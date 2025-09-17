@@ -29,13 +29,13 @@ alwaysApply: true
 ```
 
 ## 🎯 Component Design
-- Functional components with hooks
+- Functional components with hooks (see react.mdc)
 - TypeScript strict typing
 - Component composition over inheritance
 - Server/Client component separation
 
 ## 🎣 Hooks & State Management
-- Built-in React hooks
+- Built-in React hooks (see react.mdc)
 - Custom hooks for reusable logic
 - Rules of Hooks compliance
 - Proper cleanup in effects

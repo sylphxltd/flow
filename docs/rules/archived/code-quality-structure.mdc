@@ -1,0 +1,47 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Code Quality & Structure
+
+   - Use **Biome** as the unified linter/formatter/import sorter. No ESLint or Prettier.
+   - Configuration must be shared across the repo; no per-project overrides.
+   - Environment variables must be validated via Zod in a single `env` module and imported statically.
+   - Path discipline: No multi-path guessing.
+     - Do not implement fallback chains or guesswork for imports, API endpoints, file locations, or versions.
+     - If a path is unclear, consult official documentation/specs or vendor SDKs to determine the single canonical path before writing code.
+     - Centralize canonical paths and versions as typed constants in a dedicated module; avoid ad-hoc string concatenation scattered across the codebase.
+     - Validate env-derived paths at startup using Zod and fail fast with actionable error messages; do not silently fallback.
+     - Remove legacy fallbacks; handle deprecations via explicit version gates and document the rationale in an ADR.
+   - Documentation First:
+     - Business requirements and acceptance criteria.
+     - Architectural decisions and trade-offs.
+     - Complex algorithm explanations.
+     - API integration details.
+   - Architecture Principles:
+     - Modular design with clear separation of concerns.
+     - DRY and SOLID.
+     - Dependency injection for testability.
+   - Performance Optimization:
+     - Lazy load components, data fetching, and resources where practical.
+     - Ensure all UI operations are asynchronous and non-blocking.
+     - Apply caching strategies for frequently accessed data.
+     - Memory management: proactively clean up listeners/resources to avoid leaks.
+   - Code Maintenance:
+     - Continuous refactoring; split monolithic files into focused modules (≈200–300 lines).
+     - Extract reusable components and utilities.
+     - Remove dead code promptly to avoid technical debt.
+   - Development Environment:
+     - Avoid executing live environments during edits (rely on hot reload).
+     - Run isolated tests and scripts as needed.
+     - Maintain separate development, staging, and production configurations.
+   - Design System:
+     - Use a unified color palette, spacing scale, and component library.
+     - Progressive enhancement: core functionality works everywhere; enhance for capable devices.
+   - Quality Assurance:
+     - Review process: understand requirements before implementation; code review focuses on logic, performance, and maintainability.
+     - Cross-browser and device testing.
+     - Error recovery: if edits fail, re-read files carefully and retry with improved accuracy.
+     - Continuous Integration: automated testing and deployment pipelines.

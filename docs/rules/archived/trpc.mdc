@@ -1,0 +1,12 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# tRPC
+
+   - Use `httpBatchLink` for queries/mutations; `wsLink` for subscriptions (auto-reconnect enabled).
+   - All inputs/outputs validated with Zod.
+   - Subscriptions must implement **cursor-based replay** (client resends last cursor on reconnect; server replays missing events).
+   - Redis is the event bus for multi-instance fanout: publishers write to Redis channels/streams; tRPC subscription layer consumes and forwards over WebSocket.

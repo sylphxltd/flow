@@ -1,0 +1,12 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Forbidden
+
+   - `sveltekit-sse`.
+   - Direct WebSocket servers outside tRPC.
+   - Dynamic imports without ADR + benchmarks.
+   - Unsafe TypeScript assertions or suppressed errors without justification.

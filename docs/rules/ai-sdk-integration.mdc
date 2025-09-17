@@ -1,0 +1,28 @@
+---
+description: AI SDK integration patterns and best practices
+globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# AI SDK Integration Rules
+
+## 🏗️ Import Rules
+- Import only from `ai`, `@openrouter/ai-sdk-provider`, `@ai-sdk/svelte`
+- No direct imports from other AI SDK providers
+
+## 🔧 Server Implementation
+- Server endpoints must use `streamText`
+- Use `convertToModelMessages` for message conversion
+- Use `toUIMessageStreamResponse` for client responses
+- Always include `onFinish` callback for persistence
+
+## 🛠️ Tool Definition
+- Define tools with `tool()` function
+- Validate all tool inputs with Zod schemas
+- Proper error handling for tool execution
+
+## 🎨 Client Implementation
+- Client uses `Chat` component with `id` and `initialMessages`
+- Handle `tool-xxx` message parts explicitly
+- Proper loading states and error boundaries
+- Optimistic updates for better UX

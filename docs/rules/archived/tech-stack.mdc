@@ -1,0 +1,19 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Tech Stack
+
+- **Pattern**: BFF (Backend for Frontend) — the browser talks only to the app's backend; the backend talks to external services.
+- **Framework**: Svelte 5 (Runes API only: $state, $derived, $effect, $props)
+- **Language**: TypeScript (strict mode)
+- **Styling**: PandaCSS + Iconify
+- **Database**: Neon (Postgres) + Drizzle ORM
+- **Authentication**: Auth0 (BFF-managed sessions, **custom in-app login page**, no Universal Login)
+- **File Storage**: Vercel Blob
+- **Real-time / RPC**: tRPC v11 (HTTP for queries/mutations, WebSocket for subscriptions)
+- **Pub/Sub Infrastructure**: Redis (Upstash Redis or compatible cluster)
+- **Deployment**: Vercel
+- **Tooling**: Biome (unified linter/formatter/import sorter)

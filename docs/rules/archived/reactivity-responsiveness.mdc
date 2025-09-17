@@ -1,0 +1,40 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Reactivity & Responsiveness
+
+   - The entire system must be fully reactive and responsive, from backend to frontend.
+   - State changes (DB, Redis, API events) must propagate automatically through tRPC subscriptions to clients.
+   - UI must adapt responsively to all screen sizes and devices using standard responsive CSS utilities or framework primitives.
+   - Avoid polling; prefer event-driven updates with WebSocket subscriptions.
+   - Manage client state using the framework's official reactive primitives and derived-state patterns; avoid ad-hoc globals and side-effectful singletons.
+
+   - Modern layout architecture:
+     - SPA design with content switching (no full page reloads).
+     - Viewport-based layout (e.g., `height: 100vh`) with fixed navigation (sidebar/header).
+     - No-scroll main layout by default; use internal scrolling only when necessary.
+     - Seamless navigation: instant content switching without page refresh.
+
+   - Responsive and adaptive design:
+     - Mobile-first; support 320px to 2560px+ with fluid/adaptive components.
+     - Components adapt to screen size, orientation, user preferences, and network/device capabilities.
+     - Real-time state updates with reactive components; keep UI non-blocking.
+
+   - Interaction standards:
+     - Immediate visual feedback for user actions.
+     - Loading states: skeletons, progress indicators, optimistic updates.
+     - Micro-interactions: button states, form validation feedback, transitions.
+     - Touch-friendly gestures with minimum 44px hit targets.
+
+   - Accessibility & inclusivity:
+     - WCAG 2.1 AA compliance.
+     - Full keyboard navigation and proper ARIA semantics.
+     - Color contrast ≥ 4.5:1 (normal), ≥ 3:1 (large); respect reduced motion.
+     
+   - Device & platform considerations:
+     - Cross-platform consistency (desktop, mobile, tablets).
+     - Network resilience and offline-friendly behavior.
+     - Battery optimization: minimize unnecessary work and reflows.

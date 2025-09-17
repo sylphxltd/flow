@@ -22,11 +22,13 @@ alwaysApply: true
 - Implicit any types
 - Ambient declarations misuse
 
-## 🎯 Advanced Features
-- Generics for reusable code
-- Union types for variants
-- Discriminated unions for type safety
-- Conditional types when needed
+## 🎯 Advanced Patterns
+- Generics for reusable type-safe code
+- Union types with discriminated unions for type safety
+- Conditional types for complex type logic
+- Utility types (Pick, Omit, Partial, Required)
+- Mapped types for object transformations
+- Template literal types for string manipulation
 
 ## 🚫 Language Specific Forbidden
 - `console.log` in production code

@@ -39,6 +39,10 @@ git clone https://github.com/sylphxltd/rules.git .cursor/rules
 - **`trpc.mdc`** - tRPC rules (if using tRPC)
 - **`zustand.mdc`** - Zustand state management rules (if using Zustand)
 
+### 🤖 Special Purpose
+- **`planning-first.mdc`** - Tool-driven planning methodology
+- **`ai-sdk-integration.mdc`** - AI SDK streaming and tool patterns
+
 
 ## 📦 Installation Options
 

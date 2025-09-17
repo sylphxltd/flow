@@ -50,23 +50,27 @@ alwaysApply: true
 - Efficient algorithms and data structures
 - Memory leak prevention
 
-## 🔒 Security Principles
-- Validate all user inputs
-- Use parameterized queries
+## 🔒 Security & Auth Principles
+- Validate all user inputs and authentication
+- Use parameterized queries (Drizzle ORM)
 - Store secrets in environment variables
 - HTTPS only in production
 - Sanitize user content
 - Encrypt sensitive data
 - Implement rate limiting
+- All procedures use typed Context with session
+- Authorization checks explicit at procedure level
+- Never log secrets or PII (redact tokens/emails/IDs)
+- Validate auth for every tRPC procedure and REST endpoint
 
 ## 📋 Development Workflow
-- Plan before implementing
-- Incremental development
+- Plan before implementing (incremental development)
 - Code reviews mandatory
-- Automated testing
+- Automated testing in CI/CD
 - Consistent package management
-- Shared code formatting
-- Proper version control
+- Shared code formatting (Biome)
+- Proper version control and commit messages
+- Environment variables validated with Zod
 
 ## 🚫 Universal Forbidden
 - Hardcode secrets or API keys
@@ -82,3 +86,20 @@ alwaysApply: true
 - Heavy library imports
 - Dynamic imports without perf analysis
 - Unnecessary abstractions
+
+## 🔄 Redis & Pub/Sub Usage
+- Upstash Redis for serverless; local Redis for development
+- Namespaced channels (e.g., `events:chat`, `events:system`)
+- Validate every published/consumed payload with Zod
+- Redis is the source of truth for cross-instance event distribution
+- Sensitive data never published to Redis without schema filtering
+
+## 📊 Observability & Monitoring
+- Log subscription lifecycle (start/stop/reconnect, cursor)
+- Persist checkpoints on `onFinish` for AI streams and mutations
+- Structured logging with timestamp, log level, correlation IDs
+- Debug info without exposing sensitive data
+- Track Core Web Vitals (LCP, FID, CLS) and backend bottlenecks
+- Regular bundle analysis and performance monitoring
+- Graceful error degradation with actionable error messages
+- Error boundaries and intelligent retry logic

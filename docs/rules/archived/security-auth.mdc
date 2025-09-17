@@ -1,0 +1,13 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Security & Auth
+
+   - All procedures use typed `Context` with session.
+   - Authorization checks explicit at procedure level; enforce least privilege per procedure.
+   - Sensitive data must never be published to Redis without schema filtering.
+   - Never log secrets or PII; redact tokens, emails, IDs, and any user/session correlation in logs.
+   - Validate authentication and authorization for every tRPC procedure and REST endpoint; reject by default when context is missing or invalid.

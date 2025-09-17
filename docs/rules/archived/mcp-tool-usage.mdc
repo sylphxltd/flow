@@ -1,0 +1,35 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# MCP Tool Usage Protocol
+
+- Scope: Guidance for when and how to use MCP tools during development/automation. Not about the ai npm SDK code.
+
+- Tool selection principles:
+  - Choose the most appropriate tool for each task; avoid redundant calls.
+  - Fail fast on missing config; no runtime probing or fallbacks.
+  - Log usage with correlation IDs; redact secrets.
+
+- Perplexity Ask MCP (server: perplexity-ask):
+  - Default for research and data collection.
+  - Use tool name `perplexity_ask` with concise, goal-oriented prompts.
+  - Summarize and record key decisions in PR descriptions or ADRs.
+
+- gpt-image-1 MCP (server: gpt-image-1-mcp):
+  - Default for image generation and edits.
+  - For generate-image: prefer `output_format: "png"`, set `aspect_ratio` to task needs, keep `save_to_file: true`.
+  - For edit-image: set `edit_type`, minimal `mask_area` as needed, keep `preserve_composition: true` unless required otherwise.
+  - Keep `moderation: "auto"`, and `include_base64: false` unless inline embedding is necessary.
+
+- Context7 MCP:
+  - Default for documentation and code examples.
+  - Always call `resolve-library-id` first; then `get-library-docs` with a focused `topic` and explicit version when relevant.
+  - Prefer higher trust and coverage; cite versions in notes when they influence decisions.
+
+- Operational guidelines:
+  - Batch similar requests where safe; respect rate limits.
+  - Keep responses brief in code comments; link to sources when needed.
+  - Do not mix MCP instructions into AI SDK integration docs.

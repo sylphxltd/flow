@@ -30,7 +30,12 @@ alwaysApply: true
 - Component composition patterns
 
 ## 📊 State Management & Signals
-- **Svelte 5 Runes**: $state, $derived, $effect for reactive state
+- **Svelte 5 Runes ONLY**: $state, $derived, $effect for reactive state
+- **Legacy `$:` forbidden**: Use runes instead of reactive statements
+- Side effects handled inside `$effect` only
+- Clean up resources using `$effect` return function
+- Manage client state with `$state` and `$derived`
+- Avoid module-level mutable singletons
 - **Signals First**: Prefer runes over legacy stores when possible
 - Svelte's built-in stores for global state (legacy compatibility)
 - Reactive statements for derived state

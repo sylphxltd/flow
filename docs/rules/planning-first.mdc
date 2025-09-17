@@ -1,0 +1,68 @@
+---
+description: Planning and execution methodology for development tasks
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Planning First Methodology
+
+Purpose
+- Ensure every task starts with planning, design, or strategy before any implementation.
+- Reduce rework, surface risks early, and align on acceptance criteria.
+- Planning must be tool-driven: explore the codebase and research with tools instead of relying on free-text summaries alone.
+
+Scope
+- Applies to all tasks and modes.
+- This is a stand-alone instruction attached to the AI. No cross-references required.
+- Tools-first during planning: use discovery, reading, and research tools to build the plan.
+
+Non-negotiable policy
+- Perform exploration and research during planning using the most appropriate tools available in the current environment.
+- Defer any state-changing operations until the plan is confirmed.
+- Use the environment's canonical task-tracking tools to manage todos; avoid inline free-text checklists when native tooling exists.
+
+Required sequence for every task
+1) Understand
+   - Identify goals, constraints, assumptions, and missing info.
+   - If essential inputs are missing, ask a focused clarification question.
+2) Explore context (tools-first, comprehensive)
+   - Use available discovery and search capabilities to locate relevant areas across the repository.
+   - Read only the necessary files to plan effectively; prefer efficient strategies and respect file limits.
+   - When external knowledge is required, consult authoritative documentation and sources using appropriate research tools.
+   - When citing evidence, reference files with clickable links, e.g., [src/lib/server/ai.ts](src/lib/server/ai.ts:1).
+3) Draft plan
+   - Provide a Planning Header with structured sections.
+   - Link evidence (specific files/lines) gathered via tools.
+   - Define an executable, ordered set of steps that map directly to tool actions.
+4) Confirm plan
+   - Wait for approval or requested changes before any code changes.
+5) Execute plan
+   - Proceed step-by-step, one tool use per message.
+   - Prefer batching surgical edits using apply_diff with multiple SEARCH/REPLACE blocks across files when possible.
+   - After each tool use, wait for explicit confirmation of success before continuing.
+6) Track progress
+   - Manage task tracking using the environment's native tools; avoid inline checklists when native tooling exists.
+   - Mark completed, set next as in progress, and add newly discovered tasks immediately.
+7) Summarize
+   - On completion, provide a short result summary that maps to acceptance criteria.
+
+Plan quality requirements
+- Goals: What success looks like in 1–3 bullets.
+- Approach: Ordered steps that specify how you will achieve the goals and which capabilities/tools you plan to use.
+- Risks and mitigations: Top 1–3 risks with brief mitigations.
+- Acceptance criteria: Clear, verifiable outcomes.
+
+Operational rules
+- Always start with a Planning Header and manage tasks using the environment's native tooling when available.
+- Do not hardcode specific tools; select them dynamically based on availability and task requirements.
+- Prefer evidence gathered via tools; include clickable file references (e.g., [src/lib/server/ai.ts](src/lib/server/ai.ts:1)).
+- Keep plans lean but thorough: semantically scan the repo, then deep-read relevant files.
+- Fail fast on ambiguity: ask one focused question with actionable options.
+- No speculative edits: do not change files until the plan is approved.
+- Do not artificially restrict output; use tools to fetch exact content and keep narrative concise.
+
+Exceptions
+- None. For trivial tasks, provide a minimal three-bullet plan and then track two actionable items in the native task tool (when available) before execution.
+
+Compliance
+- If you acted without a plan, pause, perform tool-driven discovery (code search → file reads), create the Planning Header, and continue only after confirmation.

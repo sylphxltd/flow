@@ -1,0 +1,12 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# Redis Usage
+
+   - Upstash Redis for serverless; local Redis for development.
+   - Namespaced channels (e.g., `events:chat`, `events:system`).
+   - Validate every published/consumed payload with Zod.
+   - Redis is the source of truth for cross-instance event distribution.
