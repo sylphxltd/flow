@@ -4,18 +4,18 @@ Modern, type-safe development practices for Next.js, SvelteKit, React, and Flutt
 
 ## 🚀 Quick Start
 
-### 一鍵安裝 (推薦)
+### One-Click Installation (Recommended)
 ```bash
-# 一鍵安裝到項目
+# Install to project with one command
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/quick-install.sh | bash
 ```
 
-### 使用 npm scripts
+### Using npm
 ```bash
-# 安裝到項目
+# Install to project
 npm create @sylphxltd/rules@latest
 
-# 或手動克隆
+# Or clone manually
 git clone https://github.com/sylphxltd/rules.git .cursor/rules
 ```
 
@@ -42,29 +42,29 @@ git clone https://github.com/sylphxltd/rules.git .cursor/rules
 
 ## 📦 Installation Options
 
-### 自動安裝腳本
+### Automated Installation Script
 ```bash
-# 下載完整安裝腳本
+# Download complete installation script
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/install-rules.sh -o install-rules.sh
 chmod +x install-rules.sh
 
-# 運行安裝
-./install-rules.sh --nextjs      # Next.js 項目
-./install-rules.sh --sveltekit   # SvelteKit 項目
-./install-rules.sh --react       # React 項目
-./install-rules.sh --flutter     # Flutter 項目
-./install-rules.sh --minimal     # 最小安裝
-./install-rules.sh --all         # 安裝所有
-./install-rules.sh --interactive # 互動式選擇
-./install-rules.sh --update      # 更新規則
+# Run installation
+./install-rules.sh --nextjs      # Next.js project
+./install-rules.sh --sveltekit   # SvelteKit project
+./install-rules.sh --react       # React project
+./install-rules.sh --flutter     # Flutter project
+./install-rules.sh --minimal     # Minimal installation
+./install-rules.sh --all         # Install all rules
+./install-rules.sh --interactive # Interactive selection
+./install-rules.sh --update      # Update rules
 ```
 
-### 手動安裝
+### Manual Installation
 ```bash
-# 克隆到項目
+# Clone to project
 git clone https://github.com/sylphxltd/rules.git .cursor/rules
 
-# 或只下載特定規則
+# Or download specific rules only
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/general.mdc -o .cursor/rules/general.mdc
 ```
 
@@ -127,39 +127,39 @@ curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/general.mdc -o
 ## 💡 Usage Tips
 
 1. **Start Simple** - Begin with `general.mdc`
-2. **Add Framework** - Include your framework-specific rules (包含推薦的 type-safe 工具)
+2. **Add Framework** - Include your framework-specific rules (includes recommended type-safe tools)
 3. **Layer Tools** - Add additional tool-specific rules as needed
 4. **Customize** - Each framework file includes recommended type-safe tools
 5. **Mix & Match** - Combine framework + tools based on your project needs
 
 ## 💻 Simple Commands
 
-### 快速安裝命令
+### Quick Installation Commands
 ```bash
-# Next.js 項目
+# Next.js project
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/install-rules.sh | bash -s -- --nextjs
 
-# SvelteKit 項目
+# SvelteKit project
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/install-rules.sh | bash -s -- --sveltekit
 
-# React 項目
+# React project
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/install-rules.sh | bash -s -- --react
 
-# Flutter 項目
+# Flutter project
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/install-rules.sh | bash -s -- --flutter
 
-# 最小安裝 (任何項目)
+# Minimal installation (any project)
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/install-rules.sh | bash -s -- --minimal
 ```
 
-### 一鍵安裝 (推薦新手)
+### One-Click Installation (Recommended for Beginners)
 ```bash
-# 自動檢測項目類型並安裝合適規則
+# Auto-detect project type and install appropriate rules
 curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/quick-install.sh | bash
 ```
 
-### 更新規則
+### Update Rules
 ```bash
-# 更新已安裝的規則
+# Update installed rules
 cd .cursor/rules && git pull origin main
 ```
