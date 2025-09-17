@@ -1,0 +1,37 @@
+{
+  "name": "@sylphxltd/rules",
+  "version": "1.0.0",
+  "description": "Type-safe development rules for modern web development",
+  "main": "install-rules.sh",
+  "scripts": {
+    "install:nextjs": "./install-rules.sh --nextjs",
+    "install:sveltekit": "./install-rules.sh --sveltekit",
+    "install:react": "./install-rules.sh --react",
+    "install:flutter": "./install-rules.sh --flutter",
+    "install:minimal": "./install-rules.sh --minimal",
+    "install:all": "./install-rules.sh --all",
+    "install:interactive": "./install-rules.sh --interactive",
+    "update": "./install-rules.sh --update"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sylphxltd/rules.git"
+  },
+  "keywords": [
+    "development",
+    "rules",
+    "guidelines",
+    "typescript",
+    "nextjs",
+    "sveltekit",
+    "react",
+    "flutter",
+    "type-safe"
+  ],
+  "author": "sylphxltd",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sylphxltd/rules/issues"
+  },
+  "homepage": "https://github.com/sylphxltd/rules#readme"
+}
