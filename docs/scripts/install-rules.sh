@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Rules repository URL
 RULES_REPO="https://github.com/sylphxltd/rules.git"
-RULES_DIR=".cursor/rules"
+RULES_DIR=".cursor/rules/docs"
 
 # Show help information
 show_help() {
@@ -76,27 +76,27 @@ selective_install() {
     case "$selection" in
         "nextjs")
             echo -e "${YELLOW}Installing Next.js rules...${NC}"
-            keep_files=("README.md" "general.mdc" "typescript.mdc" "nextjs.mdc" "biome.mdc" "pandacss.mdc" "drizzle.mdc" "trpc.mdc" "zustand.mdc")
+            keep_files=("rules/README.md" "rules/general.mdc" "rules/typescript.mdc" "rules/nextjs.mdc" "rules/biome.mdc" "rules/pandacss.mdc" "rules/drizzle.mdc" "rules/trpc.mdc" "rules/zustand.mdc")
             ;;
         "sveltekit")
             echo -e "${YELLOW}Installing SvelteKit rules...${NC}"
-            keep_files=("README.md" "general.mdc" "typescript.mdc" "sveltekit.mdc" "biome.mdc" "pandacss.mdc" "drizzle.mdc" "trpc.mdc")
+            keep_files=("rules/README.md" "rules/general.mdc" "rules/typescript.mdc" "rules/sveltekit.mdc" "rules/biome.mdc" "rules/pandacss.mdc" "rules/drizzle.mdc" "rules/trpc.mdc")
             ;;
         "react")
             echo -e "${YELLOW}Installing React rules...${NC}"
-            keep_files=("README.md" "general.mdc" "typescript.mdc" "react.mdc" "biome.mdc" "pandacss.mdc" "zustand.mdc")
+            keep_files=("rules/README.md" "rules/general.mdc" "rules/typescript.mdc" "rules/react.mdc" "rules/biome.mdc" "rules/pandacss.mdc" "rules/zustand.mdc")
             ;;
         "flutter")
             echo -e "${YELLOW}Installing Flutter rules...${NC}"
-            keep_files=("README.md" "general.mdc" "flutter.mdc")
+            keep_files=("rules/README.md" "rules/general.mdc" "rules/flutter.mdc")
             ;;
         "minimal")
             echo -e "${YELLOW}Installing minimal rules...${NC}"
-            keep_files=("README.md" "general.mdc")
+            keep_files=("rules/README.md" "rules/general.mdc")
             ;;
         "all")
             echo -e "${YELLOW}Installing all rules...${NC}"
-            keep_files=("*")
+            keep_files=("rules/*")
             ;;
         *)
             echo -e "${RED}Invalid option: $selection${NC}"

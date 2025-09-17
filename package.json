@@ -2,16 +2,16 @@
   "name": "@sylphxltd/rules",
   "version": "1.0.0",
   "description": "Type-safe development rules for modern web development",
-  "main": "install-rules.sh",
+  "main": "docs/scripts/install-rules.sh",
   "scripts": {
-    "install:nextjs": "./install-rules.sh --nextjs",
-    "install:sveltekit": "./install-rules.sh --sveltekit",
-    "install:react": "./install-rules.sh --react",
-    "install:flutter": "./install-rules.sh --flutter",
-    "install:minimal": "./install-rules.sh --minimal",
-    "install:all": "./install-rules.sh --all",
-    "install:interactive": "./install-rules.sh --interactive",
-    "update": "./install-rules.sh --update"
+    "install:nextjs": "./docs/scripts/install-rules.sh --nextjs",
+    "install:sveltekit": "./docs/scripts/install-rules.sh --sveltekit",
+    "install:react": "./docs/scripts/install-rules.sh --react",
+    "install:flutter": "./docs/scripts/install-rules.sh --flutter",
+    "install:minimal": "./docs/scripts/install-rules.sh --minimal",
+    "install:all": "./docs/scripts/install-rules.sh --all",
+    "install:interactive": "./docs/scripts/install-rules.sh --interactive",
+    "update": "./docs/scripts/install-rules.sh --update"
   },
   "repository": {
     "type": "git",
