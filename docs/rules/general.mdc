@@ -6,31 +6,36 @@ alwaysApply: true
 
 # General Development Rules
 
-## 🏗️ Architecture & Design
+## Architecture & Design
 - Separation of concerns
 - Single responsibility principle
 - Dependency injection for testability
 - Interface segregation
 
-## 📁 Code Organization
+## Code Organization
 - Feature-based folder structure
 - Clear module boundaries
 - Centralized utilities
 - Consistent naming conventions
+- Modular design with clear separation of concerns
+- DRY and SOLID principles
+- Continuous refactoring; split monolithic files into focused modules (≈200–300 lines)
+- Extract reusable components and utilities
 
-## 🧹 Clean Code
+## Clean Code
 - Remove dead code immediately
 - No magic numbers (use constants)
 - Functions/methods < 50 lines
 - Max 3 levels of nesting
 
-## 📝 Documentation
+## Documentation
+- Documentation first: business requirements, acceptance criteria, architectural decisions
 - Comment complex business logic
 - Update docs with code changes
 - Clear commit messages
 - API documentation for public interfaces
 
-## 🧪 Testing Principles
+## Testing Principles
 - Unit tests for functions/components
 - Integration tests for interactions
 - E2E tests for critical user journeys
@@ -40,8 +45,11 @@ alwaysApply: true
 - Realistic test data
 - Independent test isolation
 
-## 🚀 Performance Optimization
-- Prefer static imports over dynamic
+## Performance Optimization
+- Build-time over run-time: move work to build time (codegen, config, optimization)
+- Static imports preferred over dynamic
+- Runtime focuses on business logic execution
+- Resolve canonical paths/endpoints at build time where possible
 - Lazy load components and routes
 - Bundle splitting for better caching
 - Tree-shake unused code
@@ -50,56 +58,59 @@ alwaysApply: true
 - Efficient algorithms and data structures
 - Memory leak prevention
 
-## 🔒 Security & Auth Principles
+## Security Principles
 - Validate all user inputs and authentication
-- Use parameterized queries (Drizzle ORM)
-- Store secrets in environment variables
-- HTTPS only in production
-- Sanitize user content
-- Encrypt sensitive data
-- Implement rate limiting
-- All procedures use typed Context with session
-- Authorization checks explicit at procedure level
+- Use parameterized queries to prevent SQL injection
+- Store secrets in environment variables only
+- HTTPS only in production environments
+- Sanitize all user content before processing
+- Encrypt sensitive data at rest and in transit
+- Implement rate limiting for API endpoints
 - Never log secrets or PII (redact tokens/emails/IDs)
-- Validate auth for every tRPC procedure and REST endpoint
 
-## 📋 Development Workflow
+## Development Workflow
 - Plan before implementing (incremental development)
-- Code reviews mandatory
-- Automated testing in CI/CD
-- Consistent package management
-- Shared code formatting (Biome)
-- Proper version control and commit messages
-- Environment variables validated with Zod
+- Code reviews mandatory for all changes
+- Automated testing in CI/CD pipelines
+- Consistent package management across environments
+- Shared code formatting standards
+- Proper version control and descriptive commit messages
+- Environment variables properly validated at startup
 
-## 🚫 Universal Forbidden
+## Path Discipline
+- No multi-path guessing or fallback chains
+- Consult official docs/specs to determine single canonical path
+- Store canonical paths and versions as typed constants
+- Validate env-derived paths at startup; fail fast
+- Remove legacy fallbacks; handle deprecations via explicit version gates
+
+## Development Environment
+- Avoid executing live environments during edits (use hot reload)
+- Run isolated tests and scripts as needed
+- Maintain separate development, staging, and production configurations
+
+## Design System
+- Unified color palette, spacing scale, and component library
+- Progressive enhancement: core functionality works everywhere
+
+## Quality Assurance
+- Understand requirements before implementation
+- Cross-browser and device testing
+- Error recovery: re-read files carefully if edits fail
+- Continuous integration with automated testing
+
+## Forbidden
 - Hardcode secrets or API keys
 - Commit directly to main/master
 - Leave dead/unused code
 - Skip input validation
 - Create circular dependencies
 - Use global mutable state
+- Unsafe type assertions or error suppression without justification
 
-## ⚠️ Avoid Without Justification
+## Avoid Without Justification
 - Large functions/methods (>50 lines)
 - Deep nesting (>3 levels)
-- Heavy library imports
-- Dynamic imports without perf analysis
-- Unnecessary abstractions
-
-## 🔄 Redis & Pub/Sub Usage
-- Upstash Redis for serverless; local Redis for development
-- Namespaced channels (e.g., `events:chat`, `events:system`)
-- Validate every published/consumed payload with Zod
-- Redis is the source of truth for cross-instance event distribution
-- Sensitive data never published to Redis without schema filtering
-
-## 📊 Observability & Monitoring
-- Log subscription lifecycle (start/stop/reconnect, cursor)
-- Persist checkpoints on `onFinish` for AI streams and mutations
-- Structured logging with timestamp, log level, correlation IDs
-- Debug info without exposing sensitive data
-- Track Core Web Vitals (LCP, FID, CLS) and backend bottlenecks
-- Regular bundle analysis and performance monitoring
-- Graceful error degradation with actionable error messages
-- Error boundaries and intelligent retry logic
+- Heavy library imports without performance analysis
+- Dynamic imports without performance impact assessment
+- Unnecessary abstractions that increase complexity

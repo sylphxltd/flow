@@ -6,13 +6,13 @@ alwaysApply: true
 
 # SvelteKit Rules
 
-## 🏗️ Framework Patterns
+## Framework Patterns
 - Use SvelteKit's file-based routing
 - Leverage Svelte 5 runes: $state, $derived, $effect
 - Server-side rendering with SSR
 - API routes for server endpoints
 
-## 📁 Project Structure
+## Project Structure
 ```
 ├── src/
 │   ├── app.html          # Main template
@@ -23,68 +23,89 @@ alwaysApply: true
 └── svelte.config.js     # SvelteKit config
 ```
 
-## 🎯 Component Design
+## Component Design
 - Use Svelte components with .svelte extension
 - Leverage reactive statements and stores
 - Event handling with Svelte's event system
 - Component composition patterns
 
-## 📊 State Management & Signals
-- **Svelte 5 Runes ONLY**: $state, $derived, $effect for reactive state
-- **Legacy `$:` forbidden**: Use runes instead of reactive statements
+## State Management & Signals
+- Svelte 5 Runes ONLY: $state, $derived, $effect for reactive state
+- Legacy `$:` forbidden: Use runes instead of reactive statements
 - Side effects handled inside `$effect` only
 - Clean up resources using `$effect` return function
 - Manage client state with `$state` and `$derived`
 - Avoid module-level mutable singletons
-- **Signals First**: Prefer runes over legacy stores when possible
+- Prefer runes over legacy stores when possible
 - Svelte's built-in stores for global state (legacy compatibility)
 - Reactive statements for derived state
 - Context for component-specific state
 - Proper store cleanup and subscriptions
 
-## 🔄 Data Fetching
+## Data Fetching
 - Load functions for server-side data
 - Actions for form handling
 - API routes for external integrations
 - Proper loading states and error handling
 
-## 🚀 Performance
+## Performance
 - Svelte's compile-time optimizations
 - Efficient reactive system usage
 - Proper store subscriptions cleanup
 - Bundle analysis and optimization
 
-## 🚫 Forbidden Practices
+## Forbidden
 - Manual DOM manipulation (use Svelte's reactivity)
 - Complex logic in templates (extract to scripts)
 - Global style pollution (use scoped styles)
 - Improper store cleanup
 
-## 🛠️ Recommended Tech Stack (Type-Safe)
-- **Styling**: PandaCSS + Iconify (type-safe CSS)
-- **Database**: Drizzle ORM + PostgreSQL (type-safe queries)
-- **API**: tRPC for type-safe APIs
-- **State**: Svelte stores + Zustand (if needed)
-- **Linting**: Biome for code quality
-- **Testing**: Vitest + Testing Library
+## Recommended Tool Integration
+- Compatible with PandaCSS + Iconify patterns for styling
+- Compatible with Drizzle ORM for type-safe queries
+- Compatible with tRPC for type-safe APIs
+- Compatible with Svelte stores + Zustand for state management
+- Compatible with Biome linting and formatting
+- Compatible with Vitest + Testing Library for testing
 
-## 🎨 Styling Rules
+## Styling Rules
 - PandaCSS for type-safe styling
 - Design tokens for consistent theming
 - Responsive design patterns
 - Component-level styling isolation
 
-## 🔧 Configuration
+## Configuration
 - Shared Biome configuration
 - TypeScript strict mode enabled
 - PandaCSS with design tokens
 - Environment variables properly typed
 - SvelteKit with TypeScript support
 
-## 🎯 Best Practices
+## Best Practices
 - Use TypeScript for better DX
 - Leverage Svelte's compiler features
 - Proper error boundaries
 - Accessibility considerations
 - SEO optimization with SSR
 - Type-safe configuration
+
+## UI/UX & Responsiveness
+- Fully reactive system: State changes propagate automatically through subscriptions
+- Event-driven updates: Avoid polling; prefer WebSocket subscriptions
+- Responsive design: Mobile-first support from 320px to 2560px+
+- Modern layout: SPA with viewport-based layout, fixed navigation
+- Seamless navigation: Instant content switching without page refresh
+- Cross-platform: Consistent experience across desktop, mobile, tablets
+- Network resilience: Offline-friendly behavior and battery optimization
+
+## User Experience
+- Immediate feedback: Visual feedback for all user actions
+- Loading states: Skeletons, progress indicators, optimistic updates
+- Micro-interactions: Button states, form validation feedback, transitions
+- Touch-friendly: Minimum 44px hit targets for touch interfaces
+
+## Accessibility Standards
+- WCAG 2.1 AA compliance: Full keyboard navigation and proper ARIA semantics
+- Color contrast: ≥ 4.5:1 (normal text), ≥ 3:1 (large text)
+- Reduced motion: Respect user's motion preferences
+- Screen readers: Proper semantic markup and labels

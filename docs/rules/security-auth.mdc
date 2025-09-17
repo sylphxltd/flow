@@ -1,0 +1,40 @@
+---
+description: Security and authentication rules and best practices
+globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}", "**/auth/**/*.{ts,tsx}", "**/middleware/**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# Security & Authentication Rules
+
+## Context & Sessions
+- All procedures must use typed Context with session information
+- Validate session integrity and expiration on every request
+- Ensure context is always available in authenticated routes
+
+## Authorization
+- Authorization checks must be explicit at each procedure level
+- Enforce least privilege principle - grant minimum required permissions
+- Default to denying access when context is missing or invalid
+- Implement clear role hierarchies and permission matrices
+
+## Data Protection
+- Never publish sensitive data to pub/sub systems without schema filtering
+- Implement proper PII (Personally Identifiable Information) protection
+- Sanitize all user inputs before processing or storage
+
+## Logging Security
+- Never log secrets, passwords, or sensitive tokens
+- Redact emails, user IDs, and session correlation data in logs
+- Use correlation IDs for request tracing without exposing sensitive data
+
+## Validation Requirements
+- Validate authentication and authorization for every API procedure
+- Validate authentication and authorization for every API endpoint
+- Reject requests by default when context is missing or invalid
+
+## Forbidden
+- Storing sensitive data in logs or client-side storage
+- Bypassing authorization checks for convenience
+- Using session data without proper validation
+- Exposing internal system details in error messages
+- Implementing backdoors or debug authentication paths

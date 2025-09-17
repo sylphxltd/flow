@@ -6,39 +6,38 @@ alwaysApply: true
 
 # React Rules
 
-## ⚛️ Component Design
+## Component Design
 - Functional components with hooks
 - TypeScript strict typing for props and state
 - Single responsibility per component
 - Props interface definitions
 - Component composition over inheritance
 
-## 🎣 Hooks Usage
+## Hooks Usage
 - Built-in hooks preferred
 - Custom hooks for reusable logic
 - Rules of Hooks compliance
 - Proper cleanup in effects
 
-## 📊 State Management & Signals
-- **Signals Approach**: Use modern state management patterns
+## State Management
 - Local state with useState/useReducer
-- Context API for app-wide state (with signals-like patterns)
-- External state libraries when needed (Zustand, Redux Toolkit)
+- Context API for app-wide state
+- External state libraries when needed
 - Proper state update patterns with immutability
 
-## 🔄 Side Effects
+## Side Effects
 - useEffect sparingly and properly
 - Dependency arrays always included
 - Cleanup functions for subscriptions
 - Avoid memory leaks
 
-## 🚀 Performance
+## Performance
 - React.memo for expensive components
 - useMemo for cached calculations
 - useCallback for stable references
 - Lazy loading with React.lazy
 
-## 🚫 Forbidden Practices
+## Forbidden
 - Class components (use functional)
 - Direct DOM manipulation (use refs)
 - dangerouslySetInnerHTML without sanitization
@@ -47,13 +46,13 @@ alwaysApply: true
 - Inline event handlers in render (use useCallback)
 - Large component files (>300 lines)
 
-## 🎯 Component Patterns
+## Component Patterns
 - Custom hooks for logic extraction
 - Error boundaries for error handling
 - Render props when appropriate
 - Higher-order components sparingly
 
-## 🧪 Testing
+## Testing
 - Component testing in isolation
 - Hook testing separately
 - Integration tests for interactions

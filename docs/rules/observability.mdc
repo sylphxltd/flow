@@ -1,0 +1,54 @@
+---
+description: Observability, logging, monitoring and error handling guidelines
+globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}", "**/components/**/*.{ts,tsx,svelte}", "**/pages/**/*.{ts,tsx,svelte}"]
+alwaysApply: true
+---
+
+# Observability Rules
+
+## Subscription Monitoring
+- Log subscription lifecycle events (start/stop/reconnect, cursor positions)
+- Monitor WebSocket connection health and reconnection attempts
+- Track and log cursor positions for debugging
+
+## Checkpoint Persistence
+- Persist checkpoints on finish for streaming operations
+- Create checkpoints after successful data mutations
+- Implement recovery mechanisms using persisted checkpoints
+
+## Structured Logging
+- Include timestamp and log level in all log entries
+- Attach user/session context and correlation IDs for request tracing
+- Use consistent, machine-parseable log formats
+- Use appropriate log levels (ERROR, WARN, INFO, DEBUG)
+
+## Debug Information
+- Include relevant debugging context without exposing sensitive data
+- Provide meaningful stack traces for error conditions
+- Log performance metrics and bottlenecks
+
+## Performance Monitoring
+- Track Core Web Vitals (LCP, FID, CLS)
+- Monitor backend performance bottlenecks and response times
+- Perform regular bundle size analysis and optimization
+- Track real-user performance and satisfaction metrics
+
+## Error Management
+- Implement graceful degradation to avoid broken user experiences
+- Provide meaningful, actionable error messages to users
+- Use error boundaries to contain and isolate failures
+- Implement intelligent retry logic for transient failures
+- Categorize errors (client, server, network, validation)
+
+## Alerting & Monitoring
+- Set up alerts for critical performance thresholds
+- Track error rates and failure patterns
+- Implement comprehensive health check endpoints
+- Monitor service level agreements and uptime
+
+## Forbidden
+- Logging sensitive data or PII
+- Silent failures without proper error handling
+- Missing error boundaries in critical user paths
+- Inadequate logging for production debugging
+- Ignoring performance monitoring in production

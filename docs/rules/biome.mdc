@@ -6,31 +6,31 @@ alwaysApply: true
 
 # Biome Rules
 
-## 🛠️ Configuration
+## Configuration
 - Use Biome as unified linter/formatter/import sorter
 - Shared configuration across the entire repo
 - No per-project overrides
 - Enable all recommended rules
 
-## 📝 Code Formatting
+## Code Formatting
 - Consistent indentation and spacing
 - Automatic import sorting
 - Trailing commas and semicolons
 - Line length limits
 
-## 🔧 Linting Rules
+## Linting Rules
 - TypeScript strict rules enabled
 - React specific rules for JSX
 - Import/export validation
 - Code quality checks
 
-## 🚫 Forbidden with Biome
+## Forbidden
 - Manual code formatting (use Biome format)
 - Inconsistent import ordering
 - Unused imports/variables (Biome will catch)
 - Malformed TypeScript/JSX code
 
-## ⚙️ Integration
+## Integration
 - Pre-commit hooks for automatic formatting
 - CI/CD pipeline integration
 - Editor integration for real-time feedback

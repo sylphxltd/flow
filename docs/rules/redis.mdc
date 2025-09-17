@@ -1,0 +1,33 @@
+---
+description: Redis usage guidelines and best practices
+globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}", "**/services/**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# Redis Rules
+
+## Infrastructure
+- Serverless Redis for production deployments
+- Local Redis instance for development and testing
+- Ensure provider compatibility for local development
+
+## Channel Management
+- Use prefixed channels (e.g., `events:chat`, `events:system`)
+- Maintain consistent naming patterns across the application
+- Document all channels and their purposes
+
+## Data Validation
+- Validate every published/consumed payload
+- Ensure payload types match between publishers and consumers
+- Handle validation failures gracefully
+
+## Event Distribution
+- Redis as source of truth for cross-instance event distribution
+- Implement proper error handling and reconnection logic
+- Track message delivery and processing metrics
+
+## Forbidden
+- Publishing unvalidated data to Redis channels
+- Using Redis for persistent storage (use database instead)
+- Blocking operations that could impact performance
+- Missing error handling for Redis connection failures

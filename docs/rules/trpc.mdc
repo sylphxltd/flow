@@ -6,40 +6,40 @@ alwaysApply: true
 
 # tRPC Rules
 
-## 🏗️ API Structure
+## API Structure
 - Define procedures with proper input/output types
 - Use routers for logical grouping
 - Implement middleware for cross-cutting concerns
 - Proper error handling and status codes
 
-## 🔒 Type Safety
+## Type Safety
 - End-to-end type safety between client and server
-- Input validation with Zod schemas
+- Input validation with schemas
 - Proper TypeScript inference
 - No manual API contracts
 
-## 🚫 Forbidden with tRPC
+## Forbidden
 - REST API endpoints (use tRPC procedures)
 - Manual HTTP client calls (use tRPC client)
 - Missing input validation
 - Inconsistent error handling
 
-## 🎯 Best Practices
+## Best Practices
 - Batch multiple queries when possible
 - Implement proper caching strategies
 - Use subscriptions for real-time features
 - Subscriptions implement cursor-based replay
 - Proper error boundaries for failed requests
 
-## 🔗 Integration Patterns
-- Server Components for initial data loading
-- Client Components with tRPC hooks
+## Integration Patterns
+- Server components for initial data loading
+- Client components with tRPC hooks
 - Optimistic updates for better UX
 - Loading states and error handling
 
-## 🔄 Links & Subscriptions
-- Use `httpBatchLink` for queries/mutations
-- Use `wsLink` for subscriptions (auto-reconnect enabled)
+## Links & Subscriptions
+- Use httpBatchLink for queries/mutations
+- Use wsLink for subscriptions (auto-reconnect enabled)
 - Client resends last cursor on reconnect
-- Server replays missing events via Redis
-- Redis as event bus for multi-instance fanout
+- Server replays missing events via external pub/sub
+- External pub/sub system for multi-instance event distribution

@@ -48,13 +48,13 @@ alwaysApply: true
 - tRPC for type-safe APIs (recommended)
 - Streaming and Suspense for UX
 
-## 🛠️ Recommended Tech Stack (Type-Safe)
-- **Styling**: PandaCSS + shadcn/ui (type-safe CSS)
-- **Database**: Drizzle ORM + PostgreSQL (type-safe queries)
-- **API**: tRPC for end-to-end type-safe APIs
-- **State**: Zustand for type-safe state management
-- **Linting**: Biome for code quality
-- **Testing**: Vitest + Testing Library with TypeScript
+## 🛠️ Recommended Tool Integration
+- **Type-Safe Styling**: Compatible with PandaCSS patterns
+- **Database Layer**: Compatible with Drizzle ORM for type-safe queries
+- **API Layer**: Compatible with tRPC for end-to-end type safety
+- **State Management**: Compatible with Zustand for type-safe state
+- **Code Quality**: Compatible with Biome linting and formatting
+- **Testing**: Compatible with Vitest + Testing Library
 
 ## 🚀 Performance Features
 - Automatic code splitting
@@ -70,13 +70,13 @@ alwaysApply: true
 
 ## 🚫 Forbidden Practices
 - Pages Router in new projects
-- Raw fetch calls (use tRPC)
-- Raw SQL queries (use Drizzle)
-- Traditional CSS (use PandaCSS)
-- Manual state management (use Zustand)
 - Client-side data fetching in Server Components
 - Heavy computations in render
 - Missing error boundaries
+- Raw database queries (use type-safe ORM)
+- Manual state management without proper patterns
+- Traditional CSS without design system
+- Unnecessary client-side API calls
 
 ## 🎯 Best Practices
 - Use TypeScript for better DX
