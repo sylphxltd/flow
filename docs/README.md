@@ -7,7 +7,7 @@ Modern, type-safe development practices for Next.js, SvelteKit, React, and Flutt
 ### One-Click Installation (Recommended)
 ```bash
 # Install to project with one command
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/quick-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/quick-install.sh | bash
 ```
 
 ### Using npm
@@ -45,7 +45,7 @@ git clone https://github.com/sylphxltd/rules.git .cursor/rules
 ### Automated Installation Script
 ```bash
 # Download complete installation script
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/install-rules.sh -o install-rules.sh
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh -o install-rules.sh
 chmod +x install-rules.sh
 
 # Run installation
@@ -137,29 +137,29 @@ curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/rules/gen
 ### Quick Installation Commands
 ```bash
 # Next.js project
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/install-rules.sh | bash -s -- --nextjs
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh | bash -s -- --nextjs
 
 # SvelteKit project
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/install-rules.sh | bash -s -- --sveltekit
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh | bash -s -- --sveltekit
 
 # React project
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/install-rules.sh | bash -s -- --react
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh | bash -s -- --react
 
 # Flutter project
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/install-rules.sh | bash -s -- --flutter
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh | bash -s -- --flutter
 
 # Minimal installation (any project)
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/install-rules.sh | bash -s -- --minimal
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh | bash -s -- --minimal
 ```
 
 ### One-Click Installation (Recommended for Beginners)
 ```bash
 # Auto-detect project type and install appropriate rules
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/quick-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/quick-install.sh | bash
 ```
 
 ### Update Rules
 ```bash
 # Update installed rules
-cd .cursor/rules/docs && git pull origin main
+cd .cursor/rules && git pull origin main
 ```

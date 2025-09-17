@@ -13,7 +13,7 @@ NC='\033[0m'
 
 # Configuration
 RULES_REPO="https://github.com/sylphxltd/rules.git"
-RULES_DIR=".cursor/rules/docs"
+RULES_DIR=".cursor/rules"
 
 echo -e "${BLUE}🚀 Quick Rules Installer${NC}"
 echo ""
@@ -34,7 +34,7 @@ if command -v git &> /dev/null; then
 else
     echo -e "${YELLOW}Git not detected, downloading with curl...${NC}"
     mkdir -p "$RULES_DIR"
-    curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/README.md -o "$RULES_DIR/README.md"
+    curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/README.md -o "$RULES_DIR/docs/README.md"
     echo -e "${GREEN}✓ Basic documentation downloaded${NC}"
     echo -e "${YELLOW}Tip: Install git to get the complete rule collection${NC}"
 fi
@@ -44,7 +44,7 @@ echo -e "${GREEN}🎉 Installation completed!${NC}"
 echo -e "${BLUE}Rules location: $RULES_DIR${NC}"
 echo ""
 echo -e "${YELLOW}Usage:${NC}"
-echo "  View rules: cat $RULES_DIR/README.md"
-echo "  Edit rules: cursor $RULES_DIR/"
+echo "  View rules: cat $RULES_DIR/docs/README.md"
+echo "  Edit rules: cursor $RULES_DIR/docs/"
 echo ""
 echo -e "${BLUE}More installation options: https://github.com/sylphxltd/rules${NC}"

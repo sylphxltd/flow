@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Rules repository URL
 RULES_REPO="https://github.com/sylphxltd/rules.git"
-RULES_DIR=".cursor/rules/docs"
+RULES_DIR=".cursor/rules"
 
 # Show help information
 show_help() {
@@ -76,27 +76,27 @@ selective_install() {
     case "$selection" in
         "nextjs")
             echo -e "${YELLOW}Installing Next.js rules...${NC}"
-            keep_files=("rules/README.md" "rules/general.mdc" "rules/typescript.mdc" "rules/nextjs.mdc" "rules/biome.mdc" "rules/pandacss.mdc" "rules/drizzle.mdc" "rules/trpc.mdc" "rules/zustand.mdc")
+            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/typescript.mdc" "docs/rules/nextjs.mdc" "docs/rules/biome.mdc" "docs/rules/pandacss.mdc" "docs/rules/drizzle.mdc" "docs/rules/trpc.mdc" "docs/rules/zustand.mdc")
             ;;
         "sveltekit")
             echo -e "${YELLOW}Installing SvelteKit rules...${NC}"
-            keep_files=("rules/README.md" "rules/general.mdc" "rules/typescript.mdc" "rules/sveltekit.mdc" "rules/biome.mdc" "rules/pandacss.mdc" "rules/drizzle.mdc" "rules/trpc.mdc")
+            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/typescript.mdc" "docs/rules/sveltekit.mdc" "docs/rules/biome.mdc" "docs/rules/pandacss.mdc" "docs/rules/drizzle.mdc" "docs/rules/trpc.mdc")
             ;;
         "react")
             echo -e "${YELLOW}Installing React rules...${NC}"
-            keep_files=("rules/README.md" "rules/general.mdc" "rules/typescript.mdc" "rules/react.mdc" "rules/biome.mdc" "rules/pandacss.mdc" "rules/zustand.mdc")
+            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/typescript.mdc" "docs/rules/react.mdc" "docs/rules/biome.mdc" "docs/rules/pandacss.mdc" "docs/rules/zustand.mdc")
             ;;
         "flutter")
             echo -e "${YELLOW}Installing Flutter rules...${NC}"
-            keep_files=("rules/README.md" "rules/general.mdc" "rules/flutter.mdc")
+            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/flutter.mdc")
             ;;
         "minimal")
             echo -e "${YELLOW}Installing minimal rules...${NC}"
-            keep_files=("rules/README.md" "rules/general.mdc")
+            keep_files=("docs/rules/README.md" "docs/rules/general.mdc")
             ;;
         "all")
             echo -e "${YELLOW}Installing all rules...${NC}"
-            keep_files=("rules/*")
+            keep_files=("docs/rules/*")
             ;;
         *)
             echo -e "${RED}Invalid option: $selection${NC}"
