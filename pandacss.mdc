@@ -1,0 +1,50 @@
+---
+description: PandaCSS type-safe CSS and styling rules
+globs: ["**/*.{ts,tsx,js,jsx,svelte}", "**/styled-system/**/*", "**/panda.config.*"]
+alwaysApply: true
+---
+
+# PandaCSS Rules
+
+## 🎨 Core Principles
+- **Type-Safe Styling**: All styles are type-checked
+- **Design Tokens**: Centralized design system
+- **Component Styling**: Styles co-located with components
+- **Responsive Design**: Type-safe responsive utilities
+
+## 🛠️ Configuration
+- **Design Tokens**: Define colors, spacing, typography in config
+- **CSS Generation**: Auto-generate CSS from TypeScript
+- **Type Generation**: Generate TypeScript types for styles
+- **Theme Variants**: Support light/dark themes
+
+## 📝 Usage Patterns
+- **Pattern Properties**: Use predefined design patterns
+- **Conditional Styling**: Type-safe conditional styles
+- **Composition**: Compose styles using design tokens
+- **Responsive**: Type-safe responsive breakpoints
+
+## 🔧 Best Practices
+- **Token Usage**: Always use design tokens, never hardcode values
+- **Pattern Definition**: Define reusable component patterns
+- **Type Safety**: Leverage TypeScript for styling errors
+- **Performance**: Optimize CSS generation and bundle size
+
+## 🚫 Forbidden with PandaCSS
+- **Inline Styles**: No inline style objects
+- **Global CSS**: No global CSS files (use PandaCSS)
+- **Hardcoded Values**: No hardcoded colors/spacing values
+- **CSS Modules**: No traditional CSS modules
+- **Tailwind Classes**: No utility classes (use PandaCSS patterns)
+
+## ⚙️ Integration
+- **Framework Support**: Works with React, Vue, Svelte
+- **Build Integration**: Integrate with Vite, Webpack
+- **IDE Support**: Full TypeScript IntelliSense
+- **Hot Reload**: Fast style updates during development
+
+## 🎯 Advanced Features
+- **Custom Properties**: Type-safe CSS custom properties
+- **Animation**: Type-safe animation definitions
+- **Variants**: Component style variants
+- **Recipes**: Reusable style compositions

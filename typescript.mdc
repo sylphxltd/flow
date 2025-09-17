@@ -1,0 +1,35 @@
+---
+description: TypeScript type system and language features
+globs: ["**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# TypeScript Rules
+
+## 🔧 Core Rules
+- Use strict mode always
+- No implicit any types
+- Explicit return types for functions
+- Prefer interfaces over types for object shapes
+
+## 🚫 Forbidden
+- `as any` without justification
+- `// @ts-ignore` without explanation
+- `// @ts-expect-error` without explanation
+- Global declarations outside `.d.ts` files
+- `any` type except migrations
+- Unsafe type assertions
+- Implicit any types
+- Ambient declarations misuse
+
+## 🎯 Advanced Features
+- Generics for reusable code
+- Union types for variants
+- Discriminated unions for type safety
+- Conditional types when needed
+
+## 🚫 Language Specific Forbidden
+- `console.log` in production code
+- `console.error` for error logging (use proper logging)
+- `console.warn` for warnings (use proper logging)
+- `debugger` statements in production

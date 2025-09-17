@@ -1,0 +1,37 @@
+---
+description: tRPC patterns and best practices
+globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# tRPC Rules
+
+## 🏗️ API Structure
+- Define procedures with proper input/output types
+- Use routers for logical grouping
+- Implement middleware for cross-cutting concerns
+- Proper error handling and status codes
+
+## 🔒 Type Safety
+- End-to-end type safety between client and server
+- Input validation with Zod schemas
+- Proper TypeScript inference
+- No manual API contracts
+
+## 🚫 Forbidden with tRPC
+- REST API endpoints (use tRPC procedures)
+- Manual HTTP client calls (use tRPC client)
+- Missing input validation
+- Inconsistent error handling
+
+## 🎯 Best Practices
+- Batch multiple queries when possible
+- Implement proper caching strategies
+- Use subscriptions for real-time features
+- Proper error boundaries for failed requests
+
+## 🔗 Integration Patterns
+- Server Components for initial data loading
+- Client Components with tRPC hooks
+- Optimistic updates for better UX
+- Loading states and error handling

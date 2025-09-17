@@ -1,0 +1,72 @@
+---
+description: Flutter framework-specific rules and best practices
+globs: ["**/*.dart", "**/lib/**/*", "**/test/**/*"]
+alwaysApply: true
+---
+
+# Flutter Rules
+
+## 🏗️ Framework Patterns
+- Use Flutter's declarative UI approach
+- Leverage widget composition
+- State management with Provider/Riverpod
+- Proper widget lifecycle management
+
+## 📁 Project Structure
+```
+├── lib/
+│   ├── core/             # Core utilities
+│   ├── features/         # Feature modules
+│   ├── shared/           # Shared components
+│   └── models/           # Data models
+├── test/                 # Unit and widget tests
+├── integration_test/     # Integration tests
+└── pubspec.yaml          # Dependencies
+```
+
+## 🎯 Widget Design
+- Use stateless widgets when possible
+- Proper key usage for list items
+- Efficient widget rebuilding
+- Widget composition over inheritance
+
+## 📊 State Management & Signals
+- **Signals Approach**: Reactive state management patterns
+- Provider for simple state (signals-like reactivity)
+- Riverpod for complex state (modern signals pattern)
+- Bloc pattern for business logic (event-driven signals)
+- Signals for fine-grained reactivity when available
+- Proper state disposal and lifecycle management
+
+## 🔄 Data Fetching
+- Repository pattern for data access
+- Proper error handling
+- Loading states management
+- Offline data handling
+
+## 🚀 Performance
+- Use const constructors
+- Avoid unnecessary rebuilds
+- Efficient list rendering
+- Memory leak prevention
+
+## 🚫 Forbidden Practices
+- `print()` statements in production code
+- `debugPrint()` in production (use proper logging)
+- Direct `print()` for error logging (use logging library)
+- Large widgets (>200 lines)
+- Business logic in widgets
+- Improper state management
+- Missing error boundaries
+
+## 🧪 Testing
+- Unit tests for business logic
+- Widget tests for UI components
+- Integration tests for critical flows
+- Mock external dependencies
+
+## 🎯 Best Practices
+- Use Dart's null safety
+- Proper async/await usage
+- Effective debugging techniques
+- Platform-specific considerations

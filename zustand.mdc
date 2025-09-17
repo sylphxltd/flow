@@ -1,0 +1,37 @@
+---
+description: Zustand state management patterns and best practices
+globs: ["**/store/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/hooks/**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# Zustand State Management
+
+## 🏪 Store Design
+- Small, focused stores for specific domains
+- Immutable state updates
+- Proper TypeScript typing
+- Clear action naming conventions
+
+## 🎣 Custom Hooks
+- Create typed hooks for store access
+- Proper selector usage for performance
+- Memoized selectors for complex computations
+- Clean up subscriptions properly
+
+## 🚫 Forbidden with Zustand
+- Direct store mutations (use actions)
+- Large monolithic stores
+- Missing TypeScript types
+- Improper subscription cleanup
+
+## 🎯 Best Practices
+- Actions for state mutations
+- Selectors for derived state
+- Middleware for logging/debugging
+- Proper error handling in actions
+
+## 🔄 Integration Patterns
+- Server state sync with tRPC
+- Local state persistence
+- Real-time updates with subscriptions
+- Proper loading and error states

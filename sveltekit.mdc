@@ -1,0 +1,85 @@
+---
+description: SvelteKit framework-specific rules and best practices
+globs: ["**/*.{svelte,ts,js}", "**/src/**/*", "**/routes/**/*"]
+alwaysApply: true
+---
+
+# SvelteKit Rules
+
+## 🏗️ Framework Patterns
+- Use SvelteKit's file-based routing
+- Leverage Svelte 5 runes: $state, $derived, $effect
+- Server-side rendering with SSR
+- API routes for server endpoints
+
+## 📁 Project Structure
+```
+├── src/
+│   ├── app.html          # Main template
+│   ├── lib/             # Shared utilities
+│   ├── routes/          # File-based routes
+│   └── app.d.ts         # TypeScript declarations
+├── static/              # Static assets
+└── svelte.config.js     # SvelteKit config
+```
+
+## 🎯 Component Design
+- Use Svelte components with .svelte extension
+- Leverage reactive statements and stores
+- Event handling with Svelte's event system
+- Component composition patterns
+
+## 📊 State Management & Signals
+- **Svelte 5 Runes**: $state, $derived, $effect for reactive state
+- **Signals First**: Prefer runes over legacy stores when possible
+- Svelte's built-in stores for global state (legacy compatibility)
+- Reactive statements for derived state
+- Context for component-specific state
+- Proper store cleanup and subscriptions
+
+## 🔄 Data Fetching
+- Load functions for server-side data
+- Actions for form handling
+- API routes for external integrations
+- Proper loading states and error handling
+
+## 🚀 Performance
+- Svelte's compile-time optimizations
+- Efficient reactive system usage
+- Proper store subscriptions cleanup
+- Bundle analysis and optimization
+
+## 🚫 Forbidden Practices
+- Manual DOM manipulation (use Svelte's reactivity)
+- Complex logic in templates (extract to scripts)
+- Global style pollution (use scoped styles)
+- Improper store cleanup
+
+## 🛠️ Recommended Tech Stack (Type-Safe)
+- **Styling**: PandaCSS + Iconify (type-safe CSS)
+- **Database**: Drizzle ORM + PostgreSQL (type-safe queries)
+- **API**: tRPC for type-safe APIs
+- **State**: Svelte stores + Zustand (if needed)
+- **Linting**: Biome for code quality
+- **Testing**: Vitest + Testing Library
+
+## 🎨 Styling Rules
+- PandaCSS for type-safe styling
+- Design tokens for consistent theming
+- Responsive design patterns
+- Component-level styling isolation
+
+## 🔧 Configuration
+- Shared Biome configuration
+- TypeScript strict mode enabled
+- PandaCSS with design tokens
+- Environment variables properly typed
+- SvelteKit with TypeScript support
+
+## 🎯 Best Practices
+- Use TypeScript for better DX
+- Leverage Svelte's compiler features
+- Proper error boundaries
+- Accessibility considerations
+- SEO optimization with SSR
+- Type-safe configuration

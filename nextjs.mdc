@@ -1,0 +1,86 @@
+---
+description: Next.js framework-specific rules and best practices
+globs: ["**/*.{ts,tsx,js,jsx}", "**/app/**/*", "**/pages/**/*", "**/lib/**/*"]
+alwaysApply: true
+---
+
+# Next.js Rules
+
+## 🏗️ Framework Patterns
+- App Router exclusively (no Pages Router)
+- Server Components for data fetching
+- Client Components only when needed
+- Server Actions for form mutations
+
+## 📁 Project Structure
+```
+├── app/                 # Next.js App Router
+│   ├── layout.tsx       # Root layout
+│   ├── page.tsx         # Home page
+│   ├── loading.tsx      # Loading UI
+│   └── not-found.tsx    # 404 page
+├── components/          # Reusable components
+├── lib/                 # Utilities and configurations
+│   ├── db/             # Database configuration
+│   ├── trpc/           # tRPC configuration
+│   └── store/          # State management
+├── hooks/              # Custom React hooks
+└── types/              # TypeScript definitions
+```
+
+## 🎯 Component Design
+- Functional components with hooks
+- TypeScript strict typing
+- Component composition over inheritance
+- Server/Client component separation
+
+## 🎣 Hooks & State Management
+- Built-in React hooks
+- Custom hooks for reusable logic
+- Rules of Hooks compliance
+- Proper cleanup in effects
+- Zustand for complex state (optional)
+
+## 🔄 Data Fetching Patterns
+- Server Components for initial data
+- Client Components for interactive data
+- Server Actions for mutations
+- tRPC for type-safe APIs (recommended)
+- Streaming and Suspense for UX
+
+## 🛠️ Recommended Tech Stack (Type-Safe)
+- **Styling**: PandaCSS + shadcn/ui (type-safe CSS)
+- **Database**: Drizzle ORM + PostgreSQL (type-safe queries)
+- **API**: tRPC for end-to-end type-safe APIs
+- **State**: Zustand for type-safe state management
+- **Linting**: Biome for code quality
+- **Testing**: Vitest + Testing Library with TypeScript
+
+## 🚀 Performance Features
+- Automatic code splitting
+- Image optimization with Next.js Image
+- Font optimization
+- Bundle analyzer integration
+
+## ⚙️ Configuration
+- next.config.js for build settings
+- Environment variables with Zod validation
+- Middleware for routing logic
+- API routes for external integrations
+
+## 🚫 Forbidden Practices
+- Pages Router in new projects
+- Raw fetch calls (use tRPC)
+- Raw SQL queries (use Drizzle)
+- Traditional CSS (use PandaCSS)
+- Manual state management (use Zustand)
+- Client-side data fetching in Server Components
+- Heavy computations in render
+- Missing error boundaries
+
+## 🎯 Best Practices
+- Use TypeScript for better DX
+- Leverage built-in optimizations
+- Proper loading and error states
+- SEO optimization with metadata API
+- Type-safe configuration with Zod

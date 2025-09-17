@@ -1,0 +1,84 @@
+---
+description: Universal development practices applicable to all languages and frameworks
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# General Development Rules
+
+## 🏗️ Architecture & Design
+- Separation of concerns
+- Single responsibility principle
+- Dependency injection for testability
+- Interface segregation
+
+## 📁 Code Organization
+- Feature-based folder structure
+- Clear module boundaries
+- Centralized utilities
+- Consistent naming conventions
+
+## 🧹 Clean Code
+- Remove dead code immediately
+- No magic numbers (use constants)
+- Functions/methods < 50 lines
+- Max 3 levels of nesting
+
+## 📝 Documentation
+- Comment complex business logic
+- Update docs with code changes
+- Clear commit messages
+- API documentation for public interfaces
+
+## 🧪 Testing Principles
+- Unit tests for functions/components
+- Integration tests for interactions
+- E2E tests for critical user journeys
+- Contract tests for APIs
+- Tests match code structure
+- Descriptive test names
+- Realistic test data
+- Independent test isolation
+
+## 🚀 Performance Optimization
+- Prefer static imports over dynamic
+- Lazy load components and routes
+- Bundle splitting for better caching
+- Tree-shake unused code
+- Async operations for non-blocking UI
+- Clean up event listeners and resources
+- Efficient algorithms and data structures
+- Memory leak prevention
+
+## 🔒 Security Principles
+- Validate all user inputs
+- Use parameterized queries
+- Store secrets in environment variables
+- HTTPS only in production
+- Sanitize user content
+- Encrypt sensitive data
+- Implement rate limiting
+
+## 📋 Development Workflow
+- Plan before implementing
+- Incremental development
+- Code reviews mandatory
+- Automated testing
+- Consistent package management
+- Shared code formatting
+- Proper version control
+
+## 🚫 Universal Forbidden
+- Hardcode secrets or API keys
+- Commit directly to main/master
+- Leave dead/unused code
+- Skip input validation
+- Create circular dependencies
+- Use global mutable state
+
+## ⚠️ Avoid Without Justification
+- Large functions/methods (>50 lines)
+- Deep nesting (>3 levels)
+- Heavy library imports
+- Dynamic imports without perf analysis
+- Unnecessary abstractions

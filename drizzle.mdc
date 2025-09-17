@@ -1,0 +1,37 @@
+---
+description: Drizzle ORM best practices and patterns
+globs: ["**/db/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/schema/**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# Drizzle ORM Rules
+
+## 📊 Schema Design
+- Use explicit table definitions with proper types
+- Define relationships with foreign keys
+- Use enums for constrained values
+- Proper indexing strategy
+
+## 🔧 Query Building
+- Use the query builder API instead of raw SQL
+- Proper typing with inferred types
+- Parameterized queries for security
+- Efficient query patterns
+
+## 🚫 Forbidden with Drizzle
+- Raw SQL queries (use Drizzle query builder)
+- Manual connection management
+- Improper transaction handling
+- Missing type safety
+
+## 🎯 Best Practices
+- Schema versioning and migrations
+- Connection pooling configuration
+- Error handling and logging
+- Performance optimization with proper indexing
+
+## 🔗 Integration Patterns
+- Server-side data fetching in API routes
+- Server Actions for mutations
+- Proper error boundaries for database errors
+- Caching strategies with Drizzle queries
