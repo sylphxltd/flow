@@ -6,32 +6,27 @@ alwaysApply: true
 
 # Drizzle ORM Rules
 
-## 📊 Schema Design
-- Use explicit table definitions with proper types
-- Define relationships with foreign keys
-- Use enums for constrained values
-- Proper indexing strategy
+## Scope
+- Applies to schema definitions, query builders, migrations, and database utility layers
+- Targets Drizzle ORM on both Node and edge runtimes
 
-## 🔧 Query Building
-- Use the query builder API instead of raw SQL
-- Proper typing with inferred types
-- Parameterized queries for security
-- Efficient query patterns
+## Schema Requirements
+- Define every table explicitly with strongly typed columns, constraints, and indexes
+- Model relationships with foreign keys and documented reference actions; never depend on implicit joins
+- Promote enums for constrained domains and keep enum definitions in shared modules
+- Version schema changes through migrations that run idempotently across environments
 
-## 🚫 Forbidden with Drizzle
-- Raw SQL queries (use Drizzle query builder)
-- Manual connection management
-- Improper transaction handling
-- Missing type safety
+## Query Construction
+- Use Drizzle's query builder exclusively; raw SQL is disallowed unless wrapped in typed helpers justified in code review
+- Parameterize every dynamic value; never inject unescaped strings or identifiers
+- Prefer inferred return types from Drizzle to maintain end-to-end type safety in services and API handlers
 
-## 🎯 Best Practices
-- Schema versioning and migrations
-- Connection pooling configuration
-- Error handling and logging
-- Performance optimization with proper indexing
+## Runtime Discipline
+- Centralize connection and transaction management through Drizzle utilities; do not hand-roll pools or manual commits
+- Wrap mutations inside transactions when multiple tables participate, with explicit rollback handling
+- Capture and log query errors with correlation IDs while redacting sensitive values
 
-## 🔗 Integration Patterns
-- Server-side data fetching in API routes
-- Server Actions for mutations
-- Proper error boundaries for database errors
-- Caching strategies with Drizzle queries
+## Performance Practices
+- Align indexes with query filters and sort order; update migrations when query patterns change
+- Cache stable query results where appropriate, but always invalidate on write operations
+- Monitor slow query logs and adjust schema or access patterns before resorting to raw SQL

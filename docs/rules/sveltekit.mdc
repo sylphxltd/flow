@@ -6,106 +6,42 @@ alwaysApply: true
 
 # SvelteKit Rules
 
-## Framework Patterns
-- Use SvelteKit's file-based routing
-- Leverage Svelte 5 runes: $state, $derived, $effect
-- Server-side rendering with SSR
-- API routes for server endpoints
+## Scope
+- Targets SvelteKit projects using Svelte 5 with Runes enabled
+- Covers route modules, shared libraries, components, and configuration files
 
-## Project Structure
-```
-├── src/
-│   ├── app.html          # Main template
-│   ├── lib/             # Shared utilities
-│   ├── routes/          # File-based routes
-│   └── app.d.ts         # TypeScript declarations
-├── static/              # Static assets
-└── svelte.config.js     # SvelteKit config
-```
+## Routing And SSR
+- Use SvelteKit's file-based routing; remove legacy router code during upgrades
+- Default to server-side rendering and hydrate only the components that require client interactivity
+- Keep `load` functions pure, returning serialized data and throwing `error()`/`redirect()` for control flow
+
+## State And Reactivity
+- Adopt Svelte 5 Runes exclusively: `$state`, `$derived`, and `$effect`
+- Reject the legacy `$:` reactive label; migrate existing logic into derived values or effects
+- Contain side effects inside `$effect` blocks and release resources via the cleanup function it returns
+- Avoid module-level mutable singletons; create factories that scope state per request when running on the server
 
 ## Component Design
-- Use Svelte components with .svelte extension
-- Leverage reactive statements and stores
-- Event handling with Svelte's event system
-- Component composition patterns
+- Store reusable logic in modules under `src/lib/` and import via absolute paths
+- Keep templates simple; move complex branching into script blocks or helper functions
+- Use scoped styles to prevent global leakage and rely on the shared design system for spacing and typography
 
-## State Management & Signals
-- Svelte 5 Runes ONLY: $state, $derived, $effect for reactive state
-- Legacy `$:` forbidden: Use runes instead of reactive statements
-- Side effects handled inside `$effect` only
-- Clean up resources using `$effect` return function
-- Manage client state with `$state` and `$derived`
-- Avoid module-level mutable singletons
-- Prefer runes over legacy stores when possible
-- Svelte's built-in stores for global state (legacy compatibility)
-- Reactive statements for derived state
-- Context for component-specific state
-- Proper store cleanup and subscriptions
-
-## Data Fetching
-- Load functions for server-side data
-- Actions for form handling
-- API routes for external integrations
-- Proper loading states and error handling
+## Data Access And Actions
+- Perform data fetching in `load` or server-only modules with proper type annotations
+- Use form actions for mutations; surface validation errors via returned `fail()` responses
+- For streaming or real-time features, checkpoint progress and coordinate with the observability rules
 
 ## Performance
-- Svelte's compile-time optimizations
-- Efficient reactive system usage
-- Proper store subscriptions cleanup
-- Bundle analysis and optimization
+- Audit bundle output regularly; leverage code splitting and deferred loading for heavy components
+- Remove unused stores and subscriptions to prevent unnecessary client work
+- Profile with the Svelte Inspector and fix hotspots before release
 
-## Forbidden
-- Manual DOM manipulation (use Svelte's reactivity)
-- Complex logic in templates (extract to scripts)
-- Global style pollution (use scoped styles)
-- Improper store cleanup
+## Tooling And Integration
+- Enable TypeScript strict mode and share the Biome and PandaCSS configurations if those tools are present
+- Validate environment variables at startup and crash fast when required values are missing
+- Configure Vitest with Svelte testing library for unit and component coverage
 
-## Recommended Tool Integration
-- Compatible with PandaCSS + Iconify patterns for styling
-- Compatible with Drizzle ORM for type-safe queries
-- Compatible with tRPC for type-safe APIs
-- Compatible with Svelte stores + Zustand for state management
-- Compatible with Biome linting and formatting
-- Compatible with Vitest + Testing Library for testing
-
-## Styling Rules
-- PandaCSS for type-safe styling
-- Design tokens for consistent theming
-- Responsive design patterns
-- Component-level styling isolation
-
-## Configuration
-- Shared Biome configuration
-- TypeScript strict mode enabled
-- PandaCSS with design tokens
-- Environment variables properly typed
-- SvelteKit with TypeScript support
-
-## Best Practices
-- Use TypeScript for better DX
-- Leverage Svelte's compiler features
-- Proper error boundaries
-- Accessibility considerations
-- SEO optimization with SSR
-- Type-safe configuration
-
-## UI/UX & Responsiveness
-- Fully reactive system: State changes propagate automatically through subscriptions
-- Event-driven updates: Avoid polling; prefer WebSocket subscriptions
-- Responsive design: Mobile-first support from 320px to 2560px+
-- Modern layout: SPA with viewport-based layout, fixed navigation
-- Seamless navigation: Instant content switching without page refresh
-- Cross-platform: Consistent experience across desktop, mobile, tablets
-- Network resilience: Offline-friendly behavior and battery optimization
-
-## User Experience
-- Immediate feedback: Visual feedback for all user actions
-- Loading states: Skeletons, progress indicators, optimistic updates
-- Micro-interactions: Button states, form validation feedback, transitions
-- Touch-friendly: Minimum 44px hit targets for touch interfaces
-
-## Accessibility Standards
-- WCAG 2.1 AA compliance: Full keyboard navigation and proper ARIA semantics
-- Color contrast: ≥ 4.5:1 (normal text), ≥ 3:1 (large text)
-- Reduced motion: Respect user's motion preferences
-- Screen readers: Proper semantic markup and labels
+## Forbidden Practices
+- Direct DOM manipulation outside Svelte-provided APIs
+- Global CSS that overrides the design system or breaks encapsulation
+- Leaving subscriptions open after navigation or component teardown

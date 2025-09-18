@@ -6,81 +6,55 @@ alwaysApply: true
 
 # Next.js Rules
 
-## 🏗️ Framework Patterns
-- App Router exclusively (no Pages Router)
-- Server Components for data fetching
-- Client Components only when needed
-- Server Actions for form mutations
+## Scope
+- Targets Next.js 13 and later using the App Router exclusively
+- Applies to application code, API routes, server actions, and shared libraries
 
-## 📁 Project Structure
+## Framework Patterns
+- Use Server Components for data fetching and rendering by default; promote to Client Components only for browser-side interactivity
+- Handle mutations with Server Actions or dedicated API routes returning typed responses
+- Remove legacy Pages Router implementations; migrations must delete duplicate routes after verification
+
+## Project Layout
 ```
-├── app/                 # Next.js App Router
+├── app/
 │   ├── layout.tsx       # Root layout
-│   ├── page.tsx         # Home page
-│   ├── loading.tsx      # Loading UI
-│   └── not-found.tsx    # 404 page
-├── components/          # Reusable components
-├── lib/                 # Utilities and configurations
-│   ├── db/             # Database configuration
-│   ├── trpc/           # tRPC configuration
-│   └── store/          # State management
-├── hooks/              # Custom React hooks
-└── types/              # TypeScript definitions
+│   ├── page.tsx         # Entry route
+│   ├── loading.tsx      # Skeleton or spinner
+│   └── not-found.tsx    # 404 boundary
+├── components/          # Reusable UI primitives
+├── lib/                 # Utilities, configuration, clients
+├── hooks/               # React hooks scoped by feature
+└── types/               # Shared TypeScript definitions
 ```
 
-## 🎯 Component Design
-- Functional components with hooks (see react.mdc)
-- TypeScript strict typing
-- Component composition over inheritance
-- Server/Client component separation
+## Component Discipline
+- Implement functional components only and enforce strict typing for props and state
+- Separate server-safe logic from client-only concerns; never import browser APIs in Server Components
+- Restrict component files to manageable size; extract subcomponents when code exceeds 300 lines or responsibilities diverge
 
-## 🎣 Hooks & State Management
-- Built-in React hooks (see react.mdc)
-- Custom hooks for reusable logic
-- Rules of Hooks compliance
-- Proper cleanup in effects
-- Zustand for complex state (optional)
+## Data Fetching Patterns
+- Fetch data inside Server Components or Server Actions using async/await and cache control APIs
+- Use streaming with Suspense boundaries for long-running operations to keep TTFB acceptable
+- Interactions requiring client data refresh must wrap tRPC or fetch calls in Client Components with explicit loading and error states
 
-## 🔄 Data Fetching Patterns
-- Server Components for initial data
-- Client Components for interactive data
-- Server Actions for mutations
-- tRPC for type-safe APIs (recommended)
-- Streaming and Suspense for UX
+## Configuration and Environment
+- Guard environment variables with Zod (or equivalent) validation at startup and crash fast on failures
+- Maintain `next.config.js` as the single source for build and runtime flags; document any experimental toggles
+- Apply middleware sparingly, logging every rewrite or redirect to aid debugging
 
-## 🛠️ Recommended Tool Integration
-- **Type-Safe Styling**: Compatible with PandaCSS patterns
-- **Database Layer**: Compatible with Drizzle ORM for type-safe queries
-- **API Layer**: Compatible with tRPC for end-to-end type safety
-- **State Management**: Compatible with Zustand for type-safe state
-- **Code Quality**: Compatible with Biome linting and formatting
-- **Testing**: Compatible with Vitest + Testing Library
+## Performance
+- Audit bundles with the Next.js analyzer before release and budget for regressions
+- Use the Image and Font optimization primitives provided by Next.js; never roll custom loaders unless unavoidable
+- Move CPU-intensive work to background jobs or edge functions; do not block render paths
 
-## 🚀 Performance Features
-- Automatic code splitting
-- Image optimization with Next.js Image
-- Font optimization
-- Bundle analyzer integration
+## Forbidden Practices
+- Reintroducing the Pages Router or mixing App Router with legacy client-only routing
+- Running client-side fetches from within Server Components
+- Issuing raw SQL queries from route handlers instead of the approved data access layer
+- Shipping components without error boundaries or fallback UI for suspenseful sections
 
-## ⚙️ Configuration
-- next.config.js for build settings
-- Environment variables with Zod validation
-- Middleware for routing logic
-- API routes for external integrations
-
-## 🚫 Forbidden Practices
-- Pages Router in new projects
-- Client-side data fetching in Server Components
-- Heavy computations in render
-- Missing error boundaries
-- Raw database queries (use type-safe ORM)
-- Manual state management without proper patterns
-- Traditional CSS without design system
-- Unnecessary client-side API calls
-
-## 🎯 Best Practices
-- Use TypeScript for better DX
-- Leverage built-in optimizations
-- Proper loading and error states
-- SEO optimization with metadata API
-- Type-safe configuration with Zod
+## Operational Checklist
+- Configure end-to-end tests (Playwright or Cypress) for critical flows and bind them to CI gates
+- Verify incremental static regeneration and caching policies per route before launch
+- Track runtime metrics and log correlation IDs so request traces survive multi-region deployments

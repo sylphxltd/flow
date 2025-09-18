@@ -6,40 +6,30 @@ alwaysApply: true
 
 # tRPC Rules
 
+## Scope
+- Applies to tRPC routers, procedures, context, and client integrations across web and server environments
+
 ## API Structure
-- Define procedures with proper input/output types
-- Use routers for logical grouping
-- Implement middleware for cross-cutting concerns
-- Proper error handling and status codes
+- Group procedures by domain in routers and export merged routers for the app shell
+- Require input and output schemas for every procedure to guarantee end-to-end type safety
+- Use middleware to enforce authentication, authorization, and logging consistently
 
-## Type Safety
-- End-to-end type safety between client and server
-- Input validation with schemas
-- Proper TypeScript inference
-- No manual API contracts
+## Type Safety And Validation
+- Trust inferred types from tRPC; avoid manually declaring request or response shapes
+- Validate all inputs with shared schema libraries and convert validation failures into typed errors
+- Encode domain-specific error codes so clients can branch on failures predictably
 
-## Forbidden
-- REST API endpoints (use tRPC procedures)
-- Manual HTTP client calls (use tRPC client)
-- Missing input validation
-- Inconsistent error handling
+## Real-Time And Subscriptions
+- Implement subscriptions using cursor-based replay; resend the last acknowledged cursor on reconnect
+- Combine `httpBatchLink` for queries/mutations with `wsLink` for subscriptions and enable auto-reconnect
+- Back subscription feeds with an external pub/sub system so horizontal scaling does not drop events
 
-## Best Practices
-- Batch multiple queries when possible
-- Implement proper caching strategies
-- Use subscriptions for real-time features
-- Subscriptions implement cursor-based replay
-- Proper error boundaries for failed requests
+## Performance And Caching
+- Batch related queries whenever the client fetches multiple resources concurrently
+- Apply caching policies explicitly, invalidating or refetching after mutations to keep UI consistent
+- Log slow procedures and profile resolver hot paths before falling back to raw transports
 
-## Integration Patterns
-- Server components for initial data loading
-- Client components with tRPC hooks
-- Optimistic updates for better UX
-- Loading states and error handling
-
-## Links & Subscriptions
-- Use httpBatchLink for queries/mutations
-- Use wsLink for subscriptions (auto-reconnect enabled)
-- Client resends last cursor on reconnect
-- Server replays missing events via external pub/sub
-- External pub/sub system for multi-instance event distribution
+## Forbidden Practices
+- Creating REST endpoints or ad-hoc fetch wrappers around tRPC procedures
+- Skipping validation or returning untyped payloads
+- Throwing generic errors that mask root causes or leak stack traces to clients

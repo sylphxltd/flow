@@ -6,32 +6,30 @@ alwaysApply: true
 
 # Zustand State Management
 
-## 🏪 Store Design
-- Small, focused stores for specific domains
-- Immutable state updates
-- Proper TypeScript typing
-- Clear action naming conventions
+## Scope
+- Applies to Zustand stores, selectors, and helper hooks used in client applications or shared packages
 
-## 🎣 Custom Hooks
-- Create typed hooks for store access
-- Proper selector usage for performance
-- Memoized selectors for complex computations
-- Clean up subscriptions properly
+## Store Design
+- Create small, domain-focused stores; avoid monoliths that mix unrelated concerns
+- Keep state immutable by returning new objects or arrays from actions; never mutate in place
+- Define TypeScript types for state, actions, and selectors to catch drift at compile time
 
-## 🚫 Forbidden with Zustand
-- Direct store mutations (use actions)
-- Large monolithic stores
-- Missing TypeScript types
-- Improper subscription cleanup
+## Access Patterns
+- Expose typed hooks (for example, `useUserStore`) that accept selectors to minimize re-renders
+- Memoize expensive selectors with libraries such as `proxy-memoize` or equivalent custom utilities
+- Unsubscribe listeners during cleanup to prevent memory leaks in long-lived components
 
-## 🎯 Best Practices
-- Actions for state mutations
-- Selectors for derived state
-- Middleware for logging/debugging
-- Proper error handling in actions
+## Actions And Middleware
+- Centralize mutations inside named actions; document side effects such as persistence or analytics
+- Layer middleware (logger, devtools, persistence) explicitly and configure it per store to avoid global surprises
+- Surface errors from actions and handle them in the caller instead of swallowing exceptions silently
 
-## 🔄 Integration Patterns
-- Server state sync with tRPC
-- Local state persistence
-- Real-time updates with subscriptions
-- Proper loading and error states
+## Integration Guidance
+- Sync server state through tRPC or data fetching hooks, reconciling optimistic updates when responses arrive
+- Persist only stable slices (for example, feature preferences) and version the storage schema to support migrations
+- Broadcast updates via subscriptions for collaborative features, ensuring cursor or timestamp checkpoints prevent replay gaps
+
+## Forbidden Practices
+- Directly mutating the store outside action functions
+- Registering global stores with uncontrolled growth or cross-cutting dependencies
+- Leaving active subscriptions when components unmount or routes change

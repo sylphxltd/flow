@@ -6,28 +6,31 @@ alwaysApply: true
 
 # Redis Rules
 
-## Infrastructure
-- Serverless Redis for production deployments
-- Local Redis instance for development and testing
-- Ensure provider compatibility for local development
+## Scope
+- Applies to all Redis usage across development, staging, and production environments
+- Covers pub/sub messaging, caching layers, rate limiting, and ephemeral coordination
 
-## Channel Management
-- Use prefixed channels (e.g., `events:chat`, `events:system`)
-- Maintain consistent naming patterns across the application
-- Document all channels and their purposes
+## Infrastructure Expectations
+- Use a managed or serverless Redis offering for production to guarantee persistence, backups, and monitoring
+- Provide a local Redis instance or container for development with parity configuration where possible
+- Document connection settings, TLS requirements, and authentication flows per environment
 
-## Data Validation
-- Validate every published/consumed payload
-- Ensure payload types match between publishers and consumers
-- Handle validation failures gracefully
+## Channel And Key Management
+- Prefix channels and keys with bounded namespaces (for example, `events:chat`, `locks:email`) to prevent collisions
+- Maintain a registry describing the purpose, payload shape, and retention policy for every channel or key pattern
+- Delete or migrate deprecated prefixes during release work to avoid stale consumers
+
+## Data Validation And Safety
+- Validate payloads on both publish and consume paths using shared schemas; reject invalid messages and log the failure
+- Never store sensitive data or long-lived records in Redis; persist durable state in the primary database instead
+- Configure timeouts, retries, and circuit breakers to shield the application from Redis outages or latency spikes
 
 ## Event Distribution
-- Redis as source of truth for cross-instance event distribution
-- Implement proper error handling and reconnection logic
-- Track message delivery and processing metrics
+- Treat Redis as the source of truth for cross-instance fan-out; handle reconnection logic and replay missed events using checkpoints
+- Track publish/consume metrics (latency, failure rates, backlog depth) and surface them to monitoring dashboards
+- Back pressure slow consumers by pausing subscriptions or shedding load when processing times exceed thresholds
 
-## Forbidden
-- Publishing unvalidated data to Redis channels
-- Using Redis for persistent storage (use database instead)
-- Blocking operations that could impact performance
-- Missing error handling for Redis connection failures
+## Forbidden Practices
+- Publishing unvalidated or schemaless payloads
+- Performing blocking or long-running operations that monopolize Redis connections
+- Swallowing connection errors or auto-retrying indefinitely without alerting

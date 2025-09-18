@@ -6,45 +6,31 @@ alwaysApply: true
 
 # PandaCSS Rules
 
-## 🎨 Core Principles
-- **Type-Safe Styling**: All styles are type-checked
-- **Design Tokens**: Centralized design system
-- **Component Styling**: Styles co-located with components
-- **Responsive Design**: Type-safe responsive utilities
+## Scope
+- Applies to components and utilities that consume PandaCSS generated tokens and helpers
+- Covers Panda configuration files, recipes, and runtime usage across supported frameworks
 
-## 🛠️ Configuration
-- **Design Tokens**: Define colors, spacing, typography in config
-- **CSS Generation**: Auto-generate CSS from TypeScript
-- **Type Generation**: Generate TypeScript types for styles
-- **Theme Variants**: Support light/dark themes
+## Core Principles
+- Treat the Panda config as the canonical design system; all colors, spacing, typography, and radii must originate from tokens
+- Co-locate styles with components using Panda pattern helpers; avoid separate global stylesheets
+- Enforce responsive designs using Panda's typed breakpoint utilities
 
-## 📝 Usage Patterns
-- **Pattern Properties**: Use predefined design patterns
-- **Conditional Styling**: Type-safe conditional styles
-- **Composition**: Compose styles using design tokens
-- **Responsive**: Type-safe responsive breakpoints
+## Configuration Discipline
+- Maintain `panda.config.*` as the source of truth for tokens, themes, and generated types
+- Regenerate CSS and type definitions whenever tokens change; check generated files into version control only when required by the build
+- Document theme variants (light, dark, high-contrast) and verify they compile without warnings
 
-## 🔧 Best Practices
-- **Token Usage**: Always use design tokens, never hardcode values
-- **Pattern Definition**: Define reusable component patterns
-- **Type Safety**: Leverage TypeScript for styling errors
-- **Performance**: Optimize CSS generation and bundle size
+## Usage Patterns
+- Compose styles through recipes or pattern properties; resist inline style objects and template literals
+- Express conditional styling by leveraging Panda's typed condition helpers instead of manual ternaries with raw values
+- Share common compositions via extracted recipes or slot variants to keep class lists short and consistent
 
-## 🚫 Forbidden with PandaCSS
-- **Inline Styles**: No inline style objects
-- **Global CSS**: No global CSS files (use PandaCSS)
-- **Hardcoded Values**: No hardcoded colors/spacing values
-- **CSS Modules**: No traditional CSS modules
-- **Tailwind Classes**: No utility classes (use PandaCSS patterns)
+## Forbidden Practices
+- Hardcoding color codes, spacing values, or media queries outside the design token layer
+- Importing or using Tailwind classes, CSS modules, or global CSS resets alongside Panda
+- Shipping components with inline style objects or untyped utility wrappers around Panda helpers
 
-## ⚙️ Integration
-- **Framework Support**: Works with React, Vue, Svelte
-- **Build Integration**: Integrate with Vite, Webpack
-- **IDE Support**: Full TypeScript IntelliSense
-- **Hot Reload**: Fast style updates during development
-
-## 🎯 Advanced Features
-- **Custom Properties**: Type-safe CSS custom properties
-- **Animation**: Type-safe animation definitions
-- **Variants**: Component style variants
-- **Recipes**: Reusable style compositions
+## Performance And Tooling
+- Remove unused tokens and recipes to prevent bloated generated CSS
+- Monitor bundle sizes of generated stylesheets and trim variants that are not used in production
+- Enable IDE tooling for Panda's typed APIs so violations surface while editing

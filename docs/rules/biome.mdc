@@ -6,32 +6,26 @@ alwaysApply: true
 
 # Biome Rules
 
-## Configuration
-- Use Biome as unified linter/formatter/import sorter
-- Shared configuration across the entire repo
-- No per-project overrides
-- Enable all recommended rules
+## Scope
+- Applies to all JavaScript, TypeScript, JSON, and Markdown files in the repository
+- Serves as the single source of truth for formatting, linting, and import sorting
 
-## Code Formatting
-- Consistent indentation and spacing
-- Automatic import sorting
-- Trailing commas and semicolons
-- Line length limits
+## Mandatory Configuration
+- Enforce one shared Biome config; reject per-package overrides or local rule toggles
+- Enable the full recommended rule set, including strict TypeScript and JSX checks
+- Keep the configuration version-controlled and document any rule exceptions inline
 
-## Linting Rules
-- TypeScript strict rules enabled
-- React specific rules for JSX
-- Import/export validation
-- Code quality checks
+## Usage Expectations
+- Run Biome for formatting instead of manual edits; CI and pre-commit hooks must execute `biome check --write`
+- Allow Biome to own import order, trailing commas, semicolons, and whitespace conventions
+- Fail builds if Biome detects unused symbols, invalid syntax, or lint violations
 
-## Forbidden
-- Manual code formatting (use Biome format)
-- Inconsistent import ordering
-- Unused imports/variables (Biome will catch)
-- Malformed TypeScript/JSX code
+## Integration Requirements
+- Wire Biome into IDEs for on-save feedback; do not depend on contributors remembering to run it manually
+- Execute Biome in CI before tests to surface style regressions early
+- Maintain a curated ignore list for generated or vendored assets only
 
-## Integration
-- Pre-commit hooks for automatic formatting
-- CI/CD pipeline integration
-- Editor integration for real-time feedback
-- Ignore files configuration
+## Forbidden Patterns
+- Hand-editing formatting after Biome runs
+- Disabling lint rules to quiet violations instead of addressing root causes
+- Shipping code with unused imports, unreachable branches, or suppressed diagnostics

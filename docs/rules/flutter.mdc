@@ -6,67 +6,48 @@ alwaysApply: true
 
 # Flutter Rules
 
-## 🏗️ Framework Patterns
-- Use Flutter's declarative UI approach
-- Leverage widget composition
-- State management with Provider/Riverpod
-- Proper widget lifecycle management
+## Scope
+- Applies to Flutter 3 projects targeting stable channel with null safety enabled
+- Covers application code under `lib/`, tests, and integration test suites
 
-## 📁 Project Structure
+## Project Structure
 ```
 ├── lib/
-│   ├── core/             # Core utilities
-│   ├── features/         # Feature modules
-│   ├── shared/           # Shared components
-│   └── models/           # Data models
+│   ├── core/             # Core utilities and services
+│   ├── features/         # Feature modules with routing
+│   ├── shared/           # Reusable widgets and themes
+│   └── models/           # Data models and DTOs
 ├── test/                 # Unit and widget tests
-├── integration_test/     # Integration tests
-└── pubspec.yaml          # Dependencies
+├── integration_test/     # End-to-end scenarios
+└── pubspec.yaml          # Dependencies and assets
 ```
 
-## 🎯 Widget Design
-- Use stateless widgets when possible
-- Proper key usage for list items
-- Efficient widget rebuilding
-- Widget composition over inheritance
+## Widget Design
+- Compose UI with small stateless widgets where possible; stateful widgets must encapsulate a single concern
+- Provide stable `Key` values for dynamic lists to avoid retention bugs
+- Keep widget files under 200 lines; extract sub-widgets when layouts grow complex
 
-## 📊 State Management & Signals
-- **Signals Approach**: Reactive state management patterns
-- Provider for simple state (signals-like reactivity)
-- Riverpod for complex state (modern signals pattern)
-- Bloc pattern for business logic (event-driven signals)
-- Signals for fine-grained reactivity when available
-- Proper state disposal and lifecycle management
+## State Management
+- Use Provider for simple reactive state, Riverpod for dependency-injected graphs, and Bloc for event-driven business flows
+- Dispose controllers, streams, and animation objects in `dispose()`; missing cleanup is treated as a defect
+- Avoid module-level singletons; prefer dependency injection or scoped providers
 
-## 🔄 Data Fetching
-- Repository pattern for data access
-- Proper error handling
-- Loading states management
-- Offline data handling
+## Data Access
+- Implement repository abstractions that isolate networking, persistence, and caching
+- Expose loading, empty, error, and offline states explicitly in view models
+- Centralize error translation so UI layers receive domain-safe failures
 
-## 🚀 Performance
-- Use const constructors
-- Avoid unnecessary rebuilds
-- Efficient list rendering
-- Memory leak prevention
+## Performance Discipline
+- Mark constant constructors with `const` to enable tree shaking
+- Memoize expensive computations and avoid rebuilding large widget subtrees unnecessarily
+- Use `ListView.builder`/`GridView.builder` for large collections and profile with Flutter DevTools before release
 
-## 🚫 Forbidden Practices
-- `print()` statements in production code
-- `debugPrint()` in production (use proper logging)
-- Direct `print()` for error logging (use logging library)
-- Large widgets (>200 lines)
-- Business logic in widgets
-- Improper state management
-- Missing error boundaries
+## Forbidden Patterns
+- Logging with `print` or `debugPrint` in production builds; route through a structured logger with filtering
+- Placing business logic directly inside widgets instead of dedicated controllers or blocs
+- Shipping widgets that leak subscriptions or hold references after disposal
 
-## 🧪 Testing
-- Unit tests for business logic
-- Widget tests for UI components
-- Integration tests for critical flows
-- Mock external dependencies
-
-## 🎯 Best Practices
-- Use Dart's null safety
-- Proper async/await usage
-- Effective debugging techniques
-- Platform-specific considerations
+## Testing Expectations
+- Cover domain logic with unit tests and isolate side effects using mocks or fakes
+- Author widget tests for interactive components, asserting accessibility labels and golden states when applicable
+- Run integration tests on CI for critical user journeys and gate releases on passing runs

@@ -6,54 +6,35 @@ alwaysApply: true
 
 # React Rules
 
+## Scope
+- Applies to React 18+ code authored in TypeScript or JavaScript with JSX
+- Covers components, hooks, context, and supporting utilities
+
 ## Component Design
-- Functional components with hooks
-- TypeScript strict typing for props and state
-- Single responsibility per component
-- Props interface definitions
-- Component composition over inheritance
+- Author functional components only; enforce strict typing for props, state, and event handlers
+- Limit each component to a single responsibility and extract reusable UI into smaller primitives when files grow beyond 300 lines
+- Define props interfaces near the component and freeze default props to avoid accidental mutation
 
-## Hooks Usage
-- Built-in hooks preferred
-- Custom hooks for reusable logic
-- Rules of Hooks compliance
-- Proper cleanup in effects
-
-## State Management
-- Local state with useState/useReducer
-- Context API for app-wide state
-- External state libraries when needed
-- Proper state update patterns with immutability
+## Hooks And State
+- Use built-in hooks first; create custom hooks to encapsulate shared logic and side effects
+- Follow the Rules of Hooks; never call hooks conditionally or inside loops
+- Manage complex local state with `useReducer` or state machines and keep updates immutable
 
 ## Side Effects
-- useEffect sparingly and properly
-- Dependency arrays always included
-- Cleanup functions for subscriptions
-- Avoid memory leaks
+- Use `useEffect` sparingly; define accurate dependency arrays and clean up subscriptions, timers, and listeners in the return callback
+- For async effects, encapsulate fetching logic in custom hooks and bubble up cancellation signals to prevent race conditions
 
 ## Performance
-- React.memo for expensive components
-- useMemo for cached calculations
-- useCallback for stable references
-- Lazy loading with React.lazy
+- Memoize expensive components with `React.memo` and memoize derived values with `useMemo`
+- Stabilize callback identities with `useCallback` when passing to memoized children
+- Lazy load non-critical modules using `React.lazy` and Suspense boundaries
 
-## Forbidden
-- Class components (use functional)
-- Direct DOM manipulation (use refs)
-- dangerouslySetInnerHTML without sanitization
-- Legacy context API (use modern patterns)
-- Complex logic in components (extract to hooks)
-- Inline event handlers in render (use useCallback)
-- Large component files (>300 lines)
+## Forbidden Patterns
+- Class components, legacy context API, or direct DOM manipulation outside of refs
+- `dangerouslySetInnerHTML` without sanitizing trusted HTML in a dedicated utility
+- Inline arrow functions or object literals in hot render paths when they trigger unnecessary renders
 
-## Component Patterns
-- Custom hooks for logic extraction
-- Error boundaries for error handling
-- Render props when appropriate
-- Higher-order components sparingly
-
-## Testing
-- Component testing in isolation
-- Hook testing separately
-- Integration tests for interactions
-- Accessibility testing included
+## Testing Expectations
+- Test components in isolation with React Testing Library or an equivalent tooling stack
+- Verify custom hooks via dedicated unit tests that assert default state, updates, and cleanup
+- Include accessibility assertions for interactive components (roles, labels, keyboard navigation)
