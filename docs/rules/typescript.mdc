@@ -35,3 +35,44 @@ alwaysApply: true
 - `console.error` for error logging (use proper logging)
 - `console.warn` for warnings (use proper logging)
 - `debugger` statements in production
+
+## 🧪 Testing Rules
+
+### Core Testing Principles
+- **Mandatory Testing**: All TypeScript code must have comprehensive test coverage
+- **Test Framework**: Use Vitest as the primary testing framework for TypeScript projects
+- **Test Structure**: Organize tests in `__tests__` directories or alongside source files with `.test.ts` extension
+
+### Test Coverage Requirements
+- **Minimum Coverage**: Aim for 80%+ code coverage across statements, branches, functions, and lines
+- **Critical Path Coverage**: 100% coverage for business logic, API endpoints, and error handling
+- **Coverage Tools**: Use `@vitest/coverage-v8` for accurate coverage reporting
+
+### Test Types
+- **Unit Tests**: Test individual functions, classes, and modules in isolation
+- **Integration Tests**: Test component interactions and external dependencies
+- **End-to-End Tests**: Test complete user workflows (use Playwright or Cypress)
+
+### Testing Best Practices
+- **Descriptive Test Names**: Use clear, descriptive names that explain what is being tested
+- **Arrange-Act-Assert Pattern**: Structure tests with clear setup, execution, and verification phases
+- **Mock External Dependencies**: Use Vitest's mocking capabilities for databases, APIs, and file systems
+- **Test Data Management**: Use factories or fixtures for consistent test data
+- **Async Testing**: Properly handle promises, async/await, and timeouts
+
+### Vitest Configuration
+- **Setup Files**: Configure global test setup in `vitest.config.ts`
+- **Environment Variables**: Use `.env.test` for test-specific configuration
+- **Test Timeouts**: Set appropriate timeouts for async operations
+- **Parallel Execution**: Enable parallel test execution for faster feedback
+
+### Forbidden in Tests
+- **No console.log**: Use proper assertion libraries instead
+- **No debugger**: Remove debugger statements before committing
+- **No flaky tests**: Ensure tests are deterministic and reliable
+- **No network calls**: Mock all external API calls in unit tests
+
+### Continuous Integration
+- **Pre-commit Hooks**: Run tests before commits using Husky
+- **CI Pipeline**: Integrate test execution in GitHub Actions or similar
+- **Test Reporting**: Generate and publish test reports and coverage badges
