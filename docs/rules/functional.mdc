@@ -1,0 +1,48 @@
+---
+description: Functional modules for TypeScript/Node.js — prefer pure functions and factories; avoid classes
+globs: ["**/*.ts"]
+alwaysApply: true
+---
+
+# Functional Modules (TypeScript/Node.js)
+
+## Scope
+- Applies to all TypeScript Node.js code (services, utilities, domain, adapters)
+
+## Do
+- Use pure functions and immutable data; no hidden module-level state
+- Compose modules with factories (createX) that close over injected dependencies
+- Define ports (interfaces/types) for external systems; depend on ports, not implementations
+- Separate pure core from effectful adapters (IO, HTTP, DB, FS, time)
+- Inject all dependencies via parameters/factories (DI-by-params)
+- Keep functions <50 lines; files 200–300 lines max; single responsibility
+- Return serializable Result types or typed errors at boundaries
+- Accept AbortSignal in async APIs; enforce timeouts in adapters
+- Validate config once at startup; inject typed config into factories
+- Use structured logs behind an injected logger port (no console.* in libraries)
+- Prefer caching/memoization in adapters; memoize only pure computations
+
+## Structure
+- types/ports
+- pure core functions
+- effect adapters implementing ports
+- factory that composes the public API (plain object)
+
+## Testing
+- Provide in-memory adapters/fakes via ports
+- No network/FS/real time in unit tests
+
+## Forbidden
+- Classes or static classes for modules/services
+- Global singletons or module-level mutable state
+- Importing concrete infrastructure inside core modules
+- Catch-all helpers dumping ground
+- Swallowing errors or throwing untyped exceptions across boundaries
+
+## Checklist
+- DI-by-params with explicit ports
+- Pure core separated from effects
+- Small, focused functions and files
+- Explicit Result or typed errors
+- Async accepts AbortSignal with timeouts
+- Tests use in-memory adapters
