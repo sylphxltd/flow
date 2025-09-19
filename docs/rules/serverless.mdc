@@ -1,0 +1,32 @@
+---
+description: Serverless runtime rules — stateless, no in-memory cache, no long-lived connections
+globs: ["api/**/*.{ts,js}", "functions/**/*.{ts,js}", "src/api/**/*.{ts,js}", "src/functions/**/*.{ts,js}"]
+alwaysApply: true
+---
+
+# Serverless (TypeScript/Node.js)
+
+## Do
+- Stateless per invocation; no module/global mutable state
+- No in-memory caches across invocations (Map/Object/Array/Set)
+- No long-lived connections across invocations (DB pools, HTTP keep-alive, WebSocket, gRPC)
+- Open/close clients per request; time-bound IO with AbortSignal + timeout
+- Idempotent handlers; safe for retries; use idempotency keys when mutating
+- Externalize state/cache to durable stores (DB/KV/Redis); treat local FS as ephemeral
+- Lazy-load heavy deps inside handler/factory; avoid top-level work
+- Return promptly; no background work after response
+- Structured logs with correlation/request IDs; never log secrets
+
+## Forbidden
+- Singletons reused across invocations
+- Module-level caches, LRU maps, or memoization that outlives the request
+- setInterval or unbounded setTimeout; detached promises after return
+- Persistent connection pools across invocations
+- Relying on process uptime or in-memory locks
+
+## Checklist
+- Each external call has timeout + AbortSignal
+- Request-scoped clients only
+- Idempotency enforced on mutating endpoints
+- No writes to persistent local disk; /tmp only if platform allows, cleaned up
+- No shared state between concurrent executions
