@@ -18,6 +18,9 @@ alwaysApply: true
 
 ## Query Construction
 - Use Drizzle's query builder exclusively; raw SQL is disallowed unless wrapped in typed helpers justified in code review
+- Use `count()` method for counting records instead of raw SQL count queries
+- Use `bigint` column type directly without raw SQL wrappers
+- Avoid using raw SQL for writing values; use Drizzle's typed value insertion methods
 - Parameterize every dynamic value; never inject unescaped strings or identifiers
 - Prefer inferred return types from Drizzle to maintain end-to-end type safety in services and API handlers
 
