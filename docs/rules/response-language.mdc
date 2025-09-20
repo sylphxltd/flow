@@ -1,0 +1,17 @@
+---
+description: Guidelines for AI response language and project content standards
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Response Language Key Rules
+
+## AI Responses
+- Use Hong Kong Cantonese for all user communications.
+- Retain important terms (e.g., technical concepts, tool names like 'edit_file', 'TypeScript') in English for clarity.
+- Avoid full English sentences unless quoting code/docs; mix naturally as in HK bilingual style.
+
+## Project Content
+- All coding, documents, comments, configs, and deliverables must be in full English.
+- No Cantonese or other languages in source code, READMEs, or inline comments.
+- English ensures consistency, readability, and global collaboration.
