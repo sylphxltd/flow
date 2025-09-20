@@ -4,73 +4,46 @@ globs: ["**/*"]
 alwaysApply: true
 ---
 
-# General Development Rules
+# General Key Rules
 
-## Architecture And Design
-- Keep modules focused on one responsibility and respect clear dependency boundaries
-- Inject dependencies to enable unit testing and substitute infrastructure during tests
-- Split oversized modules; target 200–300 lines per file and <50 lines per function
+## Architecture
+- Single responsibility; inject deps for testing.
+- <200-300 lines/file, <50 lines/function.
 
-## Code Organization
-- Group code by feature or domain with shared utilities in dedicated directories
-- Maintain consistent naming conventions and document module entry points
-- Refactor continuously, extracting reusable components or helpers instead of duplicating logic
+## Organization
+- Feature/domain grouping; consistent naming.
+- Refactor duplicates; remove dead code/magic numbers.
 
 ## Clean Code
-- Remove dead code immediately and replace magic numbers with named constants
-- Limit control flow to three nesting levels; collapse or extract branches that exceed the limit
-- Enforce immutability where practical to reduce side effects
+- Nesting <=3 levels; immutability preferred.
+- Comment non-obvious only; sync comments.
 
-## Documentation And Commits
-- Capture business requirements, acceptance criteria, and architecture decisions before implementing
-- Comment only when logic is non-obvious; keep comments synchronized with behavior
-- Write descriptive commit messages summarizing intent and impact
+## Docs/Commits
+- Capture reqs/AC/arch before impl.
+- Descriptive commits.
 
-## Testing Strategy
-- Mirror production behavior with unit, integration, E2E, and contract tests mapped to the code structure
-- Use realistic test data and isolate tests to avoid leaked state or ordering dependencies
-- Name tests descriptively so failures immediately communicate scope
+## Testing
+- Unit/integration/E2E/contract mirror prod.
+- Realistic/isolated data; descriptive names.
 
-## Performance Practices
-- Shift expensive work to build time via code generation or precomputation; keep runtime focused on business logic
-- Prefer static imports, tree shaking, and bundle splitting; lazy load routes and components when beneficial
-- Clean up event listeners, timers, and other resources to prevent memory leaks
+## Performance
+- Build-time precompute; static imports/tree-shaking.
+- Cleanup resources; lazy load when beneficial.
 
-## Security Standards
-- Validate all user inputs and enforce authentication checks at every boundary
-- Use parameterized queries, secret storage in environment variables, and mandatory HTTPS in production
-- Sanitize user-supplied content and redact sensitive information from logs
+## Security
+- Validate inputs/auth at boundaries.
+- Parameterized queries, env secrets, HTTPS.
+- Sanitize/redact logs.
 
-## Workflow Expectations
-- Plan work before implementation, including risk assessment and acceptance criteria
-- Require peer review for every change and keep CI pipelines running automated test suites
-- Validate environment variables at startup and fail fast when required configuration is missing
+## Workflow
+- Plan with risks/AC; peer review; CI tests.
+- Startup env validation/fail-fast.
 
-## Path Discipline
-- Avoid multi-path guessing or fallback chains; derive canonical paths and versions once and store them as typed constants
-- Validate environment-derived paths during initialization and abort when they cannot be resolved
-- Remove legacy fallbacks in favor of explicit version gating and documented migrations
+## Paths
+- Canonical/typed constants; no guessing/fallbacks.
+- Init validation/abort.
 
-## Environment Management
-- Use hot reload or local sandboxes instead of editing against live environments
-- Maintain distinct development, staging, and production configurations with consistent tooling
-
-## Design System Alignment
-- Share a unified design language covering colors, spacing, and components
-- Build with progressive enhancement so baseline functionality works without advanced features
-
-## Quality Assurance
-- Re-read modified files after edits, verifying builds and tests before submission
-- Test across supported browsers and devices, accounting for accessibility requirements
-- Design error recovery paths that surface actionable messages to users
-
-## Forbidden
-- Hardcoded secrets or API keys
-- Direct commits to protected branches such as `main` or `master`
-- Leaving unused code, skipping input validation, or introducing circular dependencies
-- Creating global mutable state or suppressing type errors without justification
-
-## Avoid Without Strong Justification
-- Functions longer than 50 lines, deep nesting, and unnecessary abstraction layers
-- Heavy libraries that are not supported by profiling data
-- Dynamic imports introduced without measuring their impact
+## Avoid
+- Hardcoded secrets, direct main commits.
+- Globals/mutables, suppressed types.
+- Long functions/deep nesting, unprofiled heavy libs.

@@ -4,34 +4,26 @@ globs: ["**/*.{ts,tsx}"]
 alwaysApply: true
 ---
 
-# TypeScript Rules
+# TypeScript Key Rules
 
-## Scope
-- Applies to all TypeScript code including runtime logic, tests, and configuration modules
-- Assumes projects compile with TypeScript 5.x in strict mode
+## Core
+- Strict mode; no implicit any.
+- Annotate export returns; interfaces for contracts.
+- Doc breaking changes.
 
-## Core Standards
-- Enable `strict` in `tsconfig.json` and block merges that disable safety flags
-- Prohibit implicit `any` types; annotate return types on exported functions and public class methods
-- Prefer interfaces for object contracts and document breaking changes in shared types
+## Avoid Unsafe
+- `as any`/`@ts-ignore` w/o justification.
+- Global ambients outside .d.ts.
+- Prod console/debugger.
 
-## Unsafe Constructs To Avoid
-- Disallow `as any`, `// @ts-ignore`, or `// @ts-expect-error` without a short justification directly above
-- Reject global ambient declarations outside `.d.ts` modules scoped to the package
-- Remove `console.log`, `console.error`, `console.warn`, and `debugger` statements from production bundles
+## Advanced
+- Generics/discrim unions/conditionals for domain.
+- Utility types (Pick/Omit); template literals for patterns.
 
-## Advanced Patterns
-- Use generics, discriminated unions, and conditional types to model domain logic precisely
-- Compose utility types (`Pick`, `Omit`, `Partial`, `Required`) instead of duplicating shapes
-- Encode string patterns with template literal types when representing routes, feature flags, or IDs
+## Testing
+- Vitest (`*.test.ts`/ `__tests__`); 80%+ coverage (100% critical).
+- `@vitest/coverage-v8`; mock externals.
 
-## Testing Expectations
-- Use Vitest as the primary framework; store tests alongside source as `*.test.ts` or under `__tests__/`
-- Maintain at least 80% coverage across statements, branches, functions, and lines, with 100% coverage on business-critical paths
-- Configure coverage reporting with `@vitest/coverage-v8` and fail CI when thresholds drop
-- Mock external systems (databases, HTTP, file IO) to keep unit tests deterministic and offline
-
-## Continuous Integration
-- Run TypeScript type checking and Vitest in pre-commit hooks and CI pipelines
-- Parameterize environment variables through `.env.test` and load them explicitly in test configuration
-- Execute tests in parallel where safe and tune timeouts for async workflows to avoid false positives
+## CI
+- Type check/Vitest pre-commit/CI.
+- `.env.test` params; parallel/timeouts.

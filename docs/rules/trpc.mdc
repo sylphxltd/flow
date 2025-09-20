@@ -4,32 +4,25 @@ globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}
 alwaysApply: true
 ---
 
-# tRPC Rules
+# tRPC Key Rules
 
-## Scope
-- Applies to tRPC routers, procedures, context, and client integrations across web and server environments
+## Structure
+- Domain routers; input/output schemas per procedure.
+- Middleware for authz/logging.
 
-## API Structure
-- Group procedures by domain in routers and export merged routers for the app shell
-- Require input and output schemas for every procedure to guarantee end-to-end type safety
-- Use middleware to enforce authentication, authorization, and logging consistently
+## Types/Validation
+- Infer types; schema validate to typed errors.
+- Domain error codes.
 
-## Type Safety And Validation
-- Trust inferred types from tRPC; avoid manually declaring request or response shapes
-- Validate all inputs with shared schema libraries and convert validation failures into typed errors
-- Encode domain-specific error codes so clients can branch on failures predictably
+## Real-Time
+- Subscriptions: cursor replay/reconnect.
+- `httpBatchLink`+`wsLink`; pub/sub backend.
 
-## Real-Time And Subscriptions
-- Implement subscriptions using cursor-based replay; resend the last acknowledged cursor on reconnect
-- Combine `httpBatchLink` for queries/mutations with `wsLink` for subscriptions and enable auto-reconnect
-- Back subscription feeds with an external pub/sub system so horizontal scaling does not drop events
+## Performance
+- Batch queries; explicit cache/invalidation post-mutations.
+- Log/profile slow resolvers.
 
-## Performance And Caching
-- Batch related queries whenever the client fetches multiple resources concurrently
-- Apply caching policies explicitly, invalidating or refetching after mutations to keep UI consistent
-- Log slow procedures and profile resolver hot paths before falling back to raw transports
-
-## Forbidden Practices
-- Creating REST endpoints or ad-hoc fetch wrappers around tRPC procedures
-- Skipping validation or returning untyped payloads
-- Throwing generic errors that mask root causes or leak stack traces to clients
+## Avoid
+- REST/fetch wrappers.
+- No validation/untyped payloads.
+- Generic errors/stack leaks.

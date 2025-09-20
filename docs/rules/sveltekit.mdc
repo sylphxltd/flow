@@ -4,44 +4,32 @@ globs: ["**/*.{svelte,ts,js}", "**/src/**/*", "**/routes/**/*"]
 alwaysApply: true
 ---
 
-# SvelteKit Rules
+# SvelteKit Key Rules
 
-## Scope
-- Targets SvelteKit projects using Svelte 5 with Runes enabled
-- Covers route modules, shared libraries, components, and configuration files
+## Routing/SSR
+- File-based; SSR default, hydrate interactive only.
+- `load` pure/serialized; throw `error()`/`redirect()`.
 
-## Routing And SSR
-- Use SvelteKit's file-based routing; remove legacy router code during upgrades
-- Default to server-side rendering and hydrate only the components that require client interactivity
-- Keep `load` functions pure, returning serialized data and throwing `error()`/`redirect()` for control flow
+## State/Reactivity
+- Runes: `$state`/`$derived`/`$effect` only; no `$:`.
+- Cleanup in `$effect`; no module singletons (server factories).
 
-## State And Reactivity
-- Adopt Svelte 5 Runes exclusively: `$state`, `$derived`, and `$effect`
-- Reject the legacy `$:` reactive label; migrate existing logic into derived values or effects
-- Contain side effects inside `$effect` blocks and release resources via the cleanup function it returns
-- Avoid module-level mutable singletons; create factories that scope state per request when running on the server
+## Components
+- `src/lib/` reusables (abs imports).
+- Simple templates; scoped styles; design system.
 
-## Component Design
-- Store reusable logic in modules under `src/lib/` and import via absolute paths
-- Keep templates simple; move complex branching into script blocks or helper functions
-- Use scoped styles to prevent global leakage and rely on the shared design system for spacing and typography
-
-## Data Access And Actions
-- Perform data fetching in `load` or server-only modules with proper type annotations
-- Use form actions for mutations; surface validation errors via returned `fail()` responses
-- For streaming or real-time features, checkpoint progress and coordinate with the observability rules
+## Data/Actions
+- Fetch in `load`/server (typed).
+- Form actions w/ `fail()` validation; stream checkpoints.
 
 ## Performance
-- Audit bundle output regularly; leverage code splitting and deferred loading for heavy components
-- Remove unused stores and subscriptions to prevent unnecessary client work
-- Profile with the Svelte Inspector and fix hotspots before release
+- Audit bundles/splitting; remove unused stores.
+- Profile Inspector.
 
-## Tooling And Integration
-- Enable TypeScript strict mode and share the Biome and PandaCSS configurations if those tools are present
-- Validate environment variables at startup and crash fast when required values are missing
-- Configure Vitest with Svelte testing library for unit and component coverage
+## Tooling
+- TS strict/Biome/Panda; env validate/crash.
+- Vitest/Svelte tests.
 
-## Forbidden Practices
-- Direct DOM manipulation outside Svelte-provided APIs
-- Global CSS that overrides the design system or breaks encapsulation
-- Leaving subscriptions open after navigation or component teardown
+## Avoid
+- DOM manip, global CSS overrides.
+- Open subs post-teardown.

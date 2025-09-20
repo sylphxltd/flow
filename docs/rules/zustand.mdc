@@ -4,32 +4,25 @@ globs: ["**/store/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/hooks/**/*.{ts,tsx
 alwaysApply: true
 ---
 
-# Zustand State Management
+# Zustand Key Rules
 
-## Scope
-- Applies to Zustand stores, selectors, and helper hooks used in client applications or shared packages
+## Design
+- Small domain stores; immutable state/actions.
+- TS for state/actions/selectors.
 
-## Store Design
-- Create small, domain-focused stores; avoid monoliths that mix unrelated concerns
-- Keep state immutable by returning new objects or arrays from actions; never mutate in place
-- Define TypeScript types for state, actions, and selectors to catch drift at compile time
+## Access
+- Typed hooks w/selectors; memoize expensive (proxy-memoize).
+- Cleanup unsubscribes.
 
-## Access Patterns
-- Expose typed hooks (for example, `useUserStore`) that accept selectors to minimize re-renders
-- Memoize expensive selectors with libraries such as `proxy-memoize` or equivalent custom utilities
-- Unsubscribe listeners during cleanup to prevent memory leaks in long-lived components
+## Actions/Middleware
+- Named mutations; doc side effects.
+- Explicit middleware (logger/devtools/persist); surface errors.
 
-## Actions And Middleware
-- Centralize mutations inside named actions; document side effects such as persistence or analytics
-- Layer middleware (logger, devtools, persistence) explicitly and configure it per store to avoid global surprises
-- Surface errors from actions and handle them in the caller instead of swallowing exceptions silently
+## Integration
+- Sync server via tRPC/fetch (optimistic).
+- Persist stable (versioned); broadcast w/checkpoints.
 
-## Integration Guidance
-- Sync server state through tRPC or data fetching hooks, reconciling optimistic updates when responses arrive
-- Persist only stable slices (for example, feature preferences) and version the storage schema to support migrations
-- Broadcast updates via subscriptions for collaborative features, ensuring cursor or timestamp checkpoints prevent replay gaps
-
-## Forbidden Practices
-- Directly mutating the store outside action functions
-- Registering global stores with uncontrolled growth or cross-cutting dependencies
-- Leaving active subscriptions when components unmount or routes change
+## Avoid
+- Direct mutations.
+- Global uncontrolled stores.
+- Active subs post-unmount.

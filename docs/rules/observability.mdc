@@ -4,38 +4,32 @@ globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}
 alwaysApply: true
 ---
 
-# Observability Rules
+# Observability Key Rules
 
-## Scope
-- Applies to backend services, UI components emitting telemetry, and shared logging utilities
-- Covers real-time streaming features, background workers, and API endpoints
+## Streaming/Subscriptions
+- Log lifecycles: start/stop/reconnect/cursors.
+- Persist checkpoints post-mutation/completion.
+- Monitor WS/SSE health/reconnects.
 
-## Streaming And Subscriptions
-- Log lifecycle events for every subscription: start, stop, reconnect attempts, and current cursor offsets
-- Persist checkpoints after successful mutations or stream completion so consumers can resume without data loss
-- Monitor WebSocket and SSE connection health, surfacing reconnect metrics to alerting systems
+## Logging
+- Structured: timestamp/level/service/correlation.
+- Redact sensitive; consistent severity (ERROR unexpected, WARN degradations).
 
-## Structured Logging
-- Emit machine-parseable logs with timestamp, level, service name, and correlation/request IDs
-- Attach user or session context only after redaction of sensitive identifiers
-- Use severity levels consistently; escalate unexpected states to `ERROR` and actionable degradations to `WARN`
+## Errors
+- Graceful degradation; no raw traces to users.
+- Retry externals with jitter logging.
+- Classify (client/server/network/validation); aggregate.
 
-## Error Management
-- Implement graceful degradation paths instead of propagating raw stack traces to users
-- Wrap external calls with retry policies tuned per dependency and log retries with jitter metadata
-- Classify errors by domain (client, server, network, validation) and aggregate counts for dashboards
+## Performance
+- Track CWV (LCP/FID/CLS); latency/throughput.
+- Bundle analysis; gate budgets.
 
-## Performance Monitoring
-- Track Core Web Vitals (LCP, FID, CLS) for web applications and publish trends to observability backends
-- Record backend latency percentiles and throughput; investigate regressions before release
-- Run bundle size analysis regularly and gate merges that blow agreed budgets
+## Alerting/Health
+- Alerts: errors/latency/drops/lag thresholds.
+- Health endpoints verify deps.
+- Document runbooks.
 
-## Alerting And Health Checks
-- Configure alerts for threshold breaches on error rates, latency, dropped connections, and checkpoint lag
-- Provide health endpoints that verify external dependencies to avoid false positives
-- Document runbooks per alert so responders know mitigation steps
-
-## Forbidden Patterns
-- Logging secrets, tokens, or PII at any level
-- Allowing silent failures where errors are swallowed or only visible in dev tools
-- Deploying critical user flows without error boundaries or telemetry hooks
+## Avoid
+- Logging secrets/PII.
+- Silent failures.
+- No boundaries/telemetry in critical flows.

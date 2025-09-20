@@ -4,33 +4,28 @@ globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}
 alwaysApply: true
 ---
 
-# Redis Rules
+# Redis Key Rules
 
-## Scope
-- Applies to all Redis usage across development, staging, and production environments
-- Covers pub/sub messaging, caching layers, rate limiting, and ephemeral coordination
+## Infra
+- Managed/serverless prod; local dev parity.
+- Document conn/TLS/auth per env.
 
-## Infrastructure Expectations
-- Use a managed or serverless Redis offering for production to guarantee persistence, backups, and monitoring
-- Provide a local Redis instance or container for development with parity configuration where possible
-- Document connection settings, TLS requirements, and authentication flows per environment
+## Channels/Keys
+- Bounded prefixes (e.g., `events:chat`).
+- Registry: purpose/payload/retention.
+- Migrate deprecations.
 
-## Channel And Key Management
-- Prefix channels and keys with bounded namespaces (for example, `events:chat`, `locks:email`) to prevent collisions
-- Maintain a registry describing the purpose, payload shape, and retention policy for every channel or key pattern
-- Delete or migrate deprecated prefixes during release work to avoid stale consumers
+## Validation/Safety
+- Schema validate pub/consume; reject/log invalid.
+- No sensitive/long-lived (use DB).
+- Timeouts/retries/circuit breakers.
 
-## Data Validation And Safety
-- Validate payloads on both publish and consume paths using shared schemas; reject invalid messages and log the failure
-- Never store sensitive data or long-lived records in Redis; persist durable state in the primary database instead
-- Configure timeouts, retries, and circuit breakers to shield the application from Redis outages or latency spikes
+## Events
+- Fan-out with checkpoints/replay.
+- Metrics: latency/failures/backlog.
+- Back-pressure slow consumers.
 
-## Event Distribution
-- Treat Redis as the source of truth for cross-instance fan-out; handle reconnection logic and replay missed events using checkpoints
-- Track publish/consume metrics (latency, failure rates, backlog depth) and surface them to monitoring dashboards
-- Back pressure slow consumers by pausing subscriptions or shedding load when processing times exceed thresholds
-
-## Forbidden Practices
-- Publishing unvalidated or schemaless payloads
-- Performing blocking or long-running operations that monopolize Redis connections
-- Swallowing connection errors or auto-retrying indefinitely without alerting
+## Avoid
+- Unvalidated/schemaless payloads.
+- Blocking/long ops.
+- Swallowed errors/auto-retries sans alert.

@@ -4,36 +4,24 @@ globs: ["**/*"]
 alwaysApply: true
 ---
 
-# Planning First Methodology
+# Planning First Key Rules
 
-## Purpose
-- Prevent code changes without validated plans and explicit acceptance criteria
-- Surface risks early through structured discovery using repo tools rather than assumptions
-- Keep execution aligned with documented goals and evidence
+## Policy
+- Tool discovery before plan; no changes without approved plan/AC.
+- Track via env tooling.
 
-## Scope
-- Mandatory for every task regardless of size or urgency
-- Applies to exploration, design, implementation, review, and documentation activities
+## Sequence
+- Understand: objectives/constraints; clarify blockers.
+- Explore: search/inspect for evidence.
+- Plan: goals/approach/risks/AC with links.
+- Confirm: approval before mods.
+- Execute: one tool/message; batch safe edits.
+- Track: status updates.
+- Summarize: AC mapping/risks.
 
-## Non-Negotiable Policy
-- Perform tool-driven discovery (search, read, inspect) before drafting any plan
-- Defer state-changing operations until the plan is reviewed and accepted
-- Track tasks using the environment's canonical tooling; avoid ad-hoc checklists when alternatives exist
-
-## Required Sequence
-1. Understand: capture objectives, constraints, and missing inputs; request clarification if blockers remain
-2. Explore: locate relevant code with search tools and inspect only necessary sections to gather evidence
-3. Plan: create a Planning Header with goals, approach, risks, and acceptance criteria, linking supporting evidence
-4. Confirm: pause and wait for approval or amendments before modifying files
-5. Execute: follow the approved steps, using one tool action per message and batching edits when safe
-6. Track: update task status continuously, marking completed steps and logging new work
-7. Summarize: deliver a final result mapped to acceptance criteria, including outstanding risks if any
-
-## Quality Expectations
-- Plans must be lean but actionable: clear steps that map to concrete tool usage
-- Goals limited to one to three bullets; acceptance criteria must be verifiable by tools or tests
-- Document risks with brief mitigations, prioritizing blockers that could derail execution
+## Quality
+- Lean/actionable steps; 1-3 goals; verifiable AC.
+- Risks with mitigations.
 
 ## Exceptions
-- None. Even trivial fixes require a minimal three-bullet plan plus tracking updates before changes occur
-- If any action occurs without an approved plan, stop immediately, perform discovery, and rebuild the plan before continuing
+- None; minimal plan for trivial; stop unapproved.

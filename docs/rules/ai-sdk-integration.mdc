@@ -4,36 +4,26 @@ globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}
 alwaysApply: true
 ---
 
-# AI SDK Integration Rules
-
-## Scope
-- Applies to server handlers, server actions, edge functions, and shared libraries that call the AI SDK
-- Covers client components that consume AI SDK streaming responses
-
-## Imports
-- Import only from `ai`, `@openrouter/ai-sdk-provider`, or `@ai-sdk/svelte`
-- Block all direct imports from alternative AI SDK packages or internal SDK internals to prevent API drift
+# AI SDK Key Rules
 
 ## Server Implementation
-- Build every streaming endpoint with `streamText` to guarantee consistent transport and backpressure
-- Use `convertToModelMessages` to transform inbound history before calling the model; reject unconvertible payloads
-- Surface responses through `toUIMessageStreamResponse` so the client receives canonical chunks
-- Always wire an `onFinish` handler that persists transcripts, tool runs, and token usage before closing the stream
-- Wrap calls in structured error handling that emits retry-safe failure states and preserves correlation IDs
+- Use `streamText` for all streaming endpoints to ensure consistent transport and backpressure.
+- Apply `convertToModelMessages` for inbound history; reject invalid payloads.
+- Route responses via `toUIMessageStreamResponse` for canonical client chunks.
+- Implement `onFinish` to persist transcripts, tool runs, and token usage.
+- Wrap calls in structured error handling with retry-safe states and correlation IDs.
 
 ## Tool Wiring
-- Define each callable tool with `tool()` and export a typed contract so the client never fabricates signatures
-- Validate tool input using Zod schemas; reject invalid payloads with actionable error codes instead of throwing raw errors
-- Tools must return serializable data only; convert binary blobs to references before emitting
+- Define tools with `tool()` and export typed contracts.
+- Validate inputs with Zod; reject invalid with actionable errors.
+- Return only serializable data; convert binaries to references.
 
 ## Client Integration
-- Use the `Chat` component and provide stable `id` and `initialMessages`
-- Handle `tool-...` message segments explicitly so rendered UI stays in sync with server tool activity
-- Provide optimistic updates while streaming but reconcile with authoritative server messages on completion
-- Expose explicit loading, error, and retry states; never leave the stream unresolved or swallow failures
+- In `Chat` components, handle `tool-...` segments, provide optimistic updates, reconcile on completion.
+- Expose explicit loading, error, retry states.
 
-## Frequent Failures To Avoid
-- Forgetting `onFinish` leads to missing persistence and dangling checkpoints
-- Skipping `convertToModelMessages` causes prompt formatting mismatches across model vendors
-- Returning tool responses without schema validation leaks malformed data to the UI
-- Allowing the client to stream without correlation IDs makes debugging production failures impossible
+## Avoid
+- Skipping `onFinish` (misses persistence).
+- Omitting `convertToModelMessages` (prompt mismatches).
+- Unvalidated tool responses.
+- Streams without correlation IDs.

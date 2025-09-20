@@ -4,57 +4,36 @@ globs: ["**/*.{ts,tsx,js,jsx}", "**/app/**/*", "**/pages/**/*", "**/lib/**/*"]
 alwaysApply: true
 ---
 
-# Next.js Rules
+# Next.js Key Rules
 
-## Scope
-- Targets Next.js 13 and later using the App Router exclusively
-- Applies to application code, API routes, server actions, and shared libraries
+## Patterns
+- App Router only; Server Components default; Client for interactivity.
+- Mutations: Server Actions/API with typed responses.
+- Delete Pages Router duplicates.
 
-## Framework Patterns
-- Use Server Components for data fetching and rendering by default; promote to Client Components only for browser-side interactivity
-- Handle mutations with Server Actions or dedicated API routes returning typed responses
-- Remove legacy Pages Router implementations; migrations must delete duplicate routes after verification
+## Layout
+- app/ (layout/page/loading/not-found), components/, lib/, hooks/, types/.
 
-## Project Layout
-```
-├── app/
-│   ├── layout.tsx       # Root layout
-│   ├── page.tsx         # Entry route
-│   ├── loading.tsx      # Skeleton or spinner
-│   └── not-found.tsx    # 404 boundary
-├── components/          # Reusable UI primitives
-├── lib/                 # Utilities, configuration, clients
-├── hooks/               # React hooks scoped by feature
-└── types/               # Shared TypeScript definitions
-```
+## Components
+- Functional only; strict props; no browser APIs in Server.
+- <300 lines; extract subs.
 
-## Component Discipline
-- Implement functional components only and enforce strict typing for props and state
-- Separate server-safe logic from client-only concerns; never import browser APIs in Server Components
-- Restrict component files to manageable size; extract subcomponents when code exceeds 300 lines or responsibilities diverge
+## Data
+- Fetch in Server Components/Actions: async/await/caching.
+- Stream with Suspense; Client tRPC/fetch with loading/errors.
 
-## Data Fetching Patterns
-- Fetch data inside Server Components or Server Actions using async/await and cache control APIs
-- Use streaming with Suspense boundaries for long-running operations to keep TTFB acceptable
-- Interactions requiring client data refresh must wrap tRPC or fetch calls in Client Components with explicit loading and error states
-
-## Configuration and Environment
-- Guard environment variables with Zod (or equivalent) validation at startup and crash fast on failures
-- Maintain `next.config.js` as the single source for build and runtime flags; document any experimental toggles
-- Apply middleware sparingly, logging every rewrite or redirect to aid debugging
+## Config/Env
+- Zod env validation/startup crash.
+- Single `next.config.js`; log middleware.
 
 ## Performance
-- Audit bundles with the Next.js analyzer before release and budget for regressions
-- Use the Image and Font optimization primitives provided by Next.js; never roll custom loaders unless unavoidable
-- Move CPU-intensive work to background jobs or edge functions; do not block render paths
+- Audit bundles; Image/Font opts.
+- Offload CPU to jobs/edge.
 
-## Forbidden Practices
-- Reintroducing the Pages Router or mixing App Router with legacy client-only routing
-- Running client-side fetches from within Server Components
-- Issuing raw SQL queries from route handlers instead of the approved data access layer
-- Shipping components without error boundaries or fallback UI for suspenseful sections
+## Avoid
+- Pages mix, client fetches in Server.
+- Raw SQL in handlers, no error boundaries.
 
-## Operational Checklist
-- Configure end-to-end tests (Playwright or Cypress) for critical flows and bind them to CI gates
-- Verify incremental static regeneration and caching policies per route before launch
-- Track runtime metrics and log correlation IDs so request traces survive multi-region deployments
+## Ops
+- E2E CI; verify ISR/caching.
+- Metrics/correlation IDs.

@@ -4,34 +4,26 @@ globs: ["**/server/**/*.{ts,tsx}", "**/lib/**/*.{ts,tsx}", "**/api/**/*.{ts,tsx}
 alwaysApply: true
 ---
 
-# Security And Authentication Rules
+# Security-Auth Key Rules
 
-## Scope
-- Applies to every authenticated API procedure, server action, background job, and middleware function
-- Governs session handling, authorization, logging, and sensitive data protection
+## Context/Sessions
+- Typed context with guards; validate integrity/exp/audience per call.
+- Deny default; rotate/revoke on anomalies.
 
-## Context And Sessions
-- Require a typed context object that exposes session state and guards; reject any request that lacks verified context
-- Validate session integrity, audience, and expiration on every call; rotate or revoke sessions proactively when anomalies appear
-- Maintain clear separation between authenticated and anonymous routes with defensive defaults (deny unless explicitly allowed)
+## Authz
+- Explicit per procedure (roles/scopes/enums); least privilege.
+- Log denials.
 
-## Authorization Controls
-- Implement explicit authorization checks per procedure, mapping roles or scopes to required capabilities
-- Enforce the principle of least privilege and avoid role checks that rely on string comparisons alone; prefer enums or bitmasks
-- Audit authorization decisions and emit structured logs when access is denied to aid incident response
+## Data
+- Sanitize/validate inputs.
+- Redact pub/sub; encrypt rest/transit (managed keys).
 
-## Data Protection
-- Sanitize and validate all user-controlled input before storage or downstream use
-- Filter outbound pub/sub messages so only redacted, schema-approved fields leave the service boundary
-- Encrypt sensitive data both at rest (database, backups) and in transit; use managed key services where available
+## Logging
+- Hash/redact tokens/emails/sessions.
+- Correlation IDs; alert failures.
 
-## Secure Logging
-- Strip or hash tokens, emails, phone numbers, and session identifiers before logging
-- Include correlation IDs to connect related events without leaking personal data
-- Alert on repeated authentication failures or unexpected context states
-
-## Forbidden Practices
-- Persisting secrets or session artifacts in client-side storage without encryption and expiration
-- Bypassing authorization for debugging, feature previews, or admin convenience
-- Exposing stack traces, infrastructure details, or internal identifiers in error responses
-- Shipping hidden login paths, master keys, or backdoor credentials
+## Avoid
+- Client storage sans encrypt/exp.
+- Bypass for debug/admin.
+- Stack traces/internal leaks.
+- Hidden paths/backdoors.

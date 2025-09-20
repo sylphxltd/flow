@@ -4,37 +4,30 @@ globs: ["**/*.{tsx,jsx}"]
 alwaysApply: true
 ---
 
-# React Rules
+# React Key Rules
 
-## Scope
-- Applies to React 18+ code authored in TypeScript or JavaScript with JSX
-- Covers components, hooks, context, and supporting utilities
+## Design
+- Functional only; strict props/state typing; freeze defaults.
+- Single responsibility; <300 lines; extract primitives.
 
-## Component Design
-- Author functional components only; enforce strict typing for props, state, and event handlers
-- Limit each component to a single responsibility and extract reusable UI into smaller primitives when files grow beyond 300 lines
-- Define props interfaces near the component and freeze default props to avoid accidental mutation
+## Hooks/State
+- Built-in first; custom for shared.
+- Rules of Hooks; `useReducer` for complex (immutable).
 
-## Hooks And State
-- Use built-in hooks first; create custom hooks to encapsulate shared logic and side effects
-- Follow the Rules of Hooks; never call hooks conditionally or inside loops
-- Manage complex local state with `useReducer` or state machines and keep updates immutable
-
-## Side Effects
-- Use `useEffect` sparingly; define accurate dependency arrays and clean up subscriptions, timers, and listeners in the return callback
-- For async effects, encapsulate fetching logic in custom hooks and bubble up cancellation signals to prevent race conditions
+## Effects
+- `useEffect` sparse: accurate deps, cleanup returns.
+- Custom hooks for async/cancellation.
 
 ## Performance
-- Memoize expensive components with `React.memo` and memoize derived values with `useMemo`
-- Stabilize callback identities with `useCallback` when passing to memoized children
-- Lazy load non-critical modules using `React.lazy` and Suspense boundaries
+- `React.memo`/`useMemo`/`useCallback`.
+- `React.lazy`/Suspense.
 
-## Forbidden Patterns
-- Class components, legacy context API, or direct DOM manipulation outside of refs
-- `dangerouslySetInnerHTML` without sanitizing trusted HTML in a dedicated utility
-- Inline arrow functions or object literals in hot render paths when they trigger unnecessary renders
+## Avoid
+- Classes/legacy context/DOM manip.
+- `dangerouslySetInnerHTML` sans sanitize.
+- Inline fns/objects in hot paths.
 
-## Testing Expectations
-- Test components in isolation with React Testing Library or an equivalent tooling stack
-- Verify custom hooks via dedicated unit tests that assert default state, updates, and cleanup
-- Include accessibility assertions for interactive components (roles, labels, keyboard navigation)
+## Tests
+- RTL isolation.
+- Hook units: state/updates/cleanup.
+- Accessibility assertions.

@@ -4,33 +4,26 @@ globs: ["**/*.{ts,tsx,js,jsx,svelte}", "**/styled-system/**/*", "**/panda.config
 alwaysApply: true
 ---
 
-# PandaCSS Rules
+# PandaCSS Key Rules
 
-## Scope
-- Applies to components and utilities that consume PandaCSS generated tokens and helpers
-- Covers Panda configuration files, recipes, and runtime usage across supported frameworks
+## Principles
+- Config as design system: tokens for colors/spacing/typo/radii.
+- Co-locate styles; responsive via typed breakpoints.
+- Recipes/patterns for composition.
 
-## Core Principles
-- Treat the Panda config as the canonical design system; all colors, spacing, typography, and radii must originate from tokens
-- Co-locate styles with components using Panda pattern helpers; avoid separate global stylesheets
-- Enforce responsive designs using Panda's typed breakpoint utilities
+## Config
+- `panda.config.*` source; regenerate CSS/types on changes.
+- Document variants (light/dark/high-contrast).
 
-## Configuration Discipline
-- Maintain `panda.config.*` as the source of truth for tokens, themes, and generated types
-- Regenerate CSS and type definitions whenever tokens change; check generated files into version control only when required by the build
-- Document theme variants (light, dark, high-contrast) and verify they compile without warnings
+## Usage
+- Conditional via typed helpers; no ternaries/raw.
+- Extract shared recipes/slots for short classes.
 
-## Usage Patterns
-- Compose styles through recipes or pattern properties; resist inline style objects and template literals
-- Express conditional styling by leveraging Panda's typed condition helpers instead of manual ternaries with raw values
-- Share common compositions via extracted recipes or slot variants to keep class lists short and consistent
+## Avoid
+- Hardcoded values/media queries.
+- Tailwind/CSS modules/global resets.
+- Inline styles/untyped wrappers.
 
-## Forbidden Practices
-- Hardcoding color codes, spacing values, or media queries outside the design token layer
-- Importing or using Tailwind classes, CSS modules, or global CSS resets alongside Panda
-- Shipping components with inline style objects or untyped utility wrappers around Panda helpers
-
-## Performance And Tooling
-- Remove unused tokens and recipes to prevent bloated generated CSS
-- Monitor bundle sizes of generated stylesheets and trim variants that are not used in production
-- Enable IDE tooling for Panda's typed APIs so violations surface while editing
+## Performance
+- Trim unused tokens/recipes.
+- Monitor generated bundle; IDE typed tooling.

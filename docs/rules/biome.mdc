@@ -4,28 +4,21 @@ globs: ["**/*.{ts,tsx,js,jsx,json,md}"]
 alwaysApply: true
 ---
 
-# Biome Rules
+# Biome Key Rules
 
-## Scope
-- Applies to all JavaScript, TypeScript, JSON, and Markdown files in the repository
-- Serves as the single source of truth for formatting, linting, and import sorting
+## Configuration
+- Single shared config with full recommended rules (strict TS/JSX); no overrides.
+- Version-control config; document exceptions inline.
 
-## Mandatory Configuration
-- Enforce one shared Biome config; reject per-package overrides or local rule toggles
-- Enable the full recommended rule set, including strict TypeScript and JSX checks
-- Keep the configuration version-controlled and document any rule exceptions inline
+## Usage
+- Run `biome check --write` in CI/pre-commit; fail on unused symbols, syntax, violations.
+- Let Biome handle imports, commas, semicolons, whitespace.
 
-## Usage Expectations
-- Run Biome for formatting instead of manual edits; CI and pre-commit hooks must execute `biome check --write`
-- Allow Biome to own import order, trailing commas, semicolons, and whitespace conventions
-- Fail builds if Biome detects unused symbols, invalid syntax, or lint violations
+## Integration
+- IDE on-save feedback; CI before tests.
+- Ignore only generated/vendored; curate list.
 
-## Integration Requirements
-- Wire Biome into IDEs for on-save feedback; do not depend on contributors remembering to run it manually
-- Execute Biome in CI before tests to surface style regressions early
-- Maintain a curated ignore list for generated or vendored assets only
-
-## Forbidden Patterns
-- Hand-editing formatting after Biome runs
-- Disabling lint rules to quiet violations instead of addressing root causes
-- Shipping code with unused imports, unreachable branches, or suppressed diagnostics
+## Avoid
+- Manual post-Biome formatting.
+- Disabling rules without fixes.
+- Shipping unused imports/unreachable code.
