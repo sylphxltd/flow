@@ -17,8 +17,10 @@ alwaysApply: true
 - Prod console/debugger.
 
 ## Advanced
+- Leverage infer for precise type extraction from generics, unions, and conditionals in domain modeling.
 - Generics/discrim unions/conditionals for domain.
 - Utility types (Pick/Omit); template literals for patterns.
+- Prefer explicit or inferred types; minimize any/unknown usage—refactor to strengthen type safety.
 
 ## Testing
 - Vitest (`*.test.ts`/ `__tests__`); 80%+ coverage (100% critical).
