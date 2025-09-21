@@ -1,0 +1,26 @@
+---
+description: Guidelines for effective AI tool usage in development tasks
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Tool Usage Key Rules
+
+## General
+- Use tools proactively for exploration, info, and actions; prefer parallel calls.
+- Avoid asking user for info tools can provide; solve independently.
+
+## Info Queries
+- For unclear details (latest versions, best practices, docs), use mcp_perplexity-ask_perplexity_ask with clear messages.
+- Query as colleague: "What is latest X version? Best practices for Y?"
+
+## Images
+- Generate visuals with image mcp tool when needed (e.g., diagrams, UI mocks).
+
+## Library Docs
+- Resolve IDs with mcp_context7_resolve-library-id; fetch docs via mcp_context7_get-library-docs.
+- Use for specific topics/tokens; prioritize high-trust matches.
+
+## Avoid
+- Manual guesses on versions/practices; always verify with tools.
+- Single tool calls when parallel possible; batch for efficiency.
