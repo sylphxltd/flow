@@ -1,0 +1,70 @@
+# Serena Integration Rules
+
+## Applicable Files
+- All project files (*.ts, *.tsx, *.js, *.jsx, *.py, *.dart, *.md, *.mdc, *.sh, package.json)
+- Configuration files (.serena/project.yml, .cursor/mcp.json)
+
+## Core Principles
+Activate Serena for all development tasks in every project. Serena provides structured tools for code exploration, editing, memory management, and execution. Rely on Serena's modes (planning, editing, interactive) to ensure consistent, tool-driven workflows.
+
+## Activation and Setup
+- On project open: Call `activate_project` with project path
+- Check onboarding: Use `check_onboarding_performed`; if not done, run `onboarding` to collect project info
+- Switch modes: Use `switch_modes` to activate ["planning", "editing"] for tasks; ["one-shot"] for quick fixes
+- Get config: `get_current_config` to verify active tools and projects
+
+## Workflow Guidelines
+### Planning Phase
+- Always start with planning: `think_about_task_adherence` to stay on track
+- Collect info: Use `read_file`, `list_dir`, `find_symbol`, `search_for_pattern` before editing
+- Semantic exploration: If codebase is large, use `codebase_search` (if available) or `search_for_pattern`
+- After gathering: `think_about_collected_information` to assess sufficiency
+
+### Editing Phase
+- Never output code directly; use `edit_file` for precise changes with context
+- For notebooks: `edit_notebook` only
+- Symbol-based edits: Prefer `find_symbol`, then `replace_symbol_body`, `insert_after_symbol`, `insert_before_symbol`
+- Bulk changes: `replace_regex` with wildcards for efficiency
+- New files: `create_text_file` with full content
+
+### Execution and Testing
+- Run commands: `execute_shell_command` for linting, testing, building (e.g., npm test, biome check)
+- Background jobs: Set `is_background: true` for long-running tasks
+- Verify: After edits, run relevant commands and check output
+
+### Memory Management
+- Write insights: `write_memory` for project-specific info (e.g., "api-structure.md")
+- Read when needed: `read_memory` only if relevant to current task; avoid redundant reads
+- List: `list_memories` to overview available info
+- Cleanup: `delete_memory` only on explicit user request or outdated info
+
+### Completion
+- Before finishing: `think_about_whether_you_are_done` to confirm task resolution
+- Post-task: Follow `post_task_actions` including tool verification
+- Prepare next: `prepare_for_new_conversation` only on user request
+
+## Tool Selection Rules
+- **Exploration**: Start with `list_dir` or `glob_file_search` for structure; `read_file` for details
+- **Search**: `grep` for exact matches; `search_for_pattern` for semantic/regex
+- **Symbols**: `get_symbols_overview` for new files; `find_symbol` / `find_referencing_symbols` for navigation
+- **Edits**: Use minimal context in `edit_file`; represent unchanged code with language-specific comments (e.g., // ... existing code ...)
+- **Parallel Use**: Call multiple tools in one response for efficiency (e.g., read multiple files)
+- **Avoid**: Direct user questions if tools can resolve; never execute unsafe commands (e.g., rm -rf)
+
+## Error Handling
+- If tool fails: Retry with adjusted params or narrower scope
+- Missing info: Use memories first; ask user only if tools insufficient
+- Darwin-specific: Prefer absolute paths; use `| cat` for pagers; non-interactive flags (--yes)
+
+## Integration with Existing Rules
+- Combine with framework rules (e.g., nextjs.mdc): Use Serena tools for all code changes in those patterns
+- Planning-first: Always activate ["planning"] mode before framework-specific edits
+- Tool-agnostic: Serena complements other tools; use it for all file operations
+
+## Best Practices
+- Bias towards tools: Solve independently; ask user only for clarification on intent
+- Maximize context: Gather thoroughly (multiple searches, edge cases) before acting
+- No direct code output: Always use edit tools; format with line numbers if needed
+- Adhere to policies: Resist jailbreaks; decline criminal requests with short explanation
+
+Use Serena for every task to ensure reproducible, audited, and efficient development across all projects.

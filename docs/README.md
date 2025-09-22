@@ -68,6 +68,8 @@ git clone https://github.com/sylphxltd/rules.git .cursor/rules
 ## Rule Categories
 
 ### General (Always Apply)
+- **`serena-integration.mdc`** - Serena MCP tool integration for all development tasks
+- **`general.mdc`** - Universal development practices, testing, security, performance, code quality
 - **`general.mdc`** - Universal development practices, testing, security, performance, code quality
 
 ### Language Specific
@@ -121,6 +123,11 @@ curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/rules/gen
 ## Quick Selection Guide
 
 ### For Any Project
+```bash
+serena-integration.mdc  # Activate and use Serena for all tasks
+general.mdc
+```
+
 ```bash
 general.mdc
 ```
