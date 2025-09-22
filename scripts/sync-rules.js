@@ -328,39 +328,64 @@ async function syncRules(agent) {
 
   progressBar.stop();
 
-  // Show results table
-  const table = new Table({
-    head: ['File', 'Status', 'Action'],
-    colWidths: [40, 15, 20],
-    style: {
-      head: ['cyan'],
-      border: ['gray']
-    }
-  });
-
+  // Group results by status
   const added = results.filter(r => r.status === 'added');
   const updated = results.filter(r => r.status === 'updated');
   const current = results.filter(r => r.status === 'current');
   const errors = results.filter(r => r.status === 'error');
 
-  // Add results to table
-  [...added, ...updated, ...current, ...errors].forEach(result => {
-    let statusColor;
-    switch (result.status) {
-      case 'added': statusColor = 'green'; break;
-      case 'updated': statusColor = 'yellow'; break;
-      case 'current': statusColor = 'blue'; break;
-      case 'error': statusColor = 'red'; break;
-    }
-    table.push([
-      result.file.length > 37 ? result.file.substring(0, 37) + '...' : result.file,
-      { content: result.status, vAlign: 'center' },
-      { content: result.action, vAlign: 'center' }
-    ]);
-  });
-
   console.log('\n📊 Sync Results:');
-  console.log(table.toString());
+
+  // Function to create and display a table for a specific status
+  const showStatusTable = (title, items, status) => {
+    if (items.length === 0) return;
+
+    console.log(`\n${title} (${items.length}):`);
+
+    const statusTable = new Table({
+      head: ['File', 'Action'],
+      colWidths: [50, 20],
+      style: {
+        head: ['cyan'],
+        border: ['gray']
+      },
+      chars: {
+        'top': '═',
+        'top-mid': '╤',
+        'top-left': '╔',
+        'top-right': '╗',
+        'bottom': '═',
+        'bottom-mid': '╧',
+        'bottom-left': '╚',
+        'bottom-right': '╝',
+        'left': '║',
+        'left-mid': '╟',
+        'mid': '─',
+        'mid-mid': '┼',
+        'right': '║',
+        'right-mid': '╢',
+        'middle': '│'
+      }
+    });
+
+    items.forEach(result => {
+      statusTable.push([
+        result.file.length > 47 ? result.file.substring(0, 47) + '...' : result.file,
+        { content: result.action, vAlign: 'center' }
+      ]);
+    });
+
+    console.log(statusTable.toString());
+  };
+
+  // Show tables for each status type
+  showStatusTable('🆕 Added', added, 'added');
+  showStatusTable('🔄 Updated', updated, 'updated');
+  showStatusTable('⏭️ Already Current', current, 'current');
+
+  if (errors.length > 0) {
+    showStatusTable('❌ Errors', errors, 'error');
+  }
 
   // Summary
   console.log(`\n🎉 Sync completed!`);
