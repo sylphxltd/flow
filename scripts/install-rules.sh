@@ -76,11 +76,11 @@ selective_install() {
     case "$selection" in
         "nextjs")
             echo -e "${YELLOW}Installing Next.js rules...${NC}"
-            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/typescript.mdc" "docs/rules/nextjs.mdc" "docs/rules/biome.mdc" "docs/rules/pandacss.mdc" "docs/rules/drizzle.mdc" "docs/rules/trpc.mdc" "docs/rules/zustand.mdc")
+            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/typescript.mdc" "docs/rules/nextjs.mdc" "docs/rules/biome.mdc" "docs/rules/pandacss.mdc" "docs/rules/drizzle.mdc" "docs/rules/trpc.mdc" "docs/rules/zustand.mdc" "docs/rules/id-generation.mdc")
             ;;
         "sveltekit")
             echo -e "${YELLOW}Installing SvelteKit rules...${NC}"
-            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/typescript.mdc" "docs/rules/sveltekit.mdc" "docs/rules/biome.mdc" "docs/rules/pandacss.mdc" "docs/rules/drizzle.mdc" "docs/rules/trpc.mdc")
+            keep_files=("docs/rules/README.md" "docs/rules/general.mdc" "docs/rules/typescript.mdc" "docs/rules/sveltekit.mdc" "docs/rules/biome.mdc" "docs/rules/pandacss.mdc" "docs/rules/drizzle.mdc" "docs/rules/trpc.mdc" "docs/rules/id-generation.mdc")
             ;;
         "react")
             echo -e "${YELLOW}Installing React rules...${NC}"

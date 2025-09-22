@@ -25,6 +25,31 @@ alwaysApply: true
 - Metrics: latency/failures/backlog.
 - Back-pressure slow consumers.
 
+## Reactive Streams Implementation
+
+### Producer Pattern
+- XADD event to Streams for persistence/durability.
+- PUBLISH to Pub/Sub channels for immediate fan-out.
+- Combine both: Streams for replay, Pub/Sub for real-time delivery.
+
+### Relay Pattern
+- XREAD with cursor for backlog replay from Streams.
+- Transition to replay-end when caught up.
+- Subscribe to Pub/Sub for new events.
+- Push to frontend via SSE/WebSocket with entry IDs.
+
+### Client Pattern
+- SSE/WebSocket connection for real-time events.
+- Use Streams entryId as cursor for resume/playback.
+- Store last processed entryId for reconnection recovery.
+- Handle connection drops gracefully with cursor-based resume.
+
+### Stream Management
+- Use auto-generated entry IDs (`XADD *`) as authoritative cursors.
+- Implement back-pressure for slow consumers.
+- Set appropriate retention policies for Streams.
+- Monitor backlog depth and consumer lag.
+
 ## Avoid
 - Unvalidated/schemaless payloads.
 - Blocking/long ops.

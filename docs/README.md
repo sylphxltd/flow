@@ -84,6 +84,8 @@ git clone https://github.com/sylphxltd/rules.git .cursor/rules
 - **`biome.mdc`** - Biome linter/formatter rules (if using Biome)
 - **`pandacss.mdc`** - PandaCSS type-safe styling rules (if using PandaCSS)
 - **`drizzle.mdc`** - Drizzle ORM rules (if using Drizzle)
+- **`id-generation.mdc`** - ID generation strategies and best practices (if using databases/Redis)
+- **`redis.mdc`** - Redis usage guidelines and reactive streams patterns (if using Redis)
 - **`trpc.mdc`** - tRPC rules (if using tRPC)
 - **`zustand.mdc`** - Zustand state management rules (if using Zustand)
 
