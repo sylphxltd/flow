@@ -58,6 +58,7 @@ npx github:sylphxltd/rules
 # Force specific agent
 npx github:sylphxltd/rules --agent=cursor    # For Cursor (.cursor/rules/*.mdc)
 npx github:sylphxltd/rules --agent=kilocode  # For Kilocode (.kilocode/rules/*.md)
+npx github:sylphxltd/rules --agent=roocode   # For RooCode (.roo/rules/*.md)
 
 # Preview without making changes
 npx github:sylphxltd/rules --dry-run

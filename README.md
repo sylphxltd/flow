@@ -12,6 +12,7 @@ npx github:sylphxltd/rules
 # Force specific agent
 npx github:sylphxltd/rules --agent=cursor
 npx github:sylphxltd/rules --agent=kilocode
+npx github:sylphxltd/rules --agent=roocode
 
 # Preview without changes
 npx github:sylphxltd/rules --dry-run

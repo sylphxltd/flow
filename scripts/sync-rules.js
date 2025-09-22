@@ -36,7 +36,7 @@ function detectAgentTool() {
   const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
   if (agentArg) {
     const agent = agentArg.split('=')[1].toLowerCase();
-    if (['cursor', 'kilocode'].includes(agent)) {
+    if (['cursor', 'kilocode', 'roocode'].includes(agent)) {
       return agent;
     }
   }
@@ -50,6 +50,10 @@ function detectAgentTool() {
     return 'kilocode';
   }
 
+  if (fs.existsSync(path.join(cwd, '.roo'))) {
+    return 'roocode';
+  }
+
   // Check for existing rules directories
   if (fs.existsSync(path.join(cwd, '.cursor', 'rules'))) {
     return 'cursor';
@@ -57,6 +61,10 @@ function detectAgentTool() {
 
   if (fs.existsSync(path.join(cwd, '.kilocode', 'rules'))) {
     return 'kilocode';
+  }
+
+  if (fs.existsSync(path.join(cwd, '.roo', 'rules'))) {
+    return 'roocode';
   }
 
   // Default to Cursor if can't detect
@@ -272,6 +280,10 @@ async function syncRules(agent) {
     rulesDir = path.join(cwd, '.kilocode', 'rules');
     fileExtension = '.md';
     processContent = stripYamlFrontMatter; // Strip YAML front matter
+  } else if (agent === 'roocode') {
+    rulesDir = path.join(cwd, '.roo', 'rules');
+    fileExtension = '.md';
+    processContent = stripYamlFrontMatter; // Strip YAML front matter
   } else {
     log(`❌ Unknown agent: ${agent}`, 'red');
     process.exit(1);
@@ -286,7 +298,8 @@ async function syncRules(agent) {
   // Show initial info
   console.log(`🚀 Rules Sync Tool`);
   console.log(`================`);
-  console.log(`📝 Agent: ${agent === 'cursor' ? 'Cursor' : 'Kilocode'}`);
+  const agentName = agent === 'cursor' ? 'Cursor' : agent === 'kilocode' ? 'Kilocode' : 'RooCode';
+  console.log(`📝 Agent: ${agentName}`);
   console.log(`📁 Target: ${rulesDir}`);
   console.log(`📋 Files: ${ruleFiles.length}`);
   console.log('');
@@ -393,6 +406,8 @@ async function syncRules(agent) {
     console.log(`💡 Rules will be automatically loaded by Cursor`);
   } else if (agent === 'kilocode') {
     console.log(`💡 Rules will be automatically loaded by Kilocode`);
+  } else if (agent === 'roocode') {
+    console.log(`💡 Rules will be automatically loaded by RooCode`);
   }
 }
 
@@ -415,8 +430,8 @@ async function main() {
           agent = detectAgentTool();
         } else {
           // Validate agent option
-          if (!['cursor', 'kilocode'].includes(agent.toLowerCase())) {
-            console.error('❌ Invalid agent. Must be "cursor" or "kilocode"');
+          if (!['cursor', 'kilocode', 'roocode'].includes(agent.toLowerCase())) {
+            console.error('❌ Invalid agent. Must be "cursor", "kilocode", or "roocode"');
             process.exit(1);
           }
           agent = agent.toLowerCase();
@@ -425,8 +440,10 @@ async function main() {
         if (options.dryRun) {
           console.log('🚀 Rules Sync Tool (Dry Run)');
           console.log('===========================');
-          console.log(`📝 Agent: ${agent === 'cursor' ? 'Cursor' : 'Kilocode'}`);
-          console.log(`📁 Target: ${agent === 'cursor' ? '.cursor/rules' : '.kilocode/rules'}`);
+          const agentName = agent === 'cursor' ? 'Cursor' : agent === 'kilocode' ? 'Kilocode' : 'RooCode';
+          const targetDir = agent === 'cursor' ? '.cursor/rules' : agent === 'kilocode' ? '.kilocode/rules' : '.roo/rules';
+          console.log(`📝 Agent: ${agentName}`);
+          console.log(`📁 Target: ${targetDir}`);
           console.log('✅ Dry run completed - no files were modified');
           return;
         }
@@ -443,10 +460,12 @@ async function main() {
     console.log('\nAuto-detection:');
     console.log('  - Detects Cursor if .cursor directory exists');
     console.log('  - Detects Kilocode if .kilocode directory exists');
+    console.log('  - Detects RooCode if .roo directory exists');
     console.log('  - Defaults to Cursor if cannot detect');
     console.log('\nExamples:');
     console.log('  $ npx github:sylphxltd/rules');
     console.log('  $ npx github:sylphxltd/rules --agent kilocode');
+    console.log('  $ npx github:sylphxltd/rules --agent roocode');
     console.log('  $ npx github:sylphxltd/rules --dry-run');
   });
 
