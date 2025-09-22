@@ -9,6 +9,7 @@ alwaysApply: true
 ## Configuration
 - Single shared config with full recommended rules (strict TS/JSX); no overrides.
 - Version-control config; document exceptions inline.
+- Exclude test files and generated files in biome.json configuration.
 
 ## Usage
 - Run `biome check --write` in CI/pre-commit; fail on unused symbols, syntax, violations.
@@ -17,6 +18,7 @@ alwaysApply: true
 ## Integration
 - IDE on-save feedback; CI before tests.
 - Ignore only generated/vendored; curate list.
+- Configure files.exclude in biome.json: test files, generated files, build outputs.
 
 ## Avoid
 - Manual post-Biome formatting.

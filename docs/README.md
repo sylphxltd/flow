@@ -69,8 +69,8 @@ git clone https://github.com/sylphxltd/rules.git .cursor/rules
 
 ### General (Always Apply)
 - **`serena-integration.mdc`** - Serena MCP tool integration for all development tasks
-- **`general.mdc`** - Universal development practices, testing, security, performance, code quality
-- **`general.mdc`** - Universal development practices, testing, security, performance, code quality
+- **`general.mdc`** - Universal development practices, security, performance, code quality
+- **`testing.mdc`** - Comprehensive testing practices and TDD workflow requirements
 
 ### Language Specific
 - **`typescript.mdc`** - TypeScript language rules (if using TS)

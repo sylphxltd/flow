@@ -22,9 +22,6 @@ alwaysApply: true
 - Capture reqs/AC/arch before impl.
 - Descriptive commits.
 
-## Testing
-- Unit/integration/E2E/contract mirror prod.
-- Realistic/isolated data; descriptive names.
 
 ## Performance
 - Build-time precompute; static imports/tree-shaking.

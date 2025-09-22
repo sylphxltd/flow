@@ -1,0 +1,43 @@
+---
+description: Comprehensive testing practices and TDD workflow requirements
+globs: ["**/*.{ts,tsx,js,jsx}", "**/test/**/*", "**/spec/**/*", "**/__tests__/**/*"]
+alwaysApply: true
+---
+
+# Testing Rules
+
+## TDD Workflow
+- Red-Green-Refactor cycle: Write failing test first, then implement, then refactor.
+- All requirements must be expressed as tests before implementation begins.
+- Tests drive design decisions and API contracts.
+- No code changes without corresponding test updates.
+
+## Test Coverage Requirements
+- Unit tests: Core business logic, utilities, pure functions.
+- Integration tests: Component interactions, API endpoints, database operations.
+- E2E tests: Critical user journeys, deployment verification.
+- Contract tests: API boundaries, external service dependencies.
+
+## Test Quality Standards
+- Tests must fail when requirements change.
+- Descriptive test names explain what and why, not how.
+- Realistic test data that mirrors production scenarios.
+- Tests should be fast, reliable, and maintainable.
+
+## Test Organization
+- Mirror source code structure in test directories.
+- Group related tests in describe blocks.
+- Setup/teardown for clean test isolation.
+- Helper functions for common test scenarios.
+
+## Testing Anti-patterns
+- ❌ Tests that only exercise implementation details.
+- ❌ Tests coupled to internal structure changes.
+- ❌ Slow or flaky tests that break the development flow.
+- ❌ Manual testing as primary verification method.
+
+## Testing as Quality Gate
+- All tests must pass before considering work complete.
+- Code review includes test review and execution.
+- CI/CD requires comprehensive test suite success.
+- Manual verification only supplements automated tests.
