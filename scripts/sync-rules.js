@@ -115,9 +115,6 @@ async function getRuleFiles() {
 
   const files = [];
 
-  // Add README
-  files.push('README.md');
-
   // Add all .mdc files from subdirectories
   for (const category of ruleCategories) {
     const categoryFiles = [
@@ -156,7 +153,6 @@ async function getRuleFiles() {
     // Filter out files that don't exist (this is a simplified approach)
     // In production, you'd want to check against the actual GitHub API
     const knownFiles = [
-      'README.md',
       'rules/ai/ai-sdk-integration.mdc',
       'rules/backend/serverless.mdc',
       'rules/backend/trpc.mdc',
@@ -204,17 +200,11 @@ function stripYamlFrontMatter(content) {
 // Process a single file
 async function processFile(filePath, rulesDir, fileExtension, processContent, baseUrl) {
   try {
-    let relativePath;
-    if (filePath === 'README.md') {
-      // README.md -> README.mdc or README.md (in root)
-      relativePath = 'README' + fileExtension;
-    } else {
-      // rules/category/file.mdc -> category/file.mdc or category/file.md
-      const pathParts = filePath.split('/');
-      const category = pathParts[1]; // e.g., 'ai', 'backend', etc.
-      const baseFileName = path.basename(filePath, '.mdc');
-      relativePath = path.join(category, baseFileName + fileExtension);
-    }
+    // rules/category/file.mdc -> category/file.mdc or category/file.md
+    const pathParts = filePath.split('/');
+    const category = pathParts[1]; // e.g., 'ai', 'backend', etc.
+    const baseFileName = path.basename(filePath, '.mdc');
+    const relativePath = path.join(category, baseFileName + fileExtension);
     const destPath = path.join(rulesDir, relativePath);
 
     // Ensure the directory exists
