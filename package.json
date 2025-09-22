@@ -6,6 +6,11 @@
   "bin": {
     "rules": "scripts/sync-rules.js"
   },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "cli-progress": "^3.12.0",
+    "cli-table3": "^0.6.3"
+  },
   "scripts": {
     "install:nextjs": "./scripts/install-rules.sh --nextjs",
     "install:sveltekit": "./scripts/install-rules.sh --sveltekit",

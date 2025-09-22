@@ -6,6 +6,11 @@ const https = require('https');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 
+// CLI and UI libraries
+const { Command } = require('commander');
+const cliProgress = require('cli-progress');
+const Table = require('cli-table3');
+
 // Colors for output
 const colors = {
   red: '\x1b[31m',
@@ -18,6 +23,10 @@ const colors = {
 function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
+
+// Global state
+let progressBar;
+let results = [];
 
 // Detect which agent tool is being used
 function detectAgentTool() {
@@ -192,6 +201,70 @@ function stripYamlFrontMatter(content) {
   return content;
 }
 
+// Process a single file
+async function processFile(filePath, rulesDir, fileExtension, processContent, baseUrl) {
+  try {
+    let relativePath;
+    if (filePath === 'README.md') {
+      // README.md -> README.mdc or README.md (in root)
+      relativePath = 'README' + fileExtension;
+    } else {
+      // rules/category/file.mdc -> category/file.mdc or category/file.md
+      const pathParts = filePath.split('/');
+      const category = pathParts[1]; // e.g., 'ai', 'backend', etc.
+      const baseFileName = path.basename(filePath, '.mdc');
+      relativePath = path.join(category, baseFileName + fileExtension);
+    }
+    const destPath = path.join(rulesDir, relativePath);
+
+    // Ensure the directory exists
+    const destDir = path.dirname(destPath);
+    fs.mkdirSync(destDir, { recursive: true });
+
+    // Check file status
+    const localInfo = getLocalFileInfo(destPath);
+    const isNew = !localInfo;
+
+    // Download and process the file
+    const url = `${baseUrl}${filePath}`;
+    await downloadFile(url, destPath);
+
+    let content = fs.readFileSync(destPath, 'utf8');
+    content = processContent(content);
+
+    // Check if content actually changed
+    const contentChanged = !localInfo || processContent(localInfo.content) !== content;
+
+    if (contentChanged) {
+      fs.writeFileSync(destPath, content, 'utf8');
+      results.push({
+        file: relativePath,
+        status: isNew ? 'added' : 'updated',
+        action: isNew ? 'Added' : 'Updated'
+      });
+    } else {
+      // Content didn't change, but we still write it to ensure format consistency
+      fs.writeFileSync(destPath, content, 'utf8');
+      results.push({
+        file: relativePath,
+        status: 'current',
+        action: 'Already current'
+      });
+    }
+
+    progressBar.increment();
+    return contentChanged;
+  } catch (error) {
+    results.push({
+      file: filePath,
+      status: 'error',
+      action: `Error: ${error.message}`
+    });
+    progressBar.increment();
+    return false;
+  }
+}
+
 // Sync rules for the detected agent
 async function syncRules(agent) {
   const cwd = process.cwd();
@@ -205,12 +278,10 @@ async function syncRules(agent) {
     rulesDir = path.join(cwd, '.cursor', 'rules');
     fileExtension = '.mdc';
     processContent = (content) => content; // Keep YAML front matter
-    log(`📝 Detected Cursor - syncing rules to .cursor/rules/`, 'blue');
   } else if (agent === 'kilocode') {
     rulesDir = path.join(cwd, '.kilocode', 'rules');
     fileExtension = '.md';
     processContent = stripYamlFrontMatter; // Strip YAML front matter
-    log(`🤖 Detected Kilocode - syncing rules to .kilocode/rules/`, 'blue');
   } else {
     log(`❌ Unknown agent: ${agent}`, 'red');
     process.exit(1);
@@ -218,118 +289,154 @@ async function syncRules(agent) {
 
   // Create rules directory
   fs.mkdirSync(rulesDir, { recursive: true });
-  log(`📁 Created rules directory: ${rulesDir}`, 'green');
 
   // Get rule files
   const ruleFiles = await getRuleFiles();
-  log(`📋 Found ${ruleFiles.length} rule files to sync`, 'yellow');
 
-  // Check and download each rule file
-  let updatedCount = 0;
-  let skippedCount = 0;
+  // Show initial info
+  console.log(`🚀 Rules Sync Tool`);
+  console.log(`================`);
+  console.log(`📝 Agent: ${agent === 'cursor' ? 'Cursor' : 'Kilocode'}`);
+  console.log(`📁 Target: ${rulesDir}`);
+  console.log(`📋 Files: ${ruleFiles.length}`);
+  console.log('');
 
-  for (const filePath of ruleFiles) {
-    try {
-      let relativePath;
-      if (filePath === 'README.md') {
-        // README.md -> README.mdc or README.md (in root)
-        relativePath = 'README' + fileExtension;
-      } else {
-        // rules/category/file.mdc -> category/file.mdc or category/file.md
-        const pathParts = filePath.split('/');
-        const category = pathParts[1]; // e.g., 'ai', 'backend', etc.
-        const baseFileName = path.basename(filePath, '.mdc');
-        relativePath = path.join(category, baseFileName + fileExtension);
-      }
-      const destPath = path.join(rulesDir, relativePath);
+  // Setup progress bar
+  progressBar = new cliProgress.SingleBar({
+    format: '📥 Downloading | {bar} | {percentage}% | {value}/{total} files | {file}',
+    barCompleteChar: '\u2588',
+    barIncompleteChar: '\u2591',
+    hideCursor: true
+  });
 
-      // Ensure the directory exists
-      const destDir = path.dirname(destPath);
-      fs.mkdirSync(destDir, { recursive: true });
+  progressBar.start(ruleFiles.length, 0, { file: 'Starting...' });
+  results = [];
 
-      // Check file status and decide whether to update
-      const localInfo = getLocalFileInfo(destPath);
-
-      // Download and process the file
-      const url = `${baseUrl}${filePath}`;
-
-      if (!localInfo) {
-        log(`🆕 ${relativePath} (downloading new file)`, 'yellow');
-      } else {
-        log(`🔄 ${relativePath} (checking for updates)`, 'yellow');
-      }
-
-      await downloadFile(url, destPath);
-
-      let content = fs.readFileSync(destPath, 'utf8');
-      content = processContent(content);
-
-      // Check if content actually changed
-      const contentChanged = !localInfo || processContent(localInfo.content) !== content;
-
-      if (contentChanged) {
-        fs.writeFileSync(destPath, content, 'utf8');
-        if (!localInfo) {
-          log(`   ✅ Added ${relativePath}`, 'green');
-        } else {
-          log(`   ✅ Updated ${relativePath}`, 'green');
-        }
-        updatedCount++;
-      } else {
-        // Content didn't change, but we still write it to ensure format consistency
-        fs.writeFileSync(destPath, content, 'utf8');
-        log(`   ⏭️  ${relativePath} already up to date`, 'blue');
-        skippedCount++;
-      }
-    } catch (error) {
-      log(`❌ Failed to process ${filePath}: ${error.message}`, 'red');
-    }
+  // Process files asynchronously in batches
+  const batchSize = 5; // Process 5 files at a time
+  const batches = [];
+  for (let i = 0; i < ruleFiles.length; i += batchSize) {
+    batches.push(ruleFiles.slice(i, i + batchSize));
   }
 
-  log(`\n🎉 Rules sync completed!`, 'green');
-  log(`📍 Rules location: ${rulesDir}`, 'blue');
-  log(`📊 Summary: ${updatedCount} updated, ${skippedCount} already current`, 'blue');
+  for (const batch of batches) {
+    const promises = batch.map(filePath =>
+      processFile(filePath, rulesDir, fileExtension, processContent, baseUrl)
+    );
+    await Promise.all(promises);
+  }
+
+  progressBar.stop();
+
+  // Show results table
+  const table = new Table({
+    head: ['File', 'Status', 'Action'],
+    colWidths: [40, 15, 20],
+    style: {
+      head: ['cyan'],
+      border: ['gray']
+    }
+  });
+
+  const added = results.filter(r => r.status === 'added');
+  const updated = results.filter(r => r.status === 'updated');
+  const current = results.filter(r => r.status === 'current');
+  const errors = results.filter(r => r.status === 'error');
+
+  // Add results to table
+  [...added, ...updated, ...current, ...errors].forEach(result => {
+    let statusColor;
+    switch (result.status) {
+      case 'added': statusColor = 'green'; break;
+      case 'updated': statusColor = 'yellow'; break;
+      case 'current': statusColor = 'blue'; break;
+      case 'error': statusColor = 'red'; break;
+    }
+    table.push([
+      result.file.length > 37 ? result.file.substring(0, 37) + '...' : result.file,
+      { content: result.status, vAlign: 'center' },
+      { content: result.action, vAlign: 'center' }
+    ]);
+  });
+
+  console.log('\n📊 Sync Results:');
+  console.log(table.toString());
+
+  // Summary
+  console.log(`\n🎉 Sync completed!`);
+  console.log(`📍 Location: ${rulesDir}`);
+
+  const summary = [];
+  if (added.length > 0) summary.push(`${added.length} added`);
+  if (updated.length > 0) summary.push(`${updated.length} updated`);
+  if (current.length > 0) summary.push(`${current.length} current`);
+  if (errors.length > 0) summary.push(`${errors.length} errors`);
+
+  console.log(`📈 Summary: ${summary.join(', ')}`);
 
   if (agent === 'cursor') {
-    log(`💡 Tip: Rules will be automatically loaded by Cursor`, 'yellow');
+    console.log(`💡 Rules will be automatically loaded by Cursor`);
   } else if (agent === 'kilocode') {
-    log(`💡 Tip: Rules will be automatically loaded by Kilocode`, 'yellow');
+    console.log(`💡 Rules will be automatically loaded by Kilocode`);
   }
 }
 
 // Main function
 async function main() {
-  log('🚀 Rules Sync Tool', 'blue');
-  log('================', 'blue');
-  log('');
+  const program = new Command();
 
-  try {
-    const agent = detectAgentTool();
-    await syncRules(agent);
-  } catch (error) {
-    log(`❌ Error: ${error.message}`, 'red');
-    process.exit(1);
-  }
+  program
+    .name('rules')
+    .description('Sync development rules to your project')
+    .version('1.0.0')
+    .option('--agent <type>', 'Force specific agent (cursor or kilocode)')
+    .option('--verbose', 'Show detailed output')
+    .option('--dry-run', 'Show what would be done without making changes')
+    .action(async (options) => {
+      try {
+        let agent = options.agent;
+
+        if (!agent) {
+          agent = detectAgentTool();
+        } else {
+          // Validate agent option
+          if (!['cursor', 'kilocode'].includes(agent.toLowerCase())) {
+            console.error('❌ Invalid agent. Must be "cursor" or "kilocode"');
+            process.exit(1);
+          }
+          agent = agent.toLowerCase();
+        }
+
+        if (options.dryRun) {
+          console.log('🚀 Rules Sync Tool (Dry Run)');
+          console.log('===========================');
+          console.log(`📝 Agent: ${agent === 'cursor' ? 'Cursor' : 'Kilocode'}`);
+          console.log(`📁 Target: ${agent === 'cursor' ? '.cursor/rules' : '.kilocode/rules'}`);
+          console.log('✅ Dry run completed - no files were modified');
+          return;
+        }
+
+        await syncRules(agent);
+      } catch (error) {
+        console.error(`❌ Error: ${error.message}`);
+        process.exit(1);
+      }
+    });
+
+  // Custom help text
+  program.on('--help', () => {
+    console.log('\nAuto-detection:');
+    console.log('  - Detects Cursor if .cursor directory exists');
+    console.log('  - Detects Kilocode if .kilocode directory exists');
+    console.log('  - Defaults to Cursor if cannot detect');
+    console.log('\nExamples:');
+    console.log('  $ npx github:sylphxltd/rules');
+    console.log('  $ npx github:sylphxltd/rules --agent kilocode');
+    console.log('  $ npx github:sylphxltd/rules --dry-run');
+  });
+
+  program.parse();
 }
 
-// Handle command line arguments
-if (process.argv.includes('--help') || process.argv.includes('-h')) {
-  log('Rules Sync Tool - Sync development rules to your project', 'blue');
-  log('');
-  log('Usage:');
-  log('  npx github:sylphxltd/rules [options]');
-  log('');
-  log('Options:');
-  log('  --agent=cursor     Force sync for Cursor (.cursor/rules/)');
-  log('  --agent=kilocode   Force sync for Kilocode (.kilocode/rules/)');
-  log('  --help, -h         Show this help message');
-  log('');
-  log('Auto-detection:');
-  log('  - Detects Cursor if .cursor directory exists');
-  log('  - Detects Kilocode if .kilocode directory exists');
-  log('  - Defaults to Cursor if cannot detect');
-  log('');
-  process.exit(0);
-}
-
+// Run the program
 main();
