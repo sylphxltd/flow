@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 // Colors for output
@@ -68,6 +69,23 @@ function downloadFile(url, destPath) {
       reject(err);
     });
   });
+}
+
+
+// Check if local file exists and get its info
+function getLocalFileInfo(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+    const content = fs.readFileSync(filePath, 'utf8');
+    return {
+      content: content,
+      exists: true
+    };
+  } catch (error) {
+    return null;
+  }
 }
 
 // Get list of rule files from GitHub
@@ -206,10 +224,12 @@ async function syncRules(agent) {
   const ruleFiles = await getRuleFiles();
   log(`📋 Found ${ruleFiles.length} rule files to sync`, 'yellow');
 
-  // Download and process each rule file
+  // Check and download each rule file
+  let updatedCount = 0;
+  let skippedCount = 0;
+
   for (const filePath of ruleFiles) {
     try {
-      const url = `${baseUrl}${filePath}`;
       let relativePath;
       if (filePath === 'README.md') {
         // README.md -> README.mdc or README.md (in root)
@@ -227,19 +247,40 @@ async function syncRules(agent) {
       const destDir = path.dirname(destPath);
       fs.mkdirSync(destDir, { recursive: true });
 
-      log(`⬇️  Downloading ${filePath}...`, 'yellow');
+      // Check file status and decide whether to update
+      const localInfo = getLocalFileInfo(destPath);
 
-      // Download the file
+      // Download and process the file
+      const url = `${baseUrl}${filePath}`;
+
+      if (!localInfo) {
+        log(`🆕 ${relativePath} (downloading new file)`, 'yellow');
+      } else {
+        log(`🔄 ${relativePath} (checking for updates)`, 'yellow');
+      }
+
       await downloadFile(url, destPath);
 
-      // Read and process content
       let content = fs.readFileSync(destPath, 'utf8');
       content = processContent(content);
 
-      // Write processed content back
-      fs.writeFileSync(destPath, content, 'utf8');
+      // Check if content actually changed
+      const contentChanged = !localInfo || processContent(localInfo.content) !== content;
 
-      log(`✅ Processed ${relativePath}`, 'green');
+      if (contentChanged) {
+        fs.writeFileSync(destPath, content, 'utf8');
+        if (!localInfo) {
+          log(`   ✅ Added ${relativePath}`, 'green');
+        } else {
+          log(`   ✅ Updated ${relativePath}`, 'green');
+        }
+        updatedCount++;
+      } else {
+        // Content didn't change, but we still write it to ensure format consistency
+        fs.writeFileSync(destPath, content, 'utf8');
+        log(`   ⏭️  ${relativePath} already up to date`, 'blue');
+        skippedCount++;
+      }
     } catch (error) {
       log(`❌ Failed to process ${filePath}: ${error.message}`, 'red');
     }
@@ -247,6 +288,7 @@ async function syncRules(agent) {
 
   log(`\n🎉 Rules sync completed!`, 'green');
   log(`📍 Rules location: ${rulesDir}`, 'blue');
+  log(`📊 Summary: ${updatedCount} updated, ${skippedCount} already current`, 'blue');
 
   if (agent === 'cursor') {
     log(`💡 Tip: Rules will be automatically loaded by Cursor`, 'yellow');
