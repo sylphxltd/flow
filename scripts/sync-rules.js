@@ -364,7 +364,7 @@ async function syncRules(agent) {
         'mid-mid': '',
         'right': '║',
         'right-mid': '',
-        'middle': ' '    // Use space instead of │ for cleaner look
+        'middle': '│'   // Keep column separator
       }
     });
 
