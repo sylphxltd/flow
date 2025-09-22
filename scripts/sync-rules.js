@@ -210,15 +210,22 @@ async function syncRules(agent) {
   for (const filePath of ruleFiles) {
     try {
       const url = `${baseUrl}${filePath}`;
-      let fileName;
+      let relativePath;
       if (filePath === 'README.md') {
-        // README.md -> README.mdc or README.md
-        fileName = 'README' + fileExtension;
+        // README.md -> README.mdc or README.md (in root)
+        relativePath = 'README' + fileExtension;
       } else {
-        // rules/something/file.mdc -> file.mdc or file.md
-        fileName = path.basename(filePath, '.mdc') + fileExtension;
+        // rules/category/file.mdc -> category/file.mdc or category/file.md
+        const pathParts = filePath.split('/');
+        const category = pathParts[1]; // e.g., 'ai', 'backend', etc.
+        const baseFileName = path.basename(filePath, '.mdc');
+        relativePath = path.join(category, baseFileName + fileExtension);
       }
-      const destPath = path.join(rulesDir, fileName);
+      const destPath = path.join(rulesDir, relativePath);
+
+      // Ensure the directory exists
+      const destDir = path.dirname(destPath);
+      fs.mkdirSync(destDir, { recursive: true });
 
       log(`⬇️  Downloading ${filePath}...`, 'yellow');
 
@@ -232,7 +239,7 @@ async function syncRules(agent) {
       // Write processed content back
       fs.writeFileSync(destPath, content, 'utf8');
 
-      log(`✅ Processed ${fileName}`, 'green');
+      log(`✅ Processed ${relativePath}`, 'green');
     } catch (error) {
       log(`❌ Failed to process ${filePath}: ${error.message}`, 'red');
     }
