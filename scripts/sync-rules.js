@@ -22,12 +22,20 @@ function log(message, color = 'reset') {
 function detectAgentTool() {
   const cwd = process.cwd();
 
-  // Check for Cursor
+  // First, check for explicit --agent argument (highest priority)
+  const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
+  if (agentArg) {
+    const agent = agentArg.split('=')[1].toLowerCase();
+    if (['cursor', 'kilocode'].includes(agent)) {
+      return agent;
+    }
+  }
+
+  // Check for existing directories
   if (fs.existsSync(path.join(cwd, '.cursor'))) {
     return 'cursor';
   }
 
-  // Check for Kilocode
   if (fs.existsSync(path.join(cwd, '.kilocode'))) {
     return 'kilocode';
   }
@@ -39,15 +47,6 @@ function detectAgentTool() {
 
   if (fs.existsSync(path.join(cwd, '.kilocode', 'rules'))) {
     return 'kilocode';
-  }
-
-  // Check environment variables or CLI args
-  const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
-  if (agentArg) {
-    const agent = agentArg.split('=')[1].toLowerCase();
-    if (['cursor', 'kilocode'].includes(agent)) {
-      return agent;
-    }
   }
 
   // Default to Cursor if can't detect
