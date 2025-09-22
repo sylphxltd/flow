@@ -13,9 +13,8 @@ npx github:sylphxltd/rules
 npx github:sylphxltd/rules --agent=cursor
 npx github:sylphxltd/rules --agent=kilocode
 
-# Legacy installation methods
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/quick-install.sh | bash
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh | bash -s -- --nextjs
+# Preview without changes
+npx github:sylphxltd/rules --dry-run
 ```
 
 ### View Documentation
