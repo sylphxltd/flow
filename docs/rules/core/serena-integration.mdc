@@ -1,8 +1,10 @@
-# Serena Integration Rules
+---
+description: Serena MCP tool integration for all development tasks
+globs: ["**/*"]
+alwaysApply: true
+---
 
-## Applicable Files
-- All project files (*.ts, *.tsx, *.js, *.jsx, *.py, *.dart, *.md, *.mdc, *.sh, package.json)
-- Configuration files (.serena/project.yml, .cursor/mcp.json)
+# Serena Integration Rules
 
 ## Core Principles
 Activate Serena for all development tasks in every project. Serena provides structured tools for code exploration, editing, memory management, and execution. Rely on Serena's modes (planning, editing, interactive) to ensure consistent, tool-driven workflows.
