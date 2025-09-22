@@ -1,5 +1,7 @@
 # Development Rules
 
+A modular, extensible rules sync tool for AI development agents.
+
 See [docs/README.md](docs/README.md) for complete documentation.
 
 ## Quick Start

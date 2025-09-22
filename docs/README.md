@@ -101,6 +101,18 @@ npx github:sylphxltd/rules --dry-run
 - Modular Updates: Changes to one file don't break others
 - AI Compatibility: Rules remain compatible with AI development workflows
 
+### Tool Extensibility
+The sync tool supports multiple AI development agents through a modular configuration system. To add support for a new agent:
+
+1. Add agent configuration to `AGENT_CONFIGS` in `scripts/sync-rules.js`
+2. Specify: name, directory, file extension, and YAML processing preference
+3. The tool automatically handles detection, validation, and processing
+
+**Current supported agents:**
+- **Cursor**: `.cursor/rules/*.mdc` (with YAML front matter)
+- **Kilocode**: `.kilocode/rules/*.md` (without YAML front matter)
+- **RooCode**: `.roo/rules/*.md` (without YAML front matter)
+
 ### Adding New Rules
 1. Assess Need: Ensure the rule addresses a genuine development need
 2. Check Scope: Define precise globs and ensure no overlap with existing files

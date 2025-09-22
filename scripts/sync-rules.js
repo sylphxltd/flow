@@ -28,6 +28,50 @@ function log(message, color = 'reset') {
 let progressBar;
 let results = [];
 
+// Agent configurations - Add new agents here for easy extensibility
+const AGENT_CONFIGS = {
+  cursor: {
+    name: 'Cursor',
+    dir: '.cursor',
+    extension: '.mdc',
+    stripYaml: false,
+    description: 'Cursor (.cursor/rules/*.mdc with YAML front matter)'
+  },
+  kilocode: {
+    name: 'Kilocode',
+    dir: '.kilocode',
+    extension: '.md',
+    stripYaml: true,
+    description: 'Kilocode (.kilocode/rules/*.md without YAML front matter)'
+  },
+  roocode: {
+    name: 'RooCode',
+    dir: '.roo',
+    extension: '.md',
+    stripYaml: true,
+    description: 'RooCode (.roo/rules/*.md without YAML front matter)'
+  }
+
+  // Example: To add a new agent called "MyAgent":
+  // myagent: {
+  //   name: 'MyAgent',
+  //   dir: '.myagent',
+  //   extension: '.rules',
+  //   stripYaml: true,
+  //   description: 'MyAgent (.myagent/rules/*.rules without YAML front matter)'
+  // }
+};
+
+// Get list of supported agents
+function getSupportedAgents() {
+  return Object.keys(AGENT_CONFIGS);
+}
+
+// Get agent config
+function getAgentConfig(agent) {
+  return AGENT_CONFIGS[agent];
+}
+
 // Detect which agent tool is being used
 function detectAgentTool() {
   const cwd = process.cwd();
@@ -36,35 +80,25 @@ function detectAgentTool() {
   const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
   if (agentArg) {
     const agent = agentArg.split('=')[1].toLowerCase();
-    if (['cursor', 'kilocode', 'roocode'].includes(agent)) {
+    if (getSupportedAgents().includes(agent)) {
       return agent;
     }
   }
 
-  // Check for existing directories
-  if (fs.existsSync(path.join(cwd, '.cursor'))) {
-    return 'cursor';
-  }
-
-  if (fs.existsSync(path.join(cwd, '.kilocode'))) {
-    return 'kilocode';
-  }
-
-  if (fs.existsSync(path.join(cwd, '.roo'))) {
-    return 'roocode';
+  // Check for existing directories (in order of preference)
+  for (const agent of getSupportedAgents()) {
+    const config = getAgentConfig(agent);
+    if (fs.existsSync(path.join(cwd, config.dir))) {
+      return agent;
+    }
   }
 
   // Check for existing rules directories
-  if (fs.existsSync(path.join(cwd, '.cursor', 'rules'))) {
-    return 'cursor';
-  }
-
-  if (fs.existsSync(path.join(cwd, '.kilocode', 'rules'))) {
-    return 'kilocode';
-  }
-
-  if (fs.existsSync(path.join(cwd, '.roo', 'rules'))) {
-    return 'roocode';
+  for (const agent of getSupportedAgents()) {
+    const config = getAgentConfig(agent);
+    if (fs.existsSync(path.join(cwd, config.dir, 'rules'))) {
+      return agent;
+    }
   }
 
   // Default to Cursor if can't detect
@@ -268,26 +302,17 @@ async function syncRules(agent) {
   const cwd = process.cwd();
   const baseUrl = 'https://raw.githubusercontent.com/sylphxltd/rules/main/docs/';
 
-  let rulesDir;
-  let fileExtension;
-  let processContent;
-
-  if (agent === 'cursor') {
-    rulesDir = path.join(cwd, '.cursor', 'rules');
-    fileExtension = '.mdc';
-    processContent = (content) => content; // Keep YAML front matter
-  } else if (agent === 'kilocode') {
-    rulesDir = path.join(cwd, '.kilocode', 'rules');
-    fileExtension = '.md';
-    processContent = stripYamlFrontMatter; // Strip YAML front matter
-  } else if (agent === 'roocode') {
-    rulesDir = path.join(cwd, '.roo', 'rules');
-    fileExtension = '.md';
-    processContent = stripYamlFrontMatter; // Strip YAML front matter
-  } else {
+  // Get agent configuration
+  const config = getAgentConfig(agent);
+  if (!config) {
     log(`❌ Unknown agent: ${agent}`, 'red');
+    log(`Supported agents: ${getSupportedAgents().join(', ')}`, 'yellow');
     process.exit(1);
   }
+
+  const rulesDir = path.join(cwd, config.dir, 'rules');
+  const fileExtension = config.extension;
+  const processContent = config.stripYaml ? stripYamlFrontMatter : (content) => content;
 
   // Create rules directory
   fs.mkdirSync(rulesDir, { recursive: true });
@@ -298,8 +323,7 @@ async function syncRules(agent) {
   // Show initial info
   console.log(`🚀 Rules Sync Tool`);
   console.log(`================`);
-  const agentName = agent === 'cursor' ? 'Cursor' : agent === 'kilocode' ? 'Kilocode' : 'RooCode';
-  console.log(`📝 Agent: ${agentName}`);
+  console.log(`📝 Agent: ${config.name}`);
   console.log(`📁 Target: ${rulesDir}`);
   console.log(`📋 Files: ${ruleFiles.length}`);
   console.log('');
@@ -402,13 +426,7 @@ async function syncRules(agent) {
 
   console.log(`📈 Summary: ${summary.join(', ')}`);
 
-  if (agent === 'cursor') {
-    console.log(`💡 Rules will be automatically loaded by Cursor`);
-  } else if (agent === 'kilocode') {
-    console.log(`💡 Rules will be automatically loaded by Kilocode`);
-  } else if (agent === 'roocode') {
-    console.log(`💡 Rules will be automatically loaded by RooCode`);
-  }
+  console.log(`💡 Rules will be automatically loaded by ${config.name}`);
 }
 
 // Main function
@@ -430,20 +448,19 @@ async function main() {
           agent = detectAgentTool();
         } else {
           // Validate agent option
-          if (!['cursor', 'kilocode', 'roocode'].includes(agent.toLowerCase())) {
-            console.error('❌ Invalid agent. Must be "cursor", "kilocode", or "roocode"');
+          if (!getSupportedAgents().includes(agent.toLowerCase())) {
+            console.error(`❌ Invalid agent. Supported agents: ${getSupportedAgents().join(', ')}`);
             process.exit(1);
           }
           agent = agent.toLowerCase();
         }
 
         if (options.dryRun) {
+          const config = getAgentConfig(agent);
           console.log('🚀 Rules Sync Tool (Dry Run)');
           console.log('===========================');
-          const agentName = agent === 'cursor' ? 'Cursor' : agent === 'kilocode' ? 'Kilocode' : 'RooCode';
-          const targetDir = agent === 'cursor' ? '.cursor/rules' : agent === 'kilocode' ? '.kilocode/rules' : '.roo/rules';
-          console.log(`📝 Agent: ${agentName}`);
-          console.log(`📁 Target: ${targetDir}`);
+          console.log(`📝 Agent: ${config.name}`);
+          console.log(`📁 Target: ${config.dir}/rules`);
           console.log('✅ Dry run completed - no files were modified');
           return;
         }
@@ -458,14 +475,23 @@ async function main() {
   // Custom help text
   program.on('--help', () => {
     console.log('\nAuto-detection:');
-    console.log('  - Detects Cursor if .cursor directory exists');
-    console.log('  - Detects Kilocode if .kilocode directory exists');
-    console.log('  - Detects RooCode if .roo directory exists');
+    getSupportedAgents().forEach(agent => {
+      const config = getAgentConfig(agent);
+      console.log(`  - Detects ${config.name} if ${config.dir} directory exists`);
+    });
     console.log('  - Defaults to Cursor if cannot detect');
+
+    console.log('\nSupported agents:');
+    getSupportedAgents().forEach(agent => {
+      const config = getAgentConfig(agent);
+      console.log(`  - ${agent}: ${config.description}`);
+    });
+
     console.log('\nExamples:');
     console.log('  $ npx github:sylphxltd/rules');
-    console.log('  $ npx github:sylphxltd/rules --agent kilocode');
-    console.log('  $ npx github:sylphxltd/rules --agent roocode');
+    getSupportedAgents().slice(1).forEach(agent => {
+      console.log(`  $ npx github:sylphxltd/rules --agent ${agent}`);
+    });
     console.log('  $ npx github:sylphxltd/rules --dry-run');
   });
 
