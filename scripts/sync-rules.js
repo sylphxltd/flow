@@ -139,89 +139,74 @@ function getLocalFileInfo(filePath) {
   }
 }
 
-// Get list of rule files from GitHub
+// Get list of rule files from local docs directory
 async function getRuleFiles() {
-  // For simplicity, we'll hardcode the known rule files
-  // In a real implementation, you might want to fetch the directory listing
+  const docsRulesDir = path.join(__dirname, '..', 'docs', 'rules');
+  const files = [];
+
+  try {
+    // Read all category directories
+    const categories = fs.readdirSync(docsRulesDir, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+
+    // Read all .mdc files from each category
+    for (const category of categories) {
+      const categoryDir = path.join(docsRulesDir, category);
+
+      try {
+        const categoryFiles = fs.readdirSync(categoryDir)
+          .filter(file => file.endsWith('.mdc'))
+          .map(file => `rules/${category}/${file}`);
+
+        files.push(...categoryFiles);
+      } catch (error) {
+        // Skip directories that can't be read
+        continue;
+      }
+    }
+  } catch (error) {
+    // If local directory reading fails, fall back to hardcoded list
+    console.warn('⚠️  Could not read local rules directory, using fallback list');
+    return getFallbackRuleFiles();
+  }
+
+  return files;
+}
+
+// Fallback hardcoded list (in case local directory reading fails)
+function getFallbackRuleFiles() {
   const ruleCategories = [
-    'ai',
-    'backend',
-    'core',
-    'data',
-    'devops',
-    'framework',
-    'misc',
-    'security',
-    'ui'
+    'ai', 'backend', 'core', 'data', 'devops', 'framework', 'misc', 'security', 'ui'
   ];
 
   const files = [];
 
-  // Add all .mdc files from subdirectories
-  for (const category of ruleCategories) {
-    const categoryFiles = [
-      `${category}/ai-sdk-integration.mdc`,
-      `${category}/serverless.mdc`,
-      `${category}/trpc.mdc`,
-      `${category}/functional.mdc`,
-      `${category}/general.mdc`,
-      `${category}/perfect-execution.mdc`,
-      `${category}/planning-first.mdc`,
-      `${category}/serena-integration.mdc`,
-      `${category}/testing.mdc`,
-      `${category}/typescript.mdc`,
-      `${category}/drizzle.mdc`,
-      `${category}/id-generation.mdc`,
-      `${category}/redis.mdc`,
-      `${category}/biome.mdc`,
-      `${category}/observability.mdc`,
-      `${category}/flutter.mdc`,
-      `${category}/nextjs.mdc`,
-      `${category}/react.mdc`,
-      `${category}/sveltekit.mdc`,
-      `${category}/zustand.mdc`,
-      `${category}/response-language.mdc`,
-      `${category}/tool-usage.mdc`,
-      `${category}/security-auth.mdc`,
-      `${category}/pandacss.mdc`
-    ];
+  // Add README
+  files.push('README.md');
 
-    for (const file of categoryFiles) {
-      files.push(`rules/${file}`);
+  // Add known files from each category
+  const knownFiles = {
+    ai: ['ai-sdk-integration.mdc'],
+    backend: ['serverless.mdc', 'trpc.mdc'],
+    core: ['functional.mdc', 'general.mdc', 'perfect-execution.mdc', 'planning-first.mdc', 'serena-integration.mdc', 'testing.mdc', 'typescript.mdc'],
+    data: ['drizzle.mdc', 'id-generation.mdc', 'redis.mdc'],
+    devops: ['biome.mdc', 'observability.mdc'],
+    framework: ['flutter.mdc', 'nextjs.mdc', 'react.mdc', 'sveltekit.mdc', 'zustand.mdc'],
+    misc: ['response-language.mdc', 'tool-usage.mdc'],
+    security: ['security-auth.mdc'],
+    ui: ['pandacss.mdc']
+  };
+
+  for (const category of ruleCategories) {
+    if (knownFiles[category]) {
+      for (const file of knownFiles[category]) {
+        files.push(`rules/${category}/${file}`);
+      }
     }
   }
 
-  return files.filter(file => {
-    // Filter out files that don't exist (this is a simplified approach)
-    // In production, you'd want to check against the actual GitHub API
-    const knownFiles = [
-      'rules/ai/ai-sdk-integration.mdc',
-      'rules/backend/serverless.mdc',
-      'rules/backend/trpc.mdc',
-      'rules/core/functional.mdc',
-      'rules/core/general.mdc',
-      'rules/core/perfect-execution.mdc',
-      'rules/core/planning-first.mdc',
-      'rules/core/serena-integration.mdc',
-      'rules/core/testing.mdc',
-      'rules/core/typescript.mdc',
-      'rules/data/drizzle.mdc',
-      'rules/data/id-generation.mdc',
-      'rules/data/redis.mdc',
-      'rules/devops/biome.mdc',
-      'rules/devops/observability.mdc',
-      'rules/framework/flutter.mdc',
-      'rules/framework/nextjs.mdc',
-      'rules/framework/react.mdc',
-      'rules/framework/sveltekit.mdc',
-      'rules/framework/zustand.mdc',
-      'rules/misc/response-language.mdc',
-      'rules/misc/tool-usage.mdc',
-      'rules/security/security-auth.mdc',
-      'rules/ui/pandacss.mdc'
-    ];
-    return knownFiles.includes(file);
-  });
+  return files;
 }
 
 // Strip YAML front matter from content
