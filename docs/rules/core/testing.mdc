@@ -13,7 +13,9 @@ alwaysApply: true
 - No code changes without corresponding test updates.
 
 ## Test Coverage Requirements
+- **100% Code Coverage Target**: All client components and server code must be fully tested.
 - Unit tests: Core business logic, utilities, pure functions.
+- Component tests: UI components, interactions, state management.
 - Integration tests: Component interactions, API endpoints, database operations.
 - E2E tests: Critical user journeys, deployment verification.
 - Contract tests: API boundaries, external service dependencies.
@@ -23,6 +25,12 @@ alwaysApply: true
 - Descriptive test names explain what and why, not how.
 - Realistic test data that mirrors production scenarios.
 - Tests should be fast, reliable, and maintainable.
+
+## Coverage Metrics
+- Track line coverage, branch coverage, and function coverage.
+- Generate coverage reports for CI/CD visibility.
+- Identify and address coverage gaps immediately.
+- Coverage reports must be accessible to all team members.
 
 ## Test Organization
 - Mirror source code structure in test directories.
@@ -37,7 +45,8 @@ alwaysApply: true
 - ❌ Manual testing as primary verification method.
 
 ## Testing as Quality Gate
+- **100% Coverage Enforcement**: CI/CD must enforce minimum coverage thresholds.
 - All tests must pass before considering work complete.
-- Code review includes test review and execution.
-- CI/CD requires comprehensive test suite success.
+- Code review includes test review, execution, and coverage analysis.
+- CI/CD requires comprehensive test suite success and coverage reports.
 - Manual verification only supplements automated tests.

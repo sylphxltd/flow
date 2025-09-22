@@ -9,16 +9,26 @@ alwaysApply: true
 ## Configuration
 - Single shared config with full recommended rules (strict TS/JSX); no overrides.
 - Version-control config; document exceptions inline.
+- Enable VCS integration: `"vcs": {"enabled": true, "clientKind": "git", "useIgnoreFile": true}`.
+- Configure strict TypeScript rules: `noExplicitAny: "error"`, `noNonNullAssertion: "error"`.
+- Set `noMagicNumbers: "warn"` with appropriate thresholds.
 - Exclude test files and generated files in biome.json configuration.
 
 ## Usage
 - Run `biome check --write` in CI/pre-commit; fail on unused symbols, syntax, violations.
 - Let Biome handle imports, commas, semicolons, whitespace.
+- Use tab indentation and double quotes for consistency.
+
+## Formatting
+- Configure `"formatter": {"indentStyle": "tab"}` for consistent indentation.
+- Set `"javascript": {"formatter": {"quoteStyle": "double"}}` for quote consistency.
+- Enable `"assist": {"actions": {"source": {"organizeImports": "on"}}}` for import organization.
 
 ## Integration
 - IDE on-save feedback; CI before tests.
 - Ignore only generated/vendored; curate list.
 - Configure files.exclude in biome.json: test files, generated files, build outputs.
+- Use overrides for framework-specific files (Svelte, Astro, Vue) to disable problematic rules.
 
 ## Avoid
 - Manual post-Biome formatting.
