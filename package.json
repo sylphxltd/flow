@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Type-safe development rules for modern web development",
   "main": "scripts/install-rules.sh",
+  "bin": {
+    "rules": "scripts/sync-rules.js"
+  },
   "scripts": {
     "install:nextjs": "./scripts/install-rules.sh --nextjs",
     "install:sveltekit": "./scripts/install-rules.sh --sveltekit",

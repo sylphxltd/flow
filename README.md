@@ -6,11 +6,16 @@ See [docs/README.md](docs/README.md) for complete documentation.
 
 ### Install Rules
 ```bash
-# One-click installation
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/quick-install.sh | bash
+# One-command sync (recommended)
+npx github:sylphxltd/rules
 
-# Or use the installation script
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/docs/scripts/install-rules.sh | bash -s -- --nextjs
+# Force specific agent
+npx github:sylphxltd/rules --agent=cursor
+npx github:sylphxltd/rules --agent=kilocode
+
+# Legacy installation methods
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/quick-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/install-rules.sh | bash -s -- --nextjs
 ```
 
 ### View Documentation

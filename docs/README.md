@@ -50,15 +50,22 @@ Rules are designed to be:
 
 ## Quick Start
 
-### One-Click Installation
+### One-Command Sync (Recommended)
 ```bash
-# Install to project with one command
-curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/quick-install.sh | bash
+# Auto-detect agent and sync rules
+npx github:sylphxltd/rules
+
+# Force specific agent
+npx github:sylphxltd/rules --agent=cursor    # For Cursor (.cursor/rules/*.mdc)
+npx github:sylphxltd/rules --agent=kilocode  # For Kilocode (.kilocode/rules/*.md)
 ```
 
-### Using npm
+### Legacy Installation Methods
 ```bash
-# Install to project
+# One-click installation
+curl -fsSL https://raw.githubusercontent.com/sylphxltd/rules/main/scripts/quick-install.sh | bash
+
+# Using npm
 npm create @sylphxltd/rules@latest
 
 # Or clone manually
