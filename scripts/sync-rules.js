@@ -359,12 +359,12 @@ async function syncRules(agent) {
         'bottom-left': '╚',
         'bottom-right': '╝',
         'left': '║',
-        'left-mid': '╟',
-        'mid': '─',
-        'mid-mid': '┼',
+        'left-mid': '',  // Remove row separators
+        'mid': '',       // Remove row separators
+        'mid-mid': '',
         'right': '║',
-        'right-mid': '╢',
-        'middle': '│'
+        'right-mid': '',
+        'middle': ' '    // Use space instead of │ for cleaner look
       }
     });
 
