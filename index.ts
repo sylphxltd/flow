@@ -30,9 +30,12 @@ program
   .command('mcp')
   .description('Start the MCP server')
   .action(async () => {
+    console.log('🔌 Starting MCP server transport...');
     try {
       const transport = new StdioServerTransport();
+      console.log('🔗 Connecting server to transport...');
       await server.connect(transport);
+      console.log('✨ MCP server connected and running');
     } catch (error) {
       console.error(`❌ MCP Server Error: ${error.message}`);
       process.exit(1);

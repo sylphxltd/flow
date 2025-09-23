@@ -19412,11 +19412,14 @@ var KNOWN_RULES = {
   ui: ["pandacss"]
 };
 var universalDescription = "This MCP server provides access to type-safe development rules for modern web development. Universal core principles: Enforce single responsibility, keep files/functions concise (<300 lines/file, <50 lines/function), use immutability, validate inputs/security at boundaries, plan with peer review/CI, avoid globals/mutables/hardcoded secrets. Tools are registered for each rule file. Each tool is named 'read_[category]_[rule_name]' (e.g., 'read_core_general') and returns the full rule content when called (parameterless). Always call the relevant tool to review the rule before applying it in your work.";
+console.log("\u{1F680} Starting Rules MCP Server...");
+console.log(`\u{1F4CB} Description: ${universalDescription.substring(0, 100)}...`);
 var server = new McpServer({
   name: "rules-mcp-server",
   version: "1.0.0",
   description: universalDescription
 });
+console.log("\u2705 MCP Server instance created");
 async function getRuleContent(category, ruleName) {
   try {
     const docsPath = import_path.default.join(__dirname, "..", "docs", "rules", category, `${ruleName}.mdc`);
@@ -19426,6 +19429,8 @@ async function getRuleContent(category, ruleName) {
     return `Rule not found: ${category}/${ruleName}.mdc`;
   }
 }
+console.log("\u{1F527} Registering tools...");
+var toolCount = 0;
 Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
   rules.forEach((ruleName) => {
     const toolName = `read_${category}_${ruleName}`;
@@ -19438,8 +19443,10 @@ Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
         inputSchema: external_exports.object({})
       },
       async (args, extra) => {
+        console.log(`\u{1F4D6} Tool called: ${toolName}`);
         try {
           const content = await getRuleContent(category, ruleName);
+          console.log(`\u2705 Successfully loaded rule: ${category}/${ruleName} (${content.length} chars)`);
           return {
             content: [{
               type: "text",
@@ -19447,6 +19454,7 @@ Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
             }]
           };
         } catch (err) {
+          console.error(`\u274C Error loading rule: ${category}/${ruleName}: ${err.message}`);
           return {
             content: [{
               type: "text",
@@ -19457,8 +19465,12 @@ Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
         }
       }
     );
+    toolCount++;
+    console.log(`\u2705 Registered tool: ${toolName}`);
   });
 });
+console.log(`\u{1F389} Total tools registered: ${toolCount}`);
+console.log("\u{1F680} Rules MCP Server ready!");
 var server_default = server;
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
@@ -19941,9 +19953,12 @@ program2.command("sync").description("Sync development rules to your project").o
   }
 });
 program2.command("mcp").description("Start the MCP server").action(async () => {
+  console.log("\u{1F50C} Starting MCP server transport...");
   try {
     const transport = new StdioServerTransport();
+    console.log("\u{1F517} Connecting server to transport...");
     await server_default.connect(transport);
+    console.log("\u2728 MCP server connected and running");
   } catch (error) {
     console.error(`\u274C MCP Server Error: ${error.message}`);
     process.exit(1);
