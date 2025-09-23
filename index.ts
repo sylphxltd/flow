@@ -21,7 +21,7 @@ program
     try {
       await syncRules(options);
     } catch (error) {
-      console.error(`❌ Error: ${error.message}`);
+      console.error(`❌ Error: ${(error as Error).message}`);
       process.exit(1);
     }
   });
@@ -36,8 +36,10 @@ program
       console.log('🔗 Connecting server to transport...');
       await server.connect(transport);
       console.log('✨ MCP server connected and running');
+      // Keep the process running for MCP communication
+      process.stdin.resume();
     } catch (error) {
-      console.error(`❌ MCP Server Error: ${error.message}`);
+      console.error(`❌ MCP Server Error: ${(error as Error).message}`);
       process.exit(1);
     }
   });

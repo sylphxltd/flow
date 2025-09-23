@@ -19959,6 +19959,7 @@ program2.command("mcp").description("Start the MCP server").action(async () => {
     console.log("\u{1F517} Connecting server to transport...");
     await server_default.connect(transport);
     console.log("\u2728 MCP server connected and running");
+    process.stdin.resume();
   } catch (error) {
     console.error(`\u274C MCP Server Error: ${error.message}`);
     process.exit(1);
