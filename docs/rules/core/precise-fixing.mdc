@@ -1,5 +1,5 @@
 ---
-description: Enforce precise problem-solving by confirming issues thoroughly, targeting root causes, and avoiding excessive fallbacks or error handling.
+description: Enforce precise problem-solving by prioritizing root cause analysis, confirming issues thoroughly, and avoiding excessive fallbacks or error handling.
 globs: []
 alwaysApply: true
 ---
@@ -7,18 +7,18 @@ alwaysApply: true
 # Precise Problem Fixing
 
 ## Core
-- Always confirm and understand the problem fully before attempting fixes—analyze symptoms, root causes, and context.
-- If unclear, investigate codebase, logs, docs, or test scenarios to pinpoint the exact issue.
-- Target fixes directly at the root cause; do not add superficial workarounds.
+- Prioritize identifying the root cause: Always investigate deeply to understand the underlying issue before any fixes.
+- Confirm the problem fully—analyze symptoms, context, logs, and tests to verify and pinpoint the exact root cause.
+- Target fixes directly at the root cause; superficial workarounds are prohibited.
 
 ## Avoid Over-Engineering
-- Prohibit adding unnecessary fallbacks, try-catch blocks, or error handling unless directly addressing the confirmed issue.
-- No "defensive programming" for unverified edge cases; focus on the specific problem.
-- Ensure fixes are minimal and precise—remove or avoid redundant checks that bloat code.
+- Do not add fallbacks, try-catch, or error handling unless they directly address the confirmed root cause.
+- Avoid "defensive programming" for hypothetical edges; focus solely on resolving the identified issue.
+- Keep fixes minimal: Eliminate redundant code that doesn't target the root cause.
 
 ## Resolution Approach
-- Diagnose: Use debugging, logging, or tools to verify the problem.
-- Fix: Implement the most direct solution that resolves the issue without side effects.
-- Validate: Test the fix to confirm it targets only the problem, maintaining clean, efficient code.
+- **Diagnose Root Cause**: Use debugging tools, existing logs, or strategically add temporary, targeted logs (e.g., console.log or structured logging at key points) to trace execution flow and variable states—remove them after diagnosis. Employ the smartest methods like conditional logging or breakpoints for efficiency.
+- **Fix Precisely**: Implement the most direct solution that eliminates the root cause without introducing new issues.
+- **Validate**: Test thoroughly to ensure the fix resolves the root cause and maintains code efficiency.
 
-This rule promotes efficient, targeted code maintenance by emphasizing accurate diagnosis over broad safeguards.
+This rule ensures efficient code maintenance by mandating root cause analysis over quick or broad fixes.
