@@ -963,8 +963,8 @@ var require_command = __commonJS({
   "node_modules/commander/lib/command.js"(exports2) {
     var EventEmitter = require("node:events").EventEmitter;
     var childProcess = require("node:child_process");
-    var path2 = require("node:path");
-    var fs2 = require("node:fs");
+    var path3 = require("node:path");
+    var fs3 = require("node:fs");
     var process3 = require("node:process");
     var { Argument: Argument2, humanReadableArgName } = require_argument();
     var { CommanderError: CommanderError2 } = require_error();
@@ -1896,11 +1896,11 @@ Expecting one of '${allowedValues.join("', '")}'`);
         let launchWithNode = false;
         const sourceExt = [".js", ".ts", ".tsx", ".mjs", ".cjs"];
         function findFile(baseDir, baseName) {
-          const localBin = path2.resolve(baseDir, baseName);
-          if (fs2.existsSync(localBin)) return localBin;
-          if (sourceExt.includes(path2.extname(baseName))) return void 0;
+          const localBin = path3.resolve(baseDir, baseName);
+          if (fs3.existsSync(localBin)) return localBin;
+          if (sourceExt.includes(path3.extname(baseName))) return void 0;
           const foundExt = sourceExt.find(
-            (ext) => fs2.existsSync(`${localBin}${ext}`)
+            (ext) => fs3.existsSync(`${localBin}${ext}`)
           );
           if (foundExt) return `${localBin}${foundExt}`;
           return void 0;
@@ -1912,21 +1912,21 @@ Expecting one of '${allowedValues.join("', '")}'`);
         if (this._scriptPath) {
           let resolvedScriptPath;
           try {
-            resolvedScriptPath = fs2.realpathSync(this._scriptPath);
+            resolvedScriptPath = fs3.realpathSync(this._scriptPath);
           } catch (err) {
             resolvedScriptPath = this._scriptPath;
           }
-          executableDir = path2.resolve(
-            path2.dirname(resolvedScriptPath),
+          executableDir = path3.resolve(
+            path3.dirname(resolvedScriptPath),
             executableDir
           );
         }
         if (executableDir) {
           let localFile = findFile(executableDir, executableFile);
           if (!localFile && !subcommand._executableFile && this._scriptPath) {
-            const legacyName = path2.basename(
+            const legacyName = path3.basename(
               this._scriptPath,
-              path2.extname(this._scriptPath)
+              path3.extname(this._scriptPath)
             );
             if (legacyName !== this._name) {
               localFile = findFile(
@@ -1937,7 +1937,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
           }
           executableFile = localFile || executableFile;
         }
-        launchWithNode = sourceExt.includes(path2.extname(executableFile));
+        launchWithNode = sourceExt.includes(path3.extname(executableFile));
         let proc;
         if (process3.platform !== "win32") {
           if (launchWithNode) {
@@ -2777,7 +2777,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @return {Command}
        */
       nameFromFilename(filename) {
-        this._name = path2.basename(filename, path2.extname(filename));
+        this._name = path3.basename(filename, path3.extname(filename));
         return this;
       }
       /**
@@ -2791,9 +2791,9 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @param {string} [path]
        * @return {(string|null|Command)}
        */
-      executableDir(path3) {
-        if (path3 === void 0) return this._executableDir;
-        this._executableDir = path3;
+      executableDir(path4) {
+        if (path4 === void 0) return this._executableDir;
+        this._executableDir = path4;
         return this;
       }
       /**
@@ -3845,8 +3845,8 @@ var require_uri_all = __commonJS({
             wsComponents.secure = void 0;
           }
           if (wsComponents.resourceName) {
-            var _wsComponents$resourc = wsComponents.resourceName.split("?"), _wsComponents$resourc2 = slicedToArray(_wsComponents$resourc, 2), path2 = _wsComponents$resourc2[0], query = _wsComponents$resourc2[1];
-            wsComponents.path = path2 && path2 !== "/" ? path2 : void 0;
+            var _wsComponents$resourc = wsComponents.resourceName.split("?"), _wsComponents$resourc2 = slicedToArray(_wsComponents$resourc, 2), path3 = _wsComponents$resourc2[0], query = _wsComponents$resourc2[1];
+            wsComponents.path = path3 && path3 !== "/" ? path3 : void 0;
             wsComponents.query = query;
             wsComponents.resourceName = void 0;
           }
@@ -4219,12 +4219,12 @@ var require_util = __commonJS({
       return "'" + escapeQuotes(str) + "'";
     }
     function getPathExpr(currentPath, expr, jsonPointers, isNumber) {
-      var path2 = jsonPointers ? "'/' + " + expr + (isNumber ? "" : ".replace(/~/g, '~0').replace(/\\//g, '~1')") : isNumber ? "'[' + " + expr + " + ']'" : "'[\\'' + " + expr + " + '\\']'";
-      return joinPaths(currentPath, path2);
+      var path3 = jsonPointers ? "'/' + " + expr + (isNumber ? "" : ".replace(/~/g, '~0').replace(/\\//g, '~1')") : isNumber ? "'[' + " + expr + " + ']'" : "'[\\'' + " + expr + " + '\\']'";
+      return joinPaths(currentPath, path3);
     }
     function getPath(currentPath, prop, jsonPointers) {
-      var path2 = jsonPointers ? toQuotedString("/" + escapeJsonPointer(prop)) : toQuotedString(getProperty(prop));
-      return joinPaths(currentPath, path2);
+      var path3 = jsonPointers ? toQuotedString("/" + escapeJsonPointer(prop)) : toQuotedString(getProperty(prop));
+      return joinPaths(currentPath, path3);
     }
     var JSON_POINTER = /^\/(?:[^~]|~0|~1)*$/;
     var RELATIVE_JSON_POINTER = /^([0-9]+)(#|\/(?:[^~]|~0|~1)*)?$/;
@@ -12307,8 +12307,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path2, errorMaps, issueData } = params;
-  const fullPath = [...path2, ...issueData.path || []];
+  const { data, path: path3, errorMaps, issueData } = params;
+  const fullPath = [...path3, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -12424,11 +12424,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path2, key) {
+  constructor(parent, value, path3, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path2;
+    this._path = path3;
     this._key = key;
   }
   get path() {
@@ -19398,6 +19398,8 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // server.ts
+var fs = __toESM(require("fs/promises"));
+var import_path = __toESM(require("path"));
 var KNOWN_RULES = {
   ai: ["ai-sdk-integration"],
   backend: ["serverless", "trpc"],
@@ -19416,13 +19418,10 @@ var server = new McpServer({
   description: universalDescription
 });
 async function getRuleContent(category, ruleName) {
-  const url = `https://raw.githubusercontent.com/sylphxltd/rules/main/docs/rules/${category}/${ruleName}.mdc`;
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return await response.text();
+    const docsPath = import_path.default.join(__dirname, "..", "docs", "rules", category, `${ruleName}.mdc`);
+    const content = await fs.readFile(docsPath, "utf-8");
+    return content;
   } catch (error) {
     return `Rule not found: ${category}/${ruleName}.mdc`;
   }
@@ -19441,9 +19440,20 @@ Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
       async (args, extra) => {
         try {
           const content = await getRuleContent(category, ruleName);
-          return { content: [{ type: "text", text: content }] };
+          return {
+            content: [{
+              type: "text",
+              text: content
+            }]
+          };
         } catch (err) {
-          return { content: [{ type: "text", text: `Error loading rule: ${category}/${ruleName}` }] };
+          return {
+            content: [{
+              type: "text",
+              text: `Error loading rule: ${category}/${ruleName}: ${err.message}`
+            }],
+            isError: true
+          };
         }
       }
     );
@@ -19548,7 +19558,7 @@ var StdioServerTransport = class {
 
 // sync.ts
 var import_fs = __toESM(require("fs"));
-var import_path = __toESM(require("path"));
+var import_path2 = __toESM(require("path"));
 var import_https = __toESM(require("https"));
 var import_readline = __toESM(require("readline"));
 var import_cli_progress = __toESM(require_cli_progress());
@@ -19644,13 +19654,13 @@ function detectAgentTool() {
   }
   for (const agent of getSupportedAgents()) {
     const config = getAgentConfig(agent);
-    if (import_fs.default.existsSync(import_path.default.join(cwd, config.dir))) {
+    if (import_fs.default.existsSync(import_path2.default.join(cwd, config.dir))) {
       return agent;
     }
   }
   for (const agent of getSupportedAgents()) {
     const config = getAgentConfig(agent);
-    if (import_fs.default.existsSync(import_path.default.join(cwd, config.dir, "rules"))) {
+    if (import_fs.default.existsSync(import_path2.default.join(cwd, config.dir, "rules"))) {
       return agent;
     }
   }
@@ -19687,12 +19697,12 @@ function getLocalFileInfo(filePath) {
   }
 }
 async function getRuleFiles() {
-  const docsRulesDir = import_path.default.join(process.cwd(), "docs", "rules");
+  const docsRulesDir = import_path2.default.join(process.cwd(), "docs", "rules");
   const files = [];
   try {
     const categories = import_fs.default.readdirSync(docsRulesDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
     for (const category of categories) {
-      const categoryDir = import_path.default.join(docsRulesDir, category);
+      const categoryDir = import_path2.default.join(docsRulesDir, category);
       try {
         const categoryFiles = import_fs.default.readdirSync(categoryDir).filter((file) => file.endsWith(".mdc")).map((file) => `rules/${category}/${file}`);
         files.push(...categoryFiles);
@@ -19755,10 +19765,10 @@ async function processFile(filePath, rulesDir, fileExtension, processContent, ba
   try {
     const pathParts = filePath.split("/");
     const category = pathParts[1];
-    const baseFileName = import_path.default.basename(filePath, ".mdc");
-    const relativePath = import_path.default.join(category, baseFileName + fileExtension);
-    const destPath = import_path.default.join(rulesDir, relativePath);
-    const destDir = import_path.default.dirname(destPath);
+    const baseFileName = import_path2.default.basename(filePath, ".mdc");
+    const relativePath = import_path2.default.join(category, baseFileName + fileExtension);
+    const destPath = import_path2.default.join(rulesDir, relativePath);
+    const destDir = import_path2.default.dirname(destPath);
     import_fs.default.mkdirSync(destDir, { recursive: true });
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
@@ -19821,7 +19831,7 @@ async function syncRules(options) {
     log(`Supported agents: ${getSupportedAgents().join(", ")}`, "yellow");
     throw new Error(`Unknown agent: ${agent}`);
   }
-  const rulesDir = import_path.default.join(cwd, config.dir, "rules");
+  const rulesDir = import_path2.default.join(cwd, config.dir, "rules");
   const fileExtension = config.extension;
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content) => content;
   import_fs.default.mkdirSync(rulesDir, { recursive: true });

@@ -24,16 +24,13 @@ const server = new McpServer({
   description: universalDescription
 });
 
-// Function to get rule content from GitHub
+// Function to get rule content from local docs folder
 async function getRuleContent(category: string, ruleName: string): Promise<string> {
-  const url = `https://raw.githubusercontent.com/sylphxltd/rules/main/docs/rules/${category}/${ruleName}.mdc`;
-
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return await response.text();
+    // Path to the docs folder (same level as dist folder when installed)
+    const docsPath = path.join(__dirname, '..', 'docs', 'rules', category, `${ruleName}.mdc`);
+    const content = await fs.readFile(docsPath, 'utf-8');
+    return content;
   } catch (error) {
     return `Rule not found: ${category}/${ruleName}.mdc`;
   }
@@ -55,9 +52,20 @@ Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
       async (args: any, extra: any) => {
         try {
           const content = await getRuleContent(category, ruleName);
-          return { content: [{ type: "text" as const, text: content }] };
-        } catch (err) {
-          return { content: [{ type: "text" as const, text: `Error loading rule: ${category}/${ruleName}` }] };
+          return {
+            content: [{
+              type: "text",
+              text: content
+            }]
+          };
+        } catch (err: any) {
+          return {
+            content: [{
+              type: "text",
+              text: `Error loading rule: ${category}/${ruleName}: ${err.message}`
+            }],
+            isError: true
+          };
         }
       }
     );

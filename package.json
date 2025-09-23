@@ -6,6 +6,10 @@
   "bin": {
     "rules": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "docs"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",
     "cli-progress": "^3.12.0",
