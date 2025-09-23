@@ -963,8 +963,8 @@ var require_command = __commonJS({
   "node_modules/commander/lib/command.js"(exports2) {
     var EventEmitter = require("node:events").EventEmitter;
     var childProcess = require("node:child_process");
-    var path3 = require("node:path");
-    var fs3 = require("node:fs");
+    var path2 = require("node:path");
+    var fs2 = require("node:fs");
     var process3 = require("node:process");
     var { Argument: Argument2, humanReadableArgName } = require_argument();
     var { CommanderError: CommanderError2 } = require_error();
@@ -1896,11 +1896,11 @@ Expecting one of '${allowedValues.join("', '")}'`);
         let launchWithNode = false;
         const sourceExt = [".js", ".ts", ".tsx", ".mjs", ".cjs"];
         function findFile(baseDir, baseName) {
-          const localBin = path3.resolve(baseDir, baseName);
-          if (fs3.existsSync(localBin)) return localBin;
-          if (sourceExt.includes(path3.extname(baseName))) return void 0;
+          const localBin = path2.resolve(baseDir, baseName);
+          if (fs2.existsSync(localBin)) return localBin;
+          if (sourceExt.includes(path2.extname(baseName))) return void 0;
           const foundExt = sourceExt.find(
-            (ext) => fs3.existsSync(`${localBin}${ext}`)
+            (ext) => fs2.existsSync(`${localBin}${ext}`)
           );
           if (foundExt) return `${localBin}${foundExt}`;
           return void 0;
@@ -1912,21 +1912,21 @@ Expecting one of '${allowedValues.join("', '")}'`);
         if (this._scriptPath) {
           let resolvedScriptPath;
           try {
-            resolvedScriptPath = fs3.realpathSync(this._scriptPath);
+            resolvedScriptPath = fs2.realpathSync(this._scriptPath);
           } catch (err) {
             resolvedScriptPath = this._scriptPath;
           }
-          executableDir = path3.resolve(
-            path3.dirname(resolvedScriptPath),
+          executableDir = path2.resolve(
+            path2.dirname(resolvedScriptPath),
             executableDir
           );
         }
         if (executableDir) {
           let localFile = findFile(executableDir, executableFile);
           if (!localFile && !subcommand._executableFile && this._scriptPath) {
-            const legacyName = path3.basename(
+            const legacyName = path2.basename(
               this._scriptPath,
-              path3.extname(this._scriptPath)
+              path2.extname(this._scriptPath)
             );
             if (legacyName !== this._name) {
               localFile = findFile(
@@ -1937,7 +1937,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
           }
           executableFile = localFile || executableFile;
         }
-        launchWithNode = sourceExt.includes(path3.extname(executableFile));
+        launchWithNode = sourceExt.includes(path2.extname(executableFile));
         let proc;
         if (process3.platform !== "win32") {
           if (launchWithNode) {
@@ -2777,7 +2777,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @return {Command}
        */
       nameFromFilename(filename) {
-        this._name = path3.basename(filename, path3.extname(filename));
+        this._name = path2.basename(filename, path2.extname(filename));
         return this;
       }
       /**
@@ -2791,9 +2791,9 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @param {string} [path]
        * @return {(string|null|Command)}
        */
-      executableDir(path4) {
-        if (path4 === void 0) return this._executableDir;
-        this._executableDir = path4;
+      executableDir(path3) {
+        if (path3 === void 0) return this._executableDir;
+        this._executableDir = path3;
         return this;
       }
       /**
@@ -3845,8 +3845,8 @@ var require_uri_all = __commonJS({
             wsComponents.secure = void 0;
           }
           if (wsComponents.resourceName) {
-            var _wsComponents$resourc = wsComponents.resourceName.split("?"), _wsComponents$resourc2 = slicedToArray(_wsComponents$resourc, 2), path3 = _wsComponents$resourc2[0], query = _wsComponents$resourc2[1];
-            wsComponents.path = path3 && path3 !== "/" ? path3 : void 0;
+            var _wsComponents$resourc = wsComponents.resourceName.split("?"), _wsComponents$resourc2 = slicedToArray(_wsComponents$resourc, 2), path2 = _wsComponents$resourc2[0], query = _wsComponents$resourc2[1];
+            wsComponents.path = path2 && path2 !== "/" ? path2 : void 0;
             wsComponents.query = query;
             wsComponents.resourceName = void 0;
           }
@@ -4219,12 +4219,12 @@ var require_util = __commonJS({
       return "'" + escapeQuotes(str) + "'";
     }
     function getPathExpr(currentPath, expr, jsonPointers, isNumber) {
-      var path3 = jsonPointers ? "'/' + " + expr + (isNumber ? "" : ".replace(/~/g, '~0').replace(/\\//g, '~1')") : isNumber ? "'[' + " + expr + " + ']'" : "'[\\'' + " + expr + " + '\\']'";
-      return joinPaths(currentPath, path3);
+      var path2 = jsonPointers ? "'/' + " + expr + (isNumber ? "" : ".replace(/~/g, '~0').replace(/\\//g, '~1')") : isNumber ? "'[' + " + expr + " + ']'" : "'[\\'' + " + expr + " + '\\']'";
+      return joinPaths(currentPath, path2);
     }
     function getPath(currentPath, prop, jsonPointers) {
-      var path3 = jsonPointers ? toQuotedString("/" + escapeJsonPointer(prop)) : toQuotedString(getProperty(prop));
-      return joinPaths(currentPath, path3);
+      var path2 = jsonPointers ? toQuotedString("/" + escapeJsonPointer(prop)) : toQuotedString(getProperty(prop));
+      return joinPaths(currentPath, path2);
     }
     var JSON_POINTER = /^\/(?:[^~]|~0|~1)*$/;
     var RELATIVE_JSON_POINTER = /^([0-9]+)(#|\/(?:[^~]|~0|~1)*)?$/;
@@ -12307,8 +12307,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path3, errorMaps, issueData } = params;
-  const fullPath = [...path3, ...issueData.path || []];
+  const { data, path: path2, errorMaps, issueData } = params;
+  const fullPath = [...path2, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -12424,11 +12424,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path3, key) {
+  constructor(parent, value, path2, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path3;
+    this._path = path2;
     this._key = key;
   }
   get path() {
@@ -19398,48 +19398,39 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // server.ts
-var fs = __toESM(require("fs/promises"));
-var import_fs = __toESM(require("fs"));
-var import_path = __toESM(require("path"));
-var rulesDir = import_path.default.join(process.cwd(), "docs/rules");
-var categories = import_fs.default.readdirSync(rulesDir).filter((dir) => import_fs.default.statSync(import_path.default.join(rulesDir, dir)).isDirectory());
-function extractDescription(fileContent) {
-  const frontmatterMatch = fileContent.match(/---\s*\n([\s\S]*?)\n---/);
-  if (frontmatterMatch) {
-    const frontmatter = frontmatterMatch[1];
-    const descriptionMatch = frontmatter.match(/description:\s*(.+)/);
-    return descriptionMatch ? descriptionMatch[1].trim() : "A development rule";
-  }
-  return "A development rule";
-}
-var universalDescription = "This MCP server provides access to type-safe development rules for modern web development. Universal core principles: ";
-var coreDir = import_path.default.join(rulesDir, "core");
-if (import_fs.default.existsSync(coreDir)) {
-  const coreFiles = import_fs.default.readdirSync(coreDir).filter((f) => f.endsWith(".mdc"));
-  const coreSummaries = coreFiles.map((file) => {
-    const filePath = import_path.default.join(coreDir, file);
-    const fileContent = import_fs.default.readFileSync(filePath, "utf-8");
-    return extractDescription(fileContent);
-  });
-  universalDescription += coreSummaries.join("; ") + ". ";
-}
-universalDescription += "General practices: Enforce single responsibility, keep files/functions concise (<300 lines/file, <50 lines/function), use immutability, validate inputs/security at boundaries, plan with peer review/CI, avoid globals/mutables/hardcoded secrets. Tools are dynamically registered for each rule file in docs/rules/. Each tool is named 'read_[category]_[rule_name]' (e.g., 'read_core_general') and returns the full rule content when called (parameterless). Always call the relevant tool to review the rule before applying it in your work.";
+var KNOWN_RULES = {
+  ai: ["ai-sdk-integration"],
+  backend: ["serverless", "trpc"],
+  core: ["functional", "general", "perfect-execution", "planning-first", "serena-integration", "testing", "typescript"],
+  data: ["drizzle", "id-generation", "redis"],
+  devops: ["biome", "observability"],
+  framework: ["flutter", "nextjs", "react", "sveltekit", "zustand"],
+  misc: ["response-language", "tool-usage"],
+  security: ["security-auth"],
+  ui: ["pandacss"]
+};
+var universalDescription = "This MCP server provides access to type-safe development rules for modern web development. Universal core principles: Enforce single responsibility, keep files/functions concise (<300 lines/file, <50 lines/function), use immutability, validate inputs/security at boundaries, plan with peer review/CI, avoid globals/mutables/hardcoded secrets. Tools are registered for each rule file. Each tool is named 'read_[category]_[rule_name]' (e.g., 'read_core_general') and returns the full rule content when called (parameterless). Always call the relevant tool to review the rule before applying it in your work.";
 var server = new McpServer({
   name: "rules-mcp-server",
   version: "1.0.0",
   description: universalDescription
 });
-categories.forEach((category) => {
-  const categoryDir = import_path.default.join(rulesDir, category);
-  if (!import_fs.default.existsSync(categoryDir)) return;
-  const files = import_fs.default.readdirSync(categoryDir).filter((f) => f.endsWith(".mdc"));
-  files.forEach((file) => {
-    const ruleName = file.replace(".mdc", "");
+async function getRuleContent(category, ruleName) {
+  const url = `https://raw.githubusercontent.com/sylphxltd/rules/main/docs/rules/${category}/${ruleName}.mdc`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return await response.text();
+  } catch (error) {
+    return `Rule not found: ${category}/${ruleName}.mdc`;
+  }
+}
+Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
+  rules.forEach((ruleName) => {
     const toolName = `read_${category}_${ruleName}`;
-    const filePath = import_path.default.join(categoryDir, file);
-    const fileContent = import_fs.default.readFileSync(filePath, "utf-8");
-    const ruleDescription = extractDescription(fileContent);
-    const description = `${ruleDescription}. IMPORTANT: Before implementing any changes or code related to this rule, always review the full content returned by this tool to ensure compliance. If you do not remember the details, call this tool first and read the content before proceeding.`;
+    const description = `Read the ${ruleName} rule from the ${category} category. IMPORTANT: Before implementing any changes or code related to this rule, always review the full content returned by this tool to ensure compliance. If you do not remember the details, call this tool first and read the content before proceeding.`;
     server.registerTool(
       toolName,
       {
@@ -19449,10 +19440,10 @@ categories.forEach((category) => {
       },
       async (args, extra) => {
         try {
-          const content = await fs.readFile(filePath, "utf-8");
+          const content = await getRuleContent(category, ruleName);
           return { content: [{ type: "text", text: content }] };
         } catch (err) {
-          return { content: [{ type: "text", text: `Rule not found: ${category}/${file}` }] };
+          return { content: [{ type: "text", text: `Error loading rule: ${category}/${ruleName}` }] };
         }
       }
     );
@@ -19556,9 +19547,10 @@ var StdioServerTransport = class {
 };
 
 // sync.ts
-var import_fs2 = __toESM(require("fs"));
-var import_path2 = __toESM(require("path"));
+var import_fs = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
 var import_https = __toESM(require("https"));
+var import_readline = __toESM(require("readline"));
 var import_cli_progress = __toESM(require_cli_progress());
 var import_cli_table3 = __toESM(require_cli_table3());
 var colors = {
@@ -19610,6 +19602,37 @@ function getSupportedAgents() {
 function getAgentConfig(agent) {
   return AGENT_CONFIGS[agent];
 }
+function promptForAgent() {
+  return new Promise((resolve) => {
+    const agents = getSupportedAgents();
+    const rl = import_readline.default.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    console.log("\n\u{1F680} Rules Sync Tool");
+    console.log("================");
+    console.log("Please select your AI agent:");
+    console.log("");
+    agents.forEach((agent, index) => {
+      const config = getAgentConfig(agent);
+      console.log(`${index + 1}. ${config.name} - ${config.description}`);
+    });
+    console.log("");
+    const askChoice = () => {
+      rl.question("Enter your choice (1-" + agents.length + "): ", (answer) => {
+        const choice = parseInt(answer.trim());
+        if (choice >= 1 && choice <= agents.length) {
+          rl.close();
+          resolve(agents[choice - 1]);
+        } else {
+          console.log(`\u274C Invalid choice. Please enter a number between 1 and ${agents.length}.`);
+          askChoice();
+        }
+      });
+    };
+    askChoice();
+  });
+}
 function detectAgentTool() {
   const cwd = process.cwd();
   const agentArg = process.argv.find((arg) => arg.startsWith("--agent="));
@@ -19621,13 +19644,13 @@ function detectAgentTool() {
   }
   for (const agent of getSupportedAgents()) {
     const config = getAgentConfig(agent);
-    if (import_fs2.default.existsSync(import_path2.default.join(cwd, config.dir))) {
+    if (import_fs.default.existsSync(import_path.default.join(cwd, config.dir))) {
       return agent;
     }
   }
   for (const agent of getSupportedAgents()) {
     const config = getAgentConfig(agent);
-    if (import_fs2.default.existsSync(import_path2.default.join(cwd, config.dir, "rules"))) {
+    if (import_fs.default.existsSync(import_path.default.join(cwd, config.dir, "rules"))) {
       return agent;
     }
   }
@@ -19635,7 +19658,7 @@ function detectAgentTool() {
 }
 function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
-    const file = import_fs2.default.createWriteStream(destPath);
+    const file = import_fs.default.createWriteStream(destPath);
     import_https.default.get(url, (response) => {
       response.pipe(file);
       file.on("finish", () => {
@@ -19643,7 +19666,7 @@ function downloadFile(url, destPath) {
         resolve();
       });
     }).on("error", (err) => {
-      import_fs2.default.unlink(destPath, () => {
+      import_fs.default.unlink(destPath, () => {
       });
       reject(err);
     });
@@ -19651,10 +19674,10 @@ function downloadFile(url, destPath) {
 }
 function getLocalFileInfo(filePath) {
   try {
-    if (!import_fs2.default.existsSync(filePath)) {
+    if (!import_fs.default.existsSync(filePath)) {
       return null;
     }
-    const content = import_fs2.default.readFileSync(filePath, "utf8");
+    const content = import_fs.default.readFileSync(filePath, "utf8");
     return {
       content,
       exists: true
@@ -19664,14 +19687,14 @@ function getLocalFileInfo(filePath) {
   }
 }
 async function getRuleFiles() {
-  const docsRulesDir = import_path2.default.join(process.cwd(), "docs", "rules");
+  const docsRulesDir = import_path.default.join(process.cwd(), "docs", "rules");
   const files = [];
   try {
-    const categories2 = import_fs2.default.readdirSync(docsRulesDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
-    for (const category of categories2) {
-      const categoryDir = import_path2.default.join(docsRulesDir, category);
+    const categories = import_fs.default.readdirSync(docsRulesDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
+    for (const category of categories) {
+      const categoryDir = import_path.default.join(docsRulesDir, category);
       try {
-        const categoryFiles = import_fs2.default.readdirSync(categoryDir).filter((file) => file.endsWith(".mdc")).map((file) => `rules/${category}/${file}`);
+        const categoryFiles = import_fs.default.readdirSync(categoryDir).filter((file) => file.endsWith(".mdc")).map((file) => `rules/${category}/${file}`);
         files.push(...categoryFiles);
       } catch (error) {
         continue;
@@ -19728,31 +19751,31 @@ function stripYamlFrontMatter(content) {
   }
   return content;
 }
-async function processFile(filePath, rulesDir2, fileExtension, processContent, baseUrl) {
+async function processFile(filePath, rulesDir, fileExtension, processContent, baseUrl) {
   try {
     const pathParts = filePath.split("/");
     const category = pathParts[1];
-    const baseFileName = import_path2.default.basename(filePath, ".mdc");
-    const relativePath = import_path2.default.join(category, baseFileName + fileExtension);
-    const destPath = import_path2.default.join(rulesDir2, relativePath);
-    const destDir = import_path2.default.dirname(destPath);
-    import_fs2.default.mkdirSync(destDir, { recursive: true });
+    const baseFileName = import_path.default.basename(filePath, ".mdc");
+    const relativePath = import_path.default.join(category, baseFileName + fileExtension);
+    const destPath = import_path.default.join(rulesDir, relativePath);
+    const destDir = import_path.default.dirname(destPath);
+    import_fs.default.mkdirSync(destDir, { recursive: true });
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
     const url = `${baseUrl}${filePath}`;
     await downloadFile(url, destPath);
-    let content = import_fs2.default.readFileSync(destPath, "utf8");
+    let content = import_fs.default.readFileSync(destPath, "utf8");
     content = processContent(content);
     const contentChanged = !localInfo || processContent(localInfo.content) !== content;
     if (contentChanged) {
-      import_fs2.default.writeFileSync(destPath, content, "utf8");
+      import_fs.default.writeFileSync(destPath, content, "utf8");
       results.push({
         file: relativePath,
         status: isNew ? "added" : "updated",
         action: isNew ? "Added" : "Updated"
       });
     } else {
-      import_fs2.default.writeFileSync(destPath, content, "utf8");
+      import_fs.default.writeFileSync(destPath, content, "utf8");
       results.push({
         file: relativePath,
         status: "current",
@@ -19783,7 +19806,14 @@ async function syncRules(options) {
       throw new Error(`Unknown agent: ${agent}`);
     }
   } else {
-    agent = detectAgentTool();
+    const detectedAgent = detectAgentTool();
+    if (detectedAgent !== "cursor") {
+      agent = detectedAgent;
+      console.log(`\u{1F4DD} Detected agent: ${getAgentConfig(agent).name}`);
+    } else {
+      console.log("\u{1F4DD} No agent detected or defaulting to Cursor.");
+      agent = await promptForAgent();
+    }
   }
   const config = getAgentConfig(agent);
   if (!config) {
@@ -19791,15 +19821,15 @@ async function syncRules(options) {
     log(`Supported agents: ${getSupportedAgents().join(", ")}`, "yellow");
     throw new Error(`Unknown agent: ${agent}`);
   }
-  const rulesDir2 = import_path2.default.join(cwd, config.dir, "rules");
+  const rulesDir = import_path.default.join(cwd, config.dir, "rules");
   const fileExtension = config.extension;
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content) => content;
-  import_fs2.default.mkdirSync(rulesDir2, { recursive: true });
+  import_fs.default.mkdirSync(rulesDir, { recursive: true });
   const ruleFiles = await getRuleFiles();
   console.log(`\u{1F680} Rules Sync Tool`);
   console.log(`================`);
   console.log(`\u{1F4DD} Agent: ${config.name}`);
-  console.log(`\u{1F4C1} Target: ${rulesDir2}`);
+  console.log(`\u{1F4C1} Target: ${rulesDir}`);
   console.log(`\u{1F4CB} Files: ${ruleFiles.length}`);
   console.log("");
   if (options.dryRun) {
@@ -19821,7 +19851,7 @@ async function syncRules(options) {
   }
   for (const batch of batches) {
     const promises = batch.map(
-      (filePath) => processFile(filePath, rulesDir2, fileExtension, processContent, baseUrl)
+      (filePath) => processFile(filePath, rulesDir, fileExtension, processContent, baseUrl)
     );
     await Promise.all(promises);
   }
@@ -19879,7 +19909,7 @@ ${title} (${items.length}):`);
   }
   console.log(`
 \u{1F389} Sync completed!`);
-  console.log(`\u{1F4CD} Location: ${rulesDir2}`);
+  console.log(`\u{1F4CD} Location: ${rulesDir}`);
   const summary = [];
   if (added.length > 0) summary.push(`${added.length} added`);
   if (updated.length > 0) summary.push(`${updated.length} updated`);

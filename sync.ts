@@ -4,6 +4,7 @@ import path from 'path';
 import https from 'https';
 import crypto from 'crypto';
 import { execSync } from 'child_process';
+import readline from 'readline';
 
 // CLI and UI libraries
 import { Command } from 'commander';
@@ -24,7 +25,7 @@ function log(message: string, color: keyof typeof colors = 'reset') {
 }
 
 // Global state
-let progressBar: cliProgress.SingleBar<any, any>;
+let progressBar: InstanceType<typeof cliProgress.SingleBar>;
 let results: Array<{file: string, status: string, action: string}> = [];
 
 // Agent configurations - Add new agents here for easy extensibility
@@ -71,6 +72,44 @@ function getSupportedAgents(): AgentType[] {
 // Get agent config
 function getAgentConfig(agent: AgentType) {
   return AGENT_CONFIGS[agent];
+}
+
+// Prompt user to select an agent interactively
+function promptForAgent(): Promise<AgentType> {
+  return new Promise((resolve) => {
+    const agents = getSupportedAgents();
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    console.log('\n🚀 Rules Sync Tool');
+    console.log('================');
+    console.log('Please select your AI agent:');
+    console.log('');
+
+    agents.forEach((agent, index) => {
+      const config = getAgentConfig(agent);
+      console.log(`${index + 1}. ${config.name} - ${config.description}`);
+    });
+
+    console.log('');
+
+    const askChoice = () => {
+      rl.question('Enter your choice (1-' + agents.length + '): ', (answer) => {
+        const choice = parseInt(answer.trim());
+        if (choice >= 1 && choice <= agents.length) {
+          rl.close();
+          resolve(agents[choice - 1]);
+        } else {
+          console.log(`❌ Invalid choice. Please enter a number between 1 and ${agents.length}.`);
+          askChoice();
+        }
+      });
+    };
+
+    askChoice();
+  });
 }
 
 // Detect which agent tool is being used
@@ -303,7 +342,17 @@ export async function syncRules(options: { agent?: string, verbose?: boolean, dr
       throw new Error(`Unknown agent: ${agent}`);
     }
   } else {
-    agent = detectAgentTool();
+    // Try to detect agent first
+    const detectedAgent = detectAgentTool();
+    if (detectedAgent !== 'cursor') {
+      // If we detected something other than cursor, use it
+      agent = detectedAgent;
+      console.log(`📝 Detected agent: ${getAgentConfig(agent).name}`);
+    } else {
+      // Force user to choose if we can't detect or defaulted to cursor
+      console.log('📝 No agent detected or defaulting to Cursor.');
+      agent = await promptForAgent();
+    }
   }
 
   const config = getAgentConfig(agent);
