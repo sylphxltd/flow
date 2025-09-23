@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "bin": {
-    "rules": "scripts/sync-rules.js",
+    "rules": "scripts/sync-rules.cjs",
     "rules-mcp": "index.js"
   },
   "dependencies": {
