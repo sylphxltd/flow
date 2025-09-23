@@ -1,6 +1,65 @@
 #!/usr/bin/env node
-import server from "./server.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { Command } from 'commander';
+import server from './server.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { syncRules } from './sync.js';
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+const program = new Command();
+
+program
+  .name('rules')
+  .description('Type-safe development rules CLI')
+  .version('1.0.0');
+
+program
+  .command('sync')
+  .description('Sync development rules to your project')
+  .option('--agent <type>', 'Force specific agent (cursor, kilocode, roocode)')
+  .option('--verbose', 'Show detailed output')
+  .option('--dry-run', 'Show what would be done without making changes')
+  .action(async (options) => {
+    try {
+      await syncRules(options);
+    } catch (error) {
+      console.error(`❌ Error: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('mcp')
+  .description('Start the MCP server')
+  .action(async () => {
+    try {
+      const transport = new StdioServerTransport();
+      await server.connect(transport);
+    } catch (error) {
+      console.error(`❌ MCP Server Error: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+// Default action when no command is provided
+program.action(() => {
+  console.log('🚀 Rules CLI - Type-safe development rules');
+  console.log('==========================================');
+  console.log('');
+  console.log('Available commands:');
+  console.log('  sync    Sync development rules to your project');
+  console.log('  mcp     Start the MCP server');
+  console.log('');
+  console.log('Examples:');
+  console.log('  rules sync');
+  console.log('  rules mcp');
+  console.log('  rules sync --agent cursor');
+  console.log('  rules sync --dry-run');
+  console.log('');
+  console.log('Run "rules <command> --help" for more information about a command.');
+});
+
+// If no arguments provided, show help
+if (process.argv.length === 2) {
+  program.help();
+}
+
+program.parse();
