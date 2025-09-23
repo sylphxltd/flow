@@ -2,14 +2,18 @@
   "name": "@sylphxltd/rules",
   "version": "1.0.0",
   "description": "Type-safe development rules for modern web development",
-  "main": "scripts/sync-rules.js",
+  "type": "module",
+  "main": "index.js",
   "bin": {
-    "rules": "scripts/sync-rules.js"
+    "rules": "scripts/sync-rules.js",
+    "rules-mcp": "index.js"
   },
   "dependencies": {
-    "commander": "^12.0.0",
+    "@modelcontextprotocol/sdk": "^1.18.1",
     "cli-progress": "^3.12.0",
-    "cli-table3": "^0.6.3"
+    "cli-table3": "^0.6.3",
+    "commander": "^12.0.0",
+    "zod": "^3.25.76"
   },
   "repository": {
     "type": "git",
