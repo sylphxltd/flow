@@ -1,0 +1,24 @@
+---
+description: Enforce precise problem-solving by confirming issues thoroughly, targeting root causes, and avoiding excessive fallbacks or error handling.
+globs: []
+alwaysApply: true
+---
+
+# Precise Problem Fixing
+
+## Core
+- Always confirm and understand the problem fully before attempting fixes—analyze symptoms, root causes, and context.
+- If unclear, investigate codebase, logs, docs, or test scenarios to pinpoint the exact issue.
+- Target fixes directly at the root cause; do not add superficial workarounds.
+
+## Avoid Over-Engineering
+- Prohibit adding unnecessary fallbacks, try-catch blocks, or error handling unless directly addressing the confirmed issue.
+- No "defensive programming" for unverified edge cases; focus on the specific problem.
+- Ensure fixes are minimal and precise—remove or avoid redundant checks that bloat code.
+
+## Resolution Approach
+- Diagnose: Use debugging, logging, or tools to verify the problem.
+- Fix: Implement the most direct solution that resolves the issue without side effects.
+- Validate: Test the fix to confirm it targets only the problem, maintaining clean, efficient code.
+
+This rule promotes efficient, targeted code maintenance by emphasizing accurate diagnosis over broad safeguards.

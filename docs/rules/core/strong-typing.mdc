@@ -1,6 +1,6 @@
 ---
 description: Enforce strong TypeScript typing by assuming user types are correct, preserving them, and avoiding loose casts or bypasses.
-globs: ["**/*.{ts,tsx}"]
+globs: []
 alwaysApply: true
 ---
 
