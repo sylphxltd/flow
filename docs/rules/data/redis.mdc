@@ -28,14 +28,16 @@ alwaysApply: true
 ## Reactive Streams Implementation
 
 ### Producer Pattern
-- XADD event to Streams for persistence/durability and real-time delivery.
-- Single source of truth: Streams handle both persistence and real-time.
+- XADD event to Streams for persistence/durability.
+- PUBLISH to Pub/Sub channels for immediate fan-out.
+- Combine both: Streams for replay, Pub/Sub for real-time delivery.
 
 ### Relay Pattern
-- XREAD with blocking (no timeout) for real-time event consumption.
-- Use cursor-based reading for backlog replay and live updates.
-- Retry XREAD immediately on failure without sleep delays.
+- XREAD with cursor for backlog replay from Streams (non-blocking).
+- Safe transition to Pub/Sub when caught up (avoid message loss with deduplication).
+- Subscribe to Pub/Sub for new real-time events.
 - Push to frontend via SSE/WebSocket with entry IDs.
+- Implement deduplication to prevent missed messages during transition.
 
 ### Client Pattern
 - SSE/WebSocket connection for real-time events.
