@@ -4,6 +4,9 @@
   "description": "Type-safe development rules for modern web development",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "rules-mcp": "dist/index.js"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",
     "cli-progress": "^3.12.0",
