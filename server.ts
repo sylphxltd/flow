@@ -9,7 +9,7 @@ const rulesDir = path.join(process.cwd(), "docs/rules");
 const categories = fsSync.readdirSync(rulesDir).filter(dir => fsSync.statSync(path.join(rulesDir, dir)).isDirectory());
 
 // Function to extract description from frontmatter
-function extractDescription(fileContent) {
+function extractDescription(fileContent: string): string {
   const frontmatterMatch = fileContent.match(/---\s*\n([\s\S]*?)\n---/);
   if (frontmatterMatch) {
     const frontmatter = frontmatterMatch[1];
@@ -40,12 +40,12 @@ const server = new McpServer({
 });
 
 // Dynamically register one tool per .mdc file
-categories.forEach((category) => {
+categories.forEach((category: string) => {
   const categoryDir = path.join(rulesDir, category);
   if (!fsSync.existsSync(categoryDir)) return;
 
   const files = fsSync.readdirSync(categoryDir).filter(f => f.endsWith('.mdc'));
-  files.forEach((file) => {
+  files.forEach((file: string) => {
     const ruleName = file.replace('.mdc', '');
     const toolName = `read_${category}_${ruleName}`;
     const filePath = path.join(categoryDir, file);
@@ -58,14 +58,14 @@ categories.forEach((category) => {
       {
         title: `Read ${ruleName} Rule (${category})`,
         description: description,
-        inputSchema: z.object({})
+        inputSchema: z.object({}) as any
       },
-      async () => {
+      async (args: any, extra: any) => {
         try {
           const content = await fs.readFile(filePath, "utf-8");
-          return { content: [{ type: "text", text: content }] };
+          return { content: [{ type: "text" as const, text: content }] };
         } catch (err) {
-          return { content: [{ type: "text", text: `Rule not found: ${category}/${file}` }] };
+          return { content: [{ type: "text" as const, text: `Rule not found: ${category}/${file}` }] };
         }
       }
     );

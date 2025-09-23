@@ -3,11 +3,7 @@
   "version": "1.0.0",
   "description": "Type-safe development rules for modern web development",
   "type": "module",
-  "main": "index.js",
-  "bin": {
-    "rules": "scripts/sync-rules.cjs",
-    "rules-mcp": "index.js"
-  },
+  "main": "dist/index.js",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",
     "cli-progress": "^3.12.0",
@@ -35,5 +31,16 @@
   "bugs": {
     "url": "https://github.com/sylphxltd/rules/issues"
   },
-  "homepage": "https://github.com/sylphxltd/rules#readme"
+  "homepage": "https://github.com/sylphxltd/rules#readme",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx index.ts",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
 }
