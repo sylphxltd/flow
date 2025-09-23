@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import server from './server.js';
+import server from './server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { syncRules } from './sync.js';
+import { syncRules } from './sync';
 
 const program = new Command();
 
