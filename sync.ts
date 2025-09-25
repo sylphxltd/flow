@@ -181,7 +181,7 @@ function getLocalFileInfo(filePath: string) {
   }
 }
 
-// Get list of rule files from local docs directory
+// Get list of rule files from local docs/rules directory
 async function getRuleFiles(): Promise<string[]> {
   const docsRulesDir = path.join(process.cwd(), 'docs', 'rules');
   const files: string[] = [];
@@ -208,44 +208,9 @@ async function getRuleFiles(): Promise<string[]> {
       }
     }
   } catch (error) {
-    // If local directory reading fails, fall back to hardcoded list
-    console.warn('⚠️  Could not read local rules directory, using fallback list');
-    return getFallbackRuleFiles();
-  }
-
-  return files;
-}
-
-// Fallback hardcoded list (in case local directory reading fails)
-function getFallbackRuleFiles(): string[] {
-  const ruleCategories = [
-    'ai', 'backend', 'core', 'data', 'devops', 'framework', 'misc', 'security', 'ui'
-  ];
-
-  const files: string[] = [];
-
-  // Add README
-  files.push('README.md');
-
-  // Add known files from each category
-  const knownFiles: Record<string, string[]> = {
-    ai: ['ai-sdk-integration.mdc'],
-    backend: ['serverless.mdc', 'trpc.mdc'],
-    core: ['functional.mdc', 'general.mdc', 'perfect-execution.mdc', 'planning-first.mdc', 'serena-integration.mdc', 'testing.mdc', 'typescript.mdc'],
-    data: ['drizzle.mdc', 'id-generation.mdc', 'redis.mdc'],
-    devops: ['biome.mdc', 'observability.mdc'],
-    framework: ['flutter.mdc', 'nextjs.mdc', 'react.mdc', 'sveltekit.mdc', 'zustand.mdc'],
-    misc: ['response-language.mdc', 'tool-usage.mdc'],
-    security: ['security-auth.mdc'],
-    ui: ['pandacss.mdc']
-  };
-
-  for (const category of ruleCategories) {
-    if (knownFiles[category]) {
-      for (const file of knownFiles[category]) {
-        files.push(`rules/${category}/${file}`);
-      }
-    }
+    // If local directory reading fails, return empty array
+    console.warn('⚠️  Could not read local rules directory, returning empty list');
+    return [];
   }
 
   return files;
