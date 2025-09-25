@@ -20269,22 +20269,39 @@ async function syncRules(options) {
   const rulesDir = import_path.default.join(cwd, config.dir, "rules");
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content) => content;
   if (options.clear && import_fs.default.existsSync(rulesDir)) {
-    console.log(`\u{1F9F9} Clearing existing rules in ${rulesDir}...`);
+    console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
+    let expectedFiles;
+    if (options.merge) {
+      expectedFiles = /* @__PURE__ */ new Set([`all-rules${config.extension}`]);
+    } else {
+      const ruleFiles2 = await getRuleFiles();
+      expectedFiles = new Set(
+        ruleFiles2.map((filePath) => {
+          const pathParts = filePath.split("/");
+          const category = pathParts[1];
+          const baseFileName = import_path.default.basename(filePath, ".mdc");
+          return config.flatten ? `${category}-${baseFileName}${config.extension}` : import_path.default.join(category, `${baseFileName}${config.extension}`);
+        })
+      );
+    }
     const existingFiles = import_fs.default.readdirSync(rulesDir, { recursive: true }).filter((file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))).map((file) => import_path.default.join(rulesDir, file));
     for (const file of existingFiles) {
-      try {
-        import_fs.default.unlinkSync(file);
-        results.push({
-          file: import_path.default.relative(rulesDir, file),
-          status: "removed",
-          action: "Removed"
-        });
-      } catch (error) {
-        results.push({
-          file: import_path.default.relative(rulesDir, file),
-          status: "error",
-          action: `Error removing: ${error.message}`
-        });
+      const relativePath = import_path.default.relative(rulesDir, file);
+      if (!expectedFiles.has(relativePath)) {
+        try {
+          import_fs.default.unlinkSync(file);
+          results.push({
+            file: relativePath,
+            status: "removed",
+            action: "Removed"
+          });
+        } catch (error) {
+          results.push({
+            file: relativePath,
+            status: "error",
+            action: `Error removing: ${error.message}`
+          });
+        }
       }
     }
   }
@@ -20295,37 +20312,98 @@ async function syncRules(options) {
   console.log(`\u{1F4DD} Agent: ${config.name}`);
   console.log(`\u{1F4C1} Target: ${rulesDir}`);
   console.log(`\u{1F4CB} Files: ${ruleFiles.length}`);
+  if (options.merge) {
+    console.log(`\u{1F517} Mode: Merge all rules into single file`);
+  }
   console.log("");
   if (options.dryRun) {
     console.log("\u2705 Dry run completed - no files were modified");
     return;
   }
-  const progressBar = new import_cli_progress.default.SingleBar({
-    format: "\u{1F4CB} Processing | {bar} | {percentage}% | {value}/{total} files | {file}",
-    barCompleteChar: "\u2588",
-    barIncompleteChar: "\u2591",
-    hideCursor: true
-  });
-  progressBar.start(ruleFiles.length, 0, { file: "Starting..." });
-  const batchSize = 5;
-  const batches = [];
-  for (let i = 0; i < ruleFiles.length; i += batchSize) {
-    batches.push(ruleFiles.slice(i, i + batchSize));
+  if (options.merge) {
+    const mergedFileName = `all-rules${config.extension}`;
+    const mergedFilePath = import_path.default.join(rulesDir, mergedFileName);
+    console.log(`\u{1F4CB} Merging ${ruleFiles.length} files into ${mergedFileName}...`);
+    let mergedContent = `# Development Rules - Complete Collection
+
+`;
+    mergedContent += `Generated on: ${(/* @__PURE__ */ new Date()).toISOString()}
+
+`;
+    mergedContent += `---
+
+`;
+    for (const filePath of ruleFiles) {
+      try {
+        const scriptDir = __dirname;
+        const sourcePath = import_path.default.join(scriptDir, "..", "docs", filePath);
+        let content = import_fs.default.readFileSync(sourcePath, "utf8");
+        content = processContent(content);
+        const pathParts = filePath.split("/");
+        const category = pathParts[1];
+        const baseFileName = import_path.default.basename(filePath, ".mdc");
+        mergedContent += `## ${category.toUpperCase()}: ${baseFileName.replace(/-/g, " ").toUpperCase()}
+
+`;
+        mergedContent += `${content}
+
+`;
+        mergedContent += `---
+
+`;
+      } catch (error) {
+        results.push({
+          file: filePath,
+          status: "error",
+          action: `Error reading: ${error.message}`
+        });
+      }
+    }
+    const localInfo = getLocalFileInfo(mergedFilePath);
+    const contentChanged = !localInfo || localInfo.content !== mergedContent;
+    if (contentChanged) {
+      import_fs.default.writeFileSync(mergedFilePath, mergedContent, "utf8");
+      results.push({
+        file: mergedFileName,
+        status: localInfo ? "updated" : "added",
+        action: localInfo ? "Updated" : "Created"
+      });
+    } else {
+      results.push({
+        file: mergedFileName,
+        status: "current",
+        action: "Already current"
+      });
+    }
+    displayResults(results, rulesDir, config.name);
+  } else {
+    const progressBar = new import_cli_progress.default.SingleBar({
+      format: "\u{1F4CB} Processing | {bar} | {percentage}% | {value}/{total} files | {file}",
+      barCompleteChar: "\u2588",
+      barIncompleteChar: "\u2591",
+      hideCursor: true
+    });
+    progressBar.start(ruleFiles.length, 0, { file: "Starting..." });
+    const batchSize = 5;
+    const batches = [];
+    for (let i = 0; i < ruleFiles.length; i += batchSize) {
+      batches.push(ruleFiles.slice(i, i + batchSize));
+    }
+    for (const batch of batches) {
+      const promises = batch.map(
+        (filePath) => processFile(filePath, rulesDir, config.extension, processContent, config.flatten, results, progressBar)
+      );
+      await Promise.all(promises);
+    }
+    progressBar.stop();
+    displayResults(results, rulesDir, config.name);
   }
-  for (const batch of batches) {
-    const promises = batch.map(
-      (filePath) => processFile(filePath, rulesDir, config.extension, processContent, config.flatten, results, progressBar)
-    );
-    await Promise.all(promises);
-  }
-  progressBar.stop();
-  displayResults(results, rulesDir, config.name);
 }
 
 // index.ts
 var program2 = new Command();
 program2.name("rules").description("Type-safe development rules CLI").version("1.0.0");
-program2.command("sync").description("Sync development rules to your project").option("--agent <type>", "Force specific agent (cursor, kilocode, roocode)").option("--verbose", "Show detailed output").option("--dry-run", "Show what would be done without making changes").option("--clear", "Clear all existing rules before syncing").action(async (options) => {
+program2.command("sync").description("Sync development rules to your project").option("--agent <type>", "Force specific agent (cursor, kilocode, roocode)").option("--verbose", "Show detailed output").option("--dry-run", "Show what would be done without making changes").option("--clear", "Clear obsolete rules before syncing").option("--merge", "Merge all rules into a single file").action(async (options) => {
   try {
     await syncRules(options);
   } catch (error) {
@@ -20362,6 +20440,7 @@ program2.action(() => {
   console.log("  rules sync --agent cursor");
   console.log("  rules sync --dry-run");
   console.log("  rules sync --clear");
+  console.log("  rules sync --merge");
   console.log("");
   console.log('Run "rules <command> --help" for more information about a command.');
 });

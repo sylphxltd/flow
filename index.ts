@@ -15,7 +15,8 @@ program
   .option('--agent <type>', 'Force specific agent (cursor, kilocode, roocode)')
   .option('--verbose', 'Show detailed output')
   .option('--dry-run', 'Show what would be done without making changes')
-  .option('--clear', 'Clear all existing rules before syncing')
+  .option('--clear', 'Clear obsolete rules before syncing')
+  .option('--merge', 'Merge all rules into a single file')
   .action(async (options) => {
     try {
       await syncRules(options);
@@ -62,6 +63,7 @@ program.action(() => {
   console.log('  rules sync --agent cursor');
   console.log('  rules sync --dry-run');
   console.log('  rules sync --clear');
+  console.log('  rules sync --merge');
   console.log('');
   console.log('Run "rules <command> --help" for more information about a command.');
 });

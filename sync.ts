@@ -338,7 +338,7 @@ function displayResults(results: Array<{file: string, status: string, action: st
 // MAIN SYNC FUNCTION
 // ============================================================================
 
-export async function syncRules(options: { agent?: string; verbose?: boolean; dryRun?: boolean; clear?: boolean }): Promise<void> {
+export async function syncRules(options: { agent?: string; verbose?: boolean; dryRun?: boolean; clear?: boolean; merge?: boolean }): Promise<void> {
   const cwd = process.cwd();
 
   // Initialize results array
@@ -368,27 +368,51 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
   const rulesDir = path.join(cwd, config.dir, 'rules');
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content: string) => content;
 
-  // Clear existing rules if requested
+  // Clear obsolete rules if requested
   if (options.clear && fs.existsSync(rulesDir)) {
-    console.log(`🧹 Clearing existing rules in ${rulesDir}...`);
+    console.log(`🧹 Clearing obsolete rules in ${rulesDir}...`);
+
+    let expectedFiles: Set<string>;
+
+    if (options.merge) {
+      // In merge mode, only expect the merged file
+      expectedFiles = new Set([`all-rules${config.extension}`]);
+    } else {
+      // Get source files for normal mode
+      const ruleFiles = await getRuleFiles();
+      expectedFiles = new Set(
+        ruleFiles.map(filePath => {
+          const pathParts = filePath.split('/');
+          const category = pathParts[1];
+          const baseFileName = path.basename(filePath, '.mdc');
+          return config.flatten ? `${category}-${baseFileName}${config.extension}` : path.join(category, `${baseFileName}${config.extension}`);
+        })
+      );
+    }
+
+    // Get existing files
     const existingFiles = fs.readdirSync(rulesDir, { recursive: true })
       .filter((file) => typeof file === 'string' && (file.endsWith('.mdc') || file.endsWith('.md')))
       .map((file) => path.join(rulesDir, file as string));
 
+    // Only remove files that are not expected
     for (const file of existingFiles) {
-      try {
-        fs.unlinkSync(file);
-        results.push({
-          file: path.relative(rulesDir, file),
-          status: 'removed',
-          action: 'Removed'
-        });
-      } catch (error: any) {
-        results.push({
-          file: path.relative(rulesDir, file),
-          status: 'error',
-          action: `Error removing: ${error.message}`
-        });
+      const relativePath = path.relative(rulesDir, file);
+      if (!expectedFiles.has(relativePath)) {
+        try {
+          fs.unlinkSync(file);
+          results.push({
+            file: relativePath,
+            status: 'removed',
+            action: 'Removed'
+          });
+        } catch (error: any) {
+          results.push({
+            file: relativePath,
+            status: 'error',
+            action: `Error removing: ${error.message}`
+          });
+        }
       }
     }
   }
@@ -405,6 +429,9 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
   console.log(`📝 Agent: ${config.name}`);
   console.log(`📁 Target: ${rulesDir}`);
   console.log(`📋 Files: ${ruleFiles.length}`);
+  if (options.merge) {
+    console.log(`🔗 Mode: Merge all rules into single file`);
+  }
   console.log('');
 
   if (options.dryRun) {
@@ -412,30 +439,87 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
     return;
   }
 
-  // Setup progress bar
-  const progressBar = new cliProgress.SingleBar({
-    format: '📋 Processing | {bar} | {percentage}% | {value}/{total} files | {file}',
-    barCompleteChar: '\u2588',
-    barIncompleteChar: '\u2591',
-    hideCursor: true
-  });
+  if (options.merge) {
+    // Merge all rules into a single file
+    const mergedFileName = `all-rules${config.extension}`;
+    const mergedFilePath = path.join(rulesDir, mergedFileName);
 
-  progressBar.start(ruleFiles.length, 0, { file: 'Starting...' });
+    console.log(`📋 Merging ${ruleFiles.length} files into ${mergedFileName}...`);
 
-  // Process files in batches
-  const batchSize = 5;
-  const batches: string[][] = [];
-  for (let i = 0; i < ruleFiles.length; i += batchSize) {
-    batches.push(ruleFiles.slice(i, i + batchSize));
+    let mergedContent = `# Development Rules - Complete Collection\n\n`;
+    mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
+    mergedContent += `---\n\n`;
+
+    for (const filePath of ruleFiles) {
+      try {
+        const scriptDir = __dirname;
+        const sourcePath = path.join(scriptDir, '..', 'docs', filePath);
+        let content = fs.readFileSync(sourcePath, 'utf8');
+        content = processContent(content);
+
+        const pathParts = filePath.split('/');
+        const category = pathParts[1];
+        const baseFileName = path.basename(filePath, '.mdc');
+
+        mergedContent += `## ${category.toUpperCase()}: ${baseFileName.replace(/-/g, ' ').toUpperCase()}\n\n`;
+        mergedContent += `${content}\n\n`;
+        mergedContent += `---\n\n`;
+      } catch (error: any) {
+        results.push({
+          file: filePath,
+          status: 'error',
+          action: `Error reading: ${error.message}`
+        });
+      }
+    }
+
+    // Check if file needs updating
+    const localInfo = getLocalFileInfo(mergedFilePath);
+    const contentChanged = !localInfo || localInfo.content !== mergedContent;
+
+    if (contentChanged) {
+      fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');
+      results.push({
+        file: mergedFileName,
+        status: localInfo ? 'updated' : 'added',
+        action: localInfo ? 'Updated' : 'Created'
+      });
+    } else {
+      results.push({
+        file: mergedFileName,
+        status: 'current',
+        action: 'Already current'
+      });
+    }
+
+    displayResults(results, rulesDir, config.name);
+  } else {
+    // Original file-by-file processing
+    // Setup progress bar
+    const progressBar = new cliProgress.SingleBar({
+      format: '📋 Processing | {bar} | {percentage}% | {value}/{total} files | {file}',
+      barCompleteChar: '\u2588',
+      barIncompleteChar: '\u2591',
+      hideCursor: true
+    });
+
+    progressBar.start(ruleFiles.length, 0, { file: 'Starting...' });
+
+    // Process files in batches
+    const batchSize = 5;
+    const batches: string[][] = [];
+    for (let i = 0; i < ruleFiles.length; i += batchSize) {
+      batches.push(ruleFiles.slice(i, i + batchSize));
+    }
+
+    for (const batch of batches) {
+      const promises = batch.map(filePath =>
+        processFile(filePath, rulesDir, config.extension, processContent, config.flatten, results, progressBar)
+      );
+      await Promise.all(promises);
+    }
+
+    progressBar.stop();
+    displayResults(results, rulesDir, config.name);
   }
-
-  for (const batch of batches) {
-    const promises = batch.map(filePath =>
-      processFile(filePath, rulesDir, config.extension, processContent, config.flatten, results, progressBar)
-    );
-    await Promise.all(promises);
-  }
-
-  progressBar.stop();
-  displayResults(results, rulesDir, config.name);
 }
