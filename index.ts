@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import server from './server';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { syncRules } from './sync';
 
 const program = new Command();
@@ -32,6 +30,10 @@ program
   .action(async () => {
     console.log('🔌 Starting MCP server transport...');
     try {
+      // Lazy load MCP server components only when needed
+      const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
+      const server = (await import('./server')).default;
+
       const transport = new StdioServerTransport();
       console.log('🔗 Connecting server to transport...');
       await server.connect(transport);

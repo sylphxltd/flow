@@ -77,15 +77,18 @@ function getAgentConfig(agent: AgentType) {
   return AGENT_CONFIGS[agent];
 }
 
-// Prompt user to select an agent interactively
-function promptForAgent(): Promise<AgentType> {
-  return new Promise((resolve) => {
-    const agents = getSupportedAgents();
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
+// ============================================================================
+// USER INTERACTION
+// ============================================================================
 
+async function promptForAgent(): Promise<AgentType> {
+  const agents = getSupportedAgents();
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
     console.log('\n🚀 Rules Sync Tool');
     console.log('================');
     console.log('Please select your AI agent:');
@@ -115,11 +118,10 @@ function promptForAgent(): Promise<AgentType> {
   });
 }
 
-// Detect which agent tool is being used
 function detectAgentTool(): AgentType {
   const cwd = process.cwd();
 
-  // First, check for explicit --agent argument (highest priority)
+  // Check for explicit --agent argument (highest priority)
   const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
   if (agentArg) {
     const agent = agentArg.split('=')[1].toLowerCase() as AgentType;
@@ -148,8 +150,11 @@ function detectAgentTool(): AgentType {
   return 'cursor';
 }
 
-// Download file from GitHub
-function downloadFile(url: string, destPath: string): Promise<void> {
+// ============================================================================
+// FILE OPERATIONS
+// ============================================================================
+
+async function downloadFile(url: string, destPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(destPath);
     https.get(url, (response) => {
@@ -165,34 +170,27 @@ function downloadFile(url: string, destPath: string): Promise<void> {
   });
 }
 
-// Check if local file exists and get its info
-function getLocalFileInfo(filePath: string) {
+function getLocalFileInfo(filePath: string): { content: string; exists: true } | null {
   try {
     if (!fs.existsSync(filePath)) {
       return null;
     }
     const content = fs.readFileSync(filePath, 'utf8');
-    return {
-      content: content,
-      exists: true
-    };
-  } catch (error) {
+    return { content, exists: true };
+  } catch {
     return null;
   }
 }
 
-// Get list of rule files from local docs/rules directory
 async function getRuleFiles(): Promise<string[]> {
   const docsRulesDir = path.join(process.cwd(), 'docs', 'rules');
   const files: string[] = [];
 
   try {
-    // Read all category directories
     const categories = fs.readdirSync(docsRulesDir, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
 
-    // Read all .mdc files from each category
     for (const category of categories) {
       const categoryDir = path.join(docsRulesDir, category);
 
@@ -202,13 +200,12 @@ async function getRuleFiles(): Promise<string[]> {
           .map(file => `rules/${category}/${file}`);
 
         files.push(...categoryFiles);
-      } catch (error) {
+      } catch {
         // Skip directories that can't be read
         continue;
       }
     }
-  } catch (error) {
-    // If local directory reading fails, return empty array
+  } catch {
     console.warn('⚠️  Could not read local rules directory, returning empty list');
     return [];
   }
@@ -216,14 +213,11 @@ async function getRuleFiles(): Promise<string[]> {
   return files;
 }
 
-// Strip YAML front matter from content
 function stripYamlFrontMatter(content: string): string {
   const lines = content.split('\n');
   if (lines.length > 0 && lines[0].trim() === '---') {
-    // Find the closing ---
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim() === '---') {
-        // Return content after the front matter
         return lines.slice(i + 1).join('\n').trim();
       }
     }
@@ -231,69 +225,54 @@ function stripYamlFrontMatter(content: string): string {
   return content;
 }
 
-// Process a single file
+// ============================================================================
+// FILE PROCESSING
+// ============================================================================
+
 async function processFile(
   filePath: string,
   rulesDir: string,
   fileExtension: string,
   processContent: (content: string) => string,
   baseUrl: string,
-  flatten: boolean
+  flatten: boolean,
+  results: Array<{file: string, status: string, action: string}>,
+  progressBar: InstanceType<typeof cliProgress.SingleBar>
 ): Promise<boolean> {
   try {
-    // rules/category/file.mdc -> category/file.mdc or category/file.md
     const pathParts = filePath.split('/');
-    const category = pathParts[1]; // e.g., 'ai', 'backend', etc.
+    const category = pathParts[1];
     const baseFileName = path.basename(filePath, '.mdc');
 
     let relativePath: string;
     let destPath: string;
 
     if (flatten) {
-      // Flatten: category-file.md
-      relativePath = category + '-' + baseFileName + fileExtension;
+      relativePath = `${category}-${baseFileName}${fileExtension}`;
       destPath = path.join(rulesDir, relativePath);
-      // No subdirectory creation needed for flattened structure
     } else {
-      // Keep subfolders: category/file.mdc
-      relativePath = path.join(category, baseFileName + fileExtension);
+      relativePath = path.join(category, `${baseFileName}${fileExtension}`);
       destPath = path.join(rulesDir, relativePath);
-
-      // Ensure the directory exists
-      const destDir = path.dirname(destPath);
-      fs.mkdirSync(destDir, { recursive: true });
+      fs.mkdirSync(path.dirname(destPath), { recursive: true });
     }
 
-    // Check file status
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
 
-    // Download and process the file
-    const url = `${baseUrl}${filePath}`;
-    await downloadFile(url, destPath);
+    await downloadFile(`${baseUrl}${filePath}`, destPath);
 
     let content = fs.readFileSync(destPath, 'utf8');
     content = processContent(content);
 
-    // Check if content actually changed
     const contentChanged = !localInfo || processContent(localInfo.content) !== content;
 
-    if (contentChanged) {
-      fs.writeFileSync(destPath, content, 'utf8');
-      results.push({
-        file: relativePath,
-        status: isNew ? 'added' : 'updated',
-        action: isNew ? 'Added' : 'Updated'
-      });
-    } else {
-      // Content didn't change, but we still write it to ensure format consistency
-      fs.writeFileSync(destPath, content, 'utf8');
-      results.push({
-        file: relativePath,
-        status: 'current',
-        action: 'Already current'
-      });
-    }
+    fs.writeFileSync(destPath, content, 'utf8');
+
+    results.push({
+      file: relativePath,
+      status: contentChanged ? (isNew ? 'added' : 'updated') : 'current',
+      action: contentChanged ? (isNew ? 'Added' : 'Updated') : 'Already current'
+    });
 
     progressBar.increment();
     return contentChanged;
@@ -308,12 +287,73 @@ async function processFile(
   }
 }
 
-// Sync rules for the detected agent
-export async function syncRules(options: { agent?: string, verbose?: boolean, dryRun?: boolean }) {
+// ============================================================================
+// OUTPUT DISPLAY
+// ============================================================================
+
+function createStatusTable(title: string, items: Array<{file: string, status: string, action: string}>): void {
+  if (items.length === 0) return;
+
+  console.log(`\n${title} (${items.length}):`);
+
+  const table = new Table({
+    head: ['File', 'Action'],
+    colWidths: [50, 20],
+    style: { head: ['cyan'], border: ['gray'] },
+    chars: {
+      'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
+      'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
+      'left': '║', 'left-mid': '', 'mid': '', 'mid-mid': '',
+      'right': '║', 'right-mid': '', 'middle': '│'
+    }
+  });
+
+  items.forEach(result => {
+    table.push([
+      result.file.length > 47 ? result.file.substring(0, 47) + '...' : result.file,
+      { content: result.action, vAlign: 'center' }
+    ]);
+  });
+
+  console.log(table.toString());
+}
+
+function displayResults(results: Array<{file: string, status: string, action: string}>, rulesDir: string, agentName: string): void {
+  const added = results.filter(r => r.status === 'added');
+  const updated = results.filter(r => r.status === 'updated');
+  const current = results.filter(r => r.status === 'current');
+  const errors = results.filter(r => r.status === 'error');
+
+  console.log('\n📊 Sync Results:');
+
+  createStatusTable('🆕 Added', added);
+  createStatusTable('🔄 Updated', updated);
+  createStatusTable('⏭️ Already Current', current);
+  if (errors.length > 0) createStatusTable('❌ Errors', errors);
+
+  console.log(`\n🎉 Sync completed!`);
+  console.log(`📍 Location: ${rulesDir}`);
+
+  const summary = [
+    added.length && `${added.length} added`,
+    updated.length && `${updated.length} updated`,
+    current.length && `${current.length} current`,
+    errors.length && `${errors.length} errors`
+  ].filter(Boolean);
+
+  console.log(`📈 Summary: ${summary.join(', ')}`);
+  console.log(`💡 Rules will be automatically loaded by ${agentName}`);
+}
+
+// ============================================================================
+// MAIN SYNC FUNCTION
+// ============================================================================
+
+export async function syncRules(options: { agent?: string; verbose?: boolean; dryRun?: boolean }): Promise<void> {
   const cwd = process.cwd();
   const baseUrl = 'https://raw.githubusercontent.com/sylphxltd/rules/main/docs/';
 
-  // Get agent configuration
+  // Determine agent
   let agent: AgentType;
   if (options.agent) {
     agent = options.agent.toLowerCase() as AgentType;
@@ -323,30 +363,19 @@ export async function syncRules(options: { agent?: string, verbose?: boolean, dr
       throw new Error(`Unknown agent: ${agent}`);
     }
   } else {
-    // Try to detect agent first
     const detectedAgent = detectAgentTool();
     if (detectedAgent !== 'cursor') {
-      // If we detected something other than cursor, use it
       agent = detectedAgent;
       console.log(`📝 Detected agent: ${getAgentConfig(agent).name}`);
     } else {
-      // Force user to choose if we can't detect or defaulted to cursor
       console.log('📝 No agent detected or defaulting to Cursor.');
       agent = await promptForAgent();
     }
   }
 
   const config = getAgentConfig(agent);
-  if (!config) {
-    log(`❌ Unknown agent: ${agent}`, 'red');
-    log(`Supported agents: ${getSupportedAgents().join(', ')}`, 'yellow');
-    throw new Error(`Unknown agent: ${agent}`);
-  }
-
   const rulesDir = path.join(cwd, config.dir, 'rules');
-  const fileExtension = config.extension;
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content: string) => content;
-  const flatten = config.flatten;
 
   // Create rules directory
   fs.mkdirSync(rulesDir, { recursive: true });
@@ -368,7 +397,7 @@ export async function syncRules(options: { agent?: string, verbose?: boolean, dr
   }
 
   // Setup progress bar
-  progressBar = new cliProgress.SingleBar({
+  const progressBar = new cliProgress.SingleBar({
     format: '📥 Downloading | {bar} | {percentage}% | {value}/{total} files | {file}',
     barCompleteChar: '\u2588',
     barIncompleteChar: '\u2591',
@@ -376,10 +405,10 @@ export async function syncRules(options: { agent?: string, verbose?: boolean, dr
   });
 
   progressBar.start(ruleFiles.length, 0, { file: 'Starting...' });
-  results = [];
+  const results: Array<{file: string, status: string, action: string}> = [];
 
-  // Process files asynchronously in batches
-  const batchSize = 5; // Process 5 files at a time
+  // Process files in batches
+  const batchSize = 5;
   const batches: string[][] = [];
   for (let i = 0; i < ruleFiles.length; i += batchSize) {
     batches.push(ruleFiles.slice(i, i + batchSize));
@@ -387,83 +416,11 @@ export async function syncRules(options: { agent?: string, verbose?: boolean, dr
 
   for (const batch of batches) {
     const promises = batch.map(filePath =>
-      processFile(filePath, rulesDir, fileExtension, processContent, baseUrl, flatten)
+      processFile(filePath, rulesDir, config.extension, processContent, baseUrl, config.flatten, results, progressBar)
     );
     await Promise.all(promises);
   }
 
   progressBar.stop();
-
-  // Group results by status
-  const added = results.filter(r => r.status === 'added');
-  const updated = results.filter(r => r.status === 'updated');
-  const current = results.filter(r => r.status === 'current');
-  const errors = results.filter(r => r.status === 'error');
-
-  console.log('\n📊 Sync Results:');
-
-  // Function to create and display a table for a specific status
-  const showStatusTable = (title: string, items: typeof results, status: string) => {
-    if (items.length === 0) return;
-
-    console.log(`\n${title} (${items.length}):`);
-
-    const statusTable = new Table({
-      head: ['File', 'Action'],
-      colWidths: [50, 20],
-      style: {
-        head: ['cyan'],
-        border: ['gray']
-      },
-      chars: {
-        'top': '═',
-        'top-mid': '╤',
-        'top-left': '╔',
-        'top-right': '╗',
-        'bottom': '═',
-        'bottom-mid': '╧',
-        'bottom-left': '╚',
-        'bottom-right': '╝',
-        'left': '║',
-        'left-mid': '',  // Remove row separators
-        'mid': '',       // Remove row separators
-        'mid-mid': '',
-        'right': '║',
-        'right-mid': '',
-        'middle': '│'   // Keep column separator
-      }
-    });
-
-    items.forEach(result => {
-      statusTable.push([
-        result.file.length > 47 ? result.file.substring(0, 47) + '...' : result.file,
-        { content: result.action, vAlign: 'center' }
-      ]);
-    });
-
-    console.log(statusTable.toString());
-  };
-
-  // Show tables for each status type
-  showStatusTable('🆕 Added', added, 'added');
-  showStatusTable('🔄 Updated', updated, 'updated');
-  showStatusTable('⏭️ Already Current', current, 'current');
-
-  if (errors.length > 0) {
-    showStatusTable('❌ Errors', errors, 'error');
-  }
-
-  // Summary
-  console.log(`\n🎉 Sync completed!`);
-  console.log(`📍 Location: ${rulesDir}`);
-
-  const summary: string[] = [];
-  if (added.length > 0) summary.push(`${added.length} added`);
-  if (updated.length > 0) summary.push(`${updated.length} updated`);
-  if (current.length > 0) summary.push(`${current.length} current`);
-  if (errors.length > 0) summary.push(`${errors.length} errors`);
-
-  console.log(`📈 Summary: ${summary.join(', ')}`);
-
-  console.log(`💡 Rules will be automatically loaded by ${config.name}`);
+  displayResults(results, rulesDir, config.name);
 }
