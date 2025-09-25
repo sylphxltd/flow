@@ -20130,7 +20130,8 @@ function getLocalFileInfo(filePath) {
   }
 }
 async function getRuleFiles() {
-  const docsRulesDir = import_path.default.join(process.cwd(), "docs", "rules");
+  const scriptDir = import_path.default.dirname(process.argv[1]);
+  const docsRulesDir = import_path.default.join(scriptDir, "..", "docs", "rules");
   const files = [];
   try {
     const categories = import_fs.default.readdirSync(docsRulesDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);

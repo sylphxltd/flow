@@ -183,7 +183,8 @@ function getLocalFileInfo(filePath: string): { content: string; exists: true } |
 }
 
 async function getRuleFiles(): Promise<string[]> {
-  const docsRulesDir = path.join(process.cwd(), 'docs', 'rules');
+  const scriptDir = path.dirname(process.argv[1]);
+  const docsRulesDir = path.join(scriptDir, '..', 'docs', 'rules');
   const files: string[] = [];
 
   try {
