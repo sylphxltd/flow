@@ -6048,9 +6048,9 @@ var init_parseUtil = __esm({
         if (this.value !== "aborted")
           this.value = "aborted";
       }
-      static mergeArray(status, results) {
+      static mergeArray(status, results2) {
         const arrayValue = [];
-        for (const s of results) {
+        for (const s of results2) {
           if (s.status === "aborted")
             return INVALID;
           if (s.status === "dirty")
@@ -8315,19 +8315,19 @@ var init_types = __esm({
       _parse(input) {
         const { ctx } = this._processInputParams(input);
         const options = this._def.options;
-        function handleResults(results) {
-          for (const result of results) {
+        function handleResults(results2) {
+          for (const result of results2) {
             if (result.result.status === "valid") {
               return result.result;
             }
           }
-          for (const result of results) {
+          for (const result of results2) {
             if (result.result.status === "dirty") {
               ctx.common.issues.push(...result.ctx.common.issues);
               return result.result;
             }
           }
-          const unionErrors = results.map((result) => new ZodError(result.ctx.common.issues));
+          const unionErrors = results2.map((result) => new ZodError(result.ctx.common.issues));
           addIssueToContext(ctx, {
             code: ZodIssueCode.invalid_union,
             unionErrors
@@ -8601,8 +8601,8 @@ var init_types = __esm({
           return schema._parse(new ParseInputLazyPath(ctx, item, ctx.path, itemIndex));
         }).filter((x) => !!x);
         if (ctx.common.async) {
-          return Promise.all(items).then((results) => {
-            return ParseStatus.mergeArray(status, results);
+          return Promise.all(items).then((results2) => {
+            return ParseStatus.mergeArray(status, results2);
           });
         } else {
           return ParseStatus.mergeArray(status, items);
@@ -20007,6 +20007,7 @@ var colors = {
 function log(message, color = "reset") {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
+var results = [];
 var AGENT_CONFIGS = {
   cursor: {
     name: "Cursor",
@@ -20144,7 +20145,7 @@ function stripYamlFrontMatter(content) {
   }
   return content;
 }
-async function processFile(filePath, rulesDir, fileExtension, processContent, flatten, results, progressBar) {
+async function processFile(filePath, rulesDir, fileExtension, processContent, flatten, results2, progressBar) {
   try {
     const pathParts = filePath.split("/");
     const category = pathParts[1];
@@ -20167,7 +20168,7 @@ async function processFile(filePath, rulesDir, fileExtension, processContent, fl
     content = processContent(content);
     const contentChanged = !localInfo || processContent(localInfo.content) !== content;
     import_fs.default.writeFileSync(destPath, content, "utf8");
-    results.push({
+    results2.push({
       file: relativePath,
       status: contentChanged ? isNew ? "added" : "updated" : "current",
       action: contentChanged ? isNew ? "Added" : "Updated" : "Already current"
@@ -20175,7 +20176,7 @@ async function processFile(filePath, rulesDir, fileExtension, processContent, fl
     progressBar.increment();
     return contentChanged;
   } catch (error) {
-    results.push({
+    results2.push({
       file: filePath,
       status: "error",
       action: `Error: ${error.message}`
@@ -20218,12 +20219,14 @@ ${title} (${items.length}):`);
   });
   console.log(table.toString());
 }
-function displayResults(results, rulesDir, agentName) {
-  const added = results.filter((r) => r.status === "added");
-  const updated = results.filter((r) => r.status === "updated");
-  const current = results.filter((r) => r.status === "current");
-  const errors = results.filter((r) => r.status === "error");
+function displayResults(results2, rulesDir, agentName) {
+  const removed = results2.filter((r) => r.status === "removed");
+  const added = results2.filter((r) => r.status === "added");
+  const updated = results2.filter((r) => r.status === "updated");
+  const current = results2.filter((r) => r.status === "current");
+  const errors = results2.filter((r) => r.status === "error");
   console.log("\n\u{1F4CA} Sync Results:");
+  createStatusTable("\u{1F5D1}\uFE0F Removed", removed);
   createStatusTable("\u{1F195} Added", added);
   createStatusTable("\u{1F504} Updated", updated);
   createStatusTable("\u23ED\uFE0F Already Current", current);
@@ -20232,6 +20235,7 @@ function displayResults(results, rulesDir, agentName) {
 \u{1F389} Sync completed!`);
   console.log(`\u{1F4CD} Location: ${rulesDir}`);
   const summary = [
+    removed.length && `${removed.length} removed`,
     added.length && `${added.length} added`,
     updated.length && `${updated.length} updated`,
     current.length && `${current.length} current`,
@@ -20242,6 +20246,7 @@ function displayResults(results, rulesDir, agentName) {
 }
 async function syncRules(options) {
   const cwd = process.cwd();
+  results = [];
   let agent;
   if (options.agent) {
     agent = options.agent.toLowerCase();
@@ -20263,6 +20268,26 @@ async function syncRules(options) {
   const config = getAgentConfig(agent);
   const rulesDir = import_path.default.join(cwd, config.dir, "rules");
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content) => content;
+  if (options.clear && import_fs.default.existsSync(rulesDir)) {
+    console.log(`\u{1F9F9} Clearing existing rules in ${rulesDir}...`);
+    const existingFiles = import_fs.default.readdirSync(rulesDir, { recursive: true }).filter((file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))).map((file) => import_path.default.join(rulesDir, file));
+    for (const file of existingFiles) {
+      try {
+        import_fs.default.unlinkSync(file);
+        results.push({
+          file: import_path.default.relative(rulesDir, file),
+          status: "removed",
+          action: "Removed"
+        });
+      } catch (error) {
+        results.push({
+          file: import_path.default.relative(rulesDir, file),
+          status: "error",
+          action: `Error removing: ${error.message}`
+        });
+      }
+    }
+  }
   import_fs.default.mkdirSync(rulesDir, { recursive: true });
   const ruleFiles = await getRuleFiles();
   console.log(`\u{1F680} Rules Sync Tool`);
@@ -20282,7 +20307,6 @@ async function syncRules(options) {
     hideCursor: true
   });
   progressBar.start(ruleFiles.length, 0, { file: "Starting..." });
-  const results = [];
   const batchSize = 5;
   const batches = [];
   for (let i = 0; i < ruleFiles.length; i += batchSize) {
@@ -20301,7 +20325,7 @@ async function syncRules(options) {
 // index.ts
 var program2 = new Command();
 program2.name("rules").description("Type-safe development rules CLI").version("1.0.0");
-program2.command("sync").description("Sync development rules to your project").option("--agent <type>", "Force specific agent (cursor, kilocode, roocode)").option("--verbose", "Show detailed output").option("--dry-run", "Show what would be done without making changes").action(async (options) => {
+program2.command("sync").description("Sync development rules to your project").option("--agent <type>", "Force specific agent (cursor, kilocode, roocode)").option("--verbose", "Show detailed output").option("--dry-run", "Show what would be done without making changes").option("--clear", "Clear all existing rules before syncing").action(async (options) => {
   try {
     await syncRules(options);
   } catch (error) {
@@ -20337,6 +20361,7 @@ program2.action(() => {
   console.log("  rules mcp");
   console.log("  rules sync --agent cursor");
   console.log("  rules sync --dry-run");
+  console.log("  rules sync --clear");
   console.log("");
   console.log('Run "rules <command> --help" for more information about a command.');
 });

@@ -305,6 +305,7 @@ function createStatusTable(title: string, items: Array<{file: string, status: st
 }
 
 function displayResults(results: Array<{file: string, status: string, action: string}>, rulesDir: string, agentName: string): void {
+  const removed = results.filter(r => r.status === 'removed');
   const added = results.filter(r => r.status === 'added');
   const updated = results.filter(r => r.status === 'updated');
   const current = results.filter(r => r.status === 'current');
@@ -312,6 +313,7 @@ function displayResults(results: Array<{file: string, status: string, action: st
 
   console.log('\n📊 Sync Results:');
 
+  createStatusTable('🗑️ Removed', removed);
   createStatusTable('🆕 Added', added);
   createStatusTable('🔄 Updated', updated);
   createStatusTable('⏭️ Already Current', current);
@@ -321,6 +323,7 @@ function displayResults(results: Array<{file: string, status: string, action: st
   console.log(`📍 Location: ${rulesDir}`);
 
   const summary = [
+    removed.length && `${removed.length} removed`,
     added.length && `${added.length} added`,
     updated.length && `${updated.length} updated`,
     current.length && `${current.length} current`,
@@ -335,8 +338,11 @@ function displayResults(results: Array<{file: string, status: string, action: st
 // MAIN SYNC FUNCTION
 // ============================================================================
 
-export async function syncRules(options: { agent?: string; verbose?: boolean; dryRun?: boolean }): Promise<void> {
+export async function syncRules(options: { agent?: string; verbose?: boolean; dryRun?: boolean; clear?: boolean }): Promise<void> {
   const cwd = process.cwd();
+
+  // Initialize results array
+  results = [];
 
   // Determine agent
   let agent: AgentType;
@@ -361,6 +367,31 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
   const config = getAgentConfig(agent);
   const rulesDir = path.join(cwd, config.dir, 'rules');
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content: string) => content;
+
+  // Clear existing rules if requested
+  if (options.clear && fs.existsSync(rulesDir)) {
+    console.log(`🧹 Clearing existing rules in ${rulesDir}...`);
+    const existingFiles = fs.readdirSync(rulesDir, { recursive: true })
+      .filter((file) => typeof file === 'string' && (file.endsWith('.mdc') || file.endsWith('.md')))
+      .map((file) => path.join(rulesDir, file as string));
+
+    for (const file of existingFiles) {
+      try {
+        fs.unlinkSync(file);
+        results.push({
+          file: path.relative(rulesDir, file),
+          status: 'removed',
+          action: 'Removed'
+        });
+      } catch (error: any) {
+        results.push({
+          file: path.relative(rulesDir, file),
+          status: 'error',
+          action: `Error removing: ${error.message}`
+        });
+      }
+    }
+  }
 
   // Create rules directory
   fs.mkdirSync(rulesDir, { recursive: true });
@@ -390,7 +421,6 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
   });
 
   progressBar.start(ruleFiles.length, 0, { file: 'Starting...' });
-  const results: Array<{file: string, status: string, action: string}> = [];
 
   // Process files in batches
   const batchSize = 5;
