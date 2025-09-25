@@ -10,11 +10,17 @@ Authoritative, implementation-ready specifications for the application. All cont
   - Keyboard Shortcuts & Command Palette: ./keyboard-shortcuts.md
   - Content Style Guide (tone, microcopy, capitalization, currency/date): ./content-style-guide.md
   - Forms Standards (validation, masks, labels, async, a11y): ./forms-standards.md
+  - UI Components System (Radix + PandaCSS + Iconify): ./ui-components.md
+  - Radix UI Component & Accessibility Spec: ./radix-ui.md
+  - Iconify Policy and Usage Standard: ./iconify.md
+  - react-use Hooks Policy and Patterns: ./react-use.md
+  - PandaCSS Rules (tokens/recipes): ../rules/ui/pandacss.mdc
 - Architecture
   - Tech Stack, BFF, Auth/Security, Realtime: ./architecture.md
   - Information Architecture & Navigation: ./information-architecture.md
   - Docker & DevOps (local/CI/CD): ./docker-devops.md
   - Performance Budgets & Caching: ./performance.md
+  - Realtime & Playback (SSE/WS + Redis): ./realtime.md
 - Legal & Compliance
   - Legal & Consent Management (DB logging, versioning): ./legal-consent.md
   - Account Deletion (Right to Erasure): ./account-deletion.md

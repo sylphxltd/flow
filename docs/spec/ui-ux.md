@@ -53,3 +53,9 @@ Scope: Entire app in Next.js App Router. Iconify-only icons. Minimal borders, co
 - Consistent visual weight; size 16–24px inline, 24–32px in buttons/cards.
 - Label critical icons; never rely on icon-only for non-obvious actions.
 
+8) Cross-References
+- UI Components System: ./ui-components.md
+- Radix UI Component & Accessibility Spec: ./radix-ui.md
+- Iconify Policy and Usage Standard: ./iconify.md
+- react-use Hooks Policy and Patterns: ./react-use.md
+- PandaCSS Rules (tokens/recipes): ../rules/ui/pandacss.mdc

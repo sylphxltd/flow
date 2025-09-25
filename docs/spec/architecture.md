@@ -1,6 +1,6 @@
 # Architecture & Platform
 
-Objectives: Serverless/stateless BFF using Next.js App Router + tRPC; Auth.js JWT sessions with rotation; Drizzle + PostgreSQL; Redis (Upstash) for streams/pubsub/rate limit; Stripe for billing/invoices; Zustand for client state; Biome for lint/format; pnpm work.
+Objectives: Serverless/stateless BFF using Next.js App Router + tRPC; Auth.js JWT sessions with rotation; Drizzle + PostgreSQL; Redis (Upstash) for streams/pubsub/rate limit; Stripe for billing/invoices; Zustand for client state; Biome for lint/format; pnpm work; Radix UI + PandaCSS + Iconify + react-use for an accessible, token-driven front-end system.
 
 Key Tenets
 - Stateless backend: JWT-based sessions; serverless functions with no sticky state.
@@ -16,6 +16,10 @@ Stack
 - Redis (Upstash): Rate limiting, Pub/Sub notifications, Streams for playback
 - Stripe: Checkout, Billing Portal, Invoices (download links)
 - Zustand: lightweight client store
+- Radix UI: accessible primitives for overlays, menus, forms, navigation
+- PandaCSS: design tokens and recipes (dark-first, light parity)
+- Iconify: single icon source (no emoji UI)
+- react-use: vetted hooks for client utilities (SSR-safe patterns)
 - Biome: code style and lint
 - pnpm: package manager (frozen lockfile in CI/dev entry)
 
