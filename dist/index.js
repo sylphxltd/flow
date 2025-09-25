@@ -20130,11 +20130,12 @@ function getLocalFileInfo(filePath) {
   }
 }
 async function getRuleFiles() {
-  const scriptDir = import_path.default.dirname(process.argv[1]);
+  const scriptDir = __dirname;
   const docsRulesDir = import_path.default.join(scriptDir, "..", "docs", "rules");
   const files = [];
   console.log("Debug: process.cwd():", process.cwd());
   console.log("Debug: process.argv[1]:", process.argv[1]);
+  console.log("Debug: __dirname:", __dirname);
   console.log("Debug: scriptDir:", scriptDir);
   console.log("Debug: docsRulesDir:", docsRulesDir);
   console.log("Debug: docsRulesDir exists:", import_fs.default.existsSync(docsRulesDir));

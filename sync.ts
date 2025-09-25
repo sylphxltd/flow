@@ -183,12 +183,14 @@ function getLocalFileInfo(filePath: string): { content: string; exists: true } |
 }
 
 async function getRuleFiles(): Promise<string[]> {
-  const scriptDir = path.dirname(process.argv[1]);
+  // In bundled CJS, __dirname is the directory of the executing script
+  const scriptDir = __dirname;
   const docsRulesDir = path.join(scriptDir, '..', 'docs', 'rules');
   const files: string[] = [];
 
   console.log('Debug: process.cwd():', process.cwd());
   console.log('Debug: process.argv[1]:', process.argv[1]);
+  console.log('Debug: __dirname:', __dirname);
   console.log('Debug: scriptDir:', scriptDir);
   console.log('Debug: docsRulesDir:', docsRulesDir);
   console.log('Debug: docsRulesDir exists:', fs.existsSync(docsRulesDir));
