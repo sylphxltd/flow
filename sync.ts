@@ -35,6 +35,7 @@ const AGENT_CONFIGS = {
     dir: '.cursor',
     extension: '.mdc',
     stripYaml: false,
+    flatten: false,
     description: 'Cursor (.cursor/rules/*.mdc with YAML front matter)'
   },
   kilocode: {
@@ -42,14 +43,16 @@ const AGENT_CONFIGS = {
     dir: '.kilocode',
     extension: '.md',
     stripYaml: true,
-    description: 'Kilocode (.kilocode/rules/*.md without YAML front matter)'
+    flatten: true,
+    description: 'Kilocode (.kilocode/rules/*.md without YAML front matter, flattened with category prefix)'
   },
   roocode: {
     name: 'RooCode',
     dir: '.roo',
     extension: '.md',
     stripYaml: true,
-    description: 'RooCode (.roo/rules/*.md without YAML front matter)'
+    flatten: true,
+    description: 'RooCode (.roo/rules/*.md without YAML front matter, flattened with category prefix)'
   }
 
   // Example: To add a new agent called "MyAgent":
@@ -269,19 +272,32 @@ async function processFile(
   rulesDir: string,
   fileExtension: string,
   processContent: (content: string) => string,
-  baseUrl: string
+  baseUrl: string,
+  flatten: boolean
 ): Promise<boolean> {
   try {
     // rules/category/file.mdc -> category/file.mdc or category/file.md
     const pathParts = filePath.split('/');
     const category = pathParts[1]; // e.g., 'ai', 'backend', etc.
     const baseFileName = path.basename(filePath, '.mdc');
-    const relativePath = path.join(category, baseFileName + fileExtension);
-    const destPath = path.join(rulesDir, relativePath);
 
-    // Ensure the directory exists
-    const destDir = path.dirname(destPath);
-    fs.mkdirSync(destDir, { recursive: true });
+    let relativePath: string;
+    let destPath: string;
+
+    if (flatten) {
+      // Flatten: category-file.md
+      relativePath = category + '-' + baseFileName + fileExtension;
+      destPath = path.join(rulesDir, relativePath);
+      // No subdirectory creation needed for flattened structure
+    } else {
+      // Keep subfolders: category/file.mdc
+      relativePath = path.join(category, baseFileName + fileExtension);
+      destPath = path.join(rulesDir, relativePath);
+
+      // Ensure the directory exists
+      const destDir = path.dirname(destPath);
+      fs.mkdirSync(destDir, { recursive: true });
+    }
 
     // Check file status
     const localInfo = getLocalFileInfo(destPath);
@@ -365,6 +381,7 @@ export async function syncRules(options: { agent?: string, verbose?: boolean, dr
   const rulesDir = path.join(cwd, config.dir, 'rules');
   const fileExtension = config.extension;
   const processContent = config.stripYaml ? stripYamlFrontMatter : (content: string) => content;
+  const flatten = config.flatten;
 
   // Create rules directory
   fs.mkdirSync(rulesDir, { recursive: true });
@@ -405,7 +422,7 @@ export async function syncRules(options: { agent?: string, verbose?: boolean, dr
 
   for (const batch of batches) {
     const promises = batch.map(filePath =>
-      processFile(filePath, rulesDir, fileExtension, processContent, baseUrl)
+      processFile(filePath, rulesDir, fileExtension, processContent, baseUrl, flatten)
     );
     await Promise.all(promises);
   }
