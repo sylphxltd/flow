@@ -154,22 +154,6 @@ function detectAgentTool(): AgentType {
 // FILE OPERATIONS
 // ============================================================================
 
-async function downloadFile(url: string, destPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(destPath);
-    https.get(url, (response) => {
-      response.pipe(file);
-      file.on('finish', () => {
-        file.close();
-        resolve();
-      });
-    }).on('error', (err) => {
-      fs.unlink(destPath, () => {}); // Delete the file on error
-      reject(err);
-    });
-  });
-}
-
 function getLocalFileInfo(filePath: string): { content: string; exists: true } | null {
   try {
     if (!fs.existsSync(filePath)) {
@@ -236,7 +220,6 @@ async function processFile(
   rulesDir: string,
   fileExtension: string,
   processContent: (content: string) => string,
-  baseUrl: string,
   flatten: boolean,
   results: Array<{file: string, status: string, action: string}>,
   progressBar: InstanceType<typeof cliProgress.SingleBar>
@@ -261,9 +244,10 @@ async function processFile(
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
 
-    await downloadFile(`${baseUrl}${filePath}`, destPath);
-
-    let content = fs.readFileSync(destPath, 'utf8');
+    // Read content from local package files instead of downloading
+    const scriptDir = __dirname;
+    const sourcePath = path.join(scriptDir, '..', 'docs', filePath);
+    let content = fs.readFileSync(sourcePath, 'utf8');
     content = processContent(content);
 
     const contentChanged = !localInfo || processContent(localInfo.content) !== content;
@@ -353,7 +337,6 @@ function displayResults(results: Array<{file: string, status: string, action: st
 
 export async function syncRules(options: { agent?: string; verbose?: boolean; dryRun?: boolean }): Promise<void> {
   const cwd = process.cwd();
-  const baseUrl = 'https://raw.githubusercontent.com/sylphxltd/rules/main/docs/';
 
   // Determine agent
   let agent: AgentType;
@@ -400,7 +383,7 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
 
   // Setup progress bar
   const progressBar = new cliProgress.SingleBar({
-    format: '📥 Downloading | {bar} | {percentage}% | {value}/{total} files | {file}',
+    format: '📋 Processing | {bar} | {percentage}% | {value}/{total} files | {file}',
     barCompleteChar: '\u2588',
     barIncompleteChar: '\u2591',
     hideCursor: true
@@ -418,7 +401,7 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
 
   for (const batch of batches) {
     const promises = batch.map(filePath =>
-      processFile(filePath, rulesDir, config.extension, processContent, baseUrl, config.flatten, results, progressBar)
+      processFile(filePath, rulesDir, config.extension, processContent, config.flatten, results, progressBar)
     );
     await Promise.all(promises);
   }

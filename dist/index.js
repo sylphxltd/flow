@@ -19994,7 +19994,6 @@ var {
 // sync.ts
 var import_fs = __toESM(require("fs"));
 var import_path = __toESM(require("path"));
-var import_https = __toESM(require("https"));
 var import_readline = __toESM(require("readline"));
 var import_cli_progress = __toESM(require_cli_progress());
 var import_cli_table3 = __toESM(require_cli_table3());
@@ -20102,22 +20101,6 @@ function detectAgentTool() {
   }
   return "cursor";
 }
-async function downloadFile(url, destPath) {
-  return new Promise((resolve, reject) => {
-    const file = import_fs.default.createWriteStream(destPath);
-    import_https.default.get(url, (response) => {
-      response.pipe(file);
-      file.on("finish", () => {
-        file.close();
-        resolve();
-      });
-    }).on("error", (err) => {
-      import_fs.default.unlink(destPath, () => {
-      });
-      reject(err);
-    });
-  });
-}
 function getLocalFileInfo(filePath) {
   try {
     if (!import_fs.default.existsSync(filePath)) {
@@ -20161,7 +20144,7 @@ function stripYamlFrontMatter(content) {
   }
   return content;
 }
-async function processFile(filePath, rulesDir, fileExtension, processContent, baseUrl, flatten, results, progressBar) {
+async function processFile(filePath, rulesDir, fileExtension, processContent, flatten, results, progressBar) {
   try {
     const pathParts = filePath.split("/");
     const category = pathParts[1];
@@ -20178,8 +20161,9 @@ async function processFile(filePath, rulesDir, fileExtension, processContent, ba
     }
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
-    await downloadFile(`${baseUrl}${filePath}`, destPath);
-    let content = import_fs.default.readFileSync(destPath, "utf8");
+    const scriptDir = __dirname;
+    const sourcePath = import_path.default.join(scriptDir, "..", "docs", filePath);
+    let content = import_fs.default.readFileSync(sourcePath, "utf8");
     content = processContent(content);
     const contentChanged = !localInfo || processContent(localInfo.content) !== content;
     import_fs.default.writeFileSync(destPath, content, "utf8");
@@ -20258,7 +20242,6 @@ function displayResults(results, rulesDir, agentName) {
 }
 async function syncRules(options) {
   const cwd = process.cwd();
-  const baseUrl = "https://raw.githubusercontent.com/sylphxltd/rules/main/docs/";
   let agent;
   if (options.agent) {
     agent = options.agent.toLowerCase();
@@ -20293,7 +20276,7 @@ async function syncRules(options) {
     return;
   }
   const progressBar = new import_cli_progress.default.SingleBar({
-    format: "\u{1F4E5} Downloading | {bar} | {percentage}% | {value}/{total} files | {file}",
+    format: "\u{1F4CB} Processing | {bar} | {percentage}% | {value}/{total} files | {file}",
     barCompleteChar: "\u2588",
     barIncompleteChar: "\u2591",
     hideCursor: true
@@ -20307,7 +20290,7 @@ async function syncRules(options) {
   }
   for (const batch of batches) {
     const promises = batch.map(
-      (filePath) => processFile(filePath, rulesDir, config.extension, processContent, baseUrl, config.flatten, results, progressBar)
+      (filePath) => processFile(filePath, rulesDir, config.extension, processContent, config.flatten, results, progressBar)
     );
     await Promise.all(promises);
   }
