@@ -188,19 +188,10 @@ async function getRuleFiles(): Promise<string[]> {
   const docsRulesDir = path.join(scriptDir, '..', 'docs', 'rules');
   const files: string[] = [];
 
-  console.log('Debug: process.cwd():', process.cwd());
-  console.log('Debug: process.argv[1]:', process.argv[1]);
-  console.log('Debug: __dirname:', __dirname);
-  console.log('Debug: scriptDir:', scriptDir);
-  console.log('Debug: docsRulesDir:', docsRulesDir);
-  console.log('Debug: docsRulesDir exists:', fs.existsSync(docsRulesDir));
-
   try {
     const categories = fs.readdirSync(docsRulesDir, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
-
-    console.log('Debug: categories found:', categories);
 
     for (const category of categories) {
       const categoryDir = path.join(docsRulesDir, category);
@@ -216,13 +207,11 @@ async function getRuleFiles(): Promise<string[]> {
         continue;
       }
     }
-  } catch (error) {
+  } catch {
     console.warn('⚠️  Could not read local rules directory, returning empty list');
-    console.warn('Debug: error:', error);
     return [];
   }
 
-  console.log('Debug: total files found:', files.length);
   return files;
 }
 
