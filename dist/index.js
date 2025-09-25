@@ -20133,8 +20133,14 @@ async function getRuleFiles() {
   const scriptDir = import_path.default.dirname(process.argv[1]);
   const docsRulesDir = import_path.default.join(scriptDir, "..", "docs", "rules");
   const files = [];
+  console.log("Debug: process.cwd():", process.cwd());
+  console.log("Debug: process.argv[1]:", process.argv[1]);
+  console.log("Debug: scriptDir:", scriptDir);
+  console.log("Debug: docsRulesDir:", docsRulesDir);
+  console.log("Debug: docsRulesDir exists:", import_fs.default.existsSync(docsRulesDir));
   try {
     const categories = import_fs.default.readdirSync(docsRulesDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
+    console.log("Debug: categories found:", categories);
     for (const category of categories) {
       const categoryDir = import_path.default.join(docsRulesDir, category);
       try {
@@ -20144,10 +20150,12 @@ async function getRuleFiles() {
         continue;
       }
     }
-  } catch {
+  } catch (error) {
     console.warn("\u26A0\uFE0F  Could not read local rules directory, returning empty list");
+    console.warn("Debug: error:", error);
     return [];
   }
+  console.log("Debug: total files found:", files.length);
   return files;
 }
 function stripYamlFrontMatter(content) {
