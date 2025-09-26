@@ -4,8 +4,8 @@
 This is a comprehensive SaaS platform specification for an advanced, modern web application. The platform focuses on user management, billing, referrals, and content delivery, built as a fully responsive SPA with serverless architecture. All features must be complete, functional, and compliant with global standards. The site operates entirely in USD, with wallet-based billing and membership tiers offering automatic top-ups and discounts.
 
 ## Technical Stack
-- **Frontend**: Next.js (App Router), React, Zustand, PandaCSS, Radix UI, react-use
-- **Backend**: tRPC (BFF pattern), Auth.js (JWT with Redis denylist), Drizzle ORM
+- **Frontend**: Next.js (App Router), React, Zustand, PandaCSS, Radix UI, react-use, @simplewebauthn/browser
+- **Backend**: tRPC (BFF pattern), Auth.js (JWT with Redis denylist), Drizzle ORM, @simplewebauthn/server
 - **Database**: PostgreSQL (Neon with pgBouncer)
 - **Caching/Real-time**: Redis (Upstash: Streams for playback, Pub/Sub for notifications, Rate limiting)
 - **Payments**: Stripe (Checkout, Billing Portal, Invoices, Webhooks with idempotency)
@@ -50,9 +50,9 @@ This is a comprehensive SaaS platform specification for an advanced, modern web 
 
 ## Features
 ### Authentication & Security
-- Registration/Login/Password Reset with SSO, 2FA, reCAPTCHA, Rate Limiting.
+- Registration/Login/Password Reset with SSO, Passkey-first 2FA (using SimpleWebAuthn), reCAPTCHA, Rate Limiting.
 - Session management: JWT rotation, Redis denylist, login activity logs.
-- Security settings: 2FA, recovery codes, login alerts.
+- Security settings: Passkey-first 2FA (using SimpleWebAuthn), recovery codes, login alerts.
 
 ### User Account
 - Profile: Display name, bio, avatar.
