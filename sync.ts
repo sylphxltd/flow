@@ -172,25 +172,25 @@ async function getRuleFiles(): Promise<string[]> {
   const docsRulesDir = path.join(scriptDir, '..', 'docs', 'rules');
   const files: string[] = [];
 
-  try {
-    const categories = fs.readdirSync(docsRulesDir, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name);
-
-    for (const category of categories) {
-      const categoryDir = path.join(docsRulesDir, category);
-
-      try {
-        const categoryFiles = fs.readdirSync(categoryDir)
-          .filter(file => file.endsWith('.mdc'))
-          .map(file => `rules/${category}/${file}`);
-
-        files.push(...categoryFiles);
-      } catch {
-        // Skip directories that can't be read
-        continue;
+  function collectFiles(dir: string, relativePath: string) {
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const itemPath = path.join(dir, item.name);
+        const itemRelative = path.join(relativePath, item.name);
+        if (item.isDirectory()) {
+          collectFiles(itemPath, itemRelative);
+        } else if (item.isFile() && (item.name.endsWith('.mdc') || item.name.endsWith('.md'))) {
+          files.push(itemRelative);
+        }
       }
+    } catch {
+      // Skip directories/files that can't be read
     }
+  }
+
+  try {
+    collectFiles(docsRulesDir, 'rules');
   } catch {
     console.warn('⚠️  Could not read local rules directory, returning empty list');
     return [];
@@ -211,6 +211,12 @@ function stripYamlFrontMatter(content: string): string {
   return content;
 }
 
+function getDescriptionForFile(filePath?: string): string {
+  if (!filePath) return 'Development rules';
+  const baseName = path.basename(filePath, path.extname(filePath));
+  return `Development rules for ${baseName.replace(/-/g, ' ')}`;
+}
+
 // ============================================================================
 // FILE PROCESSING
 // ============================================================================
@@ -225,20 +231,27 @@ async function processFile(
   progressBar: InstanceType<typeof cliProgress.SingleBar>
 ): Promise<boolean> {
   try {
-    const pathParts = filePath.split('/');
-    const category = pathParts[1];
-    const baseFileName = path.basename(filePath, '.mdc');
+    // filePath is like 'rules/subdir/file.mdc'
+    const relativeToRules = filePath.substring('rules/'.length); // 'subdir/file.mdc'
+    const parsedPath = path.parse(relativeToRules);
+    const baseName = parsedPath.name; // 'file'
+    const ext = parsedPath.ext; // '.mdc' or '.md'
+    const dir = parsedPath.dir; // 'subdir' or ''
 
     let relativePath: string;
     let destPath: string;
 
     if (flatten) {
-      relativePath = `${category}-${baseFileName}${fileExtension}`;
+      // For flatten, replace path separators with dashes
+      const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
+      relativePath = `${flattenedName}${fileExtension}`;
       destPath = path.join(rulesDir, relativePath);
     } else {
-      relativePath = path.join(category, `${baseFileName}${fileExtension}`);
-      destPath = path.join(rulesDir, relativePath);
-      fs.mkdirSync(path.dirname(destPath), { recursive: true });
+      // Keep directory structure
+      const targetDir = dir ? path.join(rulesDir, dir) : rulesDir;
+      fs.mkdirSync(targetDir, { recursive: true });
+      relativePath = path.join(dir, `${baseName}${fileExtension}`);
+      destPath = path.join(targetDir, `${baseName}${fileExtension}`);
     }
 
     const localInfo = getLocalFileInfo(destPath);
@@ -248,7 +261,7 @@ async function processFile(
     const scriptDir = __dirname;
     const sourcePath = path.join(scriptDir, '..', 'docs', filePath);
     let content = fs.readFileSync(sourcePath, 'utf8');
-    content = processContent(content);
+    content = processContent(content, filePath);
 
     const contentChanged = !localInfo || processContent(localInfo.content) !== content;
 
@@ -366,7 +379,21 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
 
   const config = getAgentConfig(agent);
   const rulesDir = path.join(cwd, config.dir, 'rules');
-  const processContent = config.stripYaml ? stripYamlFrontMatter : (content: string) => content;
+  const processContent = (content: string, filePath?: string) => {
+    if (config.stripYaml) {
+      return stripYamlFrontMatter(content);
+    } else {
+      // For Cursor, add YAML front matter
+      const yamlFrontMatter = `---
+description: ${getDescriptionForFile(filePath)}
+globs: ["**/*"]
+alwaysApply: true
+---
+
+`;
+      return yamlFrontMatter + content;
+    }
+  };
 
   // Clear obsolete rules if requested
   if (options.clear && fs.existsSync(rulesDir)) {
@@ -382,10 +409,17 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
       const ruleFiles = await getRuleFiles();
       expectedFiles = new Set(
         ruleFiles.map(filePath => {
-          const pathParts = filePath.split('/');
-          const category = pathParts[1];
-          const baseFileName = path.basename(filePath, '.mdc');
-          return config.flatten ? `${category}-${baseFileName}${config.extension}` : path.join(category, `${baseFileName}${config.extension}`);
+          const relativeToRules = filePath.substring('rules/'.length);
+          const parsedPath = path.parse(relativeToRules);
+          const baseName = parsedPath.name;
+          const dir = parsedPath.dir;
+
+          if (config.flatten) {
+            const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
+            return `${flattenedName}${config.extension}`;
+          } else {
+            return path.join(dir, `${baseName}${config.extension}`);
+          }
         })
       );
     }
@@ -455,13 +489,15 @@ export async function syncRules(options: { agent?: string; verbose?: boolean; dr
         const scriptDir = __dirname;
         const sourcePath = path.join(scriptDir, '..', 'docs', filePath);
         let content = fs.readFileSync(sourcePath, 'utf8');
-        content = processContent(content);
+        content = processContent(content, filePath);
 
-        const pathParts = filePath.split('/');
-        const category = pathParts[1];
-        const baseFileName = path.basename(filePath, '.mdc');
+        const relativeToRules = filePath.substring('rules/'.length);
+        const parsedPath = path.parse(relativeToRules);
+        const baseName = parsedPath.name;
+        const dir = parsedPath.dir;
 
-        mergedContent += `## ${category.toUpperCase()}: ${baseFileName.replace(/-/g, ' ').toUpperCase()}\n\n`;
+        const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
+        mergedContent += `## ${sectionTitle.replace(/-/g, ' ').toUpperCase()}\n\n`;
         mergedContent += `${content}\n\n`;
         mergedContent += `---\n\n`;
       } catch (error: any) {

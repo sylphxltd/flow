@@ -20117,17 +20117,23 @@ async function getRuleFiles() {
   const scriptDir = __dirname;
   const docsRulesDir = import_path.default.join(scriptDir, "..", "docs", "rules");
   const files = [];
-  try {
-    const categories = import_fs.default.readdirSync(docsRulesDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
-    for (const category of categories) {
-      const categoryDir = import_path.default.join(docsRulesDir, category);
-      try {
-        const categoryFiles = import_fs.default.readdirSync(categoryDir).filter((file) => file.endsWith(".mdc")).map((file) => `rules/${category}/${file}`);
-        files.push(...categoryFiles);
-      } catch {
-        continue;
+  function collectFiles(dir, relativePath) {
+    try {
+      const items = import_fs.default.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const itemPath = import_path.default.join(dir, item.name);
+        const itemRelative = import_path.default.join(relativePath, item.name);
+        if (item.isDirectory()) {
+          collectFiles(itemPath, itemRelative);
+        } else if (item.isFile() && (item.name.endsWith(".mdc") || item.name.endsWith(".md"))) {
+          files.push(itemRelative);
+        }
       }
+    } catch {
     }
+  }
+  try {
+    collectFiles(docsRulesDir, "rules");
   } catch {
     console.warn("\u26A0\uFE0F  Could not read local rules directory, returning empty list");
     return [];
@@ -20145,27 +20151,36 @@ function stripYamlFrontMatter(content) {
   }
   return content;
 }
+function getDescriptionForFile(filePath) {
+  if (!filePath) return "Development rules";
+  const baseName = import_path.default.basename(filePath, import_path.default.extname(filePath));
+  return `Development rules for ${baseName.replace(/-/g, " ")}`;
+}
 async function processFile(filePath, rulesDir, fileExtension, processContent, flatten, results2, progressBar) {
   try {
-    const pathParts = filePath.split("/");
-    const category = pathParts[1];
-    const baseFileName = import_path.default.basename(filePath, ".mdc");
+    const relativeToRules = filePath.substring("rules/".length);
+    const parsedPath = import_path.default.parse(relativeToRules);
+    const baseName = parsedPath.name;
+    const ext = parsedPath.ext;
+    const dir = parsedPath.dir;
     let relativePath;
     let destPath;
     if (flatten) {
-      relativePath = `${category}-${baseFileName}${fileExtension}`;
+      const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
+      relativePath = `${flattenedName}${fileExtension}`;
       destPath = import_path.default.join(rulesDir, relativePath);
     } else {
-      relativePath = import_path.default.join(category, `${baseFileName}${fileExtension}`);
-      destPath = import_path.default.join(rulesDir, relativePath);
-      import_fs.default.mkdirSync(import_path.default.dirname(destPath), { recursive: true });
+      const targetDir = dir ? import_path.default.join(rulesDir, dir) : rulesDir;
+      import_fs.default.mkdirSync(targetDir, { recursive: true });
+      relativePath = import_path.default.join(dir, `${baseName}${fileExtension}`);
+      destPath = import_path.default.join(targetDir, `${baseName}${fileExtension}`);
     }
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
     const scriptDir = __dirname;
     const sourcePath = import_path.default.join(scriptDir, "..", "docs", filePath);
     let content = import_fs.default.readFileSync(sourcePath, "utf8");
-    content = processContent(content);
+    content = processContent(content, filePath);
     const contentChanged = !localInfo || processContent(localInfo.content) !== content;
     import_fs.default.writeFileSync(destPath, content, "utf8");
     results2.push({
@@ -20267,7 +20282,20 @@ async function syncRules(options) {
   }
   const config = getAgentConfig(agent);
   const rulesDir = import_path.default.join(cwd, config.dir, "rules");
-  const processContent = config.stripYaml ? stripYamlFrontMatter : (content) => content;
+  const processContent = (content, filePath) => {
+    if (config.stripYaml) {
+      return stripYamlFrontMatter(content);
+    } else {
+      const yamlFrontMatter = `---
+description: ${getDescriptionForFile(filePath)}
+globs: ["**/*"]
+alwaysApply: true
+---
+
+`;
+      return yamlFrontMatter + content;
+    }
+  };
   if (options.clear && import_fs.default.existsSync(rulesDir)) {
     console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
     let expectedFiles;
@@ -20277,10 +20305,16 @@ async function syncRules(options) {
       const ruleFiles2 = await getRuleFiles();
       expectedFiles = new Set(
         ruleFiles2.map((filePath) => {
-          const pathParts = filePath.split("/");
-          const category = pathParts[1];
-          const baseFileName = import_path.default.basename(filePath, ".mdc");
-          return config.flatten ? `${category}-${baseFileName}${config.extension}` : import_path.default.join(category, `${baseFileName}${config.extension}`);
+          const relativeToRules = filePath.substring("rules/".length);
+          const parsedPath = import_path.default.parse(relativeToRules);
+          const baseName = parsedPath.name;
+          const dir = parsedPath.dir;
+          if (config.flatten) {
+            const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
+            return `${flattenedName}${config.extension}`;
+          } else {
+            return import_path.default.join(dir, `${baseName}${config.extension}`);
+          }
         })
       );
     }
@@ -20338,11 +20372,13 @@ async function syncRules(options) {
         const scriptDir = __dirname;
         const sourcePath = import_path.default.join(scriptDir, "..", "docs", filePath);
         let content = import_fs.default.readFileSync(sourcePath, "utf8");
-        content = processContent(content);
-        const pathParts = filePath.split("/");
-        const category = pathParts[1];
-        const baseFileName = import_path.default.basename(filePath, ".mdc");
-        mergedContent += `## ${category.toUpperCase()}: ${baseFileName.replace(/-/g, " ").toUpperCase()}
+        content = processContent(content, filePath);
+        const relativeToRules = filePath.substring("rules/".length);
+        const parsedPath = import_path.default.parse(relativeToRules);
+        const baseName = parsedPath.name;
+        const dir = parsedPath.dir;
+        const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
+        mergedContent += `## ${sectionTitle.replace(/-/g, " ").toUpperCase()}
 
 `;
         mergedContent += `${content}

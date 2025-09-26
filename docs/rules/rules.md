@@ -31,7 +31,7 @@
 
 ## Perfect Execution
 - Complete tasks in one perfect pass; no partials.
-- Repeated reviews until perfect.
+- Repeated reviews until perfe ct.
 - Action-oriented: execute more, explain less.
 - Zero loose ends.
 
