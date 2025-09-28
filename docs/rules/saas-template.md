@@ -9,43 +9,6 @@ This template defines a scalable, secure SaaS platform for modern web apps. Adap
 - **Memberships**: Tiers (Small/Medium/Large) with monthly auto-top-ups, discounts, and entitlements. Yearly plans = 10x monthly rate. Make admin-configurable.
 - **Compliance**: All features must meet global standards (GDPR/CCPA); implement verifiable acceptance criteria (AC) for each.
 
-## UI/UX Design Principles
-Implement a clean, performant interface prioritizing usability and accessibility. Validate with tools like Lighthouse (score >90) and axe-core (WCAG AA compliance).
-
-### Core Principles
-- Adopt minimalist functionalism: Eliminate decorative elements; center on core content and interactions.
-- Ensure readability: Use sans-serif fonts (e.g., Inter/SF Pro) with 1.5+ line height, 1.2-1.5 letter spacing.
-- Maintain consistency: Standardize 8-12px border radius, 16px spacing grid, single font family, and color palette across all components.
-- Achieve fluidity: Use 200-400ms CSS transitions; avoid jank—test on low-end devices.
-
-### Visual System
-- **Colors**: Default to dark mode (e.g., #1a1a1a background, #ffffff text); support light mode toggle. Use one accent color (e.g., #007bff blue) for CTAs/highlights. Enforce WCAG AA (4.5:1 contrast)—test with WAVE tool.
-- **Shapes & Layouts**: Apply 8-12px rounded corners. Use card components for modular content (e.g., user profiles). Add subtle shadows (0 1px 3px rgba(0,0,0,0.1)) for depth without clutter.
-- **Typography**: Sans-serif stack (Inter, SF Pro fallback). Headings: Bold, 24-48px; Body: 14-16px, 1.5 line-height for scannability.
-
-### Interactions & Animations
-- **Transitions**: 200-400ms ease-in-out for all state changes (e.g., hover, focus).
-- **Hover States**: Scale 1.03x or increase shadow opacity for buttons/links.
-- **Active States**: Scale down to 0.95-0.98x for tactile feedback on clicks.
-- **Page Navigation**: Implement fade (opacity 0→1) or slide transitions; preload routes for <100ms perceived load.
-
-### User Flows
-- **Conversational UI**: Design chat-like interfaces with vertical top-to-bottom scrolling for features like support tickets.
-- **Inputs**: Position forms at screen bottom (mobile-first); use prominent, bordered fields with real-time validation.
-- **Feedback**: Provide immediate visual responses (e.g., green check on valid input, loading spinner on submit).
-- **Content Management**: Use accordions/collapsibles for dense sections (e.g., settings); default to expanded for critical info.
-
-### Navigation & Accessibility
-- **Navigation**: Fixed top bar or sidebar with breadcrumb hierarchy; limit to 5-7 top-level items.
-- **Focus & Distractions**: Prioritize content; use modals for secondary actions, avoid auto-playing media.
-- **Scrolling**: Enable smooth, native scroll; implement lazy loading for lists/images (>50 items).
-- **Components**: Build reusable primitives (buttons, cards, forms) with consistent props/styling.
-- **Responsiveness**: Mobile-first design; test breakpoints (320px mobile, 768px tablet, 1024px desktop) for fluid adaptation.
-
-### UI/UX Validation
-- Test readability: Verify contrast/line-height in both modes using browser dev tools.
-- Confirm interactions: Simulate clicks/hovers; ensure <50ms feedback latency.
-- Responsive checks: Use Chrome DevTools emulation; validate on real devices if possible.
 
 ## Core Features
 Implement all features as modular, secure components. Use TDD for verification.

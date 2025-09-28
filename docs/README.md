@@ -79,6 +79,9 @@ Select categories based on project stack. Apply General always; add others as ne
 - **`trpc.mdc`**: End-to-end typesafe APIs; for RPC-style backends.
 - **`zustand.mdc`**: Minimal state stores; for React global state.
 
+### UI/UX
+- **`ui-ux-guidelines.md`**: Modern SPA instruction set (dark-mode first, minimalist conversational UI, responsive tests). Reference for all interface design prompts.
+
 ### Specialized
 - **`planning-first.mdc`**: Step-by-step planning with risks/AC before execution.
 - **`ai-sdk-integration.mdc`**: Streaming responses, tool calls for AI features.
