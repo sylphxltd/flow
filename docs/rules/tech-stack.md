@@ -17,14 +17,15 @@ Responsive SPAs via React ecosystem.
     - **Merging**: `cx(recipe(), css({ bg: 'red' }))` overrides.
     - **Opt**: `staticCss: { recipes: '*' }`; purge globs (`src/**/*.tsx`); `panda analyze --scope=recipe`. Next.js plugins; <5% bloat.
     - Rationale: Atomic + TS for perf/DX; custom extensible.
-- **Hooks**: react-use (useLocalStorage); urql (GraphQL cache).
-- **Auth**: @simplewebauthn/browser (2FA); reCAPTCHA.
+- **Hooks**: Leverage react-use’s hook suite to cover common side effects and browser integrations—persistent storage (`useLocalStorage`), element measurement (`useMeasure`), debounced handlers (`useDebounce`), sensors (`useIdle`, `useMedia`, etc.)—instead of reinventing utilities. Pair with urql for GraphQL client features (normalized cache, SSR, subscriptions, offline replays, batching).
+- **Auth**: @simplewebauthn/browser for passkey-first authentication/2FA flows (registration + assertion UX); reCAPTCHA for bot mitigation.
 
 ## Backend Stack
 GraphQL-first, serverless API.
 - **Schema/Server**: Pothos (code-first); Yoga. Use `gql.tada` for all GraphQL documents/operations (never raw template literals) and `graphql-scalars` for custom scalars.
   - Pr: Modular `queryField`; generate typed client hooks via `gql.tada` outputs.
 - **Auth**: Auth.js (JWT/Redis denylist); rotate.
+- **Request Context**: In Next.js backend/app routes, build request-scoped context with AsyncLocalStorage leveraging `headers()` / `cookies()` and custom stores instead of threading context through parameters. Expose helpers (e.g., `getRequestContext()`) that read from ALS to keep handlers clean.
 - **ORM**: Drizzle (queries/migrations). Avoid raw SQL entirely for security/type safety; use query builder methods with parameterization (e.g., `eq`, `and`, `or`). Reserve `sql` template only for unavoidable complex cases, always with user inputs bound via placeholders.
   - Ex: `db.select().from(users).where(eq(users.id, userId))`.
 - **Security**: @simplewebauthn/server; Redis limits.
