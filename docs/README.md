@@ -1,136 +1,127 @@
-# Modular AI Development Rules
+# Optimized Modular AI Development Rules
 
-This repository provides modular development rules for AI development agents. Each rule file is self-contained and can be used independently or combined based on project needs.
+This repository serves as the core hub for prompt engineering guidelines, delivering self-contained rule files for AI agents to produce consistent, high-quality code. Select and compose rules modularly to fit project requirements, ensuring ethical, efficient development.
 
-## Project Objective
+## Core Objectives
+Design rules to enable AI agents in generating scalable, maintainable code across stacks. Key principles:
+- **Modularity**: Build each file as an independent unit—apply standalone or combine without conflicts.
+- **Composability**: Mix rules for custom project needs (e.g., React + TypeScript for web apps).
+- **Tool Agnosticism**: Focus on patterns, not specific tools; adapt to user preferences.
+- **Self-Containment**: Ensure every file stands alone—no cross-references required.
 
-Provides modular development rules that AI agents use to generate consistent, high-quality code across different projects and technology stacks.
+## Rule Design Principles
+Craft rules following these imperatives to ensure AI usability and extensibility. Validate new rules against the quality checklist below.
 
-Rules are designed to be:
-- Modular: Each rule file is independent and can be used separately
-- Composable: Different projects can combine different sets of rules
-- Tool-Agnostic: Rules don't enforce specific tools, allowing flexibility
-- Self-Contained: Each file can be understood without external references
+### Structure and Scope
+- Define precise globs at the file start (e.g., `*.tsx` for React components) to target specific patterns.
+- State clear scope in the intro: Outline purpose, boundaries, and applicability (e.g., "Applies to frontend routing in SPAs").
+- Eliminate dependencies: No references to other files—keep fully self-contained.
+- Treat as guidelines: Provide flexible best practices, not rigid mandates; include "adapt as needed" notes.
 
-## Rule Creation Principles
+### Content and Patterns
+- Maintain framework agnosticism: Use general principles (e.g., "Separate concerns") applicable across React/Svelte/Flutter.
+- Stay technology neutral: Recommend patterns over tools (e.g., "Use code-first schema builders" instead of "Use Pothos").
+- Emphasize patterns: Detail "how-to" with examples (e.g., "For state management: Create a hook that subscribes to a store and unsubscribes on unmount").
+- Incorporate context: Specify triggers (e.g., "Apply immutability in reducers for concurrent updates").
 
-### Core Philosophy
-- Modularity First: Each rule file must be completely independent and self-contained
-- Tool Compatibility: Rules guide usage patterns but don't mandate specific tools
-- Composable Design: Rules should work together without conflicts
-- AI-Friendly: Written specifically for AI development agents to understand and apply
+### AI Optimization
+- Write for AI parsing: Use imperative bullets, short sentences, and code snippets for direct application.
+- Example: In a testing rule: "Write failing test first: `expect(add(2,2)).toBe(5)`; then implement `function add(a,b){return a+b;}`; refactor for edge cases."
 
-### File Structure Rules
-- Precise Globs: Each file specifies exact file patterns it applies to
-- Clear Scope: Description clearly defines the file's purpose and boundaries
-- No Dependencies: Files don't reference or depend on other rule files
-- Guideline Focus: Rules are guidelines, not hard requirements
+### Quality and Maintenance Standards
+- Ensure self-contained readability: Test by reading the file in isolation—does it guide full implementation?
+- Include targeted examples: Add code snippets for complex patterns (e.g., 5-10 lines max, with before/after).
+- Build progressively: Start with basics (e.g., "Define props"), advance to edges (e.g., "Handle async errors with AbortSignal").
+- Design for longevity: Focus on timeless principles (e.g., SRP) over fleeting trends; review annually for relevance.
 
-### Content Guidelines
-- Framework Agnostic: General principles work across different frameworks
-- Technology Neutral: Avoid specifying concrete tools unless absolutely necessary
-- Pattern Based: Focus on patterns and best practices, not implementations
-- Context Aware: Rules consider when and how to apply patterns
+## Usage Guide
 
-### Writing Rules
-- **AI-First**: Rules are written for AI development agents, not humans
-- **Concise**: Write key points directly, no unnecessary explanations
-- **Practical**: Each rule provides actionable implementation guidance
-- **No Emojis**: Remove all emojis and decorative formatting
-- **Pattern Focus**: Teach "how to" implement correctly, not "why"
-- **Tool Agnostic**: Guide patterns but don't mandate specific tools
-- **Modular**: Each file must be usable independently
-- **Self-Contained**: No references to other rule files
+### Quick Installation
+Sync rules to your AI agent's directory with one command. Auto-detects environment; supports dry-run for preview.
 
-### Quality Standards
-- Self-Contained Reading: Each file can be read and understood independently
-- Clear Examples: Rules include practical examples when helpful
-- Progressive Enhancement: Rules work from basic to advanced use cases
-- Future Proof: Rules remain relevant as technologies evolve
-
-## Quick Start
-
-### One-Command Sync (Recommended)
 ```bash
-# Auto-detect agent and sync rules
+# Recommended: Auto-sync
 npx github:sylphxltd/rules
 
-# Force specific agent
-npx github:sylphxltd/rules --agent=cursor    # For Cursor (.cursor/rules/*.mdc)
-npx github:sylphxltd/rules --agent=kilocode  # For Kilocode (.kilocode/rules/*.md)
-npx github:sylphxltd/rules --agent=roocode   # For RooCode (.roo/rules/*.md)
+# Specify agent
+npx github:sylphxltd/rules --agent=cursor    # Targets .cursor/rules/*.mdc (YAML frontmatter)
+npx github:sylphxltd/rules --agent=kilocode  # Targets .kilocode/rules/*.md (plain Markdown)
+npx github:sylphxltd/rules --agent=roocode   # Targets .roo/rules/*.md (plain Markdown)
 
-# Preview without making changes
+# Dry-run preview
 npx github:sylphxltd/rules --dry-run
 ```
 
+Post-sync: Restart agent; verify rules load without errors.
+
 ## Rule Categories
+Select categories based on project stack. Apply General always; add others as needed. Each file is standalone—compose for your context.
 
-### General (Always Apply)
-- **`serena-integration.mdc`** - Serena MCP tool integration for all development tasks
-- **`general.mdc`** - Universal development practices, security, performance, code quality
-- **`testing.mdc`** - Comprehensive testing practices and TDD workflow requirements
+### Essential (Apply Universally)
+- **`serena-integration.mdc`**: Integrate Serena MCP tools for task automation (e.g., file reads, command execution).
+- **`general.mdc`**: Core practices for security (e.g., parameterized queries), performance (e.g., lazy loading), and quality (e.g., SRP).
+- **`testing.mdc`**: Enforce TDD with 100% coverage across unit/E2E; use Vitest/Playwright.
 
-### Language Specific
-- **`typescript.mdc`** - TypeScript language rules (if using TS)
+### Language-Focused
+- **`typescript.mdc`**: Strict typing rules (e.g., infer types, forbid `any`); apply if using TS/JS.
 
-### Framework Specific
-- **`react.mdc`** - React framework rules + signals patterns (if using React)
-- **`sveltekit.mdc`** - SvelteKit framework rules + Svelte 5 runes (if using SvelteKit)
-- **`flutter.mdc`** - Flutter framework rules + signals/state management (if using Flutter)
+### Framework-Focused
+- **`react.mdc`**: Component patterns, hooks, signals for state (e.g., useSignal for reactivity); for React apps.
+- **`sveltekit.mdc`**: Routing, stores, Svelte 5 runes; for SvelteKit projects.
+- **`flutter.mdc`**: Widget trees, state management with signals; for mobile Flutter apps.
 
-### Tool Specific
-- **`biome.mdc`** - Biome linter/formatter rules (if using Biome)
-- **`pandacss.mdc`** - PandaCSS type-safe styling rules (if using PandaCSS)
-- **`drizzle.mdc`** - Drizzle ORM rules (if using Drizzle)
-- **`id-generation.mdc`** - ID generation strategies and best practices (if using databases/Redis)
-- **`redis.mdc`** - Redis usage guidelines and reactive streams patterns (if using Redis)
-- **`trpc.mdc`** - tRPC rules (if using tRPC)
-- **`zustand.mdc`** - Zustand state management rules (if using Zustand)
+### Tool-Focused
+- **`biome.mdc`**: Linting/formatting configs; enforce in CI for consistency.
+- **`pandacss.mdc`**: Type-safe CSS utilities; integrate with TS for styled props.
+- **`drizzle.mdc`**: Schema migrations, queries; use for relational DBs.
+- **`id-generation.mdc`**: UUID v7 for IDs; apply to entities/sessions.
+- **`redis.mdc`**: Streams/PubSub patterns; for caching/notifications.
+- **`trpc.mdc`**: End-to-end typesafe APIs; for RPC-style backends.
+- **`zustand.mdc`**: Minimal state stores; for React global state.
 
-### Special Purpose
-- **`planning-first.mdc`** - Tool-driven planning methodology
-- **`ai-sdk-integration.mdc`** - AI SDK streaming and tool patterns
+### Specialized
+- **`planning-first.mdc`**: Step-by-step planning with risks/AC before execution.
+- **`ai-sdk-integration.mdc`**: Streaming responses, tool calls for AI features.
 
 
-## Maintenance & Contribution
+## Maintenance and Contributions
+Maintain rules through regular reviews; contribute via PRs following this process.
 
-### Rule Maintenance Principles
-- Regular Review: Rules should be reviewed and updated as technologies evolve
-- Self-Contained: Each rule file remains independently understandable
-- Modular Updates: Changes to one file don't break others
-- AI Compatibility: Rules remain compatible with AI development workflows
+### Sync Tool Extension
+Extend the npx sync tool for new AI agents modularly:
+1. Edit `scripts/sync-rules.js`: Add to `AGENT_CONFIGS` object with keys: name, dir (e.g., '.newagent/rules'), ext ('.md' or '.mdc'), yamlFrontmatter (true/false).
+2. Test: Run `npx github:sylphxltd/rules --agent=newagent --dry-run`.
+3. Auto-handles: Detection, YAML processing, validation.
 
-### Tool Extensibility
-The sync tool supports multiple AI development agents through a modular configuration system. To add support for a new agent:
+Supported agents:
+- **Cursor**: `.cursor/rules/*.mdc` (YAML frontmatter for metadata).
+- **Kilocode**: `.kilocode/rules/*.md` (plain Markdown).
+- **RooCode**: `.roo/rules/*.md` (plain Markdown).
 
-1. Add agent configuration to `AGENT_CONFIGS` in `scripts/sync-rules.js`
-2. Specify: name, directory, file extension, and YAML processing preference
-3. The tool automatically handles detection, validation, and processing
+### Adding/Updating Rules
+Follow this sequence to ensure quality:
+1. **Assess Need**: Confirm it fills a gap (e.g., new framework pattern); check for overlaps.
+2. **Define Scope**: Set precise globs (e.g., `src/**/*.tsx`); outline boundaries in intro.
+3. **Keep Neutral**: Use patterns over tools (e.g., "Implement lazy queries" not "Use React.lazy").
+4. **Ensure Self-Containment**: Write standalone—no external refs; include all examples.
+5. **Validate Integration**: Compose with 2-3 existing rules; test AI application (e.g., generate sample code).
 
-**Current supported agents:**
-- **Cursor**: `.cursor/rules/*.mdc` (with YAML front matter)
-- **Kilocode**: `.kilocode/rules/*.md` (without YAML front matter)
-- **RooCode**: `.roo/rules/*.md` (without YAML front matter)
+### Quality Checklist
+- [ ] Descriptive title; no fluff intro.
+- [ ] Globs target exact patterns.
+- [ ] Tool-agnostic, pattern-driven content.
+- [ ] No inter-file dependencies.
+- [ ] Standalone comprehension.
+- [ ] AI-optimized: Concise imperatives, actionable steps.
+- [ ] No emojis/formatting distractions.
+- [ ] "How-to" focus with practical examples.
+- [ ] Examples: Brief, code-inclusive.
+- [ ] Future-proof: Timeless principles.
 
-### Adding New Rules
-1. Assess Need: Ensure the rule addresses a genuine development need
-2. Check Scope: Define precise globs and ensure no overlap with existing files
-3. Tool Agnostic: Avoid mandating specific tools unless absolutely necessary
-4. Self-Contained: New files must be completely understandable on their own
-5. Test Integration: Verify the rule works with existing combinations
-
-### Rule Quality Checklist
-- File has clear, descriptive title (no unnecessary introduction text)
-- Precise globs defined for applicable file patterns
-- Content is tool-agnostic and pattern-focused
-- No dependencies on other rule files
-- Can be understood without external context
-- Written for AI agents: concise, practical, actionable
-- No emojis or decorative formatting
-- Each rule teaches "how to" implement correctly
-- Examples are practical and helpful when included
-- Rules remain relevant as technologies evolve
+## Next Steps
+- Review [Rule File Format](link-to-format) for structure.
+- Explore [Installation Scripts](link-to-scripts) for customization.
+- See [Contributing Guidelines](link-to-contrib) for PR process.
 
 ## Further Reading
 
