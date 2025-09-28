@@ -46,6 +46,10 @@
 - Enhance strictness only; no loose casts (e.g., 'as any').
 - Research unfamiliar types; adapt code to fit.
 - No modifications to user types.
+- Let TS infer types automatically unless inference fails; avoid manual annotations.
+- Strictly forbid `any`; for narrowing unknown types, use specific types or generic constraints instead of `unknown`.
+- Use `satisfies` to validate object shapes rather than type annotations on variables.
+- Provide type sources via builders/generic contexts (e.g., GraphQL builders, Drizzle clients) for automatic inference of resolved inputs; avoid marking params as `unknown` or `any`.
 
 ## Testing
 - TDD: Failing test first, implement, refactor.
