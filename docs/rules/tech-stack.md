@@ -6,7 +6,7 @@ Adopt this stack for scalable, secure SaaS applications. Select modularly; prior
 Responsive SPAs via React ecosystem.
 - **Framework**: Next.js App Router (routing, SSR/SSG). Rationale: SEO/fast loads; Turbopack dev.
   - Ex: `app/dashboard/page.tsx`.
-- **UI**: React + Radix UI primitives (a11y, e.g., Dialog).
+- **UI**: React + Radix UI primitives (a11y, e.g., Dialog). Prefer Radix components for all structural/interactive elements; only craft custom components when Radix lacks coverage or feature parity.
 - **State**: Zustand (global, e.g., sessions). Avoid Redux.
   - Int: `create` with `persist`.
 - **Styling**: PandaCSS (type-safe atomic CSS-in-JS). Optimal: Zero-runtime, TS-safe, build-time (<10KB purged).
@@ -22,8 +22,8 @@ Responsive SPAs via React ecosystem.
 
 ## Backend Stack
 GraphQL-first, serverless API.
-- **Schema/Server**: Pothos (code-first); Yoga. gql.tada types; graphql-scalars customs.
-  - Pr: Modular `queryField`.
+- **Schema/Server**: Pothos (code-first); Yoga. Use `gql.tada` for all GraphQL documents/operations (never raw template literals) and `graphql-scalars` for custom scalars.
+  - Pr: Modular `queryField`; generate typed client hooks via `gql.tada` outputs.
 - **Auth**: Auth.js (JWT/Redis denylist); rotate.
 - **ORM**: Drizzle (queries/migrations). Avoid raw SQL entirely for security/type safety; use query builder methods with parameterization (e.g., `eq`, `and`, `or`). Reserve `sql` template only for unavoidable complex cases, always with user inputs bound via placeholders.
   - Ex: `db.select().from(users).where(eq(users.id, userId))`.
