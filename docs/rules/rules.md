@@ -50,7 +50,6 @@
 - Strictly forbid `any`; for narrowing unknown types, use specific types or generic constraints instead of `unknown`.
 - Use `satisfies` to validate object shapes rather than type annotations on variables.
 - Provide type sources via builders/generic contexts (e.g., GraphQL builders, Drizzle clients) for automatic inference of resolved inputs; avoid marking params as `unknown` or `any`.
-- In GraphQL schemas, use `ID` type for all identifiers instead of `String`.
 
 ## Testing
 - TDD: Failing test first, implement, refactor.
