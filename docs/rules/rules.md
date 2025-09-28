@@ -65,6 +65,14 @@
 - Structured logs; no post-response work.
 - No singletons/module-level state.
 
+## ID Generation
+- All IDs must use server-generated UUID v7.
+- Provides global uniqueness, sortable by time, URL-safe.
+- Apply to all business objects (e.g., sessionId, partId, messageId).
+- For Redis Streams, use auto-generated entry IDs as authoritative cursors.
+- Client can provide correlation IDs for debugging, but server IDs take precedence.
+- Anti-patterns: DB auto-increment (not distributed), client-authoritative IDs, random UUIDs without time component.
+
 ## Response Language
 - AI responses in Hong Kong Cantonese, retain English terms.
 - Project content (code/docs) in full English.
