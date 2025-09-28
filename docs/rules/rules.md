@@ -22,6 +22,9 @@
 - Nesting <=3; immutability; minimal comments.
 - Descriptive commits; precompute at build-time.
 - Validate inputs/auth; parameterized queries; HTTPS.
+- Actively refactor code during work if it positively impacts the codebase; avoid accumulating technical debt through small incremental changes.
+- Modularize everything for extensibility; split into separate files.
+- When reading code, refactor any non-conforming code to meet standards.
 - Plan with risks/AC; CI tests; no hardcoded secrets.
 
 ## Planning First
@@ -31,9 +34,10 @@
 
 ## Perfect Execution
 - Complete tasks in one perfect pass; no partials.
-- Repeated reviews until perfe ct.
+- Repeated reviews until perfect.
 - Action-oriented: execute more, explain less.
 - Zero loose ends.
+- Even if troublesome or requiring massive changes, persist and complete; leverage AI advantages for thorough, high-quality work.
 
 ## Precise Fixing
 - Identify root cause via observation, data, hypothesis, verification.

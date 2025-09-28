@@ -1,4 +1,4 @@
-# Website Specification
+# SaaS Platform Specification Template
 
 ## Overview
 This is a general SaaS platform specification template for advanced, modern web applications across various projects. It covers user management, billing, referrals, and content delivery, built as a fully responsive SPA with serverless architecture. All features must be complete, functional, and compliant with global standards. The site operates entirely in USD, with wallet-based billing and membership tiers offering automatic top-ups and discounts. Adapt this template to specific project needs.
