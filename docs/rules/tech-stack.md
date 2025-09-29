@@ -114,6 +114,16 @@ Apply these for GraphQL/Pothos to ensure type safety and maintainability. Valida
   - Ex: `type User { id: ID! name: String! }`.
 - **Enums/Unions**: Enums for fixed (e.g., Role); unions for polymorphic (e.g., Result = Post | User). Limit depth 3-5.
 
+### GraphQL Document Placement
+Use these co-location practices for the Next.js App Router + urql + `gql.tada` stack; they focus purely on where to put files so LLMs can trace data flow.
+
+- **Routes/pages**: Keep the operation beside the entry it powers (e.g., `app/(marketing)/signup/page.tsx` with `page.gql.ts`) so route-level data is tree-shaken together.
+- **Components**: Store component documents in the same folder using `ComponentName.gql.ts`, exporting only the typed helpers from `gql.tada`.
+- **Stores/services**: When Zustand or other orchestrators fire GraphQL calls, colocate their operations (`store.gql.ts`) or share a feature-scoped `gql/` directory; avoid a monolithic “queries/” bucket.
+- **Fragments**: Park reusable fragments under `src/gql/fragments/` or the feature’s `gql/fragments/`, with barrel re-exports to keep import paths stable.
+- **Tests & fixtures**: Place behaviour tests (`ComponentName.test.tsx`, `store.test.ts`) and their fixtures (`ComponentName.fixture.gql.ts` or `.ts`) next to the consumer; regenerate fixtures through the same `gql.tada` pipeline for schema parity.
+- **Typed modules**: Author every document in `.gql.ts` files, backed by a workspace `graphql-env.d.ts` introspection setup. The `gql.tada` plugin enriches those modules in place, so `.gql.ts` stays the single suffix the toolchain needs.
+
 ### Pothos Best Practices
 - **ID Handling**: Set `exposeId: false` in prismaField for security (hide IDs by default); use `exposeID: true` only when needed (e.g., for lists). Rationale: Reduces payload, prevents ID enumeration; Prisma auto-generates IDs.
   - Ex: `t.prismaField({ type: 'User', exposeId: false })`.
