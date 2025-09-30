@@ -25,13 +25,13 @@ Responsive SPAs via React ecosystem. Organize all frontend code under `src/featu
     - **Opt**: `staticCss: { recipes: '*' }`; purge globs (`src/**/*.tsx`); `panda analyze --scope=recipe`. Next.js plugins; <5% bloat.
     - Rationale: Atomic + TS for perf/DX; custom extensible.
 - **Hooks**: Leverage react-use’s hook suite to cover common side effects and browser integrations—persistent storage (`useLocalStorage`), element measurement (`useMeasure`), debounced handlers (`useDebounce`), sensors (`useIdle`, `useMedia`, etc.)—instead of reinventing utilities. Pair with urql for GraphQL client features (normalized cache, SSR, subscriptions, offline replays, batching).
-- **Auth**: @simplewebauthn/browser for passkey-first authentication/2FA flows (registration + assertion UX); reCAPTCHA for bot mitigation.
+- **Auth**: Better Auth for passkey-first authentication/2FA flows (registration + assertion UX); reCAPTCHA for bot mitigation.
 
 ## Backend Stack
 GraphQL-first, serverless API. Organize backend logic per domain under `src/graphql/<domain>/` (e.g., `src/graphql/billing/` for types, queries, mutations, loaders).
 - **Schema/Server**: Pothos (code-first); Yoga. Use `gql.tada` for all GraphQL documents/operations (never raw template literals) and `graphql-scalars` for custom scalars.
   - Pr: Modular `queryField`; generate typed client hooks via `gql.tada` outputs; define GraphQL operations co-located with consuming components/pages to embrace frontend-driven data requirements. Use DataLoader in `loaders.ts` to batch and cache database queries, preventing N+1 issues.
-- **Auth**: Auth.js (JWT/Redis denylist); rotate.
+- **Auth**: Better Auth (JWT/Redis denylist); rotate.
 - **Request Context**: In Next.js backend/app routes, use AsyncLocalStorage powered by `headers()` / `cookies()` (and derived stores) to access request data wherever needed—prefer tiny accessors (e.g., `getAuthSession()`, `getLocale()`) instead of passing contextual objects through function parameters.
 - **ORM**: Drizzle (queries/migrations). Avoid raw SQL entirely for security/type safety; use query builder methods with parameterization (e.g., `eq`, `and`, `or`). Reserve `sql` template only for unavoidable complex cases, always with user inputs bound via placeholders. Define schemas and queries per domain under `src/domains/<domain>/data/`.
   - Ex: `db.select().from(users).where(eq(users.id, userId))`.
@@ -152,10 +152,10 @@ Keep GraphQL files within their domain boundaries under `src/features/<domain>/s
 Implement a GraphQL-first API with serverless functions for stateless operations.
 - **Schema & Server**: Pothos for schema building (code-first); Yoga for GraphQL server execution. Use gql.tada for TS types and graphql-scalars for custom types (e.g., DateTime).
   - Best Practice: Define resolvers with `builder.queryField` for type inference; extend types modularly.
-- **Auth**: Auth.js with JWT strategy and Redis denylist for session revocation. Rotate tokens on critical actions.
+- **Auth**: Better Auth with JWT strategy and Redis denylist for session revocation. Rotate tokens on critical actions.
 - **ORM**: Drizzle ORM for type-safe queries/migrations; schema-first with relations.
   - Example: `db.select().from(users).where(eq(users.id, userId))` for secure fetches.
-- **Security**: @simplewebauthn/server for passkey verification; rate-limit endpoints with Redis.
+- **Security**: Better Auth passkey plugin for passkey verification; rate-limit endpoints with Redis.
 
 ## Data Layer
 - **Database**: PostgreSQL hosted on Neon (serverless Postgres) with pgBouncer for connection pooling. Use for relational data (users, transactions); enable row-level security.
