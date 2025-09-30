@@ -3,15 +3,19 @@
 Adopt this stack for scalable, secure SaaS applications. Select modularly; prioritize type safety, performance, serverless. Validate with E2E (Playwright); monitor with Sentry.
 
 ## Domain-Driven Architecture
-Structure the entire codebase around business domains (e.g., `src/domains/billing/`, `src/domains/user-management/`) to keep related features, data, and logic colocated. Each domain owns its own `app/` (routes), `components/`, `stores/`, `gql/`, `tests/`, and `types/` subfolders. Cross-domain dependencies are explicit via `src/domains/<domain>/index.ts` exports—avoid global shared folders. This keeps LLMs focused on one domain at a time and prevents tight coupling.
+Structure the entire codebase around business domains using a feature-based layout under `src/features/<domain>/` for frontend logic and `src/graphql/<domain>/` for backend schemas. Keep related features, data, and logic colocated within each domain. Cross-domain sharing happens via explicit exports—avoid global shared folders. This keeps LLMs focused on one domain at a time and prevents tight coupling.
+
+- **Frontend domains**: Under `src/features/<domain>/` (e.g., `src/features/user/`), include `components/`, `hooks/`, `store/`, `services/`, `utils/`, `types.ts`.
+- **Backend domains**: Under `src/graphql/<domain>/` (e.g., `src/graphql/user/`), include `types/`, `queries.ts`, `mutations.ts`, `subscriptions.ts`, `loaders.ts` (using DataLoader for N+1 prevention).
+- **Shared infra**: `src/lib/` for clients (e.g., `graphql-client.ts`), `src/app/` for routes and providers.
 
 ## Frontend Stack
-Responsive SPAs via React ecosystem. Organize all frontend code under domain folders (e.g., `src/domains/dashboard/app/page.tsx`).
+Responsive SPAs via React ecosystem. Organize all frontend code under `src/features/<domain>/` (e.g., `src/features/dashboard/`).
 - **Framework**: Next.js App Router (routing, SSR/SSG). Rationale: SEO/fast loads; Turbopack dev.
-  - Ex: `src/domains/dashboard/app/page.tsx`.
-- **UI**: React + Radix UI primitives (a11y, e.g., Dialog). Prefer Radix components for all structural/interactive elements; only craft custom components when Radix lacks coverage or feature parity. Place components under `src/domains/<domain>/components/`.
+  - Ex: `src/app/(app)/dashboard/page.tsx`.
+- **UI**: React + Radix UI primitives (a11y, e.g., Dialog). Prefer Radix components for all structural/interactive elements; only craft custom components when Radix lacks coverage or feature parity. Place components under `src/features/<domain>/components/`.
 - **State**: Zustand (global, e.g., sessions). Avoid Redux.
-  - Int: `create` with `persist`. Store domain-specific stores under `src/domains/<domain>/stores/`.
+  - Int: `create` with `persist`. Store domain-specific stores under `src/features/<domain>/store/`.
 - **Styling**: PandaCSS (type-safe atomic CSS-in-JS). Optimal: Zero-runtime, TS-safe, build-time (<10KB purged).
   - Practices:
     - **Tokens/Themes**: `panda.config.ts` semantics (e.g., `colors.primary.500: '#0ea5e9'`); `_dark`/CSS vars for modes.
@@ -24,9 +28,9 @@ Responsive SPAs via React ecosystem. Organize all frontend code under domain fol
 - **Auth**: @simplewebauthn/browser for passkey-first authentication/2FA flows (registration + assertion UX); reCAPTCHA for bot mitigation.
 
 ## Backend Stack
-GraphQL-first, serverless API. Organize backend logic per domain (e.g., `src/domains/billing/backend/` for resolvers, schemas).
+GraphQL-first, serverless API. Organize backend logic per domain under `src/graphql/<domain>/` (e.g., `src/graphql/billing/` for types, queries, mutations, loaders).
 - **Schema/Server**: Pothos (code-first); Yoga. Use `gql.tada` for all GraphQL documents/operations (never raw template literals) and `graphql-scalars` for custom scalars.
-  - Pr: Modular `queryField`; generate typed client hooks via `gql.tada` outputs; define GraphQL operations co-located with consuming components/pages to embrace frontend-driven data requirements.
+  - Pr: Modular `queryField`; generate typed client hooks via `gql.tada` outputs; define GraphQL operations co-located with consuming components/pages to embrace frontend-driven data requirements. Use DataLoader in `loaders.ts` to batch and cache database queries, preventing N+1 issues.
 - **Auth**: Auth.js (JWT/Redis denylist); rotate.
 - **Request Context**: In Next.js backend/app routes, use AsyncLocalStorage powered by `headers()` / `cookies()` (and derived stores) to access request data wherever needed—prefer tiny accessors (e.g., `getAuthSession()`, `getLocale()`) instead of passing contextual objects through function parameters.
 - **ORM**: Drizzle (queries/migrations). Avoid raw SQL entirely for security/type safety; use query builder methods with parameterization (e.g., `eq`, `and`, `or`). Reserve `sql` template only for unavoidable complex cases, always with user inputs bound via placeholders. Define schemas and queries per domain under `src/domains/<domain>/data/`.
@@ -118,15 +122,14 @@ Apply these for GraphQL/Pothos to ensure type safety and maintainability. Valida
 - **Enums/Unions**: Enums for fixed (e.g., Role); unions for polymorphic (e.g., Result = Post | User). Limit depth 3-5.
 
 ### GraphQL Document Placement
-Adopt a domain-driven folder structure (e.g., `src/domains/<domain>/feature/...`) and keep every file that collaborates on a use-case inside the same domain boundary so LLMs can trace the flow without jumping directories.
+Keep GraphQL files within their domain boundaries under `src/features/<domain>/services/` and `src/graphql/<domain>/`.
 
-- **Domain roots**: Each domain/feature owns its `app`, `components`, `stores`, `gql`, and `tests` subfolders. Cross-domain sharing happens via explicit exports from `src/domains/<domain>/index.ts` rather than a global “shared” bucket.
-- **Routes/pages**: Inside a domain, colocate the App Router entry and its operation (e.g., `src/domains/billing/app/invoices/page.tsx` with `page.gql.ts`) so route data bundles and tree-shakes with the page.
-- **Components**: Keep UI pieces under `components/` within the same domain, with their queries/mutations in sibling `ComponentName.gql.ts` files that export the typed helper from `gql.tada`.
-- **Stores/services**: For domain state or service orchestrators (`src/domains/billing/stores/invoiceStore.ts`), store their GraphQL documents beside them (`invoiceStore.gql.ts`) or under a local `gql/` folder scoped to that domain—never a monolithic `src/gql`.
-- **Fragments**: House shared fragments under `src/domains/<domain>/gql/fragments/` (or, if reused broadly, `src/domains/shared/gql/fragments/`) and expose them through barrel files to stabilise import paths.
-- **Tests & fixtures**: Match each domain artefact with colocated tests/fixtures (`ComponentName.test.tsx`, `ComponentName.fixture.gql.ts`) inside the same domain tree; regenerate fixtures with the same `gql.tada` pipeline for schema parity.
-- **Typed modules**: Author every operation in domain-scoped `.gql.ts` files, backed by the workspace `graphql-env.d.ts` introspection. The `gql.tada` plugin injects types in place, so `.gql.ts` remains the only suffix and stays domain-local.
+- **Routes/pages**: Colocate operations in domain services (e.g., `src/app/(app)/billing/invoices/page.tsx` imports from `src/features/billing/services/invoices.gql.ts`) for tree-shaking.
+- **Components**: Place queries/mutations in domain services (`src/features/billing/services/InvoiceList.gql.ts`), exporting typed helpers.
+- **Stores/services**: Store GraphQL docs in domain services (`src/features/billing/services/invoiceStore.gql.ts`).
+- **Fragments**: Use `src/features/<domain>/services/fragments/` for domain-specific fragments, with barrel exports.
+- **Tests & fixtures**: Colocate tests/fixtures under `src/features/<domain>/` (e.g., `InvoiceList.test.tsx`, `InvoiceList.fixture.gql.ts`).
+- **Typed modules**: All `.gql.ts` files stay domain-local under `src/features/<domain>/services/`, enriched by the workspace `graphql-env.d.ts`.
 
 ### Pothos Best Practices
 - **ID Handling**: Set `exposeId: false` in prismaField for security (hide IDs by default); use `exposeID: true` only when needed (e.g., for lists). Rationale: Reduces payload, prevents ID enumeration; Prisma auto-generates IDs.
