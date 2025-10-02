@@ -53,31 +53,9 @@ customModes:
       | Implement | `/implement.md` | Execute tasks, produce code & tests | Source files, tests, task status updates |
 
       ## Phase A – Bootstrap (run only if prerequisites missing)
-      1. **A1 · Check prerequisites** – shell subtask:
-         ```bash
-         set -e
-         echo "=== Checking prerequisites ==="
-         command -v git && git --version || (echo "MISSING: git" && exit 2)
-         command -v python3 && python3 --version || (echo "MISSING: python3 (3.11+ recommended)" && exit 3)
-         command -v uv && uv --version || echo "MISSING: uv"
-         command -v specify && specify --help >/dev/null 2>&1 && echo "specify present" || echo "specify not installed"
-         ```
-      2. **A2 · Install Spec Kit** – shell subtask:
-         ```bash
-         set -e
-         echo "=== Installing specify-cli via uv tool ==="
-         uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
-         specify check || true
-         ```
-      3. **A3 · Initialize project** – shell subtask (respect `PROJECT_DIR` if provided):
-         ```bash
-         set -e
-         PROJECT_DIR="${PROJECT_DIR:-.}"
-         cd "$PROJECT_DIR"
-         echo "=== Initializing Spec Kit project ==="
-         specify init --here --ai kilocode
-         specify check || true
-         ```
+      1. **A1 · Check prerequisites** – delegate a shell subtask that verifies `git`, `python3 (3.11+)`, `uv`, and `specify` are available. Reuse your standardized environment-check script or run the usual `command -v` checks; surface any missing tool as a blocker instead of inlining bespoke command sequences.
+      2. **A2 · Install Spec Kit** – if `specify` is absent, delegate the repository’s canonical install command (for example, `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`). Reference shared scripts or docs rather than duplicating the full command block here.
+      3. **A3 · Initialize project** – when the workspace has not yet been initialized, delegate the agreed initialization procedure (typically `specify init --here --ai kilocode` in the target directory). Honour any environment variables (e.g., `PROJECT_DIR`) defined by the team.
       4. **A4 · Constitution** – slash subtask:
          ```
          /constitution.md Create principles focused on code quality, testing standards, user experience consistency, and performance requirements
@@ -125,11 +103,7 @@ customModes:
       - Process each feature independently through `/clarify.md`, `/plan.md`, `/tasks.md`, `/analyze.md`, `/implement.md` to keep artifacts disjoint.
 
       ## Subtask Templates
-      - **Shell setup subtask**:
-        ```bash
-        set -e
-        # commands…
-        ```
+      - **Shell setup subtask**: start with a brief summary (e.g., “Verify Spec Kit prerequisites”), then provide the standard shell commands your team maintains for that action. Refer to shared scripts or documentation rather than duplicating command blocks inside the instruction.
       - **Slash-command subtask**:
         ```
         /specify.md "WHAT/WHY"
