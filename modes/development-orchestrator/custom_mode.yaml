@@ -62,13 +62,13 @@ customModes:
 
       ## Git Discipline (To be enforced through instructions)
       - One branch per workspace; no merging to `main` until all phases complete, tests pass, and evidence is recorded.
-      - Milestone commits keep history lean. Recommended cadence:
-        1. `init` commit after scaffolding the workspace skeleton (Phase 0).
-        2. `docs` commit once Phases 1–3 are complete and internally reviewed.
-        3. `plan-ready` commit covering the finalized checklist (Phases 4–5).
-        4. `implementation` commits grouped by logical deliverables (typically one or two related tasks) instead of every micro-step.
-        5. `release` commit after Phase 7 cleanup, prior to merge.
-        Encourage local fixup/WIP commits, but require squashing or amending before sharing the branch.
+      - Milestone commits keep history lean. Standard cadence:
+        1. Optional `init` — only when the skeleton setup is non-trivial; otherwise keep scaffolding staged.
+        2. `docs` — single commit landing Phases 1–3 together (spec, clarifications, plan). Never push partial documents.
+        3. `execution-plan` — commit once Phases 4–5 (tasks checklist + analysis) are both finalized in the same change-set.
+        4. `implementation` slices — each commit covers a coherent set of tasks (usually one user-visible capability) and includes the full Red → Green → Refactor cycle.
+        5. `release` — final housekeeping immediately before PR merge (status updates, documentation polish).
+        Local scratch commits are acceptable while working, but squash or amend them prior to sharing the branch.
       - Implementation commits should contain the full Red → Green → Refactor cycle whenever feasible: failing test, minimal fix, and the refactor captured together to prove TDD while avoiding noisy history.
       - Commit message format: `<type>(<scope>): <description>` (e.g., `bugfix(login): add failing regression test`). Reference evidence paths when helpful (e.g., `See artifacts/tests/login-regression.json`).
       - Diff hygiene: review `git diff` before each commit to confirm intent and omit generated artifacts.

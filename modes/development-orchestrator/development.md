@@ -125,13 +125,13 @@ The brief should be self-contained, reference the `initiatives/<timestamp>-<type
 
 ## Git Discipline
 - **Branching**: One branch per workspace. Use `git fetch` and `git rebase origin/main` regularly to minimize drift, but avoid force pushes after sharing work.
-- **Milestone commits**: Keep the history lean by bundling related phases. Recommended cadence:
-  1. `init` commit after scaffolding the workspace skeleton (Phase 0).
-  2. `docs` commit once Phases 1–3 are complete and internally reviewed.
-  3. `plan-ready` commit covering the finalized checklist (Phases 4–5).
-  4. `implementation` commits grouped by logical deliverable (usually one or two related tasks) rather than every micro-step.
-  5. `release` commit after Phase 7 cleanup, prior to merge.
-  Use local fixup/WIP commits freely, but squash or amend them before sharing the branch.
+- **Milestone commits**: Keep the history lean by bundling related phases. Standard cadence:
+  1. **Optional `init`** — only if the skeleton itself required non-trivial setup; otherwise keep changes staged.
+  2. **`docs`** — single commit that lands completed Phases 1–3 together (spec, clarifications, plan). Do not push partial documents.
+  3. **`execution-plan`** — commit once Phases 4–5 (tasks checklist + analysis) are both ready; they should share the same change-set.
+  4. **`implementation` slices** — each slice covers a coherent set of tasks (usually one user-facing capability). Include Red → Green → Refactor in the same commit.
+  5. **`release`** — final housekeeping after Phase 7 (status updates, documentation polish) immediately before PR merge.
+  Local scratch commits are fine while working, but squash or amend them before sharing the branch.
 - **Implementation commits**: Preserve the Red → Green → Refactor order inside a single commit whenever practical. Include the failing test, the fix, and the follow-up refactor in one logical change-set to avoid noisy history while still proving TDD discipline.
 - **Commit message format**: `<type>(<scope>): <description>`. Examples:
   - `feature(auth): add specify-phase spec.md`
