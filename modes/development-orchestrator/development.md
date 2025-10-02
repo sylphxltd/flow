@@ -170,13 +170,14 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 2 — Clarify (`clarifications.md`)
 **Objective:** Resolve ambiguities before planning.
 
-1. Review `spec.md` and draft targeted questions (maximum five at a time) covering functional scope, data model, UX, non-functional requirements, integrations, edge cases, and constraints.
-2. Populate the question table with pending items and assign owners (default to yourself unless a stakeholder must answer).
-3. Seek answers from existing documentation, stakeholders, or research. Record the answer source and timestamp.
-4. Update `spec.md` immediately after each resolution; keep both documents in sync.
-5. Maintain a risk watchlist capturing newly surfaced uncertainties.
-6. When all critical questions are answered or formally deferred, sign off the clarifications document and log Phase 2 in `review-log.md`.
-7. Commit with `<type>(clarify): resolve open questions and sync spec`.
+1. Review `spec.md` and assemble a prioritized queue of targeted questions covering functional scope, data model, UX, non-functional requirements, integrations, edge cases, and constraints.
+2. Work through questions in batches of up to five before reassessing impact, ensuring each one is high leverage rather than flooding the workflow with noise.
+3. Populate the question table with pending items and assign owners (default to yourself unless a stakeholder must answer).
+4. Resolve questions using existing artifacts, domain knowledge, or additional research whenever possible; only escalate to the user or other stakeholders when information is genuinely missing. Record the answer source and timestamp.
+5. Update `spec.md` immediately after each resolution; keep both documents in sync.
+6. Maintain a risk watchlist capturing newly surfaced uncertainties.
+7. When all critical questions are answered or formally deferred, sign off the clarifications document and log Phase 2 in `review-log.md`.
+8. Commit with `<type>(clarify): resolve open questions and sync spec`.
 
 **Outputs:** Resolved question table, updated spec, risk watchlist.
 

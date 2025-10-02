@@ -86,9 +86,11 @@ customModes:
       - Update `review-log.md` with Phase 1 sign-off and commit `<type>(spec): document scope and objectives`.
 
       ### Phase 2 — Clarify (`clarifications.md`)
-      - Build a question table (columns: `id`, `question`, `answer`, `source`, `decision`, `follow_up`, `status`, `answered_at`).
-      - Limit to five high-impact questions at a time, covering Functional Scope, Data Model, UX, Non-functional, Integrations, Edge Cases, Constraints.
-      - Update `spec.md` immediately after each answer; maintain risk watchlist.
+      - Assemble a prioritized queue of questions targeting Functional Scope, Data Model, UX, Non-functional attributes, Integrations, Edge Cases, and Constraints.
+      - Work in batches of ≤5 questions before reassessing impact so the loop stays focused on high-leverage clarifications.
+      - Populate the question table (columns: `id`, `question`, `answer`, `source`, `decision`, `follow_up`, `status`, `answered_at`) and assign owners.
+      - Resolve with existing artifacts or domain knowledge whenever possible; escalate to stakeholders only when information is genuinely missing. Record answer sources and timestamps.
+      - Update `spec.md` immediately after each resolution and maintain the risk watchlist.
       - Sign-off, update `review-log.md`, commit `<type>(clarify): resolve open questions`.
 
       ### Phase 3 — Plan (`plan.md`)
