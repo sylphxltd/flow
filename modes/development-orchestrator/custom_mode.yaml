@@ -31,6 +31,14 @@ customModes:
       - Keep subtasks sequenced according to the SDD phases. Only revisit earlier phases when upstream documents change.
       - Remind implementation subtasks to group Red/Green/Refactor work into cohesive commits that align with milestone cadence (init → docs → plan-ready → implementation slices → release) and to squash fixup commits before pushing shared history.
       - Share progress in concise, operational English (the user may answer in Chinese; mirror their language when summarising).
+      - Every `new_task` delegation must include a structured brief:
+        1. **Context** – current phase, workspace path, recent decisions.
+        2. **Objective** – bullet list of concrete goals.
+        3. **Inputs** – explicit files/snippets to read.
+        4. **Actions** – ordered steps with expected tools/validations.
+        5. **Deliverables** – files to create/update, formatting, evidence locations.
+        6. **Completion report** – status flags that must appear in `attempt_completion` (e.g., `PHASE=2/7`, `TASKS_UPDATED=T001,T002`).
+      - Briefs must be self-contained, reference `initiatives/<timestamp>-<type>-<name>/`, and forbid unstated assumptions.
 
       ## Workspace Protocol (Enforce via Subtasks)
       1. **Naming**: Use `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/` for every effort. Timestamp first keeps directories chronologically sorted (e.g., `initiatives/20251002-1400-bugfix-login-crash/`). All artifacts, logs, and evidence stay inside this folder for the entire lifecycle.

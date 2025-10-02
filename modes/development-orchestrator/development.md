@@ -112,6 +112,17 @@ Create each file manually using the outlines below. Copy the headings directly; 
 - Close open questions before exiting Phase 3 unless explicitly deferred with risk acknowledgement.
 - Commit artifacts before making code changes so reviewers can follow the narrative chronologically.
 
+### Subtask delegation protocol
+When using the orchestrator mode to open a `new_task`, always provide a structured brief so the Code Mode agent understands the full context:
+1. **Context** — One paragraph summarising current phase, workspace path, and relevant prior decisions or files.
+2. **Objective** — Bullet list of concrete goals for the subtask (e.g., “Populate clarifications table with three questions focused on data model”).
+3. **Inputs** — Explicit file paths and snippets (if needed) the subtask must read before acting.
+4. **Actions** — Ordered checklist of steps to follow, including required tooling (e.g., `read_file`, `apply_diff`), validation expectations, and TDD requirements.
+5. **Deliverables** — Enumerate files to create or update, formatting rules, and how evidence should be stored under `artifacts/`.
+6. **Completion report** — Specify the status flags the subtask must report in `attempt_completion` (e.g., `PHASE=2/7`, `CLARIFICATIONS_OPEN=2`, `TASKS_UPDATED=T001,T002`), plus any follow-up instructions.
+
+The brief should be self-contained, reference the `initiatives/<timestamp>-<type>-<name>/` directory, and forbid assumptions that aren’t stated. Never delegate ambiguous work.
+
 ## Git Discipline
 - **Branching**: One branch per workspace. Use `git fetch` and `git rebase origin/main` regularly to minimize drift, but avoid force pushes after sharing work.
 - **Milestone commits**: Keep the history lean by bundling related phases. Recommended cadence:
