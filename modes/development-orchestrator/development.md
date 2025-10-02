@@ -69,9 +69,10 @@ Create each file manually using the outlines below. Copy the headings directly; 
    - Git strategy and branching considerations.
    - Sign-off block.
 4. `tasks.md`
-   - Table with columns: `task_id`, `description`, `depends_on`, `owner`, `estimate`, `status`, `exit_criteria`, `evidence`.
-   - Parallelizable task markers `[P]` appended to the description.
-   - Section for status update log (timestamped notes).
+   - Markdown checklist where each entry begins `- [ ] TXXX — title` and includes indented metadata lines for `Depends on`, `Owner`, `Exit criteria`, `Evidence`, and optional `Notes`.
+   - Mark parallelizable items by appending `[P]` inside the title (e.g., `- [ ] T003 [P] — …`).
+   - Update entries immediately when work finishes by flipping `[ ]` to `[x]`, filling the evidence path, and recording the completion timestamp inside the metadata.
+   - Maintain a change-log section at the bottom documenting scope adjustments with ISO timestamps.
    - Sign-off block.
 5. `analysis.md`
    - Summary of cross-artifact checks.
@@ -113,7 +114,14 @@ Create each file manually using the outlines below. Copy the headings directly; 
 
 ## Git Discipline
 - **Branching**: One branch per workspace. Use `git fetch` and `git rebase origin/main` regularly to minimize drift, but avoid force pushes after sharing work.
-- **Commit frequency**: Commit at the conclusion of each SDD phase and after every TDD cycle (Red, Green, Refactor). Small documentation touch-ups can be squashed into the relevant phase commit before opening the PR.
+- **Milestone commits**: Keep the history lean by bundling related phases. Recommended cadence:
+  1. `init` commit after scaffolding the workspace skeleton (Phase 0).
+  2. `docs` commit once Phases 1–3 are complete and internally reviewed.
+  3. `plan-ready` commit covering the finalized checklist (Phases 4–5).
+  4. `implementation` commits grouped by logical deliverable (usually one or two related tasks) rather than every micro-step.
+  5. `release` commit after Phase 7 cleanup, prior to merge.
+  Use local fixup/WIP commits freely, but squash or amend them before sharing the branch.
+- **Implementation commits**: Preserve the Red → Green → Refactor order inside a single commit whenever practical. Include the failing test, the fix, and the follow-up refactor in one logical change-set to avoid noisy history while still proving TDD discipline.
 - **Commit message format**: `<type>(<scope>): <description>`. Examples:
   - `feature(auth): add specify-phase spec.md`
   - `bugfix(login): add failing regression test for null session`
@@ -189,16 +197,27 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 4 — Tasks (`tasks.md`)
 **Objective:** Break the plan into executable steps.
 
-1. Translate plan elements and acceptance criteria into atomic tasks. Each task must reference affected files or modules.
-2. Assign dependencies by listing task IDs that must complete first. Mark parallel-safe tasks with `[P]`.
-3. Prepend test-writing tasks before implementation tasks for the same area to enforce TDD.
-4. Set realistic estimates and exit criteria (e.g., “New test passes and code reviewed”).
-5. Reserve ID ranges for future discoveries instead of renumbering (e.g., leave T010 blank if skipping).
-6. Maintain a status update section capturing progress notes.
-7. Sign off and log Phase 4 completion in `review-log.md`.
-8. Commit with `<type>(tasks): publish execution plan`.
+1. Structure `tasks.md` as a Markdown checklist so progress is instantly visible. Each item must follow this shape:
+   ```
+   - [ ] T001 — Red test for login flow
+     - Depends on: none
+     - Owner: you
+     - Exit criteria: failing test recorded in artifacts/tests/login-red.txt
+     - Evidence: artifacts/tests/login-red.txt
+     - Notes: optional context (e.g., prerequisites, concurrency hints)
+   ```
+   Indent metadata beneath the checkbox. Use `[ ]` for open work and `[x]` (lowercase) the moment a task is completed.
+2. Translate plan elements and acceptance criteria into atomic tasks. Each task must reference affected files or modules and clearly state whether it is a test-first item, implementation change, or verification step.
+3. Capture dependencies explicitly in the metadata. Mark parallel-safe tasks by appending `[P]` in the title: `- [ ] T003 [P] — …`.
+4. Prepend test-writing tasks before implementation tasks for the same area to enforce TDD sequencing.
+5. Define measurable exit criteria inside the metadata, include evidence placeholders that point to future artifacts, and only add effort notes when they help scheduling parallel work.
+6. Reserve ID ranges for future discoveries instead of renumbering existing tasks (e.g., leave `T010` blank if skipping).
+7. Update the checklist immediately after finishing any task—flip `[ ]` to `[x]`, supply the actual evidence path, and note the completion timestamp in the metadata.
+8. Maintain a brief change log section at the bottom for status updates or scope adjustments with ISO timestamps.
+9. Sign off and log Phase 4 completion in `review-log.md`.
+10. Commit with `<type>(tasks): publish execution plan`.
 
-**Outputs:** Dependency-ordered task list ready for execution.
+**Outputs:** Dependency-ordered checklist ready for execution.
 
 ### Phase 5 — Analyze (`analysis.md` + `artifacts/`)
 **Objective:** Validate readiness and surface risks before coding.
@@ -225,7 +244,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
    - Implement the minimal code change (Green).
    - Refactor for maintainability (Refactor).
 3. Capture test results, metrics, and screenshots in `artifacts/`; reference them from the journal.
-4. Update `tasks.md` statuses immediately after finishing a task. Mark completion with `[X]` and note evidence paths.
+4. Update `tasks.md` immediately after finishing a task: flip the relevant checkbox to `[x]`, fill in the evidence path, and add the completion timestamp within the metadata.
 5. Log blockers or deviations in `implementation.md` and provide mitigation steps.
 6. Maintain a running summary of code changes, linking to relevant commits.
 7. Run the full test suite before finalizing the phase.
