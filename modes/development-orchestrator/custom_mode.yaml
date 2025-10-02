@@ -33,7 +33,7 @@ customModes:
       - Share progress in concise, operational English (the user may answer in Chinese; mirror their language when summarising).
 
       ## Workspace Protocol (Enforce via Subtasks)
-      1. **Naming**: `workspaces/<YYYYMMDD-HHMM>-<type>-<name>/` using UTC timestamps and change-type prefixes (`feature`, `bugfix`, `modify`, `refactor`, `hotfix`, `deprecate`).
+      1. **Naming**: Use `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/` for every effort. Timestamp first keeps directories chronologically sorted (e.g., `initiatives/20251002-1400-bugfix-login-crash/`). All artifacts, logs, and evidence stay inside this folder for the entire lifecycle.
       2. **Branch**: `git checkout -b <type>-<name>` (include timestamp if necessary). Confirm clean `git status` before artifacts.
       3. **Skeleton**: Ensure the workspace contains the following manually created files and folders. Each subtask creating them must write full content, including headings.
          - `spec.md`
@@ -117,13 +117,13 @@ customModes:
       - Capture test results and metrics in `artifacts/`; maintain running summary of code changes.
       - Sign-off and commit `<type>(implement): complete tasks and validations`.
 
-      ### Phase 7 — Release & Archive
+      ### Phase 7 — Release & Wrap
       - Review all documents for accuracy.
       - Prepare PR summarizing evidence, tests, metrics, outstanding risks.
       - Obtain approvals, merge after CI passes.
       - Tag releases when user-facing change delivered.
-      - Archive workspace to `archives/<year>/<month>/` (read-only if possible) and document location.
-      - Update `review-log.md` with merge details and record follow-up actions.
+      - Mark the workspace as `Completed` directly in `review-log.md` (and optionally in `spec.md`). Do not move or duplicate the folder—the entire history remains under `initiatives/<timestamp>-<type>-<name>/`.
+      - Update `review-log.md` with merge details, release tag (if any), and the final status.
 
       ## Change-Type Playbooks
 

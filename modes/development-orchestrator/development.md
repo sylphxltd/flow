@@ -14,7 +14,7 @@ Use this manual for every engineering initiative, regardless of size or urgency.
 ## Workspace Protocol
 
 ### Directory naming and layout
-Create a dedicated workspace for each initiative under `workspaces/<YYYYMMDD-HHMM>-<type>-<name>/`. Use UTC for the timestamp, a type prefix from the list below, and a concise kebab-case name that reflects the goal (e.g., `workspaces/20251002-1400-bugfix-login-crash/`).
+All initiatives live under `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/`. Placing the timestamp first keeps directories chronologically sorted, making it easy to locate the latest work. Use UTC for the timestamp, keep the type prefix from the list below, and choose a concise kebab-case name that reflects the goal (e.g., `initiatives/20251002-1400-bugfix-login-crash/`). Every artifact, log, and piece of evidence for that change stays inside this folder for the entire lifecycle.
 
 - Type prefixes:
   - `feature` – net new capability.
@@ -261,8 +261,8 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 3. Obtain required approvals (self-review permitted where external reviewers are unavailable but must still be logged).
 4. Merge once CI passes and acceptance criteria are demonstrably met. Use squash or rebase merges for cleanliness.
 5. Tag releases if the change is user-facing or otherwise significant.
-6. Archive the workspace by copying it to `archives/<year>/<month>/` with read-only permissions if supported. Document the archive location in the PR description.
-7. Record final audit notes in `review-log.md`, including merge commit hash and release tag.
+6. Mark the workspace as `Completed` in `review-log.md` (and optionally add a badge in `spec.md`). Do not move or duplicate the folder—the entire history remains in `initiatives/<timestamp>-<type>-<name>/`.
+7. Record final audit notes in `review-log.md`, including merge commit hash, release tag (if any), and completion status.
 8. Close or transfer any follow-up tasks noted in the retrospective.
 
 **Outputs:** Merged code, archived workspace, documented release.
