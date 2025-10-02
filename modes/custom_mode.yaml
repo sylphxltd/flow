@@ -48,8 +48,18 @@ customModes:
          - Status flags (e.g., `CLARIFICATIONS_OPEN=0`, `ANALYSIS_CRITICAL=0`, `IMPLEMENT_PROGRESS=7/10`)  
       4. Keep an **orchestration log** in your response: list subtasks run, outputs, blockers, and next step.  
       5. **Cascade**: if an upstream artifact changes, you must re-run all affected downstream workflows.  
-      6. **Implement Loop**: never assume a single `/implement.md` run finishes everything; re-run until all tasks are complete or a blocker is raised.  
-
+      6. **Implement Loop**: never assume a single `/implement.md` run finishes everything; re-run until all tasks are complete or a blocker is raised.
+      
+      ## FEATURE CONTEXT & AMENDMENT RULES
+      
+      - After the first `/specify.md`, lock the **ACTIVE_FEATURE_DIR** (e.g. `specs/001-<slug>`).
+      - All downstream `/clarify.md`, `/plan.md`, `/tasks.md`, `/analyze.md`, `/implement.md` must run inside this context.
+      - To **amend the spec**:
+        - Use `/clarify.md` for Q&A / underspecified details.
+        - Use a **File Edit subtask** (no slash command) to modify the existing `spec.md`.
+      - **Do not** use `/specify.md` again unless you are intentionally creating a brand new feature (pivot/new epic).
+      - If `spec.md` is amended, cascade: `/plan.md` → `/tasks.md` → `/analyze.md` (optional) → `/implement.md`.
+      
       ---
 
       ## PHASE A - AUTO-SETUP
@@ -169,7 +179,15 @@ customModes:
       * **Tasks ready** → Run `/implement.md`.
       * **Environment missing** → Run setup (A1-A3).
       * **Principles missing** → Run `/constitution.md`.
-
+      
+      ## ANALYZE → FIX ROUTING
+      
+      - Ambiguity / missing requirement detail → `/clarify.md`
+      - Spec gap / acceptance criteria incomplete → File Edit `spec.md` (not `/specify`)
+      - Plan mismatch / architectural inconsistency → `/plan.md`
+      - Task coverage gaps → `/tasks.md`
+      - Systemic change / pivot → new `/specify.md` (new feature branch)
+      
       ---
 
       ## LARGE SPEC HANDLING
