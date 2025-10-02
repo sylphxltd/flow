@@ -6,10 +6,36 @@ These supersede all other instructions. Follow strictly to ensure safe, ethical,
 ## Tool Usage Guidelines
 Proactively leverage tools to gather data, execute actions, and verify outcomes. Minimize user interaction by using tools for discoverable information.
 - Invoke tools in parallel when independent (e.g., multiple file reads).
-- For external queries, structure messages clearly in mcp_perplexity-ask: Use system prompts for context, user messages for queries, and assistant for responses.
+- For external queries, structure messages clearly in mcp_perplexity-ask: Use system prompts for context, user messages for queries, and assistant for responses; when Gemini Google Search fits better (e.g., broader discovery or market intel), call the dedicated tool with an explicit question.
 - Generate images via appropriate tools only when explicitly relevant (e.g., diagrams for architecture).
 - For library documentation: Always resolve-library-id first to obtain Context7-compatible ID, then use get-library-docs with focused topics and token limits.
 - Batch operations for efficiency (e.g., read up to 5 files at once); avoid speculative or manual approximations—rely on tool outputs.
+
+## II. Minimal Viable Functionality
+Deliver only work that satisfies explicit user outcomes. Resist speculative engineering and keep the backlog lean.
+
+- Document the user problem, acceptance criteria, and measurable success signals before implementation; reject work lacking clarity.
+- Implement the smallest testable slice end-to-end (UI, API, data) before layering enhancements or abstractions.
+- Hold back optional toggles, settings, or abstractions until adoption data or stakeholder demand proves necessity; explicitly reference YAGNI when declining scope.
+- Retire redundant code and exploratory spikes immediately after extracting learning to keep the surface area minimal.
+- Challenge every new dependency or integration with a written justification of the user value it unlocks and remove it if the value disappears.
+
+## IV. Progressive Enhancement
+Grow capability iteratively while preserving a resilient baseline experience.
+
+- Ship a functional baseline first: accessible markup, core navigation, and critical actions must work before layering advanced behaviors.
+- Layer enhancements in deployable increments; after each increment, run automated smoke tests and manual verification to ensure the baseline still operates flawlessly.
+- Detect runtime capabilities (feature flags, environment checks, API versions) before activating advanced paths; provide graceful fallbacks whenever prerequisites fail.
+- Capture learnings and telemetry from each release to inform the next iteration, preventing uncontrolled jumps in complexity.
+
+## V. Clear Data Boundaries
+Define strict contracts for every data exchange to prevent leakage, unintended coupling, and compliance drift.
+
+- Map all data ingress and egress points, tagging owners, trust levels, and retention requirements for each boundary.
+- Serialize inputs and outputs with versioned schemas or DTOs; validate and sanitize payloads before crossing the boundary.
+- Forbid domain objects from leaking across layers—translate them into boundary-specific shapes for APIs, persistence, analytics, and third parties.
+- Document data lineage, storage locations, and access controls alongside each service or module to keep audit trails complete.
+- Use automated contract tests, schema diffing, and runtime monitors to detect and block drift before it reaches production.
 
 ## Functional Programming Principles (TypeScript/Node.js)
 Adopt functional paradigms for predictability, testability, and maintainability. Focus on pure functions and explicit dependencies.
@@ -31,24 +57,6 @@ Apply SOLID principles universally: Single responsibility, dependency injection,
 - When analyzing code, identify and refactor violations immediately to maintain consistency.
 - Incorporate risk assessment and acceptance criteria (AC) in planning; enforce CI/CD with comprehensive tests; never hardcode secrets—use environment variables or vaults.
 
-## Structured Planning Process
-Always plan before execution to mitigate risks and ensure alignment. No code or structural changes without an approved plan and verifiable acceptance criteria (AC).
-- Follow this sequence: 1) Understand task requirements; 2) Explore codebase/environment; 3) Plan (define goals, identify risks, outline AC, propose mitigations); 4) Confirm plan with user; 5) Execute step-by-step; 6) Track progress; 7) Summarize outcomes.
-- Keep plans lean and actionable; make AC specific and testable (e.g., "Function returns expected output for input X"); address risks with targeted mitigations (e.g., "Backup data before migration").
-
-## Execution Excellence
-Aim for flawless, comprehensive completion in a single pass. Leverage AI's capacity for depth and precision.
-- Deliver complete solutions without partial implementations or unresolved issues.
-- Perform iterative self-reviews until all aspects meet standards (e.g., recheck for edge cases, type safety).
-- Prioritize action over explanation: Execute changes directly, provide concise rationale only when necessary.
-- Ensure zero loose ends—verify integrations, clean up artifacts, and test thoroughly.
-- Persist through complexity or scale; use thorough analysis for high-quality results, even if requiring extensive refactoring.
-
-## Debugging and Fixing
-Apply scientific method for root-cause resolution: Observe symptoms, gather data, form hypotheses, verify fixes.
-- Limit fixes to the precise cause; avoid broad fallbacks or excessive error handling unless required.
-- Make minimal, targeted changes; refactor surrounding code to simplify and prevent recurrence.
-- Validate fixes with tests/data; clean up any temporary code or logs post-resolution.
 
 ## TypeScript Typing Standards
 Prioritize type safety through inference and constraints. Never compromise strictness.
@@ -60,13 +68,6 @@ Prioritize type safety through inference and constraints. Never compromise stric
 - Validate object shapes with `satisfies` keyword instead of variable annotations.
 - Supply type contexts through builders or generics (e.g., Drizzle query builders for schema inference); never default to `unknown` or `any` for inputs.
 
-## Testing Practices
-Follow Test-Driven Development (TDD) for robust, maintainable tests. Aim for comprehensive coverage as a quality gate.
-- Adhere to TDD cycle: Write failing test first, implement minimal solution, refactor for cleanliness.
-- Achieve 100% coverage across layers: unit (pure functions), component (UI/modules), integration (DB/HTTP), E2E (user flows), contract (API schemas).
-- Use descriptive test names (e.g., "calculatesTotal_withEmptyItems_returnsZero"); employ realistic data; ensure tests are fast, isolated, and reliable.
-- Mirror production structure in tests; enforce via CI pipelines; treat tests as the definitive quality barrier.
-- Avoid anti-patterns: No tests coupled to implementation details (e.g., private methods); prefer behavior-focused assertions.
 
 ## Serverless Architecture
 Design for stateless, scalable invocations. Treat each request as independent.
