@@ -132,14 +132,14 @@ The brief should be self-contained, reference the `initiatives/<timestamp>-<type
 - If a human reviewer later approves the phase, append a new line with their name and timestamp; otherwise the automated entry stands alone.
 
 ### Constitution governance
-- The project constitution resides at `governance/constitution.md`. It defines non-negotiable principles (e.g., strong typing, security posture, observability baselines).
+- The project constitution resides at `governance/constitution.md`. It defines non-negotiable principles (e.g., strong typing, security posture, observability baselines). The document must contain a `version` field (semantic version or dated tag) and a short changelog so downstream workflows can reference the version without looking up commit hashes.
 - Phase 0 must read the constitution, confirm the version/hash, and halt the SDD workflow if the document is missing or outdated until it is authored or refreshed.
 - When a new initiative requires additional principles, follow the Constitution Authoring Flow before proceeding:
   1. Analyse existing artifacts (previous workspaces, audit findings, incident reports) to infer required rules.
   2. Draft proposed clauses in a temporary note and highlight uncertainties.
   3. Ask the user targeted questions to confirm new or updated principles.
-  4. Update `governance/constitution.md`, bump the version metadata, and append a changelog entry.
-  5. Log the constitution update in `review-log.md` Phase 0 with `Actor: <agent-name> (<model-id>)`, timestamp, and version/hash.
+  4. Update `governance/constitution.md`, bump the version metadata, and append a changelog entry (ensure version changes are staged before the same commit to avoid extra follow-up commits).
+  5. Log the constitution update in `review-log.md` Phase 0 with `Actor: <agent-name> (<model-id>)`, timestamp, and the new constitution version.
 - Every downstream phase must reference the constitution:
   - **Phase 1** embeds applicable clauses in `Constraints` / `Success Metrics`.
   - **Phase 2** raises clarification questions for any ambiguous or missing constitutional coverage.
@@ -176,7 +176,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 0 — Intake & Kickoff
 **Objective:** Capture the request, align with project governance, classify the change, and prepare the workspace.
 
-1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Constitution Governance above) before continuing.
+1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Constitution Governance above) before continuing. When authoring or updating the constitution, bump its version and update the changelog before making the single commit that introduces the change so no follow-up commits are needed.
 2. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
 3. Determine the change type using the prefixes enumerated above.
 4. Create the workspace directory and initialize the branch following the naming convention.

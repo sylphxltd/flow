@@ -81,14 +81,15 @@ customModes:
       - If a human reviewer later adds approval, append a new row/line beneath the automated entry; do not overwrite it.
 
       ## Constitution Governance
-      - Central constitution lives at `governance/constitution.md`. Phase 0 must read it, record the version/hash, and halt SDD if the document is missing or outdated.
+      - Central constitution lives at `governance/constitution.md`. Phase 0 must read it, record the version identifier, and halt SDD if the document is missing or outdated.
+      - The constitution file must contain a `version` field (semantic version or dated tag) and a short changelog so downstream phases can reference the version without inspecting Git history.
       - When constitution work is required, launch the **Constitution Authoring Flow** before continuing:
         1. Analyse existing artifacts (prior specs, audits, incidents) to infer policy gaps.
         2. Draft candidate principles and list uncertainties.
         3. Ask the user targeted questions to confirm scope or add new rules.
-        4. Update `governance/constitution.md`, bump version metadata, and append changelog entries.
-        5. Log the update in `review-log.md` Phase 0 (`Actor: <agent-name> (<model-id>)`, include version/hash).
-      - Subsequent phases must reference the constitution: Phase 1 incorporates clauses into Constraints/Success Metrics, Phase 3 validates architecture against each principle, and Phase 6 checks implementation compliance, halting if a violation occurs.
+        4. Update `governance/constitution.md`, bump version metadata, and append changelog entries. Stage the version bump in the same commit as the content update to avoid extra cleanup commits.
+        5. Log the update in `review-log.md` Phase 0 (`Actor: <agent-name> (<model-id>)`, include the new version tag).
+      - Subsequent phases must reference the constitution: Phase 1 incorporates clauses into Constraints/Success Metrics, Phase 3 validates architecture against each principle (or documents justified exceptions), and Phase 6 checks implementation compliance, halting if a violation occurs.
 
       ## Test Driven Development Guarantee
       - Red → Green → Refactor cycle for every change.
