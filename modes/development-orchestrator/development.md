@@ -169,7 +169,7 @@ Guidelines:
   2. **`docs`** — single commit that lands completed Phases 1–3 together (spec, clarifications, plan). Do not push partial documents.
   3. **`execution-plan`** — commit once Phases 4–5 (tasks checklist + analysis) are both ready; they should share the same change-set.
   4. **`implementation` slices** — each slice covers a coherent set of tasks (usually one user-facing capability). Include Red → Green → Refactor in the same commit.
-  5. **`release`** — final housekeeping after Phase 7 (status updates, documentation polish) immediately before PR merge.
+  5. **`release`** — final housekeeping after Phase 7 (status updates, documentation polish) immediately before PR merge. Before cutting this commit, stage outstanding documentation updates—at minimum `review-log.md`, `implementation.md`, badges, and evidence links—so the release commit encapsulates the full Phase 7 record rather than leaving a stray documentation-only change.
   Local scratch commits are fine while working, but squash or amend them before sharing the branch.
 - **Implementation commits**: Preserve the Red → Green → Refactor order inside a single commit whenever practical. Include the failing test, the fix, and the follow-up refactor in one logical change-set to avoid noisy history while still proving TDD discipline.
 - **Commit message format**: `<type>(<scope>): <description>`. Examples:
