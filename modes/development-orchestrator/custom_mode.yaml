@@ -155,7 +155,10 @@ customModes:
       - Sign-off, update `review-log.md`, commit `<type>(clarify): resolve open questions`.
 
       ### Phase 3 — Plan (`plan.md`)
-      - Analyze the existing codebase: Identify affected files, modules, classes, functions, and dependencies. Document current implementation details, data flows, and integration points relevant to the change.
+      - Understand requirements and objectives: Review `spec.md` to clarify functionality/behavior, align with user stories, test cases, ACs.
+      - Define scope and boundaries: Identify affected modules/components based on spec analysis, determine in-scope vs. out-of-scope.
+      - Break down into tasks: Translate spec into assignable tasks (implementation, testing, docs).
+      - Analyze risks and dependencies: Anticipate conflicts, API dependencies, integration needs.
       - Include: Architecture overview, responsibilities, diagrams (text or Mermaid), data flows, dependency handling, validation mapping for every AC, risk matrix, rollback plan, branching/deployment notes, sign-off (`Agent: <agent-name> (<model-id>)`, ISO timestamp).
       - Explicitly map each constitution clause to design decisions or document justified exceptions with follow-up tasks; unresolved items must re-enter Phase 2.
       - Ensure plan references clarifications, risk watchlist, and constitution alignment.

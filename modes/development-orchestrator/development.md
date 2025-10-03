@@ -236,17 +236,19 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 **Outputs:** Resolved question table, updated spec, risk watchlist.
 
 ### Phase 3 — Plan (`plan.md`)
-**Objective:** Produce the technical blueprint with detailed codebase analysis.
+**Objective:** Produce the technical blueprint based on spec requirements.
 
-1. Analyze the existing codebase: Identify affected files, modules, classes, functions, and dependencies. Document current implementation details, data flows, and integration points relevant to the change.
-2. Summarize architectural decisions, including diagrams (ASCII or Mermaid) describing component interactions and how they integrate with existing code.
-3. Detail data models, contracts, and external dependencies, specifying how they align or conflict with current structures.
-4. Map each acceptance criterion to specific validation methods (unit test, integration test, manual scenario), referencing existing test suites where applicable.
-5. Create a risk matrix with likelihood, impact, mitigation, and owner. Include rollback and contingency plans based on codebase analysis.
-6. Outline the implementation approach, guardrails, and sequencing of major themes, mapping each constitution clause to specific design decisions or recording justified exceptions with follow-up tasks.
-7. Document branching, environment, and deployment considerations, including any required infrastructure changes.
-8. Sign off and update `review-log.md` for Phase 3 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
-9. Commit with `<type>(plan): establish architecture and validation strategy`.
+1. Understand requirements and objectives: Review `spec.md` to clarify the functionality to deliver or behavior to fix, ensuring alignment with user stories, test cases, and acceptance criteria.
+2. Define scope and boundaries: Identify affected modules, components, and interfaces based on spec analysis, determining what parts are in scope and what are out of scope.
+3. Break down into tasks: Translate spec elements into assignable, fine-grained tasks (e.g., implementation, testing, documentation updates), ensuring each task is actionable and measurable.
+4. Analyze risks and dependencies: Anticipate potential conflicts with other system parts, dependencies on underlying APIs, or integration points that may require coordination.
+5. Summarize architectural decisions, including diagrams (ASCII or Mermaid) describing component interactions and high-level integration approaches.
+6. Map each acceptance criterion to validation methods (unit test, integration test, manual scenario), outlining the testing strategy.
+7. Create a risk matrix with likelihood, impact, mitigation, and owner. Include rollback and contingency plans informed by scope analysis.
+8. Outline the implementation approach, guardrails, and sequencing of major themes, mapping each constitution clause to design decisions or recording justified exceptions with follow-up tasks.
+9. Document branching, environment, and deployment considerations.
+10. Sign off and update `review-log.md` for Phase 3 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
+11. Commit with `<type>(plan): establish architecture and validation strategy`.
 
 **Outputs:** Complete plan document referencing the spec and clarifications.
 
