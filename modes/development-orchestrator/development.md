@@ -3,6 +3,8 @@
 ## Scope
 Use this manual for every engineering initiative, regardless of size or urgency. It defines a single Spec Driven Development (SDD) lifecycle to coordinate intake, planning, execution, validation, and release. Following the steps in this document ensures traceability, reproducibility, and high quality without relying on automation, generated templates, or slash commands.
 
+**Covered initiative types:** `feature`, `bugfix`, `modify`, `refactor`, `hotfix`, `deprecate`. Classify every request into one of these six labels so the orchestrator can load the matching playbook and artifact pairings. All of them still traverse Phase 0 through Phase 7 in order; the only latitude is whether the **Rapid** track is justified for lower-risk work.
+
 ## Core Principles
 - **Spec Driven Development first**: Every change moves through the SDD phases in order. Do not begin coding before Phase 3 artifacts are approved.
 - **Test Driven Development is non-negotiable**: Red → Green → Refactor governs every code change, including hotfixes (tests may follow within 48 hours but must exist).
@@ -101,11 +103,11 @@ Create each file manually using the outlines below. Copy the headings directly; 
    - Any other folders needed for logs, screenshots, or datasets referenced by the workspace.
    - Include a README in `artifacts/` describing contents and capture dates.
 9. Type-specific supplements (create only the ones relevant to the change):
-   - `bug-report.md` for bugfixes (Reproduction steps, Current vs Expected Behavior, Environment, Severity).
-   - `modification-spec.md` for enhancements (Baseline reference, Added/Modified/Removed, Backward compatibility).
-   - `refactor-spec.md` for refactors (Code smells, Target state, Risk level, Metrics to capture).
-   - `hotfix-incident.md` for hotfixes (Incident timeline, Severity P0–P2, Immediate mitigation, Communication log).
-   - `deprecation-plan.md` for deprecations (Warnings/Disabled/Removed phases, Migration path, Communication strategy).
+   - `bug-report.md` (Reproduction steps, Current vs Expected Behavior, Environment, Severity, Root Cause) plus the failing regression test captured before the fix.
+   - `modification-spec.md` (Baseline reference, Added/Modified/Removed, Backward compatibility) together with `impact-analysis.md` (dependencies, integrations, compatibility notes).
+   - `refactor-spec.md` (Code smells, Target state, Risk level, Metrics to capture) paired with `baseline-metrics.md` (pre-change performance/quality baselines).
+   - `hotfix.md` (Incident timeline, Severity P0–P2, Immediate mitigation, Communication log, rollback) plus `post-mortem.md` completed within 48 hours.
+   - `deprecation-plan.md` (Warnings/Disabled/Removed phases, Migration path, Communication strategy) alongside `dependency-analysis.md` (consumers, mitigation owners, retirement checkpoints).
 
 ### Workspace operating rules
 - Do not mix scopes; open a new workspace whenever objectives change materially.
@@ -124,6 +126,21 @@ When using the orchestrator mode to open a `new_task`, always provide a structur
 6. **Completion report** — Specify the status flags the subtask must report in `attempt_completion` (e.g., `PHASE=2/7`, `CLARIFICATIONS_OPEN=2`, `TASKS_UPDATED=T001,T002`), plus any follow-up instructions.
 
 The brief should be self-contained, reference the `initiatives/<timestamp>-<type>-<name>/` directory, and forbid assumptions that aren’t stated. Never delegate ambiguous work.
+
+## Workflow Tracks
+Select the execution track during Phase 0 and record it in `review-log.md` so every downstream artifact knows the expected depth of work.
+
+| Track | When to use | Phase coverage | Mandatory outputs |
+| ----- | ------------ | -------------- | ----------------- |
+| **Full SDD** | Feature delivery, high/critical bugfix, major modify, high-risk refactor, hotfix, deprecate, or whenever uncertainty is high | Phases 0–7 executed explicitly and sequentially | All core artifacts described in each phase plus type-specific supplements (e.g., bug-report.md, impact-analysis.md, baseline-metrics.md, hotfix.md/postmortem.md, dependency-analysis.md) |
+| **Rapid** | Low/medium-risk tweaks (e.g., cosmetic bugfix, copy update, small config change) where full discovery is disproportionate | Phase 0 recorded, Phase 1/2 condensed into minimal artefacts, Phase 3/5 optionally marked `N/A` with justification, Phase 4/6/7 executed normally | Minimal artefacts per type (see Type Playbooks) such as bug-report.md + regression test, lightweight change log, updated tasks/implementation notes. Any skipped phase must be marked `N/A (Rapid Track)` in `review-log.md` with rationale. |
+
+Guidelines:
+- Default to **Full SDD** unless a Rapid justification is documented.
+- Rapid track still requires regression tests, constitution compliance, and release checks; it only trims discovery/analysis depth.
+- Switching from Rapid → Full midstream is allowed when new risks appear; update `review-log.md` to reflect the new track.
+- Severity-to-track guardrail: Critical/High issues (e.g., production outages, security breaches) automatically use **Full SDD**; Medium issues default to Full unless Rapid is justified with documented risk containment; Low issues may use Rapid only when rollback is trivial and evidence capture remains intact.
+- Bugfixes still traverse all eight phases. Rapid merely condenses discovery/analysis artifacts; it never removes regression tests or constitution checks (Phases 1, 3, and 6 must explicitly cite applicable clauses in either track).
 
 ## Git Discipline
 - **Branching**: One branch per workspace. Use `git fetch` and `git rebase origin/main` regularly to minimize drift, but avoid force pushes after sharing work.
@@ -176,17 +193,18 @@ The brief should be self-contained, reference the `initiatives/<timestamp>-<type
 Each phase must be completed in order. Do not skip ahead; reopen earlier phases when material changes occur.
 
 ### Phase 0 — Intake & Kickoff
-**Objective:** Capture the request, align with project governance, classify the change, and prepare the workspace.
+**Objective:** Capture the request, align with project governance, choose the workflow track, and prepare the workspace.
 
 1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Constitution Governance above) before continuing. When authoring or updating the constitution, bump its version and update the changelog before making the single commit that introduces the change so no follow-up commits are needed.
 2. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
-3. Determine the change type using the prefixes enumerated above.
-4. Create the workspace directory and initialize the branch using the identical timestamped name: ``git checkout -b <type>-<YYYYMMDDHHMM>-<name>``.
-5. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
-6. Add initial entries to `review-log.md` for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, and the constitution version/hash that applies.
-7. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>` (only if scaffolding required non-trivial setup).
+3. Determine the change type using the prefixes enumerated above and assess risk/impact.
+4. Select the workflow track (Full SDD vs Rapid). Default to Full unless a Rapid justification is documented (e.g., low-risk cosmetic fix). Record the choice and rationale in `review-log.md`.
+5. Create the workspace directory and initialize the branch using the identical timestamped name: ``git checkout -b <type>-<YYYYMMDDHHMM>-<name>``.
+6. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
+7. Add initial entries to `review-log.md` for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, the selected track, and the constitution version applied.
+8. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>` (only if scaffolding required non-trivial setup).
 
-**Outputs:** Workspace folder, branch, empty artifacts ready for content, constitution alignment recorded.
+**Outputs:** Workspace folder, branch, empty artifacts ready for content, constitution alignment and track recorded.
 
 ### Phase 1 — Specify (`spec.md`)
 **Objective:** Define the problem/opportunity and success criteria.
@@ -314,38 +332,42 @@ Use these playbooks to tailor the lifecycle while preserving all phases.
 - In analysis, verify telemetry and logging requirements to ensure observability from day one.
 
 ### Bugfix
-- Capture reproduction steps, environment details, logs, and severity in `spec.md`. Severity scale: Critical (crash/data loss), High (core feature broken), Medium (major annoyance), Low (cosmetic).
-- Phase 2 should confirm the defect scope and any related guardrails.
-- The first task in Phase 4 must be the failing regression test; commit it separately before the fix.
-- Store failing artifacts under `artifacts/regressions/` and include screenshots or traces.
-- Implementation commits follow the order: failing test, fix, refactor. Ensure the regression test remains in the suite permanently.
+- Maintain the severity scale: Critical (crash/data loss), High (core feature broken), Medium (major annoyance), Low (cosmetic).
+- Produce `bug-report.md` with reproduction steps, environment, severity, and explicit root cause; store evidence under `artifacts/regressions/`.
+- Phase 2 confirms the defect scope, guardrails, and constitution clauses impacted.
+- The first Phase 4 task is the failing regression test committed before any fix.
+- Implementation commits must follow failing test → fix → refactor, keeping the regression test in the suite permanently.
 
 ### Modify (Enhancement)
-- Link to the original feature workspace or specification in Phase 1.
-- Clarify the exact behavior delta during Phase 2; record compatibility constraints.
-- Plan for backward compatibility checks, migration steps, and telemetry updates.
-- Tasks should include updating documentation, contracts, and client libraries impacted by the change.
-- Analysis must confirm that existing acceptance criteria remain satisfied.
+- Link to the originating feature workspace/spec and document the behavior delta inside `modification-spec.md`.
+- Produce `impact-analysis.md` detailing dependent endpoints, schemas, integrations, and compatibility constraints.
+- Plan backward compatibility checks, migration steps, documentation updates, and telemetry adjustments.
+- Tasks must cover documentation, contract, and client library updates alongside validation of integrations.
+- Analysis confirms prior acceptance criteria remain satisfied and cites mitigation for any incompatibility.
 
 ### Refactor
-- Articulate code smells, technical debt, and target improvements in Phase 1.
-- Collect baseline metrics (performance, error rates, bundle size, etc.) during Phase 5 and store them under `artifacts/metrics/`.
-- Tasks should divide the refactor into safe slices, each guarded by tests.
-- Implementation journal must show no behavior change; accompany each slice with before/after metrics.
-- Roll back any change that degrades key metrics by more than 5 %.
+- Capture code smells, scope, and goals inside `refactor-spec.md`.
+- Record pre-change baselines in `baseline-metrics.md` under `artifacts/metrics/` (performance, error rates, footprint).
+- Divide work into safe slices with tests guarding behavior and reference clause compliance.
+- Implementation journal must prove no behavior change and include before/after metrics for each slice.
+- Roll back any slice that degrades tracked metrics by more than 5 %.
 
 ### Hotfix
-- Document incident timeline, severity (P0 service down, P1 major feature broken, P2 workaround available), and immediate impact in `spec.md` and `hotfix-incident.md`.
-- Compress Phases 1–3 into rapid assessment but still record the decisions made.
-- Implementation prioritizes the minimal fix; tests and post-mortem entries are added within 48 hours.
-- Merge promptly once stable, then schedule follow-up workspaces for preventative measures if needed.
+- Document incident timeline, severity (P0/P1/P2), mitigation, and rollback inside `hotfix.md`, citing constitution clauses at risk.
+- Compress Phases 1–3 for rapid assessment but record every decision and assumption explicitly.
+- Implement the minimal fix quickly; backfill regression tests and validation evidence within 48 hours.
+- Deliver `post-mortem.md` inside 48 hours covering root cause, timeline, preventative measures, and evidence of regression coverage.
+- Merge promptly once stable, then schedule follow-up workspaces for preventative improvements if needed.
 
 ### Deprecate
-- Explain rationale, usage patterns, and affected personas in Phase 1.
-- Clarify scope (APIs, UI components, data) and stakeholders during Phase 2.
-- Plan three phases: Warnings, Disabled-by-default, Removal. Include timelines, communication channels, migration guides, and rollback strategy.
-- Tasks should group work by phase with explicit communication deliverables and migration validation.
-- Analysis requires a dependency matrix; maintain it in `analysis.md` and ensure no consumer remains unsupported before removal.
+- Capture rationale, usage patterns, and affected personas in `spec.md`, then formalize the schedule in `deprecation-plan.md`.
+- Maintain `dependency-analysis.md` cataloguing consumers, mitigation owners, readiness checkpoints, and rollback paths.
+- Plan three stages with timelines:
+  1. **Warnings** — announcements, communication plan, documentation updates.
+  2. **Disabled** — feature off by default (with rollback option), validation of alternatives, migration guidance.
+  3. **Removed** — code/data removal after verifying all consumers have transitioned.
+- Tasks group work by stage with communication deliverables, migration validation, and dependency sign-offs.
+- Analysis reviews dependency coverage and blocks removal until every consumer has an approved migration path.
 
 ## Evidence Management & Auditing
 - Every artifact referenced in documentation or commits must exist and be versioned. Use relative paths when citing evidence.

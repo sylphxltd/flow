@@ -23,7 +23,12 @@ customModes:
         - **Status** flags (progress counters, outstanding risks)
         - **Next** planned action or blocker resolution
       - Escalate blockers immediately if inputs are missing, tests fail twice, or evidence cannot be produced.
+      
+      ## Scope
+      Use this mode for every engineering initiative that aligns with the Spec Driven Development lifecycle.
 
+      **Covered initiative types:** `feature`, `bugfix`, `modify`, `refactor`, `hotfix`, `deprecate`. Classify the request under one of these six labels so the orchestrator can load the matching playbook and artifact pairings. Regardless of label, every initiative still moves through Phase 0 → Phase 7 in order; only the Rapid track (when justified) can condense discovery depth.
+      
       ## Operating Constraints
       - Subtasks must be atomic: one phase deliverable or tightly scoped update per `new_task`.
       - Provide explicit, step-by-step instructions inside each subtask so Code Mode can act without external references.
@@ -55,12 +60,37 @@ customModes:
          - `review-log.md` (columns: `phase`, `actor`, `timestamp`, `status`, `notes`; capture the executing agent as `Agent: <agent-name> (<model-id>)`)
          - `artifacts/` (with subfolders: `tests/`, `metrics/`, `diagrams/`, `regressions/`, plus README describing contents)
          - Type-specific supplements:
-           - `bug-report.md`
-           - `modification-spec.md`
-           - `refactor-spec.md`
-           - `hotfix-incident.md`
-           - `deprecation-plan.md`
+           - `bug-report.md` (reproduction, environment, severity, root cause) plus failing regression test recorded before the fix.
+           - `modification-spec.md` (baseline vs delta) together with `impact-analysis.md` (dependencies, compatibility, migration notes).
+           - `refactor-spec.md` (scope, target improvements) paired with `baseline-metrics.md` (pre-change performance/quality baselines).
+           - `hotfix.md` (timeline, severity, rollback) plus `post-mortem.md` completed within 48 hours detailing root cause and prevention.
+           - `deprecation-plan.md` (three-phase schedule) alongside `dependency-analysis.md` (consumers, mitigation owners, retirement checkpoints).
       4. **Evidence**: All logs, metrics, screenshots, and outputs must live under `artifacts/` and be referenced in documents and commits.
+
+      ## Workflow Tracks
+      Select the execution track during Phase 0 and record it in `review-log.md` so every downstream artifact knows the expected depth of work.
+
+      | Track | When to use | Phase coverage | Mandatory outputs |
+      | ----- | ------------ | -------------- | ----------------- |
+      | **Full SDD** | Feature delivery, high/critical bugfix, major modify, high-risk refactor, hotfix, deprecate, or whenever uncertainty is high | Phases 0–7 executed explicitly and sequentially | All core artifacts described in each phase plus type-specific supplements (e.g., bug-report.md, impact-analysis.md, baseline-metrics.md, hotfix.md/postmortem.md, dependency-analysis.md) |
+      | **Rapid** | Low/medium-risk tweaks (e.g., cosmetic bugfix, copy update, small config change) where full discovery is disproportionate | Phase 0 recorded, Phase 1/2 condensed into minimal artefacts, Phase 3/5 optionally marked `N/A` with justification, Phase 4/6/7 executed normally | Minimal artefacts per type (see Type Playbooks) such as bug-report.md + regression test, lightweight change log, updated tasks/implementation notes. Any skipped phase must be marked `N/A (Rapid Track)` in `review-log.md` with rationale. |
+
+      Guidelines:
+      - Default to **Full SDD** unless a Rapid justification is documented.
+      - Rapid track still requires regression tests, constitution compliance, and release checks; it only trims discovery/analysis depth.
+      - Switching from Rapid → Full midstream is allowed when new risks appear; update `review-log.md` to reflect the new track.
+      - Severity-to-track guardrail: Critical/High issues (e.g., production outages, security breaches) automatically use **Full SDD**; Medium issues default to Full unless Rapid is justified with documented risk containment; Low issues may use Rapid only when rollback is trivial and evidence capture remains intact.
+      - Bugfixes still traverse all eight phases. Rapid merely condenses discovery/analysis artifacts; it never removes regression tests or constitution checks (Phases 1, 3, and 6 must explicitly cite applicable clauses in either track).
+
+      ### Rapid track minimum artifacts
+      | Type | Mandatory Rapid artifacts | Notes |
+      | ---- | ------------------------- | ----- |
+      | Feature | `spec.md` (condensed), `plan.md` (key decisions), `tasks.md` (critical path), validation evidence in `implementation.md` | Use Rapid only for truly minor UX or copy tweaks without architectural impact. |
+      | Bugfix | `bug-report.md`, failing regression test recorded in `artifacts/regressions/`, updated `tasks.md`, `implementation.md` journal proving Red → Green → Refactor | Failing test must land before fix even in Rapid. |
+      | Modify | `modification-spec.md`, delta-focused updates in `spec.md`/`plan.md`, impacted docs tracked in `tasks.md` | Ensure compatibility notes remain explicit. |
+      | Refactor | `refactor-spec.md`, baseline metrics snapshot in `artifacts/metrics/`, `tasks.md` slices guarding behavior | Rapid only when scope touches isolated modules with existing coverage. |
+      | Hotfix | `hotfix-incident.md`, accelerated `spec.md` summary, post-fix validation evidence, follow-up test plan logged in `tasks.md` | Post-mortem due within 48 hours even on Rapid. |
+      | Deprecate | `deprecation-plan.md`, communication checklist in `tasks.md`, dependency audit entry in `analysis.md` | Rapid appropriate for cosmetic removals with zero external consumers. |
 
       ## Git Discipline (To be enforced through instructions)
       - One branch per workspace; no merging to `main` until all phases complete, tests pass, and evidence is recorded.
@@ -166,42 +196,40 @@ customModes:
 
       ### Bugfix
       - Severity scale: Critical (crash/data loss), High (core feature broken), Medium (major annoyance), Low (cosmetic).
-      - `spec.md` must include reproduction steps, environment, logs.
+      - Produce `bug-report.md` capturing reproduction, environment, severity, and root cause, and store raw evidence under `artifacts/regressions/`.
       - Phase 2 confirms scope and guardrails.
       - First task: failing regression test; commit before the fix.
-      - Store failing artefacts under `artifacts/regressions/`.
-      - Commit order: failing test → fix → refactor.
+      - Commit sequence must remain failing test → fix → refactor; keep the regression test in the suite permanently.
 
       ### Modify (Enhancement)
-      - Link to original workspace/spec; document behavior delta and compatibility limits.
-      - Plan backward compatibility checks, documentation updates, telemetry adjustments.
-      - Generate impact analysis detailing affected endpoints, schemas, UIs, contracts.
+      - Link to the originating feature workspace/spec and document the behavior delta in `modification-spec.md`.
+      - Produce `impact-analysis.md` detailing dependent endpoints, schemas, integrations, and compatibility constraints.
+      - Plan backward compatibility checks, documentation updates, and telemetry adjustments.
       - Tasks include documentation, contract, and client library updates.
-      - Analysis confirms prior acceptance criteria still hold.
+      - Analysis confirms prior acceptance criteria still hold and cites mitigation for any incompatible change.
 
       ### Refactor
-      - Phase 1 outlines code smells and target improvements.
-      - Phase 5 captures baseline metrics (performance, error rates, bundle size) into `artifacts/metrics/`.
-      - Divide work into safe slices with tests guarding behavior.
-      - Implementation entries document no behavior change; compare before/after metrics.
-      - Roll back any slice degrading metrics by >5%.
+      - Capture code smells, scope, and goals inside `refactor-spec.md`.
+      - Record pre-change baselines in `baseline-metrics.md` (performance, error rates, footprint) under `artifacts/metrics/`.
+      - Divide work into safe slices guarded by existing or newly added tests.
+      - Implementation journal must prove no behavior change and include before/after metrics for each slice.
+      - Roll back any slice degrading tracked metrics by more than 5 %.
 
       ### Hotfix
-      - Document incident timeline, severity (P0/P1/P2), immediate impact in `spec.md` and `hotfix-incident.md`.
-      - Compress Phases 1–3 but keep records of decisions.
-      - Implement minimal fix quickly; allow post-fix tests but require completion within 48 hours.
-      - Post-mortem must be added to `implementation.md` within 48 hours covering root cause, timeline, prevention, impact assessment.
+      - Document incident timeline, severity (P0/P1/P2), and rollback plan inside `hotfix.md`; capture immediate mitigations and communications.
+      - Compress Phases 1–3 but keep explicit records of decisions and impacted constitution clauses.
+      - Implement the minimal fix quickly; backfill tests and validation evidence within 48 hours.
+      - Deliver `post-mortem.md` inside 48 hours covering root cause, timeline, preventive actions, and evidence of regression tests.
 
       ### Deprecate
-      - Capture rationale, usage patterns, affected personas in `spec.md`.
-      - Clarify scope and stakeholders during Phase 2.
+      - Capture rationale, usage patterns, and affected personas in `spec.md`, then formalize the schedule in `deprecation-plan.md`.
+      - Maintain `dependency-analysis.md` cataloguing consumers, mitigation owners, and readiness checkpoints.
       - Plan three stages with timelines:
         1. **Warnings**: announcements, communication plan, documentation updates.
         2. **Disabled**: feature off by default (with rollback option), validation of alternatives.
         3. **Removed**: code/data removal post-validation.
-      - Maintain dependency analysis matrix in `analysis.md`.
-      - Tasks grouped per stage with communication deliverables and migration validation.
-
+      - Tasks group work by stage with communication deliverables, migration validation, and dependency sign-offs.
+      
       ## Evidence Management & Auditing
       - Every referenced artifact must exist and be version-controlled.
       - Quarterly audits sample 10% of workspaces; record findings in central audit log.
