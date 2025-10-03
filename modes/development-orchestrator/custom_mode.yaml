@@ -50,7 +50,7 @@ customModes:
          - `tasks.md`
          - `analysis.md`
          - `implementation.md`
-         - `review-log.md`
+         - `review-log.md` (columns: `phase`, `actor`, `timestamp`, `status`, `notes`; capture the executing agent as `Agent: <agent-name> (<model-id>)`)
          - `artifacts/` (with subfolders: `tests/`, `metrics/`, `diagrams/`, `regressions/`, plus README describing contents)
          - Type-specific supplements:
            - `bug-report.md`
@@ -75,6 +75,11 @@ customModes:
       - PR requirements: include links to workspace artifacts, proof of tests, coverage ≥95 % on touched code, and sign-offs in `review-log.md`.
       - Hotfix exception: allow expedited merge after the minimal fix, but enforce test backfills and post-mortem within 48 hours.
 
+      ## Sign-off convention
+      - Wherever documents request a sign-off name, record the executing agent identifier as `Agent: <agent-name> (<model-id>)` (e.g., `Agent: Kilocode (gpt-5-codex)`).
+      - Timestamps must be recorded in ISO 8601 UTC.
+      - If a human reviewer later adds approval, append a new row/line beneath the automated entry; do not overwrite it.
+
       ## Test Driven Development Guarantee
       - Red → Green → Refactor cycle for every change.
       - Failing tests precede code updates (hotfix may backfill within 48 hours).
@@ -89,7 +94,7 @@ customModes:
       - Initial `review-log.md` entry for Phase 0 and commit `<type>(init): bootstrap workspace for <name>`.
 
       ### Phase 1 — Specify (`spec.md`)
-      - Sections required: Context, Problem Statement, Objectives, Non-goals, Personas, Success Metrics, Constraints/Assumptions, Initial AC, Glossary, Open Questions, Sign-off with name & ISO timestamp.
+      - Sections required: Context, Problem Statement, Objectives, Non-goals, Personas, Success Metrics, Constraints/Assumptions, Initial AC, Glossary, Open Questions, Sign-off with `Agent: LLM` + ISO timestamp.
       - Capture type-specific emphasis (e.g., reproduction details for bugfix, baseline metrics for refactor).
       - Update `review-log.md` with Phase 1 sign-off and commit `<type>(spec): document scope and objectives`.
 
@@ -102,7 +107,7 @@ customModes:
       - Sign-off, update `review-log.md`, commit `<type>(clarify): resolve open questions`.
 
       ### Phase 3 — Plan (`plan.md`)
-      - Include: Architecture overview, responsibilities, diagrams (text or Mermaid), data flows, dependency handling, validation mapping for every AC, risk matrix, rollback plan, branching/deployment notes, sign-off.
+      - Include: Architecture overview, responsibilities, diagrams (text or Mermaid), data flows, dependency handling, validation mapping for every AC, risk matrix, rollback plan, branching/deployment notes, sign-off (`Agent: LLM`, ISO timestamp).
       - Ensure plan references clarifications and risk watchlist.
       - Commit `<type>(plan): establish architecture and validation strategy`.
 
@@ -132,7 +137,7 @@ customModes:
       - Prepare PR summarizing evidence, tests, metrics, outstanding risks.
       - Obtain approvals, merge after CI passes.
       - Tag releases when user-facing change delivered.
-      - Mark the workspace as `Completed` directly in `review-log.md` (and optionally in `spec.md`). Do not move or duplicate the folder—the entire history remains under `initiatives/<timestamp>-<type>-<name>/`.
+      - Mark the workspace as `Completed` directly in `review-log.md` by recording a final row (`actor = LLM`, `status = Completed`) and optionally in `spec.md`. Do not move or duplicate the folder—the entire history remains under `initiatives/<timestamp>-<type>-<name>/`.
       - Update `review-log.md` with merge details, release tag (if any), and the final status.
 
       ## Change-Type Playbooks

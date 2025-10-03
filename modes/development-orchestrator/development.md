@@ -51,7 +51,7 @@ Create each file manually using the outlines below. Copy the headings directly; 
    - Initial acceptance criteria (AC).
    - Glossary.
    - Open questions.
-   - Sign-off block with name and ISO timestamp.
+   - Sign-off block with ISO timestamp and actor label in the form `Agent: <agent-name> (<model-id>)` (e.g., `Agent: Kilocode (gpt-5-codex)`).
 2. `clarifications.md`
    - Introduction (link back to `spec.md`).
    - Question table with columns: `id`, `question`, `answer`, `source`, `decision`, `follow_up`, `status`, `answered_at`.
@@ -89,8 +89,8 @@ Create each file manually using the outlines below. Copy the headings directly; 
    - Final validation checklist.
    - Sign-off block.
 7. `review-log.md`
-   - Table with columns: `phase`, `owner`, `reviewer`, `timestamp`, `notes`.
-   - Record self-approvals and peer reviews; leave no row blank once the phase completes.
+   - Table with columns: `phase`, `actor`, `timestamp`, `status`, `notes`.
+   - Record the executing agent in the actor column using `Agent: <agent-name> (<model-id>)` (e.g., `Agent: Kilocode (gpt-5-codex)`). Capture status values such as `Completed`, `Blocked`, or `Deferred`; leave no row blank once the phase closes.
 8. `artifacts/`
    - `artifacts/tests/` for automated and manual test outputs.
    - `artifacts/metrics/` for performance, error-rate, or sizing baselines.
@@ -125,6 +125,11 @@ The brief should be self-contained, reference the `initiatives/<timestamp>-<type
 
 ## Git Discipline
 - **Branching**: One branch per workspace. Use `git fetch` and `git rebase origin/main` regularly to minimize drift, but avoid force pushes after sharing work.
+
+### Sign-off convention
+- Wherever a document prompts for a sign-off name, record the executing agent identifier as `Agent: <agent-name> (<model-id>)` (for example, `Agent: Kilocode (gpt-5-codex)`).
+- Record timestamps in ISO 8601 UTC.
+- If a human reviewer later approves the phase, append a new line with their name and timestamp; otherwise the automated entry stands alone.
 - **Milestone commits**: Keep the history lean by bundling related phases. Standard cadence:
   1. **Optional `init`** — only if the skeleton itself required non-trivial setup; otherwise keep changes staged.
   2. **`docs`** — single commit that lands completed Phases 1–3 together (spec, clarifications, plan). Do not push partial documents.
@@ -173,7 +178,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 3. Identify personas, stakeholders, and touchpoints.
 4. Explicitly state non-goals to prevent scope creep.
 5. List initial open questions requiring clarification.
-6. Update `review-log.md` for Phase 1 and sign off in `spec.md`.
+6. Update `review-log.md` for Phase 1 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`) and sign off in `spec.md` using the same label.
 7. Commit with `<type>(spec): document scope and objectives`.
 
 **Outputs:** Completed specification, sign-off recorded.
@@ -187,7 +192,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 4. Resolve questions using existing artifacts, domain knowledge, or additional research whenever possible; only escalate to the user or other stakeholders when information is genuinely missing. Record the answer source and timestamp.
 5. Update `spec.md` immediately after each resolution; keep both documents in sync.
 6. Maintain a risk watchlist capturing newly surfaced uncertainties.
-7. When all critical questions are answered or formally deferred, sign off the clarifications document and log Phase 2 in `review-log.md`.
+7. When all critical questions are answered or formally deferred, sign off the clarifications document with the executing agent label and log Phase 2 in `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
 8. Commit with `<type>(clarify): resolve open questions and sync spec`.
 
 **Outputs:** Resolved question table, updated spec, risk watchlist.
@@ -201,7 +206,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 4. Create a risk matrix with likelihood, impact, mitigation, and owner. Include rollback and contingency plans.
 5. Outline the implementation approach, guardrails, and sequencing of major themes.
 6. Document branching, environment, and deployment considerations.
-7. Sign off and update `review-log.md` for Phase 3.
+7. Sign off and update `review-log.md` for Phase 3 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
 8. Commit with `<type>(plan): establish architecture and validation strategy`.
 
 **Outputs:** Complete plan document referencing the spec and clarifications.
@@ -226,7 +231,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 6. Reserve ID ranges for future discoveries instead of renumbering existing tasks (e.g., leave `T010` blank if skipping).
 7. Update the checklist immediately after finishing any task—flip `[ ]` to `[x]`, supply the actual evidence path, and note the completion timestamp in the metadata.
 8. Maintain a brief change log section at the bottom for status updates or scope adjustments with ISO timestamps.
-9. Sign off and log Phase 4 completion in `review-log.md`.
+9. Sign off and log Phase 4 completion in `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
 10. Commit with `<type>(tasks): publish execution plan`.
 
 **Outputs:** Dependency-ordered checklist ready for execution.
@@ -242,7 +247,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 2. Record findings in a severity table and document recommended actions.
 3. Conduct experiments, spikes, or simulations required to de-risk the plan. Store raw outputs under `artifacts/` and summarize results in `analysis.md`.
 4. Update earlier artifacts if adjustments are necessary; note the updates and timestamp them.
-5. Sign off Phase 5 in `analysis.md` and `review-log.md`.
+5. Sign off Phase 5 in `analysis.md` and `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
 6. Commit with `<type>(analysis): capture readiness assessment`.
 
 **Outputs:** Analysis report, supporting artifacts, updated upstream documents.
@@ -260,7 +265,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 5. Log blockers or deviations in `implementation.md` and provide mitigation steps.
 6. Maintain a running summary of code changes, linking to relevant commits.
 7. Run the full test suite before finalizing the phase.
-8. Sign off Phase 6 in `review-log.md`.
+8. Sign off Phase 6 in `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
 9. Commit with `<type>(implement): complete tasks and validations`.
 
 **Outputs:** Code changes, validated tasks, implementation journal, evidence.
@@ -273,7 +278,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 3. Obtain required approvals (self-review permitted where external reviewers are unavailable but must still be logged).
 4. Merge once CI passes and acceptance criteria are demonstrably met. Use squash or rebase merges for cleanliness.
 5. Tag releases if the change is user-facing or otherwise significant.
-6. Mark the workspace as `Completed` in `review-log.md` (and optionally add a badge in `spec.md`). Do not move or duplicate the folder—the entire history remains in `initiatives/<timestamp>-<type>-<name>/`.
+6. Mark the workspace as `Completed` in `review-log.md` by logging a final entry (`actor = Agent: <agent-name> (<model-id>)`, `status = Completed`) and optionally add a badge in `spec.md`. Do not move or duplicate the folder—the entire history remains in `initiatives/<timestamp>-<type>-<name>/`.
 7. Record final audit notes in `review-log.md`, including merge commit hash, release tag (if any), and completion status.
 8. Close or transfer any follow-up tasks noted in the retrospective.
 
