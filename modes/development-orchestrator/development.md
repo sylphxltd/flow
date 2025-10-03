@@ -179,7 +179,7 @@ Guidelines:
   Include references to evidence paths when applicable: “See artifacts/tests/login-regression.json”.
 - **Diff hygiene**: Review `git diff` before each commit to confirm only intentional files change. Remove generated artifacts that should not be versioned.
 - **Pull requests**: Open a PR only after Phase 6 completes. The description must link to each workspace document and summarize validation evidence. Set reviewers (self-review allowed when human review not available) and note outstanding risks.
-- **Merge policy**: All tests must pass locally and in CI. Achieve ≥95 % coverage on touched code. Rebase or squash to maintain a linear history. Tag release candidates with semantic versions when delivering user-facing changes.
+- **Merge policy**: All tests must pass locally and in CI. Achieve ≥95 % coverage on touched code. Default to **squash merge** so the `release` commit becomes the single entry on `main` (or use rebase merge when milestone commits need to remain separate but still linear). Tag release candidates with semantic versions when delivering user-facing changes.
 - **Hotfix shortcut**: For true emergencies, keep the branch short-lived, document the expedited timeline in `hotfix-incident.md` and `implementation.md`, merge as soon as the fix is validated, and follow up with test backfills and post-mortem within 48 hours.
 
 ## Test Driven Development Guarantee
