@@ -89,9 +89,11 @@ customModes:
       ## SDD Lifecycle (Phases 0–7)
 
       ### Phase 0 — Intake & Kickoff
+      - Read the project constitution stored at `governance/constitution.md`. If the file is missing or outdated, pause the workflow and open a dedicated `new_task` to create/update it before proceeding.
       - Collect request text verbatim in workspace README or `spec.md`.
       - Classify change type, create workspace directory, branch, and skeleton files.
-      - Initial `review-log.md` entry for Phase 0 and commit `<type>(init): bootstrap workspace for <name>`.
+      - Initial `review-log.md` entry for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, and the constitution version/hash applied.
+      - Commit `<type>(init): bootstrap workspace for <name>` only if the skeleton required non-trivial setup.
 
       ### Phase 1 — Specify (`spec.md`)
       - Sections required: Context, Problem Statement, Objectives, Non-goals, Personas, Success Metrics, Constraints/Assumptions, Initial AC, Glossary, Open Questions, Sign-off with `Agent: LLM` + ISO timestamp.

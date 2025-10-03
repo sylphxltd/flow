@@ -159,16 +159,17 @@ The brief should be self-contained, reference the `initiatives/<timestamp>-<type
 Each phase must be completed in order. Do not skip ahead; reopen earlier phases when material changes occur.
 
 ### Phase 0 — Intake & Kickoff
-**Objective:** Capture the request, classify the change, and prepare the workspace.
+**Objective:** Capture the request, align with project governance, classify the change, and prepare the workspace.
 
-1. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
-2. Determine the change type using the prefixes enumerated above.
+1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Governance Role below) before continuing.
+2. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
+3. Determine the change type using the prefixes enumerated above.
 3. Create the workspace directory and initialize the branch following the naming convention.
 4. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
-5. Add initial entries to `review-log.md` for Phase 0 (owner, timestamp).
+5. Add initial entries to `review-log.md` for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, and the constitution version/hash that applies.
 6. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>`.
 
-**Outputs:** Workspace folder, branch, empty artifacts ready for content.
+**Outputs:** Workspace folder, branch, empty artifacts ready for content, constitution alignment recorded.
 
 ### Phase 1 — Specify (`spec.md`)
 **Objective:** Define the problem/opportunity and success criteria.
