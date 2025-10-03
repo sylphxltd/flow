@@ -311,14 +311,15 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 7 — Release & Archive
 **Objective:** Deliver the change safely and preserve history.
 
-1. Review all documents to confirm they reflect final decisions and outcomes.
-2. Prepare the pull request referencing the workspace path, tests performed, metrics gathered, and outstanding risks (if any).
-3. Obtain required approvals (self-review permitted where external reviewers are unavailable but must still be logged).
-4. Merge once CI passes and acceptance criteria are demonstrably met. Use squash or rebase merges for cleanliness.
-5. Tag releases if the change is user-facing or otherwise significant.
-6. Mark the workspace as `Completed` in `review-log.md` by logging a final entry (`actor = Agent: <agent-name> (<model-id>)`, `status = Completed`) and optionally add a badge in `spec.md`. Do not move or duplicate the folder—the entire history remains in `initiatives/<timestamp>-<type>-<name>/`.
-7. Record final audit notes in `review-log.md`, including merge commit hash, release tag (if any), and completion status.
-8. Close or transfer any follow-up tasks noted in the retrospective.
+1. **Obtain user approval**: After Phase 6 completes, pause and request explicit user review and approval of all artifacts, tests, and implementation evidence before proceeding. Do not advance to Phase 7 without confirmation.
+2. Review all documents to confirm they reflect final decisions and outcomes.
+3. Prepare the pull request referencing the workspace path, tests performed, metrics gathered, and outstanding risks (if any).
+4. Obtain required approvals (self-review permitted where external reviewers are unavailable but must still be logged).
+5. Merge once CI passes and acceptance criteria are demonstrably met. Use squash or rebase merges for cleanliness.
+6. Tag releases if the change is user-facing or otherwise significant.
+7. Mark the workspace as `Completed` in `review-log.md` by logging a final entry (`actor = Agent: <agent-name> (<model-id>)`, `status = Completed`) and optionally add a badge in `spec.md`. Do not move or duplicate the folder—the entire history remains in `initiatives/<timestamp>-<type>-<name>/`.
+8. Record final audit notes in `review-log.md`, including merge commit hash, release tag (if any), and completion status.
+9. Close or transfer any follow-up tasks noted in the retrospective.
 
 **Outputs:** Merged code, archived workspace, documented release.
 

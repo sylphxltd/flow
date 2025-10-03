@@ -181,6 +181,7 @@ customModes:
       - Sign-off and commit `<type>(implement): complete tasks and validations`.
 
       ### Phase 7 — Release & Wrap
+      - Obtain user approval: After Phase 6 completes, pause and request explicit user review and approval of all artifacts, tests, and implementation evidence before proceeding. Do not advance to Phase 7 without confirmation.
       - Review all documents for accuracy.
       - Prepare PR summarizing evidence, tests, metrics, outstanding risks.
       - Obtain approvals, merge after CI passes.
