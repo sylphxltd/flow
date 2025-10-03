@@ -33,7 +33,9 @@ Inside the workspace, keep this skeleton:
 - Optional `notes/` or `spikes/` folders for exploratory findings that support the main artifacts.
 
 ### Branch initialization
-1. From `main`, create a feature branch: `git checkout -b <type>-<name>`. Include a timestamp if multiple efforts may collide (e.g., `bugfix-login-crash-20251002`).
+1. From `main`, create a feature branch using the workspace timestamp:
+   ``git checkout -b <type>-<YYYYMMDDHHMM>-<name>`` (e.g., `bugfix-202510021400-login-crash`).
+   Always include the 12-digit UTC timestamp to guarantee uniqueness across parallel work.
 2. Run `git status` to ensure the new branch is clean before committing artifacts.
 3. Update the branch description (if your tooling supports it) with a one-line summary and link to the workspace path.
 
@@ -179,7 +181,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Constitution Governance above) before continuing. When authoring or updating the constitution, bump its version and update the changelog before making the single commit that introduces the change so no follow-up commits are needed.
 2. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
 3. Determine the change type using the prefixes enumerated above.
-4. Create the workspace directory and initialize the branch following the naming convention.
+4. Create the workspace directory and initialize the branch using the identical timestamped name: ``git checkout -b <type>-<YYYYMMDDHHMM>-<name>``.
 5. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
 6. Add initial entries to `review-log.md` for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, and the constitution version/hash that applies.
 7. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>` (only if scaffolding required non-trivial setup).
