@@ -48,8 +48,8 @@ customModes:
       ## Workspace Protocol (Enforce via Subtasks)
       1. **Naming**: Use `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/` for every effort. Timestamp first keeps directories chronologically sorted (e.g., `initiatives/20251002-1400-bugfix-login-crash/`). All artifacts, logs, and evidence stay inside this folder for the entire lifecycle.
       2. **Branch**: Create the branch with the **same timestamped slug** as the directory:
-         ``git checkout -b <type>-<YYYYMMDDHHMM>-<name>`` (e.g., `bugfix-202510021400-login-crash`).
-         This prevents collisions when multiple workspaces target similar names.
+         ``git checkout -b <YYYYMMDDHHMM>-<type>-<name>`` (e.g., `202510021400-bugfix-login-crash`).
+         This prevents collisions when multiple workspaces target similar names and keeps branch ordering aligned with directory naming.
       3. **Skeleton**: Ensure the workspace contains the following manually created files and folders. Each subtask creating them must write full content, including headings.
          - `spec.md`
          - `clarifications.md`
