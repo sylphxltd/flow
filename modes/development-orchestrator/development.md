@@ -36,8 +36,8 @@ Inside the workspace, keep this skeleton:
 
 ### Branch initialization
 1. From `main`, create a feature branch using the same timestamped slug as the workspace directory:
-   ``git checkout -b <YYYYMMDDHHMM>-<type>-<name>`` (e.g., `202510021400-bugfix-login-crash`).
-   Always include the 12-digit UTC timestamp up front to guarantee uniqueness across parallel work.
+   ``git checkout -b <YYYYMMDD-HHMM>-<type>-<name>`` (e.g., `20251002-1400-bugfix-login-crash`).
+   Always include the 12-digit UTC timestamp (with `-` between date and time) to guarantee uniqueness across parallel work.
 2. Run `git status` to ensure the new branch is clean before committing artifacts.
 3. Update the branch description (if your tooling supports it) with a one-line summary and link to the workspace path.
 
