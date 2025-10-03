@@ -141,6 +141,7 @@ Guidelines:
 - Switching from Rapid → Full midstream is allowed when new risks appear; update `review-log.md` to reflect the new track.
 - Severity-to-track guardrail: Critical/High issues (e.g., production outages, security breaches) automatically use **Full SDD**; Medium issues default to Full unless Rapid is justified with documented risk containment; Low issues may use Rapid only when rollback is trivial and evidence capture remains intact.
 - Bugfixes still traverse all eight phases. Rapid merely condenses discovery/analysis artifacts; it never removes regression tests or constitution checks (Phases 1, 3, and 6 must explicitly cite applicable clauses in either track).
+- Rapid track examples: Cosmetic UI changes (e.g., button color update), simple config tweaks (e.g., environment variable adjustment), or isolated copy updates where no architectural impact exists. Avoid for any change touching core logic, data models, or external integrations.
 
 ## Git Discipline
 - **Branching**: One branch per workspace. Use `git fetch` and `git rebase origin/main` regularly to minimize drift, but avoid force pushes after sharing work.
@@ -277,14 +278,15 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 5 — Analyze (`analysis.md` + `artifacts/`)
 **Objective:** Validate readiness and surface risks before coding.
 
-1. Perform cross-artifact checks:
-   - Requirements vs. tasks coverage.
-   - Non-functional requirements vs. planned validation.
-   - Terminology consistency.
-   - Duplicate or conflicting statements.
-2. Record findings in a severity table and document recommended actions.
-3. Conduct experiments, spikes, or simulations required to de-risk the plan. Store raw outputs under `artifacts/` and summarize results in `analysis.md`.
-4. Update earlier artifacts if adjustments are necessary; note the updates and timestamp them.
+1. Perform comprehensive cross-artifact checks to ensure plan integrity:
+   - Requirements vs. tasks coverage (every AC mapped to at least one task).
+   - Non-functional requirements vs. planned validation (e.g., performance metrics aligned with tests).
+   - Terminology consistency across spec, plan, and tasks.
+   - Duplicate or conflicting statements (e.g., overlapping responsibilities in plan.md).
+   - Constitution compliance (all clauses referenced in plan.md are validated here).
+2. Record findings in a severity table (Critical/High/Medium/Low) with specific locations, descriptions, and recommended actions (e.g., "Update plan.md to clarify data flow for edge case X").
+3. Conduct targeted experiments, spikes, or simulations to de-risk uncertainties identified in earlier phases. Store raw outputs (logs, metrics, screenshots) under `artifacts/` and summarize insights in `analysis.md` (e.g., "Spike on API integration confirmed 5% performance overhead; adjust plan.md accordingly").
+4. Update upstream artifacts if gaps are found (e.g., add missing tasks in tasks.md or clarify assumptions in spec.md); note all changes with timestamps.
 5. Sign off Phase 5 in `analysis.md` and `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
 6. Commit with `<type>(analysis): capture readiness assessment`.
 

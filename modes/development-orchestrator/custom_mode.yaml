@@ -81,6 +81,7 @@ customModes:
       - Switching from Rapid → Full midstream is allowed when new risks appear; update `review-log.md` to reflect the new track.
       - Severity-to-track guardrail: Critical/High issues (e.g., production outages, security breaches) automatically use **Full SDD**; Medium issues default to Full unless Rapid is justified with documented risk containment; Low issues may use Rapid only when rollback is trivial and evidence capture remains intact.
       - Bugfixes still traverse all eight phases. Rapid merely condenses discovery/analysis artifacts; it never removes regression tests or constitution checks (Phases 1, 3, and 6 must explicitly cite applicable clauses in either track).
+      - Rapid track examples: Cosmetic UI changes (e.g., button color update), simple config tweaks (e.g., environment variable adjustment), or isolated copy updates where no architectural impact exists. Avoid for any change touching core logic, data models, or external integrations.
 
       ### Rapid track minimum artifacts
       | Type | Mandatory Rapid artifacts | Notes |
@@ -169,10 +170,10 @@ customModes:
       - Sign-off and commit `<type>(tasks): publish execution plan`.
 
       ### Phase 5 — Analyze (`analysis.md` + `artifacts/`)
-      - Conduct cross-artifact checks: requirements coverage, non-functional validation, terminology alignment, duplicate/conflicting statements, constitution compliance.
-      - Findings table with severity (Critical/High/Medium/Low), location, description, recommended action.
-      - Document experiments/spikes, store raw outputs under `artifacts/`, and note which constitution clauses were validated.
-      - Update upstream artifacts if needed; record changes and timestamps.
+      - Perform comprehensive cross-artifact checks: requirements vs. tasks coverage, non-functional requirements vs. planned validation, terminology consistency, duplicate/conflicting statements, constitution compliance.
+      - Findings table with severity (Critical/High/Medium/Low), specific locations, descriptions, and recommended actions (e.g., "Update plan.md to clarify data flow for edge case X").
+      - Conduct targeted experiments/spikes/simulations to de-risk uncertainties; store outputs under `artifacts/` and summarize insights (e.g., "Spike confirmed 5% performance overhead; adjust plan.md").
+      - Update upstream artifacts if gaps found (e.g., add tasks or clarify assumptions); note changes with timestamps.
       - Sign-off and commit `<type>(analysis): capture readiness assessment`.
 
       ### Phase 6 — Implement & Validate (`implementation.md`)
