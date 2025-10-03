@@ -130,6 +130,21 @@ The brief should be self-contained, reference the `initiatives/<timestamp>-<type
 - Wherever a document prompts for a sign-off name, record the executing agent identifier as `Agent: <agent-name> (<model-id>)` (for example, `Agent: Kilocode (gpt-5-codex)`).
 - Record timestamps in ISO 8601 UTC.
 - If a human reviewer later approves the phase, append a new line with their name and timestamp; otherwise the automated entry stands alone.
+
+### Constitution governance
+- The project constitution resides at `governance/constitution.md`. It defines non-negotiable principles (e.g., strong typing, security posture, observability baselines).
+- Phase 0 must read the constitution, confirm the version/hash, and halt the SDD workflow if the document is missing or outdated until it is authored or refreshed.
+- When a new initiative requires additional principles, follow the Constitution Authoring Flow before proceeding:
+  1. Analyse existing artifacts (previous workspaces, audit findings, incident reports) to infer required rules.
+  2. Draft proposed clauses in a temporary note and highlight uncertainties.
+  3. Ask the user targeted questions to confirm new or updated principles.
+  4. Update `governance/constitution.md`, bump the version metadata, and append a changelog entry.
+  5. Log the constitution update in `review-log.md` Phase 0 with `Actor: <agent-name> (<model-id>)`, timestamp, and version/hash.
+- Every downstream phase must reference the constitution:
+  - **Phase 1** embeds applicable clauses in `Constraints` / `Success Metrics`.
+  - **Phase 2** raises clarification questions for any ambiguous or missing constitutional coverage.
+  - **Phase 3** maps each clause to design decisions or records justified exceptions with follow-up tasks.
+  - **Phase 6** verifies each implementation slice against the clauses; if a violation occurs, flag the task as blocked and loop back through clarification/plan adjustments before continuing.
 - **Milestone commits**: Keep the history lean by bundling related phases. Standard cadence:
   1. **Optional `init`** — only if the skeleton itself required non-trivial setup; otherwise keep changes staged.
   2. **`docs`** — single commit that lands completed Phases 1–3 together (spec, clarifications, plan). Do not push partial documents.
@@ -161,13 +176,13 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 0 — Intake & Kickoff
 **Objective:** Capture the request, align with project governance, classify the change, and prepare the workspace.
 
-1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Governance Role below) before continuing.
+1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Constitution Governance above) before continuing.
 2. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
 3. Determine the change type using the prefixes enumerated above.
-3. Create the workspace directory and initialize the branch following the naming convention.
-4. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
-5. Add initial entries to `review-log.md` for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, and the constitution version/hash that applies.
-6. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>`.
+4. Create the workspace directory and initialize the branch following the naming convention.
+5. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
+6. Add initial entries to `review-log.md` for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, and the constitution version/hash that applies.
+7. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>` (only if scaffolding required non-trivial setup).
 
 **Outputs:** Workspace folder, branch, empty artifacts ready for content, constitution alignment recorded.
 
@@ -178,7 +193,8 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 2. Quantify objectives and success metrics; include baseline measurements if available.
 3. Identify personas, stakeholders, and touchpoints.
 4. Explicitly state non-goals to prevent scope creep.
-5. List initial open questions requiring clarification.
+5. Reference the constitution by listing applicable clauses in `Constraints` or `Success Metrics`, and highlight any potential gaps for later clarification.
+6. List initial open questions requiring clarification.
 6. Update `review-log.md` for Phase 1 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`) and sign off in `spec.md` using the same label.
 7. Commit with `<type>(spec): document scope and objectives`.
 
@@ -187,7 +203,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 2 — Clarify (`clarifications.md`)
 **Objective:** Resolve ambiguities before planning.
 
-1. Review `spec.md` and assemble a prioritized queue of targeted questions covering functional scope, data model, UX, non-functional requirements, integrations, edge cases, and constraints.
+1. Review `spec.md` and the governing principles referenced from `governance/constitution.md`. Assemble a prioritized queue of targeted questions covering functional scope, data model, UX, non-functional requirements, integrations, edge cases, constraints, and constitutional compliance gaps.
 2. Work through questions in batches of up to five before reassessing impact, ensuring each one is high leverage rather than flooding the workflow with noise.
 3. Populate the question table with pending items and assign owners (default to yourself unless a stakeholder must answer).
 4. Resolve questions using existing artifacts, domain knowledge, or additional research whenever possible; only escalate to the user or other stakeholders when information is genuinely missing. Record the answer source and timestamp.
@@ -205,7 +221,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 2. Detail data models, contracts, and external dependencies.
 3. Map each acceptance criterion to specific validation methods (unit test, integration test, manual scenario).
 4. Create a risk matrix with likelihood, impact, mitigation, and owner. Include rollback and contingency plans.
-5. Outline the implementation approach, guardrails, and sequencing of major themes.
+5. Outline the implementation approach, guardrails, and sequencing of major themes, mapping each constitution clause to specific design decisions or recording justified exceptions with follow-up tasks.
 6. Document branching, environment, and deployment considerations.
 7. Sign off and update `review-log.md` for Phase 3 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
 8. Commit with `<type>(plan): establish architecture and validation strategy`.
@@ -261,8 +277,9 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
    - Write or update tests (Red).
    - Implement the minimal code change (Green).
    - Refactor for maintainability (Refactor).
-3. Capture test results, metrics, and screenshots in `artifacts/`; reference them from the journal.
-4. Update `tasks.md` immediately after finishing a task: flip the relevant checkbox to `[x]`, fill in the evidence path, and add the completion timestamp within the metadata.
+   - Confirm the slice complies with all relevant constitution clauses. If any principle is violated, mark the task as blocked, open the necessary clarification or plan adjustment, and resume only after resolving the gap.
+3. Capture test results, metrics, and screenshots in `artifacts/`; reference them from the journal, noting the constitution clauses validated.
+4. Update `tasks.md` immediately after finishing a task: flip the relevant checkbox to `[x]`, fill in the evidence path, add the completion timestamp within the metadata, and list the constitution clauses covered.
 5. Log blockers or deviations in `implementation.md` and provide mitigation steps.
 6. Maintain a running summary of code changes, linking to relevant commits.
 7. Run the full test suite before finalizing the phase.
