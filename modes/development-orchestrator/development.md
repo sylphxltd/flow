@@ -235,21 +235,22 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 **Outputs:** Resolved question table, updated spec, risk watchlist.
 
 ### Phase 3 — Plan (`plan.md`)
-**Objective:** Produce the technical blueprint.
+**Objective:** Produce the technical blueprint with detailed codebase analysis.
 
-1. Summarize architectural decisions, including diagrams (ASCII or Mermaid) describing component interactions.
-2. Detail data models, contracts, and external dependencies.
-3. Map each acceptance criterion to specific validation methods (unit test, integration test, manual scenario).
-4. Create a risk matrix with likelihood, impact, mitigation, and owner. Include rollback and contingency plans.
-5. Outline the implementation approach, guardrails, and sequencing of major themes, mapping each constitution clause to specific design decisions or recording justified exceptions with follow-up tasks.
-6. Document branching, environment, and deployment considerations.
-7. Sign off and update `review-log.md` for Phase 3 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
-8. Commit with `<type>(plan): establish architecture and validation strategy`.
+1. Analyze the existing codebase: Identify affected files, modules, classes, functions, and dependencies. Document current implementation details, data flows, and integration points relevant to the change.
+2. Summarize architectural decisions, including diagrams (ASCII or Mermaid) describing component interactions and how they integrate with existing code.
+3. Detail data models, contracts, and external dependencies, specifying how they align or conflict with current structures.
+4. Map each acceptance criterion to specific validation methods (unit test, integration test, manual scenario), referencing existing test suites where applicable.
+5. Create a risk matrix with likelihood, impact, mitigation, and owner. Include rollback and contingency plans based on codebase analysis.
+6. Outline the implementation approach, guardrails, and sequencing of major themes, mapping each constitution clause to specific design decisions or recording justified exceptions with follow-up tasks.
+7. Document branching, environment, and deployment considerations, including any required infrastructure changes.
+8. Sign off and update `review-log.md` for Phase 3 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
+9. Commit with `<type>(plan): establish architecture and validation strategy`.
 
 **Outputs:** Complete plan document referencing the spec and clarifications.
 
 ### Phase 4 — Tasks (`tasks.md`)
-**Objective:** Break the plan into executable steps.
+**Objective:** Break the plan into executable steps with specific file and modification details.
 
 1. Structure `tasks.md` as a Markdown checklist so progress is instantly visible. Each item must follow this shape:
    ```
@@ -261,8 +262,8 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
      - Notes: optional context (e.g., prerequisites, concurrency hints)
    ```
    Indent metadata beneath the checkbox. Use `[ ]` for open work and `[x]` (lowercase) the moment a task is completed.
-2. Translate plan elements and acceptance criteria into atomic tasks. Each task must reference affected files or modules and clearly state whether it is a test-first item, implementation change, or verification step.
-3. Capture dependencies explicitly in the metadata. Mark parallel-safe tasks by appending `[P]` in the title: `- [ ] T003 [P] — …`.
+2. Translate plan elements and acceptance criteria into atomic tasks, directly referencing the codebase analysis from `plan.md`. Each task must specify affected files, modules, classes, or functions, and describe the exact changes required (e.g., "Modify function X in file Y to add parameter Z and update logic for condition W").
+3. Capture dependencies explicitly in the metadata. Mark parallelizable tasks by appending `[P]` inside the title: `- [ ] T003 [P] — …`.
 4. Prepend test-writing tasks before implementation tasks for the same area to enforce TDD sequencing.
 5. Define measurable exit criteria inside the metadata, include evidence placeholders that point to future artifacts, and only add effort notes when they help scheduling parallel work.
 6. Reserve ID ranges for future discoveries instead of renumbering existing tasks (e.g., leave `T010` blank if skipping).
