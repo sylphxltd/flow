@@ -88,30 +88,11 @@ customModes:
       - Rapid track examples: Cosmetic UI changes (e.g., button color update), simple config tweaks (e.g., environment variable adjustment), or isolated copy updates where no architectural impact exists. Avoid for any change touching core logic, data models, or external integrations.
 
       ### Rapid track minimum artifacts
-      | Type | Mandatory Rapid artifacts | Notes |
-      | ---- | ------------------------- | ----- |
-      | Feature | `spec.md` (condensed), `plan.md` (key decisions), `tasks.md` (critical path), validation evidence in `implementation.md` | Use Rapid only for truly minor UX or copy tweaks without architectural impact. |
-      | Bugfix | `bug-report.md`, failing regression test recorded in `artifacts/regressions/`, updated `tasks.md`, `implementation.md` journal proving Red → Green → Refactor | Failing test must land before fix even in Rapid. |
-      | Modify | `modification-spec.md`, delta-focused updates in `spec.md`/`plan.md`, impacted docs tracked in `tasks.md` | Ensure compatibility notes remain explicit. |
-      | Refactor | `refactor-spec.md`, baseline metrics snapshot in `artifacts/metrics/`, `tasks.md` slices guarding behavior | Rapid only when scope touches isolated modules with existing coverage. |
-      | Hotfix | `hotfix-incident.md`, accelerated `spec.md` summary, post-fix validation evidence, follow-up test plan logged in `tasks.md` | Post-mortem due within 48 hours even on Rapid. |
-      | Deprecate | `deprecation-plan.md`, communication checklist in `tasks.md`, dependency audit entry in `analysis.md` | Rapid appropriate for cosmetic removals with zero external consumers. |
+      Refer to the Development Manual section “Rapid track minimum artifacts” and enforce accordingly (see modes/development-orchestrator/development.md).
 
-      ## Git Discipline (To be enforced through instructions)
-      - One branch per workspace; no merging to `main` until all phases complete, tests pass, and evidence is recorded.
-      - Milestone commits keep history lean. Standard cadence:
-        1. Optional `init` — only when the skeleton setup is non-trivial; otherwise keep scaffolding staged.
-        2. `docs` — single commit landing Phases 1–3 together (spec, clarifications, plan). Never push partial documents.
-        3. `execution-plan` — commit once Phases 4–5 (tasks checklist + analysis) are both finalized in the same change-set.
-        4. `implementation` slices — each commit covers a coherent set of tasks (usually one user-visible capability) and includes the full Red → Green → Refactor cycle.
-        5. `release` — final housekeeping immediately before PR merge (status updates, documentation polish). Before cutting this commit, stage any remaining documentation updates—at minimum `review-log.md`, `implementation.md`, completion badges, and evidence links—so the Phase 7 record is sealed in a single release commit instead of leaving a standalone `review-log.md` change.
-        Local scratch commits are acceptable while working, but squash or amend them prior to sharing the branch.
-      - Implementation commits should contain the full Red → Green → Refactor cycle whenever feasible: failing test, minimal fix, and the refactor captured together to prove TDD while avoiding noisy history.
-      - Commit message format: `<type>(<scope>): <description>` (e.g., `bugfix(login): add failing regression test`). Reference evidence paths when helpful (e.g., `See artifacts/tests/login-regression.json`).
-      - Diff hygiene: review `git diff` before each commit to confirm intent and omit generated artifacts.
-      - PR requirements: include links to workspace artifacts, proof of tests, coverage ≥95 % on touched code, and sign-offs in `review-log.md`.
-      - Merge policy: All tests must pass locally and in CI. Default to **squash merge** so the `release` commit becomes the only entry on `main`; when milestone commits must remain distinct but linear, switch to a rebase merge instead.
-      - Hotfix exception: allow expedited merge after the minimal fix, but enforce test backfills and post-mortem within 48 hours.
+      ## Git Discipline (enforce per manual)
+      - Enforce commit cadence and merge gates defined in the Development Manual (milestones, coverage, PR requirements).
+      - Implementation commits should contain Red → Green → Refactor when feasible; default to squash merge unless otherwise justified.
 
       ## Sign-off convention
       - Wherever documents request a sign-off name, record the executing agent identifier as `Agent: <agent-name> (<model-id>)` (e.g., `Agent: Kilocode (gpt-5-codex)`).
@@ -152,7 +133,7 @@ customModes:
       - Sections required: Context, Problem Statement, Objectives, Non-goals, Personas, Success Metrics, Constraints/Assumptions, Initial AC, Glossary, Open Questions, Sign-off with `Agent: <agent-name> (<model-id>)` + ISO timestamp.
       - Embed relevant constitution clauses inside Constraints/Success Metrics and highlight any gaps that require follow-up in Phase 2.
       - Capture type-specific emphasis (e.g., reproduction details for bugfix, baseline metrics for refactor).
-      - Update `review-log.md` with Phase 1 sign-off (`Actor: <agent-name> (<model-id>)`, `Status: Completed`) and commit `<type>(spec): document scope and objectives`.
+      - Update `review-log.md` with Phase 1 sign-off (`actor: Agent: <agent-name> (<model-id>)`, `status: Completed`) and commit `<type>(spec): document scope and objectives`.
 
       ### Phase 2 — Clarify (`clarifications.md`)
       - Assemble a prioritized queue of questions targeting Functional Scope, Data Model, UX, Non-functional attributes, Integrations, Edge Cases, Constraints, and constitutional compliance gaps.
@@ -212,48 +193,13 @@ customModes:
       - Sign off and update `review-log.md` for Phase 8 (`actor: Agent: <agent-name> (<model-id>)`, `status: Completed`).
       - Commit `<type>(retrospective): document lessons learned`.
 
-      ## Change-Type Playbooks
-
-      ### Feature (Net New Capability)
-      - Emphasize user journeys and success metrics in `spec.md`.
-      - Plan module boundaries, contracts, telemetry requirements.
-      - Tasks begin with test scaffolding; analysis verifies observability readiness.
-
-      ### Bugfix
-      - Severity scale: Critical (crash/data loss), High (core feature broken), Medium (major annoyance), Low (cosmetic).
-      - Produce `bug-report.md` capturing reproduction, environment, severity, and root cause, and store raw evidence under `artifacts/regressions/`.
-      - Phase 2 confirms scope and guardrails.
-      - First task: failing regression test; commit before the fix.
-      - Commit sequence must remain failing test → fix → refactor; keep the regression test in the suite permanently.
-
-      ### Modify (Enhancement)
-      - Link to the originating feature workspace/spec and document the behavior delta in `modification-spec.md`.
-      - Produce `impact-analysis.md` detailing dependent endpoints, schemas, integrations, and compatibility constraints.
-      - Plan backward compatibility checks, documentation updates, and telemetry adjustments.
-      - Tasks include documentation, contract, and client library updates.
-      - Analysis confirms prior acceptance criteria still hold and cites mitigation for any incompatible change.
-
-      ### Refactor
-      - Capture code smells, scope, and goals inside `refactor-spec.md`.
-      - Record pre-change baselines in `baseline-metrics.md` (performance, error rates, footprint) under `artifacts/metrics/`.
-      - Divide work into safe slices guarded by existing or newly added tests.
-      - Implementation journal must prove no behavior change and include before/after metrics for each slice.
-      - Roll back any slice degrading tracked metrics by more than 5 %.
-
-      ### Hotfix
-      - Document incident timeline, severity (P0/P1/P2), and rollback plan inside `hotfix.md`; capture immediate mitigations and communications.
-      - Compress Phases 1–3 but keep explicit records of decisions and impacted constitution clauses.
-      - Implement the minimal fix quickly; backfill tests and validation evidence within 48 hours.
-      - Deliver `post-mortem.md` inside 48 hours covering root cause, timeline, preventive actions, and evidence of regression tests.
-
-      ### Deprecate
-      - Capture rationale, usage patterns, and affected personas in `spec.md`, then formalize the schedule in `deprecation-plan.md`.
-      - Maintain `dependency-analysis.md` cataloguing consumers, mitigation owners, and readiness checkpoints.
-      - Plan three stages with timelines:
-        1. **Warnings**: announcements, communication plan, documentation updates.
-        2. **Disabled**: feature off by default (with rollback option), validation of alternatives.
-        3. **Removed**: code/data removal post-validation.
-      - Tasks group work by stage with communication deliverables, migration validation, and dependency sign-offs.
+      ## Change-Type Playbooks (enforce per manual)
+      - Feature: emphasize user journeys and success metrics; tasks start with test scaffolding; ensure observability readiness.
+      - Bugfix: severity scale; bug-report.md; first failing regression test; commit order failing test → fix → refactor; keep regression test.
+      - Modify: link to origin; impact-analysis.md; compatibility checks and documentation updates.
+      - Refactor: refactor-spec.md; baseline metrics; safe slices; prove no behavior change; rollback if metrics degrade >5%.
+      - Hotfix: hotfix.md timeline/severity/rollback; compress Phases 1–3 with explicit records; backfill tests; post-mortem within 48 hours.
+      - Deprecate: deprecation-plan.md schedule; dependency-analysis.md; stages Warnings → Disabled → Removed with sign-offs.
       
       ## Evidence Management & Auditing
       - Every referenced artifact must exist and be version-controlled.

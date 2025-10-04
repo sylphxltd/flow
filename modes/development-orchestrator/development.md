@@ -1,5 +1,7 @@
 # Development Workflow Manual
 
+LLM-first orientation: This manual targets LLM agents executing SDD end-to-end. Humans are optional reviewers. The orchestrator only coordinates flow; Code Mode subtasks perform all tool actions.
+
 ## Scope
 Use this manual for every engineering initiative, regardless of size or urgency. It defines a single Spec Driven Development (SDD) lifecycle to coordinate intake, planning, execution, validation, and release. Following the steps in this document ensures traceability, reproducibility, and high quality without relying on automation, generated templates, or slash commands.
 
@@ -121,15 +123,15 @@ Create each file manually using the outlines below. Copy the headings directly; 
 - Retrospective evidence handling: When consulting `governance/retrospective.md`, cite only relevant items with file path and line ranges; do not duplicate content in the workspace. If none are relevant, record “No relevant retrospective items”. Convert actionable items into Phase 2 clarifications or Phase 3 plan updates.
 
 ### Subtask delegation protocol
-When using the orchestrator mode to open a `new_task`, always provide a structured brief so the Code Mode agent understands the full context:
-1. **Context** — One paragraph summarising current phase, workspace path, and relevant prior decisions or files.
-2. **Objective** — Bullet list of concrete goals for the subtask (e.g., “Populate clarifications table with three questions focused on data model”).
-3. **Inputs** — Explicit file paths and snippets (if needed) the subtask must read before acting.
-4. **Actions** — Ordered checklist of steps to follow, including required tooling (e.g., `read_file`, `apply_diff`), validation expectations, and TDD requirements.
-5. **Deliverables** — Enumerate files to create or update, formatting rules, and how evidence should be stored under `artifacts/`.
-6. **Completion report** — Specify the status flags the subtask must report in `attempt_completion` (e.g., `PHASE=2/7`, `CLARIFICATIONS_OPEN=2`, `TASKS_UPDATED=T001,T002`), plus any follow-up instructions.
+Provide a self-contained `new_task` brief with:
+1. Context — current phase, workspace path, prior decisions.
+2. Objective — concrete goals.
+3. Inputs — explicit paths/snippets to read first.
+4. Actions — ordered steps + required tools + validation/TDD.
+5. Deliverables — target files, formatting, evidence locations.
+6. Completion report — required status flags (e.g., `PHASE=2/7`, `TASKS_UPDATED=T001,T002`).
 
-The brief should be self-contained, reference the `initiatives/<timestamp>-<type>-<name>/` directory, and forbid assumptions that aren’t stated. Never delegate ambiguous work.
+Reference `initiatives/<timestamp>-<type>-<name>/`. Forbid unstated assumptions. Never delegate ambiguous work.
 
 ## Workflow Tracks
 Select the execution track during Phase 0 and record it in `review-log.md` so every downstream artifact knows the expected depth of work.
@@ -173,7 +175,7 @@ Guidelines:
   2. Draft proposed clauses in a temporary note and highlight uncertainties.
   3. Ask the user targeted questions to confirm new or updated principles.
   4. Update `governance/constitution.md`, bump the version metadata, and append a changelog entry (ensure version changes are staged before the same commit to avoid extra follow-up commits).
-  5. Log the constitution update in `review-log.md` Phase 0 with `Actor: <agent-name> (<model-id>)`, timestamp, and the new constitution version.
+  5. Log the constitution update in `review-log.md` Phase 0 with `actor: Agent: <agent-name> (<model-id>)`, timestamp, and the new constitution version.
 - Every downstream phase must reference the constitution:
   - **Phase 1** embeds applicable clauses in `Constraints` / `Success Metrics`.
   - **Phase 2** raises clarification questions for any ambiguous or missing constitutional coverage.
@@ -234,8 +236,8 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 4. Explicitly state non-goals to prevent scope creep.
 5. Reference the constitution by listing applicable clauses in `Constraints` or `Success Metrics`, and highlight any potential gaps for later clarification.
 6. List initial open questions requiring clarification.
-6. Update `review-log.md` for Phase 1 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`) and sign off in `spec.md` using the same label.
-7. Commit with `<type>(spec): document scope and objectives`.
+7. Update `review-log.md` for Phase 1 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`) and sign off in `spec.md` using the same label.
+8. Commit with `<type>(spec): document scope and objectives`.
 
 **Outputs:** Completed specification, sign-off recorded.
 
@@ -298,7 +300,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 5 — Analyze (`analysis.md` + `artifacts/`)
 **Objective:** Validate readiness and surface risks before coding.
 
-1. Optionally review `governance/retrospective.md` for relevant lessons from prior initiatives to inform analysis approaches or avoid common validation pitfalls.
+1. Optionally consult `governance/retrospective.md` as evidence (citation-only per Phase 0 guidance).
 2. Perform comprehensive cross-artifact checks to ensure plan integrity:
     - Requirements vs. tasks coverage (every AC mapped to at least one task).
     - Non-functional requirements vs. planned validation (e.g., performance metrics aligned with tests).
@@ -316,7 +318,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 6 — Implement & Validate (`implementation.md`)
 **Objective:** Execute tasks, write code, and prove correctness.
 
-1. Optionally review `governance/retrospective.md` for relevant lessons from prior implementations to inform coding approaches or avoid common implementation pitfalls.
+1. Consult evidence as needed (use retrospective citations per Phase 0 guidance).
 2. Follow the task order. Before starting each task, record the timestamp and intent in the journal section.
 3. For each implementation unit:
     - Write or update tests (Red).
