@@ -175,3 +175,57 @@ Minimal orchestrator checklist (every delegation)
 
 Notes
 - This contract complements, and does not replace, the detailed policy in development.md. Modes are isolated at runtime; the orchestrator enforces this contract so the SDD lifecycle remains coherent even when mode instructions are independent.
+
+## Mode runtime model (agent sessions and handoffs)
+
+Purpose
+- Clarify how modes operate as agents at runtime so the orchestrator maintains a coherent SDD flow even when each mode is isolated.
+- Complement policy in [modes/development-orchestrator/development.md](modes/development-orchestrator/development.md) and embedded runtime rules in [modes/development-orchestrator/custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml) and [modes/development-orchestrator/custom_mode.beta.yaml](modes/development-orchestrator/custom_mode.beta.yaml).
+
+Core concepts
+- Session-per-subtask: Every `new_task` launches a new agent session for the delegated mode. The session has no implicit memory of prior sessions.
+- Hand-off: The delegated mode must end with `attempt_completion`. Control returns to the orchestrator session with required status flags and a Human Report.
+- Shared state lives in the repo: The only durable memory across sessions is the workspace repository (documents, code, and artifacts). Modes must not rely on hidden/ephemeral memory.
+
+Handshake sequence (each delegation)
+1) Orchestrator computes the next phase from the ledger (see Global Orchestrator Contract) and prepares a complete brief:
+   - PHASE, SUBPHASE, GOAL, INPUTS, OUTPUTS, VALIDATION, MODEL_TIER, TRACK, FLAGS.
+2) Orchestrator opens `new_task` to the target mode (creates a new agent session).
+3) Delegated mode executes with tools (orchestrator never uses tools):
+   - Reads inputs; makes repository changes bound to the workspace path; captures evidence in `artifacts/`.
+   - Writes required sign-offs and updates `review-log.md` for the phase.
+4) Delegated mode finishes with `attempt_completion`, including REQUIRED status flags and a Human Report.
+5) Orchestrator resumes, validates gates, updates the ledger view, and either re-briefs (if Blocked) or advances to the next phase.
+
+Isolation and persistence rules
+- No implicit cross-session memory: Modes cannot assume previous context beyond files they read in the brief.
+- Evidence-first: All logs/outputs/screenshots must be stored under `artifacts/` and referenced from documents and commits.
+- Sign-offs and ledger: Phases are considered complete only when the corresponding document has a sign-off and `review-log.md` records a row with `status=Completed`.
+
+Blocking and re-brief loop (no fallbacks)
+- Ambiguity: Missing/unclear brief fields → the mode must return `STATUS=Blocked`, `REASON=MissingBriefFields`, include `MISSING`, make no changes.
+- Out-of-order: Requested phase not allowed by the ledger → `STATUS=Blocked`, `REASON=OutOfOrder`, no changes.
+- Model unavailability: Requested model/tier not available → `STATUS=Blocked`, `REASON=ModeUnavailable`, no changes.
+- Constitution HALT: Missing/outdated governance → `STATUS=Blocked`, `REASON=HALT`; orchestrator opens a constitution task in Phase 0.
+
+Determinism and idempotency
+- Idempotent subtasks: If a section already exists or a checklist item is already `[x]`, perform no duplicate writes and still return `STATUS=Completed` with a summary and evidence paths.
+- Diff hygiene: Use surgical edits; avoid duplicating headings, sign-off blocks, or checklist entries.
+- Explicit scope: Briefs should specify target files/sections to prevent accidental edits elsewhere.
+
+Concurrency policy
+- Parallel sessions are allowed only for tasks marked `[P]` in `tasks.md` and must not touch the same files/sections.
+- Orchestrator is responsible for safe scheduling; when in doubt, run serially.
+- If a mode detects conflicting scope, it must return `STATUS=Blocked` with `REASON=PolicyViolation` and note the suspected collision.
+
+Model tier control
+- The orchestrator sets `MODEL_TIER` explicitly in the brief; modes must not override it.
+- See “Model routing policy (runtime guidance)” in this README for default mappings and heuristics.
+
+Auditability
+- The runtime ledger is the workspace `review-log.md` file under `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/review-log.md`.
+- The orchestrator uses this ledger plus status flags in `attempt_completion` to compute the next allowed phase and enforce gates.
+
+Where to find the rules
+- Human policy (maintainer source of truth): [modes/development-orchestrator/development.md](modes/development-orchestrator/development.md)
+- Runtime authority (embedded snapshots for agents): [modes/development-orchestrator/custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml), [modes/development-orchestrator/custom_mode.beta.yaml](modes/development-orchestrator/custom_mode.beta.yaml)
