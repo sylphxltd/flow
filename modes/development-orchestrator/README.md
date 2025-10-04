@@ -50,3 +50,21 @@ Start-here checklist
 - Re-read [development.md](modes/development-orchestrator/development.md) and [custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml).
 - Confirm invariants above.
 - Open the first Phase 0 new_task.
+## Runtime visibility and alignment
+
+Modes cannot read local repository documents at runtime (including development.md). To ensure consistent execution without external reads:
+
+- Embedded policy snapshot
+  - Each mode file (custom_mode.yaml, custom_mode.beta.yaml) embeds the core policy snapshot necessary for execution (front-matter, standard artifacts, constitution governance, TDD, Rapid minimum artifacts, Git discipline, merge gates, evidence).
+  - Orchestrator and Beta modes must not assume runtime access to development.md.
+
+- Manual remains the human-maintained policy source
+  - development.md is the human-readable, tool-agnostic policy. Maintainers edit the manual first, then mirror updates into the mode files’ embedded snapshots.
+  - Treat any references to development.md in mode files as maintainer guidance only (not runtime reads).
+
+- Alignment protocol
+  1) Update development.md (policy/workflow).
+  2) Mirror the same changes into custom_mode.yaml and custom_mode.beta.yaml (embedded policy snapshot).
+  3) Validate with a quick pass: artifacts present, gates listed, phase sign-offs, and Rapid constraints match.
+
+This section clarifies that the runtime authority for agents lies in the mode files’ embedded policy, while development.md remains the source of truth for maintainers editing the process.
