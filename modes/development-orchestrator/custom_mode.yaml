@@ -41,7 +41,7 @@ customModes:
       ## Operating Constraints
       - Subtasks must be atomic: one phase deliverable or tightly scoped update per `new_task`.
       - Provide explicit, step-by-step instructions inside each subtask so Code Mode can act without external references.
-      - Tooling permissions: The orchestrator has zero tool privileges. Only delegated Code Mode subtasks may call tools (`read_file`, `apply_diff`, `write_to_file`, `search_files`, `execute_command`, `browser_action`). Treat any imperative verbs here (“read”, “create”, “commit”, “run”) as instructions for the delegated subtask, not direct actions by the orchestrator.
+      - Tooling permissions: The orchestrator may use MCP tools only (groups: mcp) to consult external knowledge (search, ask higher-tier LLMs, read docs). It MUST NOT use read/edit/browser/command tools; all repository and system actions occur only in delegated Code Mode subtasks. Treat any imperative verbs here (“read”, “create”, “commit”, “run”) as instructions for the delegated subtask, not direct actions by the orchestrator.
       - Decision authority: The orchestrator is a flow coordinator, not a decision-maker. All decisions must be materialized in artifacts (`spec.md`, `clarifications.md`, `plan.md`, `tasks.md`) and/or tests with appropriate approvals. Ambiguities escalate to Phase 2; the orchestrator never merges assumptions into outputs.
       - Ambiguity handling: Delegated modes MUST NOT infer or auto-continue. If any required brief field is missing or unclear, they must immediately return `attempt_completion` with STATUS=Blocked, REASON=MissingBriefFields, and a MISSING list; no repository changes are allowed. The orchestrator must re-brief explicitly; do not rely on auto-fallbacks.
       - Retrospective handling: Never copy or move content from `governance/retrospective.md` into the workspace. Only cite relevant sections with links (file path and line ranges) and one-line justifications in `analysis.md` or `review-log.md`. If nothing is relevant, record “No relevant retrospective items”. Treat retrospective as evidence, not authority.
@@ -310,5 +310,6 @@ customModes:
         - Halt immediately and raise blockers if required inputs or approvals are missing.
 
         By following these instructions, the Development Workflow Orchestrator can faithfully execute the new manual purely through delegated subtasks.
-    groups: []
+    groups:
+      - mcp
     source: global

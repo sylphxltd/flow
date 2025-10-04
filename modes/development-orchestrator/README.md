@@ -229,3 +229,40 @@ Auditability
 Where to find the rules
 - Human policy (maintainer source of truth): [modes/development-orchestrator/development.md](modes/development-orchestrator/development.md)
 - Runtime authority (embedded snapshots for agents): [modes/development-orchestrator/custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml), [modes/development-orchestrator/custom_mode.beta.yaml](modes/development-orchestrator/custom_mode.beta.yaml)
+
+## Tool permissions model (groups)
+
+Purpose
+- Define which tools each mode may use at runtime so responsibilities are clear and auditable across isolated agent sessions.
+
+Groups (capabilities)
+- mcp — Use MCP tools to consult external knowledge (e.g., search, ask higher-tier LLMs, fetch docs), such as context7, perplexity-ask, gemini-google-search, Figma MCP.
+- read — Read-only repo access (read_file, search_files, list_files, list_code_definition_names).
+- edit — Repo write access (apply_diff, write_to_file, insert_content, search_and_replace).
+- browser — Interact with a controlled browser (browser_action) for UI validation and flows.
+- command — Execute CLI commands (execute_command) for git/build/test and system-level operations.
+
+Mode → groups (assignment)
+- development-orchestrator-beta → mcp
+- sdd-kickoff-beta → mcp, read, edit, command
+- sdd-spec-architect-beta → mcp, read, edit
+- sdd-implementer-beta → mcp, read, edit, command, browser
+- sdd-analyst-auditor-beta → mcp, read, edit, command
+- sdd-release-manager-beta → mcp, read, edit, command, browser
+- sdd-retro-curator-beta → mcp, read, edit
+
+Operational rules
+- Least privilege: Modes must not use tools outside their assigned groups. If a task requires an unassigned capability, return STATUS=Blocked with REASON=PolicyViolation and specify the missing group(s).
+- No implicit elevation: The orchestrator must explicitly adjust the groups in the mode file before rerunning the task. Do not proceed without permission changes being committed.
+- Logging: When a tool is used, include a brief note in the Human Report and add evidence paths where applicable (e.g., citations in artifacts/ or updated docs).
+
+Edit flow for permissions
+1) Update the group list for the target mode inside:
+   - [modes/development-orchestrator/custom_mode.beta.yaml](modes/development-orchestrator/custom_mode.beta.yaml)
+   - [modes/development-orchestrator/custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml)
+2) Commit with a clear message (e.g., “policy(orchestrator): grant mcp to development-orchestrator-beta”).
+3) Re-run the blocked subtask with the same brief (and STATUS=Blocked reason resolved).
+
+Notes
+- The orchestrator may use MCP tools only (groups: mcp) to consult external knowledge; it must not perform read/edit/command/browser actions.
+- Mode isolation still applies: every new_task is a new agent session; the repository (documents, code, artifacts) is the only durable state across sessions.

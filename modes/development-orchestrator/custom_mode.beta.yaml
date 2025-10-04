@@ -14,8 +14,9 @@ customModes:
     customInstructions: |-
       # Orchestrator Beta (multi-mode router)
 
-      ## Zero tool privileges and non-decision role
-      - You never call tools; all actions happen in delegated Beta modes.
+      ## Tooling permissions and non-decision role
+      - You may use MCP tools only (groups: mcp) to consult external knowledge (search, ask higher-tier LLMs, read docs).
+      - You MUST NOT perform repository or system actions; all read/edit/command/browser operations occur only in delegated Beta modes.
       - All decisions must be recorded in artifacts with sign-offs; never embed decisions in orchestration logs.
 
       ## Default routing table (override allowed)
@@ -143,7 +144,8 @@ customModes:
       ## Safety and routing continuity
       - HALT when constitution is missing/outdated. Do not proceed; return attempt_completion with STATUS=Blocked and REASON=HALT. The orchestrator must open sdd-kickoff-beta to fix.
       - If a Beta mode is unavailable, do not auto-fallback. Return attempt_completion with STATUS=Blocked and REASON=ModeUnavailable. The orchestrator may re-route explicitly.
-    groups: []
+    groups:
+      - mcp
     source: global
 
   - slug: sdd-kickoff-beta
@@ -176,7 +178,11 @@ customModes:
       - Review-log initial row uses lowercase keys: `actor`, `status` (e.g., `actor: Agent: <agent-name> (<model-id>)`, `status: Completed`).
       - Commit message format: `<type>(init): bootstrap workspace for <name>` (only if scaffolding is non-trivial).
       - attempt_completion must include: PHASE=0/7, MODE=sdd-kickoff-beta, MODEL_TIER=cheap_fast (default), EVIDENCE (paths), RISKS (if any), NEXT. Include Human Report.
-    groups: []
+    groups:
+      - mcp
+      - read
+      - edit
+      - command
     source: global
 
   - slug: sdd-spec-architect-beta
@@ -212,7 +218,10 @@ customModes:
         - Map each constitution clause to design decisions or document justified exceptions with follow-up tasks; sign-off and log Phase 3 in review-log.md.
       - Commit cadence and messages follow the manual: `<type>(spec)`, `<type>(clarify)`, `<type>(plan)`.
       - attempt_completion must include: PHASE=1-3, MODE=sdd-spec-architect-beta, MODEL_TIER=thinking_slow, TASKS_UPDATED (if any), EVIDENCE, RISKS, NEXT. Include Human Report.
-    groups: []
+    groups:
+      - mcp
+      - read
+      - edit
     source: global
 
   - slug: sdd-implementer-beta
@@ -249,7 +258,12 @@ customModes:
       - Constitution compliance:
         - If a clause is violated, mark the task BLOCKED, open Phase 2/3 adjustments, and resume only after resolution.
       - attempt_completion must include: PHASE=4 or 6, MODE=sdd-implementer-beta, MODEL_TIER=code_fast, TASKS_DONE/TOTAL, EVIDENCE, RISKS, NEXT. Include Human Report.
-    groups: []
+    groups:
+      - mcp
+      - read
+      - edit
+      - command
+      - browser
     source: global
 
   - slug: sdd-analyst-auditor-beta
@@ -284,7 +298,11 @@ customModes:
       - Run targeted spikes/experiments; store raw outputs under artifacts/; summarize insights; update upstream docs if gaps are found; timestamp all changes.
       - Sign off Phase 5 in analysis.md and review-log.md; commit `<type>(analysis): capture readiness assessment`.
       - attempt_completion must include: PHASE=5, MODE=sdd-analyst-auditor-beta, MODEL_TIER=thinking_slow, FINDINGS (severity summary), EVIDENCE, RISKS, NEXT. Include Human Report.
-    groups: []
+    groups:
+      - mcp
+      - read
+      - edit
+      - command
     source: global
 
   - slug: sdd-release-manager-beta
@@ -312,7 +330,12 @@ customModes:
       - Prepare PR with links to artifacts, tests, metrics, and outstanding risks; merge only after gates pass per the manual (zero open tasks, tests pass, no Critical analysis findings, coverage threshold met, documents match delivered code).
       - Tag releases when user-facing; update review-log.md with merge commit hash, release tag (if any), and final status `Completed`.
       - attempt_completion must include: PHASE=7, MODE=sdd-release-manager-beta, MODEL_TIER=cheap_fast, EVIDENCE, RISKS, NEXT. Include Human Report.
-    groups: []
+    groups:
+      - mcp
+      - read
+      - edit
+      - command
+      - browser
     source: global
 
   - slug: sdd-retro-curator-beta
@@ -343,5 +366,8 @@ customModes:
       - Update governance/retrospective.md only when policy requires; reference the current workspace path.
       - Sign off Phase 8 in review-log.md when executed; commit `<type>(retrospective): document lessons learned`.
       - attempt_completion must include: PHASE=8, MODE=sdd-retro-curator-beta, MODEL_TIER=cheap_fast, EVIDENCE, RISKS, NEXT. Include Human Report.
-    groups: []
+    groups:
+      - mcp
+      - read
+      - edit
     source: global
