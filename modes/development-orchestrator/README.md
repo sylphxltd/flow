@@ -69,3 +69,50 @@ Modes cannot read local repository documents at runtime (including development.m
   3) Validate with a quick pass: artifacts present, gates listed, phase sign-offs, and Rapid constraints match.
 
 This section clarifies that the runtime authority for agents lies in the mode files’ embedded policy, while development.md remains the source of truth for maintainers editing the process.
+## Model routing policy (runtime guidance)
+
+- Modes cannot infer MODEL_TIER. The orchestrator must set MODEL_TIER explicitly in every `new_task` brief.
+- No auto-fallbacks. If a brief is ambiguous or a requested tier/model is unavailable, the delegated mode must return:
+  - STATUS=Blocked with REASON=MissingBriefFields (when required brief fields are missing) or
+  - STATUS=Blocked with REASON=ModeUnavailable (when the specified tier/model is not available)
+  - Make no repository changes under ambiguity.
+
+Default routing (balanced, recommended)
+- development-orchestrator-beta → cheap_fast
+- sdd-kickoff-beta → cheap_fast
+  - Escalate to thinking_slow only when authoring/updating governance/constitution.md or resolving policy conflicts.
+- sdd-spec-architect-beta → thinking_slow
+- sdd-analyst-auditor-beta → thinking_slow
+- sdd-implementer-beta → code_fast
+  - Escalate to thinking_slow for high-risk refactors, cross-cutting changes, or policy-heavy constraints.
+- sdd-release-manager-beta → cheap_fast
+- sdd-retro-curator-beta → cheap_fast
+
+Alternative profiles
+- Quality-first
+  - kickoff → thinking_slow when constitution/policy interpretation involved; otherwise cheap_fast
+  - spec/architect (1–3), analyst (5) → thinking_slow
+  - implementer (4/6) → code_fast; route to thinking_slow on complex refactors, critical paths, or repeated low-signal test failures (&gt;1x)
+  - release/retro/orchestrator → cheap_fast
+- Cost-optimized (safe)
+  - kickoff, release, retro, orchestrator → cheap_fast
+  - spec/architect (1–3), analyst (5) → thinking_slow only when TRACK=full or RISK ≥ Medium; otherwise allow cheap_fast for very small Rapid changes with simple ACs
+  - implementer (4/6) → code_fast
+  - Guardrails: If ACs &gt; 5, core data models touched, or external integrations affected → route to thinking_slow
+
+Routing heuristics for the orchestrator
+- Track: TRACK=full → thinking_slow for Phases 1–3 and 5. TRACK=rapid + Low risk → allow cheap_fast for Phase 1/2 only when no architectural impact.
+- Risk: Critical/High severity or security/privacy implications → thinking_slow (Phases 1–3, 5).
+- Scope: Large refactors or cross-cutting changes → thinking_slow for planning/analysis; code_fast for TDD implementation.
+- Context size: Very long inputs (large specs/plans) → choose a long-context thinking_slow model for Phases 1–3/5.
+- Deadline: Urgent but low-risk chores (retro/release/kickoff triage) → cheap_fast.
+
+Operational guardrails (consistent with invariants)
+- Orchestrator sets MODEL_TIER explicitly; modes must not override it.
+- Ambiguous briefs → STATUS=Blocked, REASON=MissingBriefFields, include MISSING list; no changes made.
+- Unavailable tier/model → STATUS=Blocked, REASON=ModeUnavailable; no implicit rerouting.
+- HALT on constitution missing/outdated → STATUS=Blocked, REASON=HALT; orchestrator opens a constitution task.
+
+Provider-neutral configuration
+- Keep this repository vendor-agnostic. Map thinking_slow / code_fast / cheap_fast to actual providers in your runtime configuration (outside this repo).
+- See also “Model selection policy (guidance)” embedded in custom_mode.beta.yaml for at-runtime reference by modes.
