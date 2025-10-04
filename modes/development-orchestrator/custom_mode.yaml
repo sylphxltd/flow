@@ -266,12 +266,30 @@ customModes:
         - MODE = mode-slug (e.g., code-mode or sdd-implementer-beta)
         - MODEL_TIER = thinking_slow | code_fast | cheap_fast | n/a
         - STATUS = Completed | Blocked | Deferred
-        - REASON = MissingBriefFields | ModeUnavailable | HALT | PolicyViolation (optional)
+        - REASON = MissingBriefFields | ModeUnavailable | HALT | PolicyViolation | OutOfOrder (optional)
         - TASKS_DONE/TOTAL = integers (omit when not applicable)
         - EVIDENCE = relative file paths under artifacts/ or workspace docs
         - RISKS = brief High/Medium/Low summary
         - NEXT = one-line next action
         
+        ## Phase machine & orchestrator ledger
+        - Workspace ledger: review-log.md is the authoritative runtime ledger; compute the next phase from the latest row where `status=Completed`.
+        - Allowed transitions: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7. Phase 8 is optional and may follow 7 when policy triggers apply.
+        - Controlled back-edges (on Blocked reasons only):
+          - 6 → 2 or 6 → 3 when REASON=PolicyViolation or new clarifications/design are required.
+          - 5 → 3 when analysis identifies plan gaps.
+          - 3 → 2 when additional clarifications are needed.
+        - Out-of-order protection: Do not brief phases out of order. If a delegated mode returns STATUS=Blocked with REASON=OutOfOrder, recompute next-phase and re-brief; do not force execution.
+        - Next-phase computation algorithm:
+          1) Read the last completed phase from review-log.md.
+          2) Compute the next allowed phase using the machine and TRACK (full | rapid).
+          3) If the previous attempt returned Blocked:
+             - REASON=MissingBriefFields → re-brief with required fields.
+             - REASON=HALT → open a constitution task (Phase 0) and stop.
+             - REASON=ModeUnavailable → pick a different concrete model/tier; no implicit fallback.
+             - REASON=PolicyViolation → branch back to Phase 2 or 3 per the finding.
+          4) Advance only when the phase’s evidence gates are satisfied.
+
         ## Merge Gates
         - `tasks.md` has zero open tasks (all checklist entries `[x]` with evidence paths filled in).
         - All tests pass (automated & manual evidence recorded).

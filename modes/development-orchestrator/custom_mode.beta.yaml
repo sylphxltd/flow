@@ -64,7 +64,7 @@ customModes:
       - INPUTS: list of file paths/snippets to read first
       - OUTPUTS: list of files/sections to create or update
       - VALIDATION: exit criteria and evidence destinations (artifacts/... paths)
-      - MODEL_TIER: thinking_slow | code_fast | cheap_fast (router suggestion; mode may override)
+      - MODEL_TIER: thinking_slow | code_fast | cheap_fast (router selection; mode must not override)
       - TRACK: full | rapid (affects gating and N/A handling)
       - FLAGS: any extra status flags (optional)
 
@@ -88,7 +88,7 @@ customModes:
         - MODE = <beta-mode-slug> (e.g., sdd-spec-architect-beta)
         - MODEL_TIER = thinking_slow | code_fast | cheap_fast
         - STATUS = Completed | Blocked | Deferred
-        - REASON = short code such as MissingBriefFields | ModeUnavailable | HALT | PolicyViolation
+        - REASON = short code such as MissingBriefFields | ModeUnavailable | HALT | PolicyViolation | OutOfOrder
         - TASKS_DONE/TOTAL = integers (omit when not applicable)
         - EVIDENCE = relative file paths under artifacts/ or workspace docs
         - RISKS = brief High/Medium/Low summary (e.g., “Medium: perf risk”)
@@ -111,6 +111,34 @@ customModes:
       - Every artifact referenced must exist and be version-controlled
       - Maintain periodic audits (e.g., 10% sampling) and record findings in a central log
       - Post-merge, update knowledge bases/runbooks with lessons and the workspace path
+
+      ## Phase machine & orchestrator ledger
+      - Workspace ledger: review-log.md is the authoritative runtime ledger; compute the next phase from the latest row where `status=Completed`.
+      - Allowed transitions: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7. Phase 8 is optional and may follow 7 when policy triggers apply.
+      - Controlled back-edges (on Blocked reasons only):
+        - 6 → 2 or 6 → 3 when REASON=PolicyViolation or new clarifications/design are required.
+        - 5 → 3 when analysis identifies plan gaps.
+        - 3 → 2 when additional clarifications are needed.
+      - Out-of-order protection: If a brief requests a phase that is not the next allowed per the ledger and track, immediately return STATUS=Blocked with REASON=OutOfOrder. Do not make repository changes.
+      - Next-phase computation algorithm:
+        1) Read the last completed phase from review-log.md.
+        2) Compute the next allowed phase using the machine and TRACK (full | rapid).
+        3) If the previous attempt returned Blocked:
+           - REASON=MissingBriefFields → wait for orchestrator re-brief with the required fields.
+           - REASON=HALT → stop; orchestrator must open sdd-kickoff-beta to fix the constitution.
+           - REASON=ModeUnavailable → stop; orchestrator must re-route explicitly; no implicit fallback.
+           - REASON=PolicyViolation → branch back to Phase 2 or 3 per the finding.
+        4) Advance only when the phase’s evidence gates are satisfied (see summary below).
+      - Phase gates (summary):
+        - Phase 0: Constitution version recorded; track recorded; skeleton created; initial review-log row written.
+        - Phase 1: spec.md sections complete; sign-off present; applicable constitution clauses referenced.
+        - Phase 2: clarifications table; risk watchlist; spec.md synced; sign-off present.
+        - Phase 3: architecture + data flows; AC→validation map; risk/rollback; git/deploy notes; constitution mapping; sign-off present.
+        - Phase 4: tasks.md checklist with IDs/Depends/Owner/Exit/Evidence/[P]; change-log; sign-off present.
+        - Phase 5: cross-artifact checks; findings table; spikes in artifacts/; upstream doc updates with timestamps; sign-off present.
+        - Phase 6: TDD Red→Green→Refactor evidence; tasks flipped to [x] with timestamps and clause coverage; full suite green; sign-off present.
+        - Phase 7: approvals; PR; merge after gates; review-log updated with merge hash and final Completed row.
+        - Phase 8 (optional): policy-triggered; citations-only to governance/retrospective.md; review-log updated.
 
       ## Safety and routing continuity
       - HALT when constitution is missing/outdated. Do not proceed; return attempt_completion with STATUS=Blocked and REASON=HALT. The orchestrator must open sdd-kickoff-beta to fix.

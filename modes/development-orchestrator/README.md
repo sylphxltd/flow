@@ -116,3 +116,62 @@ Operational guardrails (consistent with invariants)
 Provider-neutral configuration
 - Keep this repository vendor-agnostic. Map thinking_slow / code_fast / cheap_fast to actual providers in your runtime configuration (outside this repo).
 - See also “Model selection policy (guidance)” embedded in custom_mode.beta.yaml for at-runtime reference by modes.
+
+## Global Orchestrator Contract (phase machine)
+
+Why this exists
+- When each mode runs with isolated instructions, the orchestrator is the single source of runtime coordination. This section guarantees the orchestrator always knows what it is doing and how SDD proceeds, regardless of mode isolation.
+
+Single runtime truth
+- Modes cannot read local policy at runtime. The orchestrator relies on the embedded policy snapshots in the mode files (not on reading development.md at runtime).
+- Phase progression and gating are validated through the workspace ledger in `review-log.md` and the required evidence in `artifacts/`.
+
+Phase machine (allowed transitions)
+- Linear forward transitions: `0 → 1 → 2 → 3 → 4 → 5 → 6 → 7` (Phase 8 optional; may follow 7 when policy triggers apply).
+- Controlled back-edges (only via explicit Blocked reasons):
+  - `6 → 2` or `6 → 3` when `REASON=PolicyViolation` or missing clarifications/design.
+  - `5 → 3` when analysis finds plan gaps.
+  - `3 → 2` when clarifications are needed.
+- Disallowed: skipping forward (e.g., `1 → 3`) or executing phases out of order.
+  - Out-of-order attempts must return `STATUS=Blocked` with `REASON=OutOfOrder`.
+
+Next-phase computation algorithm (orchestrator)
+1) Read the last completed phase from `review-log.md` (most recent row with `status=Completed`).
+2) Compute the next allowed phase using the phase machine and `TRACK` (`full|rapid`).
+3) If the delegated mode returns `STATUS=Blocked`:
+   - `REASON=MissingBriefFields` → re-brief with the required fields.
+   - `REASON=HALT` → open a constitution task in Phase 0 and stop.
+   - `REASON=PolicyViolation` → branch back to the indicated phase (2 or 3).
+   - `REASON=ModeUnavailable` → choose another concrete model/tier and re-brief (no implicit re-routing).
+4) Advance only when `status=Completed` and the phase’s evidence gates are satisfied.
+
+Delegation brief completeness (required)
+- `PHASE` (0..8), `SUBPHASE` (specify|clarify|plan|tasks|implement|analyze|release|retro)
+- `GOAL` (1–2 lines), `INPUTS` (file paths/snippets), `OUTPUTS` (files/sections), `VALIDATION` (exit criteria + `artifacts/` destinations)
+- `MODEL_TIER` (thinking_slow|code_fast|cheap_fast), `TRACK` (full|rapid), `FLAGS` (optional)
+- Ambiguity returns `STATUS=Blocked` with `REASON=MissingBriefFields`; no repository changes must be made under ambiguity.
+
+Shared status flags (must be present in every `attempt_completion`)
+- `PHASE`, `MODE`, `MODEL_TIER`, `STATUS` (Completed|Blocked|Deferred), `REASON` (MissingBriefFields|ModeUnavailable|HALT|PolicyViolation|OutOfOrder), `TASKS_DONE/TOTAL` (when applicable), `EVIDENCE`, `RISKS`, `NEXT`, `MISSING` (when blocked for brief issues).
+
+Phase gates (evidence required to mark Completed)
+- Phase 0 — Intake & Kickoff: Constitution version recorded; track selected; skeleton created; initial `review-log.md` row written.
+- Phase 1 — Specify: `spec.md` sections filled; sign-off present; applicable constitution clauses referenced.
+- Phase 2 — Clarify: `clarifications.md` table filled; risk watchlist updated; `spec.md` synced; sign-off present.
+- Phase 3 — Plan: architecture + data flows; AC→validation map; risk/rollback; git/deploy notes; constitution mapping; sign-off present.
+- Phase 4 — Tasks: checklist authored with IDs, dependencies, evidence placeholders, `[P]` markers; change-log; sign-off present.
+- Phase 5 — Analyze: cross-artifact checks; findings table; spikes evidence in `artifacts/`; upstream docs updated as needed; sign-off present.
+- Phase 6 — Implement & Validate: TDD Red→Green→Refactor evidence stored; tasks flipped to `[x]` with timestamps and clause coverage; full suite green; sign-off present.
+- Phase 7 — Release & Archive: approvals; PR prepared; merge after gates; `review-log.md` updated with merge hash and final `Completed` row.
+- Phase 8 — Retrospective (optional): policy-triggered; citation-only to `governance/retrospective.md`; `review-log.md` updated.
+
+Minimal orchestrator checklist (every delegation)
+- Resolve next `PHASE` using the phase machine and `review-log.md`.
+- Set `MODEL_TIER` explicitly; modes must not infer or override.
+- Provide a complete brief as above; forbid assumptions; include the workspace path `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/`.
+- Require status flags and a Human Report in `attempt_completion`.
+- Verify the delegated subtask wrote the correct `review-log.md` row and required sign-off; if not, re-brief to fix.
+- Reject out-of-order or ambiguous work with `STATUS=Blocked` (no repository changes when blocked).
+
+Notes
+- This contract complements, and does not replace, the detailed policy in development.md. Modes are isolated at runtime; the orchestrator enforces this contract so the SDD lifecycle remains coherent even when mode instructions are independent.
