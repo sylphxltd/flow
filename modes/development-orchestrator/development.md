@@ -12,6 +12,7 @@ Use this manual for every engineering initiative, regardless of size or urgency.
 - **Traceable commitments**: Each decision, assumption, and sign-off lives in the workspace files. Update upstream documents when downstream work reveals new information.
 - **Small, reversible steps**: Design for incremental delivery, short feedback loops, and safe rollbacks.
 - **Shared understanding**: Documents must be self-contained so any reviewer can understand context without external references.
+- **Flow coordination, not decision-making**: The orchestrator guides the SDD phases and delegation only. Decisions must be captured in workspace artifacts (`spec.md`, `clarifications.md`, `plan.md`, `tasks.md`) with explicit sign-offs. Ambiguities are raised as Phase 2 clarifications; do not make decisions solely in orchestration logs.
 
 ## Workspace Protocol
 
@@ -43,6 +44,7 @@ Inside the workspace, keep this skeleton:
 
 ### Standard artifact checklist
 Create each file manually using the outlines below. Copy the headings directly; do not rely on external templates.
+- All artifacts MUST begin with a front-matter block containing: `workspace_id`, `phase`, `track` (`full`|`rapid`), `constitution_version`, `manual_version`, `actor` (`Agent: <agent-name> (<model-id>)`), and `iso_timestamp`.
 
 1. `spec.md`
    - Context and background.
@@ -115,6 +117,8 @@ Create each file manually using the outlines below. Copy the headings directly; 
 - Mirror every decision across artifacts; stale information must be corrected immediately.
 - Close open questions before exiting Phase 3 unless explicitly deferred with risk acknowledgement.
 - Commit artifacts before making code changes so reviewers can follow the narrative chronologically.
+- Flow coordination, not decision-making: The orchestrator coordinates phase flow and delegation; decisions must be materialized in artifacts with sign-offs. Never embed unstated assumptions in orchestration updates.
+- Retrospective evidence handling: When consulting `governance/retrospective.md`, cite only relevant items with file path and line ranges; do not duplicate content in the workspace. If none are relevant, record “No relevant retrospective items”. Convert actionable items into Phase 2 clarifications or Phase 3 plan updates.
 
 ### Subtask delegation protocol
 When using the orchestrator mode to open a `new_task`, always provide a structured brief so the Code Mode agent understands the full context:
@@ -140,8 +144,18 @@ Guidelines:
 - Rapid track still requires regression tests, constitution compliance, and release checks; it only trims discovery/analysis depth.
 - Switching from Rapid → Full midstream is allowed when new risks appear; update `review-log.md` to reflect the new track.
 - Severity-to-track guardrail: Critical/High issues (e.g., production outages, security breaches) automatically use **Full SDD**; Medium issues default to Full unless Rapid is justified with documented risk containment; Low issues may use Rapid only when rollback is trivial and evidence capture remains intact.
-- Bugfixes still traverse all eight phases. Rapid merely condenses discovery/analysis artifacts; it never removes regression tests or constitution checks (Phases 1, 3, and 6 must explicitly cite applicable clauses in either track).
+- Bugfixes still traverse phases 0–7. Phase 8 (Retrospective) is optional unless required by policy. Rapid merely condenses discovery/analysis artifacts; it never removes regression tests or constitution checks (Phases 1, 3, and 6 must explicitly cite applicable clauses in either track).
 - Rapid track examples: Cosmetic UI changes (e.g., button color update), simple config tweaks (e.g., environment variable adjustment), or isolated copy updates where no architectural impact exists. Avoid for any change touching core logic, data models, or external integrations.
+
+### Rapid track minimum artifacts
+| Type | Mandatory Rapid artifacts | Notes |
+| ---- | ------------------------- | ----- |
+| Feature | `spec.md` (condensed), `plan.md` (key decisions), `tasks.md` (critical path), validation evidence in `implementation.md` | Use Rapid only for truly minor UX or copy tweaks without architectural impact. |
+| Bugfix | `bug-report.md`, failing regression test recorded in `artifacts/regressions/`, updated `tasks.md`, `implementation.md` journal proving Red → Green → Refactor | Failing test must land before fix even in Rapid. |
+| Modify | `modification-spec.md`, delta-focused updates in `spec.md`/`plan.md`, impacted docs tracked in `tasks.md` | Ensure compatibility notes remain explicit. |
+| Refactor | `refactor-spec.md`, baseline metrics snapshot in `artifacts/metrics/`, `tasks.md` slices guarding behavior | Rapid only when scope touches isolated modules with existing coverage. |
+| Hotfix | `hotfix-incident.md`, accelerated `spec.md` summary, post-fix validation evidence, follow-up test plan logged in `tasks.md` | Post-mortem due within 48 hours even on Rapid. |
+| Deprecate | `deprecation-plan.md`, communication checklist in `tasks.md`, dependency audit entry in `analysis.md` | Rapid appropriate for cosmetic removals with zero external consumers. |
 
 ## Git Discipline
 - **Branching**: One branch per workspace. Use `git fetch` and `git rebase origin/main` regularly to minimize drift, but avoid force pushes after sharing work.
@@ -153,7 +167,7 @@ Guidelines:
 
 ### Constitution governance
 - The project constitution resides at `governance/constitution.md`. It defines non-negotiable principles (e.g., strong typing, security posture, observability baselines). The document must contain a `version` field (semantic version or dated tag) and a short changelog so downstream workflows can reference the version without looking up commit hashes.
-- Phase 0 must read the constitution, confirm the version/hash, and halt the SDD workflow if the document is missing or outdated until it is authored or refreshed.
+- Phase 0 must read the constitution, confirm the version, and HALT the SDD workflow if the document is missing or outdated until it is authored or refreshed.
 - When a new initiative requires additional principles, follow the Constitution Authoring Flow before proceeding:
   1. Analyse existing artifacts (previous workspaces, audit findings, incident reports) to infer required rules.
   2. Draft proposed clauses in a temporary note and highlight uncertainties.
@@ -191,19 +205,23 @@ Guidelines:
 - If a bug or missing requirement is uncovered outside the workspace scope, log it in `analysis.md`, create a new workspace, and reference the tracking identifier in your notes.
 
 ## Spec Driven Development Lifecycle
-Each phase must be completed in order. Do not skip ahead; reopen earlier phases when material changes occur.
+Each phase must be completed in order. Do not skip ahead; reopen earlier phases when material changes occur. Phases 0-7 are mandatory; Phase 8 is optional for continuous improvement.
 
 ### Phase 0 — Intake & Kickoff
 **Objective:** Capture the request, align with project governance, choose the workflow track, and prepare the workspace.
 
 1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Constitution Governance above) before continuing. When authoring or updating the constitution, bump its version and update the changelog before making the single commit that introduces the change so no follow-up commits are needed.
-2. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
-3. Determine the change type using the prefixes enumerated above and assess risk/impact.
-4. Select the workflow track (Full SDD vs Rapid). Default to Full unless a Rapid justification is documented (e.g., low-risk cosmetic fix). Record the choice and rationale in `review-log.md`.
-5. Create the workspace directory and initialize the branch using the identical timestamped name: ``git checkout -b <type>-<YYYYMMDDHHMM>-<name>``.
-6. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
-7. Add initial entries to `review-log.md` for Phase 0 noting `Actor: <agent-name> (<model-id>)`, `Status: Completed`, the selected track, and the constitution version applied.
-8. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>` (only if scaffolding required non-trivial setup).
+2. Optionally consult `governance/retrospective.md` for relevant lessons as evidence (not authority):
+   - Do not copy or move content into the workspace. Record a citations block in `analysis.md` or `review-log.md` that lists file path and line ranges plus one-line justifications per item.
+   - If nothing is relevant, record “No relevant retrospective items”.
+   - Route any ambiguity or new constraint it reveals into Phase 2 clarifications or Phase 3 plan updates with sign-offs.
+3. Collect the original request text verbatim in a `README` or within `spec.md`’s context section.
+4. Determine the change type using the prefixes enumerated above and assess risk/impact.
+5. Select the workflow track (Full SDD vs Rapid). Default to Full unless a Rapid justification is documented (e.g., low-risk cosmetic fix). Record the choice and rationale in `review-log.md`.
+6. Create the workspace directory and initialize the branch using the identical timestamped name: ``git checkout -b <YYYYMMDD-HHMM>-<type>-<name>``.
+7. Create empty versions of all standard artifacts with headings in place (include type-specific supplements where relevant).
+8. Add initial entries to `review-log.md` for Phase 0 noting `actor: Agent: <agent-name> (<model-id>)`, `status: Completed`, the selected track, and the constitution version applied.
+9. Commit the skeleton with message `<type>(init): bootstrap workspace for <name>` (only if scaffolding required non-trivial setup).
 
 **Outputs:** Workspace folder, branch, empty artifacts ready for content, constitution alignment and track recorded.
 
@@ -280,36 +298,38 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 5 — Analyze (`analysis.md` + `artifacts/`)
 **Objective:** Validate readiness and surface risks before coding.
 
-1. Perform comprehensive cross-artifact checks to ensure plan integrity:
-   - Requirements vs. tasks coverage (every AC mapped to at least one task).
-   - Non-functional requirements vs. planned validation (e.g., performance metrics aligned with tests).
-   - Terminology consistency across spec, plan, and tasks.
-   - Duplicate or conflicting statements (e.g., overlapping responsibilities in plan.md).
-   - Constitution compliance (all clauses referenced in plan.md are validated here).
-2. Record findings in a severity table (Critical/High/Medium/Low) with specific locations, descriptions, and recommended actions (e.g., "Update plan.md to clarify data flow for edge case X").
-3. Conduct targeted experiments, spikes, or simulations to de-risk uncertainties identified in earlier phases. Store raw outputs (logs, metrics, screenshots) under `artifacts/` and summarize insights in `analysis.md` (e.g., "Spike on API integration confirmed 5% performance overhead; adjust plan.md accordingly").
-4. Update upstream artifacts if gaps are found (e.g., add missing tasks in tasks.md or clarify assumptions in spec.md); note all changes with timestamps.
-5. Sign off Phase 5 in `analysis.md` and `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
-6. Commit with `<type>(analysis): capture readiness assessment`.
+1. Optionally review `governance/retrospective.md` for relevant lessons from prior initiatives to inform analysis approaches or avoid common validation pitfalls.
+2. Perform comprehensive cross-artifact checks to ensure plan integrity:
+    - Requirements vs. tasks coverage (every AC mapped to at least one task).
+    - Non-functional requirements vs. planned validation (e.g., performance metrics aligned with tests).
+    - Terminology consistency across spec, plan, and tasks.
+    - Duplicate or conflicting statements (e.g., overlapping responsibilities in plan.md).
+    - Constitution compliance (all clauses referenced in plan.md are validated here).
+3. Record findings in a severity table (Critical/High/Medium/Low) with specific locations, descriptions, and recommended actions (e.g., "Update plan.md to clarify data flow for edge case X").
+4. Conduct targeted experiments, spikes, or simulations to de-risk uncertainties identified in earlier phases. Store raw outputs (logs, metrics, screenshots) under `artifacts/` and summarize insights in `analysis.md` (e.g., "Spike on API integration confirmed 5% performance overhead; adjust plan.md accordingly").
+5. Update upstream artifacts if gaps are found (e.g., add missing tasks in tasks.md or clarify assumptions in spec.md); note all changes with timestamps.
+6. Sign off Phase 5 in `analysis.md` and `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
+7. Commit with `<type>(analysis): capture readiness assessment`.
 
 **Outputs:** Analysis report, supporting artifacts, updated upstream documents.
 
 ### Phase 6 — Implement & Validate (`implementation.md`)
 **Objective:** Execute tasks, write code, and prove correctness.
 
-1. Follow the task order. Before starting each task, record the timestamp and intent in the journal section.
-2. For each implementation unit:
-   - Write or update tests (Red).
-   - Implement the minimal code change (Green).
-   - Refactor for maintainability (Refactor).
-   - Confirm the slice complies with all relevant constitution clauses. If any principle is violated, mark the task as blocked, open the necessary clarification or plan adjustment, and resume only after resolving the gap.
-3. Capture test results, metrics, and screenshots in `artifacts/`; reference them from the journal, noting the constitution clauses validated.
-4. Update `tasks.md` immediately after finishing a task: flip the relevant checkbox to `[x]`, fill in the evidence path, add the completion timestamp within the metadata, and list the constitution clauses covered.
-5. Log blockers or deviations in `implementation.md` and provide mitigation steps.
-6. Maintain a running summary of code changes, linking to relevant commits.
-7. Run the full test suite before finalizing the phase.
-8. Sign off Phase 6 in `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
-9. Commit with `<type>(implement): complete tasks and validations`.
+1. Optionally review `governance/retrospective.md` for relevant lessons from prior implementations to inform coding approaches or avoid common implementation pitfalls.
+2. Follow the task order. Before starting each task, record the timestamp and intent in the journal section.
+3. For each implementation unit:
+    - Write or update tests (Red).
+    - Implement the minimal code change (Green).
+    - Refactor for maintainability (Refactor).
+    - Confirm the slice complies with all relevant constitution clauses. If any principle is violated, mark the task as blocked, open the necessary clarification or plan adjustment, and resume only after resolving the gap.
+4. Capture test results, metrics, and screenshots in `artifacts/`; reference them from the journal, noting the constitution clauses validated.
+5. Update `tasks.md` immediately after finishing a task: flip the relevant checkbox to `[x]`, fill in the evidence path, add the completion timestamp within the metadata, and list the constitution clauses covered.
+6. Log blockers or deviations in `implementation.md` and provide mitigation steps.
+7. Maintain a running summary of code changes, linking to relevant commits.
+8. Run the full test suite before finalizing the phase.
+9. Sign off Phase 6 in `review-log.md` (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
+10. Commit with `<type>(implement): complete tasks and validations`.
 
 **Outputs:** Code changes, validated tasks, implementation journal, evidence.
 
@@ -327,6 +347,18 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 9. Close or transfer any follow-up tasks noted in the retrospective.
 
 **Outputs:** Merged code, archived workspace, documented release.
+
+### Phase 8 — Retrospective / Learn (Optional)
+**Objective:** Reflect on the process and accumulate knowledge for continuous improvement.
+Policy: Run Phase 8 when any of the following occur: Hotfix P0–P2, High/Critical bugfix, repeated Phase 6 failure loops on the same test, significant schedule slip, or coverage gate exceptions.
+
+1. Analyze the entire workflow experience: Review what went well, what could be improved, and any bottlenecks encountered.
+2. Identify process improvements: Document suggestions for refining phases, tools, or practices based on lessons learned.
+3. Update knowledge base: Accumulate insights into `governance/retrospective.md` (create if missing), including common pitfalls, best practices, updated playbooks, or tool recommendations. Reference the current workspace path for context.
+4. Sign off and update `review-log.md` for Phase 8 (actor `Agent: <agent-name> (<model-id>)`, status `Completed`).
+5. Commit with `<type>(retrospective): document lessons learned`.
+
+**Outputs:** Updated `governance/retrospective.md`, documented improvements for future initiatives.
 
 ## Change-Type Playbooks
 Use these playbooks to tailor the lifecycle while preserving all phases.
@@ -379,4 +411,4 @@ Use these playbooks to tailor the lifecycle while preserving all phases.
 - Every artifact referenced in documentation or commits must exist and be versioned. Use relative paths when citing evidence.
 - Maintain quarterly audits by sampling 10 % of workspaces to verify adherence to this manual. Record findings in a centralized audit log.
 - Post-merge, update shared knowledge bases or runbooks with lessons learned. Cite the workspace path for future reference.
-- Treat this document as the constitution: changes require agreement, documented rationale, and propagation to all workspaces going forward.
+- Treat this document as the authoritative SDD process manual; governance principles remain defined in `governance/constitution.md`. Changes to this manual require agreement, documented rationale, and propagation to all workspaces going forward.
