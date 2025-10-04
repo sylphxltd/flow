@@ -18,6 +18,7 @@ Invariants (no drift, no duplication)
 - Single source of truth: policy in [development.md](modes/development-orchestrator/development.md); [custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml) implements it.
 - No duplication: the mode references the manual for detailed tables/policy.
 - Constitution HALT: halt Phase 0 if governance/constitution.md is missing/outdated; record the version everywhere referenced.
+- No auto-fallbacks: ambiguous or under-specified briefs MUST return attempt_completion with STATUS=Blocked, REASON=MissingBriefFields, and a MISSING list; the orchestrator will re-brief. Modes make no repository changes under ambiguity.
 - Retrospective = evidence-only: citation-only with file path and line ranges; record “No relevant retrospective items” when none.
 - Decisions and approvals: captured in spec/clarifications/plan/tasks with actor + timestamp, not in orchestration logs.
 - Naming: initiatives/<YYYYMMDD-HHMM>-<type>-<name> (same for branch).

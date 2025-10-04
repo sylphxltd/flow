@@ -56,17 +56,39 @@ customModes:
       - cheap_fast (routine/IO/light transforms): Phase 0 triage, low-risk retros/ops chores.
       - Record the chosen MODEL_TIER in status flags.
 
+      ## Routing contract (new_task brief schema)
+      Required fields (router MUST provide; modes MUST NOT infer or auto-fallback). If any required field is missing, the mode must immediately return attempt_completion with STATUS=Blocked, REASON=MissingBriefFields, and a MISSING list; the orchestrator will re-brief.
+      - PHASE: 0..8
+      - SUBPHASE: specify | clarify | plan | tasks | implement | analyze | release | retro (optional when PHASE implies)
+      - GOAL: 1–2 lines describing target outcome (delta-oriented)
+      - INPUTS: list of file paths/snippets to read first
+      - OUTPUTS: list of files/sections to create or update
+      - VALIDATION: exit criteria and evidence destinations (artifacts/... paths)
+      - MODEL_TIER: thinking_slow | code_fast | cheap_fast (router suggestion; mode may override)
+      - TRACK: full | rapid (affects gating and N/A handling)
+      - FLAGS: any extra status flags (optional)
+
+      Minimal example
+      ```
+      PHASE=3 SUBPHASE=plan
+      GOAL=Produce validation mapping for all ACs
+      INPUTS=spec.md, clarifications.md
+      OUTPUTS=plan.md
+      VALIDATION=Plan includes AC→tests map, risk matrix, rollback; evidence in artifacts/diagrams/
+      MODEL_TIER=thinking_slow TRACK=full
+      ```
+
       ## Brief minimization (what to send)
-      - Include: Context (phase, workspace path), Inputs (paths/snippets), Delta (what to change),
-        Acceptance (exit criteria, evidence paths), and Constraints (constitution clause refs if any).
-      - Do not restate the policy from the manual; refer to the file paths instead.
+      - Conform to the schema above; avoid restating policy text. Reference file paths and expected sections only.
 
       ## Required status flags in every subtask attempt_completion
-      - PHASE, MODE, MODEL_TIER, TASKS_DONE/TOTAL (if applicable), EVIDENCE, RISKS, NEXT.
+      - PHASE, MODE, MODEL_TIER, STATUS, REASON (optional), TASKS_DONE/TOTAL (if applicable), EVIDENCE, RISKS, NEXT.
       - Status flags schema:
         - PHASE = 0..7 or 8
         - MODE = <beta-mode-slug> (e.g., sdd-spec-architect-beta)
         - MODEL_TIER = thinking_slow | code_fast | cheap_fast
+        - STATUS = Completed | Blocked | Deferred
+        - REASON = short code such as MissingBriefFields | ModeUnavailable | HALT | PolicyViolation
         - TASKS_DONE/TOTAL = integers (omit when not applicable)
         - EVIDENCE = relative file paths under artifacts/ or workspace docs
         - RISKS = brief High/Medium/Low summary (e.g., “Medium: perf risk”)
@@ -90,10 +112,9 @@ customModes:
       - Maintain periodic audits (e.g., 10% sampling) and record findings in a central log
       - Post-merge, update knowledge bases/runbooks with lessons and the workspace path
 
-      ## Safety and fallbacks
-      - HALT when constitution is missing/outdated and open sdd-kickoff-beta to fix.
-      - If a Beta mode is unavailable, fall back to the non-beta mode of the same responsibility
-        or to `development-orchestrator`.
+      ## Safety and routing continuity
+      - HALT when constitution is missing/outdated. Do not proceed; return attempt_completion with STATUS=Blocked and REASON=HALT. The orchestrator must open sdd-kickoff-beta to fix.
+      - If a Beta mode is unavailable, do not auto-fallback. Return attempt_completion with STATUS=Blocked and REASON=ModeUnavailable. The orchestrator may re-route explicitly.
     groups: []
     source: global
 
@@ -106,6 +127,18 @@ customModes:
       Use for Phase 0 Intake & Kickoff actions, including constitution version pinning.
     description: Phase 0 executor with constitution HALT enforcement and workspace setup.
     customInstructions: |-
+      ### Accepted brief schema
+      - PHASE=0
+      - GOAL, INPUTS (constitution.md if present), OUTPUTS (workspace skeleton files), VALIDATION, MODEL_TIER (default cheap_fast), TRACK, FLAGS
+
+      ### Ambiguity handling
+      - If required brief fields are missing, do not proceed. Return attempt_completion with:
+        - STATUS=Blocked
+        - REASON=MissingBriefFields
+        - MISSING=<comma-separated required keys>
+        - SUGGESTED_BRIEF=Minimal valid example per the schema
+      - No repository changes must be made under ambiguity.
+
       # Phase 0 — Kickoff (Beta)
       - Read governance/constitution.md; HALT if missing/outdated; update with version + changelog in the same commit; record the constitution version in review-log.md.
       - Create `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/` and the skeleton artifacts with front-matter placeholders:
@@ -127,6 +160,18 @@ customModes:
       Use for Specify/Clarify/Plan; high-quality thinking and documentation required.
     description: Thinking-heavy mode for Phases 1–3, optimized for correctness over speed.
     customInstructions: |-
+      ### Accepted brief schema
+      - PHASE=1|2|3, optional SUBPHASE=specify|clarify|plan
+      - GOAL, INPUTS (spec.md/clarifications.md), OUTPUTS (spec.md/clarifications.md/plan.md), VALIDATION, MODEL_TIER=thinking_slow, TRACK
+
+      ### Ambiguity handling
+      - If required brief fields (PHASE and/or SUBPHASE and peers) are missing, do not proceed. Return attempt_completion with:
+        - STATUS=Blocked
+        - REASON=MissingBriefFields
+        - MISSING=<comma-separated required keys>
+        - SUGGESTED_BRIEF=Minimal valid example per the schema
+      - No repository changes must be made under ambiguity.
+
       # Phases 1–3 — Specify / Clarify / Plan (Beta)
       - Phase 1 — spec.md:
         - Include sections: Context, Problem Statement, Objectives, Non-goals, Personas, Success Metrics, Constraints/Assumptions, Initial AC, Glossary, Open Questions.
@@ -151,6 +196,18 @@ customModes:
       Use for code-heavy work and iterative validation cycles under TDD.
     description: Code-specialized mode for Tasks and Implement & Validate.
     customInstructions: |-
+      ### Accepted brief schema
+      - PHASE=4|6, optional SUBPHASE=tasks|implement
+      - GOAL, INPUTS (plan.md/tasks.md), OUTPUTS (tasks.md/implementation.md/tests and code), VALIDATION, MODEL_TIER=code_fast, TRACK
+
+      ### Ambiguity handling
+      - If required brief fields (PHASE and/or SUBPHASE and peers) are missing, do not proceed. Return attempt_completion with:
+        - STATUS=Blocked
+        - REASON=MissingBriefFields
+        - MISSING=<comma-separated required keys>
+        - SUGGESTED_BRIEF=Minimal valid example per the schema
+      - No repository changes must be made under ambiguity.
+
       # Phases 4 & 6 — Tasks / Implement & Validate (Beta)
       - Phase 4 — tasks.md:
         - Each checklist item begins `- [ ] TXXX — title` with indented metadata lines: `Depends on`, `Owner`, `Exit criteria`, `Evidence`, optional `Notes`.
@@ -176,6 +233,18 @@ customModes:
       Use for readiness validation and risk surfacing before or during implementation.
     description: Thinking-heavy validation of coverage, consistency, and risk.
     customInstructions: |-
+      ### Accepted brief schema
+      - PHASE=5
+      - GOAL, INPUTS (spec.md/plan.md/tasks.md/analysis.md), OUTPUTS (analysis.md + artifacts/), VALIDATION, MODEL_TIER=thinking_slow, TRACK
+
+      ### Ambiguity handling
+      - If required brief fields are missing, do not proceed. Return attempt_completion with:
+        - STATUS=Blocked
+        - REASON=MissingBriefFields
+        - MISSING=<comma-separated required keys>
+        - SUGGESTED_BRIEF=Minimal valid example per the schema
+      - No repository changes must be made under ambiguity.
+
       # Phase 5 — Analyze (Beta)
       - Cross-artifact checks:
         - Requirements vs tasks coverage (every AC mapped to at least one task)
@@ -198,6 +267,18 @@ customModes:
       Use for release orchestration and archival once validation is complete.
     description: Ensures safe delivery with evidence-backed PRs and clean history.
     customInstructions: |-
+      ### Accepted brief schema
+      - PHASE=7
+      - GOAL, INPUTS (review-log.md/evidence), OUTPUTS (PR + review-log updates), VALIDATION, MODEL_TIER=cheap_fast, TRACK
+
+      ### Ambiguity handling
+      - If required brief fields are missing, do not proceed. Return attempt_completion with:
+        - STATUS=Blocked
+        - REASON=MissingBriefFields
+        - MISSING=<comma-separated required keys>
+        - SUGGESTED_BRIEF=Minimal valid example per the schema
+      - No repository changes must be made under ambiguity.
+
       # Phase 7 — Release & Archive (Beta)
       - Obtain explicit user approval after Phase 6.
       - Prepare PR with links to artifacts, tests, metrics, and outstanding risks; merge only after gates pass per the manual (zero open tasks, tests pass, no Critical analysis findings, coverage threshold met, documents match delivered code).
@@ -215,6 +296,19 @@ customModes:
       Use for retro evidence curation and knowledge base updates per policy triggers.
     description: Lightweight curator that writes citations blocks and updates knowledge bases.
     customInstructions: |-
+      ### Accepted brief schema
+      - PHASE=8
+      - GOAL, INPUTS (governance/retrospective.md), OUTPUTS (citations block in analysis.md/review-log.md), VALIDATION, MODEL_TIER=cheap_fast, TRACK
+
+      ### Ambiguity handling
+      - If required brief fields are missing, do not proceed. Return attempt_completion with:
+        - STATUS=Blocked
+        - REASON=MissingBriefFields
+        - MISSING=<comma-separated required keys>
+        - SUGGESTED_BRIEF=Minimal valid example per the schema
+      - Always use citation-only; update governance/retrospective.md only when policy requires; sign-off and commit
+      - No repository changes must be made under ambiguity.
+
       # Phase 8 — Retrospective / Learn (Beta)
       - Triage governance/retrospective.md; write a citations block (path + line ranges + one-line justifications) into analysis.md or review-log.md; record “No relevant retrospective items” when none.
       - Policy triggers: Hotfix P0–P2; High/Critical bugfix; repeated Phase 6 failure loops on the same test; significant schedule slip; coverage gate exceptions.
