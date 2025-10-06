@@ -18,15 +18,16 @@ This directory defines LLM-first, Spec-Driven Development (SDD) workflows with c
 
 ### Multi-Mode (custom_mode.beta.yaml)
 - **Orchestrator** coordinates flow and handles user communication
-- **One independent mode per phase** (6 modes total, aligned with traditional SDD):
-  - `sdd-kickoff` — Phase 0 (Kickoff - LLM-first adaptation)
+- **One independent mode per phase** (7 modes total, optimized for LLM-first):
+  - `sdd-kickoff` — Phase 0 (Kickoff)
   - `sdd-specify` — Phase 1 (Specify + internal clarify iterations)
   - `sdd-plan` — Phase 2 (Plan + task breakdown)
-  - `sdd-implement` — Phase 3 (Implement + continuous analysis)
-  - `sdd-release` — Phase 4 (Release & Archive)
-  - `sdd-retrospective` — Phase 5 (Retrospective - optional)
+  - `sdd-analyze` — Phase 3 (Independent cross-check before implementation)
+  - `sdd-implement` — Phase 4 (TDD implementation)
+  - `sdd-release` — Phase 5 (Release & Archive)
+  - `sdd-retrospective` — Phase 6 (Retrospective - optional)
 - User can configure different LLM for each mode
-- Aligned with traditional SDD core phases while adapted for LLM-first execution
+- Independent analysis phase for LLM reliability (self-validation unreliable)
 
 ## Roles Contract (Consistency)
 
@@ -65,13 +66,14 @@ Frontline Human Report (after every subtask)
 - Evidence links (clickable file paths + line ranges)
 - Next steps and ETA
 
-LLM-first quickstart (6 phases)
-1) Phase 0 (Kickoff): Constitution handling, workspace setup, track selection
-2) Phase 1 (Specify): Spec writing with internal clarify iterations until clear
-3) Phase 2 (Plan): Architecture design + task breakdown in one phase
-4) Phase 3 (Implement): TDD execution + continuous analysis validation
-5) Phase 4 (Release): User approval (via orchestrator), merge gates, PR, merge, archive
-6) Phase 5 (Retrospective): Optional, triggered by policy (hotfix P0-P2, critical issues, repeated failures)
+LLM-first quickstart (7 phases)
+1) Phase 0 (Kickoff): Constitution, workspace, track
+2) Phase 1 (Specify): Spec + clarify iterations until clear
+3) Phase 2 (Plan): Architecture + task breakdown
+4) Phase 3 (Analyze): Independent cross-check (LLM can't reliably self-validate)
+5) Phase 4 (Implement): TDD execution
+6) Phase 5 (Release): User approval (via orchestrator), gates, merge, archive
+7) Phase 6 (Retrospective): Optional, policy-triggered
 
 ## Edit Flow
 
@@ -141,15 +143,16 @@ LLM-first quickstart (6 phases)
 
 Each mode is designed for a specific phase aligned with traditional SDD:
 
-| Mode | Phase | Typical Workload | SDD Alignment |
-|------|-------|------------------|---------------|
-| `development-orchestrator` | Coordination | Flow control (MCP only) | Orchestration layer |
-| `sdd-kickoff` | 0 | Constitution, setup | LLM-first adaptation |
-| `sdd-specify` | 1 | Spec + clarify iterations | Core SDD: Specification phase |
-| `sdd-plan` | 2 | Architecture + tasks | Core SDD: Planning phase |
-| `sdd-implement` | 3 | TDD + continuous analysis | Core SDD: Implementation + validation |
-| `sdd-release` | 4 | Release management | Core SDD: Delivery phase |
-| `sdd-retrospective` | 5 | Knowledge accumulation | Continuous improvement |
+| Mode | Phase | Typical Workload | LLM-First Rationale |
+|------|-------|------------------|---------------------|
+| `development-orchestrator` | - | Flow control (MCP only) | Gatekeeper, report-based verification |
+| `sdd-kickoff` | 0 | Constitution, setup | Foundation establishment |
+| `sdd-specify` | 1 | Spec + clarify | Eliminate ambiguity iteratively |
+| `sdd-plan` | 2 | Architecture + tasks | Design blueprint |
+| `sdd-analyze` | 3 | Cross-check | Independent validation (LLM can't self-validate) |
+| `sdd-implement` | 4 | TDD | Code execution |
+| `sdd-release` | 5 | Release | Safe delivery |
+| `sdd-retrospective` | 6 | Retrospective | Knowledge accumulation |
 
 ### User Configuration
 
@@ -157,9 +160,9 @@ Users configure which LLM to use for each mode in their runtime environment (out
 
 **Example configurations**:
 
-- **Balanced**: Mid-tier for spec/plan (1-2), fast for implementation (3), budget for coordination/admin
-- **Quality-First**: Premium for spec/plan (1-2), fast for implementation (3)
-- **Cost-Optimized**: Budget models where possible, premium only for critical phases (1-2)
+- **Balanced**: Mid-tier for spec/plan/analyze (1-3), fast for implementation (4)
+- **Quality-First**: Premium for spec/plan/analyze (1-3), fast for implementation (4)
+- **Cost-Optimized**: Budget where possible, premium only for spec/analyze (1,3)
 
 ### Operational Rules
 
@@ -183,13 +186,14 @@ Single runtime truth
 - Phase progression and gating are validated through the workspace ledger in `review-log.md` and the required evidence in `artifacts/`.
 
 Phase machine (allowed transitions)
-- Linear forward transitions: `0 → 1 → 2 → 3 → 4` (Phase 5 optional; triggered by policy).
-- Controlled back-edges (only via explicit Blocked reasons):
-  - `3 → 1` when `REASON=PolicyViolation` or missing clarifications (back to spec).
-  - `3 → 2` when analysis finds plan gaps (back to plan).
-  - `2 → 1` when planning discovers spec ambiguities.
-- Disallowed: skipping forward or executing phases out of order.
-  - Out-of-order attempts must return `STATUS=Blocked` with `REASON=OutOfOrder`.
+- Linear forward: `0 → 1 → 2 → 3 → 4 → 5` (Phase 6 optional, policy-triggered)
+- Controlled back-edges (only via Blocked):
+  - `4 → 1` - implementation needs spec clarification
+  - `4 → 2` - implementation needs plan adjustment
+  - `3 → 2` - analysis finds plan gaps
+  - `3 → 1` - analysis finds spec ambiguities
+  - `2 → 1` - planning discovers spec issues
+- Out-of-order returns `STATUS=Blocked, REASON=OutOfOrder`
 
 Next-phase computation algorithm (orchestrator)
 1) Read the last completed phase from `review-log.md` (most recent row with `status=Completed`).
@@ -210,12 +214,13 @@ Shared status flags (must be present in every `attempt_completion`)
 - `PHASE`, `MODE`, `STATUS` (Completed|Blocked|Deferred), `REASON` (MissingBriefFields|HALT|PolicyViolation|OutOfOrder - when blocked), `TASKS_DONE/TOTAL` (when applicable), `EVIDENCE`, `RISKS`, `MISSING` (when blocked for brief issues).
 
 Phase gates (evidence required to mark Completed)
-- Phase 0 — Kickoff: Constitution version recorded; track selected; skeleton created; initial `review-log.md` row written.
-- Phase 1 — Specify: `spec.md` complete and clear; `clarifications.md` all resolved; sign-off present; constitution clauses referenced.
-- Phase 2 — Plan: architecture + data flows + tasks.md checklist; AC→validation map; risk/rollback; constitution mapping; sign-off present.
-- Phase 3 — Implement: TDD Red→Green→Refactor evidence; tasks flipped to `[x]`; continuous analysis.md findings addressed; full suite green; sign-off present.
-- Phase 4 — Release: approvals; PR prepared; merge after gates; `review-log.md` updated with merge hash and final `Completed` row.
-- Phase 5 — Retrospective (optional): policy-triggered; citation-only to `governance/retrospective.md`; `review-log.md` updated.
+- Phase 0: Constitution version; track selected; 8 files + artifacts/ created; git branch; review-log.md row
+- Phase 1: spec.md clear; clarifications.md resolved/deferred; constitution clauses referenced; sign-off
+- Phase 2: plan.md + tasks.md; architecture + flows; AC→validation map; constitution mapping; sign-off
+- Phase 3: analysis.md; findings table; zero Critical/High unresolved; cross-checks complete; sign-off
+- Phase 4: tasks all [x]; tests passing; coverage ≥95%; constitution verified; implementation.md; sign-off
+- Phase 5: gates passed; PR merged; commit hash; review-log.md final; archive complete
+- Phase 6 (optional): governance/retrospective.md updated; lessons documented; review-log.md row
 
 Minimal orchestrator checklist (every delegation)
 - Resolve next `PHASE` using the phase machine and `review-log.md`.
@@ -294,6 +299,7 @@ Mode → groups (assignment)
 - sdd-kickoff → mcp, read, edit, command
 - sdd-specify → mcp, read, edit
 - sdd-plan → mcp, read, edit
+- sdd-analyze → mcp, read, edit, command
 - sdd-implement → mcp, read, edit, command, browser
 - sdd-release → mcp, read, edit, command, browser
 - sdd-retrospective → mcp, read, edit
