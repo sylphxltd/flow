@@ -17,16 +17,19 @@ This directory defines LLM-first, Spec-Driven Development (SDD) workflows with c
 - Simple delegation model: orchestrator → code → orchestrator
 
 ### Multi-Mode (custom_mode.beta.yaml)
-- **Orchestrator** coordinates flow and handles human communication
-- **Specialized modes** for each phase:
-  - `sdd-kickoff-beta` — Phase 0 (Intake & Kickoff)
-  - `sdd-spec-architect-beta` — Phases 1-3 (Specify, Clarify, Plan)
-  - `sdd-implementer-beta` — Phases 4 & 6 (Tasks, Implement)
-  - `sdd-analyst-auditor-beta` — Phase 5 (Analyze)
-  - `sdd-release-manager-beta` — Phase 7 (Release & Archive)
-  - `sdd-retro-curator-beta` — Phase 8 (Retrospective)
-- User can configure different LLM tiers per mode
-- Reduced orchestrator cognitive load through specialization
+- **Orchestrator** coordinates flow and handles user communication
+- **One independent mode per phase** (9 modes total):
+  - `sdd-kickoff` — Phase 0 (Intake & Kickoff)
+  - `sdd-specify` — Phase 1 (Specify)
+  - `sdd-clarify` — Phase 2 (Clarify)
+  - `sdd-plan` — Phase 3 (Plan)
+  - `sdd-tasks` — Phase 4 (Tasks)
+  - `sdd-analyze` — Phase 5 (Analyze)
+  - `sdd-implement` — Phase 6 (Implement & Validate)
+  - `sdd-release` — Phase 7 (Release & Archive)
+  - `sdd-retrospective` — Phase 8 (Retrospective)
+- User can configure different LLM for each mode
+- Maximum specialization and clarity
 
 ## Roles Contract (Consistency)
 
@@ -138,17 +141,20 @@ LLM-first quickstart
 
 ### Mode Specialization
 
-Each mode is designed for specific phases with different computational needs:
+Each mode is designed for a specific phase with distinct computational needs:
 
-| Mode | Phases | Typical Workload |
-|------|--------|------------------|
-| `development-orchestrator-beta` | Coordination | Flow control, delegation (MCP only) |
-| `sdd-kickoff-beta` | 0 | Setup, constitution validation |
-| `sdd-spec-architect-beta` | 1-3 | Requirements, planning, architecture (thinking-intensive) |
-| `sdd-analyst-auditor-beta` | 5 | Analysis, consistency checks (thinking-intensive) |
-| `sdd-implementer-beta` | 4, 6 | Task breakdown, TDD implementation (code-intensive) |
-| `sdd-release-manager-beta` | 7 | Release process, validation |
-| `sdd-retro-curator-beta` | 8 | Documentation, retrospective |
+| Mode | Phase | Typical Workload |
+|------|-------|------------------|
+| `development-orchestrator` | Coordination | Flow control, delegation (MCP only) |
+| `sdd-kickoff` | 0 | Setup, constitution handling |
+| `sdd-specify` | 1 | Requirements specification (thinking-intensive) |
+| `sdd-clarify` | 2 | Ambiguity resolution (thinking-intensive) |
+| `sdd-plan` | 3 | Architecture planning (thinking-intensive) |
+| `sdd-tasks` | 4 | Task breakdown |
+| `sdd-analyze` | 5 | Analysis, consistency checks (thinking-intensive) |
+| `sdd-implement` | 6 | TDD implementation (code-intensive) |
+| `sdd-release` | 7 | Release process, validation |
+| `sdd-retrospective` | 8 | Documentation, retrospective |
 
 ### User Configuration
 
@@ -156,9 +162,9 @@ Users configure which LLM to use for each mode in their runtime environment (out
 
 **Example configurations**:
 
-- **Balanced**: Use mid-tier models for planning/analysis, fast models for implementation/coordination
-- **Quality-First**: Use premium models for all planning and analysis phases
-- **Cost-Optimized**: Use budget models where possible, premium only for critical phases
+- **Balanced**: Mid-tier models for planning (1-3, 5), fast models for implementation (6), budget for coordination/admin
+- **Quality-First**: Premium models for all thinking phases (1-3, 5), fast for implementation (6)
+- **Cost-Optimized**: Budget models for simple phases, premium only for critical planning (3, 5)
 
 ### Operational Rules
 
@@ -292,13 +298,16 @@ Groups (capabilities)
 - command — Execute CLI commands (execute_command) for git/build/test and system-level operations.
 
 Mode → groups (assignment)
-- development-orchestrator-beta → mcp
-- sdd-kickoff-beta → mcp, read, edit, command
-- sdd-spec-architect-beta → mcp, read, edit
-- sdd-implementer-beta → mcp, read, edit, command, browser
-- sdd-analyst-auditor-beta → mcp, read, edit, command
-- sdd-release-manager-beta → mcp, read, edit, command, browser
-- sdd-retro-curator-beta → mcp, read, edit
+- development-orchestrator → mcp
+- sdd-kickoff → mcp, read, edit, command
+- sdd-specify → mcp, read, edit
+- sdd-clarify → mcp, read, edit
+- sdd-plan → mcp, read, edit
+- sdd-tasks → mcp, read, edit
+- sdd-analyze → mcp, read, edit, command
+- sdd-implement → mcp, read, edit, command, browser
+- sdd-release → mcp, read, edit, command, browser
+- sdd-retrospective → mcp, read, edit
 
 Operational rules
 - Least privilege: Modes must not use tools outside their assigned groups. If a task requires an unassigned capability, return STATUS=Blocked with REASON=PolicyViolation and specify the missing group(s).
