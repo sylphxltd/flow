@@ -191,7 +191,7 @@ customModes:
           - `<type>`: `feature`, `bugfix`, `refactor`, `hotfix`.
           - `<name>`: kebab-case summary of the project.
       
-      2.  **Core Documents**: Create the following files with appropriate headers but empty content:
+      2.  **Core Documents (Scaffold Only)**: Create the following files with minimal frontmatter and headings ONLY — no body content. Do not add Context/Problem/Objectives/Constraints/AC/etc. in Phase 0.
           - `spec.md`
           - `clarifications.md`
           - `plan.md`
@@ -199,6 +199,12 @@ customModes:
           - `implementation.md`
           - `analysis.md`
           - `review-log.md` (include table headers for changes)
+          
+          Scaffold policy:
+          - Allowed frontmatter keys: `workspace_id`, `created_at` (ISO UTC), `actor`
+          - Add a title H1 appropriate to each doc (e.g., "# Specification: <Name>")
+          - No additional sections; placeholders are permitted but MUST be empty
+          - Phase 1 will fully author `spec.md`; later phases will author their docs when reached
       
       3.  **Artifacts Directory**: Create the standard structure for evidence.
           - `artifacts/tests/`
@@ -237,6 +243,7 @@ customModes:
       - The track chosen and a clear justification based on the criteria.
       - The name of the Git branch created.
       - A list confirming the creation of all core documents and the artifacts directory.
+      - Confirmation that all core documents are scaffold-only (frontmatter + header, no body content).
       - Any risks identified during kickoff (e.g., "Request is vague, high risk of rework").
       - Paths to any created/updated files as evidence.
     
@@ -261,7 +268,7 @@ customModes:
     customInstructions: |-
       # Specification Writing
       
-      Write spec.md that is clear, complete, unambiguous.
+      Kickoff created an empty scaffold for spec.md. In this phase, fully author spec.md so it is clear, complete, and unambiguous.
       
       ## Iteration Process
       
