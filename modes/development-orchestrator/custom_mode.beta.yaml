@@ -134,7 +134,7 @@ customModes:
   # ============================================================================
   - slug: sdd-kickoff
     name: Kickoff Specialist
-    roleDefinition: 你负责 Phase 0: 需求收集、工作区初始化
+    roleDefinition: 你负责 Phase 0 需求收集、工作区初始化
     whenToUse: Phase 0
     description: 初始化工作区、设置 SDD 基础
     
@@ -186,7 +186,7 @@ customModes:
   # ============================================================================
   - slug: sdd-specify
     name: Specification Specialist
-    roleDefinition: 你负责 Phase 1: 编写完整的需求规格
+    roleDefinition: 你负责 Phase 1 编写完整的需求规格
     whenToUse: Phase 1
     description: 需求规格编写专家
     
@@ -228,7 +228,7 @@ customModes:
   # ============================================================================
   - slug: sdd-clarify
     name: Clarification Specialist
-    roleDefinition: 你负责 Phase 2: 解决所有需求模糊之处
+    roleDefinition: 你负责 Phase 2 解决所有需求模糊之处
     whenToUse: Phase 2
     description: 需求澄清专家
     
@@ -268,7 +268,7 @@ customModes:
   # ============================================================================
   - slug: sdd-plan
     name: Planning Specialist
-    roleDefinition: 你负责 Phase 3: 制定技术实施蓝图
+    roleDefinition: 你负责 Phase 3 制定技术实施蓝图
     whenToUse: Phase 3
     description: 架构规划专家
     
@@ -310,7 +310,7 @@ customModes:
   # ============================================================================
   - slug: sdd-tasks
     name: Task Planning Specialist
-    roleDefinition: 你负责 Phase 4: 创建可执行的任务清单
+    roleDefinition: 你负责 Phase 4 创建可执行的任务清单
     whenToUse: Phase 4
     description: 任务规划专家
     
@@ -351,7 +351,7 @@ customModes:
   # ============================================================================
   - slug: sdd-analyze
     name: Analysis Specialist
-    roleDefinition: 你负责 Phase 5: 执行就绪性分析和风险审计
+    roleDefinition: 你负责 Phase 5 执行就绪性分析和风险审计
     whenToUse: Phase 5
     description: 分析与审计专家
     
@@ -407,7 +407,7 @@ customModes:
   # ============================================================================
   - slug: sdd-implement
     name: Implementation Specialist
-    roleDefinition: 你负责 Phase 6: 执行 TDD 实施和验证
+    roleDefinition: 你负责 Phase 6 执行 TDD 实施和验证
     whenToUse: Phase 6
     description: TDD 实施与测试专家
     
@@ -458,7 +458,7 @@ customModes:
   # ============================================================================
   - slug: sdd-release
     name: Release Manager
-    roleDefinition: 你负责 Phase 7: 准备发布、验证 merge gates、归档工作区
+    roleDefinition: 你负责 Phase 7 准备发布、验证 merge gates、归档工作区
     whenToUse: Phase 7
     description: 发布与归档专家
     
@@ -517,7 +517,7 @@ customModes:
   # ============================================================================
   - slug: sdd-retrospective
     name: Retrospective Curator
-    roleDefinition: 你负责 Phase 8: 流程回顾和知识库更新
+    roleDefinition: 你负责 Phase 8 流程回顾和知识库更新
     whenToUse: Phase 8 (可选，政策触发)
     description: 流程回顾与知识积累专家
     
