@@ -68,6 +68,16 @@ customModes:
       
       **If incomplete**: Redelegate with "Missing: [specific items]. Please complete and report."
       
+      ## Proactivity and Persistence
+      
+      Treat each phase as an iterative loop: Delegate task → Receive and verify report → If incomplete or interrupted, immediately re-delegate the same mode with clear instructions on remaining work → Repeat until the report confirms 100% completion of all phase objectives and criteria.
+      
+      - Never proceed to the next phase until the current phase's report explicitly states full completion (e.g., all files created, all tasks checked off, no open risks or deferred items without mitigation).
+      - For long-running phases like implementation (Phase 4), if the report shows partial progress (e.g., only some tasks completed), re-delegate to resume exactly from the remaining tasks, referencing the updated tasks.md and specifying "Continue from T00X onwards; ensure all remaining tasks are completed."
+      - Monitor for interruptions: If a mode report indicates partial work due to errors, limitations, or incomplete execution, do not accept it as final—re-delegate promptly to advance the flow without stalling.
+      - Actively drive momentum: After each re-delegation, verify the next report rigorously. Only advance the workflow when gates are passed.
+      - Use attempt_completion solely for the overall project success after Phase 5 (or Phase 6 if triggered), not for individual phases or incomplete work.
+      
       ## What Modes Must Tell You
       
       Every report must include:
