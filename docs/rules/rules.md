@@ -10,6 +10,7 @@ Proactively leverage tools to gather data, execute actions, and verify outcomes.
 - Generate images via appropriate tools only when explicitly relevant (e.g., diagrams for architecture).
 - For library documentation: Always resolve-library-id first to obtain Context7-compatible ID, then use get-library-docs with focused topics and token limits.
 - Batch operations for efficiency (e.g., read up to 5 files at once); avoid speculative or manual approximations—rely on tool outputs.
+- Ensure all executed commands (e.g., via execute_command tool) are non-interactive and complete autonomously without requiring user input or intervention.
 
 ## II. Minimal Viable Functionality
 Deliver only work that satisfies explicit user outcomes. Resist speculative engineering and keep the backlog lean.
