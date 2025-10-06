@@ -170,8 +170,8 @@ Guidelines:
 
 ### Constitution governance
 - The project constitution resides at `governance/constitution.md`. It defines non-negotiable principles (e.g., strong typing, security posture, observability baselines). The document must contain a `version` field (semantic version or dated tag) and a short changelog so downstream workflows can reference the version without looking up commit hashes.
-- Phase 0 must read the constitution, confirm the version, and HALT the SDD workflow if the document is missing or outdated until it is authored or refreshed.
-- When a new initiative requires additional principles, follow the Constitution Authoring Flow before proceeding:
+- Phase 0 reads the constitution and handles it as part of the normal startup process. If missing or outdated, Phase 0 creates/updates it before proceeding with other initialization tasks.
+- When a new initiative requires additional principles, follow the Constitution Authoring Flow:
   1. Analyse existing artifacts (previous workspaces, audit findings, incident reports) to infer required rules.
   2. Draft proposed clauses in a temporary note and highlight uncertainties.
   3. Ask the user targeted questions to confirm new or updated principles.
@@ -213,7 +213,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 0 — Intake & Kickoff
 **Objective:** Capture the request, align with project governance, choose the workflow track, and prepare the workspace.
 
-1. Read the project constitution at `governance/constitution.md`. If it is missing, pause and create/update it (see Constitution Governance above) before continuing. When authoring or updating the constitution, bump its version and update the changelog before making the single commit that introduces the change so no follow-up commits are needed.
+1. Handle the project constitution at `governance/constitution.md` as part of startup. If it is missing or outdated, create/update it (see Constitution Governance above) before continuing with other initialization tasks. When authoring or updating the constitution, bump its version and update the changelog before making the single commit that introduces the change so no follow-up commits are needed.
 2. Optionally consult `governance/retrospective.md` for relevant lessons as evidence (not authority):
    - Do not copy or move content into the workspace. Record a citations block in `analysis.md` or `review-log.md` that lists file path and line ranges plus one-line justifications per item.
    - If nothing is relevant, record “No relevant retrospective items”.
@@ -339,7 +339,7 @@ Each phase must be completed in order. Do not skip ahead; reopen earlier phases 
 ### Phase 7 — Release & Archive
 **Objective:** Deliver the change safely and preserve history.
 
-1. **Obtain user approval**: After Phase 6 completes, pause and request explicit user review and approval of all artifacts, tests, and implementation evidence before proceeding. Do not advance to Phase 7 without confirmation.
+1. **Obtain user approval**: After Phase 6 completes, request explicit user review and approval of all artifacts, tests, and implementation evidence before proceeding. Do not advance to Phase 7 without confirmation.
 2. Review all documents to confirm they reflect final decisions and outcomes.
 3. Prepare the pull request referencing the workspace path, tests performed, metrics gathered, and outstanding risks (if any).
 4. Obtain required approvals (self-review permitted where external reviewers are unavailable but must still be logged).

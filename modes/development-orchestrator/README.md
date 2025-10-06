@@ -50,7 +50,7 @@ These rules apply to **both** single-mode and multi-mode implementations:
 
 - **Single source of truth**: Policy in [`development.md`](development.md); mode files implement it
 - **No duplication**: Mode files embed necessary policy snapshots; avoid verbatim copying
-- **Constitution HALT**: Halt Phase 0 if `governance/constitution.md` is missing/outdated; record version everywhere
+- **Constitution handling**: Phase 0 handles `governance/constitution.md` as part of normal startup; record version everywhere
 - **No auto-fallbacks**: Ambiguous briefs MUST return `attempt_completion` with `STATUS=Blocked, REASON=MissingBriefFields, MISSING=[list]`. Orchestrator re-briefs. No repository changes under ambiguity.
 - **Retrospective = evidence-only**: Citation-only with file path and line ranges; record "No relevant retrospective items" when none
 - **Decisions and approvals**: Captured in spec/clarifications/plan/tasks with actor + timestamp, not in orchestration logs
@@ -95,9 +95,9 @@ LLM-first quickstart
 **For Multi-Mode**:
 1. Re-read [`development.md`](development.md) and [`custom_mode.beta.yaml`](custom_mode.beta.yaml)
 2. Confirm invariants above
-3. Activate `development-orchestrator-beta` mode
-4. Configure LLM tiers per mode (see Model Routing Policy below)
-5. Open first Phase 0 new_task to `sdd-kickoff-beta`
+3. Activate `development-orchestrator` mode
+4. Configure LLM for each mode in runtime environment
+5. Open first Phase 0 new_task to `sdd-kickoff`
 ## Runtime Visibility and Alignment
 
 **Critical Constraint**: Modes cannot read local repository documents at runtime (including `development.md`).
@@ -201,7 +201,7 @@ Next-phase computation algorithm (orchestrator)
 2) Compute the next allowed phase using the phase machine and `TRACK` (`full|rapid`).
 3) If the delegated mode returns `STATUS=Blocked`:
    - `REASON=MissingBriefFields` → re-brief with the required fields.
-   - `REASON=HALT` → open a constitution task in Phase 0 and stop.
+   - `REASON=HALT` → critical issue needs resolution before continuing.
    - `REASON=PolicyViolation` → branch back to the indicated phase (2 or 3).
 4) Advance only when `status=Completed` and the phase's evidence gates are satisfied.
 
@@ -212,7 +212,7 @@ Delegation brief completeness (required)
 - Ambiguity returns `STATUS=Blocked` with `REASON=MissingBriefFields`; no repository changes must be made under ambiguity.
 
 Shared status flags (must be present in every `attempt_completion`)
-- `PHASE`, `MODE`, `STATUS` (Completed|Blocked|Deferred), `REASON` (MissingBriefFields|HALT|PolicyViolation|OutOfOrder), `TASKS_DONE/TOTAL` (when applicable), `EVIDENCE`, `RISKS`, `MISSING` (when blocked for brief issues).
+- `PHASE`, `MODE`, `STATUS` (Completed|Blocked|Deferred), `REASON` (MissingBriefFields|HALT|PolicyViolation|OutOfOrder - when blocked), `TASKS_DONE/TOTAL` (when applicable), `EVIDENCE`, `RISKS`, `MISSING` (when blocked for brief issues).
 
 Phase gates (evidence required to mark Completed)
 - Phase 0 — Intake & Kickoff: Constitution version recorded; track selected; skeleton created; initial `review-log.md` row written.
@@ -228,7 +228,7 @@ Phase gates (evidence required to mark Completed)
 Minimal orchestrator checklist (every delegation)
 - Resolve next `PHASE` using the phase machine and `review-log.md`.
 - Provide a complete brief as above; forbid assumptions; include the workspace path `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/`.
-- Require status flags and a Human Report in `attempt_completion`.
+- Require status flags in `attempt_completion`.
 - Verify the delegated subtask wrote the correct `review-log.md` row and required sign-off; if not, re-brief to fix.
 - Reject out-of-order or ambiguous work with `STATUS=Blocked` (no repository changes when blocked).
 
@@ -243,7 +243,7 @@ Purpose
 
 Core concepts
 - Session-per-subtask: Every `new_task` launches a new agent session for the delegated mode. The session has no implicit memory of prior sessions.
-- Hand-off: The delegated mode must end with `attempt_completion`. Control returns to the orchestrator session with required status flags and a Human Report.
+- Hand-off: The delegated mode must end with `attempt_completion`. Control returns to the orchestrator session with required status flags.
 - Shared state lives in the repo: The only durable memory across sessions is the workspace repository (documents, code, and artifacts). Modes must not rely on hidden/ephemeral memory.
 
 Handshake sequence (each delegation)
@@ -253,7 +253,7 @@ Handshake sequence (each delegation)
 3) Delegated mode executes with tools (orchestrator never uses tools):
    - Reads inputs; makes repository changes bound to the workspace path; captures evidence in `artifacts/`.
    - Writes required sign-offs and updates `review-log.md` for the phase.
-4) Delegated mode finishes with `attempt_completion`, including REQUIRED status flags and a Human Report.
+4) Delegated mode finishes with `attempt_completion`, including REQUIRED status flags.
 5) Orchestrator resumes, validates gates, updates the ledger view, and either re-briefs (if Blocked) or advances to the next phase.
 
 Isolation and persistence rules
@@ -264,7 +264,7 @@ Isolation and persistence rules
 Blocking and re-brief loop (no fallbacks)
 - Ambiguity: Missing/unclear brief fields → the mode must return `STATUS=Blocked`, `REASON=MissingBriefFields`, include `MISSING`, make no changes.
 - Out-of-order: Requested phase not allowed by the ledger → `STATUS=Blocked`, `REASON=OutOfOrder`, no changes.
-- Constitution HALT: Missing/outdated governance → `STATUS=Blocked`, `REASON=HALT`; orchestrator opens a constitution task in Phase 0.
+- Critical issues: When critical problems arise → `STATUS=Blocked`, `REASON=HALT` with explanation.
 
 Determinism and idempotency
 - Idempotent subtasks: If a section already exists or a checklist item is already `[x]`, perform no duplicate writes and still return `STATUS=Completed` with a summary and evidence paths.
@@ -312,7 +312,7 @@ Mode → groups (assignment)
 Operational rules
 - Least privilege: Modes must not use tools outside their assigned groups. If a task requires an unassigned capability, return STATUS=Blocked with REASON=PolicyViolation and specify the missing group(s).
 - No implicit elevation: The orchestrator must explicitly adjust the groups in the mode file before rerunning the task. Do not proceed without permission changes being committed.
-- Logging: When a tool is used, include a brief note in the Human Report and add evidence paths where applicable (e.g., citations in artifacts/ or updated docs).
+- Logging: When a tool is used, include a brief note in the summary and add evidence paths where applicable (e.g., citations in artifacts/ or updated docs).
 
 Edit flow for permissions
 1) Update the group list for the target mode inside:
