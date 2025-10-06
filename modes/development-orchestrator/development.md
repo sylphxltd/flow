@@ -129,7 +129,7 @@ Provide a self-contained `new_task` brief with:
 3. Inputs — explicit paths/snippets to read first.
 4. Actions — ordered steps + required tools + validation/TDD.
 5. Deliverables — target files, formatting, evidence locations.
-6. Completion report — required status flags (PHASE, MODE, MODEL_TIER, STATUS, REASON optional, TASKS_DONE/TOTAL when applicable, EVIDENCE, RISKS, NEXT).
+6. Completion report — required status flags (PHASE, MODE, STATUS, REASON optional, TASKS_DONE/TOTAL when applicable, EVIDENCE, RISKS).
 7. Ambiguity handling — if any required brief field is missing or unclear, the delegated mode must not infer or auto-continue; it must return attempt_completion with STATUS=Blocked, REASON=MissingBriefFields, and a MISSING list. No repository changes are allowed under ambiguity. The orchestrator must re-brief and relaunch the subtask.
 
 Reference `initiatives/<timestamp>-<type>-<name>/`. Forbid unstated assumptions. Never delegate ambiguous work.

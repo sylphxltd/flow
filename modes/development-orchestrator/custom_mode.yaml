@@ -16,7 +16,7 @@ customModes:
       ## Role Summary
       - Own the entire Development Workflow Manual for every initiative.
       - Never run shell commands or edit files directly; delegate each action through `new_task` subtasks executed in Code Mode.
-      - Require each subtask to call `attempt_completion` with a clear summary, affected files, and REQUIRED status flags: PHASE, MODE, MODEL_TIER, STATUS, REASON (optional), TASKS_DONE/TOTAL (when applicable), EVIDENCE, RISKS, NEXT; include a Human Report block (see below).
+      - Require each subtask to call `attempt_completion` with a clear summary, affected files, and REQUIRED status flags: PHASE, MODE, STATUS, REASON (optional), TASKS_DONE/TOTAL (when applicable), EVIDENCE, RISKS; include a Human Report block (see below).
       - Maintain an orchestration log in every response after a subtask completes:
         - **Ran** | **Type** (file / git / test / documentation) | **Result** (OK / BLOCKED)
         - **Artifacts** touched (list relative paths)
@@ -259,18 +259,16 @@ customModes:
         - **Clarification loop**: direct Code Mode to generate question tables, gather answers, and sync spec updates.
         - **Task execution**: delegate Red/Green/Refactor cycles, specifying tests to write, files to edit, evidence to capture, and reminding them to update the checklist entry to `[x]` with completion metadata.
         - **Git actions**: ensure subtasks stage, commit, and push with the prescribed format.
-        - **Status updates**: after each subtask, include required status flags in your orchestration log: PHASE, MODE, MODEL_TIER, STATUS, REASON (optional), TASKS_DONE/TOTAL (when applicable), EVIDENCE, RISKS, NEXT. Skip effort estimates unless they materially aid parallel scheduling.
+        - **Status updates**: after each subtask, include required status flags in your orchestration log: PHASE, MODE, STATUS, REASON (optional), TASKS_DONE/TOTAL (when applicable), EVIDENCE, RISKS. Skip effort estimates unless they materially aid parallel scheduling.
         
         ### Required status flags in every subtask `attempt_completion`
         - PHASE = 0..7 or 8
         - MODE = mode-slug (e.g., code-mode or sdd-implementer-beta)
-        - MODEL_TIER = thinking_slow | code_fast | cheap_fast | n/a
         - STATUS = Completed | Blocked | Deferred
-        - REASON = MissingBriefFields | ModeUnavailable | HALT | PolicyViolation | OutOfOrder (optional)
+        - REASON = MissingBriefFields | HALT | PolicyViolation | OutOfOrder (optional)
         - TASKS_DONE/TOTAL = integers (omit when not applicable)
         - EVIDENCE = relative file paths under artifacts/ or workspace docs
         - RISKS = brief High/Medium/Low summary
-        - NEXT = one-line next action
         
         ## Phase machine & orchestrator ledger
         - Workspace ledger: review-log.md is the authoritative runtime ledger; compute the next phase from the latest row where `status=Completed`.
@@ -286,7 +284,6 @@ customModes:
           3) If the previous attempt returned Blocked:
              - REASON=MissingBriefFields → re-brief with required fields.
              - REASON=HALT → open a constitution task (Phase 0) and stop.
-             - REASON=ModeUnavailable → pick a different concrete model/tier; no implicit fallback.
              - REASON=PolicyViolation → branch back to Phase 2 or 3 per the finding.
           4) Advance only when the phase’s evidence gates are satisfied.
 

@@ -1,29 +1,59 @@
 # Development Orchestrator Assets
 
-This directory defines a single LLM-first, Spec-Driven Development (SDD) workflow with two canonical artifacts that must stay in sync.
+This directory defines LLM-first, Spec-Driven Development (SDD) workflows with canonical artifacts that must stay in sync.
 
-What’s here
-- [development.md](modes/development-orchestrator/development.md) — Pure workflow manual (human-readable, tool-agnostic policy).
-- [custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml) — LLM-first execution of the manual (delegation, guardrails, reporting).
+## What's here
 
-Roles contract (consistency)
-- development.md: source of truth for phases, artifacts, gates, tracks, and evidence rules. Any enforced rule MUST exist here first.
-- custom_mode.yaml: operationalizes the manual for LLM agents; it may not contradict or extend policy. Reference the manual for long details (e.g., Rapid minimum artifacts).
-- README.md (this file): team consensus, quickstart, and editing protocol.
+- [`development.md`](development.md) — Pure workflow manual (human-readable, tool-agnostic policy)
+- [`custom_mode.yaml`](custom_mode.yaml) — Single-mode implementation (orchestrator + code mode)
+- [`custom_mode.beta.yaml`](custom_mode.beta.yaml) — Multi-mode implementation (orchestrator + specialized modes)
+- [`README.md`](README.md) (this file) — Team consensus, architecture overview, and editing protocol
 
-LLM-first stance (one paragraph)
-Orchestrator coordinates flow and opens new_task briefs; it has zero tool privileges and is not a decision-maker. Code Mode subtasks perform all tool actions. Decisions and approvals live only in workspace artifacts with sign-offs.
+## Architecture Variants
 
-Invariants (no drift, no duplication)
-- Single source of truth: policy in [development.md](modes/development-orchestrator/development.md); [custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml) implements it.
-- No duplication: the mode references the manual for detailed tables/policy.
-- Constitution HALT: halt Phase 0 if governance/constitution.md is missing/outdated; record the version everywhere referenced.
-- No auto-fallbacks: ambiguous or under-specified briefs MUST return attempt_completion with STATUS=Blocked, REASON=MissingBriefFields, and a MISSING list; the orchestrator will re-brief. Modes make no repository changes under ambiguity.
-- Retrospective = evidence-only: citation-only with file path and line ranges; record “No relevant retrospective items” when none.
-- Decisions and approvals: captured in spec/clarifications/plan/tasks with actor + timestamp, not in orchestration logs.
-- Naming: initiatives/<YYYYMMDD-HHMM>-<type>-<name> (same for branch).
-- Merge gates: zero open tasks, evidence stored, tests passing, no critical analysis findings, high coverage on touched code, docs match delivered code (see manual).
-- Artifact front-matter: workspace_id, phase, track, constitution_version, manual_version, actor, iso_timestamp.
+### Single-Mode (custom_mode.yaml)
+- **Orchestrator** coordinates flow via `new_task`
+- **Code Mode** performs all tool actions
+- Simple delegation model: orchestrator → code → orchestrator
+
+### Multi-Mode (custom_mode.beta.yaml)
+- **Orchestrator** coordinates flow and handles human communication
+- **Specialized modes** for each phase:
+  - `sdd-kickoff-beta` — Phase 0 (Intake & Kickoff)
+  - `sdd-spec-architect-beta` — Phases 1-3 (Specify, Clarify, Plan)
+  - `sdd-implementer-beta` — Phases 4 & 6 (Tasks, Implement)
+  - `sdd-analyst-auditor-beta` — Phase 5 (Analyze)
+  - `sdd-release-manager-beta` — Phase 7 (Release & Archive)
+  - `sdd-retro-curator-beta` — Phase 8 (Retrospective)
+- User can configure different LLM tiers per mode
+- Reduced orchestrator cognitive load through specialization
+
+## Roles Contract (Consistency)
+
+- **development.md**: Source of truth for phases, artifacts, gates, tracks, evidence rules. Any enforced rule MUST exist here first.
+- **custom_mode.yaml**: Single-mode operationalization for LLM agents.
+- **custom_mode.beta.yaml**: Multi-mode operationalization with embedded policy snapshots per mode.
+- **README.md** (this file): Team consensus, architecture overview, quickstart, and editing protocol.
+
+## LLM-First Stance
+
+**Single-Mode**: Orchestrator coordinates flow and opens new_task briefs; it has zero tool privileges and is not a decision-maker. Code Mode subtasks perform all tool actions. Decisions and approvals live only in workspace artifacts with sign-offs.
+
+**Multi-Mode**: Orchestrator is the human communication window and flow coordinator; it uses only MCP tools for external knowledge. Each specialized mode has appropriate tool permissions for its phase. Modes are completely isolated; communication happens only through `attempt_completion`. The workflow is single-threaded: orchestrator → new_task → delegated mode → attempt_completion → orchestrator.
+
+## Invariants (No Drift, No Duplication)
+
+These rules apply to **both** single-mode and multi-mode implementations:
+
+- **Single source of truth**: Policy in [`development.md`](development.md); mode files implement it
+- **No duplication**: Mode files embed necessary policy snapshots; avoid verbatim copying
+- **Constitution HALT**: Halt Phase 0 if `governance/constitution.md` is missing/outdated; record version everywhere
+- **No auto-fallbacks**: Ambiguous briefs MUST return `attempt_completion` with `STATUS=Blocked, REASON=MissingBriefFields, MISSING=[list]`. Orchestrator re-briefs. No repository changes under ambiguity.
+- **Retrospective = evidence-only**: Citation-only with file path and line ranges; record "No relevant retrospective items" when none
+- **Decisions and approvals**: Captured in spec/clarifications/plan/tasks with actor + timestamp, not in orchestration logs
+- **Naming**: `initiatives/<YYYYMMDD-HHMM>-<type>-<name>` (same for branch)
+- **Merge gates**: Zero open tasks, evidence stored, tests passing, no critical findings, ≥95% coverage on touched code, docs match code
+- **Artifact front-matter**: workspace_id, phase, track, constitution_version, manual_version, actor, iso_timestamp
 
 Frontline Human Report (after every subtask)
 - Summary of what changed
@@ -42,80 +72,105 @@ LLM-first quickstart
 4) Phase 7: Approvals, PR, merge after gates; archive workspace record.
 5) Phase 8: Run when triggered (hotfix P0–P2, high/critical bugfix, repeated failures, schedule slip, coverage exceptions).
 
-Edit flow
-1) Update [development.md](modes/development-orchestrator/development.md) (policy).
-2) Mirror in [custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml) (agent execution).
-3) Validate alignment; adjust this README only for stance/quickstart/protocol wording.
+## Edit Flow
 
-Start-here checklist
-- Re-read [development.md](modes/development-orchestrator/development.md) and [custom_mode.yaml](modes/development-orchestrator/custom_mode.yaml).
-- Confirm invariants above.
-- Open the first Phase 0 new_task.
-## Runtime visibility and alignment
+1. Update [`development.md`](development.md) (policy source of truth)
+2. Mirror changes in mode files:
+   - [`custom_mode.yaml`](custom_mode.yaml) (single-mode)
+   - [`custom_mode.beta.yaml`](custom_mode.beta.yaml) (multi-mode)
+3. Validate alignment across all files
+4. Update README only for architecture/stance/quickstart/protocol wording
 
-Modes cannot read local repository documents at runtime (including development.md). To ensure consistent execution without external reads:
+## Start-Here Checklist
 
-- Embedded policy snapshot
-  - Each mode file (custom_mode.yaml, custom_mode.beta.yaml) embeds the core policy snapshot necessary for execution (front-matter, standard artifacts, constitution governance, TDD, Rapid minimum artifacts, Git discipline, merge gates, evidence).
-  - Orchestrator and Beta modes must not assume runtime access to development.md.
+**For Single-Mode**:
+1. Re-read [`development.md`](development.md) and [`custom_mode.yaml`](custom_mode.yaml)
+2. Confirm invariants above
+3. Activate `development-orchestrator` mode
+4. Open first Phase 0 new_task to Code Mode
 
-- Manual remains the human-maintained policy source
-  - development.md is the human-readable, tool-agnostic policy. Maintainers edit the manual first, then mirror updates into the mode files’ embedded snapshots.
-  - Treat any references to development.md in mode files as maintainer guidance only (not runtime reads).
+**For Multi-Mode**:
+1. Re-read [`development.md`](development.md) and [`custom_mode.beta.yaml`](custom_mode.beta.yaml)
+2. Confirm invariants above
+3. Activate `development-orchestrator-beta` mode
+4. Configure LLM tiers per mode (see Model Routing Policy below)
+5. Open first Phase 0 new_task to `sdd-kickoff-beta`
+## Runtime Visibility and Alignment
 
-- Alignment protocol
-  1) Update development.md (policy/workflow).
-  2) Mirror the same changes into custom_mode.yaml and custom_mode.beta.yaml (embedded policy snapshot).
-  3) Validate with a quick pass: artifacts present, gates listed, phase sign-offs, and Rapid constraints match.
+**Critical Constraint**: Modes cannot read local repository documents at runtime (including `development.md`).
 
-This section clarifies that the runtime authority for agents lies in the mode files’ embedded policy, while development.md remains the source of truth for maintainers editing the process.
-## Model routing policy (runtime guidance)
+### Embedded Policy Snapshots
 
-- Modes cannot infer MODEL_TIER. The orchestrator must set MODEL_TIER explicitly in every `new_task` brief.
-- No auto-fallbacks. If a brief is ambiguous or a requested tier/model is unavailable, the delegated mode must return:
-  - STATUS=Blocked with REASON=MissingBriefFields (when required brief fields are missing) or
-  - STATUS=Blocked with REASON=ModeUnavailable (when the specified tier/model is not available)
-  - Make no repository changes under ambiguity.
+- Each mode file embeds the core policy snapshot necessary for execution:
+  - Front-matter requirements
+  - Standard artifacts structure
+  - Constitution governance
+  - TDD guarantee
+  - Rapid minimum artifacts
+  - Git discipline
+  - Merge gates
+  - Evidence management
 
-Default routing (balanced, recommended)
-- development-orchestrator-beta → cheap_fast
-- sdd-kickoff-beta → cheap_fast
-  - Escalate to thinking_slow only when authoring/updating governance/constitution.md or resolving policy conflicts.
-- sdd-spec-architect-beta → thinking_slow
-- sdd-analyst-auditor-beta → thinking_slow
-- sdd-implementer-beta → code_fast
-  - Escalate to thinking_slow for high-risk refactors, cross-cutting changes, or policy-heavy constraints.
-- sdd-release-manager-beta → cheap_fast
-- sdd-retro-curator-beta → cheap_fast
+- Modes must **not** assume runtime access to `development.md`
 
-Alternative profiles
-- Quality-first
-  - kickoff → thinking_slow when constitution/policy interpretation involved; otherwise cheap_fast
-  - spec/architect (1–3), analyst (5) → thinking_slow
-  - implementer (4/6) → code_fast; route to thinking_slow on complex refactors, critical paths, or repeated low-signal test failures (&gt;1x)
-  - release/retro/orchestrator → cheap_fast
-- Cost-optimized (safe)
-  - kickoff, release, retro, orchestrator → cheap_fast
-  - spec/architect (1–3), analyst (5) → thinking_slow only when TRACK=full or RISK ≥ Medium; otherwise allow cheap_fast for very small Rapid changes with simple ACs
-  - implementer (4/6) → code_fast
-  - Guardrails: If ACs &gt; 5, core data models touched, or external integrations affected → route to thinking_slow
+### Human-Maintained Policy Source
 
-Routing heuristics for the orchestrator
-- Track: TRACK=full → thinking_slow for Phases 1–3 and 5. TRACK=rapid + Low risk → allow cheap_fast for Phase 1/2 only when no architectural impact.
-- Risk: Critical/High severity or security/privacy implications → thinking_slow (Phases 1–3, 5).
-- Scope: Large refactors or cross-cutting changes → thinking_slow for planning/analysis; code_fast for TDD implementation.
-- Context size: Very long inputs (large specs/plans) → choose a long-context thinking_slow model for Phases 1–3/5.
-- Deadline: Urgent but low-risk chores (retro/release/kickoff triage) → cheap_fast.
+- [`development.md`](development.md) is the human-readable, tool-agnostic policy
+- Maintainers edit the manual first, then mirror updates into mode files
+- Any references to `development.md` in mode files are maintainer guidance only (not runtime reads)
 
-Operational guardrails (consistent with invariants)
-- Orchestrator sets MODEL_TIER explicitly; modes must not override it.
-- Ambiguous briefs → STATUS=Blocked, REASON=MissingBriefFields, include MISSING list; no changes made.
-- Unavailable tier/model → STATUS=Blocked, REASON=ModeUnavailable; no implicit rerouting.
-- HALT on constitution missing/outdated → STATUS=Blocked, REASON=HALT; orchestrator opens a constitution task.
+### Alignment Protocol
 
-Provider-neutral configuration
-- Keep this repository vendor-agnostic. Map thinking_slow / code_fast / cheap_fast to actual providers in your runtime configuration (outside this repo).
-- See also “Model selection policy (guidance)” embedded in custom_mode.beta.yaml for at-runtime reference by modes.
+1. Update [`development.md`](development.md) (policy/workflow)
+2. Mirror changes into mode files' embedded snapshots:
+   - [`custom_mode.yaml`](custom_mode.yaml) (single-mode)
+   - [`custom_mode.beta.yaml`](custom_mode.beta.yaml) (multi-mode specialized instructions)
+3. Validate alignment:
+   - Artifacts present ✓
+   - Gates listed ✓
+   - Phase sign-offs ✓
+   - Rapid constraints match ✓
+
+**Authority**: Runtime authority for agents lies in mode files' embedded policy. `development.md` remains source of truth for maintainers.
+## Model Configuration (Multi-Mode Only)
+
+**Applies to**: [`custom_mode.beta.yaml`](custom_mode.beta.yaml) only
+
+### Mode Specialization
+
+Each mode is designed for specific phases with different computational needs:
+
+| Mode | Phases | Typical Workload |
+|------|--------|------------------|
+| `development-orchestrator-beta` | Coordination | Flow control, delegation (MCP only) |
+| `sdd-kickoff-beta` | 0 | Setup, constitution validation |
+| `sdd-spec-architect-beta` | 1-3 | Requirements, planning, architecture (thinking-intensive) |
+| `sdd-analyst-auditor-beta` | 5 | Analysis, consistency checks (thinking-intensive) |
+| `sdd-implementer-beta` | 4, 6 | Task breakdown, TDD implementation (code-intensive) |
+| `sdd-release-manager-beta` | 7 | Release process, validation |
+| `sdd-retro-curator-beta` | 8 | Documentation, retrospective |
+
+### User Configuration
+
+Users configure which LLM to use for each mode in their runtime environment (outside this repository).
+
+**Example configurations**:
+
+- **Balanced**: Use mid-tier models for planning/analysis, fast models for implementation/coordination
+- **Quality-First**: Use premium models for all planning and analysis phases
+- **Cost-Optimized**: Use budget models where possible, premium only for critical phases
+
+### Operational Rules
+
+- If a mode receives ambiguous instructions → `STATUS=Blocked, REASON=MissingBriefFields`
+- Constitution missing/outdated → `STATUS=Blocked, REASON=HALT`
+- Policy violations → `STATUS=Blocked, REASON=PolicyViolation`
+
+### Provider-Neutral Design
+
+- This repo is vendor-agnostic
+- Model selection happens in runtime configuration (outside this repo)
+- See embedded policy in [`custom_mode.beta.yaml`](custom_mode.beta.yaml) for mode requirements
 
 ## Global Orchestrator Contract (phase machine)
 
@@ -142,17 +197,16 @@ Next-phase computation algorithm (orchestrator)
    - `REASON=MissingBriefFields` → re-brief with the required fields.
    - `REASON=HALT` → open a constitution task in Phase 0 and stop.
    - `REASON=PolicyViolation` → branch back to the indicated phase (2 or 3).
-   - `REASON=ModeUnavailable` → choose another concrete model/tier and re-brief (no implicit re-routing).
-4) Advance only when `status=Completed` and the phase’s evidence gates are satisfied.
+4) Advance only when `status=Completed` and the phase's evidence gates are satisfied.
 
 Delegation brief completeness (required)
 - `PHASE` (0..8), `SUBPHASE` (specify|clarify|plan|tasks|implement|analyze|release|retro)
 - `GOAL` (1–2 lines), `INPUTS` (file paths/snippets), `OUTPUTS` (files/sections), `VALIDATION` (exit criteria + `artifacts/` destinations)
-- `MODEL_TIER` (thinking_slow|code_fast|cheap_fast), `TRACK` (full|rapid), `FLAGS` (optional)
+- `TRACK` (full|rapid), `FLAGS` (optional)
 - Ambiguity returns `STATUS=Blocked` with `REASON=MissingBriefFields`; no repository changes must be made under ambiguity.
 
 Shared status flags (must be present in every `attempt_completion`)
-- `PHASE`, `MODE`, `MODEL_TIER`, `STATUS` (Completed|Blocked|Deferred), `REASON` (MissingBriefFields|ModeUnavailable|HALT|PolicyViolation|OutOfOrder), `TASKS_DONE/TOTAL` (when applicable), `EVIDENCE`, `RISKS`, `NEXT`, `MISSING` (when blocked for brief issues).
+- `PHASE`, `MODE`, `STATUS` (Completed|Blocked|Deferred), `REASON` (MissingBriefFields|HALT|PolicyViolation|OutOfOrder), `TASKS_DONE/TOTAL` (when applicable), `EVIDENCE`, `RISKS`, `MISSING` (when blocked for brief issues).
 
 Phase gates (evidence required to mark Completed)
 - Phase 0 — Intake & Kickoff: Constitution version recorded; track selected; skeleton created; initial `review-log.md` row written.
@@ -167,7 +221,6 @@ Phase gates (evidence required to mark Completed)
 
 Minimal orchestrator checklist (every delegation)
 - Resolve next `PHASE` using the phase machine and `review-log.md`.
-- Set `MODEL_TIER` explicitly; modes must not infer or override.
 - Provide a complete brief as above; forbid assumptions; include the workspace path `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/`.
 - Require status flags and a Human Report in `attempt_completion`.
 - Verify the delegated subtask wrote the correct `review-log.md` row and required sign-off; if not, re-brief to fix.
@@ -189,7 +242,7 @@ Core concepts
 
 Handshake sequence (each delegation)
 1) Orchestrator computes the next phase from the ledger (see Global Orchestrator Contract) and prepares a complete brief:
-   - PHASE, SUBPHASE, GOAL, INPUTS, OUTPUTS, VALIDATION, MODEL_TIER, TRACK, FLAGS.
+   - PHASE, SUBPHASE, GOAL, INPUTS, OUTPUTS, VALIDATION, TRACK, FLAGS.
 2) Orchestrator opens `new_task` to the target mode (creates a new agent session).
 3) Delegated mode executes with tools (orchestrator never uses tools):
    - Reads inputs; makes repository changes bound to the workspace path; captures evidence in `artifacts/`.
@@ -205,7 +258,6 @@ Isolation and persistence rules
 Blocking and re-brief loop (no fallbacks)
 - Ambiguity: Missing/unclear brief fields → the mode must return `STATUS=Blocked`, `REASON=MissingBriefFields`, include `MISSING`, make no changes.
 - Out-of-order: Requested phase not allowed by the ledger → `STATUS=Blocked`, `REASON=OutOfOrder`, no changes.
-- Model unavailability: Requested model/tier not available → `STATUS=Blocked`, `REASON=ModeUnavailable`, no changes.
 - Constitution HALT: Missing/outdated governance → `STATUS=Blocked`, `REASON=HALT`; orchestrator opens a constitution task in Phase 0.
 
 Determinism and idempotency
@@ -218,9 +270,6 @@ Concurrency policy
 - Orchestrator is responsible for safe scheduling; when in doubt, run serially.
 - If a mode detects conflicting scope, it must return `STATUS=Blocked` with `REASON=PolicyViolation` and note the suspected collision.
 
-Model tier control
-- The orchestrator sets `MODEL_TIER` explicitly in the brief; modes must not override it.
-- See “Model routing policy (runtime guidance)” in this README for default mappings and heuristics.
 
 Auditability
 - The runtime ledger is the workspace `review-log.md` file under `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/review-log.md`.
