@@ -79,6 +79,8 @@ customModes:
       - **Completeness**: All requested outputs are listed with exact paths.
       - **Quantification**: Specific numbers are used (e.g., "5/7 tasks complete", not "some tasks").
       - **Evidence**: Paths to evidence artifacts (e.g., test logs, diagrams) are provided.
+      - **Evidence Naming Compliance**: Evidence filenames follow artifacts/<phase>/<ISO8601>_<Txxx>_<ACxx>_<slug>.<ext>.
+      - **Manifest References**: Evidence items are registered in artifacts/manifest.json and referenced by manifest id(s) in the report.
       - **Risk Assessment**: Risks are identified, qualified (High/Medium/Low), and have a mitigation plan.
       - **Explicit Status**: The report must clearly state "Ready for next phase" or "Blocked".
       
@@ -90,6 +92,65 @@ customModes:
       - **Never Advance on Incomplete Work**: Only move to the next phase when the current one is 100% complete and verified.
       - **Drive Implementation Cycles**: For Phase 4, if a report shows partial progress (e.g., "8/15 tasks done"), acknowledge it and immediately re-delegate to continue, specifying "Continue implementation from task T009 onwards."
       - **Act on Blockers**: If a mode is blocked, your job is to facilitate the unblocking, which may mean looping back to a previous phase for correction.
+      
+      ## Global Conventions (Enforced)
+      
+      ### Artifacts Structure
+      Ensure the Kickoff phase creates the following standard structure:
+      - `artifacts/tests/`
+      - `artifacts/metrics/`
+      - `artifacts/diagrams/`
+      - `artifacts/experiments/`
+      - `artifacts/logs/`
+      - `artifacts/coverage/`
+      - `artifacts/benchmarks/`
+      - `artifacts/recordings/`
+      - `artifacts/datasets/`
+      - `artifacts/notebooks/`
+      - `artifacts/migrations/`
+      - `artifacts/docs/`
+      - `artifacts/README.md`
+      - `artifacts/manifest.json`
+      
+      ### Evidence Naming Convention
+      Pattern: artifacts/<phase>/<ISO8601>_<Txxx>_<ACxx>_<slug>.<ext>
+      Example: artifacts/tests/2025-10-06T14-23Z_T002_AC1_login-red.txt
+      
+      ### Artifacts Manifest
+      Each evidence item must have a record in artifacts/manifest.json with:
+      - id (unique, e.g., EV-20251006-1423Z-T002-AC1)
+      - phase (0..7), taskId (e.g., T002), acId (e.g., AC1 or N/A)
+      - kind (test-log, coverage, diagram, benchmark, migration-log)
+      - path (relative), checksum (sha256), iso_timestamp (ISO 8601 UTC)
+      
+      Reports must reference manifest id(s) alongside evidence paths.
+      
+      ### Loopback Matrix and Escalation
+      - Spec change → Phase 1 (Specify)
+      - Planning gap → Phase 2 (Plan)
+      - Consistency/Security issues → Phase 3 (Analyze)
+      - Failing tests/defects → Phase 4 (Implement)
+      - User change requests → Phase 1 (requirements) or Phase 4 (bug)
+      - Hard stop: any unresolved High/Critical = STATUS=Blocked
+      - Escalation: same gate fails ≥2 times → trigger Phase 7 (Retrospective)
+      - Max loop rounds per gate = 3 before mandatory escalation
+      
+      ### Constitutional Gates (Numeric Defaults)
+      Override via governance/constitution.md or spec constraints:
+      - Code coverage ≥ 95% on touched code
+      - p95 latency ≤ 150ms (or per-spec target)
+      - Lint errors = 0; Type errors = 0
+      - Secrets scan findings = 0
+      - SAST: 0 unresolved High/Critical
+      - Accessibility (UI): WCAG 2.1 AA pass or approved exception
+      - Bundle budgets (web): main ≤ 250KB gzip (or per-spec)
+      
+      ### AC ↔ Task Mapping (Bi-Directional)
+      - Spec defines AC IDs (AC1, AC2, …)
+      - Plan includes an AC Coverage table (AC → Tasks[])
+      - Every task declares the AC IDs it satisfies
+      - Analysis verifies coverage both ways
+      - Implementation reports per-AC verification status and evidence manifest IDs
     
     groups:
       - mcp
@@ -139,7 +200,20 @@ customModes:
           - `artifacts/metrics/`
           - `artifacts/diagrams/`
           - `artifacts/experiments/`
+          - `artifacts/logs/`
+          - `artifacts/coverage/`
+          - `artifacts/benchmarks/`
+          - `artifacts/recordings/`
+          - `artifacts/datasets/`
+          - `artifacts/notebooks/`
+          - `artifacts/migrations/`
+          - `artifacts/docs/`
           - `artifacts/README.md`
+          - `artifacts/manifest.json`
+
+          Initialize:
+          - `artifacts/README.md`: Document evidence naming pattern `artifacts/<phase>/<ISO8601>_<Txxx>_<ACxx>_<slug>.<ext>` with examples.
+          - `artifacts/manifest.json`: Initialize as an empty JSON array `[]`. All later phases must append entries with fields: `id`, `phase`, `taskId`, `acId`, `kind`, `path`, `checksum`, `iso_timestamp`.
 
       4.  **Git Branch**: Create a new branch named `<type>/<name>` (e.g., `feature/add-user-login`). This name MUST align with the folder structure.
       
@@ -257,6 +331,7 @@ customModes:
       - Technical constraint
       
       ## Acceptance Criteria
+      Note: Use explicit IDs AC1, AC2, … and reference these IDs in plan.md and tasks.md.
       - AC1: Measurable criterion
       - AC2: Measurable criterion
       
@@ -265,6 +340,11 @@ customModes:
       
       ## Open Questions
       - [ ] Q1: Question (resolved in clarifications)
+      
+      ## Phase Learnings Seed
+      - Key decisions made in specification
+      - Notable risks or ambiguities and how they were mitigated/deferred
+      - Metrics to observe downstream (what, how)
       
       ---
       **Sign-off**: Agent: <name> (<model>) | <ISO>
@@ -394,6 +474,12 @@ customModes:
       
       - External API X: <approach>, failures: <handling>
       
+      ## AC Coverage
+      | AC  | Tasks            |
+      |-----|------------------|
+      | AC1 | T001, T003       |
+      | AC2 | T002             |
+      
       ## Validation
       
       | AC | Method | Test Type |
@@ -435,22 +521,28 @@ customModes:
       - [ ] T001 — Write failing login test
         - Depends on: none
         - Owner: Agent: <name> (<model>)
+        - ACs: AC1
         - Exit criteria: Test fails correctly, output saved
-        - Evidence: artifacts/tests/login-red.txt
+        - Evidence: artifacts/tests/<ISO>_T001_AC1_login-red.txt
+        - Manifest: id=EV-<generated>
         - Notes: Red phase of TDD
       
       - [ ] T002 — Implement login
         - Depends on: T001
         - Owner: Agent: <name> (<model>)
+        - ACs: AC1
         - Exit criteria: T001 passes
         - Evidence: src/auth/login.ts
+        - Manifest: id=EV-<generated>
         - Notes: Green phase
       
       - [ ] T003 [P] — Add validation
         - Depends on: none
         - Owner: Agent: <name> (<model>)
+        - ACs: AC2
         - Exit criteria: Validation tests pass
         - Evidence: src/auth/validation.ts
+        - Manifest: id=EV-<generated>
         - Notes: Can parallelize
       
       ## Change Log
@@ -470,7 +562,7 @@ customModes:
       - How many parallel tasks
       - How many test tasks vs impl tasks
       - How many dependencies mapped
-      - Which constitution clauses mapped
+      - Which constitution clauses mapped and numeric budgets defined (coverage, p95 latency, bundle size)
       - Number of exceptions (if any)
       - Technical risks
       - Evidence paths
@@ -508,9 +600,17 @@ customModes:
       **Constitution**:
       - All clauses addressed in plan?
       - No missing coverage?
+      - Numeric gates defined where applicable (coverage target, latency target, bundle budgets)?
       
       **Performance**:
       - Performance requirements have validation tasks?
+      
+      **Evidence & Manifest**:
+      - Evidence filenames follow the convention
+      - All cited evidence present and registered in artifacts/manifest.json
+      
+      **Security & Quality Gates (Pre-check)**:
+      - Secrets scan, SAST (no High/Critical unresolved), lint, and type-check tasks are planned and owned
       
       ## Lightweight Approach
       
@@ -544,6 +644,8 @@ customModes:
       - ✅ All tasks have exit criteria
       - ⚠️ Performance validation missing - added note to plan
       - ✅ Terminology consistent
+      - ✅ Evidence naming pattern validated
+      - ✅ artifacts/manifest.json entries present for cited evidence
       
       ## Findings
       
@@ -551,6 +653,14 @@ customModes:
       |----------|----------|-------------|--------|--------|
       | Critical | plan.md:45 | Missing error handling | Add tasks T010-T012 | Resolved |
       | High | tasks.md:T005 | Unclear exit criteria | Clarified criteria | Resolved |
+      
+      ## Gates (Pre-Check Targets)
+      - Coverage target: ≥95% on touched code — Defined: <Yes/No>
+      - p95 latency target: ≤150ms (or per spec) — Defined: <Yes/No/N/A>
+      - Bundle budget: main ≤ 250KB gzip — Defined: <Yes/No/N/A>
+      - Security gates (secrets=0, SAST High/Critical=0) — Planned: <Yes/No>
+      - Lint/Type errors = 0 — Planned: <Yes/No>
+      - Accessibility WCAG 2.1 AA — Planned: <Yes/No/N/A>
       
       ## Experiments
       
@@ -614,25 +724,29 @@ customModes:
       
       ## For Each Task
       
-      **Red**: 
+      **Red**:
       - Write failing test
       - Run it, confirm failure
-      - Save output to artifacts/tests/
+      - Save output to artifacts/tests/ using the naming pattern
+      - Append entry to artifacts/manifest.json with fields: id, phase, taskId, acId, kind=test-log, path, checksum, iso_timestamp
       
       **Green**:
       - Write minimal code to pass
       - Don't over-engineer
       - Confirm test passes
+      - Add passing test evidence (e.g., artifacts/tests/<ISO>_Txxx_ACx_<slug>-green.txt) and update manifest
       
       **Refactor**:
       - Clean up code
       - Keep tests green
       - No behavior changes
+      - Update evidence if refactor alters public contracts; record in manifest
       
       **Update Checkbox** (CRITICAL):
       ```markdown
       - [x] T001 — Task description
-        - Evidence: artifacts/tests/login-red.txt, src/auth/login.ts
+        - Evidence: artifacts/tests/<ISO>_T001_AC1_login-red.txt, src/auth/login.ts
+        - Manifest IDs: EV-..., EV-...
         - Completed: 2025-10-06T14:23:15Z
         - Constitution: Clause 2.1, 3.4 verified
       ```
@@ -655,9 +769,18 @@ customModes:
       - Started: <ISO>
       - Intent: Red phase for auth
       - Result: Test fails as expected
-      - Evidence: artifacts/tests/login-red.txt
+      - Evidence: artifacts/tests/<ISO>_T001_AC1_login-red.txt
       - Constitution: Clause 2.1 verified
       - Completed: <ISO>
+      
+      ## Per-AC Verification
+      | AC  | Tests                                   | Status | Evidence (Manifest IDs) |
+      |-----|-----------------------------------------|--------|-------------------------|
+      | AC1 | test_login_success, test_login_invalid  | ✅     | EV-..., EV-...          |
+      
+      ## Evidence Registry
+      - EV-...: artifacts/tests/<ISO>_T001_AC1_login-red.txt (sha256=...)
+      - EV-...: artifacts/tests/<ISO>_T002_AC1_login-green.txt (sha256=...)
       
       ## TDD Summary
       
@@ -676,6 +799,11 @@ customModes:
       - <ISO>: T005 blocked - constitution violation
       - Resolution: Updated plan, resolved <ISO>
       
+      ## Phase Learnings Seed
+      - Unexpected complexities and how we addressed them
+      - Flaky tests or repeating failures observed
+      - Proposed guardrails for future (templates/tools/gates)
+      
       ---
       **Sign-off**: Agent: <name> (<model>) | <ISO>
       ```
@@ -687,7 +815,8 @@ customModes:
       - Which tasks flipped to [x]: T001, T002, T005, T007 (list all)
       - Tests passing: X/Y
       - Coverage percentage on touched code
-      - Constitution clauses verified (specific IDs)
+      - Constitution clauses verified (specific IDs) and gate status (lint/type errors=0, secrets=0, SAST High/Critical=0, A11y status, bundle budgets)
+      - Per-AC pass summary and manifest IDs count (N evidence items registered)
       - implementation.md updated
       - If not all done: how many remaining
       - Evidence paths
@@ -720,6 +849,7 @@ customModes:
       1.  Read `implementation.md`, `spec.md`, and `tasks.md`.
       2.  Create a clear, non-technical summary of what was built and how it meets the objectives defined in `spec.md`.
       3.  If possible and applicable (e.g., for UI changes), run the application and capture screenshots or GIFs to demonstrate the work.
+      4.  Include a concise Gates Summary (coverage, tests pass, lint/type errors=0, secrets=0, SAST High/Critical=0, A11y status, bundle budgets).
       
       ## 2. Present to User
       
@@ -733,6 +863,7 @@ customModes:
       - Feature X (e.g., User Login) has been implemented.
       - It covers all 5 acceptance criteria, including password validation and session creation.
       - 15/15 related tasks are complete, and all 45 automated tests are passing.
+      - Gates Summary: Coverage 96% ✅, Lint 0 errors ✅, Type 0 errors ✅, Secrets 0 ✅, SAST High/Critical 0 ✅, WCAG AA ✅, Bundle 220KB gzip ✅
       
       [Attach screenshot/GIF if available]
       
@@ -746,6 +877,7 @@ customModes:
       
       1.  Whatever the user's response, log it in `review-log.md`.
       2.  If changes are requested, document them clearly under a "Change Requests" section in the log.
+      3.  Add a "Phase Learnings Seed" subsection summarizing user insights or expectation deltas.
       
       ## 4. Reporting
       
@@ -787,6 +919,10 @@ customModes:
       - [ ] **Test Success**: All automated tests are passing in CI/locally.
       - [ ] **Analysis Findings**: `analysis.md` shows zero unresolved Critical or High severity findings.
       - [ ] **Code Coverage**: Meets the threshold defined in `constitution.md` (e.g., ≥95%).
+      - [ ] **Lint/Type**: Lint errors = 0; Type errors = 0.
+      - [ ] **Security**: Secrets scan = 0 findings; SAST High/Critical = 0 unresolved.
+      - [ ] **Accessibility (if UI)**: WCAG 2.1 AA pass or documented exception approved.
+      - [ ] **Performance/Bundles (if applicable)**: p95 latency target met; bundle budgets within limits.
       - [ ] **Documentation**: All created documentation (`spec`, `plan`, etc.) is up-to-date.
       
       **If any gate fails**: Immediately report `STATUS=Blocked` to the Orchestrator, listing exactly which gates failed. Do not proceed.
@@ -798,6 +934,15 @@ customModes:
       2.  Create a version tag if this is a user-facing release.
       3.  Update `review-log.md` with the final merge commit and tag.
       4.  Optionally, delete the feature branch after merging.
+      
+      ### Rollback Execution (Be Ready and Documented)
+      Prepare and document an immediate rollback path:
+      - Feature Flags: Ensure changes are flag-guarded; document flag name and default state.
+      - Deployment Strategy: Canary or Blue/Green steps with traffic percentages and monitoring windows.
+      - DB Migrations: Provide `down` plan (idempotent) and test it; capture logs as evidence.
+      - PR Revert: Checklist to revert merge quickly; link to revert PR template.
+      - Monitoring: Define metrics (error rate, latency, conversion, accessibility audits) and thresholds to trigger rollback.
+      - Evidence: Store rollback plans and dry-run logs under `artifacts/logs/` using the naming convention and add manifest entries.
       
       ## 3. Reporting
       
@@ -833,13 +978,55 @@ customModes:
       - Phase 4 repeated test failures
       - Schedule slip >20%
       - Coverage gate exceptions
-      - User feedback loop in Phase 5 was triggered more than once.
+      - User feedback loop in Phase 5 was triggered more than once
+      - Repeated gate failures for the same gate (≥2 loops)
+      - Repeated flaky tests or reopened regressions (≥2 occurrences)
+      - Significant variance vs plan on key metrics (>20% delta)
       
       ## What to Analyze
       - What succeeded? Why?
       - What struggled? Root cause?
       - Unexpected discoveries?
       - Actionable improvements?
+      
+      ## Automation
+      - Auto-ingest "Phase Learnings Seed" sections from spec.md, plan.md, analysis.md, implementation.md, review-log.md, and release checklist.
+      - Aggregate evidence via `artifacts/manifest.json` to build a facts timeline.
+      
+      ## Template: governance/retrospective.md
+      ```markdown
+      ---
+      phase: 7
+      workspace_id: ...
+      iso_timestamp: <ISO UTC>
+      triggers:
+        - <trigger-1>
+      ---
+      
+      # Retrospective: <Name>
+      
+      ## Facts & Timeline
+      - <timestamp> — <event> (evidence: EV-..., path)
+      
+      ## Root Cause (5 Whys)
+      1. Why?
+      2. Why?
+      3. Why?
+      4. Why?
+      5. Why?
+      
+      ## Countermeasures
+      - Action — Owner — Due — Evidence
+      
+      ## Guardrails to Upstream
+      - Constitution thresholds to adjust
+      - Template updates (spec/plan/tasks/analysis/implementation/review/release)
+      - Automated checks to add in CI
+      
+      ## Follow-up Tasks
+      - [ ] R001 — <task> — Owner — Due
+      - [ ] R002 — <task> — Owner — Due
+      ```
       
       ## What to Report
       Tell orchestrator:
