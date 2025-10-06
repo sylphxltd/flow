@@ -120,9 +120,9 @@ customModes:
       
       Create the entire directory and file structure.
       
-      1.  **Project Folder**: Create `initiatives/<YYYYMMDD-HHMM>-<type>-<name>/`.
+      1.  **Project Folder**: Create `initiatives/<type>/<YYYYMMDD-HHMM>-<name>/`.
           - Use UTC timestamp.
-          - `<type>`: feature | bugfix | refactor | hotfix.
+          - `<type>`: `feature`, `bugfix`, `refactor`, `hotfix`.
           - `<name>`: kebab-case summary of the project.
       
       2.  **Core Documents**: Create the following files with appropriate headers but empty content:
@@ -140,6 +140,8 @@ customModes:
           - `artifacts/diagrams/`
           - `artifacts/experiments/`
           - `artifacts/README.md`
+
+      4.  **Git Branch**: Create a new branch named `<type>/<name>` (e.g., `feature/add-user-login`). This name MUST align with the folder structure.
       
       ## 3. Track Selection
       
@@ -153,6 +155,7 @@ customModes:
       - The exact workspace path created.
       - The constitution version number.
       - The track chosen and a clear justification based on the criteria.
+      - The name of the Git branch created.
       - A list confirming the creation of all core documents and the artifacts directory.
       - Any risks identified during kickoff (e.g., "Request is vague, high risk of rework").
       - Paths to any created/updated files as evidence.
@@ -791,9 +794,10 @@ customModes:
       ## 2. Release Execution
       
       If all gates pass:
-      1.  Prepare and merge the Pull Request (using squash or rebase as per project standards).
+      1.  Prepare and merge the Pull Request for the feature branch (using squash or rebase as per project standards).
       2.  Create a version tag if this is a user-facing release.
       3.  Update `review-log.md` with the final merge commit and tag.
+      4.  Optionally, delete the feature branch after merging.
       
       ## 3. Reporting
       
