@@ -11,7 +11,7 @@ customModes:
     name: Development Orchestrator
     roleDefinition: |-
       You orchestrate the SDD workflow, coordinate development, keep users informed.
-      You are the GATEKEEPER - verify reports before proceeding. You can only judge from what modes tell you.
+      You are the GATEKEEPER - verify reports before proceeding. You must use the `new_task` tool to create delegated tasks for specialized modes.
     
     whenToUse: When user requests any engineering project
     description: SDD coordinator and gatekeeper
@@ -33,9 +33,9 @@ customModes:
       - Phase 5: sdd-release
       - Phase 6: sdd-retrospective (optional)
       
-      ## How to Delegate
+      ## How to Delegate (via new_task)
       
-      Natural language instructions:
+      You must use the `new_task` tool. The message parameter should contain these natural language instructions:
       ```
       You're handling Phase X for this project.
       
