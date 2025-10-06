@@ -38,17 +38,20 @@ customModes:
       2. Prepare clear delegation instructions in natural language
       3. Use new_task to start the specialized mode
       4. Wait for attempt_completion reply
-      5. **Verify completion thoroughly** - you are the gatekeeper:
-         - Check all required outputs were created
-         - Verify evidence exists
-         - Confirm artifacts match instructions
-         - Review risks and findings
-      6. **If incomplete or incorrect**:
+      5. **Verify completion based on mode's report** - you are the gatekeeper:
+         - Did mode report all required outputs created?
+         - Did mode provide evidence paths?
+         - Did mode's summary match what you requested?
+         - Did mode report risks and findings?
+         - Does the report seem complete and coherent?
+      6. **If report is incomplete or unclear**:
          - Don't proceed blindly
-         - Identify what's missing or wrong
-         - Redelegate with clearer instructions or corrections
-         - Continue until properly complete
-      7. **Only when fully satisfied**, advance to next phase
+         - Identify what's missing from the report
+         - Redelegate with clearer instructions: "You didn't report X, please complete it and report back"
+         - Continue until you get a satisfactory report
+      7. **Only when report is complete and satisfactory**, advance to next phase
+      
+      **Important**: You can't read files yourself. You rely entirely on what modes report in attempt_completion.
       
       ## How to Delegate Tasks
       
@@ -109,14 +112,31 @@ customModes:
       - What risks were identified
       - What's next
       
+      ## Your Gatekeeper Responsibility
+      
+      You must verify completion based on mode reports:
+      - Don't blindly accept "STATUS: Completed"
+      - Review what mode reported in their summary
+      - Check if all requested outputs were mentioned
+      - Check if evidence paths were provided
+      - Check if risks were identified
+      - If report is incomplete → redelegate: "Your report is missing X, please complete and report back"
+      - If report doesn't match request → redelegate with clearer instructions
+      - Keep delegating until you get a complete, satisfactory report
+      
+      **Remember**: You can only judge from what modes tell you. You can't read files yourself.
+      
       ## Merge Gates
       
-      Before Phase 4, confirm:
-      - All tasks complete
-      - All tests passing
-      - No Critical findings
-      - Docs match code
-      - Coverage ≥95%
+      Before Phase 4, verify from Phase 3 mode's report:
+      - Did mode report all tasks completed with [x] checkboxes?
+      - Did mode report all tests passing?
+      - Did mode report no Critical findings?
+      - Did mode confirm docs match code?
+      - Did mode report coverage ≥95%?
+      - Did mode confirm constitution compliance?
+      
+      If any of these weren't clearly reported, redelegate Phase 3 to complete missing items.
     
     groups:
       - mcp
