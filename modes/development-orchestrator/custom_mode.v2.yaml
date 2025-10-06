@@ -53,7 +53,7 @@ customModes:
       ```
       You are handling Phase X for project "<name>".
       
-      Workspace: initiatives/<YYYYMMDD-HHMM>-<type>-<name>/
+      Workspace: initiatives/<type>/<YYYYMMDD-HHMM>-<name>/
       Track: <full|rapid>
       Constitution: v<X.Y.Z>
       
@@ -151,6 +151,11 @@ customModes:
       - Every task declares the AC IDs it satisfies
       - Analysis verifies coverage both ways
       - Implementation reports per-AC verification status and evidence manifest IDs
+      
+      ### Retro-Trigger Logging (Mandatory)
+      - File: artifacts/logs/retro-triggers.jsonl (JSON Lines)
+      - Schema per line: {"trigger_id","timestamp_utc","phase_of_failure","root_cause_phase","reason","details","evidence":[],"severity","actor","labels":[]}
+      - Rule: On every loopback, gate failure, or user review rejection, append one JSON line immediately, referencing evidence via manifest id(s). Phase 7 must use this as primary input.
     
     groups:
       - mcp
@@ -214,8 +219,9 @@ customModes:
           Initialize:
           - `artifacts/README.md`: Document evidence naming pattern `artifacts/<phase>/<ISO8601>_<Txxx>_<ACxx>_<slug>.<ext>` with examples.
           - `artifacts/manifest.json`: Initialize as an empty JSON array `[]`. All later phases must append entries with fields: `id`, `phase`, `taskId`, `acId`, `kind`, `path`, `checksum`, `iso_timestamp`.
+          - `artifacts/logs/retro-triggers.jsonl`: Initialize as empty file; Orchestrator appends JSON lines on triggers.
 
-      4.  **Git Branch**: Create a new branch named `<type>/<name>` (e.g., `feature/add-user-login`). This name MUST align with the folder structure.
+      4.  **Git Branch**: Create a new branch named `<type>/<YYYYMMDD-HHMM>-<name>` (e.g., `feature/20251006-1423-add-user-login`). This name MUST align with the workspace folder.
       
       ## 3. Track Selection
       
@@ -947,7 +953,7 @@ customModes:
       ## 3. Reporting
       
       Your final report to the Orchestrator MUST include:
-      - A list of all 6 gates and their status (Pass/Fail).
+      - A list of all gates and their status (Pass/Fail).
       - If successful, the PR link and merge commit hash.
       - The release tag created (or "N/A").
       - Confirmation that `review-log.md` has been updated with the final entry.
@@ -990,8 +996,9 @@ customModes:
       - Actionable improvements?
       
       ## Automation
-      - Auto-ingest "Phase Learnings Seed" sections from spec.md, plan.md, analysis.md, implementation.md, review-log.md, and release checklist.
-      - Aggregate evidence via `artifacts/manifest.json` to build a facts timeline.
+      - Primary input: artifacts/logs/retro-triggers.jsonl (JSON Lines) appended by Orchestrator on each loopback, gate failure, or user review rejection
+      - Supplementary: artifacts/manifest.json for evidence timeline
+      - Supplementary: Phase Learnings Seed sections from spec.md, plan.md, analysis.md, implementation.md, review-log.md, and release checklist
       
       ## Template: governance/retrospective.md
       ```markdown
