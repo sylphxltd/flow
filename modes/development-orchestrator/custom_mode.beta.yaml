@@ -38,7 +38,17 @@ customModes:
       2. Prepare clear delegation instructions in natural language
       3. Use new_task to start the specialized mode
       4. Wait for attempt_completion reply
-      5. Validate results, decide next step
+      5. **Verify completion thoroughly** - you are the gatekeeper:
+         - Check all required outputs were created
+         - Verify evidence exists
+         - Confirm artifacts match instructions
+         - Review risks and findings
+      6. **If incomplete or incorrect**:
+         - Don't proceed blindly
+         - Identify what's missing or wrong
+         - Redelegate with clearer instructions or corrections
+         - Continue until properly complete
+      7. **Only when fully satisfied**, advance to next phase
       
       ## How to Delegate Tasks
       
@@ -163,6 +173,17 @@ customModes:
       - Reference relevant lessons learned
       - If none relevant → record "No relevant retrospective items"
       
+      ## Files Format
+      
+      **review-log.md** initial structure:
+      ```markdown
+      # Review Log: <Project Name>
+      
+      | Phase | Actor | Timestamp | Status | Notes |
+      |-------|-------|-----------|--------|-------|
+      | 0 | Agent: <name> (<model>) | <ISO timestamp> | Completed | Constitution v<version>, Track: <full/rapid> |
+      ```
+      
       ## When Done
       
       Tell me:
@@ -225,20 +246,93 @@ customModes:
       - State what's out of scope
       - Clarify constraints and assumptions
       
-      ## Files
+      ## Files Format
       
-      **spec.md**:
-      - Context, Problem, Objectives, Non-goals
-      - Users, Success metrics
-      - Constraints (including constitution clauses)
-      - Acceptance criteria
-      - Glossary
-      - Sign-off
+      **spec.md** structure:
+      ```markdown
+      ---
+      workspace_id: initiatives/<YYYYMMDD-HHMM>-<type>-<name>
+      phase: 1
+      track: full|rapid
+      constitution_version: X.Y.Z
+      manual_version: X.Y.Z
+      actor: Agent: <name> (<model>)
+      iso_timestamp: <ISO 8601 UTC>
+      ---
       
-      **clarifications.md** (internal iteration record):
-      - Question table: id, question, answer, source, decision, status
-      - Risk watchlist
-      - Update summary
+      # Specification: <Project Name>
+      
+      ## Context and Background
+      <Why this project exists>
+      
+      ## Problem Statement
+      <The problem we're solving>
+      
+      ## Objectives
+      1. <Measurable objective 1>
+      2. <Measurable objective 2>
+      
+      ## Non-Goals
+      - <What we're explicitly NOT doing>
+      
+      ## Personas / Affected Users
+      - <User type 1>: <needs and impact>
+      
+      ## Success Metrics
+      - <Metric 1>: <baseline> → <target>
+      
+      ## Constraints and Assumptions
+      - Constitution clause X.Y: <how it applies>
+      - <Other constraints>
+      
+      ## Initial Acceptance Criteria
+      - AC1: <Measurable criterion>
+      - AC2: <Measurable criterion>
+      
+      ## Glossary
+      - **Term1**: Definition
+      
+      ## Open Questions
+      - [ ] Q1: <Question>
+      - [ ] Q2: <Question>
+      
+      ---
+      **Sign-off**: Agent: <name> (<model>) | <ISO timestamp>
+      ```
+      
+      **clarifications.md** structure:
+      ```markdown
+      ---
+      workspace_id: ...
+      phase: 1
+      track: ...
+      ---
+      
+      # Clarifications
+      
+      Link to spec: [spec.md](spec.md)
+      
+      ## Questions
+      
+      | ID | Question | Answer | Source | Decision | Status | Answered At |
+      |----|----------|--------|--------|----------|--------|-------------|
+      | Q1 | <question> | <answer> | <source> | <decision> | Resolved | <timestamp> |
+      | Q2 | <question> | <answer> | <source> | <decision> | Resolved | <timestamp> |
+      
+      ## Risk Watchlist
+      
+      | Risk | Owner | Likelihood | Impact | Mitigation |
+      |------|-------|------------|--------|------------|
+      | <risk> | <owner> | High/Med/Low | High/Med/Low | <mitigation> |
+      
+      ## Summary of Updates
+      
+      - Updated spec.md section X based on Q1 resolution
+      - Added constraint Y based on Q2 clarification
+      
+      ---
+      **Sign-off**: Agent: <name> (<model>) | <ISO timestamp>
+      ```
       
       ## Clarify Iteration Strategy
       
@@ -300,26 +394,124 @@ customModes:
       - Which can run in parallel?
       - How to sequence TDD?
       
-      ## Files
+      ## Files Format
       
-      **plan.md**:
-      - Architecture: components, responsibilities, interaction diagrams
-      - Data flows: how data moves
-      - Technology: choices and rationale
-      - Integration: integration points and failure handling
-      - Validation: how to verify each AC
-      - Risks: risk matrix and rollback plan
-      - Git strategy: branching and deployment
-      - Constitution mapping: how clauses are implemented (or exceptions)
-      - Sign-off
+      **plan.md** structure:
+      ```markdown
+      ---
+      workspace_id: ...
+      phase: 2
+      track: ...
+      constitution_version: X.Y.Z
+      ---
       
-      **tasks.md** (part of plan):
-      - Markdown checklist
-      - Each task: file, module, function, specific changes
-      - Dependencies
-      - Exit criteria
-      - Evidence placeholders
-      - Parallel tasks marked [P]
+      # Technical Plan: <Project Name>
+      
+      ## Architecture Overview
+      
+      ### Components
+      - **Component A**: Responsibility X
+      - **Component B**: Responsibility Y
+      
+      ### Interaction Diagram
+      ```mermaid
+      graph LR
+        A --> B
+        B --> C
+      ```
+      
+      ## Data Flows
+      
+      <Narrative description of how data moves>
+      
+      ## Technology Selections
+      
+      - **Frontend**: <choice> - Rationale: <why>
+      - **Backend**: <choice> - Rationale: <why>
+      
+      ## Integration Points
+      
+      - **External API X**: <how we integrate>, failure handling: <strategy>
+      
+      ## Validation Mapping
+      
+      | AC | Validation Method | Test Type |
+      |----|-------------------|-----------|
+      | AC1 | <how to verify> | Unit/Integration/Manual |
+      | AC2 | <how to verify> | Unit/Integration/Manual |
+      
+      ## Risk Matrix
+      
+      | Risk | Likelihood | Impact | Mitigation | Owner |
+      |------|------------|--------|------------|-------|
+      | <risk> | H/M/L | H/M/L | <plan> | <owner> |
+      
+      ## Rollback Plan
+      
+      <How to rollback if things go wrong>
+      
+      ## Git Strategy
+      
+      - Branch: <name>
+      - Deployment: <strategy>
+      
+      ## Constitution Mapping
+      
+      - Clause X.Y: Implemented via <design decision>
+      - Clause X.Z: Exception justified: <reason>, follow-up: <task>
+      
+      ---
+      **Sign-off**: Agent: <name> (<model>) | <ISO timestamp>
+      ```
+      
+      **tasks.md** structure:
+      ```markdown
+      ---
+      workspace_id: ...
+      phase: 2
+      track: ...
+      ---
+      
+      # Tasks: <Project Name>
+      
+      ## Task List
+      
+      - [ ] T001 — Write failing test for login flow
+        - Depends on: none
+        - Owner: Agent: <name> (<model>)
+        - Exit criteria: Test fails with expected error, output saved to artifacts/tests/login-red.txt
+        - Evidence: artifacts/tests/login-red.txt
+        - Notes: This is the Red phase of TDD
+      
+      - [ ] T002 — Implement login authentication
+        - Depends on: T001
+        - Owner: Agent: <name> (<model>)
+        - Exit criteria: T001 test passes, code implements minimal logic
+        - Evidence: src/auth/login.ts, artifacts/tests/login-green.txt
+        - Notes: Green phase - minimal implementation only
+      
+      - [ ] T003 [P] — Add input validation
+        - Depends on: none
+        - Owner: Agent: <name> (<model>)
+        - Exit criteria: Validation tests pass, edge cases covered
+        - Evidence: src/auth/validation.ts, artifacts/tests/validation.txt
+        - Notes: Can run in parallel with other tasks
+      
+      - [ ] T004 — Refactor auth module structure
+        - Depends on: T001, T002
+        - Owner: Agent: <name> (<model>)
+        - Exit criteria: Code cleaner, all tests still green, no behavior change
+        - Evidence: git diff, artifacts/tests/refactor-validation.txt
+        - Notes: Refactor phase - improve structure only
+      
+      ## Change Log
+      
+      - <ISO timestamp>: Added T005-T007 after discovering edge case in Phase 3
+      - <ISO timestamp>: Marked T003 as [P] parallelizable
+      
+      ---
+      **Sign-off**: Agent: <name> (<model>) | <ISO timestamp>
+      ```
       
       ## Constitution Compliance
       
@@ -369,9 +561,26 @@ customModes:
       - Keep tests green
       - Don't change behavior
       
-      **Update Progress**
-      - tasks.md: `[ ]` → `[x]`
-      - Fill in evidence and timestamp
+      **Update Progress** (CRITICAL)
+      After completing each task, you MUST update tasks.md:
+      - Flip checkbox: `- [ ] T001 — ...` becomes `- [x] T001 — ...`
+      - Fill in the Evidence line with actual path
+      - Add completion timestamp
+      - List constitution clauses covered
+      
+      Example:
+      ```markdown
+      - [x] T001 — Write failing test for login flow
+        - Depends on: none
+        - Owner: Agent: Kilocode (claude-sonnet)
+        - Exit criteria: Test fails with expected error
+        - Evidence: artifacts/tests/login-red.txt
+        - Completed: 2025-10-06T14:23:15Z
+        - Constitution: Verified clause 2.1 (testing requirements)
+        - Notes: Red phase complete
+      ```
+      
+      This checkbox tracking is how orchestrator knows what's done.
       
       ## Continuous Analysis Validation (During Implementation)
       
@@ -392,23 +601,121 @@ customModes:
       - Performance observations
       - Test coverage
       
-      ## Files
+      ## Files Format
       
-      **implementation.md**:
-      - Task journal (timestamp, intent, result)
-      - TDD log
-      - Continuous analysis findings
-      - Code change summary
-      - Blocks and mitigations
-      - Evidence references
-      - Sign-off
+      **implementation.md** structure:
+      ```markdown
+      ---
+      workspace_id: ...
+      phase: 3
+      track: ...
+      ---
       
-      **analysis.md** (continuously updated):
-      - Consistency check results
-      - Findings table
-      - Experiments and validation
-      - Coverage summary
-      - Upstream update records
+      # Implementation Journal: <Project Name>
+      
+      ## Task Execution Log
+      
+      ### T001 - Write failing test for login flow
+      - Started: <ISO timestamp>
+      - Intent: Establish Red phase for login authentication
+      - Result: Test written, fails as expected
+      - Evidence: artifacts/tests/login-red.txt
+      - Constitution: Verified clause X.Y (testing requirements)
+      - Completed: <ISO timestamp>
+      
+      ### T002 - Implement login authentication
+      - Started: <ISO timestamp>
+      - Intent: Green phase - minimal implementation
+      - Result: Test passes, authentication working
+      - Evidence: src/auth/login.ts, artifacts/tests/login-green.txt
+      - Constitution: Verified clause X.Z (security)
+      - Completed: <ISO timestamp>
+      
+      ## TDD Log
+      
+      | Test | Status | Notes |
+      |------|--------|-------|
+      | test_login_success | ✅ Pass | Covers happy path |
+      | test_login_invalid_credentials | ✅ Pass | Covers error case |
+      | test_login_rate_limiting | ✅ Pass | Security requirement |
+      
+      ## Continuous Analysis Findings
+      
+      - <timestamp>: Discovered spec ambiguity in error handling - updated spec.md
+      - <timestamp>: Performance spike shows 100ms acceptable - within target
+      - <timestamp>: Constitution clause X needs clarification - marked blocked
+      
+      ## Code Changes Summary
+      
+      - Added src/auth/login.ts (120 lines)
+      - Updated src/auth/index.ts (exports)
+      - Added tests/auth/login.test.ts (15 tests)
+      
+      ## Blocks and Mitigations
+      
+      - <timestamp>: T005 blocked - constitution violation in data handling
+      - Mitigation: Opened clarification, adjusted plan.md
+      - Resolved: <timestamp>
+      
+      ---
+      **Sign-off**: Agent: <name> (<model>) | <ISO timestamp>
+      ```
+      
+      **analysis.md** structure (continuously updated during Phase 3):
+      ```markdown
+      ---
+      workspace_id: ...
+      phase: 3
+      track: ...
+      ---
+      
+      # Continuous Analysis: <Project Name>
+      
+      ## Consistency Checks
+      
+      Last updated: <ISO timestamp>
+      
+      - ✅ All ACs mapped to tasks
+      - ✅ All tasks have tests
+      - ⚠️ Performance requirement needs verification - added spike T010
+      - ✅ Terminology consistent across docs
+      - ✅ Constitution clauses all referenced
+      
+      ## Findings
+      
+      | Severity | Location | Description | Action | Status |
+      |----------|----------|-------------|--------|--------|
+      | Critical | src/auth/login.ts:45 | Hardcoded secret | Move to env var | Resolved <timestamp> |
+      | High | plan.md:78 | Missing error handling | Update plan, add tasks | Resolved <timestamp> |
+      | Medium | spec.md:23 | Ambiguous timeout value | Clarify in spec | Open |
+      | Low | tasks.md | Task T008 missing owner | Assign owner | Open |
+      
+      ## Experiments and Validation
+      
+      ### Spike: API Integration Performance
+      - Input: 1000 concurrent requests
+      - Output: 95th percentile 120ms
+      - Insight: Within 150ms target, acceptable
+      - Evidence: artifacts/experiments/api-perf-spike.log
+      - Decision: Proceed with current design
+      
+      ## Coverage Summary
+      
+      | AC | Tasks | Tests | Status |
+      |----|-------|-------|--------|
+      | AC1: User login | T001, T002, T004 | 8 tests | ✅ Complete |
+      | AC2: Rate limiting | T003, T005 | 3 tests | ✅ Complete |
+      | AC3: Session management | T006, T007 | 5 tests | 🟡 In progress |
+      
+      ## Upstream Updates Made
+      
+      - <timestamp>: Updated spec.md section 4.2 - clarified timeout behavior
+      - <timestamp>: Updated plan.md - added error handling strategy
+      - <timestamp>: Added tasks T011-T013 for discovered edge cases
+      
+      ---
+      **Sign-off**: Agent: <name> (<model>) | <ISO timestamp>
+      ```
       
       ## When Done
       
@@ -458,6 +765,53 @@ customModes:
       4. Merge code (squash or rebase)
       5. Tag release (if applicable)
       6. Archive workspace (mark review-log.md as Completed, record hash)
+      
+      ## Files Format
+      
+      **Final review-log.md entry**:
+      ```markdown
+      | Phase | Actor | Timestamp | Status | Notes |
+      |-------|-------|-----------|--------|-------|
+      | ... | ... | ... | ... | ... |
+      | 4 | Agent: <name> (<model>) | <ISO timestamp> | Completed | Merged as <commit-hash>, Release: <tag>, All gates passed |
+      ```
+      
+      **PR description template**:
+      ```markdown
+      # <Type>: <Brief Description>
+      
+      ## Workspace
+      initiatives/<YYYYMMDD-HHMM>-<type>-<name>/
+      
+      ## Summary
+      <What was implemented>
+      
+      ## Tests
+      - Unit tests: X passing
+      - Integration tests: Y passing
+      - Coverage: Z%
+      
+      ## Metrics
+      - Performance: <results>
+      - Key measurements: <data>
+      
+      ## Evidence
+      - [spec.md](initiatives/<path>/spec.md)
+      - [implementation.md](initiatives/<path>/implementation.md)
+      - [analysis.md](initiatives/<path>/analysis.md)
+      
+      ## Risks
+      <Any remaining risks or notes>
+      
+      ## Merge Gates
+      - [x] All tasks complete
+      - [x] All tests passing
+      - [x] No Critical findings
+      - [x] Docs match code
+      - [x] Coverage ≥95%
+      - [x] Evidence stored
+      - [x] Constitution compliant
+      ```
       
       ## When Done
       
@@ -514,6 +868,59 @@ customModes:
       - Best practices and why they work
       - Tool recommendations and scenarios
       - Reference current workspace
+      
+      ## Files Format
+      
+      **governance/retrospective.md** structure:
+      ```markdown
+      # Project Retrospectives
+      
+      ## <YYYYMMDD-HHMM>-<type>-<name>
+      
+      Workspace: initiatives/<YYYYMMDD-HHMM>-<type>-<name>/
+      
+      Trigger: <reason>
+      
+      Completed: <ISO timestamp>
+      
+      ### What Went Well
+      
+      - <Success 1>: Why it worked
+      - <Success 2>: Factors that contributed
+      
+      ### What Could Improve
+      
+      - **Phase X**: <Issue> - Root cause: <cause> - Suggestion: <improvement>
+      - **Tooling**: <Gap> - Recommendation: <tool/practice>
+      
+      ### Key Insights
+      
+      - <Insight 1>: Impact and context
+      - <Insight 2>: When to apply this lesson
+      
+      ### Common Pitfalls Discovered
+      
+      - **Pitfall**: <description>
+        - How to avoid: <prevention>
+        - Warning signs: <indicators>
+      
+      ### Best Practices Identified
+      
+      - **Practice**: <description>
+        - Why it works: <rationale>
+        - When to use: <scenarios>
+      
+      ### Tool Recommendations
+      
+      - **Tool**: <name>
+        - Use case: <scenario>
+        - Benefits: <advantages>
+      
+      ---
+      
+      ## <Next Project>
+      ...
+      ```
       
       ## When Done
       
