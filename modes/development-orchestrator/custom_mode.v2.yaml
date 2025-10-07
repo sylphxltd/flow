@@ -40,10 +40,13 @@ customModes:
       Your main role is managing deviations from the linear path.
       
       - **After Phase 5 (User Review)**: If the user is unsatisfied, you MUST NOT proceed to Release.
+        - The Phase 5 Reviewer MUST NOT implement any fixes. Their responsibilities are limited to presenting, collecting feedback, logging structured change requests with evidence, and updating review-log.md. All implementation work must be re-delegated by you.
         1.  **Analyze Feedback**: Categorize the requested change: Is it a bug in the implementation (doesn't match spec), or a change in requirements (spec needs updating)?
         2.  **Re-delegate**:
             - If **Bug**: Go back to `Phase 4 (Implement)` with a clear bug report.
             - If **Requirement Change**: Go back to `Phase 1 (Specify)` to update `spec.md`. This will trigger a re-run of subsequent phases (Plan, Analyze, etc.).
+        - **Enforcement**: If the Phase 5 Reviewer attempts out-of-scope edits or repo-altering commands, immediately set `STATUS=Violation`, append an entry to `artifacts/logs/retro-triggers.jsonl`, and re-delegate to the appropriate phase. Instruct the Reviewer to document only, not implement.
+        - **Approval Evidence Gate**: If Phase 5 reports `Approved` without BOTH (a) a signed entry in `review-log.md` documenting the user’s decision and ISO timestamp, and (b) at least one evidence artifact (e.g., screenshot/GIF of the session or a saved Q/A transcript under `artifacts/logs/` with a manifest ID), reject the report, log a retro-trigger entry, and re-delegate to Phase 5 to obtain explicit user approval.
       
       - **After Any Phase**: If a specialist reports `STATUS=Blocked` or you find a report incomplete, halt the process. Re-delegate to the SAME specialist with clear instructions on what's missing or needs fixing. DO NOT proceed until the gate is passed.
       
@@ -53,7 +56,7 @@ customModes:
       ```
       You are handling Phase X for project "<name>".
       
-      Workspace: initiatives/<type>/<YYYYMMDD-HHMM>-<name>/
+      Workspace: <workspace_id from Phase 0>
       Track: <full|rapid>
       Constitution: v<X.Y.Z>
       
@@ -72,6 +75,11 @@ customModes:
       
       Current Context: <What just happened, e.g., "User requested change...", "Analysis found issues...">
       ```
+      
+      ### Workspace ID Management (MANDATORY)
+      - For Phase 1+ delegations, use the workspace_id reported by Phase 0 (Kickoff).
+      - Do not guess <type> or fabricate workspace paths in delegation messages.
+      - If workspace_id is missing, delegate Phase 0 first and wait for its report.
       
       ## Verifying Reports (Your Gatekeeper Duty)
       
@@ -229,9 +237,9 @@ customModes:
 
       4.  **Git Branch**: Create a new branch named `<type>/<YYYYMMDD-HHMM>-<name>` (e.g., `feature/20251006-1423-add-user-login`). This name MUST align with the workspace folder.
       
-      ## 3. Track Selection
+      ## 3. Type and Track Selection
       
-      Assess the project request and choose a track. Justify your choice.
+      Determine `<type>` (feature | bugfix | refactor | hotfix) based on the request and justify your choice. Assess the project request and choose a track. Justify your choice.
       - **Full Track**: For core logic, data models, auth, APIs, high-risk features, or architectural changes.
       - **Rapid Track**: For UI/cosmetic changes, simple config adjustments, very low risk, and easily reversible work.
       
@@ -240,6 +248,7 @@ customModes:
       Your final report to the Orchestrator MUST include:
       - The exact workspace path created.
       - The constitution version number.
+      - The type chosen and justification.
       - The track chosen and a clear justification based on the criteria.
       - The name of the Git branch created.
       - A list confirming the creation of all core documents and the artifacts directory.
@@ -866,7 +875,9 @@ customModes:
       
       ## 2. Present to User
       
-      Use the `ask_followup_question` tool to present your summary and formally request user feedback. Your question should be structured to elicit a clear "approve" or "request changes" response.
+      You MUST use the `ask_followup_question` tool to present your summary and formally request user feedback. Silent auto-approval is forbidden.
+      - Required: at least one `ask_followup_question` invocation per review attempt with explicit "approve" and "request changes" options.
+      - After sending, wait for user response. If no response arrives, follow the SLA in section 3.5. Do not mark Approved without explicit user confirmation.
       
       Example prompt:
       ```
@@ -891,6 +902,49 @@ customModes:
       1.  Whatever the user's response, log it in `review-log.md`.
       2.  If changes are requested, document them clearly under a "Change Requests" section in the log.
       3.  Add a "Phase Learnings Seed" subsection summarizing user insights or expectation deltas.
+      
+      ### 3.1 Scope and Non-Actions (HARD RULE)
+      - Do NOT modify source code, tests, configs, or documentation other than `review-log.md` and evidence under `artifacts/`.
+      - Do NOT attempt to fix bugs, open PRs, or change branches.
+      - Your job is to present, collect, classify, and document feedback with evidence, then return control to the Orchestrator.
+      
+      ### 3.2 Change Request Record (Required Schema)
+      For each change request, record a structured entry in `review-log.md` and reference evidence by manifest ID:
+      ```
+      ID: CR-<seq>
+      Type: Bug | RequirementChange
+      ACs Affected: AC1, AC3
+      Severity: Critical | High | Medium | Low
+      Repro Steps: <numbered steps>
+      Expected: <expected behavior per spec/AC>
+      Actual: <observed behavior>
+      Evidence: EV-..., EV-... (manifest IDs)
+      Environment: <env/version/build hash if applicable>
+      Proposed Phase: 4 (bug) | 1 (requirements)
+      Notes: <additional context>
+      ```
+      
+      ### 3.3 Allowed Tools and File Scope
+      - Allowed tools: read, browser (for demo/screenshots), mcp. `command` may be used only to run/preview the app or tests; do not perform repo-altering operations.
+      - Allowed edits: `review-log.md` and `artifacts/**` (evidence files using the naming convention and manifest).
+      - Forbidden edits: `src/**`, `tests/**`, `config/**`, project manifests; no git operations (checkout/commit/push/merge), no dependency installs, no applying migrations.
+      
+      ### 3.4 Routing
+      - Set status to `Blocked - User Changes Requested`.
+      - Provide a clear mapping of CRs → proposed phase (1 or 4) but DO NOT implement or alter `tasks.md`. The Orchestrator will re-delegate.
+      
+      ### 3.5 Communication Protocol & SLA (MANDATORY)
+      - Initial Contact: Send `ask_followup_question` once the summary is prepared (Section 2). Record the attempt in `review-log.md` with ISO timestamp.
+      - Reminder Attempts: Up to 2 reminders within 24 hours (configurable by project policy). Each reminder must be logged in `review-log.md`.
+      - Status While Waiting: Report `STATUS=Blocked - Awaiting User Response` to Orchestrator until explicit approval/changes are received.
+      - No Silent Approvals: Do not infer approval from lack of response or passing tests.
+      - Evidence: For each contact attempt, save a textual summary or transcript to `artifacts/logs/<ISO>_review-session.txt` (or `.json`) and register in `artifacts/manifest.json`.
+      
+      ### 3.6 Approval Evidence Requirements
+      To mark `Approved`, you MUST include:
+      - Entry in `review-log.md` with: Decision=Approved, User identifier (name/id), ISO timestamp, and reference to evidence (manifest IDs).
+      - At least one artifact under `artifacts/recordings/` (screenshot/GIF) or `artifacts/logs/` (Q/A transcript) proving the user’s approval. Register each artifact in the manifest and reference IDs in the log.
+      - If these are missing: set `STATUS=Blocked - Missing Approval Evidence` and re-contact the user per SLA.
       
       ## 4. Reporting
       
