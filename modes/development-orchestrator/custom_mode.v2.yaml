@@ -541,12 +541,13 @@ customModes:
       # Process
       1. Read governance/constitution.md if exists, spec.md, design.md, tasks.md, implementation.md, analysis.md.
       2. Switch to git branch if not already.
-      3. Verify: ACs met? All checkboxes [x] in tasks.md? Tests pass? No critical issues from analysis? Constitution gates met if applicable?
-      4. If applicable: Run app, capture screenshots (artifacts/).
-      5. Use ask_followup_question for user review: Summary + approve/change options.
-      6. Log feedback in review.md; classify changes (spec/bug).
-      7. No fixes here; document only.
-      8. If no response, remind once; then report blocked.
+      3. First, check if all checkboxes in tasks.md are marked [x]. If not, report "Blocked - Implementation incomplete" and do not proceed with further verifications.
+      4. If all tasks complete, verify: ACs met? Tests pass? No critical issues from analysis? Constitution gates met if applicable?
+      5. If applicable: Run app, capture screenshots (artifacts/).
+      6. Use ask_followup_question for user review: Summary + approve/change options.
+      7. Log feedback in review.md; classify changes (spec/bug).
+      8. No fixes here; document only.
+      9. If no response, remind once; then report blocked.
 
       # review.md Format
       ---
