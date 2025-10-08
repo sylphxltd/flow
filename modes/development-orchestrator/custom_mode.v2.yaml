@@ -219,16 +219,18 @@ customModes:
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Done-When:
         - <workspace_id>/spec.md exists with:
-          - Objectives ≥ 1
-          - ACs are measurable and enumerated (AC1+)
-          - Constraints include constitution references if applicable
+          - User Scenarios & Testing: prioritized User Stories (P1, P2, P3...) each independently testable with Acceptance Scenarios (Given/When/Then)
+          - Functional Requirements (FR-xxx) with at most 3 [NEEDS CLARIFICATION] markers total
+          - Key Entities (if data involved)
+          - Success Criteria with measurable, technology-agnostic outcomes
+          - Constraints include constitution references if applicable (optional)
         - Status = "Ready - Initial spec" or "Partial - High ambiguities"
 
       # Process
       1. Read governance/constitution.md if exists; ensure spec complies (reference clauses in constraints if applicable).
       2. Create workspace directory based on Workspace ID from the task message if it doesn't exist.
       3. Create git branch named <git_branch> from the task message if it doesn't exist, then switch to it.
-      4. Create <workspace_id>/spec.md: Context, Objectives, ACs (measurable, AC1+), Constraints (include constitution refs if applicable), Glossary, Risks.
+      4. Create <workspace_id>/spec.md: User Scenarios & Testing (prioritized, independently testable, with Acceptance Scenarios), Edge Cases, Requirements (Functional Requirements FR-xxx with up to 3 [NEEDS CLARIFICATION] markers), Key Entities, Success Criteria (measurable), Constraints (constitution refs if applicable), Glossary (optional), Risks/Deferred.
       5. If ambiguities exist, record them in Risks; proceed without blocking.
       6. Save and report.
 
@@ -242,17 +244,49 @@ customModes:
       ---
       # Initial Specification: <Name>
 
-      ## Objectives
-      - Measurable goal 1
+      ## User Scenarios & Testing (mandatory)
+      ### User Story 1 - <Brief Title> (Priority: P1)
+      Why this priority: <value reason>
+      Independent Test: <how to verify independently>
+      Acceptance Scenarios:
+      1. Given <initial state>, When <action>, Then <expected outcome>
+      2. Given <initial state>, When <action>, Then <expected outcome>
 
-      ## Acceptance Criteria
-      - AC1: <measurable>
+      ### User Story 2 - <Brief Title> (Priority: P2)
+      Why this priority: <value reason>
+      Independent Test: <how to verify independently>
+      Acceptance Scenarios:
+      1. Given <initial state>, When <action>, Then <expected outcome>
 
-      ## Constraints
+      ### User Story 3 - <Brief Title> (Priority: P3)
+      Why this priority: <value reason>
+      Independent Test: <how to verify independently>
+      Acceptance Scenarios:
+      1. Given <initial state>, When <action>, Then <expected outcome>
+
+      ### Edge Cases
+      - What happens when <boundary condition>?
+      - How does system handle <error scenario>?
+
+      ## Requirements (mandatory)
+      ### Functional Requirements
+      - FR-001: System MUST <capability>
+      - FR-002: System MUST <capability>
+      - FR-00X: System MUST <capability> [NEEDS CLARIFICATION: <critical question>]  # max 3 markers total
+
+      ## Key Entities (if data)
+      - <Entity>: <what it represents; key attributes/relationships>
+
+      ## Success Criteria (mandatory)
+      ### Measurable Outcomes
+      - SC-001: <measurable metric>
+      - SC-002: <measurable metric>
+
+      ## Constraints (optional; include constitution refs if applicable)
       - Constitution: Coverage ≥95% (if applicable)
       - <other>
 
-      ## Glossary
+      ## Glossary (optional)
       - Term: Definition
 
       ## Risks/Deferred
@@ -481,6 +515,22 @@ customModes:
       ---
       # High-Level Design: <Project Name>
 
+      ## Technical Context
+      - Language/Version: <e.g., Python 3.11 / TypeScript 5.x / NEEDS CLARIFICATION>
+      - Primary Dependencies: <frameworks/libs / NEEDS CLARIFICATION>
+      - Storage: <PostgreSQL / files / N/A>
+      - Testing: <pytest / vitest / XCTest / NEEDS CLARIFICATION>
+      - Target Platform: <e.g., Linux server / iOS 15+ / Web / NEEDS CLARIFICATION>
+      - Performance Goals: <domain-specific throughput/latency>
+      - Constraints: <e.g., p95 <200ms, mem <100MB, offline-capable>
+      - Scale/Scope: <e.g., 10k users, 50 screens, etc.>
+
+      ## Constitution Check (summary)
+      - Gates: <tests/coverage/lint/perf> — <status or plan>
+
+      ## Project Structure (selected)
+      - Outline selected source/docs layout and key paths for this feature
+
       ## Requirements Evaluation
       - Functional: <summary>
       - Non-Functional: <key constraints>
@@ -590,7 +640,11 @@ customModes:
       # Process
       1. Read constitution (if exists), spec.md, and plan.md; ensure tasks comply (e.g., coverage, security).
       2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
-      3. Create tasks.md: granular tasks (T001+), dependencies, AC links, with checkboxes [ ] for progress; include constitution-related tasks (lint/type/perf gates) if applicable.
+      3. Create tasks.md organized by phases and User Stories:
+         - Phase 1: Setup (shared infrastructure)
+         - Phase 2: Foundational (blocking prerequisites)
+         - Phase 3+: One phase per User Story in priority order (P1 → P2 → P3), each independently implementable and testable (MVP slices)
+         - Include granular tasks (T001+), dependencies, AC/User Story links, and [ ] checkboxes; include constitution-related tasks (lint/type/perf gates) if applicable.
       4. Ensure TDD orientation (test-first) per plan.md Testing Strategy:
          - Generate test-first tasks for Mandatory categories (Foundational, P1, bugfix, API/data/security/critical rules) before implementation tasks.
          - For waiver-eligible P2+ low-risk items, include a "Add minimal regression test" sub-step under the same T-ID before Review.
@@ -614,15 +668,34 @@ customModes:
       ---
       # Tasks: <Name>
 
-      - [ ] T001: Desc | Deps: none | ACs: AC1 | Type: test
-      - [ ] T002: Desc | Deps: T001 | ACs: AC1 | Type: impl
-      - [ ] T003 [P]: Desc | Deps: none | ACs: AC2 | Type: test (parallelizable)
-      - [ ] T004: Lint/type checks | Deps: T002 | ACs: N/A | Type: verify (Per Constitution, e.g., coverage ≥95%, if applicable)
+      ## Phase 1: Setup (Shared Infrastructure)
+      - [ ] T001: Create project structure per plan.md | Deps: none | Story: N/A | Type: chore
+      - [ ] T002 [P]: Initialize toolchain (lint/type/format) | Deps: T001 | Story: N/A | Type: verify
+
+      ## Phase 2: Foundational (Blocking Prerequisites)
+      - [ ] T010: Setup database schema & migrations | Deps: T001 | Story: N/A | Type: impl
+      - [ ] T011 [P]: Implement auth framework | Deps: T001 | Story: N/A | Type: impl
+      - [ ] T012: API routing/middleware skeleton | Deps: T001 | Story: N/A | Type: impl
+
+      ## Phase 3: User Story 1 - <Title> (Priority: P1) — MVP
+      Independent Test: <how to verify independently>
+      Tests (Mandatory categories per policy):
+      - [ ] T020 [P] [US1]: Contract test for <endpoint> in tests/contract/<name>.<ext> | Deps: T012 | Type: test
+      - [ ] T021 [P] [US1]: Integration test for <journey> in tests/integration/<name>.<ext> | Deps: T012 | Type: test
+      Implementation:
+      - [ ] T022 [US1]: Model <Entity1> in <path> | Deps: T020 | Type: impl
+      - [ ] T023 [US1]: Service <Service> in <path> | Deps: T022 | Type: impl
+      - [ ] T024 [US1]: Endpoint/UI <Feature> in <path> | Deps: T023 | Type: impl
+
+      ## Phase 4: User Story 2 - <Title> (Priority: P2)
+      Independent Test: <how to verify independently>
+      Tests/Waiver:
+      - If Waiver (low-risk UI/content) is applied: include a "Add minimal regression test" sub-step under the same T-ID before Review approval.
 
       ## AC Coverage
-      | AC  | Tasks     |
-      |-----|-----------|
-      | AC1 | T001-T003 |
+      | Story/AC           | Tasks       |
+      |--------------------|------------|
+      | US1: AC1, AC2      | T020–T024  |
 
       ## Change Log
       - <ISO>: Initial tasks

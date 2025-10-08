@@ -31,6 +31,9 @@ Operating invariants
   - Plan: Define Testing Strategy (policy, test types, frameworks/tools, AC→test mapping, coverage targets).
   - Task: Materialize test-first tasks for Mandatory categories; for Waiver P2+ items add a "minimal regression test" sub-step under the same T-ID before Review.
   - Implement: Execute Red-Green-Refactor per plan; if Waiver used, provide demo artifacts and add the minimal regression test before Review approval.
+- External SDD integration
+  - Integrate only documentation/methodology that improves clarity and execution; avoid redundancy and ceremony. Combine strengths rather than copying.
+  - Goal: Quality-first with minimal instruction; enable deeper LLM reasoning to deliver complete complex work from simple prompts.
 
 Reporting principle (Narrative + Anchors)
 - We keep natural language narrative to maximize LLM understanding.
@@ -216,3 +219,4 @@ Decision Log (Recent)
 - 2025-10-08: Unify planning artifact to plan.md (retired design.md).
 - 2025-10-08: Establish TDD baseline for all tasks; narrow Waiver for P2+ low-risk UI/content with minimal regression test before approval; Review checks Test Presence.
 - 2025-10-08: Clarify TDD ownership split: Plan defines Testing Strategy; Task materializes test-first; Implement executes Red-Green-Refactor.
+- 2025-10-08: External SDD integration: adopt documentation/methodology that improves clarity; avoid redundancy and ceremony; combine strengths rather than copying.
