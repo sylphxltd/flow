@@ -337,6 +337,7 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Micro-loop requests must be orchestrator-mediated: end session with Status: "Blocked - Needs Task Update" if scope update is required.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Clarify method: Q&A first + apply updates. Record Q→A, then update spec.md in-place for accepted clarifications. Use clarify.md as an audit log of applied changes (no duplication of unchanged spec content).
       - Done-When:
         - <workspace_id>/clarify.md exists with:
           - Q→A items recorded
@@ -372,14 +373,15 @@ customModes:
       6. If all priorities low (e.g., <20), create clarify.md noting adequacy; skip questions. Threshold is a guideline; adjust per project risk profile.
       7. Otherwise, compose targeted questions and use ask_followup_question in batched groups.
 
-      ## Step 4: Incremental Integration
+      ## Step 4: Incremental Integration (Q&A + Apply updates)
       8. After EACH accepted answer:
          - Append to clarify.md: "- Q: <question> → A: <final answer>".
-         - Integrate immediately into the appropriate section (Objectives/ACs/Constraints/Glossary/Edge Cases/Risks).
-         - Replace invalidated statements; avoid duplicates and contradictions.
-
-      9. Preserve spec.md unchanged; refinements live in clarify.md.
-      10. Finalize clarify.md once questions are resolved; reference spec.md for stable parts.
+         - Update spec.md in-place: modify the precise statement(s) in the relevant section (Objectives/Acceptance Scenarios/Requirements/Constraints/Glossary/Edge Cases/Risks), keeping wording testable and concise.
+         - In clarify.md, add a brief Applied Update entry (no full copy):
+           - "- Applied: [Section] '<changed fragment>' — Reason: <why> — Spec Ref: spec.md → <heading/anchor>"
+         - Do not duplicate unchanged content.
+      9. spec.md remains the single source of truth (authoritative). clarify.md serves as the Q&A and applied-changes audit log referencing spec.md.
+      10. Finalize clarify.md with a compact Applied Updates summary; reference spec.md for all unchanged parts.
       11. Maintain self-sufficiency: rely on spec.md and obtained clarifications only.
 
       # clarify.md Format
@@ -396,23 +398,17 @@ customModes:
       ## Resolved Clarifications
       - Q: <question> → A: <final answer>
 
-      ## Objectives (updated from spec.md)
-      - Original/Updated goal 1
+      ## Applied Updates (Audit log; no duplication)
+      - Section: <Objectives | Acceptance Scenarios | Requirements | Constraints | Glossary | Edge Cases | Risks>
+        - Changed: "<fragment updated>"
+        - Reason: <why>
+        - Spec Reference: spec.md → <heading/anchor>
 
-      ## Acceptance Criteria (updated from spec.md)
-      - AC1: <refined or original>
+      ## Reference Map
+      - Affected Spec Sections: <list of headings/anchors>
 
-      ## Constraints (updated from spec.md)
-      - <original or refined constraint>
-
-      ## Glossary (updated from spec.md)
-      - Term: Definition (refined if needed)
-
-      ## Edge Cases / Error Handling (new or updated)
-      - <added edge case>
-
-      ## Risks/Deferred (updated)
-      - <if any>
+      ## Notes
+      - Assumptions/Deferred (if any)
 
       ---
       

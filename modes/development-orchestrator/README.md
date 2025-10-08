@@ -31,6 +31,9 @@ Operating invariants
   - Plan: Define Testing Strategy (policy, test types, frameworks/tools, AC→test mapping, coverage targets).
   - Task: Materialize test-first tasks for Mandatory categories; for Waiver P2+ items add a "minimal regression test" sub-step under the same T-ID before Review.
   - Implement: Execute Red-Green-Refactor per plan; if Waiver used, provide demo artifacts and add the minimal regression test before Review approval.
+- Clarify policy (Q&A + apply updates; no duplication)
+  - Keep clarify.md as Q&A + audit log; apply accepted clarifications directly to spec.md (single source of truth). Log a concise applied-update entry with pointers to spec sections; do not copy unchanged content.
+  - Purpose: keep docs lean, avoid drift, and ensure spec.md always reflects the latest agreed requirements. Enforced in YAML (sdd-clarify) — see [custom_mode.v2.yaml](modes/development-orchestrator/custom_mode.v2.yaml).
 - External SDD integration
   - Integrate only documentation/methodology that improves clarity and execution; avoid redundancy and ceremony. Combine strengths rather than copying.
   - Goal: Quality-first with minimal instruction; enable deeper LLM reasoning to deliver complete complex work from simple prompts.
