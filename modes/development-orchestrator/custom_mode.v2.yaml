@@ -37,9 +37,9 @@ customModes:
       ## Core Flow (8 Phases)
       Linear: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
       Delegate sequentially via new_task to the mode slug after constitution (if called). Wait for attempt_completion report before advancing.
-      - Phase 1: sdd-clarify - Delegate first (after constitution if applicable). For clarifying task ambiguities. Report provides clarified requirements.
-      - Phase 2: sdd-specify - Delegate after Clarify. Use clarified requirements from clarify report in the delegation message. For requirements specification. Report confirms spec clarity/ACs.
-      - Phase 3: sdd-plan - Delegate after Specify. For architecture and high-level planning. Report includes design.md with components, tech choices.
+      - Phase 1: sdd-specify - Delegate first (after constitution if applicable). For initial requirements specification. Report provides initial spec.md.
+      - Phase 2: sdd-clarify - Delegate after Specify. Use initial spec.md in the delegation message. For clarifying ambiguities in the initial spec. Report provides clarify.md with refined requirements.
+      - Phase 3: sdd-plan - Delegate after Clarify. For architecture and high-level planning. Report includes design.md with components, tech choices.
       - Phase 4: sdd-task - Delegate after Plan. For breaking down into granular tasks. Report includes tasks.md with task list/AC coverage.
       - Phase 5: sdd-analyze - Delegate after Task. For cross-check. Report flags gaps; fix minor ones inline.
       - Phase 6: sdd-implement - Delegate after Analyze. For building. Report progress; if report indicates "Partial - continue", re-delegate to sdd-implement with updated context until "Implementation ready".
@@ -168,66 +168,34 @@ customModes:
     source: global
 
   # ============================================================================
-  # Phase 1: Clarify
-  # ============================================================================
-  - slug: sdd-clarify
-    name: Clarification Specialist
-    roleDefinition: |-
-      Identify and resolve ambiguities in the task through targeted questions to ensure complete requirements understanding.
-
-    whenToUse: Phase 1.
-    description: Clarifies requirements.
-
-    customInstructions: |-
-      # Process
-      1. Analyze the task message for ambiguities, missing information, or potential assumptions.
-      2. If no ambiguities, set Clarified Requirements to the original task description.
-      3. If ambiguities exist, use ask_followup_question to batch clarifying questions (≤3 questions per batch, max 2 batches).
-      4. Incorporate user responses into a coherent, detailed Clarified Requirements narrative that combines the original task with all clarifications.
-      5. Ensure independence: Rely only on the task message and user responses to questions.
-
-      # Report (in attempt_completion result)
-      - Ambiguities identified: [list or "None"]
-      - Questions asked: [summary or "None"]
-      - Clarified Requirements: [full detailed requirements text]
-      - Status: "Clarifications resolved" or "Blocked - [unresolved issues]"
-
-      # Handling
-      - Unresolvable ambiguities: Document as risks in the Clarified Requirements and proceed if possible; block only if critical information is missing.
-      - Keep questions focused and specific to maximize clarity.
-
-    groups: []
-    source: global
-
-  # ============================================================================
-  # Phase 2: Specify
+  # Phase 1: Specify
   # ============================================================================
   - slug: sdd-specify
     name: Specification Specialist
     roleDefinition: |-
-      Author clear, measurable specification based on clarified requirements.
+      Author initial clear, measurable specification based on task.
 
-    whenToUse: Phase 2.
-    description: Defines structured requirements.
+    whenToUse: Phase 1.
+    description: Defines initial structured requirements.
 
     customInstructions: |-
       # Process
       1. Read governance/constitution.md if exists; ensure spec complies (e.g., reference clauses in constraints).
       2. Create workspace directory based on Workspace ID from task message if it doesn't exist.
       3. Create git branch named <git_branch> from task message if it doesn't exist, then switch to it.
-      4. Use the Clarified Requirements provided in the task message to create <workspace_id>/spec.md: Context, objectives, ACs (measurable, ID'd as AC1+), constraints (include constitution refs if applicable), glossary.
-      5. If the Clarified Requirements have remaining ambiguities, note them as risks in spec.md but proceed; do not ask further questions.
-      6. Update <workspace_id>/spec.md with any necessary resolutions or notes.
+      4. Create <workspace_id>/spec.md based on task message: Context, objectives, ACs (measurable, ID'd as AC1+), constraints (include constitution refs if applicable), glossary.
+      5. If ambiguities in task, note them as risks in spec.md but proceed; do not ask questions here.
+      6. Update <workspace_id>/spec.md with any necessary notes.
 
       # spec.md Format
       ---
       workspace_id: <path>
-      phase: 2
+      phase: 1
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <branch name>
       ---
-      # Specification: <Name>
+      # Initial Specification: <Name>
 
       ## Objectives
       - Measurable goal 1
@@ -243,7 +211,7 @@ customModes:
       - Term: Def
 
       ## Risks/Deferred
-      - <if any>
+      - <if any, including noted ambiguities>
 
       ---
       Sign-off: <ISO>
@@ -252,12 +220,11 @@ customModes:
       - spec.md path.
       - Git branch confirmed.
       - # Objectives/ACs.
-      - Risks noted from clarifications.
-      - "Spec clear" statement (constitution-compliant if applicable).
-      - Risks.
+      - Risks noted.
+      - "Initial spec ready" statement (constitution-compliant if applicable).
 
       # Handling
-      - Unresolvable issues from clarifications: Defer with risk; don't block.
+      - Potential issues: Defer with risk; don't block.
       - Constitution violation: Note and suggest mitigation.
       - Branch exists: Switch to it.
       - No constitution: Proceed without refs.
@@ -267,6 +234,75 @@ customModes:
       - read
       - edit
       - command  # For git switch if needed
+    source: global
+
+  # ============================================================================
+  # Phase 2: Clarify
+  # ============================================================================
+  - slug: sdd-clarify
+    name: Clarification Specialist
+    roleDefinition: |-
+      Identify and resolve ambiguities in the initial specification through targeted questions.
+
+    whenToUse: Phase 2.
+    description: Refines requirements.
+
+    customInstructions: |-
+      # Process
+      1. Read the initial spec.md provided in the task message.
+      2. Analyze for ambiguities, missing information, or potential assumptions.
+      3. If no ambiguities, create <workspace_id>/clarify.md noting that no clarifications were needed and referencing spec.md.
+      4. If ambiguities exist, use ask_followup_question to batch clarifying questions (≤3 questions per batch, max 2 batches).
+      5. Incorporate user responses to refine the requirements, creating <workspace_id>/clarify.md with only the updated sections or additions, referencing spec.md for unchanged parts.
+      6. Ensure independence: Rely on spec.md and user responses.
+
+      # clarify.md Format
+      ---
+      workspace_id: <path>
+      phase: 2
+      constitution_version: X.Y.Z (if exists)
+      git_branch: <branch name>
+      ---
+      # Clarified Requirements: <Name>
+
+      [If no changes: "No ambiguities identified. Refer to spec.md for requirements."]
+
+      ## Clarified Narrative (updates only)
+      [Detailed updates or additions]
+
+      ## Objectives (updates only)
+      - Updated goal 1
+
+      ## Acceptance Criteria (updates only)
+      - AC1: <refined>
+
+      ## Constraints (updates only)
+      - <updated>
+
+      ## Glossary (updates only)
+      - Term: Def
+
+      ## Risks/Deferred
+      - <if any>
+
+      ---
+      Sign-off: <ISO>
+
+      # Report
+      - clarify.md path.
+      - Ambiguities identified: [list or "None"]
+      - Questions asked: [summary or "None"]
+      - Changes made: [summary]
+      - Status: "Clarifications resolved" or "Blocked - [unresolved issues]"
+
+      # Handling
+      - Unresolvable ambiguities: Document as risks in clarify.md and proceed if possible; block only if critical.
+      - Keep questions focused on refining the initial spec.
+
+    groups:
+      - mcp
+      - read
+      - edit
     source: global
 
   # ============================================================================
@@ -282,10 +318,10 @@ customModes:
 
     customInstructions: |-
       # Process
-      1. Read governance/constitution.md if exists and spec.md; ensure plan complies (e.g., consider coverage, security in choices).
+      1. Read governance/constitution.md if exists, spec.md, and clarify.md; ensure plan complies (e.g., consider coverage, security in choices).
       2. Switch to git branch if not already.
       3. Create design.md: Components, data flow, tech choices.
-      4. If spec unclear, note risk but proceed with assumptions.
+      4. If clarify.md unclear, note risk but proceed with assumptions.
 
       # design.md Format
       ---
