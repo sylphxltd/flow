@@ -54,7 +54,7 @@ customModes:
       Delegate sequentially via new_task to the mode slug after constitution (if called). Wait for attempt_completion report before advancing.
       - Phase 1: sdd-specify — For initial requirements specification. Report: spec.md.
       - Phase 2: sdd-clarify — Resolve ambiguities in spec. Report: clarify.md.
-      - Phase 3: sdd-plan — Architecture and high-level planning. Report: design.md.
+      - Phase 3: sdd-plan — Architecture and high-level planning. Report: plan.md.
       - Phase 4: sdd-task — Break down into granular tasks. Report: tasks.md.
       - Phase 5: sdd-analyze — Cross-check and fix minor gaps. Report: analysis.md.
       - Phase 6: sdd-implement — Build via TDD until “Implementation ready”. Report: implementation.md.
@@ -422,7 +422,7 @@ customModes:
       - If scope change is discovered downstream, request orchestrator-mediated micro-loop (end session with Status: "Blocked - Needs Task Update"); do not modify tasks directly.
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Done-When:
-        - <workspace_id>/design.md exists with:
+        - <workspace_id>/plan.md exists with:
           - Architecture + AC Mapping
           - Tech Stack + Constitution alignment
           - Data Model
@@ -458,19 +458,20 @@ customModes:
       8. If high risks, suggest alternatives or flag for clarification.
 
       ## Step 5: Documentation
-      9. Create <workspace_id>/design.md with structured content focusing on decisions and mappings (no narrative).
-      10. Deliverables in design.md:
+      9. Create <workspace_id>/plan.md with structured content focusing on decisions and mappings (no narrative).
+      10. Deliverables in plan.md:
          - Architecture and AC Mapping (authoritative).
          - Tech Stack choices with rationale and Constitution alignment.
+         - Testing Strategy (TDD): policy (Default/Mandatory/Waiver), test types, frameworks/tools, AC→test mapping (Given-When-Then outlines), coverage targets per constitution (if applicable).
          - Data Model: entities, fields, relationships, invariants.
          - API Contracts: endpoints/interfaces, request/response schemas, error cases.
          - Implementation Snippets (optional): minimal code skeletons to clarify patterns; keep concise.
       11. If unresolved ambiguities impact design, note as high-risk with assumptions; do not block unless viability impacted.
       12. Storage guidance:
-         - Default: Keep all content in a single design.md with the sections above.
-         - Optional split (only if helpful): If any section grows large, create a design/ folder and split into files (e.g., design/data-model.md, design/api-contracts.md). Link to them from design.md. Avoid splitting unless it materially improves navigation.
+         - Default: Keep all content in a single plan.md with the sections above.
+         - Optional split (only if helpful): If any section grows large, create a plan/ folder and split into files (e.g., plan/data-model.md, plan/api-contracts.md). Link to them from plan.md. Avoid splitting unless it materially improves navigation.
 
-      # design.md Format
+      # plan.md Format
       ---
       workspace_id: <workspace_id>
       phase: 3
@@ -497,6 +498,13 @@ customModes:
       |----------|----------|-----------------------------|-----------------------|
       | Frontend | Next.js  | SSR for perf, ecosystem     | Performance gate      |
       | Database | PostgreSQL | ACID compliance          | Security (no secrets) |
+
+      ## Testing Strategy (TDD)
+      - Policy: Default TDD for all tasks; Mandatory per Tests policy (Foundational, P1, bugfix, API/data/security/critical rules); Waiver only for P2+ low-risk UI/content with minimal regression test before approval.
+      - Test Types: contract, unit, integration, e2e/UI.
+      - Frameworks/Tools: <list>.
+      - AC→Test Mapping: Given-When-Then outlines per AC.
+      - Coverage Targets: per constitution (if applicable).
 
       ## Data Model
       - Entities: list key entities with fields/types and ownership.
@@ -532,7 +540,7 @@ customModes:
       
 
       # Report
-      - File: <workspace_id>/design.md (created/updated).
+      - File: <workspace_id>/plan.md (created/updated).
       - Branch: <git_branch>
       - Architecture: Components/flows summarized; ACs mapped.
       - Tech Stack: Choices with rationales and constitution alignment.
@@ -540,7 +548,7 @@ customModes:
       - Research: Tools used (e.g., context7, codebase_search).
       - Constitution: Compliance integrated (if applicable).
       - Status: "Ready - Design complete" | "Partial - High-risk assumptions".
-      - Next: Delegate to sdd-task with design.md as input.
+      - Next: Delegate to sdd-task with plan.md as input.
 
       # Handling
       - High risks: Flag; suggest mitigation or loop to sdd-clarify if assumption-dependent.
@@ -580,10 +588,12 @@ customModes:
         - Status = "Ready - Tasks executable" or "Blocked - Incomplete AC coverage"
 
       # Process
-      1. Read constitution (if exists), spec.md, and design.md; ensure tasks comply (e.g., coverage, security).
+      1. Read constitution (if exists), spec.md, and plan.md; ensure tasks comply (e.g., coverage, security).
       2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
       3. Create tasks.md: granular tasks (T001+), dependencies, AC links, with checkboxes [ ] for progress; include constitution-related tasks (lint/type/perf gates) if applicable.
-      4. Ensure TDD orientation (test-first).
+      4. Ensure TDD orientation (test-first) per plan.md Testing Strategy:
+         - Generate test-first tasks for Mandatory categories (Foundational, P1, bugfix, API/data/security/critical rules) before implementation tasks.
+         - For waiver-eligible P2+ low-risk items, include a "Add minimal regression test" sub-step under the same T-ID before Review.
       5. Provide AC coverage mapping.
 
       ## Task Freezing Rules
@@ -662,14 +672,14 @@ customModes:
       - Done-When:
         - <workspace_id>/analysis.md exists with:
           - No Critical/High issues
-          - Contract Readiness passed (if design.md exists)
+          - Contract Readiness passed (if plan.md exists)
         - Status = "Ready - Implement" or "Blocked - High gaps"
 
       # Process Overview
-      Conduct a lightweight pre-implementation cross-check on spec, design, and tasks for consistency, gaps, and compliance. Focus on critical issues; fix minor ones inline. Block on high-impact problems with specific upstream recommendations. Provide detailed reporting for orchestrator decisions.
+      Conduct a lightweight pre-implementation cross-check on spec, plan, and tasks for consistency, gaps, and compliance. Focus on critical issues; do not modify upstream files; record suggested minor fixes in analysis.md only. Block on high-impact problems with specific upstream recommendations. Provide detailed reporting for orchestrator decisions.
 
       ## Step 1: Preparation
-      1. Read prior artifacts: constitution (if exists), spec.md, clarify.md (if exists), design.md, tasks.md.
+      1. Read prior artifacts: constitution (if exists), spec.md, clarify.md (if exists), plan.md, tasks.md.
       2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
       3. Scope based on track (full: thorough; rapid: core only).
 
@@ -679,14 +689,14 @@ customModes:
          - Terminology Consistency: Normalize across docs.
          - Constitution Alignment: Gates planned (coverage, lint, etc.) if applicable.
          - Design Feasibility: Obvious gaps or risks.
-         - Contract Readiness: Data Model and API Contracts are present and consistent with all ACs (if design.md exists).
+         - Contract Readiness: Data Model and API Contracts are present and consistent with all ACs (if plan.md exists).
          - Overall Coherence: Contradictions or conflicts.
          - Use tools (codebase_search/search_files) if needed; no code changes.
 
       ## Step 3: Findings and Fixes
       5. Classify issues by severity (High/Critical block, Medium flag, Low note).
          - Critical/High: Recommend upstream loops (clarify/plan/task).
-         - Minor: Apply inline doc fixes (e.g., add a task; update a term).
+         - Minor: Suggest doc fixes in report (no file edits).
          - Timebox to ~30 minutes equivalent; focus on high impact.
 
       ## Step 4: Documentation
@@ -714,7 +724,7 @@ customModes:
       | Severity | Dimension | Location  | Description        | Recommended Action            |
       |----------|-----------|-----------|--------------------|-------------------------------|
       | High     | Coverage  | tasks.md  | AC3 uncovered      | Add T011-T012 or re-do sdd-task |
-      | Medium   | Terms     | design.md | "User" inconsistency | Normalize to "Client"        |
+      | Medium   | Terms     | plan.md | "User" inconsistency | Normalize to "Client"        |
 
       ## Fixes Applied
       - <doc fix or "None">
@@ -766,6 +776,10 @@ customModes:
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates to sdd-task.
       - Keep outputs concise; measurable statements; avoid narrative.
+      - Tests policy:
+        - Default: TDD for all tasks (Red-Green-Refactor) as self-verification for LLM.
+        - Mandatory: Foundational (Phase 2); P1 (Critical Path); Bugfix tasks; and any change that touches API contracts, data model, security/auth boundaries, or critical business rules; and whenever the constitution/spec requires tests or TDD.
+        - Waiver (Evidence-first): Only for P2+ cosmetic/low-risk UI/content tasks. Provide reproducible demo steps and artifacts/. A minimal regression test must be added (as a sub-step under the same T-ID) before Review approval.
       - Done-When:
         - All tasks are [x] and verified (tests/gates), or
         - Status = "Partial - technical blockers" with resumption plan, or
@@ -775,16 +789,15 @@ customModes:
       Aim for full completion of all tasks in tasks.md using strict TDD (Red-Green-Refactor). Process in dependency order. Partial completion is only for technical blockers (e.g., external deps). For upstream issues (spec/design gaps), halt and report "Blocked" with a suggested loop (clarify/plan/task). Verify changes and constitution compliance.
 
       ## Step 1: Preparation
-      1. Read inputs: constitution (if exists), spec.md, clarify.md (if exists), design.md, analysis.md, tasks.md (prioritize incomplete [ ]).
+      1. Read inputs: constitution (if exists), spec.md, clarify.md (if exists), plan.md (incl. Testing Strategy), analysis.md, tasks.md (prioritize incomplete [ ]).
       2. Assume git_branch is active (orchestrator ensured). Do not switch or create branches here; only report mismatch.
       3. Review constitution for compliance requirements (e.g., coverage ≥95%).
 
       ## Step 2: Task Execution (Iterative TDD)
       4. Process tasks in dependency order (respect [P] parallels if independent):
          - For each incomplete task (T-ID):
-           - Red: Write failing test (or stub) from ACs/design.
-           - Green: Implement minimal code to pass.
-           - Refactor: Clean up, ensure best practices (types, lint).
+           - Default: Red → Green → Refactor (from ACs/plan).
+           - If applying Waiver (Evidence-first) per Tests policy: Implement minimal code to satisfy ACs; provide reproducible demo steps and artifacts/; add a minimal regression test as a sub-step under the same T-ID before Review approval; then refactor (types, lint).
          - Use write_to_file/apply_diff for code/tests; execute_command for builds/tests/lint.
          - If UI: Use browser_action to verify interactions; capture evidence.
          - Update tasks.md: Mark [x] on completion; add brief evidence (e.g., "tests/auth.test.ts passed").
@@ -880,7 +893,7 @@ customModes:
       Ensure the implementation meets requirements before release. Always start with completeness. Proceed to verification and user feedback only if implementation is complete. Halt early if incomplete, but always document details for orchestrator.
 
       ## Step 1: Preparation
-      1. Read artifacts: constitution (if exists), spec.md, clarify.md (if exists), design.md, tasks.md, analysis.md, implementation.md/logs, artifacts/.
+      1. Read artifacts: constitution (if exists), spec.md, clarify.md (if exists), plan.md, tasks.md, analysis.md, implementation.md/logs, artifacts/.
       2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
 
       ## Step 2: Implementation Completeness (Always)
@@ -895,6 +908,7 @@ customModes:
       4. Verify against requirements:
          - ACs: Validate each via tests/code/manual checks; note pass/fail with evidence.
          - Tests: Run full suite; report pass rate, coverage, errors.
+         - Test Presence: Confirm required tests exist per Tests policy for applicable tasks (Foundational, P1, bugfix, API/data/security/critical rules).
          - Analysis follow-up: Confirm resolution of all findings.
          - Constitution: Validate gates (lint/coverage/perf) as applicable.
          - Scope adherence: Every change maps to tasks.md T-IDs; no untracked scope introduced in implementation. If mismatch is found, classify as scope creep and request orchestrator re-delegation to sdd-task to update tasks.md before approval.
