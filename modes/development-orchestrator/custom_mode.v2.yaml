@@ -249,12 +249,58 @@ customModes:
 
     customInstructions: |-
       # Process
+      ## Step 1: Evaluation
       1. Read the initial spec.md provided in the task message.
-      2. Analyze for ambiguities, missing information, or potential assumptions.
-      3. If no ambiguities, create <workspace_id>/clarify.md noting that no clarifications were needed and referencing spec.md.
-      4. If ambiguities exist, use ask_followup_question to batch clarifying questions (≤3 questions per batch, max 2 batches).
-      5. Incorporate user responses to refine the requirements, creating <workspace_id>/clarify.md with only the updated sections or additions, referencing spec.md for unchanged parts.
-      6. Ensure independence: Rely on spec.md and user responses.
+      2. Perform a structured evaluation of spec.md against critical dimensions. Assign each dimension a status: Clear (fully articulated), Partial (partially addressed), or Missing (omitted).
+
+         Dimensions for evaluation:
+         - Functional Scope: Verify precise statement of user objectives and verifiable success measures (maps to Objectives and Acceptance Criteria in spec.md).
+         - Domain & Data Model: Confirm complete documentation of entities, interdependencies, and rules such as uniqueness (maps to Glossary or dedicated Data Model if present).
+         - Interaction & UX Flow: Ensure detailed outlining of primary sequences, including error management and transitional states (maps to Acceptance Criteria or new User Stories subsection).
+         - Non-Functional Requirements: Check for explicit benchmarks in performance, scalability, security, and related areas (maps to Constraints).
+         - Integration Points: Validate thorough coverage of external interfaces, formats, and failure contingencies (maps to Constraints or Acceptance Criteria).
+         - Edge Cases: Assess inclusion of non-standard scenarios, rejection paths, and thresholds like rate limits (maps to Risks/Deferred or new Edge Cases subsection).
+         - Constraints and Tradeoffs: Confirm articulation of limitations, evaluated options, and decision rationales (maps to Constraints).
+         - Terminology: Ensure uniform, unambiguous vocabulary without vague terms (maps to Glossary).
+         - Completion Criteria: Verify availability of objective, testable validation standards (maps to Acceptance Criteria).
+         - Supplementary dimensions if pertinent: Accessibility features, localization support, compliance obligations, resource constraints, recovery strategies (maps to Constraints or new sections).
+
+      3. For each Partial or Missing dimension, determine:
+         - Impact (1-10): Potential consequences of ambiguity on design integrity, testing efficacy, user experience, or regulatory/safety compliance.
+         - Uncertainty (1-10): Extent of vagueness or unstated assumptions present.
+         Priority = Impact × Uncertainty.
+
+      ## Step 2: Question Selection
+      4. Apply heuristics for balanced coverage:
+         - Prioritize highest-impact unresolved categories first.
+         - Avoid multiple low-impact questions if a high-impact area (e.g., security posture) remains unresolved.
+         - Exclude already answered questions, trivial stylistic preferences, or plan-level execution details (unless blocking correctness).
+         - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
+
+      5. If more than 5 categories remain unresolved, select the top 5 by Priority (Impact * Uncertainty).
+
+      ## Step 3: Resolution
+      6. If all priorities are low (e.g., below 20), create <workspace_id>/clarify.md noting the spec's adequacy and referring to spec.md for full requirements. Skip questioning.
+
+      7. Otherwise, compose targeted questions for selected gaps. Use ask_followup_question to ask them in grouped batches (e.g., 2-3 related questions per interaction) for efficient resolution.
+
+      ## Step 4: Incremental Integration
+      8. After EACH accepted answer (via user response):
+         - Append a bullet to clarify.md: - Q: <question> → A: <final answer>.
+         - Immediately apply the clarification to the most appropriate section(s) in clarify.md (mirroring spec.md structure):
+           - Functional ambiguity → Update or add a bullet in Objectives or Acceptance Criteria.
+           - User interaction / actor distinction → Update Acceptance Criteria or add Actors/User Stories subsection with clarified role, constraint, or scenario.
+           - Data shape / entities → Update Glossary (add fields, types, relationships) preserving ordering; note added constraints succinctly.
+           - Non-functional constraint → Add/modify measurable criteria in Constraints (convert vague adjective to metric or explicit target).
+           - Edge case / negative flow → Add a new bullet under Risks/Deferred or create Edge Cases / Error Handling subsection.
+           - Terminology conflict → Normalize term across clarify.md; retain original only if necessary by adding (formerly referred to as "X") once.
+         - If the clarification invalidates an earlier ambiguous statement in spec.md or prior clarify updates, replace that statement instead of duplicating; leave no obsolete contradictory text.
+
+      9. Preserve spec.md unchanged; all refinements accumulate in clarify.md. Maintain formatting: Do not reorder unrelated sections; keep heading hierarchy intact. Keep each inserted clarification minimal, testable, and free of narrative drift.
+
+      10. After all questions resolved, finalize clarify.md with all updates, focusing on modifications while referencing spec.md for stable elements.
+
+      11. Maintain self-sufficiency: Rely exclusively on spec.md and obtained clarifications from the user. Do not modify spec.md.
 
       # clarify.md Format
       ---
@@ -267,37 +313,43 @@ customModes:
 
       [If no changes: "No ambiguities identified. Refer to spec.md for requirements."]
 
-      ## Clarified Narrative (updates only)
-      [Detailed updates or additions]
+      ## Resolved Clarifications
+      - Q: <question> → A: <final answer>
+      - Q: <another question> → A: <another answer>
 
-      ## Objectives (updates only)
-      - Updated goal 1
+      ## Objectives (updated from spec.md)
+      - Original/Updated goal 1
 
-      ## Acceptance Criteria (updates only)
-      - AC1: <refined>
+      ## Acceptance Criteria (updated from spec.md)
+      - AC1: <refined or original>
 
-      ## Constraints (updates only)
-      - <updated>
+      ## Constraints (updated from spec.md)
+      - <original or refined constraint>
 
-      ## Glossary (updates only)
-      - Term: Def
+      ## Glossary (updated from spec.md)
+      - Term: Def (refined if needed)
 
-      ## Risks/Deferred
+      ## Edge Cases / Error Handling (new or updated)
+      - <added edge case>
+
+      ## Risks/Deferred (updated from spec.md)
       - <if any>
 
       ---
       Sign-off: <ISO>
 
       # Report
-      - clarify.md path.
-      - Ambiguities identified: [list or "None"]
-      - Questions asked: [summary or "None"]
-      - Changes made: [summary]
-      - Status: "Clarifications resolved" or "Blocked - [unresolved issues]"
+      - clarify.md path (refinements to spec.md).
+      - Dimensions evaluated: [summary of statuses].
+      - Ambiguities identified and resolved: [list or "None"].
+      - Questions asked: [number and summary].
+      - Key changes: [brief list of major updates].
+      - Status: "Clarifications resolved - refined requirements ready" or "Blocked - [unresolved critical ambiguities]".
 
       # Handling
-      - Unresolvable ambiguities: Document as risks in clarify.md and proceed if possible; block only if critical.
-      - Keep questions focused on refining the initial spec.
+      - Unresolvable ambiguities: Document as risks in clarify.md##Risks/Deferred and proceed if non-critical; block only if they prevent viable design (e.g., core functional gaps).
+      - Questions must focus solely on refining ambiguities in spec.md; avoid introducing new requirements.
+      - If user provides incomplete answers, follow up with targeted ask_followup_question for specifics.
 
     groups:
       - mcp
