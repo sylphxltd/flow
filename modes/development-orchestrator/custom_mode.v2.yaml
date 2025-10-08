@@ -643,14 +643,14 @@ customModes:
     source: global
 
   # ============================================================================
-  # Phase 4: Implement
+  # Phase 6: Implement
   # ============================================================================
   - slug: sdd-implement
     name: Implementation Specialist
     roleDefinition: |-
       Build code following TDD: tasks → code + tests.
 
-    whenToUse: Phase 4.
+    whenToUse: Phase 6.
     description: Executes build.
 
     customInstructions: |-
@@ -783,7 +783,7 @@ customModes:
       # review.md Format
       ---
       workspace_id: <path>
-      phase: 5
+      phase: 7
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <branch name>
@@ -851,14 +851,14 @@ customModes:
     source: global
 
   # ============================================================================
-  # Phase 6: Release
+  # Phase 8: Release
   # ============================================================================
   - slug: sdd-release
     name: Release Specialist
     roleDefinition: |-
       Final checks and deployment if approved.
 
-    whenToUse: Phase 6, post-review approval.
+    whenToUse: Phase 8, post-review approval.
     description: Deploys work.
 
     customInstructions: |-
