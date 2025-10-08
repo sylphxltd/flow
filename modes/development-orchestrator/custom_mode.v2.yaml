@@ -152,10 +152,12 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - governance/constitution.md path and version.
-      - Git branch created/confirmed.
-      - Principles incorporated.
-      - "Constitution defined and compliant".
+      - File: governance/constitution.md (path and version created/updated).
+      - Git: Branch <branch_name> created/switched to.
+      - Principles: List of key principles incorporated or updated (e.g., Testing ≥95%, Security no secrets).
+      - Compliance: Confirmed alignment with user input; any conflicts resolved via [method, e.g., prioritization or user confirmation].
+      - Status: "Constitution ready - proceed to next phase" or "Blocked - [reason, e.g., unresolved conflicts]".
+      - Next: Ready for delegation to sdd-specify (or other phase).
 
       # Handling
       - Conflicts: Prioritize core principles; ask user if needed.
@@ -217,11 +219,16 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - spec.md path.
-      - Git branch confirmed.
-      - # Objectives/ACs.
-      - Risks noted.
-      - "Initial spec ready" statement (constitution-compliant if applicable).
+      - File: <workspace_id>/spec.md (path created).
+      - Git: Branch <branch_name> created/switched to.
+      - Objectives: Number and summary (e.g., 3 measurable goals defined).
+      - Acceptance Criteria: Number and coverage (e.g., 5 ACs, all measurable and ID'd as AC1-AC5).
+      - Constraints: List key ones (e.g., Constitution refs if applicable).
+      - Glossary: Terms defined (e.g., 4 key terms).
+      - Risks/Deferred: Number and summary (e.g., 2 ambiguities noted as risks).
+      - Constitution: Compliance noted (e.g., refs to clauses in constraints) if applicable.
+      - Status: "Initial spec ready - proceed to clarify" or "Partial - [reason, e.g., high ambiguities]".
+      - Next: Delegate to sdd-clarify with spec.md as input.
 
       # Handling
       - Potential issues: Defer with risk; don't block.
@@ -339,12 +346,14 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - clarify.md path (refinements to spec.md).
-      - Dimensions evaluated: [summary of statuses].
-      - Ambiguities identified and resolved: [list or "None"].
-      - Questions asked: [number and summary].
-      - Key changes: [brief list of major updates].
-      - Status: "Clarifications resolved - refined requirements ready" or "Blocked - [unresolved critical ambiguities]".
+      - File: <workspace_id>/clarify.md (path created/updated with refinements).
+      - Dimensions: Evaluation summary (e.g., 7/10 clear, 2 partial, 1 missing; statuses per dimension).
+      - Ambiguities: Identified [number], resolved [number] (list key ones, e.g., "Security benchmarks clarified").
+      - Questions: Asked [number] in [batches]; summary of topics (e.g., "2 on data model, 1 on edge cases").
+      - Changes: Key updates (e.g., "Added 3 ACs, refined Constraints with metrics, normalized 2 terms").
+      - Constitution: Compliance verified (e.g., non-functional updates align with gates) if applicable.
+      - Status: "Clarifications resolved - refined requirements ready" or "Blocked - [unresolved critical ambiguities, e.g., core functional gap]".
+      - Next: Proceed to sdd-plan; provide clarify.md as input for architecture.
 
       # Handling
       - Unresolvable ambiguities: Document as risks in clarify.md##Risks/Deferred and proceed if non-critical; block only if they prevent viable design (e.g., core functional gaps).
@@ -397,11 +406,14 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - design.md path.
-      - Git branch confirmed.
-      - Constitution compliance noted (if applicable).
-      - Risks.
-      - "Plan defined".
+      - File: <workspace_id>/design.md (path created).
+      - Git: Branch <branch_name> confirmed/switched.
+      - Architecture: Components listed (e.g., 4 main: UI, API, DB, Auth); data flow summarized.
+      - Tech Stack: Choices and rationales (e.g., "Next.js for UI - complies with performance gates").
+      - Risks: Number and details (e.g., 2 risks: scalability - mitigated by caching).
+      - Constitution: Compliance noted (e.g., tech choices align with security/performance clauses) if applicable.
+      - Status: "Plan defined - ready for task breakdown" or "Partial - [reason, e.g., unresolved risks]".
+      - Next: Delegate to sdd-task with design.md as input.
 
       # Handling
       - Constitution gap: Note if applicable.
@@ -457,12 +469,14 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - tasks.md path.
-      - Git branch confirmed.
-      - # Tasks, parallelizable.
-      - AC coverage.
-      - Constitution compliance noted (if applicable).
-      - "Tasks executable".
+      - File: <workspace_id>/tasks.md (path created).
+      - Git: Branch <branch_name> confirmed.
+      - Tasks: Total [number], parallelizable [number] (e.g., 10 tasks, 3 [P]; TDD-oriented with test/impl pairs).
+      - Dependencies: Summary (e.g., sequential chain T001-T005, parallels T006-T008).
+      - AC Coverage: Mapping table summary (e.g., All 5 ACs covered by 10 tasks; full coverage).
+      - Constitution: Related tasks added (e.g., lint checks for quality gate) if applicable.
+      - Status: "Tasks executable - ready for analysis" or "Blocked - [reason, e.g., incomplete coverage]".
+      - Next: Delegate to sdd-analyze for cross-check.
 
       # Handling
       - Dependencies unclear: Assume sequential; note.
@@ -524,14 +538,15 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - analysis.md path.
-      - Git branch confirmed.
-      - # Checks passed/failed.
-      - Findings count (critical/high only).
-      - Constitution compliance verified (if applicable).
-      - Updates made.
-      - "Ready for implement" or "Blocked - <critical issues>".
-      - Evidence paths (if any).
+      - File: <workspace_id>/analysis.md (path created/updated).
+      - Git: Branch <branch_name> confirmed.
+      - Checks: Summary (e.g., AC Coverage: ✅ full; Consistency: ✅; Constitution: ✅ gates planned; Gaps: 1 low).
+      - Findings: Total [number] (e.g., 3: 0 critical, 1 high, 2 low); table summary with actions.
+      - Updates: Files modified (e.g., "Updated tasks.md: Added T011 for gap").
+      - Constitution: Verified alignment (e.g., all gates addressed in tasks) if applicable.
+      - Status: "Ready for implement - no critical issues" or "Blocked - [critical issues, e.g., AC coverage gap]".
+      - Evidence: Paths to artifacts if used (e.g., none).
+      - Next: Proceed to sdd-implement if ready.
 
       # Handling
       - Minor issues: Fix and note.
@@ -592,14 +607,15 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - Progress: X/Y tasks (checkboxes updated in tasks.md).
-      - Completed tasks list.
-      - Tests/coverage status.
-      - Constitution gates passed (if applicable).
-      - Code changes (files).
-      - Remaining if partial.
-      - "Implementation ready" or "Partial - continue".
-      - Risks.
+      - Progress: [X/Y] tasks completed (e.g., 8/10; checkboxes flipped in tasks.md).
+      - Completed: List (e.g., T001-T008: tests/impl for AC1-AC3).
+      - Verification: Tests [pass/fail count], coverage [%], lint/type errors [0/non-zero].
+      - Constitution: Gates status (e.g., coverage 96% ≥95%, lint=0) if applicable.
+      - Changes: Files created/updated (e.g., "Added src/auth.ts, tests/auth.test.ts; 5 files total").
+      - Remaining: [list if partial, e.g., T009-T010 blocked by deps].
+      - Risks: Any new (e.g., "Performance threshold close - monitor").
+      - Status: "Implementation ready - all tasks complete and verified" or "Partial - continue [reason, e.g., 2 tasks remaining]".
+      - Next: If ready, proceed to sdd-review; else re-delegate to self.
 
       # Handling
       - Test fails: Debug, fix, re-run.
@@ -659,13 +675,15 @@ customModes:
       Sign-off: <ISO>
 
       # Report
-      - Verification status.
-      - Git branch confirmed.
-      - Constitution compliance confirmed (if applicable).
-      - User decision.
-      - Changes list (if any).
-      - "Approved" or "Blocked - changes needed".
-      - Evidence paths.
+      - File: <workspace_id>/review.md (path created/updated with verification and feedback).
+      - Git: Branch <branch_name> confirmed.
+      - Verification: Detailed results (e.g., ACs: 5/5 pass with evidence; Tasks: All [x]; Analysis: All resolved; Tests: Pass, coverage 97%).
+      - Constitution: Gates confirmed (e.g., lint=0, WCAG AA met) if applicable.
+      - User Feedback: Decision (Approved/Changes needed); details (e.g., "Approved with minor note on UX").
+      - Changes: Classified list (e.g., "2 bugs: re-implement T007; 1 spec update: refine AC4") or none.
+      - Evidence: Artifacts/screenshots (e.g., "artifacts/review-screenshot.png").
+      - Status: "Approved - proceed to release" or "Blocked - changes needed [classification, e.g., bugs → sdd-implement; spec → sdd-specify]".
+      - Next: If approved, delegate to sdd-release; else re-delegate to appropriate phase with specifics.
 
       # Handling
       - User changes: Classify precisely; suggest phase.
@@ -703,11 +721,14 @@ customModes:
       7. If fails: Report blocked.
 
       # Report
-      - Gates status (tests, coverage, constitution if applicable).
-      - Git merge/tag details.
-      - Deploy details.
-      - Rollback plan.
-      - "Released successfully".
+      - Gates: Final verification (e.g., Tests: All pass; Coverage: 98%; Lint: 0 errors).
+      - Constitution: All gates met (e.g., performance p95 ≤150ms) if applicable.
+      - Git: Merge to main completed; tag [v1.0.0] created if user-facing.
+      - Deploy: Details (e.g., "Built and deployed to staging via npm run deploy; URL: https://app.example.com").
+      - Rollback: Plan (e.g., "Git revert to tag v0.9.0; redeploy").
+      - Status: "Released successfully - project complete" or "Blocked - [failure reason, e.g., deploy error; suggest rollback]".
+      - Evidence: Logs/URLs (e.g., "artifacts/deploy-log.txt").
+      - Next: Task complete; notify user or archive workspace.
 
       # Handling
       - Gate fail: Block, specify fix phase.
