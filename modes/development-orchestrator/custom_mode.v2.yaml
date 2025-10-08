@@ -77,7 +77,7 @@ customModes:
       - After any phase: If report incomplete (e.g., missing outputs), re-delegate via new_task with specifics.
       - Task-update micro-loop (orchestrator-mediated): For low-risk scope discovered during implementation, the expert must end the session via attempt_completion with Status: "Blocked - Needs Task Update" and include minimal context (problem, affected ACs, proposed tasks). The orchestrator will re-delegate to sdd-task within ≤10 minutes. Implementation resumes only after tasks.md is updated and AC coverage confirmed.
       - No loops for minor issues; proceed if non-critical.
-      - Max 2 loops per phase before escalating to user.
+      - Soft cap: ~2 loops per phase; orchestrator may adjust based on value/risk.
 
       ## Delegation (new_task)
       Structure message:
@@ -144,6 +144,13 @@ customModes:
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Done-When:
+        - governance/constitution.md exists with:
+          - version
+          - principles
+          - gates
+          - updates
+        - Status = "Ready - Constitution prepared"
 
       # Process
       1. Read existing governance/constitution.md if present.
@@ -173,11 +180,11 @@ customModes:
       - <ISO>: Initial version
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report
       - File: governance/constitution.md (path and version created/updated).
-      - Git: Branch <git_branch> created/switched to.
+      - Branch: <git_branch>
       - Principles: Key principles incorporated/updated.
       - Compliance: Confirm alignment with user input; note conflict resolution.
       - Status: "Ready - Constitution prepared" | "Blocked - <reason>".
@@ -210,6 +217,12 @@ customModes:
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Done-When:
+        - <workspace_id>/spec.md exists with:
+          - Objectives ≥ 1
+          - ACs are measurable and enumerated (AC1+)
+          - Constraints include constitution references if applicable
+        - Status = "Ready - Initial spec" or "Partial - High ambiguities"
 
       # Process
       1. Read governance/constitution.md if exists; ensure spec complies (reference clauses in constraints if applicable).
@@ -246,11 +259,11 @@ customModes:
       - <noted ambiguities or risks>
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report
       - File: <workspace_id>/spec.md (path created).
-      - Git: Branch <git_branch> created/switched.
+      - Branch: <git_branch>
       - Objectives: Count and summary.
       - Acceptance Criteria: Count; all measurable and enumerated AC1+.
       - Constraints: Key items (incl. constitution refs if applicable).
@@ -290,6 +303,12 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Micro-loop requests must be orchestrator-mediated: end session with Status: "Blocked - Needs Task Update" if scope update is required.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Done-When:
+        - <workspace_id>/clarify.md exists with:
+          - Q→A items recorded
+          - Applied updates integrated (Objectives/ACs/Constraints/Glossary/Edge Cases/Risks)
+          - No unresolved critical ambiguities
+        - Status = "Ready - Clarifications resolved"
 
       # Process
       ## Step 1: Evaluation
@@ -362,7 +381,7 @@ customModes:
       - <if any>
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report
       - File: <workspace_id>/clarify.md (created/updated).
@@ -402,6 +421,14 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - If scope change is discovered downstream, request orchestrator-mediated micro-loop (end session with Status: "Blocked - Needs Task Update"); do not modify tasks directly.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Done-When:
+        - <workspace_id>/design.md exists with:
+          - Architecture + AC Mapping
+          - Tech Stack + Constitution alignment
+          - Data Model
+          - API Contracts
+          - (optional) minimal Implementation Snippets
+        - Status = "Ready - Design complete" or "Partial - High-risk assumptions"
 
       # Process Overview
       Develop a comprehensive high-level design that aligns with requirements, constitution, and best practices. Use tools for research (e.g., MCP for docs, codebase_search for patterns). Focus on critical decisions; note assumptions and risks explicitly.
@@ -502,11 +529,11 @@ customModes:
       - Research Sources: <tools and findings>
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report
       - File: <workspace_id>/design.md (created/updated).
-      - Git: Branch <git_branch> confirmed/switched.
+      - Branch: <git_branch>
       - Architecture: Components/flows summarized; ACs mapped.
       - Tech Stack: Choices with rationales and constitution alignment.
       - Risks: Count and summary (severity noted).
@@ -545,6 +572,12 @@ customModes:
       - tasks.md is authoritative once Phase 4 ends; no T-ID creation during implementation.
       - If scope update is required later, end session with Status: "Blocked - Needs Task Update" for orchestrator re-delegation to sdd-task.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Done-When:
+        - <workspace_id>/tasks.md exists with:
+          - T001+ list with deps / Type / AC links / checkboxes
+          - AC Coverage table shows full coverage
+          - Freeze rule active (no new T-IDs during implementation)
+        - Status = "Ready - Tasks executable" or "Blocked - Incomplete AC coverage"
 
       # Process
       1. Read constitution (if exists), spec.md, and design.md; ensure tasks comply (e.g., coverage, security).
@@ -585,11 +618,11 @@ customModes:
       - <ISO>: Initial tasks
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report
       - File: <workspace_id>/tasks.md (created).
-      - Git: Branch <git_branch> confirmed.
+      - Branch: <git_branch>
       - Tasks: Total and parallelizable counts; TDD pairing present.
       - Dependencies: Summary (sequences and parallels).
       - AC Coverage: Summary (full/partial).
@@ -626,6 +659,11 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Do not change scope; if a gap is found, end session with Status: "Blocked - Needs Task Update" for orchestrator to re-delegate to sdd-task.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Done-When:
+        - <workspace_id>/analysis.md exists with:
+          - No Critical/High issues
+          - Contract Readiness passed (if design.md exists)
+        - Status = "Ready - Implement" or "Blocked - High gaps"
 
       # Process Overview
       Conduct a lightweight pre-implementation cross-check on spec, design, and tasks for consistency, gaps, and compliance. Focus on critical issues; fix minor ones inline. Block on high-impact problems with specific upstream recommendations. Provide detailed reporting for orchestrator decisions.
@@ -687,11 +725,11 @@ customModes:
       - Risks: <summary>
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report
       - File: <workspace_id>/analysis.md (created/updated).
-      - Git: Branch <git_branch> confirmed.
+      - Branch: <git_branch>
       - Checks: Summary across key dimensions.
       - Findings: Count and table summary with actions.
       - Updates: Files modified (if any).
@@ -700,12 +738,10 @@ customModes:
       - Evidence: Paths to artifacts (if used).
       - Next: Proceed to sdd-implement if ready.
 
-      # Handling Edge Cases
-      - Critical/High: Always block; recommend upstream phase.
-      - Minor: Fix inline; note in findings.
-      - No Constitution: Skip gate checks; report "N/A".
-      - Tool Failures: If search fails, manual review; log.
-      - Upstream Blocks: Do not proceed; explicit status and recommendation.
+      # Handling
+      - Block criteria: Missing AC coverage | Gates not planned | Unresolved design contradictions.
+      - Minor fix: Trivial doc/term updates inline; log in findings.
+      - Escalation: End session with Status "Blocked - Needs Task Update" for orchestrator re-delegation.
 
     groups:
       - mcp
@@ -730,6 +766,10 @@ customModes:
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates to sdd-task.
       - Keep outputs concise; measurable statements; avoid narrative.
+      - Done-When:
+        - All tasks are [x] and verified (tests/gates), or
+        - Status = "Partial - technical blockers" with resumption plan, or
+        - Status = "Blocked - upstream issue" with suggested loop
 
       # Process Overview
       Aim for full completion of all tasks in tasks.md using strict TDD (Red-Green-Refactor). Process in dependency order. Partial completion is only for technical blockers (e.g., external deps). For upstream issues (spec/design gaps), halt and report "Blocked" with a suggested loop (clarify/plan/task). Verify changes and constitution compliance.
@@ -802,7 +842,7 @@ customModes:
       - Risks: <summary>
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
     groups:
       - mcp
@@ -828,6 +868,13 @@ customModes:
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Verification scope: validate against ACs, constitution gates, and analysis follow-ups only; no new scope introduction.
       - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation to sdd-task".
+      - Done-When:
+        - <workspace_id>/review.md exists with:
+          - Completeness assessed
+          - AC verification with evidence
+          - User decision captured (if solicited)
+          - Scope adherence OK (or micro-loop requested)
+        - Status = Approved/Blocked (per template)
 
       # Process Overview
       Ensure the implementation meets requirements before release. Always start with completeness. Proceed to verification and user feedback only if implementation is complete. Halt early if incomplete, but always document details for orchestrator.
@@ -905,12 +952,12 @@ customModes:
       - Next Actions: <specific delegation or proceed to sdd-release>
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report (attempt_completion)
       Provide a concise summary mirroring review.md:
       - File: <workspace_id>/review.md (created/updated).
-      - Git: Branch <git_branch> active.
+      - Branch: <git_branch>
       - 1. Completeness: <X/N>; Status: <Complete | Blocked - Incomplete>; Recommendation: <...>.
       - 2. Verification: <summary or skipped reason>.
       - 3. User Feedback: <decision/classification or not solicited>.
@@ -918,14 +965,10 @@ customModes:
       - Evidence: <artifacts summary>.
       - Overall: Enables orchestrator decision; constitution compliance noted (if applicable).
 
-      # Handling Edge Cases
-      - Incomplete implementation: Always report; suggest precise re-delegation.
-      - Verification failures: Document severity; seek user input if complete.
-      - User requests changes: Classify accurately and route.
-      - No user response: One reminder; then "Blocked - Awaiting User Feedback".
-      - Constitution gaps: Flag; recommend update if blocking.
-      - Rapid track: Lighter verification; note shortcuts.
-      - No constitution: Skip gate checks; note "N/A".
+      # Handling
+      - Block criteria: Incomplete implementation | AC failures without fix | Scope mismatch.
+      - Minor fix: Small test/doc issues inline; log in review.md.
+      - Escalation: End session with Status "Blocked - ..." with summary; orchestrator re-delegates to the right mode.
 
     groups:
       - mcp
@@ -952,6 +995,10 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Only document release details; do not change code/config. Link to review.md as needed.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Done-When:
+        - <workspace_id>/release.md exists with:
+          - Gates/Git/Deploy/Rollback/Evidence recorded
+        - Status = "Ready - Released successfully" or "Blocked - <reason>"
 
       # Process
       1. Read constitution (if exists); verify: tests pass, no errors, review approved, all tasks [x], constitution gates met (if applicable).
@@ -993,7 +1040,7 @@ customModes:
       - Plan: <steps, e.g., revert to tag>
 
       ---
-      Sign-off: <ISO Date/Time>
+      
 
       # Report
       - File: <workspace_id>/release.md (created/updated).
