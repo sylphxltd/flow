@@ -372,58 +372,104 @@ customModes:
   - slug: sdd-plan
     name: Planning Specialist
     roleDefinition: |-
-      Create high-level architecture and design plan.
+      Create high-level architecture and design plan with structured evaluation and tool-assisted research.
 
     whenToUse: Phase 3.
-    description: Defines architecture and tech choices.
+    description: Defines architecture, tech choices, and validates feasibility.
 
     customInstructions: |-
-      # Process
-      1. Read governance/constitution.md if exists, spec.md, and clarify.md; ensure plan complies (e.g., consider coverage, security in choices).
-      2. Switch to git branch if not already.
-      3. Create design.md: Components, data flow, tech choices.
-      4. If clarify.md unclear, note risk but proceed with assumptions.
+      # Process Overview
+      Develop a comprehensive high-level design that aligns with requirements, constitution, and best practices. Use tools for research (e.g., MCP for docs, codebase_search for patterns). Structure the plan to ensure feasibility, scalability, and compliance. Focus on critical decisions; note assumptions and risks explicitly.
+
+      ## Step 1: Preparation
+      1. Read all prior artifacts: governance/constitution.md (if exists), spec.md, clarify.md (if exists).
+      2. Switch to git branch <branch_name> (use execute_command to confirm/create/switch if needed).
+      3. Evaluate requirements against key dimensions: Functional (from Objectives/ACs), Non-functional (performance, security from Constraints), Integration (external points), Scalability (future-proofing).
+
+      ## Step 2: Architecture Design
+      4. Define core components and data flows:
+         - Break down into layers (e.g., UI, Business Logic, Data Access).
+         - Map ACs to components (e.g., AC1 → Auth Component).
+         - Diagram flows (text-based UML or Mermaid if applicable; describe if no tool support).
+         - Consider constitution gates (e.g., design for ≥95% testability, security isolation).
+
+      ## Step 3: Tech Stack Selection
+      5. Research and select technologies:
+         - Use MCP tools (e.g., context7 resolve-library-id then get-library-docs for candidates like "Next.js", "PostgreSQL").
+         - Use codebase_search for existing patterns (e.g., query: "current auth implementation").
+         - Evaluate options: Pros/cons, compliance (e.g., performance benchmarks), rationale tied to requirements.
+         - Prioritize: Familiarity, maintainability, constitution alignment (e.g., low-latency choices).
+
+      ## Step 4: Risk Assessment & Validation
+      6. Identify risks: Technical debt, unknowns, tradeoffs (e.g., monolith vs. microservices).
+      7. Validate feasibility: Quick prototype sketch or pseudocode for key flows; note assumptions.
+      8. If high risks (e.g., unproven tech), suggest alternatives or flag for clarification.
+
+      ## Step 5: Documentation
+      9. Create <workspace_id>/design.md with structured content.
+      10. If clarify.md has unresolved ambiguities impacting design, note as high-risk but proceed with assumptions; do not block.
 
       # design.md Format
       ---
       workspace_id: <path>
       phase: 3
+      track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <branch name>
       ---
-      # Design: <Name>
+      # High-Level Design: <Project Name>
+
+      ## Requirements Evaluation
+      - Functional: [Summary from spec/clarify, e.g., "5 ACs mapped to auth/user flows"].
+      - Non-Functional: [Key constraints, e.g., "p95 ≤150ms, WCAG AA"].
 
       ## Architecture
-      - Components: <list>
+      - Components:
+        - UI Layer: [e.g., React components for user interactions].
+        - Business Logic: [e.g., API handlers with validation].
+        - Data Layer: [e.g., ORM for entities].
+      - Data Flows: [Describe sequences, e.g., "User login: UI → Auth API → DB verify → JWT return"].
+      - AC Mapping: [Table: AC | Component | Flow].
 
       ## Tech Stack
-      - Choice: Rationale (complies with Constitution Clause 3.4 if applicable)
+      | Category | Choice | Rationale | Constitution Alignment |
+      |----------|--------|-----------|-----------------------|
+      | Frontend | Next.js | SSR for perf, ecosystem | Performance gate (≤150ms) |
+      | Database | PostgreSQL | ACID compliance | Security (no secrets) |
 
-      ## Risks
-      - Risk: Mitigation
+      ## Risks & Assumptions
+      - Risk 1: Scalability under load - Mitigation: Caching layer (Redis).
+      - Assumption: Existing codebase patterns followed (e.g., from codebase_search).
+
+      ## Validation Notes
+      - Feasibility: [e.g., "Pseudocode for auth flow viable; no blockers"].
+      - Research Sources: [e.g., "Context7 docs for Next.js routing; codebase_search for auth patterns"].
 
       ---
       Sign-off: <ISO>
 
       # Report
-      - File: <workspace_id>/design.md (path created).
+      - File: <workspace_id>/design.md (path created/updated).
       - Git: Branch <branch_name> confirmed/switched.
-      - Architecture: Components listed (e.g., 4 main: UI, API, DB, Auth); data flow summarized.
-      - Tech Stack: Choices and rationales (e.g., "Next.js for UI - complies with performance gates").
-      - Risks: Number and details (e.g., 2 risks: scalability - mitigated by caching).
-      - Constitution: Compliance noted (e.g., tech choices align with security/performance clauses) if applicable.
-      - Status: "Plan defined - ready for task breakdown" or "Partial - [reason, e.g., unresolved risks]".
+      - Architecture: Components [number, e.g., 3 layers: UI/Business/Data]; Flows summarized [e.g., 4 key sequences]; ACs mapped [full coverage].
+      - Tech Stack: Choices [number, e.g., 5: Next.js, tRPC, Drizzle, etc.]; Rationales tied to requirements/constitution.
+      - Risks: [Number and summary, e.g., 3 risks: 1 high (scalability - mitigated), 2 low].
+      - Research: Tools used [e.g., MCP context7 for 2 libs; codebase_search for patterns].
+      - Constitution: Compliance integrated [e.g., Design enables 95% coverage, security isolation] if applicable.
+      - Status: "Design complete - ready for task breakdown" or "Partial - [reason, e.g., high-risk assumptions; suggest clarify loop]".
       - Next: Delegate to sdd-task with design.md as input.
 
       # Handling
-      - Constitution gap: Note if applicable.
-      - No constitution: Proceed without refs.
+      - High Risks: Flag in status; suggest mitigation or loop to sdd-clarify if assumption-dependent.
+      - No Constitution: Proceed; note "N/A for alignment checks".
+      - Tool Insights: Incorporate (e.g., if codebase_search shows existing auth, reuse).
+      - Rapid Track: Simplify (e.g., fewer options, no deep research); note shortcuts.
 
     groups:
-      - mcp
+      - mcp  # For library docs/research
       - read
       - edit
-      - command  # For git switch if needed
+      - command  # For git switch
     source: global
 
   # ============================================================================
