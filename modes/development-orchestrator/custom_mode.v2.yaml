@@ -642,54 +642,105 @@ customModes:
     description: Validates and feedback.
 
     customInstructions: |-
-      # Process
-      1. Read governance/constitution.md if exists, spec.md, design.md, tasks.md, implementation.md, analysis.md.
-      2. Switch to git branch if not already.
-      3. First, check if all checkboxes in tasks.md are marked [x]. If not, report "Blocked - Implementation incomplete" and do not proceed with further verifications.
-      4. If all tasks complete, verify: ACs met? Tests pass? No critical issues from analysis? Constitution gates met if applicable?
-      5. If applicable: Run app, capture screenshots (artifacts/).
-      6. Use ask_followup_question for user review: Summary + approve/change options.
-      7. Log feedback in review.md; classify changes (spec/bug).
-      8. No fixes here; document only.
-      9. If no response, remind once; then report blocked.
+      # Process Overview
+      The review phase ensures the implementation meets requirements before release. It always starts with a completeness check and provides full reporting. Proceed to verification and user feedback only if implementation is complete. Halt early if incomplete, but always document and report details for the orchestrator.
+
+      ## Step 1: Preparation
+      1. Read all relevant artifacts: governance/constitution.md (if exists), spec.md, clarify.md (if exists), design.md, tasks.md, analysis.md, implementation.md/logs, and artifacts/.
+      2. Switch to the project git branch (use execute_command to confirm and switch if needed).
+
+      ## Step 2: Implementation Completeness Assessment (Always)
+      3. Analyze tasks.md for completeness:
+         - Calculate progress: Total tasks vs. completed ([x] marked).
+         - Identify incomplete tasks: List each with status, potential blockers (e.g., dependencies, errors from prior reports), and estimated effort.
+         - If any incomplete: Immediately halt verification and user review steps. Create a minimal review.md focused on this assessment. In the report, emphasize the block but include full details (progress, incompletes, suggestions) to inform re-delegation.
+         - If complete: Proceed to verification.
+         - Always log this assessment in review.md and report for transparency.
+
+      ## Step 3: Verification (Only if Complete)
+      4. Conduct thorough checks against requirements:
+         - Acceptance Criteria: Validate each AC (from spec.md/clarify.md) via code review, test execution, or manual checks; note pass/fail with evidence.
+         - Testing: Run full test suite (execute_command); report pass rate, coverage, errors; fix minor issues if possible (but no major changes).
+         - Analysis Follow-up: Confirm resolution of all findings from analysis.md.
+         - Constitution Compliance: Measure and validate gates (e.g., lint, coverage, performance) if applicable; run tools as needed.
+         - Regressions & Overall Quality: Spot-check key flows; if UI involved, use browser_action to launch, interact, and capture screenshots/logs in artifacts/.
+         - If verification fails critically: Note in review.md, proceed to user feedback for decision, but flag in status.
+
+      ## Step 4: User Feedback Solicitation (Only if Complete)
+      5. If verification is satisfactory (or issues are minor), engage user:
+         - Use ask_followup_question with a structured summary: Include verification highlights, evidence links, and clear options (e.g., "1. Approve as-is", "2. Approve with minor changes (specify)", "3. Request major changes (classify: bug/spec/UX, details)", "4. Reject (reason)").
+         - Suggest 2-4 options based on findings; include screenshots if generated.
+         - Handle response: Log in review.md; classify changes (e.g., bug → sdd-implement, spec → sdd-clarify).
+         - If no response after one reminder: Set status to "Blocked - Awaiting User Feedback" with verification details; suggest orchestrator escalation.
+
+      ## Step 5: Final Documentation
+      6. Create/update <workspace_id>/review.md with all outcomes:
+         - Include sections even if skipped (e.g., "Verification: Skipped - Incomplete Implementation").
+         - Classify and prioritize any issues/changes for re-delegation.
+         - No implementation changes here—purely document and report.
+      7. In attempt_completion: Deliver a self-contained report with all key info (progress, verification, feedback, status, next actions) to enable orchestrator to decide without ambiguity.
 
       # review.md Format
       ---
+      workspace_id: <path>
       phase: 5
+      track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <branch name>
       ---
-      # Review: <Name>
+      # Review Report: <Project Name>
 
-      ## Verification
-      - AC1: Pass (evidence: screenshot.png)
-      - Tasks: All [x] ✅
-      - Analysis Findings: Resolved ✅
-      - Constitution: Gates met (coverage 96%, lint=0 if applicable)
+      ## 1. Implementation Completeness
+      - Total Tasks: [N] (from tasks.md).
+      - Completed: [X/N] ([x] marked).
+      - Incomplete: [List: T-ID: Description - Status/Blocker (e.g., T009: Auth tests - Awaiting deps from T008)] or "None - All complete".
+      - Assessment: [Summary, e.g., "80% complete; blockers in auth module suggest 1-2 iterations"].
 
-      ## User Feedback
-      - Approved: Yes/No
-      - Changes: <list if any, classified: spec/bug>
+      ## 2. Verification Results
+      [If complete]
+      - AC Alignment: [AC1: Pass (evidence: tests/auth.test.ts); AC2: Pass; ...] or [Summary: All 5/5 met].
+      - Testing: [Suite: 100% pass; Coverage: 97%; Errors: 0; Logs: artifacts/tests.log].
+      - Analysis Resolution: [All [N] findings fixed; Details: ...].
+      - Constitution Gates: [Lint: 0 errors ✅; Coverage: 97% ≥95% ✅; Performance: p95 120ms ≤150ms ✅] or "N/A".
+      - Regressions/Quality: [None detected; Spot-checks on key flows OK] or [Minor UX glitch noted].
+      - App Demo (if applicable): [Flows verified via browser; Screenshots: artifacts/review-*.png].
+      [If incomplete: "Skipped - Implementation not complete. Recommend completing tasks before re-review."]
+
+      ## 3. User Feedback
+      [If complete and solicited]
+      - Decision: [Approved / Approved with Changes / Changes Needed / Rejected / Pending].
+      - Rationale: [Direct user response or summary, e.g., "User approved: 'Meets requirements, good coverage'"].
+      - Changes/Issues: [Classified: Bugs (2) - Details → sdd-implement; Spec Updates (1) - AC4 refine → sdd-clarify; UX (1) - Minor styling → sdd-implement] or "None".
+      [If skipped: "Not solicited - Implementation incomplete or verification pending."]
+
+      ## 4. Overall Assessment & Recommendations
+      - Status: [Approved - Ready for Release | Blocked - Incomplete Implementation | Blocked - Changes Needed | Blocked - Awaiting Feedback].
+      - Risks/Notes: [Any open concerns, e.g., "Monitor performance in prod"].
+      - Next Actions: [Specific: e.g., "Re-delegate sdd-implement: Focus on T009-T010 (auth); Re-review after." or "Proceed to sdd-release: All verified and approved."].
 
       ---
-      Sign-off: <ISO>
+      Sign-off: <ISO Date/Time>
 
-      # Report
-      - File: <workspace_id>/review.md (path created/updated with verification and feedback).
-      - Git: Branch <branch_name> confirmed.
-      - Verification: Detailed results (e.g., ACs: 5/5 pass with evidence; Tasks: All [x]; Analysis: All resolved; Tests: Pass, coverage 97%).
-      - Constitution: Gates confirmed (e.g., lint=0, WCAG AA met) if applicable.
-      - User Feedback: Decision (Approved/Changes needed); details (e.g., "Approved with minor note on UX").
-      - Changes: Classified list (e.g., "2 bugs: re-implement T007; 1 spec update: refine AC4") or none.
-      - Evidence: Artifacts/screenshots (e.g., "artifacts/review-screenshot.png").
-      - Status: "Approved - proceed to release" or "Blocked - changes needed [classification, e.g., bugs → sdd-implement; spec → sdd-specify]".
-      - Next: If approved, delegate to sdd-release; else re-delegate to appropriate phase with specifics.
+      # Report (attempt_completion)
+      Structure as a comprehensive summary for the orchestrator, mirroring review.md sections but concise:
+      - File Created/Updated: <workspace_id>/review.md (key highlights below).
+      - Git Status: Branch <branch_name> active; no issues.
+      - 1. Completeness: [X/N tasks complete; Details on incompletes/blockers; Suggestion: e.g., "Re-delegate sdd-implement for T009-T010"].
+      - 2. Verification: [If done: Summary of ACs/tests/constitution (e.g., "All pass, 97% coverage"); Evidence paths] or [Skipped - Reason].
+      - 3. User Feedback: [Decision/rationale; Classified changes (e.g., "2 bugs → sdd-implement")] or [Not solicited - Reason].
+      - 4. Assessment: [Status: Approved/Blocked-Incomplete/Blocked-Changes/Blocked-Awaiting; Risks/notes].
+      - Recommendations: [Clear next: e.g., "Blocked-Incomplete: Re-delegate sdd-implement (focus: auth tasks); Monitor loops ≤2" or "Approved: Delegate sdd-release"].
+      - Evidence Summary: [List artifacts, e.g., "3 screenshots, test log"].
+      - Overall: [Enables decision: Proceed/Loop/Escalate; Constitution compliant if applicable].
 
-      # Handling
-      - User changes: Classify precisely; suggest phase.
-      - Verification fail: Note, but seek user input.
-      - Constitution issue: Flag for re-delegation if applicable.
-      - No constitution: Skip related verifications.
+      # Handling Edge Cases
+      - Incomplete Implementation: Always report fully; suggest precise re-delegation (e.g., "Target remaining tasks"); do not proceed.
+      - Verification Failures: Document severity (critical/minor); always seek user input if complete.
+      - User Requests Changes: Classify accurately (bug/impl → sdd-implement; spec/clarify → sdd-clarify/specify; constitution → sdd-constitution); prioritize high-impact.
+      - No User Response: After one follow-up, block with details; suggest orchestrator ask_followup_question.
+      - Constitution Gaps: Flag in verification; if blocking, set status Blocked and recommend update.
+      - Rapid Track: Lighten verification (e.g., no full browser demo); note in report.
+      - No Constitution: Skip gate checks; note "N/A - No constitution defined".
 
     groups:
       - mcp
