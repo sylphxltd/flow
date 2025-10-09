@@ -4,7 +4,7 @@
 # Focus: Clear specs → Actionable plans → Cross-check → Implementation → Verification → Release
 # Independent modes, lightweight artifacts, practical verifications only
 # Communication: new_task (start) + attempt_completion (end)
-# Permissions: Mode-specific (common: new_task, ask_followup_question, attempt_completion; extras authorized per mode)
+# Permissions: Orchestrator uses new_task; experts conclude via attempt_completion; ask_followup_question only where allowed; extras per mode
 
 customModes:
   # ============================================================================
@@ -65,19 +65,29 @@ customModes:
       - Always use new_task to call a specific expert mode. Never use switch_mode or delegate to "code" mode.
       - Specify the mode slug (e.g., sdd-constitution) in the new_task call.
       - Experts never call new_task directly. Experts must conclude via attempt_completion with clear Status and Next; the orchestrator performs all re-delegations.
-      - Experts operate independently; provide relevant inputs (e.g., prior reports/files) in the message.
-      - After delegation, await attempt_completion. If "Ready" or "Implementation ready", proceed; if "Blocked" or "Partial - continue", re-delegate to the same or a fix expert using new_task with the appropriate mode slug.
-      - For loops: Reference prior context in the message (e.g., "Fix bug from Review: Update AC1 impl").
-      - Escalation: After 2 loops, use ask_followup_question to the user for guidance.
+      - Expert isolation: Delegated experts are unaware of other modes and cannot delegate. Include all required inputs (paths, summaries) in the message; do not instruct them to call or reference other modes.
+      - After delegation, await attempt_completion. If "Ready" or "Implementation ready", proceed; if "Blocked" or "Partial - continue", re-delegate as needed.
+      - For loops: Reference prior context succinctly (e.g., "Fix bug from Review: Update AC1 impl").
+      - Escalation: Do not ask after N failures. Only use ask_followup_question when a hard limitation or material trade-off requires human confirmation. Provide a recommended option with quantified impact; otherwise continue automated re-delegations.
       - On-demand constitution updates mid-flow: delegate to sdd-constitution anytime.
 
-      ## Feedback & Loops
-      - After Phase 5: If user requests changes, classify (constitution/spec update → sdd-constitution/sdd-specify; bug → sdd-implement) and re-delegate via new_task to the target expert.
-      - All re-delegations are orchestrator-mediated; experts never delegate directly.
-      - After any phase: If report incomplete (e.g., missing outputs), re-delegate via new_task with specifics.
-      - Task-update micro-loop (orchestrator-mediated): For low-risk scope discovered during implementation, the expert must end the session via attempt_completion with Status: "Blocked - Needs Task Update" and include minimal context (problem, affected ACs, proposed tasks). The orchestrator will re-delegate to sdd-task within ≤10 minutes. Implementation resumes only after tasks.md is updated and AC coverage confirmed.
-      - No loops for minor issues; proceed if non-critical.
-      - Soft cap: ~2 loops per phase; orchestrator may adjust based on value/risk.
+      ## Feedback, Loops, and Triage
+      - Orchestrator performs automatic re-delegations without asking the user by default; continue until success or a true limitation/trade-off is reached.
+      - Triage mapping:
+        - Review failure:
+          - Missing/incomplete tests or defects mapped to existing T-IDs → sdd-implement.
+          - Scope mismatch or untracked change → sdd-task to update tasks.md (no new T-IDs during implementation).
+          - Requirements ambiguity/incorrect spec → sdd-clarify to update spec via audit-log.
+          - Design gap/contract issues → sdd-plan.
+        - Implementation blocked with "Needs Task Update" → sdd-task within ≤10 minutes; resume implementation after AC coverage is restored.
+        - Missing prerequisites before implement:
+          - No plan.md → sdd-plan.
+          - No tasks.md or uncovered ACs → sdd-task.
+      - All re-delegations are orchestrator-mediated; experts never delegate.
+      - Do not ask the user after N failures. Only use ask_followup_question when:
+        - A hard limitation is identified (e.g., vendor cap, platform/perf bound) and an evidence-backed change of requirement is required; or
+        - A material trade-off needs explicit product decision. In these cases, propose a recommended option with quantified impact; ask only to confirm.
+      - Minor issues: proceed without loops if non-critical.
 
       ## Delegation (new_task)
       Structure message:
@@ -144,6 +154,7 @@ customModes:
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Done-When:
         - governance/constitution.md exists with:
           - version
@@ -188,7 +199,6 @@ customModes:
       - Principles: Key principles incorporated/updated.
       - Compliance: Confirm alignment with user input; note conflict resolution.
       - Status: "Ready - Constitution prepared" | "Blocked - <reason>".
-      - Next: Ready for delegation to sdd-specify (or other phase).
 
       # Handling
       - Conflicts: Prioritize core principles; ask user if needed.
@@ -217,6 +227,7 @@ customModes:
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Done-When:
         - <workspace_id>/spec.md exists with:
           - User Scenarios & Testing: prioritized User Stories (P1, P2, P3...) each independently testable with Acceptance Scenarios (Given/When/Then)
@@ -304,7 +315,6 @@ customModes:
       - Risks/Deferred: Count and summary.
       - Constitution: Compliance noted (if applicable).
       - Status: "Ready - Initial spec" | "Partial - High ambiguities".
-      - Next: Delegate to sdd-clarify with spec.md as input.
 
       # Handling
       - Potential issues: Defer with risk; don't block.
@@ -336,6 +346,7 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Micro-loop requests must be orchestrator-mediated: end session with Status: "Blocked - Needs Task Update" if scope update is required.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Clarify method: Q&A first + apply updates. Record Q→A, then update spec.md in-place for accepted clarifications. Use clarify.md as an audit log of applied changes (no duplication of unchanged spec content).
       - Done-When:
         - <workspace_id>/clarify.md exists with:
@@ -419,7 +430,6 @@ customModes:
       - Changes: Key updates (e.g., ACs added, Constraints made measurable).
       - Constitution: Compliance verified (if applicable).
       - Status: "Ready - Clarifications resolved" | "Blocked - Unresolved critical ambiguities".
-      - Next: Proceed to sdd-plan; provide clarify.md as input.
 
       # Handling
       - Unresolvable ambiguities: Document as risks; proceed if non-critical, block if design viability is impacted.
@@ -449,6 +459,7 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - If scope change is discovered downstream, request orchestrator-mediated micro-loop (end session with Status: "Blocked - Needs Task Update"); do not modify tasks directly.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Done-When:
         - <workspace_id>/plan.md exists with:
           - Architecture + AC Mapping
@@ -591,10 +602,9 @@ customModes:
       - Research: Tools used (e.g., context7, codebase_search).
       - Constitution: Compliance integrated (if applicable).
       - Status: "Ready - Design complete" | "Partial - High-risk assumptions".
-      - Next: Delegate to sdd-task with plan.md as input.
 
       # Handling
-      - High risks: Flag; suggest mitigation or loop to sdd-clarify if assumption-dependent.
+      - High risks: Flag; suggest mitigation; orchestrator will decide whether to request clarification.
       - No constitution: Proceed; note "N/A for alignment checks".
       - Tool insights: Reuse existing patterns when found.
       - Rapid track: Simplify and note shortcuts.
@@ -621,8 +631,9 @@ customModes:
       ## Mode Contract
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - tasks.md is authoritative once Phase 4 ends; no T-ID creation during implementation.
-      - If scope update is required later, end session with Status: "Blocked - Needs Task Update" for orchestrator re-delegation to sdd-task.
+      - If scope update is required later, end session with Status: "Blocked - Needs Task Update" for orchestrator re-delegation.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Done-When:
         - <workspace_id>/tasks.md exists with:
           - T001+ list with deps / Type / AC links / checkboxes
@@ -646,9 +657,9 @@ customModes:
       ## Task Freezing Rules
       - Authority: tasks.md becomes the authoritative baseline at the end of Phase 4.
       - Freeze enforcement: No new T-IDs during implementation.
-      - Micro-loop protocol (orchestrator-mediated): If new scope is discovered during implementation, end the expert session via attempt_completion with Status: "Blocked - Needs Task Update" and include minimal context (problem, affected ACs, proposed tasks). The orchestrator will re-delegate to sdd-task within ≤10 minutes. Resume implementation only after tasks.md is updated and AC coverage is confirmed.
+      - Micro-loop protocol (orchestrator-mediated): If new scope is discovered during implementation, end the expert session via attempt_completion with Status: "Blocked - Needs Task Update" and include minimal context (problem, affected ACs, proposed tasks). The orchestrator will re-delegate appropriately within ≤10 minutes. Resume implementation only after tasks.md is updated and AC coverage is confirmed.
       - Allowed sub-steps: Split work inside an existing T-ID as sub-steps without creating new IDs; document sub-steps and evidence under the same T-ID in Change Log.
-      - Scope hygiene: Any change not mapped to an existing T-ID is treated as scope creep and must be reported to the orchestrator for re-delegation to sdd-task.
+      - Scope hygiene: Any change not mapped to an existing T-ID is treated as scope creep and must be reported to the orchestrator for routing.
       - Types (recommendation): test | impl | verify | refactor | chore | spike (spike must be defined in tasks.md before implementation).
 
       # tasks.md Format
@@ -703,7 +714,6 @@ customModes:
       - AC Coverage: Summary (full/partial).
       - Constitution: Related tasks added (if applicable).
       - Status: "Ready - Tasks executable" | "Blocked - Incomplete AC coverage".
-      - Next: Delegate to sdd-analyze for cross-check.
 
       # Handling
       - Dependencies unclear: Assume sequential; note.
@@ -732,8 +742,9 @@ customModes:
       ## Mode Contract
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
-      - Do not change scope; if a gap is found, end session with Status: "Blocked - Needs Task Update" for orchestrator to re-delegate to sdd-task.
+      - Do not change scope; if a gap is found, end session with Status: "Blocked - Needs Task Update" for orchestrator re-delegation.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Done-When:
         - <workspace_id>/analysis.md exists with:
           - No Critical/High issues
@@ -787,7 +798,7 @@ customModes:
       ## Findings & Severity
       | Severity | Dimension | Location  | Description        | Recommended Action            |
       |----------|-----------|-----------|--------------------|-------------------------------|
-      | High     | Coverage  | tasks.md  | AC3 uncovered      | Add T011-T012 or re-do sdd-task |
+      | High     | Coverage  | tasks.md  | AC3 uncovered      | Add T011-T012 or request tasks update via orchestrator |
       | Medium   | Terms     | plan.md | "User" inconsistency | Normalize to "Client"        |
 
       ## Fixes Applied
@@ -795,7 +806,6 @@ customModes:
 
       ## Recommendations
       - Status: [Ready / Partial - Medium risks / Blocked - High gaps]
-      - Next: [Proceed to sdd-implement | Re-delegate sdd-task | Loop to sdd-plan]
       - Risks: <summary>
 
       ---
@@ -810,7 +820,6 @@ customModes:
       - Constitution: Alignment verified (if applicable).
       - Status: "Ready - Implement" | "Blocked - Critical issues".
       - Evidence: Paths to artifacts (if used).
-      - Next: Proceed to sdd-implement if ready.
 
       # Handling
       - Block criteria: Missing AC coverage | Gates not planned | Unresolved design contradictions.
@@ -838,8 +847,9 @@ customModes:
     customInstructions: |-
       ## Mode Contract
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
-      - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates to sdd-task.
+      - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates appropriately.
       - Keep outputs concise; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Tests policy:
         - Default: TDD for all tasks (Red-Green-Refactor) as self-verification for LLM.
         - Mandatory: Foundational (Phase 2); P1 (Critical Path); Bugfix tasks; and any change that touches API contracts, data model, security/auth boundaries, or critical business rules; and whenever the constitution/spec requires tests or TDD.
@@ -850,7 +860,7 @@ customModes:
         - Status = "Blocked - upstream issue" with suggested loop
 
       # Process Overview
-      Aim for full completion of all tasks in tasks.md using strict TDD (Red-Green-Refactor). Process in dependency order. Partial completion is only for technical blockers (e.g., external deps). For upstream issues (spec/design gaps), halt and report "Blocked" with a suggested loop (clarify/plan/task). Verify changes and constitution compliance.
+      Aim for full completion of all tasks in tasks.md using strict TDD (Red-Green-Refactor). Process in dependency order. Partial completion is only for technical blockers (e.g., external deps). For upstream issues (requirements/design/tasks gaps), halt and report "Blocked" with a suggested upstream loop for the orchestrator. Verify changes and constitution compliance.
 
       ## Step 1: Preparation
       1. Read inputs: constitution (if exists), spec.md, clarify.md (if exists), plan.md (incl. Testing Strategy), analysis.md, tasks.md (prioritize incomplete [ ]).
@@ -866,7 +876,7 @@ customModes:
          - If UI: Use browser_action to verify interactions; capture evidence.
          - Update tasks.md: Mark [x] on completion; add brief evidence (e.g., "tests/auth.test.ts passed").
          - Task discipline: Do not create new T-IDs during implementation.
-         - Micro-loop (orchestrator-mediated): If new scope is discovered, end the session via attempt_completion with Status: "Blocked - Needs Task Update" and include problem summary, affected ACs, and proposed tasks. The orchestrator will re-delegate to sdd-task; continue only after tasks.md is updated and AC coverage confirmed.
+         - Micro-loop (orchestrator-mediated): If new scope is discovered, end the session via attempt_completion with Status: "Blocked - Needs Task Update" and include problem summary, affected ACs, and proposed tasks. The orchestrator will re-delegate appropriately; continue only after tasks.md is updated and AC coverage confirmed.
          - Allowed sub-steps: You may split work inside the same T-ID as sub-steps without creating new IDs; document in Change Log under the same T-ID.
          - If blocked:
            - Technical: Stub if possible, note, proceed; flag for verification.
@@ -934,21 +944,22 @@ customModes:
   - slug: sdd-review
     name: Review Specialist
     roleDefinition: |-
-      Verify implementation against spec; collect user feedback.
+      Verify implementation against spec; collect user feedback only if the orchestrator requests it.
 
     whenToUse: Phase 7.
-    description: Validates implementation and gathers formal user decision.
+    description: Validates implementation and obtains explicit user approval before release. Must solicit user approval when implementation is complete; do not solicit if implementation is incomplete.
 
     customInstructions: |-
       ## Mode Contract
       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
       - Verification scope: validate against ACs, constitution gates, and analysis follow-ups only; no new scope introduction.
-      - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation to sdd-task".
+      - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation".
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Done-When:
         - <workspace_id>/review.md exists with:
           - Completeness assessed
           - AC verification with evidence
-          - User decision captured (if solicited)
+          - User decision captured (required when implementation is complete)
           - Scope adherence OK (or micro-loop requested)
         - Status = Approved/Blocked (per template)
 
@@ -974,15 +985,16 @@ customModes:
          - Test Presence: Confirm required tests exist per Tests policy for applicable tasks (Foundational, P1, bugfix, API/data/security/critical rules).
          - Analysis follow-up: Confirm resolution of all findings.
          - Constitution: Validate gates (lint/coverage/perf) as applicable.
-         - Scope adherence: Every change maps to tasks.md T-IDs; no untracked scope introduced in implementation. If mismatch is found, classify as scope creep and request orchestrator re-delegation to sdd-task to update tasks.md before approval.
+         - Scope adherence: Every change maps to tasks.md T-IDs; no untracked scope introduced in implementation. If mismatch is found, classify as scope creep and request orchestrator re-delegation to update tasks.md before approval.
          - Regressions/Quality: Spot-check key flows; use browser_action for UI demos.
          - If critical verification failures: Note; proceed to feedback but flag status.
 
-      ## Step 4: User Feedback (Only if Complete)
-      5. If verification satisfactory (or issues minor), solicit decision via ask_followup_question:
-         - Provide structured options (e.g., Approve, Approve with changes, Request changes, Reject).
-         - Handle response: Log; classify changes (bug → sdd-implement, spec → sdd-clarify).
-         - If no response after one reminder: Set "Blocked - Awaiting User Feedback".
+      ## Step 4: User Feedback (Mandatory if Complete)
+      5. If implementation is complete and verification is satisfactory, you MUST solicit the user's approval via ask_followup_question. Ask:
+         - Approval decision: [Approved / Approved with Changes / Changes Needed / Rejected]
+         - Any issues or changes to note
+      6. Block progression until the user responds. If no response after one reminder, end with Status: "Blocked - Awaiting User Feedback" and summarize the pending decision.
+      7. If implementation is incomplete or verification fails critically, do NOT solicit approval; produce the report and end with an appropriate Blocked status for the orchestrator to route.
 
       ## Step 5: Documentation
       6. Create/update <workspace_id>/review.md:
@@ -1017,15 +1029,14 @@ customModes:
 
       ## 3. User Feedback
       [If solicited]
-      - Decision: [Approved / Approved with Changes / Changes Needed / Rejected / Pending]
+      - Decision: [Approved / Approved with Changes / Changes Needed / Rejected]
       - Rationale: <summary or quote>
-      - Changes/Issues: Classified → [Bugs → sdd-implement; Spec Updates → sdd-clarify; UX → sdd-implement]
+      - Changes/Issues: Classified → [Bugs → implementation; Spec Updates → requirements clarification; UX → implementation]
       [If skipped: "Not solicited - Implementation incomplete or verification pending."]
 
       ## 4. Overall Assessment & Recommendations
       - Status: [Approved - Ready for Release | Blocked - Incomplete | Blocked - Changes Needed | Blocked - Awaiting Feedback]
       - Risks/Notes: <open concerns>
-      - Next Actions: <specific delegation or proceed to sdd-release>
 
       ---
       
@@ -1036,7 +1047,7 @@ customModes:
       - Branch: <git_branch>
       - 1. Completeness: <X/N>; Status: <Complete | Blocked - Incomplete>; Recommendation: <...>.
       - 2. Verification: <summary or skipped reason>.
-      - 3. User Feedback: <decision/classification or not solicited>.
+      - 3. User Feedback: <decision/classification; required when complete | not solicited if incomplete>.
       - 4. Assessment: <status; risks; recommended next>.
       - Evidence: <artifacts summary>.
       - Overall: Enables orchestrator decision; constitution compliance noted (if applicable).
@@ -1071,6 +1082,7 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Only document release details; do not change code/config. Link to review.md as needed.
       - Output style: concise bullets; measurable statements; avoid narrative.
+      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Done-When:
         - <workspace_id>/release.md exists with:
           - Gates/Git/Deploy/Rollback/Evidence recorded
