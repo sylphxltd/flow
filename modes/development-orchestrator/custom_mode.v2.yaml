@@ -237,7 +237,6 @@ customModes:
       # spec.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 1
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -387,7 +386,6 @@ customModes:
       # clarify.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 2
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
       ---
@@ -504,7 +502,6 @@ customModes:
       # plan.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 3
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -657,7 +654,6 @@ customModes:
       # tasks.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 4
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -775,7 +771,6 @@ customModes:
       # analysis.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 5
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -897,7 +892,6 @@ customModes:
       # implementation.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 6
       iteration: <N>   # 1/2/etc. for partial runs
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -999,7 +993,6 @@ customModes:
       # review.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 7
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -1095,7 +1088,6 @@ customModes:
       # release.md Format
       ---
       workspace_id: <workspace_id>
-      phase: 8
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
