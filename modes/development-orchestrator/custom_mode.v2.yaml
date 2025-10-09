@@ -68,6 +68,7 @@ customModes:
       - Expert isolation: Delegated experts are unaware of other modes and cannot delegate. Include all required inputs (paths, summaries) in the message; do not instruct them to call or reference other modes.
       - After delegation, await attempt_completion. If "Ready" or "Implementation ready", proceed; if "Blocked" or "Partial - continue", re-delegate as needed.
       - For loops: Reference prior context succinctly (e.g., "Fix bug from Review: Update AC1 impl").
+      - Research-first: Experts must self-research via tools (MCP context7, google_search, codebase search/search_files) before raising any question; questions are a last resort after sources are exhausted and a recommended option is prepared.
       - Escalation: Do not ask after N failures. Only use ask_followup_question when a hard limitation or material trade-off requires human confirmation. Provide a recommended option with quantified impact; otherwise continue automated re-delegations.
       - On-demand constitution updates mid-flow: delegate to sdd-constitution anytime.
 
@@ -111,6 +112,10 @@ customModes:
       Criteria:
       - <measurable 1>
       - <measurable 2>
+
+      Expectations:
+      - Self-research-first (internal artifacts + authoritative external docs via MCP/tools); cite sources in outputs.
+      - Questions only as last resort after sources are exhausted; include a recommended option with quantified impact if asking.
 
       Context:
       - <prior events/notes>
@@ -158,6 +163,7 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Self-research-first: Use internal artifacts and authoritative external sources (standards/best practices) via MCP/tools; infer sensible defaults; cite sources in the Report.
       - Done-When:
         - governance/constitution.md exists with:
           - version
@@ -201,6 +207,7 @@ customModes:
       - Branch: <git_branch>
       - Principles: Key principles incorporated/updated.
       - Compliance: Confirm alignment with user input; note conflict resolution.
+      - Evidence: Sources consulted (links/paths/citations).
       - Status: "Ready - Constitution prepared" | "Blocked - <reason>".
 
       # Handling
@@ -234,6 +241,8 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Self-research-first: Use internal artifacts and authoritative external sources via MCP/tools (context7, google_search) to infer sensible defaults and standards; ask only when unavoidable; cite sources in spec and report.
+      - Assumptions policy: Decide trivial/stylistic items via sensible defaults; record as assumptions in Risks/Deferred or Glossary.
       - Done-When:
         - <workspace_id>/spec.md exists with:
           - User Scenarios & Testing: prioritized User Stories (P1, P2, P3...) each independently testable with Acceptance Scenarios (Given/When/Then)
@@ -318,6 +327,7 @@ customModes:
       - Acceptance Criteria: Count; all measurable and enumerated AC1+.
       - Constraints: Key items (incl. constitution refs if applicable).
       - Glossary: Terms defined.
+      - Evidence: Sources consulted (links/paths/citations).
       - Risks/Deferred: Count and summary.
       - Constitution: Compliance noted (if applicable).
       - Status: "Ready - Initial spec" | "Partial - High ambiguities".
@@ -478,6 +488,8 @@ customModes:
       - If scope change is discovered downstream, request orchestrator-mediated micro-loop (end session with Status: "Blocked - Needs Task Update"); do not modify tasks directly.
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Self-research-first: Use MCP context7 and codebase_search/search_files to validate and select technologies; ask only on material trade-offs; cite sources in plan.md (Research Sources).
+      - Assumptions policy: Choose defaults for minor design choices; document under plan.md "Risks & Assumptions".
       - Done-When:
         - <workspace_id>/plan.md exists with:
           - Architecture + AC Mapping
@@ -655,6 +667,7 @@ customModes:
       - If scope update is required later, end session with Status: "Blocked - Needs Task Update" for orchestrator re-delegation.
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Self-research-first: Infer missing details from spec/plan/constitution and the codebase; document assumptions inline under the relevant T-ID in tasks.md; avoid user questions.
       - Done-When:
         - <workspace_id>/tasks.md exists with:
           - T001+ list with deps / Type / AC links / checkboxes
@@ -769,6 +782,7 @@ customModes:
       - Do not change scope; if a gap is found, end session with Status: "Blocked - Needs Task Update" for orchestrator re-delegation.
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Self-research-first: Use codebase_search/search_files and MCP/context7 to check patterns/standards; gather evidence; do not ask the user.
       - Done-When:
         - <workspace_id>/analysis.md exists with:
           - No Critical/High issues
@@ -877,6 +891,7 @@ customModes:
       - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates appropriately.
       - Keep outputs concise; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Self-research-first: Consult official docs via MCP/context7 and existing repo patterns before asking; cite references in implementation.md Evidence.
       - Tests policy:
         - Default: TDD for all tasks (Red-Green-Refactor) as self-verification for LLM.
         - Mandatory: Foundational (Phase 2); P1 (Critical Path); Bugfix tasks; and any change that touches API contracts, data model, security/auth boundaries, or critical business rules; and whenever the constitution/spec requires tests or TDD.
@@ -985,6 +1000,7 @@ customModes:
       - Verification scope: validate against ACs, constitution gates, and analysis follow-ups only; no new scope introduction.
       - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation".
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Research-first: Gather verification evidence from tests/logs/artifacts and authoritative docs; do not ask the user except to capture final approval when implementation is complete.
       - Done-When:
         - <workspace_id>/review.md exists with:
           - Completeness assessed
@@ -1115,6 +1131,7 @@ customModes:
       - Only document release details; do not change code/config. Link to review.md as needed.
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+      - Self-research-first: Determine merge/tag/deploy commands from project manifests and documentation; avoid user questions; cite logs/URLs in release.md.
       - Done-When:
         - <workspace_id>/release.md exists with:
           - Gates/Git/Deploy/Rollback/Evidence recorded
