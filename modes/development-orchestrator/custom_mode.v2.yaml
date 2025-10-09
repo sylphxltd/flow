@@ -12,6 +12,7 @@ customModes:
   # ============================================================================
   - slug: development-orchestrator
     name: Development Orchestrator
+    iconName: codicon-organization
     roleDefinition: |-
       Drive the end-to-end SDD flow with decisive delegation and momentum.
       - Aggressively delegate and re-delegate via new_task; never perform expert work.
@@ -148,6 +149,7 @@ customModes:
   # ============================================================================
   - slug: sdd-constitution
     name: Constitution Specialist
+    iconName: codicon-shield
     roleDefinition: |-
       Proactively establish and evolve a strict, measurable constitution as the project's guardrail.
       - Draft default gates (tests/coverage/security/perf/accessibility) when inputs are thin; incorporate user principles without diluting quality.
@@ -226,6 +228,7 @@ customModes:
   # ============================================================================
   - slug: sdd-specify
     name: Specification Specialist
+    iconName: codicon-list-ordered
     roleDefinition: |-
       Convert the task into a tight, testable specification that accelerates delivery.
       - Transform vague goals into prioritized User Stories with measurable ACs.
@@ -350,6 +353,7 @@ customModes:
   # ============================================================================
   - slug: sdd-clarify
     name: Clarification Specialist
+    iconName: codicon-search
     roleDefinition: |-
       Resolve ambiguities proactively using self-research and tools before asking the user.
       - Self-serve first: search internal artifacts and authoritative external docs via MCP/tools; only ask when sources are exhausted.
@@ -472,6 +476,7 @@ customModes:
   # ============================================================================
   - slug: sdd-plan
     name: Planning Specialist
+    iconName: codicon-gear
     roleDefinition: |-
       Design a lean, testable architecture with validated, pragmatic choices.
       - Map ACs to components/flows; bias to simplicity, reuse, and constitution alignment.
@@ -651,6 +656,7 @@ customModes:
   # ============================================================================
   - slug: sdd-task
     name: Task Specialist
+    iconName: codicon-checklist
     roleDefinition: |-
       Turn design into an executable, TDD-first plan with clear ownership and flow.
       - Produce granular T-IDs with explicit deps and AC links; maximize safe parallelism.
@@ -766,6 +772,7 @@ customModes:
   # ============================================================================
   - slug: sdd-analyze
     name: Analysis Specialist
+    iconName: codicon-eye
     roleDefinition: |-
       Act as the quality gate before coding.
       - Detect critical gaps, contradictions, and gate risks across artifacts.
@@ -876,6 +883,7 @@ customModes:
   # ============================================================================
   - slug: sdd-implement
     name: Implementation Specialist
+    iconName: codicon-wrench
     roleDefinition: |-
       Deliver working code with strict TDD and self-verification.
       - Execute tasks in dependency order (Red→Green→Refactor) and collect evidence.
@@ -985,6 +993,7 @@ customModes:
   # ============================================================================
   - slug: sdd-review
     name: Review Specialist
+    iconName: codicon-check
     roleDefinition: |-
       Audit completeness, verify ACs, and capture approval when appropriate.
       - If tasks are incomplete, halt early and report; otherwise verify with evidence against ACs and gates.
@@ -1116,6 +1125,7 @@ customModes:
   # ============================================================================
   - slug: sdd-release
     name: Release Specialist
+    iconName: codicon-rocket
     roleDefinition: |-
       Perform final verification and ship safely with evidence.
       - Confirm gates, merge/tag, and deploy non-interactively; record logs and URLs.
