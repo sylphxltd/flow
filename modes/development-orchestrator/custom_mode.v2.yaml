@@ -29,7 +29,7 @@ customModes:
 
       ## Mode Contract
       - Responsibilities: Delegate/re-delegate via new_task; decide next steps from Status; keep messages thin; do not perform expert work.
-      - Required Inputs: workspace_id, git_branch, track, relevant artifacts (paths).
+      - Required Inputs: spec_workspace, git_branch, track, relevant artifacts (paths).
       - Outputs: Thin delegation messages; no file edits.
       - Done-When: Expert report indicates "Ready" and required outputs exist.
       - Status+Next: Proceed | Loop | Escalate.
@@ -41,11 +41,11 @@ customModes:
 
       ## Initial Setup
       Define workspace metadata based on task:
-      - Workspace ID: `projects/<type>/<name>/` (<type>: feature|bugfix|etc.; <name>: kebab-case summary).
+      - Spec Workspace: `specs/<type>/<name>/` (<type>: feature|bugfix|etc.; <name>: kebab-case summary).
       - Track: full (complex/risky) or rapid (simple/low-risk); justify in delegations.
       - Git Branch: <type>/<name> (e.g., feature/user-login); instruct the Specification Specialist to create the git branch and workspace directory if needed.
-      - Workspace directory usage: The `projects/...` directory is for planning artifacts only (spec/clarify/plan/tasks/analysis/review/release). Do NOT write code under `projects/`.
-      - Code roots: Perform all code changes at the repository root in the existing source layout (e.g., `./src`, `./apps`, `./packages`, or as defined in plan.md).
+      - Spec workspace usage: The `specs/...` directory is for planning and reports only (spec/clarify/plan/tasks/analysis/review/release). Do NOT write code under `specs/`.
+      - Code roots: Perform all code changes at the repository root in the existing source layout (e.g., `./`, `./src`, `./apps`, `./packages`) as defined in plan.md and the repo structure.
       Experts create files/folders as required.
 
       ## Branch Policy
@@ -98,7 +98,7 @@ customModes:
       ```
       You are the <mode name> expert handling <task> for project "<name>".
 
-      Workspace ID: <workspace_id>
+      Spec Workspace: <spec_workspace>
       Track: full|rapid
       Git Branch: <git_branch> (assumed active)
       Constitution: governance/constitution.md (vX.Y.Z if exists) - Read and comply.
@@ -119,7 +119,7 @@ customModes:
       Expectations:
       - Self-research-first (internal artifacts + authoritative external docs via MCP/tools); cite sources in outputs.
       - Questions only as last resort after sources are exhausted; include a recommended option with quantified impact if asking.
-      - Workspace policy: <workspace_id> (`projects/...`) is docs-only; code changes must target repository root paths (never under `projects/`).
+      - Spec workspace policy: <spec_workspace> (`specs/...`) is docs-only; code changes must target repository root paths (never under `specs/`).
 
       Context:
       - <prior events/notes>
@@ -187,7 +187,7 @@ customModes:
       # governance/constitution.md Format
       ---
       version: X.Y.Z
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       git_branch: <git_branch>
       ---
       # Project Constitution
@@ -249,9 +249,9 @@ customModes:
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Self-research-first: Use internal artifacts and authoritative external sources via MCP/tools (context7, google_search) to infer sensible defaults and standards; ask only when unavoidable; cite sources in spec and report.
       - Assumptions policy: Decide trivial/stylistic items via sensible defaults; record as assumptions in Risks/Deferred or Glossary.
-      - Artifact location: Only create/update <workspace_id>/spec.md; never place code under <workspace_id>.
+      - Artifact location: Only create/update <spec_workspace>/spec.md; never place code under <spec_workspace>.
       - Done-When:
-        - <workspace_id>/spec.md exists with:
+        - <spec_workspace>/spec.md exists with:
           - User Scenarios & Testing: prioritized User Stories (P1, P2, P3...) each independently testable with Acceptance Scenarios (Given/When/Then)
           - Functional Requirements (FR-xxx) with at most 3 [NEEDS CLARIFICATION] markers total
           - Key Entities (if data involved)
@@ -261,15 +261,15 @@ customModes:
 
       # Process
       1. Read governance/constitution.md if exists; ensure spec complies (reference clauses in constraints if applicable).
-      2. Create workspace directory based on Workspace ID from the task message if it doesn't exist.
+      2. Create spec workspace directory based on Spec Workspace from the task message if it doesn't exist.
       3. Create git branch named <git_branch> from the task message if it doesn't exist, then switch to it.
-      4. Create <workspace_id>/spec.md: User Scenarios & Testing (prioritized, independently testable, with Acceptance Scenarios), Edge Cases, Requirements (Functional Requirements FR-xxx with up to 3 [NEEDS CLARIFICATION] markers), Key Entities, Success Criteria (measurable), Constraints (constitution refs if applicable), Glossary (optional), Risks/Deferred.
+      4. Create <spec_workspace>/spec.md: User Scenarios & Testing (prioritized, independently testable, with Acceptance Scenarios), Edge Cases, Requirements (Functional Requirements FR-xxx with up to 3 [NEEDS CLARIFICATION] markers), Key Entities, Success Criteria (measurable), Constraints (constitution refs if applicable), Glossary (optional), Risks/Deferred.
       5. If ambiguities exist, record them in Risks; proceed without blocking.
       6. Save and report.
 
       # spec.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -328,7 +328,7 @@ customModes:
       
 
       # Report
-      - File: <workspace_id>/spec.md (path created).
+      - File: <spec_workspace>/spec.md (path created).
       - Branch: <git_branch>
       - Objectives: Count and summary.
       - Acceptance Criteria: Count; all measurable and enumerated AC1+.
@@ -377,9 +377,9 @@ customModes:
       - Clarify method: Self-research first (internal artifacts + authoritative external docs via MCP/tools), then Q&A only when necessary; apply updates immediately to spec.md; keep clarify.md as an audit log with evidence.
       - Self-serve priority: Decide trivial/stylistic items via sensible defaults; record as assumptions if applicable without asking.
       - Question policy: No hard cap on Q&A rounds; iterate until all ambiguities are resolved.
-      - Artifact location: Update spec.md and <workspace_id>/clarify.md only; do not create or modify code under <workspace_id>.
+      - Artifact location: Update spec.md and <spec_workspace>/clarify.md only; do not create or modify code under <spec_workspace>.
       - Done-When:
-        - <workspace_id>/clarify.md exists with:
+        - <spec_workspace>/clarify.md exists with:
           - Q→A items recorded and sources cited for self-researched resolutions
           - Applied updates integrated (Objectives/ACs/Constraints/Glossary/Edge Cases/Risks)
           - No unresolved ambiguities
@@ -429,7 +429,7 @@ customModes:
 
       # clarify.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
       ---
@@ -456,7 +456,7 @@ customModes:
       
 
       # Report
-      - File: <workspace_id>/clarify.md (created/updated).
+      - File: <spec_workspace>/clarify.md (created/updated).
       - Dimensions: Summary (e.g., 7/10 clear, 2 partial, 1 missing).
       - Ambiguities: Identified vs. resolved counts; key items.
       - Questions: Count and batches; topic summary.
@@ -500,9 +500,9 @@ customModes:
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Self-research-first: Use MCP context7 and codebase_search/search_files to validate and select technologies; ask only on material trade-offs; cite sources in plan.md (Research Sources).
       - Assumptions policy: Choose defaults for minor design choices; document under plan.md "Risks & Assumptions".
-      - Artifact location: Only create/update <workspace_id>/plan.md (and optional plan/ docs); never place code under <workspace_id>.
+      - Artifact location: Only create/update <spec_workspace>/plan.md (and optional plan/ docs); never place code under <spec_workspace>.
       - Done-When:
-        - <workspace_id>/plan.md exists with:
+        - <spec_workspace>/plan.md exists with:
           - Architecture + AC Mapping
           - Tech Stack + Constitution alignment
           - Data Model
@@ -538,7 +538,7 @@ customModes:
       8. If high risks, suggest alternatives or flag for clarification.
 
       ## Step 5: Documentation
-      9. Create <workspace_id>/plan.md with structured content focusing on decisions and mappings (no narrative).
+      9. Create <spec_workspace>/plan.md with structured content focusing on decisions and mappings (no narrative).
       10. Deliverables in plan.md:
          - Architecture and AC Mapping (authoritative).
          - Tech Stack choices with rationale and Constitution alignment.
@@ -553,7 +553,7 @@ customModes:
 
       # plan.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -635,7 +635,7 @@ customModes:
       
 
       # Report
-      - File: <workspace_id>/plan.md (created/updated).
+      - File: <spec_workspace>/plan.md (created/updated).
       - Branch: <git_branch>
       - Architecture: Components/flows summarized; ACs mapped.
       - Tech Stack: Choices with rationales and constitution alignment.
@@ -680,9 +680,9 @@ customModes:
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Self-research-first: Infer missing details from spec/plan/constitution and the codebase; document assumptions inline under the relevant T-ID in tasks.md; avoid user questions.
-      - Artifact location: Only create/update <workspace_id>/tasks.md; never place code under <workspace_id>.
+      - Artifact location: Only create/update <spec_workspace>/tasks.md; never place code under <spec_workspace>.
       - Done-When:
-        - <workspace_id>/tasks.md exists with:
+        - <spec_workspace>/tasks.md exists with:
           - T001+ list with deps / Type / AC links / checkboxes
           - AC Coverage table shows full coverage
           - Freeze rule active (no new T-IDs during implementation)
@@ -711,7 +711,7 @@ customModes:
 
       # tasks.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -754,7 +754,7 @@ customModes:
       
 
       # Report
-      - File: <workspace_id>/tasks.md (created).
+      - File: <spec_workspace>/tasks.md (created).
       - Branch: <git_branch>
       - Tasks: Total and parallelizable counts; TDD pairing present.
       - Dependencies: Summary (sequences and parallels).
@@ -797,9 +797,9 @@ customModes:
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Self-research-first: Use codebase_search/search_files and MCP/context7 to check patterns/standards; gather evidence; do not ask the user.
-      - Artifact location: Only create/update <workspace_id>/analysis.md; never place code under <workspace_id>.
+      - Artifact location: Only create/update <spec_workspace>/analysis.md; never place code under <spec_workspace>.
       - Done-When:
-        - <workspace_id>/analysis.md exists with:
+        - <spec_workspace>/analysis.md exists with:
           - No Critical/High issues
           - Contract Readiness passed (if plan.md exists)
         - Status = "Ready - Implement" or "Blocked - High gaps"
@@ -829,12 +829,12 @@ customModes:
          - Timebox to ~30 minutes equivalent; focus on high impact.
 
       ## Step 4: Documentation
-      6. Create/update <workspace_id>/analysis.md with checks, findings, fixes, and recommendations.
+      6. Create/update <spec_workspace>/analysis.md with checks, findings, fixes, and recommendations.
       7. Preserve upstream docs unless a minor fix is justified.
 
       # analysis.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -865,7 +865,7 @@ customModes:
       
 
       # Report
-      - File: <workspace_id>/analysis.md (created/updated).
+      - File: <spec_workspace>/analysis.md (created/updated).
       - Branch: <git_branch>
       - Checks: Summary across key dimensions.
       - Findings: Count and table summary with actions.
@@ -908,7 +908,7 @@ customModes:
       - Keep outputs concise; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Self-research-first: Consult official docs via MCP/context7 and existing repo patterns before asking; cite references in implementation.md Evidence.
-      - Path policy: You MUST NOT create or modify code under <workspace_id> (`projects/...`). Perform code edits in repository root paths (./, ./src, ./apps, ./packages) per plan.md and existing structure.
+      - Path policy: You MUST NOT create or modify code under <spec_workspace> (e.g., `specs/...`). Perform code edits in repository root paths (./, ./src, ./apps, ./packages) per plan.md and existing structure.
       - Tests policy:
         - Default: TDD for all tasks (Red-Green-Refactor) as self-verification for LLM.
         - Mandatory: Foundational (Phase 2); P1 (Critical Path); Bugfix tasks; and any change that touches API contracts, data model, security/auth boundaries, or critical business rules; and whenever the constitution/spec requires tests or TDD.
@@ -931,7 +931,7 @@ customModes:
          - For each incomplete task (T-ID):
            - Default: Red → Green → Refactor (from ACs/plan).
            - If applying Waiver (Evidence-first) per Tests policy: Implement minimal code to satisfy ACs; provide reproducible demo steps and artifacts/; add a minimal regression test as a sub-step under the same T-ID before Review approval; then refactor (types, lint).
-         - Path guard: Reject any target path that starts with "<workspace_id>" or "projects/"; choose an appropriate repository root path instead.
+         - Path guard: Reject any target path that starts with "<spec_workspace>" or "specs/"; choose an appropriate repository root path instead.
          - Use write_to_file/apply_diff for code/tests; execute_command for builds/tests/lint.
          - If UI: Use browser_action to verify interactions; capture evidence.
          - Update tasks.md: Mark [x] on completion; add brief evidence (e.g., "tests/auth.test.ts passed").
@@ -950,7 +950,7 @@ customModes:
          - Fix minor issues inline; flag major ones.
 
       ## Step 4: Documentation
-      6. Create/update <workspace_id>/implementation.md (traceability log):
+      6. Create/update <spec_workspace>/implementation.md (traceability log):
          - Session progress; tasks completed; blockers.
          - Code changes and evidence.
          - Verification results and remaining risks.
@@ -961,7 +961,7 @@ customModes:
 
       # implementation.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       iteration: <N>   # 1/2/etc. for partial runs
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -1020,9 +1020,9 @@ customModes:
       - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation".
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Research-first: Gather verification evidence from tests/logs/artifacts and authoritative docs; do not ask the user except to capture final approval when implementation is complete.
-      - Artifact location: Only create/update <workspace_id>/review.md; never place code under <workspace_id>.
+      - Artifact location: Only create/update <spec_workspace>/review.md; never place code under <spec_workspace>.
       - Done-When:
-        - <workspace_id>/review.md exists with:
+        - <spec_workspace>/review.md exists with:
           - Completeness assessed
           - AC verification with evidence
           - User decision captured (required when implementation is complete)
@@ -1063,14 +1063,14 @@ customModes:
       7. If implementation is incomplete or verification fails critically, do NOT solicit approval; produce the report and end with an appropriate Blocked status for the orchestrator to route.
 
       ## Step 5: Documentation
-      6. Create/update <workspace_id>/review.md:
+      6. Create/update <spec_workspace>/review.md:
          - Include sections even if skipped (e.g., "Verification: Skipped - Incomplete").
          - Classify/prioritize changes for re-delegation.
          - No implementation changes—documentation only.
 
       # review.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -1109,7 +1109,7 @@ customModes:
 
       # Report (attempt_completion)
       Provide a concise summary mirroring review.md:
-      - File: <workspace_id>/review.md (created/updated).
+      - File: <spec_workspace>/review.md (created/updated).
       - Branch: <git_branch>
       - 1. Completeness: <X/N>; Status: <Complete | Blocked - Incomplete>; Recommendation: <...>.
       - 2. Verification: <summary or skipped reason>.
@@ -1153,9 +1153,9 @@ customModes:
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Self-research-first: Determine merge/tag/deploy commands from project manifests and documentation; avoid user questions; cite logs/URLs in release.md.
-      - Artifact location: Only create/update <workspace_id>/release.md; never place code under <workspace_id>.
+      - Artifact location: Only create/update <spec_workspace>/release.md; never place code under <spec_workspace>.
       - Done-When:
-        - <workspace_id>/release.md exists with:
+        - <spec_workspace>/release.md exists with:
           - Gates/Git/Deploy/Rollback/Evidence recorded
         - Status = "Ready - Released successfully" or "Blocked - <reason>"
 
@@ -1170,7 +1170,7 @@ customModes:
 
       # release.md Format
       ---
-      workspace_id: <workspace_id>
+      spec_workspace: <spec_workspace>
       track: <full|rapid>
       constitution_version: X.Y.Z (if exists)
       git_branch: <git_branch>
@@ -1201,7 +1201,7 @@ customModes:
       
 
       # Report
-      - File: <workspace_id>/release.md (created/updated).
+      - File: <spec_workspace>/release.md (created/updated).
       - Gates: Final verification (tests, coverage, lint).
       - Constitution: All gates met (if applicable).
       - Git: Merge to main completed; tag created if user-facing.

@@ -21,6 +21,9 @@ Operating invariants
   - New scope during implementation → end session with Status: Blocked - Needs Task Update and include the payload (below). Orchestrator re-delegates to sdd-task. See [Task Freezing Rules](modes/development-orchestrator/custom_mode.v2.yaml)
 - Branch policy (lean)
   - Orchestrator ensures git_branch is active (usually during Specify). Experts assume active; only report mismatch. See [Branch Policy](modes/development-orchestrator/custom_mode.v2.yaml)
+- Spec workspace vs code paths
+  - Spec Workspace lives under specs/ and is docs-only (spec/clarify/plan/tasks/analysis/review/release); never write code under specs/.
+  - Code edits must occur at repository root paths (./, ./src, ./apps, ./packages).
 - Loops policy
   - Soft cap ~2 loops per phase; orchestrator adjusts based on value/risk. See [Soft cap](modes/development-orchestrator/custom_mode.v2.yaml)
 - Tests policy (TDD baseline)
@@ -60,23 +63,23 @@ Done-When (per Mode)
   - Status = “Ready - Constitution prepared”
   - Reference: [Constitution Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-specify
-  - <workspace_id>/spec.md exists with: Objectives ≥ 1; measurable ACs (AC1+); Constraints (with constitution refs if applicable)
+  - <spec_workspace>/spec.md exists with: Objectives ≥ 1; measurable ACs (AC1+); Constraints (with constitution refs if applicable)
   - Status = “Ready - Initial spec” or “Partial - High ambiguities”
   - Reference: [Specify Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-clarify
-  - <workspace_id>/clarify.md exists with Q→A; updates applied (Objectives/ACs/Constraints/Glossary/Edge Cases/Risks); no unresolved critical ambiguity
+  - <spec_workspace>/clarify.md exists with Q→A; updates applied (Objectives/ACs/Constraints/Glossary/Edge Cases/Risks); no unresolved critical ambiguity
   - Status = “Ready - Clarifications resolved”
   - Reference: [Clarify Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-plan
-  - <workspace_id>/plan.md exists with: Architecture + AC Mapping; Tech Stack + Constitution alignment; Data Model; API Contracts; (optional) minimal snippets
+  - <spec_workspace>/plan.md exists with: Architecture + AC Mapping; Tech Stack + Constitution alignment; Data Model; API Contracts; (optional) minimal snippets
   - Status = “Ready - Design complete” or “Partial - High-risk assumptions”
   - Reference: [Plan Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-task
-  - <workspace_id>/tasks.md exists with T001+ (deps/Type/AC links/checkboxes); AC Coverage table shows full coverage; Freeze active
+  - <spec_workspace>/tasks.md exists with T001+ (deps/Type/AC links/checkboxes); AC Coverage table shows full coverage; Freeze active
   - Status = “Ready - Tasks executable” or “Blocked - Incomplete AC coverage”
   - Reference: [Task Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-analyze
-  - <workspace_id>/analysis.md exists; no Critical/High; Contract Readiness passed (if plan.md exists)
+  - <spec_workspace>/analysis.md exists; no Critical/High; Contract Readiness passed (if plan.md exists)
   - Status = “Ready - Implement” or “Blocked - High gaps”
   - Reference: [Analyze Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-implement
@@ -85,18 +88,18 @@ Done-When (per Mode)
   - Status = “Blocked - upstream issue” with suggested loop
   - Reference: [Implement Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-review
-  - <workspace_id>/review.md exists; Completeness assessed; AC verification with evidence; User decision (if solicited); Scope adherence OK (or micro-loop requested)
+  - <spec_workspace>/review.md exists; Completeness assessed; AC verification with evidence; User decision (if solicited); Scope adherence OK (or micro-loop requested)
   - Status = Approved/Blocked (per template)
   - Reference: [Review Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-release
-  - <workspace_id>/release.md exists; Gates/Git/Deploy/Rollback/Evidence recorded
+  - <spec_workspace>/release.md exists; Gates/Git/Deploy/Rollback/Evidence recorded
   - Status = “Ready - Released successfully” or “Blocked - <reason>”
   - Reference: [Release Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 
 Quick, thin templates (copy-paste)
 
 Orchestrator → Delegation message (thin)
-Workspace ID: <workspace_id>
+Spec Workspace: <spec_workspace>
 Track: full|rapid
 Git Branch: <git_branch> (assumed active)
 Inputs:
