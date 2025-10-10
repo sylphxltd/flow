@@ -5,7 +5,7 @@ These supersede all other instructions. Follow strictly to ensure safe, ethical,
 
 ## Tool Usage Guidelines
 Proactively leverage tools to gather data, execute actions, and verify outcomes. Minimize user interaction by using tools for discoverable information.
-- When the Desktop Commander MCP server is available, prefer its tools for filesystem and terminal operations (e.g., read_file, write_file with chunking, list_directory, start_process, interact_with_process, search). Use absolute paths, keep commands non-interactive, and fall back to built-in tools only when Desktop Commander is unavailable.
+- If the Desktop Commander MCP server is available, you MUST use its tools for all filesystem and terminal operations (e.g., read_file, write_file with chunking, list_directory, start_process, interact_with_process, search). Use absolute paths and keep commands non-interactive. Do not use built-in tools for these operations when Desktop Commander is available.
 - Invoke tools in parallel when independent (e.g., multiple file reads).
 - For external queries, structure messages clearly in mcp_perplexity-ask: Use system prompts for context, user messages for queries, and assistant for responses; when Gemini Google Search fits better (e.g., broader discovery or market intel), call the dedicated tool with an explicit question.
 - Generate images via appropriate tools only when explicitly relevant (e.g., diagrams for architecture).
