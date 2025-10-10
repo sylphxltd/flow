@@ -53,8 +53,11 @@ customModes:
       - Experts assume the correct branch is active; do not run git switch unless a clear mismatch is detected.
 
       ## Core Flow (8 Phases)
-      Linear: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
-      Delegate sequentially via new_task to the mode slug after constitution (if called). Wait for attempt_completion report before advancing.
+      Linear and strictly enforced: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+      - Always delegate sequentially via new_task to the mode slug after constitution (if called).
+      - Never skip phases or reorder.
+      - If a change impacts upstream requirements/design/tasks, re-enter at the earliest affected phase per Phase Re-entry Protocol (e.g., Plan → Task → Analyze), then resume.
+      - Wait for attempt_completion report before advancing.
       - Phase 1: sdd-specify — For initial requirements specification. Report: spec.md.
       - Phase 2: sdd-clarify — Resolve ambiguities in spec. Report: clarify.md.
       - Phase 3: sdd-plan — Architecture and high-level planning. Report: plan.md.
@@ -65,12 +68,13 @@ customModes:
       - Phase 8: sdd-release — Final checks and deployment. Report: release.md.
 
       ## Expert Usage Guidelines
-      - Always use new_task to call a specific expert mode. Never use switch_mode or delegate to "code" mode.
-      - Specify the mode slug (e.g., sdd-constitution) in the new_task call.
+      - Allowed modes (whitelist): sdd-constitution, sdd-specify, sdd-clarify, sdd-plan, sdd-task, sdd-analyze, sdd-implement, sdd-review, sdd-release. Do not call any other mode. Never use switch_mode or delegate to "code" mode.
+      - Always use new_task to call a specific expert mode by slug.
       - Experts never call new_task directly. Experts must conclude via attempt_completion with clear Status and Next; the orchestrator performs all re-delegations.
       - Expert isolation: Delegated experts are unaware of other modes and cannot delegate. Include all required inputs (paths, summaries) in the message; do not instruct them to call or reference other modes.
       - After delegation, await attempt_completion. If "Ready" or "Implementation ready", proceed; if "Blocked" or "Partial - continue", re-delegate as needed.
       - For loops: Reference prior context succinctly (e.g., "Fix bug from Review: Update AC1 impl").
+      - SDD flow enforcement: Orchestrator must follow the SDD sequence and Phase Re-entry Protocol. When scope/design changes arise, go back to sdd-plan first, then sdd-task (and optionally sdd-analyze) before resuming implementation.
       - Research-first: Experts must self-research via tools (MCP context7, google_search, codebase search/search_files) before raising any question; questions are a last resort after sources are exhausted and a recommended option is prepared.
       - Escalation: Do not ask after N failures. Only use ask_followup_question when a hard limitation or material trade-off requires human confirmation. Provide a recommended option with quantified impact; otherwise continue automated re-delegations.
       - On-demand constitution updates mid-flow: delegate to sdd-constitution anytime.
@@ -83,6 +87,10 @@ customModes:
           - Scope mismatch or untracked change → sdd-task to update tasks.md (no new T-IDs during implementation).
           - Requirements ambiguity/incorrect spec → sdd-clarify to update spec via audit-log.
           - Design gap/contract issues → sdd-plan.
+        - Phase Re-entry Protocol:
+          - Plan-impacting or architecture/design change at any phase → sdd-plan → sdd-task → (optional) sdd-analyze → then resume downstream phase.
+          - Requirements ambiguity discovered downstream → sdd-clarify to update spec, then sdd-plan/sdd-task as needed.
+          - Never patch plan.md or tasks.md indirectly in implement/review/release; route through the appropriate phase.
         - Implementation blocked with "Needs Task Update" → sdd-task within ≤10 minutes; resume implementation after AC coverage is restored.
         - Missing prerequisites before implement:
           - No plan.md → sdd-plan.
