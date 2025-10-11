@@ -34,8 +34,10 @@ customModes:
       - Done-When: Expert report indicates "Ready" and required outputs exist.
       - Status+Next: Proceed | Loop | Escalate.
 
-      ## Constitution Handling (On-Demand Expert)
-      - If user mentions principles/clauses, task implies governance needs, or constitution is missing/outdated, delegate to sdd-constitution first to create/update governance/constitution.md (report version).
+      ## Constitution Handling and Project-Wide Policy Auto-Capture
+      - Proactively delegate to sdd-constitution before Phase 1 when ANY project-wide policy is mentioned or implied by the user (or when constitution is missing/outdated).
+      - Triggers (non-exhaustive): Tech Stack, UI/UX guidelines, Testing policy, Code style/naming, Security/Privacy, Performance budgets, Accessibility, Observability/Monitoring, Release policy, Definition of Done.
+      - Action: Pass the raw user statements plus pointers to internal rules (if present) to sdd-constitution to normalize into governance/constitution.md under "Project-Wide Guidelines" with a version bump.
       - Otherwise, proceed to core flow; experts read existing constitution if present.
       - Reference constitution version in delegations if known; experts ensure compliance.
 
@@ -182,15 +184,23 @@ customModes:
           - version
           - principles
           - gates
+          - project-wide-guidelines (if applicable: Tech Stack/UI-UX/Tests/Security/Performance/Accessibility/Observability/Release/DoD)
           - updates
         - Status = "Ready - Constitution prepared"
 
       # Process
-      1. Read existing governance/constitution.md if present.
-      2. If missing or outdated, create/update with core principles (e.g., testing ≥95%, security no secrets, lint=0).
-      3. Include version (e.g., v1.0.0), clauses for gates (coverage, latency, accessibility).
-      4. If user principles mentioned, incorporate and confirm via ask_followup_question if needed.
-      5. Ensure independence: rely on task message inputs.
+      1. Read existing governance/constitution.md if present; extract current version and sections.
+      2. Detect and collect project-wide policies from the task/user prompt (e.g., Tech Stack/UI-UX/Tests/etc.).
+      3. Discover internal sources to align with:
+         - docs/rules/tech-stack.md (if exists)
+         - docs/rules/ui-ux-guidelines.md (if exists)
+         - docs/README.md Essential Testing section (as reference)
+      4. Create/update constitution with:
+         - Version (e.g., v1.0.0 → bump minor for policy additions)
+         - Principles and Gates (coverage, latency, accessibility)
+         - Project-Wide Guidelines (structured subsections with concise, measurable bullets and links to internal docs where applicable)
+      5. If user principles require material policy choices, ask only if necessary; otherwise infer sensible defaults and proceed.
+      6. Ensure independence: rely on task message inputs and internal docs; cite sources in Report.
 
       # governance/constitution.md Format
       ---
@@ -209,18 +219,57 @@ customModes:
       ## Gates
       - Pre-release: All must pass or exception justified.
 
+      ## Project-Wide Guidelines
+      ### Tech Stack
+      - Language/Frameworks: <e.g., TypeScript 5.x, Next.js 14> (source: internal/external)
+      - Package Manager & Tooling: <e.g., pnpm, Biome, Lefthook>
+      - Deploy/Runtime: <e.g., Vercel>
+      - References: docs/rules/tech-stack.md (if present)
+
+      ### UI/UX
+      - Accessibility: WCAG AA; axe-core/Lighthouse ≥90
+      - Responsive: 320/768/1024 breakpoints
+      - Interaction: feedback ≤50ms; mobile-first
+      - References: docs/rules/ui-ux-guidelines.md (if present)
+
+      ### Tests
+      - Policy: TDD default; Mandatory for Foundational, P1, bugfix, API/data/security/critical rules; Waiver only for P2+ low-risk UI/content with minimal regression test before Review
+      - Frameworks: <e.g., Vitest, Playwright>
+      - Coverage: ≥95% touched code
+
+      ### Security
+      - Secrets: none in repo; env-based
+      - Dependencies: no High/Critical vulns
+
+      ### Performance
+      - Budgets: p95 ≤150ms; bundle ≤250KB gzip
+
+      ### Accessibility
+      - Baseline: WCAG AA; automated checks
+
+      ### Observability
+      - Errors/Latency: capture and monitor key metrics
+
+      ### Release
+      - Merge/Tag policy: per project; rollback plan required
+
+      ### Definition of Done
+      - ACs met; tests green; gates pass; docs updated
+
       ## Updates
       - <ISO>: Initial version
 
       ---
-      
+
 
       # Report
       - File: governance/constitution.md (path and version created/updated).
       - Branch: <git_branch>
       - Principles: Key principles incorporated/updated.
+      - Project-Wide Guidelines: Categories created/updated (e.g., Tech Stack/UI-UX/Tests/Security/Performance/Accessibility/Observability/Release/DoD).
       - Compliance: Confirm alignment with user input; note conflict resolution.
       - Evidence: Sources consulted (links/paths/citations).
+      - Links: Internal docs referenced (e.g., docs/rules/tech-stack.md, docs/rules/ui-ux-guidelines.md).
       - Status: "Ready - Constitution prepared" | "Blocked - <reason>".
 
       # Handling

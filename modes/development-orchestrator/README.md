@@ -12,6 +12,7 @@ Authoritative source
   - Implement micro-loop payload: [Implement Step 2 payload fields](modes/development-orchestrator/custom_mode.v2.yaml)
   - Branch policy (assume active): [Branch Policy](modes/development-orchestrator/custom_mode.v2.yaml)
   - Soft cap loops: [Feedback & Loops](modes/development-orchestrator/custom_mode.v2.yaml)
+  - Constitution auto-capture triggers: [Constitution Handling and Project-Wide Policy Auto-Capture](modes/development-orchestrator/custom_mode.v2.yaml)
 
 Operating invariants
 - Orchestrator-mediated only
@@ -24,6 +25,8 @@ Operating invariants
 - Spec workspace vs code paths
   - Spec Workspace lives under specs/ and is docs-only (spec/clarify/plan/tasks/analysis/review/release); never write code under specs/.
   - Code edits must occur at repository root paths (./, ./src, ./apps, ./packages).
+- Proactive constitution auto-capture
+  - Orchestrator delegates to sdd-constitution when project-wide policies are mentioned or implied (Tech Stack, UI/UX, Tests, Security, Performance, Accessibility, Observability, Release, Definition of Done). See Constitution Handling and Project-Wide Policy Auto-Capture in [custom_mode.v2.yaml](modes/development-orchestrator/custom_mode.v2.yaml).
 - Loops policy
   - Soft cap ~2 loops per phase; orchestrator adjusts based on value/risk. See [Soft cap](modes/development-orchestrator/custom_mode.v2.yaml)
 - Tests policy (TDD baseline)
@@ -59,7 +62,7 @@ Reporting principle (Narrative + Anchors)
 
 Done-When (per Mode)
 - sdd-constitution
-  - governance/constitution.md exists with version, principles, gates, updates
+  - governance/constitution.md exists with version, principles, gates, project-wide-guidelines (if applicable), updates
   - Status = “Ready - Constitution prepared”
   - Reference: [Constitution Done-When](modes/development-orchestrator/custom_mode.v2.yaml)
 - sdd-specify
@@ -102,6 +105,7 @@ Orchestrator → Delegation message (thin)
 Spec Workspace: <spec_workspace>
 Track: full|rapid
 Git Branch: <git_branch> (assumed active)
+Constitution: governance/constitution.md (vX.Y.Z if exists) - Read and comply
 Inputs:
 - file: brief description
 Outputs:
