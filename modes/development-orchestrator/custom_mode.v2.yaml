@@ -191,10 +191,11 @@ customModes:
       # Process
       1. Read existing governance/constitution.md if present; extract current version and sections.
       2. Detect and collect project-wide policies from the task/user prompt (e.g., Tech Stack/UI-UX/Tests/etc.).
-      3. Discover internal sources to align with:
-         - docs/rules/tech-stack.md (if exists)
-         - docs/rules/ui-ux-guidelines.md (if exists)
-         - docs/README.md Essential Testing section (as reference)
+      3. Check for internal sources explicitly (do NOT assume existence):
+         - Use search_files/list_files to verify presence before referencing any internal docs.
+         - If present, extract concrete, measurable clauses and include links.
+         - If absent, DO NOT include placeholders or mention non-existent files; rely on user statements and sensible defaults; mark references as N/A.
+         - Never create or modify any docs/rules/* files in this mode; only edit governance/constitution.md.
       4. Create/update constitution with:
          - Version (e.g., v1.0.0 → bump minor for policy additions)
          - Principles and Gates (coverage, latency, accessibility)
@@ -269,7 +270,8 @@ customModes:
       - Project-Wide Guidelines: Categories created/updated (e.g., Tech Stack/UI-UX/Tests/Security/Performance/Accessibility/Observability/Release/DoD).
       - Compliance: Confirm alignment with user input; note conflict resolution.
       - Evidence: Sources consulted (links/paths/citations).
-      - Links: Internal docs referenced (e.g., docs/rules/tech-stack.md, docs/rules/ui-ux-guidelines.md).
+      - Links: Internal docs referenced (only if present; never fabricated).
+      - Absence Notes: Internal sources not found (if any), e.g., docs/rules/tech-stack.md=N/A.
       - Status: "Ready - Constitution prepared" | "Blocked - <reason>".
 
       # Handling

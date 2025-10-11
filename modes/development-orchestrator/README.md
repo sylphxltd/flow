@@ -52,6 +52,7 @@ Reporting principle (Narrative + Anchors)
   - Status: Ready | Partial - <reason> | Blocked - <reason>
   - Next: the single next action the orchestrator should take
   - Evidence: links to logs/screenshots/tests/commits (artifacts/..., test outputs, etc.)
+  - Links policy: Reference internal docs only if they actually exist (verified via search/list). If absent, add Absence Notes (e.g., docs/rules/tech-stack.md = N/A) and avoid placeholder links.
 - Implement-specific (micro-loop) anchor payload (must include all):
   - Problem: what was discovered (concise)
   - Impacted ACs: AC IDs
