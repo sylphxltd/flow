@@ -210,56 +210,56 @@ customModes:
       git_branch: <git_branch>
       ---
       # Project Constitution
-
+      
       ## Principles
       - Testing: ≥95% coverage on touched code.
       - Security: No secrets; SAST High/Critical=0.
       - Quality: Lint/Type errors=0; WCAG AA for UI.
       - Performance: p95 latency ≤150ms; bundle ≤250KB gzip.
-
+      
       ## Gates
       - Pre-release: All must pass or exception justified.
-
+      
       ## Project-Wide Guidelines
       ### Tech Stack
-      - Language/Frameworks: <e.g., TypeScript 5.x, Next.js 14> (source: internal/external)
-      - Package Manager & Tooling: <e.g., pnpm, Biome, Lefthook>
-      - Deploy/Runtime: <e.g., Vercel>
+      - Language/Frameworks: Select modern, maintainable languages and frameworks aligned with project goals and scalability needs (source: internal/external best practices).
+      - Package Manager & Tooling: Use efficient, secure tools for dependency management, linting, and formatting to ensure consistency and reproducibility.
+      - Deploy/Runtime: Choose reliable deployment platforms that support the project's runtime requirements, security, and monitoring needs.
       - References: docs/rules/tech-stack.md (if present)
-
+      
       ### UI/UX
-      - Accessibility: WCAG AA; axe-core/Lighthouse ≥90
-      - Responsive: 320/768/1024 breakpoints
-      - Interaction: feedback ≤50ms; mobile-first
+      - Accessibility: Adhere to WCAG AA standards; achieve ≥90 score on automated tools like axe-core or Lighthouse.
+      - Responsive: Design for key breakpoints (mobile, tablet, desktop) to ensure usability across devices.
+      - Interaction: Provide immediate feedback (≤50ms) and prioritize mobile-first, intuitive user experiences.
       - References: docs/rules/ui-ux-guidelines.md (if present)
-
+      
       ### Tests
-      - Policy: TDD default; Mandatory for Foundational, P1, bugfix, API/data/security/critical rules; Waiver only for P2+ low-risk UI/content with minimal regression test before Review
-      - Frameworks: <e.g., Vitest, Playwright>
-      - Coverage: ≥95% touched code
-
+      - Policy: TDD as default; Mandatory for foundational elements, high-priority features, bug fixes, API/data changes, security boundaries, and critical business rules; Waiver only for low-risk UI/content changes with minimal regression testing before review.
+      - Frameworks: Select appropriate testing frameworks that support unit, integration, and E2E testing.
+      - Coverage: ≥95% on touched code; ensure comprehensive validation of acceptance criteria.
+      
       ### Security
-      - Secrets: none in repo; env-based
-      - Dependencies: no High/Critical vulns
-
+      - Secrets: Never commit secrets to the repository; use environment variables and secure vaults.
+      - Dependencies: Maintain zero High/Critical vulnerabilities; regularly audit and update packages.
+      
       ### Performance
-      - Budgets: p95 ≤150ms; bundle ≤250KB gzip
-
+      - Budgets: Target p95 latency ≤150ms and optimized bundle sizes (≤250KB gzip) for core user flows.
+      
       ### Accessibility
-      - Baseline: WCAG AA; automated checks
-
+      - Baseline: WCAG AA compliance as minimum; integrate automated checks into CI/CD pipelines.
+      
       ### Observability
-      - Errors/Latency: capture and monitor key metrics
-
+      - Errors/Latency: Capture and monitor key metrics (errors, latency, usage) for all critical paths to enable proactive issue detection.
+      
       ### Release
-      - Merge/Tag policy: per project; rollback plan required
-
+      - Merge/Tag policy: Follow project-defined branching strategy; require rollback plans for all releases.
+      
       ### Definition of Done
-      - ACs met; tests green; gates pass; docs updated
-
+      - All acceptance criteria met; tests passing; gates cleared; documentation updated; no outstanding risks.
+      
       ## Updates
       - <ISO>: Initial version
-
+      
       ---
 
 
