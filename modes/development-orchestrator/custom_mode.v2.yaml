@@ -41,11 +41,12 @@ customModes:
       - Parallel Execution: Identify and batch independent operations when safe.
 
       ## Constitution Handling and Project-Wide Policy Auto-Capture
-      - Proactively delegate to sdd-constitution before Phase 1 when ANY project-wide policy is mentioned or implied by the user (or when constitution is missing/outdated).
-      - Triggers (non-exhaustive): Tech Stack, UI/UX guidelines, Testing policy, Code style/naming, Security/Privacy, Performance budgets, Accessibility, Observability/Monitoring, Release policy, Definition of Done.
-      - Action: Pass the raw user statements plus pointers to internal rules (if present) to sdd-constitution to normalize into governance/constitution.md under "Project-Wide Guidelines" with a version bump.
-      - Otherwise, proceed to core flow; experts read existing constitution if present.
-      - Reference constitution version in delegations if known; experts ensure compliance.
+      - Constitution is user-defined and project-specific; our workflow only provides the structure for users to define their own governance.
+      - sdd-constitution is only used when users explicitly request it or when they mention project-wide policies they want to formalize.
+      - Triggers (non-exhaustive): Users explicitly asking to define project policies, or mentioning they want to formalize Tech Stack, UI/UX guidelines, Testing policy, etc.
+      - Action: If users request, sdd-constitution helps normalize their statements into a structured constitution.md.
+      - Otherwise, proceed to core flow without assuming any constitution exists.
+      - Our workflow does not define any project-specific gates or thresholds.
 
       ## Initial Setup
        Define workspace metadata based on task:
@@ -77,6 +78,20 @@ customModes:
        - Phase 6: sdd-implement — Build via TDD until "Implementation ready". Report: implementation.md.
        - Phase 7: sdd-release — Verify, get user approval, and merge to main. Report: review.md.
 
+      ## Key Flow Points
+       When uncertain about flow progression, remember:
+       
+       Overall SDD Flow:
+       1. Constitution (if needed) → Specify → Clarify → Plan → Task → Analyze → Implement → Release
+       2. If issues found in Analyze, re-enter at Plan → Task → Analyze
+       3. If implementation incomplete, continue implementation until complete
+       4. Release: Check completeness → Verify requirements → Get approval → Merge
+
+       Release Verification Priority (CRITICAL):
+       1. First: Check if ALL tasks in tasks.md are complete ([x])
+       2. If ANY incomplete: STOP immediately, report "Blocked - Incomplete"
+       3. Only if ALL complete: Proceed with verification
+
       ## Expert Usage Guidelines
        - Allowed modes (whitelist): sdd-constitution, sdd-specify, sdd-clarify, sdd-plan, sdd-task, sdd-analyze, sdd-implement, sdd-release. Do not call any other mode. Never use switch_mode or delegate to "code" mode.
        - Always use new_task to call a specific expert mode by slug.
@@ -88,17 +103,22 @@ customModes:
        - Research-first: Experts must self-research via tools (MCP context7, google_search, codebase search/search_files) before raising any question; questions are a last resort after sources are exhausted and a recommended option is prepared.
        - Escalation: Do not ask after N failures. Only use ask_followup_question when a hard limitation or material trade-off requires human confirmation. Provide a recommended option with quantified impact; otherwise continue automated re-delegations.
        - On-demand constitution updates mid-flow: delegate to sdd-constitution anytime.
-       - Commit policy: Each phase completion should include meaningful semantic commits to the feature branch using conventional commit format.
+       - Commit policy: Each phase completion should include meaningful commits to the feature branch using required format: type(T-ID): message
+       - Branch Guard: Each mode must verify correct git branch is active before proceeding. If <git_branch> doesn't exist or is not checked out, immediately Block and report to orchestrator.
 
       ## Feedback, Loops, and Triage
        - Orchestrator performs automatic re-delegations without asking the user by default; continue until success or a true limitation/trade-off is reached.
        
        ## Universal Fixing Policy (APPLIES TO ALL MODES)
-       - CRITICAL: No mode may fix issues discovered during its own verification/audit phase
-       - Implementation modes may only fix bugs in code they are actively writing
-       - Once a mode enters verification/audit, all discovered issues must be reported to orchestrator
-       - Review and Analysis phases are audit-only: NEVER fix any discovered issues
-       - Any violation of this policy must be reported as a process failure
+        - CRITICAL: No mode may fix issues discovered during its own verification/audit phase
+        - Implementation modes may only fix bugs in code they are actively writing
+        - Once a mode enters verification/audit, all discovered issues must be reported to orchestrator
+        - Review and Analysis phases are audit-only: NEVER fix any discovered issues
+        - EXCEPTION: Low/Trivial Fix Allowlist for audit phases (sdd-analyze, sdd-release):
+          - Allowed: Documentation typos, broken links, formatting issues, test naming inconsistencies
+          - Not allowed: Logic changes, requirement modifications, scope alterations
+          - All fixes must be documented in analysis.md/release.md with "FIXED:" prefix
+        - Any violation of this policy must be reported as a process failure
        
        ## Triage mapping:
           - Release failure:
@@ -177,7 +197,7 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-      - Self-research-first: Use internal artifacts and authoritative external sources (standards/best practices) via MCP/tools; infer sensible defaults; cite sources in the Report.
+      - Self-research-first: Use available tools to research standards/best practices; cite sources in the Report.
       - Evidence Collection: Create evidence index in artifacts/constitution-evidence.md with all sources and decisions.
       - Done-When:
         - governance/constitution.md exists with:
@@ -188,6 +208,15 @@ customModes:
           - updates
         - artifacts/constitution-evidence.md exists with indexed sources
         - Status = "Ready - Constitution prepared"
+
+      ## Constitution Creation Process
+      1. Read existing constitution (if present) → Extract current version
+      2. Detect project policies from user input
+      3. Check internal sources (if present)
+      4. Create evidence index
+      5. Update constitution with principles, gates, and guidelines
+      6. If user principles need choices, ask user → Apply input
+      7. Ready when constitution.md exists with all sections
 
       # Process
       1. Read existing governance/constitution.md if present; extract current version and sections.
@@ -310,7 +339,7 @@ customModes:
       - Required inputs must be present; otherwise set Status: "Blocked - Missing Inputs: <list>".
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-      - Self-research-first: Use internal artifacts and authoritative external sources via MCP/tools (context7, google_search) to infer sensible defaults and standards; ask only when unavoidable; cite sources in spec and report.
+      - Self-research-first: Research standards/best practices using available tools; ask only when unavoidable; cite sources in spec and report.
       - Assumptions policy: Decide trivial/stylistic items via sensible defaults; record as assumptions in Risks/Deferred or Glossary.
       - Artifact location: Only create/update <spec_workspace>/spec.md; never place code under <spec_workspace>.
       - Done-When:
@@ -321,6 +350,20 @@ customModes:
           - Success Criteria with measurable, technology-agnostic outcomes
           - Constraints include constitution references if applicable (optional)
         - Status = "Ready - Initial spec" or "Partial - High ambiguities"
+      - Completion Checklist:
+        - [ ] spec.md created with all required sections
+        - [ ] Git branch created and checked out
+        - [ ] Evidence directory and index created
+        - [ ] All ambiguities documented or resolved
+        - [ ] Specification committed to feature branch
+
+      ## Specification Creation Process
+      1. Read constitution → Create spec workspace → Create git branch
+      2. Create evidence directory → Create evidence index
+      3. Create spec.md with user stories, requirements, and success criteria
+      4. If ambiguities exist, record in risks
+      5. Commit specification
+      6. Ready when spec.md exists with all required sections
 
       # Process
       1. Read governance/constitution.md if exists; ensure spec complies (reference clauses in constraints if applicable).
@@ -454,6 +497,19 @@ customModes:
           - Applied updates integrated (Objectives/ACs/Constraints/Glossary/Edge Cases/Risks)
           - No unresolved ambiguities
         - Status = "Ready - Clarifications resolved"
+      - Completion Checklist:
+        - [ ] All dimensions evaluated (Functional, Domain, UX, etc.)
+        - [ ] Self-research completed with sources cited
+        - [ ] All ambiguities resolved or documented as risks
+        - [ ] spec.md updated with all changes
+        - [ ] Clarification committed to feature branch
+
+      ## Clarification Process
+      1. Read spec.md → Evaluate dimensions → Prioritize by impact × uncertainty
+      2. Self-research first → If sources exhausted, ask user questions
+      3. Apply updates to spec.md → Update clarify.md
+      4. Repeat until all ambiguities resolved
+      5. Ready when clarify.md exists with all Q&A resolved
 
       # Process
       ## Step 1: Evaluation
@@ -573,7 +629,7 @@ customModes:
       - If scope change is discovered downstream, request orchestrator-mediated micro-loop (end session with Status: "Blocked - Needs Task Update"); do not modify tasks directly.
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-      - Self-research-first: Use MCP context7 and codebase_search/search_files to validate and select technologies; ask only on material trade-offs; cite sources in plan.md (Research Sources).
+      - Self-research-first: Research and validate technologies using available tools; ask only on material trade-offs; cite sources in plan.md (Research Sources).
       - Assumptions policy: Choose defaults for minor design choices; document under plan.md "Risks & Assumptions".
       - Artifact location: Only create/update <spec_workspace>/plan.md (and optional plan/ docs); never place code under <spec_workspace>.
       - Done-When:
@@ -584,12 +640,28 @@ customModes:
           - API Contracts
           - (optional) minimal Implementation Snippets
         - Status = "Ready - Design complete" or "Partial - High-risk assumptions"
-
-      # Process Overview
+      - Completion Checklist:
+        - [ ] Architecture designed with AC mapping
+        - [ ] Tech stack selected with constitution alignment
+        - [ ] Data model defined with relationships
+        - [ ] API contracts specified
+        - [ ] Alternatives considered (min 2) with rationale
+        - [ ] Plan committed to feature branch
+ 
+        ## Planning Architecture Process
+        1. Read prior artifacts → Evaluate requirements
+        2. Define components & data flows → Map ACs to components
+        3. Select tech stack → Validate technologies
+        4. Identify risks & assumptions → Validate feasibility
+        5. If high risks, suggest alternatives
+        6. Create evidence index → Create plan.md
+        7. Ready when plan.md exists with all required sections
+ 
+        # Process Overview
       Develop a comprehensive high-level design that aligns with requirements, constitution, and best practices. Use tools for research (e.g., MCP for docs, codebase_search for patterns). Focus on critical decisions; note assumptions and risks explicitly.
 
       ## Step 1: Preparation
-      1. Read prior artifacts: constitution (if exists), spec.md, clarify.md (if exists).
+      1. Read prior artifacts: constitution (if exists, user-defined), spec.md, clarify.md (if exists).
       2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
       3. Evaluate requirements across: Functional, Non-functional, Integration, Scalability.
 
@@ -673,8 +745,10 @@ customModes:
       ## Tech Stack
       | Category | Choice   | Rationale                   | Constitution Alignment |
       |----------|----------|-----------------------------|-----------------------|
-      | Frontend | Next.js  | SSR for perf, ecosystem     | Performance gate      |
-      | Database | PostgreSQL | ACID compliance          | Security (no secrets) |
+      | Frontend | <TBD>    | <to be determined>          | <to be determined>     |
+      | Database | <TBD>    | <to be determined>          | <to be determined>     |
+      
+      NOTE: This table is EXAMPLE ONLY - replace with your actual tech stack choices
 
       ## Testing Strategy (TDD)
       - Policy: Default TDD for all tasks; Mandatory per Tests policy (Foundational, P1, bugfix, API/data/security/critical rules); Waiver only for P2+ low-risk UI/content with minimal regression test before approval.
@@ -770,6 +844,21 @@ customModes:
           - AC Coverage table shows full coverage
           - Freeze rule active (no new T-IDs during implementation)
         - Status = "Ready - Tasks executable" or "Blocked - Incomplete AC coverage"
+      - Completion Checklist:
+        - [ ] Tasks organized by phases and user stories
+        - [ ] All ACs covered by tasks
+        - [ ] Dependencies clearly defined
+        - [ ] Parallelizable tasks marked with [P]
+        - [ ] TDD orientation ensured (test tasks first)
+        - [ ] Tasks committed to feature branch
+
+      ## Task Breakdown Process
+      1. Read constitution/spec/plan → Create evidence index
+      2. Organize by phases & stories → Ensure TDD orientation
+      3. Mark parallelizable tasks → Provide AC coverage mapping
+      4. Create tasks.md
+      5. If AC coverage incomplete, add missing tasks
+      6. Ready when tasks.md exists with full AC coverage
 
       # Process
       1. Read constitution (if exists), spec.md, and plan.md; ensure tasks comply (e.g., coverage, security).
@@ -887,13 +976,18 @@ customModes:
        - Do not change scope; if a gap is found, end session with Status: "Blocked - Needs Task Update" for orchestrator re-delegation.
        - Output style: concise bullets; measurable statements; avoid narrative.
        - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-       - Self-research-first: Use codebase_search/search_files and MCP/context7 to check patterns/standards; gather evidence; do not ask the user.
+       - Self-research-first: Check patterns/standards using available tools; gather evidence; do not ask the user.
        - Artifact location: Only create/update <spec_workspace>/analysis.md; never place code under <spec_workspace>.
       - Done-When:
         - <spec_workspace>/analysis.md exists with:
           - No Critical/High issues
           - Contract Readiness passed (if plan.md exists)
         - Status = "Ready - Implement" or "Blocked - High gaps"
+
+      ## Analysis Audit Process
+      1. Read prior artifacts → Perform structured checks
+      2. If critical issues found, classify by severity → Create evidence index → Create analysis.md → Blocked
+      3. If no critical issues, Ready to implement
 
       # Process Overview
       Conduct a lightweight pre-implementation cross-check on spec, plan, and tasks for consistency, gaps, and compliance. Focus on critical issues; do not modify upstream files; record suggested minor fixes in analysis.md only. Block on high-impact problems with specific upstream recommendations. Provide detailed reporting for orchestrator decisions.
@@ -918,7 +1012,7 @@ customModes:
       ## Step 3: Findings and Reporting (NO FIXES)
        6. Classify issues by severity (High/Critical block, Medium flag, Low note).
           - ALL issues: Report to orchestrator with recommended delegation targets.
-          - ABSOLUTELY NO FIXES: Not even minor doc fixes. This is audit-only.
+          - FIXING POLICY: Only fix Low/Trivial issues (typos, broken links, formatting). All other issues must be reported to orchestrator.
           - Timebox to ~30 minutes equivalent; focus on high impact.
 
       ## Step 4: Evidence Consolidation
@@ -977,7 +1071,7 @@ customModes:
 
       # Handling
        - Block criteria: Missing AC coverage | Gates not planned | Unresolved design contradictions | ANY issues found.
-       - NO FIXES ALLOWED: Never fix any issues, regardless of severity. Always report to orchestrator.
+       - FIXING POLICY: Only fix Low/Trivial issues (typos, broken links, formatting). All other issues must be reported to orchestrator.
        - Escalation: End session with Status "Blocked - Needs Task Update" for orchestrator re-delegation.
 
     groups:
@@ -1008,7 +1102,7 @@ customModes:
        - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates appropriately.
        - Keep outputs concise; measurable statements; avoid narrative.
        - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-       - Self-research-first: Consult official docs via MCP/context7 and existing repo patterns before asking; cite references in implementation.md Evidence.
+       - Self-research-first: Consult available docs and existing repo patterns before asking; cite references in implementation.md Evidence.
        - Path policy: You MUST NOT create or modify code under <spec_workspace> (e.g., `specs/...`). Perform code edits in repository root paths (./, ./src, ./apps, ./packages) per plan.md and existing structure.
        - Fixing policy: You may fix bugs in code you write during implementation, but you MUST NOT fix issues discovered during verification (e.g., test failures, lint errors, constitution gate failures). These must be reported to the orchestrator.
       - Tests policy:
@@ -1019,14 +1113,30 @@ customModes:
         - All tasks are [x] and verified (tests/gates), or
         - Status = "Partial - technical blockers" with resumption plan, or
         - Status = "Blocked - upstream issue" with suggested loop
+      - Completion Checklist:
+        - [ ] All tasks marked complete [x]
+        - [ ] All tests passing with required coverage
+        - [ ] All constitution gates passing
+        - [ ] Implementation committed with semantic messages
+        - [ ] Evidence index updated with all results
+
+      ## Visual Workflow Reference
+      Implementation TDD Flow:
+      1. Read all inputs → Process tasks in order
+      2. Execute TDD cycle → Commit progress
+      3. If new scope discovered, Blocked - Needs Task Update
+      4. If technical blockers, Partial - Technical Blockers
+      5. When all tasks complete, commit all changes → Validate progress
+      6. If issues found during verification, Blocked - Issues Found
+      7. If all good, Ready - Implementation Complete
 
       # Process Overview
       Aim for full completion of all tasks in tasks.md using strict TDD (Red-Green-Refactor). Process in dependency order. Partial completion is only for technical blockers (e.g., external deps). For upstream issues (requirements/design/tasks gaps), halt and report "Blocked" with a suggested upstream loop for the orchestrator. Verify changes and constitution compliance.
 
       ## Step 1: Preparation
-      1. Read inputs: constitution (if exists), spec.md, clarify.md (if exists), plan.md (incl. Testing Strategy), analysis.md, tasks.md (prioritize incomplete [ ]).
+      1. Read inputs: constitution (if exists, user-defined), spec.md, clarify.md (if exists), plan.md (incl. Testing Strategy), analysis.md, tasks.md (prioritize incomplete [ ]).
       2. Assume git_branch is active (orchestrator ensured). Do not switch or create branches here; only report mismatch.
-      3. Review constitution for compliance requirements (e.g., coverage ≥95%).
+      3. If constitution exists and references compliance requirements, note them.
 
       ## Step 2: Task Execution (Iterative TDD)
        4. Process tasks in dependency order (respect [P] parallels if independent):
@@ -1038,10 +1148,10 @@ customModes:
             - If UI: Use browser_action to verify interactions; capture evidence.
             - Update tasks.md: Mark [x] on completion; add brief evidence (e.g., "tests/auth.test.ts passed").
             - Task discipline: Do not create new T-IDs during implementation.
-            - COMMIT POLICY: Commit meaningful progress after completing significant tasks or milestones using semantic commit format:
-              - `git add . && git commit -m "feat: implement T<T-ID> - <brief description>"`
-              - `git add . && git commit -m "fix: resolve issue in T<T-ID> - <brief description>"`
-              - `git add . && git commit -m "test: add tests for T<T-ID> - <brief description>"`
+            - COMMIT POLICY: Commit meaningful progress after completing significant tasks or milestones using required format:
+              - `git add . && git commit -m "type(T123): brief description"`
+              - Examples: `feat(T045): add user authentication`, `fix(T067): resolve null pointer exception`
+              - All commits MUST follow format: type(T-ID): message
             - Micro-loop (orchestrator-mediated): If new scope is discovered, end the session via attempt_completion with Status: "Blocked - Needs Task Update" and include problem summary, affected ACs, and proposed tasks. The orchestrator will re-delegate appropriately; continue only after tasks.md is updated and AC coverage is confirmed.
             - Allowed sub-steps: You may split work inside the same T-ID as sub-steps without creating new IDs; document in Change Log under the same T-ID.
             - If blocked:
@@ -1053,9 +1163,9 @@ customModes:
          - Maintain evidence trail for all parallel operations
 
       ## Step 3: Verification
-        6. CRITICAL: Commit all changes made during this implementation session before verification using semantic commit format:
+        6. CRITICAL: Commit all changes made during this implementation session before verification using required format:
            - `git add . && git commit -m "feat: complete implementation session - <summary>"`
-           - `git add . && git commit -m "refactor: improve code quality - <summary>"`
+           - `git add . && git commit -m "refactor(T123): improve code quality - <summary>"`
         7. Validate overall progress:
            - Run full test suite; report pass rate and coverage.
            - Check constitution gates (lint/type/perf) via commands; save outputs to artifacts/ on failure.
@@ -1143,10 +1253,10 @@ customModes:
        - AUDIT-ONLY: This phase is purely for verification, approval, and merging - NO FIXING ALLOWED
        - Verification scope: validate against ACs, constitution gates, and analysis follow-ups only; no new scope introduction.
        - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation".
-       - ABSOLUTE PROHIBITION: Never fix any issues (code, tests, docs, configs). Always report to orchestrator.
+       - FIXING POLICY: Only fix Low/Trivial issues (typos, broken links, formatting). All other issues must be reported to orchestrator.
        - MERGE RESPONSIBILITY: After user approval, merge feature branch to main with single merge commit.
        - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-       - Research-first: Gather verification evidence from tests/logs/artifacts and authoritative docs; do not ask the user except to capture final approval when implementation is complete.
+       - Research-first: Gather verification evidence from tests/logs/artifacts; do not ask the user except to capture final approval when implementation is complete.
        - Artifact location: Only create/update <spec_workspace>/review.md; never place code under <spec_workspace>.
       - Done-When:
         - <spec_workspace>/review.md exists with:
@@ -1157,20 +1267,32 @@ customModes:
           - Scope adherence OK (or micro-loop requested)
         - Status = Approved-Merged/Blocked (per template)
 
+      ## Release Verification Process
+      1. Read all artifacts → Check implementation completeness
+      2. CRITICAL: If ANY tasks incomplete, STOP immediately → Report Blocked - Incomplete
+      3. Only if ALL complete: Verify requirements → Check test coverage
+      4. Validate constitution gates → Verify scope adherence
+      5. If any checks fail, Report Issues Found → Re-delegate
+      6. If all pass, Request user approval
+      7. If approved: Switch to main → Merge → Create tag → Push → Update review.md
+      8. If rejected: Report Changes Needed → Re-delegate
+
       # Process Overview
       Ensure the implementation meets requirements before release. Always start with completeness. Proceed to verification and user feedback only if implementation is complete. Halt early if incomplete, but always document details for orchestrator.
 
       ## Step 1: Preparation
-      1. Read artifacts: constitution (if exists), spec.md, clarify.md (if exists), plan.md, tasks.md, analysis.md, implementation.md/logs, artifacts/.
+      1. Read artifacts: constitution (if exists, user-defined), spec.md, clarify.md (if exists), plan.md, tasks.md, analysis.md, implementation.md/logs, artifacts/.
       2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
 
       ## Step 2: Implementation Completeness (Always)
-      3. Analyze tasks.md:
-         - Calculate progress: total vs. completed ([x]).
-         - List incomplete tasks with status/blockers and effort.
-         - If any incomplete: Halt verification and user review. Create a minimal review.md focused on completeness and recommendations; report "Blocked - Incomplete".
-         - If complete: Proceed to verification.
-         - Always log this assessment in review.md.
+      3. CRITICAL: Follow the Release Verification Flow diagram precisely:
+         - First check: Calculate progress: total vs. completed ([x]) in tasks.md
+         - If ANY tasks are incomplete ([ ]): STOP immediately - do not proceed to verification
+         - Create a minimal review.md focused only on completeness: list all incomplete tasks with blockers
+         - Report "Blocked - Incomplete" to orchestrator - do NOT solicit user approval
+         - Only if ALL tasks are complete ([x]): Proceed to verification
+         - Always log this assessment in review.md with clear task completion metrics
+         - Reference the Release Verification Process above for the complete decision process
 
       ## Step 3: Verification (Only if Complete)
        4. Verify against requirements:
@@ -1266,7 +1388,7 @@ customModes:
 
        # Handling
         - Block criteria: Incomplete implementation | ANY verification failures | Scope mismatch | User rejection.
-        - ABSOLUTE NO-FIX POLICY: This is an audit-only phase. Never fix any issues, regardless of severity. Always report to orchestrator for re-delegation.
+        - FIXING POLICY: Only fix Low/Trivial issues (typos, broken links, formatting). All other issues must be reported to orchestrator for re-delegation.
         - MERGE POLICY: Only merge to main after explicit user approval. Use --no-ff for merge commits.
         - Escalation: End session with Status "Blocked - ..." with detailed issue summary and recommended delegation targets.
 
