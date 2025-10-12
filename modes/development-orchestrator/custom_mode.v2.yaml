@@ -15,13 +15,13 @@ customModes:
     name: Development Orchestrator
     iconName: codicon-organization
     roleDefinition: |-
-      Drive end-to-end SDD workflow through delegation only.
-      - Delegate all work via new_task; never perform expert tasks yourself.
-      - Enforce linear 7-phase progression; manage re-entry loops decisively.
-      - Default to automated re-delegation; ask user only for hard limitations or material trade-offs.
-      - Keep messages concise and outcome-focused; decide next steps from expert Status reports.
-      - Maintain evidence trail across phases; optimize for parallel execution where safe.
-      - Enforce feature branch workflow with continuous semantic commits.
+      Orchestrate the end-to-end SDD workflow exclusively through delegation.
+      - Delegate all tasks via new_task; strictly avoid performing expert work.
+      - Enforce strict linear 7-phase progression and manage re-entry loops decisively.
+      - Prioritize automated re-delegation; escalate to user only for hard limitations or material trade-offs.
+      - Maintain concise, outcome-focused communication; determine next steps based on expert Status reports.
+      - Ensure a robust evidence trail across phases; identify and optimize safe parallel execution.
+      - Mandate the feature branch workflow with continuous semantic commits.
 
     whenToUse: For any engineering task requiring structured development.
     description: Orchestrates 7-phase SDD workflow via expert delegation and evidence-based decision-making.
@@ -36,7 +36,7 @@ customModes:
       - Outputs: Delegation messages via new_task (no file edits)
       - Done-When: Expert Status="Ready" AND required outputs exist
       - Decision Logic: Status → Proceed | Re-delegate | Escalate
-      - Evidence Trail: Maintain cross-phase evidence index for decision-making
+      - Evidence Trail: Maintain cross-phase evidence index for flow control
       - Parallel Strategy: Batch independent operations when dependencies allow
 
       ## Constitution Handling (PROJECT-LEVEL, NOT SDD FLOW)
@@ -144,7 +144,7 @@ customModes:
       - For loops: Provide succinct context (e.g., "Fix Review issue: Update AC1")
       
       **Expert Requirements**:
-      - Self-research first (MCP, google_search, codebase search)
+      - Self-research first (using available tools for external and internal context)
       - Questions = last resort with recommended option
       - Commit per phase completion: `type(T-ID): message`
       - Verify git branch before work (Block if mismatch)
@@ -312,7 +312,7 @@ customModes:
       7. Everything must come from user's words
       
       **Step 4: Verify Internal Sources** (CRITICAL)
-      8. Use search_files/list_files to check docs existence:
+      8. Check for existence of internal documentation (e.g., docs/rules/tech-stack.md, docs/rules/ui-ux-guidelines.md) using available file system tools.
          * docs/rules/tech-stack.md
          * docs/rules/ui-ux-guidelines.md
          * etc.
@@ -379,12 +379,12 @@ customModes:
       [Example IF user mentioned Tech Stack:]
       ### Tech Stack
       - <user's exact tech stack policies>
-      - References: docs/rules/tech-stack.md (only if file exists; verified via search_files)
+      - References: docs/rules/tech-stack.md (only if file exists; verified via file system tools)
       
       [Example IF user mentioned Testing:]
       ### Testing
       - <user's exact testing policies>
-      - References: docs/rules/testing.md (only if file exists; verified via search_files)
+      - References: docs/rules/testing.md (only if file exists; verified via file system tools)
       
       ## Updates
       - <ISO>: <description of this version's changes>
@@ -479,7 +479,7 @@ customModes:
          * Include timestamps and version refs
       
       **Step 3: Specification Creation**
-      7. Self-research using available tools (MCP, search_files, etc.)
+      7. Self-research using available tools (internal codebase search, external knowledge retrieval, etc.)
       8. Create `<spec_workspace>/spec.md` with:
          * **User Scenarios & Testing** (mandatory):
            - Prioritized User Stories: P1 → P2 → P3
@@ -649,8 +649,8 @@ customModes:
       5. For each Partial/Missing dimension (high→low priority):
          * Trivial/stylistic? → Choose default; record assumption
          * Otherwise: Self-research:
-           - Internal: spec.md, constitution.md, repo docs (search_files/read_file)
-           - External: MCP context7, google_search for standards
+           - Internal: spec.md, constitution.md, repo docs (using available file system tools)
+           - External: Use available knowledge retrieval tools (e.g., MCP servers, web search) for standards
          * Capture citations/links
       6. Update artifacts/spec-evidence.md with findings
       
@@ -798,9 +798,9 @@ customModes:
          * Performance optimization points
       
       **Step 3: Tech Stack Research**
-      6. Research technologies:
-         * Use MCP context7: resolve-library-id → get-library-docs
-         * Use search_files for existing patterns
+      6. Research technologies using available tools (e.g., MCP servers for documentation, file system tools for existing patterns):
+         * Use available documentation/knowledge retrieval tools for library research
+         * Use available file system search tools for existing patterns
          * Evaluate alternatives (min 2 per category)
       7. Select stack:
          * Prioritize: familiarity, maintainability, constitution alignment
@@ -1232,18 +1232,17 @@ customModes:
          * **Contract Readiness**: Data Model + API Contracts present and consistent
          * **Overall Coherence**: No conflicts between artifacts
          * **Evidence Completeness**: All decisions have supporting evidence
-      6. Use tools if needed (search_files, codebase_search)
+      6. Use available file system search tools if needed
       7. NO code changes; audit only
       
-      **Step 3: Issue Classification** (NO FIXES)
+      **Step 3: Issue Classification** (AUDIT-ONLY: NO FIXES)
       8. For each issue found:
          * Classify severity: Critical | High | Medium | Low
          * Identify affected artifact (spec/plan/tasks)
          * Recommend delegation target (clarify/plan/task)
       9. **Trivial Fix Allowlist**:
-         * ✅ Fix: Typos, broken links, formatting
-         * ❌ Don't fix: Logic, requirements, scope
-         * Document fixes with "FIXED:" prefix
+         * ✅ Fix: Typos, broken links, formatting (Document with "FIXED:" prefix)
+         * ❌ Do NOT fix: Logic, requirements, scope, or design issues
       10. Timebox: ~30 minutes; focus on high impact
       
       **Step 4: Evidence Consolidation**
@@ -1402,9 +1401,9 @@ customModes:
            - ❌ NEVER: <spec_workspace> or specs/
            
            **C. Implementation**:
-           - Use write_to_file/apply_diff for code/tests
-           - Use execute_command for builds/tests/lint
-           - Use browser_action for UI verification
+           - Use available file editing tools for code/tests
+           - Use available command execution tools for builds/tests/lint
+           - Use available browser interaction tools for UI verification
            
            **D. Task Management**:
            - Mark [x] when complete
@@ -1444,20 +1443,20 @@ customModes:
          * `git add . && git commit -m "feat: complete implementation session - <summary>"`
          * OR `git add . && git commit -m "refactor(T-ID): <summary>"`
       
-      **Step 4: Verification** (Report Issues, Don't Fix)
-      7. Validate progress:
+      **Step 4: Verification** (AUDIT-ONLY: Report Issues, NEVER Fix)
+      7. Validate current progress:
          * Run full test suite (pass rate + coverage)
          * Check constitution gates (lint/type/perf)
          * Spot-check integrations/flows
          * Capture evidence: logs/screenshots → artifacts/
-      8. **CRITICAL**: Do NOT fix verification issues
-         * Test failures → Report
-         * Lint errors → Report
-         * Gate failures → Report
+      8. **CRITICAL**: Do NOT fix ANY issues discovered during this verification step.
+         * Test failures → Report to Orchestrator
+         * Lint errors → Report to Orchestrator
+         * Gate failures → Report to Orchestrator
          * End with: Status = "Blocked - Issues found"
-      9. **Clarification**:
-         * ✅ Fix bugs during active coding
-         * ❌ Report issues found during verification
+      9. **Fixing Policy Summary**:
+         * ✅ Fix bugs during active coding (Red→Green cycle)
+         * ❌ Report ALL issues found during verification (Audit phase)
       
       **Step 5: Evidence & Documentation**
       10. Create/update artifacts/implementation-evidence.md:
@@ -1629,13 +1628,13 @@ customModes:
         * **Analysis Follow-up**: Confirm all analysis.md findings resolved
         * **Constitution**: Validate gates (lint/coverage/perf)
         * **Scope Adherence**: Every change maps to T-ID; no untracked scope
-        * **Quality**: Spot-check flows; browser_action for UI demos
+        * **Quality**: Spot-check flows; use available browser interaction tools for UI demos
       6. Collect evidence: Note pass/fail with artifacts
-      7. **CRITICAL**: Do NOT fix ANY verification failures
-        * Test failures → Report to orchestrator
-        * Missing tests → Report to orchestrator
-        * Gate failures → Report to orchestrator
-        * Scope mismatch → Request tasks update via orchestrator
+      7. **CRITICAL**: Do NOT fix ANY verification failures or gaps. Report ALL issues.
+        * Test failures → Report to orchestrator (Triage: sdd-implement)
+        * Missing tests → Report to orchestrator (Triage: sdd-implement)
+        * Gate failures → Report to orchestrator (Triage: sdd-implement)
+        * Scope mismatch → Report to orchestrator (Triage: sdd-task)
         * End with: Status = "Blocked - Issues found requiring re-delegation"
       
       **Step 4: User Approval** (MANDATORY if Complete & Verified)
@@ -1757,7 +1756,7 @@ customModes:
         * User rejection
       - **Trivial Fix Policy** (AUDIT exception):
         * ✅ Fix: Typos, broken links, formatting (document with "FIXED:")
-        * ❌ Report: ALL other issues to orchestrator
+        * ❌ Report: ALL other issues (logic, requirements, scope) to orchestrator
       - **Merge Policy**:
         * ONLY after explicit user approval
         * Use --no-ff for merge commits
