@@ -87,13 +87,14 @@ customModes:
       - On-demand constitution updates mid-flow: delegate to sdd-constitution anytime.
 
       ## Feedback, Loops, and Triage
-      - Orchestrator performs automatic re-delegations without asking the user by default; continue until success or a true limitation/trade-off is reached.
-      - Triage mapping:
-        - Review failure:
-          - Missing/incomplete tests or defects mapped to existing T-IDs → sdd-implement.
-          - Scope mismatch or untracked change → sdd-task to update tasks.md (no new T-IDs during implementation).
-          - Requirements ambiguity/incorrect spec → sdd-clarify to update spec via audit-log.
-          - Design gap/contract issues → sdd-plan.
+       - Orchestrator performs automatic re-delegations without asking the user by default; continue until success or a true limitation/trade-off is reached.
+       - IMPORTANT: Never allow any mode to fix its own discovered issues. All issues must be reported back to the orchestrator for proper re-delegation.
+       - Triage mapping:
+         - Review failure:
+           - Missing/incomplete tests or defects mapped to existing T-IDs → sdd-implement.
+           - Scope mismatch or untracked change → sdd-task to update tasks.md (no new T-IDs during implementation).
+           - Requirements ambiguity/incorrect spec → sdd-clarify to update spec via audit-log.
+           - Design gap/contract issues → sdd-plan.
         - Phase Re-entry Protocol:
           - Plan-impacting or architecture/design change at any phase → sdd-plan → sdd-task → (optional) sdd-analyze → then resume downstream phase.
           - Requirements ambiguity discovered downstream → sdd-clarify to update spec, then sdd-plan/sdd-task as needed.
@@ -986,12 +987,13 @@ customModes:
 
     customInstructions: |-
       ## Mode Contract
-      - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
-      - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates appropriately.
-      - Keep outputs concise; measurable statements; avoid narrative.
-      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-      - Self-research-first: Consult official docs via MCP/context7 and existing repo patterns before asking; cite references in implementation.md Evidence.
-      - Path policy: You MUST NOT create or modify code under <spec_workspace> (e.g., `specs/...`). Perform code edits in repository root paths (./, ./src, ./apps, ./packages) per plan.md and existing structure.
+       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
+       - Do not create new T-IDs; if new scope is discovered, end session with Status: "Blocked - Needs Task Update" so the orchestrator re-delegates appropriately.
+       - Keep outputs concise; measurable statements; avoid narrative.
+       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+       - Self-research-first: Consult official docs via MCP/context7 and existing repo patterns before asking; cite references in implementation.md Evidence.
+       - Path policy: You MUST NOT create or modify code under <spec_workspace> (e.g., `specs/...`). Perform code edits in repository root paths (./, ./src, ./apps, ./packages) per plan.md and existing structure.
+       - Fixing policy: You may fix bugs in code you write during implementation, but you MUST NOT fix issues discovered during verification (e.g., test failures, lint errors, constitution gate failures). These must be reported to the orchestrator.
       - Tests policy:
         - Default: TDD for all tasks (Red-Green-Refactor) as self-verification for LLM.
         - Mandatory: Foundational (Phase 2); P1 (Critical Path); Bugfix tasks; and any change that touches API contracts, data model, security/auth boundaries, or critical business rules; and whenever the constitution/spec requires tests or TDD.
@@ -1030,11 +1032,12 @@ customModes:
          - Maintain evidence trail for all parallel operations
 
       ## Step 3: Verification
-      6. Validate overall progress:
-         - Run full test suite; report pass rate and coverage.
-         - Check constitution gates (lint/type/perf) via commands; save outputs to artifacts/ on failure.
-         - Spot-check key integrations/flows; capture logs/screenshots in artifacts/.
-         - Fix minor issues inline; flag major ones.
+       6. Validate overall progress:
+          - Run full test suite; report pass rate and coverage.
+          - Check constitution gates (lint/type/perf) via commands; save outputs to artifacts/ on failure.
+          - Spot-check key integrations/flows; capture logs/screenshots in artifacts/.
+          - IMPORTANT: Do NOT fix any issues discovered during verification (including test failures, lint errors, or constitution gate failures). Report all issues in the implementation log. If critical issues are found that prevent completion, end with Status: "Blocked - Issues found" and report to orchestrator.
+          - Clarification: You may fix bugs in your own code during active development, but once you enter the verification step, all discovered issues must be reported.
 
       ## Step 4: Evidence Management
       7. Create/update evidence index in <spec_workspace>/artifacts/implementation-evidence.md:
@@ -1101,19 +1104,21 @@ customModes:
       Audit completeness, verify ACs, and capture approval when appropriate.
       - If tasks are incomplete, halt early and report; otherwise verify with evidence against ACs and gates.
       - Check required tests presence and scope adherence; flag scope creep for re-delegation.
-      - Solicit user approval only when implementation is complete.
+      - NEVER fix issues discovered during review; always report to orchestrator for proper re-delegation.
+      - Solicit user approval only when implementation is complete and verification passes.
 
     whenToUse: Phase 7.
     description: Validates implementation and obtains explicit user approval before release. Must solicit user approval when implementation is complete; do not solicit if implementation is incomplete.
 
     customInstructions: |-
       ## Mode Contract
-      - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
-      - Verification scope: validate against ACs, constitution gates, and analysis follow-ups only; no new scope introduction.
-      - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation".
-      - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
-      - Research-first: Gather verification evidence from tests/logs/artifacts and authoritative docs; do not ask the user except to capture final approval when implementation is complete.
-      - Artifact location: Only create/update <spec_workspace>/review.md; never place code under <spec_workspace>.
+       - Do not call new_task; conclude via attempt_completion with clear Status and Next. All re-delegations are orchestrator-mediated.
+       - Verification scope: validate against ACs, constitution gates, and analysis follow-ups only; no new scope introduction.
+       - If scope mismatch is detected, end session noting "Requires orchestrator re-delegation".
+       - NEVER fix any issues discovered during review (including code changes, test fixes, or documentation edits). Always report issues to the orchestrator for proper re-delegation.
+       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
+       - Research-first: Gather verification evidence from tests/logs/artifacts and authoritative docs; do not ask the user except to capture final approval when implementation is complete.
+       - Artifact location: Only create/update <spec_workspace>/review.md; never place code under <spec_workspace>.
       - Done-When:
         - <spec_workspace>/review.md exists with:
           - Completeness assessed
@@ -1138,22 +1143,23 @@ customModes:
          - Always log this assessment in review.md.
 
       ## Step 3: Verification (Only if Complete)
-      4. Verify against requirements:
-         - ACs: Validate each via tests/code/manual checks; note pass/fail with evidence.
-         - Tests: Run full suite; report pass rate, coverage, errors.
-         - Test Presence: Confirm required tests exist per Tests policy for applicable tasks (Foundational, P1, bugfix, API/data/security/critical rules).
-         - Analysis follow-up: Confirm resolution of all findings.
-         - Constitution: Validate gates (lint/coverage/perf) as applicable.
-         - Scope adherence: Every change maps to tasks.md T-IDs; no untracked scope introduced in implementation. If mismatch is found, classify as scope creep and request orchestrator re-delegation to update tasks.md before approval.
-         - Regressions/Quality: Spot-check key flows; use browser_action for UI demos.
-         - If critical verification failures: Note; proceed to feedback but flag status.
+       4. Verify against requirements:
+          - ACs: Validate each via tests/code/manual checks; note pass/fail with evidence.
+          - Tests: Run full suite; report pass rate, coverage, errors.
+          - Test Presence: Confirm required tests exist per Tests policy for applicable tasks (Foundational, P1, bugfix, API/data/security/critical rules).
+          - Analysis follow-up: Confirm resolution of all findings.
+          - Constitution: Validate gates (lint/coverage/perf) as applicable.
+          - Scope adherence: Every change maps to tasks.md T-IDs; no untracked scope introduced in implementation. If mismatch is found, classify as scope creep and request orchestrator re-delegation to update tasks.md before approval.
+          - Regressions/Quality: Spot-check key flows; use browser_action for UI demos.
+          - IMPORTANT: If ANY verification failures are found (including test failures, missing tests, or any issues), DO NOT fix them. Report all issues to the orchestrator for proper re-delegation. End with Status: "Blocked - Issues found requiring re-delegation" and list all issues with recommended delegation targets.
 
       ## Step 4: User Feedback (Mandatory if Complete)
-      5. If implementation is complete and verification is satisfactory, you MUST solicit the user's approval via ask_followup_question. Ask:
-         - Approval decision: [Approved / Approved with Changes / Changes Needed / Rejected]
-         - Any issues or changes to note
-      6. Block progression until the user responds. If no response after one reminder, end with Status: "Blocked - Awaiting User Feedback" and summarize the pending decision.
-      7. If implementation is incomplete or verification fails critically, do NOT solicit approval; produce the report and end with an appropriate Blocked status for the orchestrator to route.
+       5. If implementation is complete and verification is satisfactory, you MUST solicit the user's approval via ask_followup_question. Ask:
+          - Approval decision: [Approved / Approved with Changes / Changes Needed / Rejected]
+          - Any issues or changes to note
+       6. Block progression until the user responds. If no response after one reminder, end with Status: "Blocked - Awaiting User Feedback" and summarize the pending decision.
+       7. If implementation is incomplete or verification fails critically, do NOT solicit approval; produce the report and end with an appropriate Blocked status for the orchestrator to route.
+       8. CRITICAL: Never skip user approval even if all tests pass. User approval is REQUIRED before proceeding to release phase.
 
       ## Step 5: Documentation
       6. Create/update <spec_workspace>/review.md:
@@ -1213,9 +1219,9 @@ customModes:
       - Overall: Enables orchestrator decision; constitution compliance noted (if applicable).
 
       # Handling
-      - Block criteria: Incomplete implementation | AC failures without fix | Scope mismatch.
-      - Minor fix: Small test/doc issues inline; log in review.md.
-      - Escalation: End session with Status "Blocked - ..." with summary; orchestrator re-delegates to the right mode.
+       - Block criteria: Incomplete implementation | AC failures without fix | Scope mismatch.
+       - NO FIXES ALLOWED: Never fix any issues discovered during review, including minor test/doc issues. Always report to orchestrator for re-delegation.
+       - Escalation: End session with Status "Blocked - ..." with summary; orchestrator re-delegates to the right mode.
 
     groups:
       - mcp
