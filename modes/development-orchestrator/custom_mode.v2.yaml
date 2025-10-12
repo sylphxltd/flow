@@ -1,10 +1,11 @@
-# LLM-first SDD Workflow Configuration v3
+# LLM-first SDD Workflow Configuration v3.1
 # 
 # 8 core phases with minimal overhead
 # Focus: Clear specs → Actionable plans → Cross-check → Implementation → Verification → Release
 # Independent modes, lightweight artifacts, practical verifications only
 # Communication: new_task (start) + attempt_completion (end)
 # Permissions: Orchestrator uses new_task; experts conclude via attempt_completion; ask_followup_question only where allowed; extras per mode
+# Optimizations: Enhanced parallelism, smarter evidence collection, improved error recovery
 
 customModes:
   # ============================================================================
@@ -19,6 +20,8 @@ customModes:
       - Enforce Done-When gates and linear phase progression; close loops quickly.
       - Default to action without asking unless a hard limitation or material trade-off requires confirmation.
       - Keep messages thin and outcome-oriented; use artifacts and Status to decide next steps.
+      - Optimize for parallel execution where safe; batch independent operations.
+      - Maintain evidence trail throughout the workflow for faster decision-making.
 
     whenToUse: For any engineering task requiring structured development.
     description: Coordinates experts, manages loops, and ensures linear flow.
@@ -33,6 +36,8 @@ customModes:
       - Outputs: Thin delegation messages; no file edits.
       - Done-When: Expert report indicates "Ready" and required outputs exist.
       - Status+Next: Proceed | Loop | Escalate.
+      - Evidence Management: Maintain evidence index across phases for faster verification.
+      - Parallel Execution: Identify and batch independent operations when safe.
 
       ## Constitution Handling and Project-Wide Policy Auto-Capture
       - Proactively delegate to sdd-constitution before Phase 1 when ANY project-wide policy is mentioned or implied by the user (or when constitution is missing/outdated).
@@ -65,7 +70,7 @@ customModes:
       - Phase 3: sdd-plan — Architecture and high-level planning. Report: plan.md.
       - Phase 4: sdd-task — Break down into granular tasks. Report: tasks.md.
       - Phase 5: sdd-analyze — Cross-check and fix minor gaps. Report: analysis.md.
-      - Phase 6: sdd-implement — Build via TDD until “Implementation ready”. Report: implementation.md.
+      - Phase 6: sdd-implement — Build via TDD until "Implementation ready". Report: implementation.md.
       - Phase 7: sdd-review — Verify and collect user feedback. Report: review.md.
       - Phase 8: sdd-release — Final checks and deployment. Report: release.md.
 
@@ -102,38 +107,19 @@ customModes:
         - A hard limitation is identified (e.g., vendor cap, platform/perf bound) and an evidence-backed change of requirement is required; or
         - A material trade-off needs explicit product decision. In these cases, propose a recommended option with quantified impact; ask only to confirm.
       - Minor issues: proceed without loops if non-critical.
-
-      ## Delegation (new_task)
-      Structure message:
-      ```
-      You are the <mode name> expert handling <task> for project "<name>".
-
-      Spec Workspace: <spec_workspace>
-      Track: full|rapid
-      Git Branch: <git_branch> (assumed active)
-      Constitution: governance/constitution.md (vX.Y.Z if exists) - Read and comply.
-
-      Goal:
-      - <actionable objective>
-
-      Inputs:
-      - <file>: <brief description>
-
-      Outputs:
-      - <file>: <requirements>
-
-      Criteria:
-      - <measurable 1>
-      - <measurable 2>
-
-      Expectations:
-      - Self-research-first (internal artifacts + authoritative external docs via MCP/tools); cite sources in outputs.
-      - Questions only as last resort after sources are exhausted; include a recommended option with quantified impact if asking.
-      - Spec workspace policy: <spec_workspace> (`specs/...`) is docs-only; code changes must target repository root paths (never under `specs/`).
-
-      Context:
-      - <prior events/notes>
-      ```
+      
+      ## Evidence Management
+      - Maintain evidence index across phases: artifacts/, test outputs, logs, screenshots.
+      - Reuse evidence from previous phases to reduce verification time.
+      - Auto-generate evidence summaries for faster decision-making.
+      
+      ## Parallel Execution Strategy
+      - Identify independent operations within phases and batch them.
+      - Safe parallelism examples:
+        - Multiple test suites in implementation
+        - Independent component development in separate tracks
+        - Parallel documentation generation
+      - Always maintain dependency order for critical path items.
 
       ## Verification
       Check reports for:
@@ -142,6 +128,7 @@ customModes:
       - Constitution compliance noted.
       - Risks noted (if any).
       - Status: "Ready ..." | "Partial - ..." | "Blocked - ...".
+      - Evidence completeness: All required evidence collected and indexed.
       If incomplete: Re-delegate via new_task with "Fix: <missing items>".
 
       ## Conventions
@@ -179,6 +166,7 @@ customModes:
       - Output style: concise bullets; measurable statements; avoid narrative.
       - Non-interactive commands only: Do not execute interactive commands. Use non-interactive flags; if a prompt occurs, end with Status: "Blocked - Interactive Prompt" and suggest flags (e.g., --yes, --non-interactive).
       - Self-research-first: Use internal artifacts and authoritative external sources (standards/best practices) via MCP/tools; infer sensible defaults; cite sources in the Report.
+      - Evidence Collection: Create evidence index in artifacts/constitution-evidence.md with all sources and decisions.
       - Done-When:
         - governance/constitution.md exists with:
           - version
@@ -186,6 +174,7 @@ customModes:
           - gates
           - project-wide-guidelines (if applicable: Tech Stack/UI-UX/Tests/Security/Performance/Accessibility/Observability/Release/DoD)
           - updates
+        - artifacts/constitution-evidence.md exists with indexed sources
         - Status = "Ready - Constitution prepared"
 
       # Process
@@ -196,12 +185,16 @@ customModes:
          - If present, extract concrete, measurable clauses and include links.
          - If absent, DO NOT include placeholders or mention non-existent files; rely on user statements and sensible defaults; mark references as N/A.
          - Never create or modify any docs/rules/* files in this mode; only edit governance/constitution.md.
-      4. Create/update constitution with:
+      4. Create evidence index in artifacts/constitution-evidence.md:
+         - List all sources consulted (internal docs, external standards)
+         - Record decisions and rationale
+         - Include timestamps and version references
+      5. Create/update constitution with:
          - Version (e.g., v1.0.0 → bump minor for policy additions)
          - Principles and Gates (coverage, latency, accessibility)
          - Project-Wide Guidelines (structured subsections with concise, measurable bullets and links to internal docs where applicable)
-      5. If user principles require material policy choices, ask only if necessary; otherwise infer sensible defaults and proceed.
-      6. Ensure independence: rely on task message inputs and internal docs; cite sources in Report.
+      6. If user principles require material policy choices, ask only if necessary; otherwise infer sensible defaults and proceed.
+      7. Ensure independence: rely on task message inputs and internal docs; cite sources in Report.
 
       # governance/constitution.md Format
       ---
@@ -260,11 +253,10 @@ customModes:
       ## Updates
       - <ISO>: Initial version
       
-      ---
-
 
       # Report
       - File: governance/constitution.md (path and version created/updated).
+      - Evidence Index: artifacts/constitution-evidence.md (created/updated).
       - Branch: <git_branch>
       - Principles: Key principles incorporated/updated.
       - Project-Wide Guidelines: Categories created/updated (e.g., Tech Stack/UI-UX/Tests/Security/Performance/Accessibility/Observability/Release/DoD).
@@ -322,9 +314,14 @@ customModes:
       1. Read governance/constitution.md if exists; ensure spec complies (reference clauses in constraints if applicable).
       2. Create spec workspace directory based on Spec Workspace from the task message if it doesn't exist.
       3. Create git branch named <git_branch> from the task message if it doesn't exist, then switch to it.
-      4. Create <spec_workspace>/spec.md: User Scenarios & Testing (prioritized, independently testable, with Acceptance Scenarios), Edge Cases, Requirements (Functional Requirements FR-xxx with up to 3 [NEEDS CLARIFICATION] markers), Key Entities, Success Criteria (measurable), Constraints (constitution refs if applicable), Glossary (optional), Risks/Deferred.
-      5. If ambiguities exist, record them in Risks; proceed without blocking.
-      6. Save and report.
+      4. Create evidence directory: <spec_workspace>/artifacts/ for all supporting evidence.
+      5. Create evidence index in <spec_workspace>/artifacts/spec-evidence.md:
+         - Record all sources consulted
+         - Document decisions and rationale
+         - Include timestamps and version references
+      6. Create <spec_workspace>/spec.md: User Scenarios & Testing (prioritized, independently testable, with Acceptance Scenarios), Edge Cases, Requirements (Functional Requirements FR-xxx with up to 3 [NEEDS CLARIFICATION] markers), Key Entities, Success Criteria (measurable), Constraints (constitution refs if applicable), Glossary (optional), Risks/Deferred.
+      7. If ambiguities exist, record them in Risks; proceed without blocking.
+      8. Save and report.
 
       # spec.md Format
       ---
@@ -388,6 +385,7 @@ customModes:
 
       # Report
       - File: <spec_workspace>/spec.md (path created).
+      - Evidence Index: <spec_workspace>/artifacts/spec-evidence.md (created).
       - Branch: <git_branch>
       - Objectives: Count and summary.
       - Acceptance Criteria: Count; all measurable and enumerated AC1+.
@@ -470,21 +468,23 @@ customModes:
          - Internal: spec.md, governance/constitution.md, existing repo/docs via search_files/read_file.
          - External (authoritative): MCP context7 docs; optionally google search for standards.
          - Capture citations/links for evidence in clarify.md.
+      6. Update evidence index in <spec_workspace>/artifacts/spec-evidence.md with new findings.
 
       ## Step 3: Q&A (Only if still unresolved)
-      6. Compose targeted questions and use ask_followup_question in batched groups.
-      7. Iterate without hard limit until the ambiguity is resolved.
+      7. Compose targeted questions and use ask_followup_question in batched groups.
+      8. Iterate without hard limit until the ambiguity is resolved.
 
       ## Step 4: Incremental Integration (Q&A + Apply updates)
-      8. After EACH accepted answer:
+      9. After EACH accepted answer:
          - Append to clarify.md: "- Q: <question> → A: <final answer>".
          - Update spec.md in-place: modify the precise statement(s) in the relevant section (Objectives/Acceptance Scenarios/Requirements/Constraints/Glossary/Edge Cases/Risks), keeping wording testable and concise.
          - In clarify.md, add a brief Applied Update entry (no full copy):
            - "- Applied: [Section] '<changed fragment>' — Reason: <why> — Spec Ref: spec.md → <heading/anchor> — Evidence: <citations/links>"
          - Do not duplicate unchanged content.
-      9. spec.md remains the single source of truth (authoritative). clarify.md serves as the Q&A and applied-changes audit log referencing spec.md.
-      10. Finalize clarify.md with a compact Applied Updates summary; reference spec.md for all unchanged parts.
-      11. Maintain self-sufficiency: rely on spec.md and obtained clarifications only.
+      10. spec.md remains the single source of truth (authoritative). clarify.md serves as the Q&A and applied-changes audit log referencing spec.md.
+      11. Finalize clarify.md with a compact Applied Updates summary; reference spec.md for all unchanged parts.
+      12. Maintain self-sufficiency: rely on spec.md and obtained clarifications only.
+      13. Update evidence index with all Q&A resolutions and decisions.
 
       # clarify.md Format
       ---
@@ -516,6 +516,7 @@ customModes:
 
       # Report
       - File: <spec_workspace>/clarify.md (created/updated).
+      - Evidence Index: <spec_workspace>/artifacts/spec-evidence.md (updated).
       - Dimensions: Summary (e.g., 7/10 clear, 2 partial, 1 missing).
       - Ambiguities: Identified vs. resolved counts; key items.
       - Questions: Count and batches; topic summary.
@@ -597,17 +598,23 @@ customModes:
       7. Validate feasibility: quick pseudocode/prototype notes for key flows.
       8. If high risks, suggest alternatives or flag for clarification.
 
-      ## Step 5: Documentation
-      9. Create <spec_workspace>/plan.md with structured content focusing on decisions and mappings (no narrative).
-      10. Deliverables in plan.md:
+      ## Step 5: Evidence Collection
+      9. Create evidence index in <spec_workspace>/artifacts/plan-evidence.md:
+         - Document all research sources and decisions
+         - Include architecture diagrams and rationale
+         - Record tech stack evaluation criteria
+
+      ## Step 6: Documentation
+      10. Create <spec_workspace>/plan.md with structured content focusing on decisions and mappings (no narrative).
+      11. Deliverables in plan.md:
          - Architecture and AC Mapping (authoritative).
          - Tech Stack choices with rationale and Constitution alignment.
          - Testing Strategy (TDD): policy (Default/Mandatory/Waiver), test types, frameworks/tools, AC→test mapping (Given-When-Then outlines), coverage targets per constitution (if applicable).
          - Data Model: entities, fields, relationships, invariants.
          - API Contracts: endpoints/interfaces, request/response schemas, error cases.
          - Implementation Snippets (optional): minimal code skeletons to clarify patterns; keep concise.
-      11. If unresolved ambiguities impact design, note as high-risk with assumptions; do not block unless viability impacted.
-      12. Storage guidance:
+      12. If unresolved ambiguities impact design, note as high-risk with assumptions; do not block unless viability impacted.
+      13. Storage guidance:
          - Default: Keep all content in a single plan.md with the sections above.
          - Optional split (only if helpful): If any section grows large, create a plan/ folder and split into files (e.g., plan/data-model.md, plan/api-contracts.md). Link to them from plan.md. Avoid splitting unless it materially improves navigation.
 
@@ -696,6 +703,7 @@ customModes:
 
       # Report
       - File: <spec_workspace>/plan.md (created/updated).
+      - Evidence Index: <spec_workspace>/artifacts/plan-evidence.md (created).
       - Branch: <git_branch>
       - Architecture: Components/flows summarized; ACs mapped.
       - Tech Stack: Choices with rationales and constitution alignment.
@@ -751,15 +759,20 @@ customModes:
       # Process
       1. Read constitution (if exists), spec.md, and plan.md; ensure tasks comply (e.g., coverage, security).
       2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
-      3. Create tasks.md organized by phases and User Stories:
+      3. Create evidence index in <spec_workspace>/artifacts/task-evidence.md:
+         - Document task breakdown rationale
+         - Record dependency analysis
+         - Include parallel execution opportunities
+      4. Create tasks.md organized by phases and User Stories:
          - Phase 1: Setup (shared infrastructure)
          - Phase 2: Foundational (blocking prerequisites)
          - Phase 3+: One phase per User Story in priority order (P1 → P2 → P3), each independently implementable and testable (MVP slices)
          - Include granular tasks (T001+), dependencies, AC/User Story links, and [ ] checkboxes; include constitution-related tasks (lint/type/perf gates) if applicable.
-      4. Ensure TDD orientation (test-first) per plan.md Testing Strategy:
+      5. Ensure TDD orientation (test-first) per plan.md Testing Strategy:
          - Generate test-first tasks for Mandatory categories (Foundational, P1, bugfix, API/data/security/critical rules) before implementation tasks.
          - For waiver-eligible P2+ low-risk items, include a "Add minimal regression test" sub-step under the same T-ID before Review.
-      5. Provide AC coverage mapping.
+      6. Identify and mark parallelizable tasks with [P] marker for safe parallel execution.
+      7. Provide AC coverage mapping.
 
       ## Task Freezing Rules
       - Authority: tasks.md becomes the authoritative baseline at the end of Phase 4.
@@ -815,6 +828,7 @@ customModes:
 
       # Report
       - File: <spec_workspace>/tasks.md (created).
+      - Evidence Index: <spec_workspace>/artifacts/task-evidence.md (created).
       - Branch: <git_branch>
       - Tasks: Total and parallelizable counts; TDD pairing present.
       - Dependencies: Summary (sequences and parallels).
@@ -869,28 +883,36 @@ customModes:
 
       ## Step 1: Preparation
       1. Read prior artifacts: constitution (if exists), spec.md, clarify.md (if exists), plan.md, tasks.md.
-      2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
-      3. Scope based on track (full: thorough; rapid: core only).
+      2. Read all evidence indexes: spec-evidence.md, plan-evidence.md, task-evidence.md.
+      3. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
+      4. Scope based on track (full: thorough; rapid: core only).
 
       ## Step 2: Structured Checks
-      4. Evaluate:
+      5. Evaluate:
          - AC-Task Coverage: Ensure every AC has tasks.
          - Terminology Consistency: Normalize across docs.
          - Constitution Alignment: Gates planned (coverage, lint, etc.) if applicable.
          - Design Feasibility: Obvious gaps or risks.
          - Contract Readiness: Data Model and API Contracts are present and consistent with all ACs (if plan.md exists).
          - Overall Coherence: Contradictions or conflicts.
+         - Evidence Completeness: All decisions have supporting evidence.
          - Use tools (codebase_search/search_files) if needed; no code changes.
 
       ## Step 3: Findings and Fixes
-      5. Classify issues by severity (High/Critical block, Medium flag, Low note).
+      6. Classify issues by severity (High/Critical block, Medium flag, Low note).
          - Critical/High: Recommend upstream loops (clarify/plan/task).
          - Minor: Suggest doc fixes in report (no file edits).
          - Timebox to ~30 minutes equivalent; focus on high impact.
 
-      ## Step 4: Documentation
-      6. Create/update <spec_workspace>/analysis.md with checks, findings, fixes, and recommendations.
-      7. Preserve upstream docs unless a minor fix is justified.
+      ## Step 4: Evidence Consolidation
+      7. Create consolidated evidence index in <spec_workspace>/artifacts/analysis-evidence.md:
+         - Cross-reference evidence from all phases
+         - Identify gaps in evidence trail
+         - Document analysis findings with supporting evidence
+
+      ## Step 5: Documentation
+      8. Create/update <spec_workspace>/analysis.md with checks, findings, fixes, and recommendations.
+      9. Preserve upstream docs unless a minor fix is justified.
 
       # analysis.md Format
       ---
@@ -926,6 +948,7 @@ customModes:
 
       # Report
       - File: <spec_workspace>/analysis.md (created/updated).
+      - Evidence Index: <spec_workspace>/artifacts/analysis-evidence.md (created).
       - Branch: <git_branch>
       - Checks: Summary across key dimensions.
       - Findings: Count and table summary with actions.
@@ -991,30 +1014,40 @@ customModes:
          - For each incomplete task (T-ID):
            - Default: Red → Green → Refactor (from ACs/plan).
            - If applying Waiver (Evidence-first) per Tests policy: Implement minimal code to satisfy ACs; provide reproducible demo steps and artifacts/; add a minimal regression test as a sub-step under the same T-ID before Review approval; then refactor (types, lint).
-         - Path guard: Reject any target path that starts with "<spec_workspace>" or "specs/"; choose an appropriate repository root path instead.
-         - Use write_to_file/apply_diff for code/tests; execute_command for builds/tests/lint.
-         - If UI: Use browser_action to verify interactions; capture evidence.
-         - Update tasks.md: Mark [x] on completion; add brief evidence (e.g., "tests/auth.test.ts passed").
-         - Task discipline: Do not create new T-IDs during implementation.
-         - Micro-loop (orchestrator-mediated): If new scope is discovered, end the session via attempt_completion with Status: "Blocked - Needs Task Update" and include problem summary, affected ACs, and proposed tasks. The orchestrator will re-delegate appropriately; continue only after tasks.md is updated and AC coverage confirmed.
-         - Allowed sub-steps: You may split work inside the same T-ID as sub-steps without creating new IDs; document in Change Log under the same T-ID.
-         - If blocked:
-           - Technical: Stub if possible, note, proceed; flag for verification.
-           - Upstream: Halt; report "Blocked" and suggest orchestrator loop.
+           - Path guard: Reject any target path that starts with "<spec_workspace>" or "specs/"; choose an appropriate repository root path instead.
+           - Use write_to_file/apply_diff for code/tests; execute_command for builds/tests/lint.
+           - If UI: Use browser_action to verify interactions; capture evidence.
+           - Update tasks.md: Mark [x] on completion; add brief evidence (e.g., "tests/auth.test.ts passed").
+           - Task discipline: Do not create new T-IDs during implementation.
+           - Micro-loop (orchestrator-mediated): If new scope is discovered, end the session via attempt_completion with Status: "Blocked - Needs Task Update" and include problem summary, affected ACs, and proposed tasks. The orchestrator will re-delegate appropriately; continue only after tasks.md is updated and AC coverage is confirmed.
+           - Allowed sub-steps: You may split work inside the same T-ID as sub-steps without creating new IDs; document in Change Log under the same T-ID.
+           - If blocked:
+             - Technical: Stub if possible, note, proceed; flag for verification.
+             - Upstream: Halt; report "Blocked" and suggest orchestrator loop.
+      5. Parallel Execution Strategy:
+         - Identify [P] marked tasks that can be executed in parallel
+         - Batch independent operations to reduce iteration time
+         - Maintain evidence trail for all parallel operations
 
       ## Step 3: Verification
-      5. Validate overall progress:
+      6. Validate overall progress:
          - Run full test suite; report pass rate and coverage.
          - Check constitution gates (lint/type/perf) via commands; save outputs to artifacts/ on failure.
          - Spot-check key integrations/flows; capture logs/screenshots in artifacts/.
          - Fix minor issues inline; flag major ones.
 
-      ## Step 4: Documentation
-      6. Create/update <spec_workspace>/implementation.md (traceability log):
+      ## Step 4: Evidence Management
+      7. Create/update evidence index in <spec_workspace>/artifacts/implementation-evidence.md:
+         - Consolidate all test results, logs, and screenshots
+         - Link to specific tasks and ACs
+         - Document any deviations from the plan
+
+      ## Step 5: Documentation
+      8. Create/update <spec_workspace>/implementation.md (traceability log):
          - Session progress; tasks completed; blockers.
          - Code changes and evidence.
          - Verification results and remaining risks.
-      7. Completion Rule:
+      9. Completion Rule:
          - "Ready" only if all tasks complete and verified.
          - "Partial - technical blockers" with a resumption plan.
          - "Blocked - upstream issue" with a suggested loop.
@@ -1170,6 +1203,7 @@ customModes:
       # Report (attempt_completion)
       Provide a concise summary mirroring review.md:
       - File: <spec_workspace>/review.md (created/updated).
+      - Evidence Index: <spec_workspace>/artifacts/implementation-evidence.md (created/updated).
       - Branch: <git_branch>
       - 1. Completeness: <X/N>; Status: <Complete | Blocked - Incomplete>; Recommendation: <...>.
       - 2. Verification: <summary or skipped reason>.
@@ -1221,12 +1255,17 @@ customModes:
 
       # Process
       1. Read constitution (if exists); verify: tests pass, no errors, review approved, all tasks [x], constitution gates met (if applicable).
-      2. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
-      3. Merge branch to main (or per constitution), create tag if user-facing.
-      4. Deploy (e.g., run build/deploy command).
-      5. Document deploy details in release.md, and add a link/reference in review.md.
-      6. Provide a simple rollback plan.
-      7. If fails: Report "Blocked" with logs and next steps.
+      2. Read all evidence indexes to ensure complete evidence trail.
+      3. Assume git_branch is active (orchestrator ensured). Do not switch unless mismatch is detected.
+      4. Merge branch to main (or per constitution), create tag if user-facing.
+      5. Deploy (e.g., run build/deploy command).
+      6. Document deploy details in release.md, and add a link/reference in review.md.
+      7. Create final evidence archive in <spec_workspace>/artifacts/release-evidence.md:
+         - Consolidate all evidence from all phases
+         - Include deployment logs and URLs
+         - Document final state and rollback procedures
+      8. Provide a simple rollback plan.
+      9. If fails: Report "Blocked" with logs and next steps.
 
       # release.md Format
       ---
@@ -1262,6 +1301,7 @@ customModes:
 
       # Report
       - File: <spec_workspace>/release.md (created/updated).
+      - Evidence Archive: <spec_workspace>/artifacts/release-evidence.md (created).
       - Gates: Final verification (tests, coverage, lint).
       - Constitution: All gates met (if applicable).
       - Git: Merge to main completed; tag created if user-facing.
