@@ -75,10 +75,10 @@ customModes:
        - Phase 4: sdd-task — Break down into granular tasks. Report: tasks.md.
        - Phase 5: sdd-analyze — Cross-check and report gaps. Report: analysis.md.
        - Phase 6: sdd-implement — Build via TDD until "Implementation ready". Report: implementation.md.
-       - Phase 7: sdd-review-merge — Verify, get user approval, and merge to main. Report: review.md.
+       - Phase 7: sdd-release — Verify, get user approval, and merge to main. Report: review.md.
 
       ## Expert Usage Guidelines
-       - Allowed modes (whitelist): sdd-constitution, sdd-specify, sdd-clarify, sdd-plan, sdd-task, sdd-analyze, sdd-implement, sdd-review-merge. Do not call any other mode. Never use switch_mode or delegate to "code" mode.
+       - Allowed modes (whitelist): sdd-constitution, sdd-specify, sdd-clarify, sdd-plan, sdd-task, sdd-analyze, sdd-implement, sdd-release. Do not call any other mode. Never use switch_mode or delegate to "code" mode.
        - Always use new_task to call a specific expert mode by slug.
        - Experts never call new_task directly. Experts must conclude via attempt_completion with clear Status and Next; the orchestrator performs all re-delegations.
        - Expert isolation: Delegated experts are unaware of other modes and cannot delegate. Include all required inputs (paths, summaries) in the message; do not instruct them to call or reference other modes.
@@ -101,7 +101,7 @@ customModes:
        - Any violation of this policy must be reported as a process failure
        
        ## Triage mapping:
-          - Review-Merge failure:
+          - Release failure:
             - Missing/incomplete tests or defects mapped to existing T-IDs → sdd-implement.
             - Scope mismatch or untracked change → sdd-task to update tasks.md (no new T-IDs during implementation).
             - Requirements ambiguity/incorrect spec → sdd-clarify to update spec via audit-log.
@@ -109,7 +109,7 @@ customModes:
         - Phase Re-entry Protocol:
           - Plan-impacting or architecture/design change at any phase → sdd-plan → sdd-task → (optional) sdd-analyze → then resume downstream phase.
           - Requirements ambiguity discovered downstream → sdd-clarify to update spec, then sdd-plan/sdd-task as needed.
-          - Never patch plan.md or tasks.md indirectly in implement/review/release; route through the appropriate phase.
+          - Never patch plan.md or tasks.md indirectly in implement/release; route through the appropriate phase.
         - Implementation blocked with "Needs Task Update" → sdd-task within ≤10 minutes; resume implementation after AC coverage is restored.
         - Missing prerequisites before implement:
           - No plan.md → sdd-plan.
@@ -1120,10 +1120,10 @@ customModes:
     source: global
 
   # ============================================================================
-  # Phase 7: Review & Merge
+  # Phase 7: Release
   # ============================================================================
-  - slug: sdd-review-merge
-     name: Review & Merge Specialist
+  - slug: sdd-release
+     name: Release Specialist
      iconName: codicon-git-merge
      roleDefinition: |-
        AUDIT-ONLY phase: Verify implementation, get user approval, and merge to main.
@@ -1214,7 +1214,7 @@ customModes:
        constitution_version: X.Y.Z (if exists)
        git_branch: <git_branch>
        ---
-       # Review & Merge Report: <Project Name>
+       # Release Report: <Project Name>
 
        ## 1. Implementation Completeness
        - Total Tasks: <N>
