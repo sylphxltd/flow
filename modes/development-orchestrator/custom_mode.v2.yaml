@@ -447,8 +447,7 @@ customModes:
       - **Role**: Create initial specification only
       - **Inputs Required**: User task, spec_workspace, git_branch, track (from orchestrator)
       - **Outputs**:
-        * spec.md (User Stories with ACs, Requirements, Entities, Success Criteria)
-        * artifacts/spec-evidence.md (sources and decisions)
+        * spec.md (User Stories with ACs, Requirements, Entities, Success Criteria, Sources, and Rationale)
         * Git branch created and activated
       - **Done-When**:
         * spec.md exists with all mandatory sections
@@ -471,12 +470,9 @@ customModes:
       3. Create git branch: `<git_branch>`
       4. Switch to branch: `git switch <git_branch>`
       
-      **Step 2: Evidence Foundation**
-      5. Create artifacts directory: `<spec_workspace>/artifacts/`
-      6. Create evidence index: `<spec_workspace>/artifacts/spec-evidence.md`
-         * Record all sources consulted
-         * Document decisions and rationale
-         * Include timestamps and version refs
+      **Step 2: Artifact Setup**
+      5. Create artifacts directory: `<spec_workspace>/artifacts/` (Reserved for non-textual evidence: logs, screenshots)
+      6. Ensure all sources consulted, decisions, rationale, timestamps, and version refs are documented within spec.md (e.g., in Risks/Deferred or a dedicated section).
       
       **Step 3: Specification Creation**
       7. Self-research using available tools (internal codebase search, external knowledge retrieval, etc.)
@@ -553,6 +549,10 @@ customModes:
       ## Glossary (optional)
       - Term: Definition
 
+      ## Sources & Rationale
+      - Sources Consulted: <list of tools/documents used>
+      - Decisions & Rationale: <key decisions and why they were made>
+
       ## Risks/Deferred
       - <noted ambiguities or risks>
 
@@ -562,8 +562,7 @@ customModes:
       ## Report Format (attempt_completion)
       
       Provide concise summary:
-      - **File**: `<spec_workspace>/spec.md` (created)
-      - **Evidence Index**: `<spec_workspace>/artifacts/spec-evidence.md` (created)
+      - **File**: `<spec_workspace>/spec.md` (created, includes sources/rationale)
       - **Branch**: `<git_branch>` (created and active)
       - **User Stories**: Count and priority distribution
       - **Acceptance Criteria**: Total count; all measurable
@@ -571,7 +570,6 @@ customModes:
       - **Key Entities**: Count (if applicable)
       - **Success Criteria**: Count of measurable outcomes
       - **Constraints**: Summary (constitution refs if applicable)
-      - **Evidence**: Sources consulted (citations)
       - **Risks/Deferred**: Count and summary
       - **Constitution**: Compliance noted OR N/A
       - **Status**: "Ready - Initial spec" | "Partial - High ambiguities"
@@ -613,8 +611,7 @@ customModes:
       - **Inputs Required**: spec_workspace, spec.md path
       - **Outputs**:
         * Updated spec.md (in-place modifications)
-        * clarify.md (Q&A audit trail + applied updates)
-        * Updated artifacts/spec-evidence.md
+        * clarify.md (Q&A audit trail + applied updates, including rationale and sources)
       - **Done-When**:
         * clarify.md exists with all Q&A resolved
         * spec.md updated with all changes
@@ -652,7 +649,7 @@ customModes:
            - Internal: spec.md, constitution.md, repo docs (using available file system tools)
            - External: Use available knowledge retrieval tools (e.g., MCP servers, web search) for standards
          * Capture citations/links
-      6. Update artifacts/spec-evidence.md with findings
+      6. Ensure all findings and sources are documented in clarify.md.
       
       **Step 3: Q&A Phase** (Only if Still Unresolved)
       7. Compose targeted questions
@@ -670,7 +667,7 @@ customModes:
       
       **Step 5: Finalization**
       12. Finalize clarify.md with compact summary
-      13. Update evidence index with all resolutions
+      13. Ensure all resolutions are documented in clarify.md.
       14. Commit: `git add <spec_workspace>/* && git commit -m "docs: clarify requirements for <name>"`
       15. Report via attempt_completion
 
@@ -706,9 +703,8 @@ customModes:
       
       Provide concise summary:
       - **Files**:
-        * clarify.md (created/updated)
+        * clarify.md (created/updated, includes rationale/sources)
         * spec.md (updated in-place)
-        * artifacts/spec-evidence.md (updated)
       - **Branch**: `<git_branch>` (active)
       - **Dimensions**: Summary (X/10 clear, Y partial, Z missing → resolved)
       - **Ambiguities**:
@@ -717,7 +713,7 @@ customModes:
         * Methods: Self-research X, Q&A Y
       - **Questions Asked**: Count and batches; topics
       - **Spec Changes**: Key updates (sections modified)
-      - **Evidence**: Sources consulted (citations)
+      - **Sources**: Consulted (citations documented in clarify.md)
       - **Constitution**: Compliance verified OR N/A
       - **Status**: "Ready - Clarifications resolved" | "Blocked - Unresolved ambiguities"
       
@@ -758,8 +754,7 @@ customModes:
       - **Role**: Design high-level architecture only
       - **Inputs Required**: spec_workspace, spec.md, clarify.md (if exists), constitution (if exists)
       - **Outputs**:
-        * plan.md (architecture, tech stack, data model, API contracts, testing strategy)
-        * artifacts/plan-evidence.md (research sources and decisions)
+        * plan.md (architecture, tech stack, data model, API contracts, testing strategy, research sources, and decisions)
       - **Done-When**:
         * plan.md exists with all required sections
         * All ACs mapped to components
@@ -829,11 +824,8 @@ customModes:
       12. Validate feasibility (pseudocode for key flows)
       13. If high risk: suggest alternatives
       
-      **Step 7: Evidence & Documentation**
-      14. Create artifacts/plan-evidence.md:
-          * All research sources
-          * Architecture diagrams/rationale
-          * Tech evaluation criteria
+      **Step 7: Documentation**
+      14. Ensure all research sources, architecture diagrams/rationale, and tech evaluation criteria are documented within plan.md (e.g., in Decision Log and Validation Notes).
       15. Create plan.md (single file default):
           * Technical Context
           * Architecture + AC Mapping
@@ -929,6 +921,7 @@ customModes:
       ## Validation Notes
       - Feasibility: <summary>
       - Research Sources: <tools and findings>
+      - Decisions Rationale: <summary of key design decisions>
 
       ---
       
@@ -937,8 +930,7 @@ customModes:
       
       Provide concise summary:
       - **Files**:
-        * plan.md (created/updated)
-        * artifacts/plan-evidence.md (created)
+        * plan.md (created/updated, includes sources/rationale)
       - **Branch**: `<git_branch>` (active)
       - **Architecture**:
         * Components count and layers
@@ -955,7 +947,7 @@ customModes:
       - **Data Model**: Entities count + relationships
       - **API Contracts**: Endpoints/interfaces count
       - **Risks**: Count + severity (High/Medium/Low)
-      - **Research**: Tools used + sources cited
+      - **Research**: Tools used + sources cited (documented in plan.md)
       - **Constitution**: Compliance OR N/A
       - **Status**: "Ready - Design complete" | "Partial - High-risk assumptions"
       
@@ -997,8 +989,7 @@ customModes:
       - **Role**: Create granular task breakdown only
       - **Inputs Required**: spec_workspace, spec.md, plan.md, constitution (if exists)
       - **Outputs**:
-        * tasks.md (T-IDs with deps, types, AC links, checkboxes)
-        * artifacts/task-evidence.md (breakdown rationale, dependency analysis)
+        * tasks.md (T-IDs with deps, types, AC links, checkboxes, breakdown rationale, dependency analysis)
       - **Done-When**:
         * tasks.md exists with all sections
         * 100% AC coverage (every AC has tasks)
@@ -1024,10 +1015,7 @@ customModes:
       2. Verify git_branch active (report if mismatch)
       
       **Step 2: Task Organization**
-      3. Create evidence index: `<spec_workspace>/artifacts/task-evidence.md`
-         * Document breakdown rationale
-         * Record dependency analysis
-         * Identify parallel execution opportunities
+      3. Document breakdown rationale, dependency analysis, and parallel execution opportunities within tasks.md (e.g., in a dedicated Rationale section).
       4. Organize tasks by phases:
          * **Phase 1: Setup** - Shared infrastructure (T001+)
          * **Phase 2: Foundational** - Blocking prerequisites (T010+)
@@ -1130,18 +1118,21 @@ customModes:
       |--------------------|------------|
       | US1: AC1, AC2      | T020–T024  |
 
+      ## Rationale & Dependencies
+      - Breakdown Rationale: <summary of how tasks were derived from plan.md>
+      - Dependency Analysis: <summary of sequential chains and parallel opportunities>
+
       ## Change Log
       - <ISO>: Initial tasks
 
       ---
-      
+
 
       ## Report Format (attempt_completion)
       
       Provide concise summary:
       - **Files**:
-        * tasks.md (created)
-        * artifacts/task-evidence.md (created)
+        * tasks.md (created, includes rationale/dependencies)
       - **Branch**: `<git_branch>` (active)
       - **Tasks**:
         * Total count
@@ -1195,8 +1186,7 @@ customModes:
       - **Role**: Audit planning artifacts only - NEVER fix
       - **Inputs Required**: spec_workspace, spec.md, plan.md, tasks.md, all evidence indexes
       - **Outputs**:
-        * analysis.md (check results, findings, recommendations)
-        * artifacts/analysis-evidence.md (consolidated evidence)
+        * analysis.md (check results, findings, recommendations, and evidence summary)
       - **Done-When**:
         * analysis.md exists with all checks performed
         * No Critical/High issues OR all reported with delegation targets
@@ -1216,10 +1206,10 @@ customModes:
          * spec.md + clarify.md (if exists)
          * plan.md
          * tasks.md
-      2. Read all evidence indexes:
-         * artifacts/spec-evidence.md
-         * artifacts/plan-evidence.md
-         * artifacts/task-evidence.md
+      2. Review rationale and sources documented within:
+         * spec.md
+         * plan.md
+         * tasks.md
       3. Verify git_branch active (report if mismatch)
       4. Determine scope: full (thorough) | rapid (core only)
       
@@ -1245,11 +1235,8 @@ customModes:
          * ❌ Do NOT fix: Logic, requirements, scope, or design issues
       10. Timebox: ~30 minutes; focus on high impact
       
-      **Step 4: Evidence Consolidation**
-      11. Create artifacts/analysis-evidence.md:
-          * Cross-reference all phase evidence
-          * Identify evidence trail gaps
-          * Document analysis findings
+      **Step 4: Evidence Summary**
+      11. Document analysis findings and summarize the evidence trail (referencing spec.md, plan.md, tasks.md) within analysis.md.
       
       **Step 5: Documentation**
       12. Create analysis.md with:
@@ -1296,8 +1283,7 @@ customModes:
       
       Provide concise summary:
       - **Files**:
-        * analysis.md (created/updated)
-        * artifacts/analysis-evidence.md (created)
+        * analysis.md (created/updated, includes evidence summary)
       - **Branch**: `<git_branch>` (active)
       - **Checks Performed**: 7 dimensions evaluated
       - **Check Results**:
@@ -1310,7 +1296,7 @@ customModes:
         * Low: Count (notes)
         * Trivial fixes applied: Count (if any with "FIXED:")
       - **Recommendations**: Delegation targets for each issue
-      - **Evidence**: Consolidated from all phases
+      - **Evidence**: Summary of rationale/sources from spec.md, plan.md, tasks.md
       - **Constitution**: Alignment verified OR N/A
       - **Status**: "Ready - Implement" | "Blocked - Critical issues"
       
@@ -1358,8 +1344,8 @@ customModes:
       - **Outputs**:
         * Code changes in repository root (NOT under specs/)
         * Updated tasks.md (checkboxes marked [x])
-        * implementation.md (session log with evidence)
-        * artifacts/implementation-evidence.md (test results, logs, screenshots)
+        * implementation.md (session log with evidence summary)
+        * Code artifacts (test results, logs, screenshots) stored in artifacts/
       - **Done-When**:
         * All tasks [x] and verified (tests/gates) OR
         * Status = "Partial - technical blockers" with resumption plan OR
@@ -1459,13 +1445,10 @@ customModes:
          * ❌ Report ALL issues found during verification (Audit phase)
       
       **Step 5: Evidence & Documentation**
-      10. Create/update artifacts/implementation-evidence.md:
-          * Consolidate test results, logs, screenshots
-          * Link to specific tasks and ACs
-          * Document deviations from plan
+      10. Ensure all test results, logs, and screenshots are saved to the artifacts/ directory.
       11. Create/update implementation.md:
           * Session progress; tasks completed
-          * Code changes and evidence
+          * Code changes and evidence summary (referencing artifacts/)
           * Verification results; remaining risks
       12. Commit: `git add <spec_workspace>/* && git commit -m "docs: update implementation log for <name>"`
       
@@ -1510,8 +1493,7 @@ customModes:
 
       Provide concise summary:
       - **Files**:
-        * implementation.md (created/updated)
-        * artifacts/implementation-evidence.md (created/updated)
+        * implementation.md (created/updated, includes evidence summary)
         * Code files modified (list paths)
       - **Branch**: `<git_branch>` (active)
       - **Session Progress**:
@@ -1529,7 +1511,7 @@ customModes:
         * Technical: List (if any)
         * Upstream: List (if any)
         * New scope: Details (if discovered)
-      - **Evidence**: Artifacts paths
+      - **Evidence**: Artifacts paths (logs, screenshots, test results)
       - **Constitution**: Compliance OR N/A
       - **Status**:
         * "Ready - Implementation complete" OR
@@ -1717,7 +1699,6 @@ customModes:
       Provide concise summary mirroring review.md:
       - **Files**:
         * review.md (created/updated)
-        * artifacts/implementation-evidence.md (referenced)
       - **Branch**: `<git_branch>` (active) OR main (if merged)
       - **1. Completeness**:
         * Total: N tasks
@@ -1742,7 +1723,7 @@ customModes:
         * Overall status
         * Risks/open concerns
         * Recommended next steps
-      - **Evidence**: Artifacts summary
+      - **Evidence**: Artifacts summary (logs, screenshots, test results from artifacts/)
       - **Constitution**: Compliance noted OR N/A
       
       ## Error Handling
