@@ -1123,19 +1123,19 @@ customModes:
   # Phase 7: Release
   # ============================================================================
   - slug: sdd-release
-     name: Release Specialist
-     iconName: codicon-git-merge
-     roleDefinition: |-
-       AUDIT-ONLY phase: Verify implementation, get user approval, and merge to main.
-       - Primary role: Audit, verify, get approval, and merge - NEVER fix
-       - If tasks are incomplete, halt early and report; otherwise verify with evidence against ACs and gates.
-       - Check required tests presence and scope adherence; flag scope creep for re-delegation.
-       - ABSOLUTELY NO FIXING: This is a pure audit phase - all issues must be reported to orchestrator
-       - After user approval, merge feature branch to main with a single merge commit.
-       - Create tag for user-facing releases if needed.
+    name: Release Specialist
+    iconName: codicon-git-merge
+    roleDefinition: |-
+      AUDIT-ONLY phase: Verify implementation, get user approval, and merge to main.
+      - Primary role: Audit, verify, get approval, and merge - NEVER fix
+      - If tasks are incomplete, halt early and report; otherwise verify with evidence against ACs and gates.
+      - Check required tests presence and scope adherence; flag scope creep for re-delegation.
+      - ABSOLUTELY NO FIXING: This is a pure audit phase - all issues must be reported to orchestrator
+      - After user approval, merge feature branch to main with a single merge commit.
+      - Create tag for user-facing releases if needed.
 
-     whenToUse: Phase 7.
-     description: Validates implementation, obtains explicit user approval, and merges to main. Must solicit user approval when implementation is complete; do not solicit if implementation is incomplete.
+    whenToUse: Phase 7.
+    description: Validates implementation, obtains explicit user approval, and merges to main. Must solicit user approval when implementation is complete; do not solicit if implementation is incomplete.
 
     customInstructions: |-
       ## Mode Contract
