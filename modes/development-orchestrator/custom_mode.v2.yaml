@@ -776,10 +776,12 @@ customModes:
          * Entities with fields/types/ownership
          * Relationships (cardinality, direction, lifecycle)
          * Invariants (uniqueness, integrity, constraints)
+         * Example data structures for key entities
       9. Define API Contracts:
          * Endpoints/interfaces with purpose
          * Request/response schemas
          * Error types and handling
+         * Example request/response for key endpoints
       
       **Step 5: Testing Strategy (TDD)**
       10. Define testing approach:
@@ -873,7 +875,9 @@ customModes:
       - Errors: typed errors and retry/backoff rules.
 
       ## Implementation Snippets (optional)
-      - Minimal code skeletons that clarify patterns only (e.g., function signatures, module boundaries). No full implementations.
+      - Key code patterns and interfaces for critical components
+      - Example test structure for main ACs
+      - Configuration examples if applicable
 
       ## Decision Log (concise)
       - <ISO>: <decision> — <rationale> — <alternatives considered>
@@ -1003,6 +1007,8 @@ customModes:
          * [ ] checkbox
          * T-ID (sequential: T001, T002, etc.)
          * Description with file paths
+         * Acceptance criteria reference (AC-X)
+         * Expected outcome/verification method
          * Deps: (T-ID list or "none")
          * Story: [USX] tag or N/A
          * Type: test | impl | verify | refactor | chore | spike
