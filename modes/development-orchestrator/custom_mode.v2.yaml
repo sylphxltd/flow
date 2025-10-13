@@ -191,17 +191,24 @@ customModes:
       - Continue until: Success OR hard limitation/trade-off
       - Minor issues: Proceed without loops if non-critical
       
-      ## Evidence Management
+      ## Evidence Management (Streamlined Approach)
       
-      **Cross-Phase Evidence Index**:
-      - Each phase creates: `<spec_workspace>/artifacts/<phase>-evidence.md`
-      - Contains: Sources, decisions, rationale, timestamps
-      - Orchestrator tracks completeness for faster decisions
+      **Evidence Principle**: Practical over comprehensive.
+      
+      **Evidence Types**:
+      - **Core Artifacts**: spec.md, plan.md, tasks.md (primary evidence)
+      - **Audit Trail**: clarify.md, analysis.md, review.md (decision trail)
+      - **Implementation**: implementation.md + test results (execution evidence)
+      
+      **Evidence Collection**:
+      - Document key decisions directly in core artifacts (no separate evidence files)
+      - Use git commit history as temporal evidence
+      - Collect test results/screenshots only for verification phases
       
       **Evidence Reuse**:
-      - Later phases reference earlier evidence
-      - Reduce verification time via evidence trail
-      - Auto-generate summaries when needed
+      - Reference core artifacts instead of duplicating
+      - Use "See spec.md Section X" instead of copying content
+      - Git commits provide natural evidence trail
       
       ## Report Verification Checklist
       
@@ -438,8 +445,8 @@ customModes:
       4. Switch to branch: `git switch <git_branch>`
       
       **Step 2: Artifact Setup**
-      5. Create artifacts directory: `<spec_workspace>/artifacts/` (Reserved for non-textual evidence: logs, screenshots)
-      6. Ensure all sources consulted, decisions, rationale, timestamps, and version refs are documented within spec.md (e.g., in Risks/Deferred or a dedicated section).
+      5. Create artifacts directory: `<spec_workspace>/artifacts/` (Reserved for verification evidence: test results, screenshots)
+      6. Document key decisions and rationale in spec.md (keep concise; git history provides detailed trail)
       
       **Step 3: Specification Creation**
       7. Self-research using available tools (internal codebase search, external knowledge retrieval, etc.)
@@ -616,7 +623,7 @@ customModes:
            - Internal: spec.md, constitution.md, repo docs (using available file system tools)
            - External: Use available knowledge retrieval tools (e.g., MCP servers, web search) for standards
          * Capture citations/links
-      6. Ensure all findings and sources are documented in clarify.md.
+      6. Document key findings in clarify.md (focus on resolutions, not exhaustive source listing)
       
       **Step 3: Q&A Phase** (Only if Still Unresolved)
       7. Compose targeted questions
@@ -792,7 +799,7 @@ customModes:
       13. If high risk: suggest alternatives
       
       **Step 7: Documentation**
-      14. Ensure all research sources, architecture diagrams/rationale, and tech evaluation criteria are documented within plan.md (e.g., in Decision Log and Validation Notes).
+      14. Document key decisions and rationale in plan.md (focus on why, not exhaustive research details)
       15. Create plan.md (single file default):
           * Technical Context
           * Architecture + AC Mapping
@@ -1203,7 +1210,7 @@ customModes:
       10. Timebox: ~30 minutes; focus on high impact
       
       **Step 4: Evidence Summary**
-      11. Document analysis findings and summarize the evidence trail (referencing spec.md, plan.md, tasks.md) within analysis.md.
+      11. Document key findings in analysis.md (reference core artifacts; avoid duplication)
       
       **Step 5: Documentation**
       12. Create analysis.md with:
@@ -1412,10 +1419,10 @@ customModes:
          * ❌ Report ALL issues found during verification (Audit phase)
       
       **Step 5: Evidence & Documentation**
-      10. Ensure all test results, logs, and screenshots are saved to the artifacts/ directory.
+      10. Save test results to artifacts/ directory (screenshots only if UI verification needed)
       11. Create/update implementation.md:
           * Session progress; tasks completed
-          * Code changes and evidence summary (referencing artifacts/)
+          * Key code changes summary
           * Verification results; remaining risks
       12. Commit: `git add <spec_workspace>/* && git commit -m "docs: update implementation log for <name>"`
       
