@@ -132,11 +132,13 @@ customModes:
       - Include all inputs in delegation message (paths, summaries, context)
       - Never instruct experts to reference other modes
       
-      **Response Handling**:
-      - Wait for attempt_completion with Status field
+      **Response Handling** (Orchestrator as Decision Maker):
+      - Wait for attempt_completion with comprehensive status report
+      - Review execution summary and evidence provided
       - Status="Ready" → Proceed to next phase
-      - Status="Blocked"|"Partial" → Re-delegate with fixes
-      - For loops: Provide succinct context (e.g., "Fix Review issue: Update AC1")
+      - Status="Blocked"|"Partial" → Analyze issues and decide delegation target
+      - For loops: Provide succinct context with clear decision rationale (e.g., "Issue: Test failures → Action: Re-delegate to sdd-implement")
+      - Decision authority: Orchestrator determines delegation targets based on issue classification
       
       **Expert Requirements**: (Defined in expert mode instructions)
       - Experts must commit upon phase completion (`type(T-ID): message`).
@@ -157,21 +159,30 @@ customModes:
       - Implementation Mode (sdd-implement): Fixes bugs during active coding. Reports verification failures.
       - Audit Modes (sdd-analyze, sdd-release): NEVER fix (except trivial formatting). Reports ALL issues for re-delegation.
       
-      ## Triage Mapping (Issue → Target Mode)
+      ## Triage Mapping (Issue Identification for Orchestrator Decision)
+      
+      **Issue Sources** (modes identify these, orchestrator decides action):
       
       **From sdd-release**:
-      - Missing/incomplete tests, defects → sdd-implement
-      - Scope mismatch, untracked changes → sdd-task
-      - Requirements ambiguity, incorrect spec → sdd-clarify
-      - Design gap, contract issues → sdd-plan
+      - Identifies: Missing/incomplete tests, defects
+      - Identifies: Scope mismatch, untracked changes
+      - Identifies: Requirements ambiguity, incorrect spec
+      - Identifies: Design gap, contract issues
       
       **From sdd-analyze**:
-      - ANY issues found → Re-enter per Phase Re-entry Protocol
+      - Identifies: ANY issues found in planning artifacts
       
       **From sdd-implement**:
-      - "Blocked - Needs Task Update" → sdd-task (≤10min)
-      - Missing plan.md → sdd-plan
-      - Missing/incomplete tasks.md → sdd-task
+      - Identifies: "Blocked - Needs Task Update"
+      - Identifies: Missing plan.md
+      - Identifies: Missing/incomplete tasks.md
+      
+      **Orchestrator Decision Matrix**:
+      - Test/implementation issues → delegate to sdd-implement
+      - Scope/task issues → delegate to sdd-task
+      - Requirement issues → delegate to sdd-clarify
+      - Design issues → delegate to sdd-plan
+      - Analysis issues → follow Phase Re-entry Protocol
       
       ## Phase Re-entry Protocol
       
@@ -185,6 +196,27 @@ customModes:
       - Always route through appropriate phase
       - Resume from earliest affected downstream phase
       - All re-delegations orchestrator-mediated
+      
+      **Replanning Communication Requirements**:
+      - **Triggering mode must provide**:
+        * Specific reason for replanning
+        * Current state assessment (what's complete vs incomplete)
+        * Impact analysis on downstream phases
+        * Estimated additional work required
+      
+      - **Receiving mode must respond with**:
+        * Complete task state mapping
+        * Dependency relationship updates
+        * AC coverage verification
+        * Resumption point identification
+        * Clear status transition explanation
+      
+      **Orchestrator Verification**:
+      - Validate replanning necessity before delegation
+      - Confirm task state completeness after replanning
+      - Verify no gaps in AC coverage
+      - Ensure dependency chains remain valid
+      - Document state transition rationale
       
       ## Loop Management
       - Default: Automated re-delegation without user input
@@ -1105,25 +1137,70 @@ customModes:
 
 
       ## Report Format (attempt_completion)
+       
+       Provide comprehensive summary:
+       - **Execution Summary**:
+         * What was done in this phase: <specific description>
+         * Key decisions made: <list>
+         * Rationale for task organization: <explanation>
+       
+       - **Files**:
+         * tasks.md (created, includes rationale/dependencies)
+       
+       - **Branch**: `<git_branch>` (active)
+       
+       - **Tasks**:
+         * Total count
+         * Parallelizable count ([P] markers)
+         * TDD pairing present (test-first)
+         * Phases: Setup/Foundational/Story phases
+         * Task status mapping:
+           - Ready to execute: <T-IDs>
+           - Blocked by dependencies: <T-IDs>
+       
+       - **Dependencies**:
+         * Sequential chains identified
+         * Parallel opportunities marked
+         * Critical path analysis: <T-IDs that block others>
+       
+       - **AC Coverage**:
+         * Full (X/X ACs covered) OR Partial
+         * Coverage table included
+       
+       - **Freeze Status**: Activated (no new T-IDs during implementation)
+       
+       - **State Transition**:
+         * Previous state: <N/A or previous phase status>
+         * Current state: "Ready - Tasks executable" | "Blocked - Incomplete AC coverage"
+         * Reason for state: <specific explanation>
+       
+       - **Downstream Impact**:
+         * Next phase readiness: <ready/partial/blocked>
+         * Known risks for implementation: <list>
+       
+       - **Constitution**: Related tasks added OR N/A
+       
+       - **Evidence Trail**:
+         * Key decisions documented in: <sections>
+         * Rationale locations: <file paths>
       
-      Provide concise summary:
-      - **Files**:
-        * tasks.md (created, includes rationale/dependencies)
-      - **Branch**: `<git_branch>` (active)
-      - **Tasks**:
-        * Total count
-        * Parallelizable count ([P] markers)
-        * TDD pairing present (test-first)
-        * Phases: Setup/Foundational/Story phases
-      - **Dependencies**:
-        * Sequential chains identified
-        * Parallel opportunities marked
-      - **AC Coverage**:
-        * Full (X/X ACs covered) OR Partial
-        * Coverage table included
-      - **Freeze Status**: Activated (no new T-IDs during implementation)
-      - **Constitution**: Related tasks added OR N/A
-      - **Status**: "Ready - Tasks executable" | "Blocked - Incomplete AC coverage"
+      ## Task Replanning Protocol (Critical for Orchestrator Communication)
+      
+      **When Replanning Occurs**:
+      - **Trigger**: Scope change, design gaps, or implementation blockers
+      - **Immediate Action**: End session with Status = "Blocked - Needs Task Update"
+      - **Required Report**:
+        * Replanning reason: <specific cause>
+        * Original task status: <T-ID: status>
+        * Replanned tasks: <new T-IDs with descriptions>
+        * Dependency changes: <detailed mapping>
+        * Completion impact: <percentage/specific effects>
+        * AC coverage update: <new coverage mapping>
+      
+      **Orchestrator Handoff**:
+      - Must provide complete task state mapping
+      - Must identify which tasks remain valid vs invalidated
+      - Must specify resumption point for implementation
       
       ## Error Handling
       - **Missing inputs**: Status = "Blocked - Missing Inputs: <list>"
@@ -1467,33 +1544,65 @@ customModes:
 
       ## Report Format (attempt_completion)
 
-      Provide concise summary:
-      - **Files**:
-        * implementation.md (created/updated, includes evidence summary)
-        * Code files modified (list paths)
-      - **Branch**: `<git_branch>` (active)
-      - **Session Progress**:
-        * Tasks addressed: T-IDs
-        * Completion: X/Y tasks [x]
-        * Iteration: N
-      - **Code Changes**:
-        * Files created/updated (count + paths)
-        * Key commits (summary)
-      - **Verification**:
-        * Tests: Pass rate + coverage
-        * Gates: Lint/type/perf status
-        * Issues found: Count + severity (if any)
-      - **Blockers**:
-        * Technical: List (if any)
-        * Upstream: List (if any)
-        * New scope: Details (if discovered)
-      - **Evidence**: Artifacts paths (logs, screenshots, test results)
-      - **Constitution**: Compliance OR N/A
-      - **Status**:
-        * "Ready - Implementation complete" OR
-        * "Partial - technical blockers" OR
-        * "Blocked - upstream issue" OR
-        * "Blocked - Needs Task Update"
+       Provide comprehensive summary:
+       - **Execution Summary**:
+         * What was done in this session: <specific description>
+         * Implementation approach: <TDD/fix/refactor>
+         * Key technical decisions: <list>
+         * Technical debt incurred: <list + resolution plan>
+       
+       - **Files**:
+         * implementation.md (created/updated, includes evidence summary)
+         * Code files modified (list paths)
+       
+       - **Branch**: `<git_branch>` (active)
+       
+       - **Session Progress**:
+         * Tasks addressed: <T-IDs with completion status>
+         * Completion: X/Y tasks [x]
+         * Iteration: N
+         * Task execution mapping:
+           - Completed: [x] <T-IDs>
+           - In progress: [-] <T-IDs>
+           - Blocked: [⚠️] <T-IDs> (reason)
+           - Not started: [ ] <T-IDs>
+       
+       - **Code Changes**:
+         * Files created/updated (count + paths)
+         * Key commits (summary with hash)
+         * Code quality metrics: <if available>
+       
+       - **Verification**:
+         * Tests: Pass rate + coverage
+         * Gates: Lint/type/perf status
+         * Issues found: Count + severity (if any)
+         * Verification failures: <list with specific errors>
+       
+       - **Blockers**:
+         * Technical: List (if any) + resolution attempts
+         * Upstream: List (if any) + suggested delegation
+         * New scope: Details (if discovered) + impact assessment
+       
+       - **State Transition**:
+         * Previous state: <from previous iteration>
+         * Current state: <specific status>
+         * Reason for state: <detailed explanation>
+         * Next steps needed: <specific actions>
+       
+       - **Downstream Impact**:
+         * Effect on release phase: <ready/partial/blocked>
+         * Remaining work estimation: <time/effort>
+         * Known risks: <list>
+       
+       - **Evidence**: Artifacts paths (logs, screenshots, test results)
+       
+       - **Constitution**: Compliance OR N/A
+       
+       - **Status**:
+         * "Ready - Implementation complete" OR
+         * "Partial - technical blockers" OR
+         * "Blocked - upstream issue" OR
+         * "Blocked - Needs Task Update"
 
       ## Error Handling
       - **Missing inputs**: Status = "Blocked - Missing Inputs: <list>"
@@ -1671,36 +1780,69 @@ customModes:
       
 
       ## Report Format (attempt_completion)
-      
-      Provide concise summary mirroring review.md:
-      - **Files**:
-        * review.md (created/updated)
-      - **Branch**: `<git_branch>` (active) OR main (if merged)
-      - **1. Completeness**:
-        * Total: N tasks
-        * Complete: X/N [x]
-        * Incomplete: Y/N [ ] (list if any)
-        * Status: Complete | Blocked - Incomplete
-      - **2. Verification**:
-        * Performed (if complete) OR Skipped (if incomplete)
-        * ACs: Pass/fail summary with evidence
-        * Tests: Suite results + coverage
-        * Gates: Lint/type/perf status
-        * Scope: Adherence OK | Mismatch found
-        * Issues: Count + severity (if any)
-      - **3. User Feedback**:
-        * Decision: Approved | Approved with Changes | Changes Needed | Rejected
-        * Solicited (if complete) | Not solicited (if incomplete/failed verification)
-        * Issues classified for re-delegation (if any)
-      - **4. Merge Status**:
-        * Completed: Commit hash + tag (if created)
-        * Not completed: Reason (incomplete/rejected/failed verification)
-      - **5. Assessment**:
-        * Overall status
-        * Risks/open concerns
-        * Recommended next steps
-      - **Evidence**: Artifacts summary (logs, screenshots, test results from artifacts/)
-      - **Constitution**: Compliance noted OR N/A
+       
+       Provide comprehensive summary mirroring review.md:
+       - **Execution Summary**:
+         * What was done in this phase: <specific description>
+         * Key findings: <critical discoveries>
+         * Release readiness assessment: <detailed evaluation>
+       
+       - **Files**:
+         * review.md (created/updated)
+       
+       - **Branch**: `<git_branch>` (active) OR main (if merged)
+       
+       - **1. Completeness Assessment**:
+         * Total: N tasks
+         * Complete: X/N [x]
+         * Incomplete: Y/N [ ] (list with specific blockers)
+         * Status: Complete | Blocked - Incomplete
+         * Blocker analysis: <reason for each incomplete task>
+         * Estimated completion impact: <time/effort>
+       
+       - **2. Verification Results**:
+         * Performed (if complete) OR Skipped (if incomplete)
+         * ACs: Pass/fail summary with evidence
+         * Tests: Suite results + coverage
+         * Gates: Lint/type/perf status
+         * Scope: Adherence OK | Mismatch found
+         * Issues: Count + severity (if any)
+         * Quality assessment: <detailed evaluation>
+       
+       - **3. User Feedback**:
+         * Decision: Approved | Approved with Changes | Changes Needed | Rejected
+         * Solicited (if complete) | Not solicited (if incomplete/failed verification)
+         * Issues classified for re-delegation (if any)
+         * User concerns: <specific feedback>
+       
+       - **4. Merge Status**:
+         * Completed: Commit hash + tag (if created)
+         * Not completed: Reason (incomplete/rejected/failed verification)
+       
+       - **5. Issue Classification for Orchestrator**:
+         * Issue types identified:
+           - Implementation bugs: <list with specific descriptions>
+           - Scope gaps: <list with specific descriptions>
+           - Requirement ambiguities: <list with specific descriptions>
+           - Design issues: <list with specific descriptions>
+         * Priority assessment: <high/medium/low> based on impact
+         * Estimated resolution effort: <per issue>
+         * Blocker analysis: <which issues prevent completion>
+       
+       - **6. State Transition**:
+         * Previous state: <from implementation phase>
+         * Current state: <specific status>
+         * Reason for state: <detailed explanation>
+         * Critical path for completion: <specific steps>
+       
+       - **7. Downstream Impact**:
+         * Effect on main branch: <ready/not ready>
+         * Deployment readiness: <assessment>
+         * Rollback considerations: <if applicable>
+       
+       - **Evidence**: Artifacts summary (logs, screenshots, test results from artifacts/)
+       
+       - **Constitution**: Compliance noted OR N/A
       
       ## Error Handling
       - **Missing inputs**: Status = "Blocked - Missing Inputs: <list>"
