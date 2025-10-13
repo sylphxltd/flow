@@ -191,9 +191,7 @@ customModes:
       - Continue until: Success OR hard limitation/trade-off
       - Minor issues: Proceed without loops if non-critical
       
-      ## Evidence Management (Streamlined Approach)
-      
-      **Evidence Principle**: Practical over comprehensive.
+      ## Evidence Management
       
       **Evidence Types**:
       - **Core Artifacts**: spec.md, plan.md, tasks.md (primary evidence)
@@ -215,8 +213,7 @@ customModes:
       For each expert attempt_completion, verify:
       - ✅ Outputs created/updated (paths listed)
       - ✅ Status: "Ready"|"Partial"|"Blocked"
-      - ✅ Key metrics reported by expert (e.g., X/Y tasks [x], compliance status, risks)
-      - ✅ Evidence index complete
+      - ✅ Key metrics reported (X/Y tasks [x], coverage if applicable)
       
       If incomplete → Re-delegate: "Fix: <missing items>" (e.g., missing file, incorrect status)
       
@@ -613,8 +610,7 @@ customModes:
          * Terminology
          * Completion Criteria
          * Supplementary (Accessibility, i18n, compliance, recovery)
-      3. Calculate priority: Impact (1-10) × Uncertainty (1-10)
-      4. Sort by priority (highest first)
+      3. Focus on high-impact dimensions first
       
       **Step 2: Self-Research Phase**
       5. For each Partial/Missing dimension (high→low priority):
@@ -1187,7 +1183,7 @@ customModes:
       3. Verify git_branch active (report if mismatch)
       4. Determine scope: full (thorough) | rapid (core only)
       
-      **Step 2: Structured Checks** (7 Dimensions)
+      **Step 2: Structured Checks**
       5. Evaluate each dimension:
          * **AC-Task Coverage**: Every AC has ≥1 task
          * **Terminology Consistency**: Same terms across all docs
@@ -1195,8 +1191,8 @@ customModes:
          * **Design Feasibility**: No obvious gaps/contradictions
          * **Contract Readiness**: Data Model + API Contracts present and consistent
          * **Overall Coherence**: No conflicts between artifacts
-         * **Evidence Completeness**: All decisions have supporting evidence
-      6. Use available file system search tools if needed
+         * **Evidence Completeness**: Key decisions have supporting evidence
+      6. Focus on blockers that would prevent implementation
       7. NO code changes; audit only
       
       **Step 3: Issue Classification** (AUDIT-ONLY: NO FIXES)
@@ -1576,15 +1572,15 @@ customModes:
           - Do NOT proceed to verification
           - Report to orchestrator
       
-      **Step 3: Verification** (Only if ALL Complete)
+      **Step 3: Verification**
       5. Verify against requirements:
-        * **ACs**: Validate each via tests/code/manual checks
-        * **Tests**: Run full suite (pass rate + coverage)
-        * **Test Presence**: Confirm required tests exist (Foundational, P1, bugfix, API/data/security/critical)
-        * **Analysis Follow-up**: Confirm all analysis.md findings resolved
-        * **Constitution**: Validate gates (lint/coverage/perf)
-        * **Scope Adherence**: Every change maps to T-ID; no untracked scope
-        * **Quality**: Spot-check flows; use available browser interaction tools for UI demos
+         * **ACs**: Validate each via tests/code/manual checks
+         * **Tests**: Run test suite (pass rate + coverage)
+         * **Test Presence**: Confirm required tests exist (Foundational, P1, bugfix, API/data/security/critical)
+         * **Analysis Follow-up**: Confirm critical analysis.md findings resolved
+         * **Constitution**: Validate gates (lint/coverage/perf)
+         * **Scope Adherence**: Every change maps to T-ID; no untracked scope
+         * **Quality**: Spot-check key flows
       6. Collect evidence: Note pass/fail with artifacts
       7. **CRITICAL**: Do NOT fix ANY verification failures or gaps. Report ALL issues.
         * Test failures → Report to orchestrator (Triage: sdd-implement)
