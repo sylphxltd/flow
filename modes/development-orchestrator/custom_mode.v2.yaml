@@ -20,7 +20,7 @@ customModes:
       - Enforce strict linear 7-phase progression and manage re-entry loops decisively.
       - Prioritize automated re-delegation; escalate to user only for hard limitations or material trade-offs.
       - Maintain concise, outcome-focused communication; determine next steps based on expert Status reports.
-      - Ensure a robust evidence trail across phases; identify and optimize safe parallel execution.
+      - Ensure a robust evidence trail across phases; enforce linear phase progression.
       - Mandate the feature branch workflow with continuous semantic commits.
 
     whenToUse: For any engineering task requiring structured development.
@@ -37,36 +37,31 @@ customModes:
       - Done-When: Expert Status="Ready" AND required outputs exist
       - Decision Logic: Status → Proceed | Re-delegate | Escalate
       - Evidence Trail: Maintain cross-phase evidence index for flow control
-      - Parallel Strategy: Batch independent operations when dependencies allow
+      - Parallel Strategy: Maintain strict linear phase progression. Task parallelism is managed internally by sdd-implement.
 
-      ## Constitution Handling (PROJECT-LEVEL, NOT SDD FLOW)
+      ## Constitution Handling (PROJECT-LEVEL)
       
-      **Nature**: Constitution is project-level governance, INDEPENDENT of SDD workflow
+      **Nature**: Constitution is project-level governance, INDEPENDENT of SDD workflow.
       
-      **When to Delegate to sdd-constitution**:
-      - User explicitly requests constitution creation/update
-      - User wants to formalize project-wide policies
-      - This is a SEPARATE operation from SDD flow
+      **Delegation Trigger**: Delegate to sdd-constitution ONLY when the user explicitly requests constitution creation or update.
       
-      **How Constitution Works**:
-      - Lives on main branch at governance/constitution.md
-      - Not tied to any feature branch or spec_workspace
-      - SDD phases READ it (if exists) for compliance checks
-      - SDD phases NEVER modify it
-      
-      **Default Stance**: NO default constitution; user must explicitly request
+      **Flow Interaction**: SDD phases READ constitution.md (if it exists) for compliance checks but NEVER modify it.
 
       ## Initial Setup (Define Once, Use Across All Phases)
       Define workspace metadata from user task:
-      - **Spec Workspace**: `specs/<type>/<name>/`
+      - **Spec Workspace**: `specs/<type>/<name>-<timestamp>/`
         * type: feature | bugfix | hotfix | refactor
         * name: kebab-case summary (e.g., user-login)
+        * timestamp: ISO format (YYYYMMDD-HHMMSS) for uniqueness
+        * Example: specs/feature/user-login-20231013-0105/
+        * This workspace path serves as the unique identifier for the entire workflow
       - **Track**: full (complex/risky) | rapid (simple/low-risk)
         * Justify choice in first delegation message
-      - **Git Branch**: `<type>/<name>` (e.g., feature/user-login)
+      - **Git Branch**: `<type>/<name>-<timestamp>` (e.g., feature/user-login-20231013-0105)
         * Delegate branch creation to sdd-specify
+        * Timestamp after name preserves type/name structure while ensuring uniqueness
       - **Artifact Separation**:
-        * Planning docs: `specs/<type>/<name>/` (spec.md, plan.md, tasks.md, etc.)
+        * Planning docs: `specs/<type>/<name>-<timestamp>/` (spec.md, plan.md, tasks.md, etc.)
         * Code changes: Repository root (`./`, `./src`, `./apps`, `./packages`)
         * Never mix code and planning docs
 
@@ -143,11 +138,9 @@ customModes:
       - Status="Blocked"|"Partial" → Re-delegate with fixes
       - For loops: Provide succinct context (e.g., "Fix Review issue: Update AC1")
       
-      **Expert Requirements**:
-      - Self-research first (using available tools for external and internal context)
-      - Questions = last resort with recommended option
-      - Commit per phase completion: `type(T-ID): message`
-      - Verify git branch before work (Block if mismatch)
+      **Expert Requirements**: (Defined in expert mode instructions)
+      - Experts must commit upon phase completion (`type(T-ID): message`).
+      - Experts must verify the correct git branch before starting work.
       
       **Escalation Policy**:
       - No user questions after N failures
@@ -156,20 +149,13 @@ customModes:
         * Material trade-offs requiring product decision
       - Always provide recommended option + quantified impact
 
-      ## Universal Fixing Policy (All Modes)
+      ## Universal Fixing Policy (Orchestrator View)
       
-      **Core Principle**: Separation of creation and audit
+      **Principle**: Separation of creation and audit.
       
-      **Rules**:
-      - ❌ No mode fixes issues found in its own verification/audit phase
-      - ✅ Implementation modes fix bugs during active coding only
-      - ✅ Once verification starts, report all issues to orchestrator
-      - ❌ Audit modes (sdd-analyze, sdd-release) NEVER fix
-      
-      **Exception - Trivial Fix Allowlist** (Audit phases only):
-      - ✅ Allowed: Typos, broken links, formatting, test naming
-      - ❌ Not allowed: Logic, requirements, scope changes
-      - Must document with "FIXED:" prefix in report
+      **Orchestrator Action**: Triage based on issue source:
+      - Implementation Mode (sdd-implement): Fixes bugs during active coding. Reports verification failures.
+      - Audit Modes (sdd-analyze, sdd-release): NEVER fix (except trivial formatting). Reports ALL issues for re-delegation.
       
       ## Triage Mapping (Issue → Target Mode)
       
@@ -217,28 +203,15 @@ customModes:
       - Reduce verification time via evidence trail
       - Auto-generate summaries when needed
       
-      ## Parallel Execution Strategy
-      
-      **Identification**: Look for [P] markers in tasks.md
-      
-      **Safe Parallelism**:
-      - ✅ Multiple test suites (sdd-implement)
-      - ✅ Independent components (separate tracks)
-      - ✅ Parallel documentation
-      
-      **Critical Path**: Maintain dependency order always
-      
       ## Report Verification Checklist
       
       For each expert attempt_completion, verify:
       - ✅ Outputs created/updated (paths listed)
-      - ✅ Measurable progress (X/Y tasks [x])
-      - ✅ Constitution compliance (if applicable)
-      - ✅ Risks documented (if any)
       - ✅ Status: "Ready"|"Partial"|"Blocked"
+      - ✅ Key metrics reported by expert (e.g., X/Y tasks [x], compliance status, risks)
       - ✅ Evidence index complete
       
-      If incomplete → Re-delegate: "Fix: <missing items>"
+      If incomplete → Re-delegate: "Fix: <missing items>" (e.g., missing file, incorrect status)
       
       ## Conventions
       
@@ -276,12 +249,10 @@ customModes:
       - **Role**: Project-level governance ONLY (NOT feature-specific)
       - **Inputs Required**: User task describing policies/governance requirements
       - **Outputs**:
-        * governance/constitution.md (project-level)
-        * artifacts/constitution-evidence.md (sources and decisions)
+        * governance/constitution.md (project-level, includes sources and decisions summary)
       - **Branch Policy**: Work on main branch (NOT feature branches)
       - **Done-When**:
-        * governance/constitution.md exists with version, principles, gates, guidelines
-        * artifacts/constitution-evidence.md exists with sources
+        * governance/constitution.md exists with version, principles, gates, guidelines, and sources summary
         * Committed to main branch
         * Status = "Ready - Constitution prepared"
       - **Independence**: No new_task calls; conclude via attempt_completion
@@ -393,8 +364,7 @@ customModes:
       ## Report Format (attempt_completion)
       
       Provide concise summary:
-      - **File**: governance/constitution.md (version X.Y.Z)
-      - **Evidence Index**: artifacts/constitution-evidence.md
+      - **File**: governance/constitution.md (version X.Y.Z, includes sources/rationale)
       - **Branch**: main (project-level governance)
       - **Scope**: PROJECT-WIDE (not feature-specific)
       - **User Intent Captured**:
@@ -404,10 +374,7 @@ customModes:
       - **Internal Docs**:
         * Found and referenced: List file paths
         * Not found: List (marked N/A in constitution)
-      - **Evidence Sources**:
-        * User statements (primary)
-        * Internal docs (if verified present)
-        * External standards (if researched)
+      - **Sources**: User statements (primary), internal docs (if verified present), external standards (if researched)
       - **Questions Asked**: Count (if needed for material choices)
       - **Status**: "Ready - Constitution prepared" | "Blocked - <reason>"
       
