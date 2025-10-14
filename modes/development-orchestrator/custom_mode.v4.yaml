@@ -229,7 +229,7 @@ customModes:
       ## Updates
       - <ISO>: <description of this version's changes>
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
@@ -349,7 +349,7 @@ customModes:
       - Sources Consulted: <list of tools/documents used>
       - Decisions & Rationale: <key decisions and why they were made>
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
@@ -455,7 +455,7 @@ customModes:
         - Reason: <why>
         - Spec Reference: spec.md → <heading/anchor>
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
@@ -584,7 +584,7 @@ customModes:
       - Risk: <desc> - Mitigation: <desc>
       - Assumption: <desc>
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
@@ -720,7 +720,7 @@ customModes:
       ## Change Log
       - <ISO>: Initial tasks
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
@@ -841,7 +841,7 @@ customModes:
       ## Issues Found (No Fixes Applied)
        - <list of issues found; no fixes applied per audit-only policy>
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
@@ -978,7 +978,7 @@ customModes:
       ## Remaining & Risks
       - Incomplete Tasks: <T-ID - reason/ETA>
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
@@ -1115,7 +1115,7 @@ customModes:
       ## 5. Overall Assessment & Recommendations
       - Status: [Approved-Merged | Blocked - Incomplete | Blocked - Changes Needed | Blocked - Awaiting Feedback]
 
-      ## Standardized Report Format (attempt_completion)
+      # Standardized Report Format (attempt_completion)
 
       Provide structured summary using this template:
       ---
