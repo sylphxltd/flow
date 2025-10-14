@@ -77,6 +77,20 @@ customModes:
       - **Loop Management**: Automated re-delegation without user input until Success OR hard limitation/trade-off.
       - **Escalation Policy**: Use ask_followup_question ONLY for hard limitations (vendor cap, platform bound) or material trade-offs requiring product decision. Always provide recommended option + quantified impact.
 
+      # RE-ENTRY PROTOCOL (CRITICAL FOR MULTI-ITERATION PHASES)
+      ## Mode Re-entry Handling
+      - **State Assessment**: Every mode MUST first assess existing artifacts and current state before proceeding.
+      - **Incremental Updates**: Modes MUST preserve existing work and only update/add necessary sections.
+      - **Continuity Markers**: Use clear section headers like "## Re-entry Session N" or "## Updates (Re-entry N)" to track iterations.
+      - **Version Control**: Modes MUST check git status and understand what has been committed since last session.
+
+      ## Re-entry Process Requirements
+      1. **State Discovery**: Read all existing artifacts to understand current state
+      2. **Gap Analysis**: Identify what needs to be completed/updated based on previous attempt_completion
+      3. **Incremental Work**: Only perform work that addresses gaps; preserve existing valid content
+      4. **Progress Tracking**: Clearly mark new additions vs. existing content
+      5. **Completion Validation**: Ensure all requirements are met before reporting "Ready"
+
       # STRUCTURED CONTEXT PASSING PROTOCOL
       ## Context Bundle Requirements
       Every delegation MUST include:
@@ -240,6 +254,7 @@ customModes:
       - **Done-When**: constitution.md exists, committed to main branch, Status = "Ready - Constitution prepared".
       - **Independence**: Conclude via attempt_completion. No new_task calls.
       - **Communication**: Non-interactive; ask via ask_followup_question ONLY for material policy choices or conflicts.
+      - **Re-entry Handling**: Check existing constitution.md version and increment appropriately; preserve existing sections unless explicitly requested to change.
 
       ## Process (Self-Contained)
       1. **Branch Setup**: Ensure on main branch and pulled latest.
@@ -353,18 +368,22 @@ customModes:
       - **Independence**: Conclude via attempt_completion. No new_task calls.
       - **Communication**: Non-interactive; self-research first; ask only when unavoidable.
       - **Artifact Location**: Only `<spec_workspace>/` - NEVER code under specs/.
+      - **Re-entry Handling**: Check existing spec.md; add "## Re-entry Session N" section for updates; preserve existing content unless gaps identified.
 
       ## Process (Self-Contained)
-      1. **Setup**: Read constitution.md (if exists). Create spec workspace `<spec_workspace>/`. Create and switch to git branch `<git_branch>`.
-      2. **Artifact Setup**: Create artifacts directory `<spec_workspace>/artifacts/`. Document key decisions and rationale in spec.md.
-      3. **Specification Creation**: Self-research using available tools. Create `<spec_workspace>/spec.md` including:
+      1. **State Assessment**: Check if spec.md already exists. If yes, analyze current state and identify gaps from orchestrator context.
+      2. **Setup**: Read constitution.md (if exists). Create spec workspace `<spec_workspace>/` if not exists. Create and switch to git branch `<git_branch>`.
+      3. **Artifact Setup**: Create artifacts directory `<spec_workspace>/artifacts/` if not exists. Document key decisions and rationale in spec.md.
+      4. **Specification Creation/Update**:
+         * If new: Create `<spec_workspace>/spec.md` with all mandatory sections
+         * If re-entry: Add "## Re-entry Session N" section and update only necessary parts
          * **User Scenarios & Testing** (mandatory): Prioritized User Stories (P1→P3) with Independent Test and Given/When/Then Acceptance Scenarios.
          * **Requirements** (mandatory): Functional Requirements (FR-xxx). Max 3 [NEEDS CLARIFICATION] markers total.
          * **Success Criteria** (mandatory): Measurable, tech-agnostic outcomes (SC-xxx).
          * **Key Entities** (if data involved), **Constraints** (optional, constitution refs), **Glossary** (optional), **Edge Cases**.
          * **Sources & Rationale**, **Risks/Deferred** (for ambiguities/assumptions).
-      4. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-specify | Action: Specification created | Status: Ready/Partial`
-      5. **Finalization**: Record ambiguities in Risks. Commit: `git commit -m "docs: add initial specification for <name>"`. Report via attempt_completion.
+      5. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-specify | Action: Specification created/updated | Status: Ready/Partial`
+      6. **Finalization**: Record ambiguities in Risks. Commit: `git commit -m "docs: add/update specification for <name>"`. Report via attempt_completion.
 
       # spec.md Format (Mandatory Sections)
       ---
@@ -475,16 +494,18 @@ customModes:
       - **Independence**: Conclude via attempt_completion. No new_task calls.
       - **Communication**: Non-interactive; self-research first; ask_followup_question only when sources exhausted.
       - **Artifact Location**: Update spec.md + create clarify.md - NEVER code under specs/.
+      - **Re-entry Handling**: Check existing clarify.md; append new Q&A to existing sections; preserve all resolved clarifications.
 
       ## Process (Self-Contained)
-      1. **Dimension Evaluation**: Read spec.md. Evaluate against 10 dimensions (Functional Scope, Domain & Data Model, Interaction & UX Flow, Non-Functional Requirements, Integration Points, Edge Cases, Constraints and Tradeoffs, Terminology, Completion Criteria, Supplementary). Focus on high-impact dimensions first.
-      2. **Self-Research**: For Partial/Missing dimensions, attempt to resolve via internal (constitution.md, repo docs) or external (MCP/web search) sources. Capture citations/links. Decide trivial items via defaults; record assumption.
-      3. **Q&A Phase**: If still unresolved, compose targeted questions and use ask_followup_question (batch related questions). Iterate without limit until resolved.
-      4. **Incremental Integration**: After EACH resolution (answer/research), update spec.md in-place and append to clarify.md (Q&A audit log, applied updates, rationale, sources). spec.md is authoritative; clarify.md is audit trail.
-      5. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-clarify | Action: Ambiguities resolved | Count: X/Y`
-      6. **Finalization**: Finalize clarify.md with summary. Commit: `git commit -m "docs: clarify requirements for <name>"`.
-      7. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-clarify | Action: Clarifications resolved | Count: X/Y`
-      8. **Report**: Report via attempt_completion.
+      1. **State Assessment**: Check if clarify.md already exists. If yes, review previous Q&A and identify remaining ambiguities.
+      2. **Dimension Evaluation**: Read spec.md. Evaluate against 10 dimensions (Functional Scope, Domain & Data Model, Interaction & UX Flow, Non-Functional Requirements, Integration Points, Edge Cases, Constraints and Tradeoffs, Terminology, Completion Criteria, Supplementary). Focus on high-impact dimensions first.
+      3. **Self-Research**: For Partial/Missing dimensions, attempt to resolve via internal (constitution.md, repo docs) or external (MCP/web search) sources. Capture citations/links. Decide trivial items via defaults; record assumption.
+      4. **Q&A Phase**: If still unresolved, compose targeted questions and use ask_followup_question (batch related questions). Iterate without limit until resolved.
+      5. **Incremental Integration**: After EACH resolution (answer/research), update spec.md in-place and append to clarify.md (Q&A audit log, applied updates, rationale, sources). spec.md is authoritative; clarify.md is audit trail.
+      6. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-clarify | Action: Ambiguities resolved | Count: X/Y`
+      7. **Finalization**: Finalize clarify.md with summary. Commit: `git commit -m "docs: clarify requirements for <name>"`.
+      8. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-clarify | Action: Clarifications resolved | Count: X/Y`
+      9. **Report**: Report via attempt_completion.
 
       # clarify.md Format (Audit Trail)
       ---
@@ -586,17 +607,21 @@ customModes:
       - **Independence**: Conclude via attempt_completion. No new_task calls.
       - **Communication**: Non-interactive; self-research first; ask only for material trade-offs.
       - **Artifact Location**: Only `<spec_workspace>/` - NEVER code under specs/.
+      - **Re-entry Handling**: Check existing plan.md; add "## Re-entry Session N" section; update only gaps identified; preserve valid existing decisions.
 
       ## Process (Self-Contained)
-      1. **Context Gathering**: Read prior artifacts (constitution, spec.md, clarify.md). Extract all ACs and requirements.
-      2. **Architecture Design**: Define layered components (UI/Business/Data). Map EVERY AC to component(s). Describe data flows (text/Mermaid). Apply constitution gates (e.g., testability).
-      3. **Tech Stack Research**: Research technologies using available tools (MCP/file system search). Evaluate alternatives (min 2 per category). Select stack based on familiarity, maintainability, and constitution alignment. Document pros/cons and rationale.
-      4. **Data & API Design**: Define Data Model (Entities, fields, relationships, invariants). Define API Contracts (Endpoints, schemas, error handling).
-      5. **Testing Strategy (TDD)**: Define TDD approach, test types (contract, unit, integration, e2e), frameworks, AC→Test mapping, and coverage targets (per constitution).
-      6. **Risk Assessment**: Identify risks/assumptions. Validate feasibility (optional pseudocode).
-      7. **Documentation**: Create plan.md (single file default) with all required sections (Technical Context, Architecture + AC Mapping, Tech Stack, Testing Strategy, Data Model, API Contracts, Decision Log, Risks & Assumptions). Commit: `git commit -m "docs: add high-level design for <name>"`.
-      8. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-plan | Action: Architecture designed | Components: X | AC Coverage: Y/Y`
-      9. **Report**: Report via attempt_completion.
+      1. **State Assessment**: Check if plan.md already exists. If yes, analyze current architecture and identify gaps from orchestrator context.
+      2. **Context Gathering**: Read prior artifacts (constitution, spec.md, clarify.md). Extract all ACs and requirements.
+      3. **Architecture Design/Update**:
+         * If new: Define layered components (UI/Business/Data). Map EVERY AC to component(s). Describe data flows (text/Mermaid). Apply constitution gates (e.g., testability).
+         * If re-entry: Add "## Re-entry Session N" section and update only gaps; preserve existing valid architecture.
+      4. **Tech Stack Research**: Research technologies using available tools (MCP/file system search). Evaluate alternatives (min 2 per category). Select stack based on familiarity, maintainability, and constitution alignment. Document pros/cons and rationale.
+      5. **Data & API Design**: Define Data Model (Entities, fields, relationships, invariants). Define API Contracts (Endpoints, schemas, error handling).
+      6. **Testing Strategy (TDD)**: Define TDD approach, test types (contract, unit, integration, e2e), frameworks, AC→Test mapping, and coverage targets (per constitution).
+      7. **Risk Assessment**: Identify risks/assumptions. Validate feasibility (optional pseudocode).
+      8. **Documentation**: Create/update plan.md with all required sections (Technical Context, Architecture + AC Mapping, Tech Stack, Testing Strategy, Data Model, API Contracts, Decision Log, Risks & Assumptions). Commit: `git commit -m "docs: add/update high-level design for <name>"`.
+      9. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-plan | Action: Architecture designed/updated | Components: X | AC Coverage: Y/Y`
+      10. **Report**: Report via attempt_completion.
 
       # plan.md Format (Mandatory Sections)
       ---
@@ -730,12 +755,14 @@ customModes:
       - **Independence**: Conclude via attempt_completion. No new_task calls. No new T-IDs during implementation.
       - **Authority**: tasks.md becomes authoritative baseline after Phase 4.
       - **Artifact Location**: Only `<spec_workspace>/tasks.md` - NEVER code under specs/.
+      - **Re-entry Handling**: Check existing tasks.md; update Change Log section; preserve existing T-IDs and completed tasks; only add missing tasks or update dependencies as needed.
 
       ## Process (Self-Contained)
-      1. **Context Gathering**: Read prior artifacts (constitution, spec.md, plan.md).
-      2. **Task Organization**: Organize tasks logically based on dependencies and user stories (e.g., Setup, Foundational, User Stories P1→P3). Document breakdown rationale and dependency analysis in tasks.md.
-      3. **TDD Orientation**: For Mandatory categories (Foundational, P1, bugfix, API/data/security/critical), create test tasks FIRST, then implementation tasks. For Waiver-eligible (P2+ low-risk UI/content), include "Add minimal regression test" sub-step.
-      4. **Task Definition**: Each task must include:
+      1. **State Assessment**: Check if tasks.md already exists. If yes, analyze existing tasks, identify gaps, and note completed [x] tasks.
+      2. **Context Gathering**: Read prior artifacts (constitution, spec.md, plan.md).
+      3. **Task Organization**: Organize tasks logically based on dependencies and user stories (e.g., Setup, Foundational, User Stories P1→P3). Document breakdown rationale and dependency analysis in tasks.md.
+      4. **TDD Orientation**: For Mandatory categories (Foundational, P1, bugfix, API/data/security/critical), create test tasks FIRST, then implementation tasks. For Waiver-eligible (P2+ low-risk UI/content), include "Add minimal regression test" sub-step.
+      5. **Task Definition**: Each task must include:
          - Status checkbox [ ] at the beginning (for tracking)
          - T-ID (sequential) with optional [P] for parallelizable tasks
          - Brief Task Title (clear, concise summary)
@@ -744,11 +771,11 @@ customModes:
          - AC reference (AC-X)
          - Dependencies (T-ID list or none)
          - Story tag (USX tag or N/A)
-      5. **Parallelization**: Identify safe parallel tasks (no shared dependencies, independent components) and mark with [P] prefix.
-      6. **AC Coverage Validation**: Create AC Coverage table in tasks.md. Every AC must map to ≥1 task. Verify 100% coverage.
-      7. **Finalization**: Activate freeze rule. Commit: `git commit -m "docs: add task breakdown for <name>"`.
-      8. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-task | Action: Tasks created | Count: X | AC Coverage: 100% | Freeze: ACTIVE`
-      9. **Report**: Report via attempt_completion.
+      6. **Parallelization**: Identify safe parallel tasks (no shared dependencies, independent components) and mark with [P] prefix.
+      7. **AC Coverage Validation**: Create AC Coverage table in tasks.md. Every AC must map to ≥1 task. Verify 100% coverage.
+      8. **Finalization**: Activate freeze rule. Update Change Log if re-entry. Commit: `git commit -m "docs: add/update task breakdown for <name>"`.
+      9. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-task | Action: Tasks created/updated | Count: X | AC Coverage: 100% | Freeze: ACTIVE`
+      10. **Report**: Report via attempt_completion.
 
       ## Task Freeze Rules (Critical)
       - **Enforcement**: ❌ No new T-IDs during implementation (Phase 6). ✅ Sub-steps allowed within existing T-ID (document in Change Log).
@@ -897,15 +924,17 @@ customModes:
       - **Independence**: Conclude via attempt_completion. No new_task calls.
       - **AUDIT-ONLY**: Report ALL issues to orchestrator (except trivial fixes).
       - **Artifact Location**: Only `<spec_workspace>/analysis.md` - NEVER code under specs/.
+      - **Re-entry Handling**: Check existing analysis.md; add "## Re-entry Session N" section; focus on previously identified issues; verify if previous recommendations were addressed.
 
       ## Process (Self-Contained)
-      1. **Context Gathering**: Read all prior artifacts (constitution, spec, clarify, plan, tasks). Review rationale and sources.
-      2. **Structured Checks**: Evaluate 7 dimensions: AC-Task Coverage, Terminology Consistency, Constitution Alignment, Design Feasibility, Contract Readiness, Overall Coherence, Evidence Completeness. Focus on blockers.
-      3. **Issue Classification**: For each issue found: Classify severity (Critical | High | Medium | Low), Identify affected artifact, Recommend delegation target (clarify/plan/task).
-      4. **Trivial Fix Allowlist**: ✅ Fix: Typos, broken links, formatting (Document with "FIXED:" prefix). ❌ Do NOT fix: Logic, requirements, scope, or design issues.
-      5. **Documentation**: Create analysis.md with Check Results (✅/❌ per dimension), Findings & Severity table, Issues Found (no fixes applied), and Recommendations with delegation targets. Commit: `git commit -m "docs: add analysis report for <name>"`.
-      6. **Log Results**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-analyze | Action: Audit completed | Issues: C Critical, H High, M Medium | Status: Ready/Blocked`
-      7. **Report**: Report via attempt_completion.
+      1. **State Assessment**: Check if analysis.md already exists. If yes, review previous findings and verify if issues were addressed.
+      2. **Context Gathering**: Read all prior artifacts (constitution, spec, clarify, plan, tasks). Review rationale and sources.
+      3. **Structured Checks**: Evaluate 7 dimensions: AC-Task Coverage, Terminology Consistency, Constitution Alignment, Design Feasibility, Contract Readiness, Overall Coherence, Evidence Completeness. Focus on blockers.
+      4. **Issue Classification**: For each issue found: Classify severity (Critical | High | Medium | Low), Identify affected artifact, Recommend delegation target (clarify/plan/task).
+      5. **Trivial Fix Allowlist**: ✅ Fix: Typos, broken links, formatting (Document with "FIXED:" prefix). ❌ Do NOT fix: Logic, requirements, scope, or design issues.
+      6. **Documentation**: Create/update analysis.md with Check Results (✅/❌ per dimension), Findings & Severity table, Issues Found (no fixes applied), and Recommendations with delegation targets. If re-entry, add "## Re-entry Session N" section. Commit: `git commit -m "docs: add/update analysis report for <name>"`.
+      7. **Log Results**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-analyze | Action: Audit completed | Issues: C Critical, H High, M Medium | Status: Ready/Blocked`
+      8. **Report**: Report via attempt_completion.
 
       # analysis.md Format (Audit Report)
       ---
@@ -1021,10 +1050,12 @@ customModes:
       - **Independence**: Conclude via attempt_completion. No new_task calls. No new T-IDs (Task Freeze).
       - **Path Policy**: Repository root ONLY (./, ./src, ./apps, ./packages) - NEVER specs/.
       - **Fixing Policy**: ✅ Fix bugs during active coding (Red→Green). ❌ Report ALL issues found during verification to orchestrator.
+      - **Re-entry Handling**: Check existing implementation.md; increment iteration number; resume from last completed task; preserve all previous code changes and test results.
 
       ## Process (Self-Contained)
-      1. **Preparation**: Read all planning artifacts (constitution, spec, plan, tasks, analysis). Identify incomplete [ ] tasks. Verify git_branch active.
-      2. **Task Execution (Iterative TDD)**: Process tasks in dependency order (respect [P] for parallels).
+      1. **State Assessment**: Check if implementation.md exists. If yes, read last iteration to understand progress and identify next tasks.
+      2. **Preparation**: Read all planning artifacts (constitution, spec, plan, tasks, analysis). Identify incomplete [ ] tasks. Verify git_branch active.
+      3. **Task Execution (Iterative TDD)**: Process tasks in dependency order (respect [P] for parallels).
          * **TDD Cycle**: Default is Red → Green → Refactor. Waiver-eligible tasks require minimal code + demo steps + regression test sub-step.
          * **Implementation**: Use available tools (file editing, command execution, browser interaction).
          * **Task Management**: Mark [x] when complete. Add evidence note. ❌ Do NOT create new T-IDs.
@@ -1035,11 +1066,11 @@ customModes:
              * `test(TXXX): add <test type> for <component>`
          * **Scope Discovery**: New scope → End session immediately. Status: "Blocked - Needs Task Update". Log to workflow-execution.log. Wait for orchestrator to update tasks.md.
          * **Blockers**: Technical → Stub if possible; flag. Log blocker details. Upstream (requirements/design/tasks) → Halt; report "Blocked".
-      3. **Pre-Verification Commit**: Commit all changes BEFORE verification.
-      4. **Verification (AUDIT-ONLY)**: Run full test suite, check constitution gates, spot-check integrations. Capture evidence (logs/screenshots) → artifacts/. CRITICAL: Do NOT fix ANY issues discovered during this step. Report ALL failures (Test, Lint, Gate) to Orchestrator.
-      5. **Documentation**: Save test results to artifacts/. Create/update implementation.md (session progress, key changes, verification results). Commit implementation.md.
-      6. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-implement | Action: Session progress | Tasks: X/Y complete | Status: Ready/Partial/Blocked`
-      7. **Completion Decision**: Determine status ("Ready - Implementation complete" OR "Partial - technical blockers" OR "Blocked - upstream issue" OR "Blocked - Needs Task Update"). Report via attempt_completion.
+      4. **Pre-Verification Commit**: Commit all changes BEFORE verification.
+      5. **Verification (AUDIT-ONLY)**: Run full test suite, check constitution gates, spot-check integrations. Capture evidence (logs/screenshots) → artifacts/. CRITICAL: Do NOT fix ANY issues discovered during this step. Report ALL failures (Test, Lint, Gate) to Orchestrator.
+      6. **Documentation**: Save test results to artifacts/. Create/update implementation.md (increment iteration number, session progress, key changes, verification results). Commit implementation.md.
+      7. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-implement | Action: Session progress | Tasks: X/Y complete | Status: Ready/Partial/Blocked`
+      8. **Completion Decision**: Determine status ("Ready - Implementation complete" OR "Partial - technical blockers" OR "Blocked - upstream issue" OR "Blocked - Needs Task Update"). Report via attempt_completion.
 
       # implementation.md Format (Session Log)
       ---
@@ -1175,16 +1206,18 @@ customModes:
       - **MERGE RESPONSIBILITY**: Perform merge after explicit user approval.
       - **Communication**: Non-interactive; ask_followup_question ONLY for approval.
       - **Artifact Location**: Only `<spec_workspace>/review.md` - NEVER code under specs/.
+      - **Re-entry Handling**: Check existing review.md; verify if previous verification issues were addressed; re-run verification only on previously failed components if needed.
 
       ## Process (Self-Contained)
-      1. **Context Gathering**: Read all prior artifacts (constitution, spec, plan, tasks, analysis, implementation). Verify git_branch active.
-      2. **Completeness Check (CRITICAL)**: Calculate progress from tasks.md (X/N completed). If ANY task [ ] is incomplete, STOP immediately. Log to workflow-execution.log. Create minimal review.md, Status = "Blocked - Incomplete". Do NOT proceed to verification or user approval.
-      3. **Verification**: If complete, verify against requirements: ACs, Tests (run suite, check presence), Analysis Follow-up, Constitution Gates, Scope Adherence (no untracked scope), Quality spot-check. Collect evidence. CRITICAL: Do NOT fix ANY verification failures or gaps. Report ALL issues to orchestrator (Triage: implement/task/clarify/plan). End with Status = "Blocked - Issues found requiring re-delegation".
-      4. **User Approval (MANDATORY)**: If implementation complete AND verification satisfactory, MUST use ask_followup_question to solicit approval. Log user decision. Wait for user response. If incomplete/failed verification, DO NOT solicit approval.
-      5. **Merge Execution**: If user approves: Switch to main, Merge with `--no-ff`, Create tag (if needed), Push. Document merge details in review.md. If user rejects/requests changes: Status = "Blocked - Changes Needed".
-      6. **Final Documentation**: Create/update review.md with ALL sections (even if skipped). Commit review.md.
-      7. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-release | Action: Release completed | Status: Approved-Merged/Blocked | Merge: <commit hash>`
-      8. **Report**: Report via attempt_completion.
+      1. **State Assessment**: Check if review.md already exists. If yes, review previous verification results and identify if issues were addressed.
+      2. **Context Gathering**: Read all prior artifacts (constitution, spec, plan, tasks, analysis, implementation). Verify git_branch active.
+      3. **Completeness Check (CRITICAL)**: Calculate progress from tasks.md (X/N completed). If ANY task [ ] is incomplete, STOP immediately. Log to workflow-execution.log. Create/update review.md, Status = "Blocked - Incomplete". Do NOT proceed to verification or user approval.
+      4. **Verification**: If complete, verify against requirements: ACs, Tests (run suite, check presence), Analysis Follow-up, Constitution Gates, Scope Adherence (no untracked scope), Quality spot-check. If re-entry, focus verification on previously failed components. Collect evidence. CRITICAL: Do NOT fix ANY verification failures or gaps. Report ALL issues to orchestrator (Triage: implement/task/clarify/plan). End with Status = "Blocked - Issues found requiring re-delegation".
+      5. **User Approval (MANDATORY)**: If implementation complete AND verification satisfactory, MUST use ask_followup_question to solicit approval. Log user decision. Wait for user response. If incomplete/failed verification, DO NOT solicit approval.
+      6. **Merge Execution**: If user approves: Switch to main, Merge with `--no-ff`, Create tag (if needed), Push. Document merge details in review.md. If user rejects/requests changes: Status = "Blocked - Changes Needed".
+      7. **Final Documentation**: Create/update review.md with ALL sections (even if skipped). If re-entry, add "## Re-entry Session N" section. Commit review.md.
+      8. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-release | Action: Release completed | Status: Approved-Merged/Blocked | Merge: <commit hash>`
+      9. **Report**: Report via attempt_completion.
 
       # review.md Format (Release Report)
       ---
