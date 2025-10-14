@@ -380,8 +380,9 @@ customModes:
          * **Key Entities** (if data involved), **Constraints** (optional, constitution refs), **Glossary** (optional), **Edge Cases**.
          * **Sources & Rationale**, **Risks/Deferred** (for ambiguities/assumptions).
       5. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-specify | Action: Specification created/updated | Status: Ready/Partial`
-      6. **Finalization**: Record ambiguities in Risks. Commit: `git commit -m "docs: add/update specification for <name>"`.
-         Log Completion: Append to workflow-execution.log: `COMPLETE | Mode: sdd-specify | Action: Specification created/updated | Status: Ready/Partial`. Report via attempt_completion.
+      6. **Finalization**: Record ambiguities in Risks.
+         Log Completion: Append to workflow-execution.log: `COMPLETE | Mode: sdd-specify | Action: Specification created/updated | Status: Ready/Partial`.
+         Commit: `git commit -m "docs: add/update specification for <name>"`. Report via attempt_completion.
 
       # spec.md Format (Mandatory Sections)
       ---
@@ -501,8 +502,9 @@ customModes:
       4. **Q&A Phase**: If still unresolved, compose targeted questions and use ask_followup_question (batch related questions). Iterate without limit until resolved.
       5. **Incremental Integration**: After EACH resolution (answer/research), update spec.md in-place and append to clarify.md (Q&A audit log, applied updates, rationale, sources). spec.md is authoritative; clarify.md is audit trail.
       6. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-clarify | Action: Ambiguities resolved | Count: X/Y`
-      7. **Finalization**: Finalize clarify.md with summary. Commit: `git commit -m "docs: clarify requirements for <name>"`.
-      8. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-clarify | Action: Clarifications resolved | Count: X/Y`
+      7. **Finalization**: Finalize clarify.md with summary.
+         Log Completion: Append to workflow-execution.log: `COMPLETE | Mode: sdd-clarify | Action: Clarifications resolved | Count: X/Y`.
+         Commit: `git commit -m "docs: clarify requirements for <name>"`.
       9. **Report**: Report via attempt_completion.
 
       # clarify.md Format (Audit Trail)
@@ -617,9 +619,10 @@ customModes:
       5. **Data & API Design**: Define Data Model (Entities, fields, relationships, invariants). Define API Contracts (Endpoints, schemas, error handling).
       6. **Testing Strategy (TDD)**: Define TDD approach, test types (contract, unit, integration, e2e), frameworks, AC→Test mapping, and coverage targets (per constitution).
       7. **Risk Assessment**: Identify risks/assumptions. Validate feasibility (optional pseudocode).
-      8. **Documentation**: Create/update plan.md with all required sections (Technical Context, Architecture + AC Mapping, Tech Stack, Testing Strategy, Data Model, API Contracts, Decision Log, Risks & Assumptions). Commit: `git commit -m "docs: add/update high-level design for <name>"`.
+      8. **Documentation**: Create/update plan.md with all required sections (Technical Context, Architecture + AC Mapping, Tech Stack, Testing Strategy, Data Model, API Contracts, Decision Log, Risks & Assumptions).
       9. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-plan | Action: Architecture designed/updated | Components: X | AC Coverage: Y/Y`
-      10. **Report**: Report via attempt_completion.
+      10. **Commit**: `git commit -m "docs: add/update high-level design for <name>"`.
+      11. **Report**: Report via attempt_completion.
 
       # plan.md Format (Mandatory Sections)
       ---
@@ -771,9 +774,10 @@ customModes:
          - Story tag (USX tag or N/A)
       6. **Parallelization**: Identify safe parallel tasks (no shared dependencies, independent components) and mark with [P] prefix.
       7. **AC Coverage Validation**: Create AC Coverage table in tasks.md. Every AC must map to ≥1 task. Verify 100% coverage.
-      8. **Finalization**: Activate freeze rule. Update Change Log if re-entry. Commit: `git commit -m "docs: add/update task breakdown for <name>"`.
+      8. **Finalization**: Activate freeze rule. Update Change Log if re-entry.
       9. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-task | Action: Tasks created/updated | Count: X | AC Coverage: 100% | Freeze: ACTIVE`
-      10. **Report**: Report via attempt_completion.
+      10. **Commit**: `git commit -m "docs: add/update task breakdown for <name>"`.
+      11. **Report**: Report via attempt_completion.
 
       ## Task Freeze Rules (Critical)
       - **Enforcement**: ❌ No new T-IDs during implementation (Phase 6). ✅ Sub-steps allowed within existing T-ID (document in Change Log).
@@ -930,9 +934,10 @@ customModes:
       3. **Structured Checks**: Evaluate 7 dimensions: AC-Task Coverage, Terminology Consistency, Constitution Alignment, Design Feasibility, Contract Readiness, Overall Coherence, Evidence Completeness. Focus on blockers.
       4. **Issue Classification**: For each issue found: Classify severity (Critical | High | Medium | Low), Identify affected artifact, Recommend delegation target (clarify/plan/task).
       5. **Trivial Fix Allowlist**: ✅ Fix: Typos, broken links, formatting (Document with "FIXED:" prefix). ❌ Do NOT fix: Logic, requirements, scope, or design issues.
-      6. **Documentation**: Create/update analysis.md with Check Results (✅/❌ per dimension), Findings & Severity table, Issues Found (no fixes applied), and Recommendations with delegation targets. If re-entry, add "## Re-entry Session N" section. Commit: `git commit -m "docs: add/update analysis report for <name>"`.
+      6. **Documentation**: Create/update analysis.md with Check Results (✅/❌ per dimension), Findings & Severity table, Issues Found (no fixes applied), and Recommendations with delegation targets. If re-entry, add "## Re-entry Session N" section.
       7. **Log Results**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-analyze | Action: Audit completed | Issues: C Critical, H High, M Medium | Status: Ready/Blocked`
-      8. **Report**: Report via attempt_completion.
+      8. **Commit**: `git commit -m "docs: add/update analysis report for <name>"`.
+      9. **Report**: Report via attempt_completion.
 
       # analysis.md Format (Audit Report)
       ---
@@ -1067,9 +1072,10 @@ customModes:
          * **Blockers**: Technical → Stub if possible; flag. Log blocker details. Upstream (requirements/design/tasks) → Halt; report "Blocked".
       4. **Pre-Verification Commit**: Commit all changes BEFORE verification.
       5. **Verification (AUDIT-ONLY)**: Run full test suite, check constitution gates, spot-check integrations. Capture evidence (logs/screenshots) → artifacts/. CRITICAL: Do NOT fix ANY issues discovered during this step. Report ALL failures (Test, Lint, Gate) to Orchestrator.
-      6. **Documentation**: Save test results to artifacts/. Create/update implementation.md (increment iteration number, session progress, key changes, verification results). Commit implementation.md.
+      6. **Documentation**: Save test results to artifacts/. Create/update implementation.md (increment iteration number, session progress, key changes, verification results).
       7. **Log Progress**: Append to workflow-execution.log: `PROGRESS | Mode: sdd-implement | Action: Session progress | Tasks: X/Y complete | Status: Ready/Partial/Blocked`
-      8. **Completion Decision**: Determine status ("Ready - Implementation complete" OR "Partial - technical blockers" OR "Blocked - upstream issue" OR "Blocked - Needs Task Update"). Report via attempt_completion.
+      8. **Commit**: Commit implementation.md and any other changes: `git commit -m "docs: update implementation log for <name>"`
+      9. **Completion Decision**: Determine status ("Ready - Implementation complete" OR "Partial - technical blockers" OR "Blocked - upstream issue" OR "Blocked - Needs Task Update"). Report via attempt_completion.
 
       # implementation.md Format (Session Log)
       ---
@@ -1215,9 +1221,10 @@ customModes:
       4. **Verification**: If complete, verify against requirements: ACs, Tests (run suite, check presence), Analysis Follow-up, Constitution Gates, Scope Adherence (no untracked scope), Quality spot-check. If re-entry, focus verification on previously failed components. Collect evidence. CRITICAL: Do NOT fix ANY verification failures or gaps. Report ALL issues to orchestrator (Triage: implement/task/clarify/plan). End with Status = "Blocked - Issues found requiring re-delegation".
       5. **User Approval (MANDATORY)**: If implementation complete AND verification satisfactory, MUST use ask_followup_question to solicit approval. Log user decision. Wait for user response. If incomplete/failed verification, DO NOT solicit approval.
       6. **Merge Execution**: If user approves: Switch to main, Merge with `--no-ff`, Create tag (if needed), Push. Document merge details in review.md. If user rejects/requests changes: Status = "Blocked - Changes Needed".
-      7. **Final Documentation**: Create/update review.md with ALL sections (even if skipped). If re-entry, add "## Re-entry Session N" section. Commit review.md.
+      7. **Final Documentation**: Create/update review.md with ALL sections (even if skipped). If re-entry, add "## Re-entry Session N" section.
       8. **Log Completion**: Append to workflow-execution.log: `COMPLETE | Mode: sdd-release | Action: Release completed | Status: Approved-Merged/Blocked | Merge: <commit hash>`
-      9. **Report**: Report via attempt_completion.
+      9. **Commit**: Commit review.md and any other changes: `git commit -m "docs: add/update release report for <name>"`
+      10. **Report**: Report via attempt_completion.
 
       # review.md Format (Release Report)
       ---
