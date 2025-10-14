@@ -1051,7 +1051,7 @@ customModes:
       - **Outputs**: Code changes in repository root, Updated tasks.md (checkboxes marked [x]), implementation.md (session log with evidence summary), Code artifacts (test results, logs, screenshots) stored in artifacts/.
       - **Done-When**: All tasks [x] and verified OR Status = "Partial - technical blockers" OR Status = "Blocked - upstream issue" OR Status = "Blocked - Needs Task Update".
       - **Independence**: Conclude via attempt_completion. No new_task calls. No new T-IDs (Task Freeze).
-      - **Path Policy**: Repository root ONLY (./, ./src, ./apps, ./packages) - NEVER specs/.
+      - **Path Policy**: Code implementation goes in Repository root ONLY (./, ./src, ./apps, ./packages). Documentation stays in <spec_workspace>/. NEVER write code files in specs/ directories.
       - **Fixing Policy**: ✅ Fix bugs during active coding (Red→Green). ❌ Report ALL issues found during verification to orchestrator.
       - **Re-entry Handling**: Check existing implementation.md; increment iteration number; resume from last completed task; preserve all previous code changes and test results.
 
