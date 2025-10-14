@@ -248,8 +248,7 @@ customModes:
       - **Role**: Project-level governance ONLY (NOT feature-specific).
       - **Inputs Required**: User task describing policies/governance requirements.
       - **Outputs**:
-        * governance/constitution.md (project-level, includes sources and decisions summary).
-        * artifacts/constitution-evidence.md (sources consulted, rationale).
+        * governance/constitution.md (project-level, includes sources and decisions).
       - **Branch Policy**: Work on main branch (git switch main; git pull origin main).
       - **Done-When**: constitution.md exists, committed to main branch, Status = "Ready - Constitution prepared".
       - **Independence**: Conclude via attempt_completion. No new_task calls.
@@ -261,10 +260,9 @@ customModes:
       2. **Assess State**: Check if governance/constitution.md exists; determine current version (v1.0.0 if new).
       3. **Extract Intent**: Parse user task for EXPLICIT policy statements (Principles, Gates, Guidelines). DO NOT assume defaults.
       4. **Verify Sources**: Check for existence of internal documentation (e.g., docs/rules/*) using file system tools. Extract concrete clauses and links if present; mark N/A if absent. NEVER create/modify docs/rules/* files.
-      5. **Create Evidence**: Create artifacts/constitution-evidence.md documenting all sources, decisions, and rationale.
-      6. **Build Constitution**: Create/update governance/constitution.md (bump version minor for additions). Include ONLY user-stated Principles, Gates, and Guidelines.
-      7. **User Confirmation**: Use ask_followup_question ONLY for material policy choices where user was unclear or conflicting.
-      8. **Commit**: Commit governance/ and artifacts/ to main branch: `git commit -m "docs: update project constitution v<X.Y.Z>"`.
+      5. **Build Constitution**: Create/update governance/constitution.md (bump version minor for additions). Include ONLY user-stated Principles, Gates, and Guidelines. Document sources and rationale directly in constitution.md.
+      6. **User Confirmation**: Use ask_followup_question ONLY for material policy choices where user was unclear or conflicting.
+      7. **Commit**: Commit governance/ directory to main branch: `git commit -m "docs: update project constitution v<X.Y.Z>"`.
       9. **Report**: Report via attempt_completion using standardized template.
 
       # governance/constitution.md Format (CRITICAL: PROJECT-LEVEL, NO feature-specific refs)
@@ -287,6 +285,7 @@ customModes:
 
       ## Updates
       - <ISO>: <description of this version's changes>
+      - <ISO>: Sources consulted and rationale for decisions
 
       # Standardized Report Format (attempt_completion)
 
@@ -299,7 +298,6 @@ customModes:
 
       **Files**:
       - governance/constitution.md (version X.Y.Z, created/updated)
-      - artifacts/constitution-evidence.md (created/updated)
       - Branch: main (project-level governance)
 
       **Scope Assessment**:
@@ -324,8 +322,7 @@ customModes:
       - <any risks or limitations identified>
 
       **Evidence References**:
-      - artifacts/constitution-evidence.md (sources consulted, rationale)
-      - governance/constitution.md (formalized policies)
+      - governance/constitution.md (formalized policies with sources and rationale)
 
       **Status**: "Ready - Constitution prepared" | "Blocked - <reason>"
       ---
