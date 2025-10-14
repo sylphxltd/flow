@@ -51,13 +51,13 @@ customModes:
       Define workspace metadata from user task:
       - **Spec Workspace**: `specs/<type>/<name>-<timestamp>/`
         * type: feature | bugfix | hotfix | refactor
-        * name: kebab-case summary (e.g., user-login)
+        * name: kebab-case summary (e.g., feature-description)
         * timestamp: ISO format (YYYYMMDD-HHMMSS) for uniqueness
-        * Example: specs/feature/user-login-20231013-0105/
+        * Example: specs/feature/feature-description-20231013-0105/
         * This workspace path serves as the unique identifier for the entire workflow
       - **Track**: full (complex/risky) | rapid (simple/low-risk)
         * Justify choice in first delegation message
-      - **Git Branch**: `<type>/<name>-<timestamp>` (e.g., feature/user-login-20231013-0105)
+      - **Git Branch**: `<type>/<name>-<timestamp>` (e.g., feature/feature-description-20231013-0105)
         * Delegate branch creation to sdd-specify
         * Timestamp after name preserves type/name structure while ensuring uniqueness
       - **Artifact Separation**:
@@ -320,9 +320,9 @@ customModes:
       
       **Step 4: Verify Internal Sources** (CRITICAL)
       8. Check for existence of internal documentation (e.g., docs/rules/tech-stack.md, docs/rules/ui-ux-guidelines.md) using available file system tools.
-         * docs/rules/tech-stack.md
-         * docs/rules/ui-ux-guidelines.md
-         * etc.
+          * docs/rules/tech-stack.md
+          * docs/rules/ui-ux-guidelines.md
+          * docs/rules/<other-guideline>.md
       9. If present: Extract concrete clauses + add links
       10. If absent: Mark as N/A (don't fabricate)
       11. NEVER create/modify docs/rules/* files
@@ -367,7 +367,7 @@ customModes:
       [If user stated NOTHING about principles, omit this section]
       
       [Example IF user stated testing requirement:]
-      - Testing: <user's exact words, e.g., "≥90% coverage for all new code">
+      - Testing: <user's exact words, e.g., "≥X% coverage for all new code">
       
       [Example IF user stated security requirement:]
       - Security: <user's exact words, e.g., "Zero High/Critical vulnerabilities">
@@ -392,6 +392,11 @@ customModes:
       ### Testing
       - <user's exact testing policies>
       - References: docs/rules/testing.md (only if file exists; verified via file system tools)
+      
+      [Example IF user mentioned other category:]
+      ### <Category>
+      - <user's exact policies for this category>
+      - References: docs/rules/<category>.md (only if file exists; verified via file system tools)
       
       ## Updates
       - <ISO>: <description of this version's changes>
@@ -546,7 +551,7 @@ customModes:
       - SC-002: <measurable metric>
 
       ## Constraints (optional; include constitution refs if applicable)
-      - Constitution: Coverage ≥95% (if applicable)
+      - Constitution: Coverage ≥X% (if applicable)
       - <other>
 
       ## Glossary (optional)
@@ -790,7 +795,7 @@ customModes:
          * Map EVERY AC to component(s)
          * Describe data flows (text-based or Mermaid)
       5. Apply constitution gates:
-         * Design for ≥95% testability
+         * Design for ≥X% testability
          * Security isolation where needed
          * Performance optimization points
       
@@ -854,14 +859,14 @@ customModes:
       # High-Level Design: <Project Name>
 
       ## Technical Context
-      - Language/Version: <e.g., Python 3.11 / TypeScript 5.x / NEEDS CLARIFICATION>
+      - Language/Version: <e.g., Python X.X / TypeScript X.X / NEEDS CLARIFICATION>
       - Primary Dependencies: <frameworks/libs / NEEDS CLARIFICATION>
-      - Storage: <PostgreSQL / files / N/A>
-      - Testing: <pytest / vitest / XCTest / NEEDS CLARIFICATION>
-      - Target Platform: <e.g., Linux server / iOS 15+ / Web / NEEDS CLARIFICATION>
+      - Storage: <database type / files / N/A>
+      - Testing: <testing framework / NEEDS CLARIFICATION>
+      - Target Platform: <e.g., server / mobile version / Web / NEEDS CLARIFICATION>
       - Performance Goals: <domain-specific throughput/latency>
-      - Constraints: <e.g., p95 <200ms, mem <100MB, offline-capable>
-      - Scale/Scope: <e.g., 10k users, 50 screens, etc.>
+      - Constraints: <e.g., response time <Xms, memory <XMB, offline-capable>
+      - Scale/Scope: <e.g., X users, X screens, etc.>
 
       ## Constitution Check (summary)
       - Gates: <tests/coverage/lint/perf> — <status or plan>
@@ -886,6 +891,8 @@ customModes:
       |----------|----------|-----------------------------|-----------------------|
       | Frontend | <TBD>    | <to be determined>          | <to be determined>     |
       | Database | <TBD>    | <to be determined>          | <to be determined>     |
+      | Backend  | <TBD>    | <to be determined>          | <to be determined>     |
+      | Testing  | <TBD>    | <to be determined>          | <to be determined>     |
       
       NOTE: This table is EXAMPLE ONLY - replace with your actual tech stack choices
 
@@ -918,7 +925,7 @@ customModes:
       - <question> — <owner> — <due/next step>
 
       ## Instrumentation Plan (lightweight)
-      - Metrics to observe for key ACs (e.g., p95 latency, error rate); where/how to collect.
+      - Metrics to observe for key ACs (e.g., response latency, error rate); where/how to collect.
 
       ## Risks & Assumptions
       - Risk: <desc> - Mitigation: <desc>
@@ -1102,14 +1109,14 @@ customModes:
       - [ ] T002 [P]: Initialize toolchain (lint/type/format) | Deps: T001 | Story: N/A | Type: verify
 
       ## Phase 2: Foundational (Blocking Prerequisites)
-      - [ ] T010: Setup database schema & migrations | Deps: T001 | Story: N/A | Type: impl
-      - [ ] T011 [P]: Implement auth framework | Deps: T001 | Story: N/A | Type: impl
+      - [ ] T010: Setup data storage & schema | Deps: T001 | Story: N/A | Type: impl
+      - [ ] T011 [P]: Implement authentication/authorization framework | Deps: T001 | Story: N/A | Type: impl
       - [ ] T012: API routing/middleware skeleton | Deps: T001 | Story: N/A | Type: impl
 
       ## Phase 3: User Story 1 - <Title> (Priority: P1) — MVP
       Independent Test: <how to verify independently>
       Tests (Mandatory categories per policy):
-      - [ ] T020 [P] [US1]: Contract test for <endpoint> in tests/contract/<name>.<ext> | Deps: T012 | Type: test
+      - [ ] T020 [P] [US1]: Contract test for <component> in tests/contract/<name>.<ext> | Deps: T012 | Type: test
       - [ ] T021 [P] [US1]: Integration test for <journey> in tests/integration/<name>.<ext> | Deps: T012 | Type: test
       Implementation:
       - [ ] T022 [US1]: Model <Entity1> in <path> | Deps: T020 | Type: impl
@@ -1310,7 +1317,7 @@ customModes:
       # Analysis Report: <Project Name>
 
       ## Check Results
-      - AC-Task Coverage: [✅ Full / ❌ Gaps: AC3 missing tasks]
+      - AC-Task Coverage: [✅ Full / ❌ Gaps: <specific AC> missing tasks]
       - Terminology Consistency: [✅ / ❌ Detail]
       - Constitution Alignment: [✅ / ❌ Detail] (if applicable)
       - Design Feasibility: [✅ / ❌ Detail]
@@ -1319,8 +1326,8 @@ customModes:
       ## Findings & Severity
       | Severity | Dimension | Location  | Description        | Recommended Action            |
       |----------|-----------|-----------|--------------------|-------------------------------|
-      | High     | Coverage  | tasks.md  | AC3 uncovered      | Add T011-T012 or request tasks update via orchestrator |
-      | Medium   | Terms     | plan.md | "User" inconsistency | Normalize to "Client"        |
+      | High     | Coverage  | tasks.md  | <AC> uncovered     | Add T<IDs> or request tasks update via orchestrator |
+      | Medium   | Terms     | plan.md | <term> inconsistency | Normalize to <correct term>   |
 
       ## Issues Found (No Fixes Applied)
        - <list of issues found; no fixes applied per audit-only policy>
@@ -1455,7 +1462,7 @@ customModes:
            - Examples:
              * `feat(T045): add user authentication`
              * `fix(T067): resolve null pointer exception`
-             * `test(T020): add contract test for auth endpoint`
+             * `test(T020): add contract test for endpoint`
            
            **F. Scope Discovery**:
            - New scope → End session immediately
