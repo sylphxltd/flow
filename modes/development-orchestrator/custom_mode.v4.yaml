@@ -1,9 +1,10 @@
-# LLM-first SDD Workflow Configuration v4.2 (Enhanced Communication)
+# LLM-first SDD Workflow Configuration v4.3 (Enhanced Issue Resolution)
 #
 # Focus: Improved communication between orchestrator and modes
 # Enhanced status reporting, structured context passing, and clear issue classification
 # Independent modes, lightweight artifacts, TDD-first implementation
 # Communication: new_task (start) + attempt_completion (end) with structured reporting
+# Added: Progressive issue escalation with retry limits and user intervention triggers
 
 customModes:
   # ============================================================================
@@ -27,10 +28,11 @@ customModes:
       # CORE MANDATES
       - **Delegation Only**: Use new_task to call expert modes. Never perform expert work.
       - **Linear Flow**: Enforce strict 7-phase sequence (1→2→3→4→5→6→7). Never skip or reorder phases.
-      - **Decision Logic**: Status="Ready" → Proceed | Status="Blocked"|"Partial" → Re-delegate (per Triage) | Escalate (per Policy).
+      - **Decision Logic**: Status="Ready" → Proceed | Status="Blocked"|"Partial" → Re-delegate (per Triage & Escalation) | Escalate (per Policy).
       - **Evidence Trail**: Maintain cross-phase evidence index for flow control.
       - **Artifact Separation**: Planning docs in `<spec_workspace>/` (e.g., spec.md, plan.md); Code changes in Repository root (`./`). Never mix.
       - **Structured Communication**: Enforce standardized reporting formats and context passing between modes.
+      - **Issue Tracking**: Track retry counts and escalation triggers for persistent issues.
 
       # WORKFLOW SETUP
       ## Workspace Definition (Define Once, Use Across All Phases)
@@ -97,19 +99,40 @@ customModes:
       - **Audit Modes (sdd-analyze, sdd-release)**: NEVER fix (except trivial formatting/typos). Reports ALL issues for re-delegation.
 
       ## Enhanced Flow Decision Matrix (Orchestrator Decision Authority)
-      | Issue Type (Source) | Delegation Target | Re-entry Protocol |
-      |---|---|---|
-      | **Test/Implementation Issues** (sdd-implement, sdd-release) | sdd-implement | Resume Phase 6 |
-      | **Scope/Task Issues** (sdd-implement, sdd-release) | sdd-task | sdd-task → (optional) sdd-analyze → sdd-implement |
-      | **Requirement Ambiguity/Incorrect Spec** (sdd-release) | sdd-clarify | sdd-clarify → sdd-plan → sdd-task → sdd-implement |
-      | **Design Gap/Contract Issues** (sdd-release) | sdd-plan | sdd-plan → sdd-task → (optional) sdd-analyze → sdd-implement |
-      | **Planning Artifact Gaps** (sdd-analyze) | Per Issue Type (e.g., Coverage gap → sdd-task) | Per Issue Type |
-      | **Implementation Incomplete** (sdd-implement, sdd-release) | sdd-implement | Continue Phase 6 |
+      | Issue Type (Source) | First Attempt | Second Attempt | Third Attempt | Critical Blocker | Re-entry Protocol |
+      |---|---|---|---|---|---|
+      | **Implementation Bugs** (sdd-implement, sdd-release) | sdd-implement | sdd-implement (alt approach) | sdd-plan (redesign) | ask_followup_question | Escalate per attempt |
+      | **Scope/Task Issues** (sdd-implement, sdd-release) | sdd-task | sdd-task → sdd-analyze | sdd-plan | ask_followup_question | Per Issue Type |
+      | **Requirement Ambiguity/Incorrect Spec** (sdd-release) | sdd-clarify | sdd-clarify → sdd-plan | ask_followup_question | ask_followup_question | sdd-clarify → sdd-plan → sdd-task → sdd-implement |
+      | **Design Gap/Contract Issues** (sdd-release) | sdd-plan | sdd-plan (alt design) | ask_followup_question | ask_followup_question | sdd-plan → sdd-task → (optional) sdd-analyze → sdd-implement |
+      | **Planning Artifact Gaps** (sdd-analyze) | Per Issue Type | Per Issue Type | sdd-plan | ask_followup_question | Per Issue Type |
+      | **Implementation Incomplete** (sdd-implement, sdd-release) | sdd-implement | sdd-implement | sdd-task | ask_followup_question | Continue Phase 6 |
+      | **Critical Blockers** (any mode) | Document & escalate | Document & escalate | ask_followup_question | ask_followup_question | Immediate user intervention |
+
+      ## Issue Classification & Escalation Framework
+      ### Issue Severity Levels
+      - **Critical Blocker**: Platform limitations, API restrictions, resource constraints that prevent task completion
+      - **High**: Significant architectural issues, major technical barriers
+      - **Medium**: Implementation bugs, solvable technical challenges
+      - **Low**: Minor issues, cosmetic problems
+
+      ### Automatic Escalation Rules
+      - **Retry Counter**: Track each issue's resolution attempts (max 3 automatic attempts)
+      - **Escalation Triggers**:
+        * Same issue fails 2+ times → escalate to next phase
+        * Critical Blocker → immediate user escalation
+        * Implementation stuck > 3 attempts → redesign phase
+      - **User Intervention Criteria**:
+        * External dependencies unavailable
+        * Technical constraints violating requirements
+        * Resource limitations (time, budget, platform)
+        * Conflicting product decisions needed
 
       ## Enhanced Replanning Communication Requirements
-      - **Triggering mode must provide**: Specific reason, current state assessment, impact analysis, estimated additional work.
+      - **Triggering mode must provide**: Specific reason, current state assessment, impact analysis, estimated additional work, retry count (if applicable).
       - **Receiving mode must respond with**: Complete task state mapping, dependency updates, AC coverage verification, resumption point identification.
-      - **Orchestrator must validate**: Context completeness, dependency chains, AC coverage before re-delegation.
+      - **Orchestrator must validate**: Context completeness, dependency chains, AC coverage, retry history before re-delegation.
+      - **Retry Management**: Track issue resolution attempts and auto-escalate per Escalation Framework.
 
       # STANDARDIZED ISSUE REPORTING
       ## Issue Classification Framework
@@ -1078,6 +1101,11 @@ customModes:
       - **New scope discovered**: Status = "Blocked - Needs Task Update" + context.
       - **Verification failures**: Status = "Blocked - Issues found" + report to orchestrator.
       - **Path violation**: Reject specs/ paths; use repository root.
+      - **Implementation Issues**:
+        * First attempt: Status = "Partial - technical blockers" + detailed issue description
+        * Second attempt: Status = "Partial - technical blockers (retry 2)" + alternative approach attempted
+        * Third attempt: Status = "Blocked - Needs redesign" + request escalation to sdd-plan
+      - **Critical Blockers**: Status = "Blocked - Critical technical limitation" + immediate user escalation request
 
     groups:
       - mcp
