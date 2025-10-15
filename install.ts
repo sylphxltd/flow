@@ -108,7 +108,8 @@ export async function installAgents(options: CommonOptions): Promise<void> {
             const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
             return `${flattenedName}${config.extension}`;
           } else {
-            return path.join(dir, `${baseName}${config.extension}`);
+            // Add sdd/ prefix for target directory structure
+            return path.join('sdd', `${baseName}${config.extension}`);
           }
         })
       );
@@ -176,10 +177,11 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
     displayResults(results, agentsDir, config.name, 'Install');
   } else {
-    // Process files individually - pass just the filenames, not full paths
+    // Process files individually - create sdd/ subdirectory structure
+    const sddTargetDir = path.join(agentsDir, 'sdd');
     await processBatch(
-      agentFiles, // Just the filenames, not pathPrefix + f
-      agentsDir,
+      agentFiles, // Just the filenames
+      sddTargetDir, // Target to sdd/ subdirectory
       config.extension,
       processContent,
       config.flatten,
