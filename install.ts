@@ -39,8 +39,19 @@ async function getAgentFiles(): Promise<string[]> {
   // When running from compiled dist folder, we need to resolve from the project root
   const scriptDir = __dirname;
   const projectRoot = path.resolve(scriptDir, '..');
-  const agentsDir = path.join(projectRoot, 'agents', 'sdd');
-  return collectFiles(agentsDir, ['.md']);
+  
+  // Collect files from both sdd and core directories
+  const sddDir = path.join(projectRoot, 'agents', 'sdd');
+  const coreDir = path.join(projectRoot, 'agents', 'core');
+  
+  const sddFiles = collectFiles(sddDir, ['.md']);
+  const coreFiles = collectFiles(coreDir, ['.md']);
+  
+  // Return all files with their relative paths
+  return [
+    ...sddFiles.map(file => path.join('sdd', file)),
+    ...coreFiles.map(file => path.join('core', file))
+  ];
 }
 
 async function promptForAgent(): Promise<AgentType> {
@@ -108,8 +119,8 @@ export async function installAgents(options: CommonOptions): Promise<void> {
             const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
             return `${flattenedName}${config.extension}`;
           } else {
-            // Add sdd/ prefix for target directory structure
-            return path.join('sdd', `${baseName}${config.extension}`);
+            // Keep the relative path structure (sdd/file.md, core/file.md)
+            return filePath;
           }
         })
       );
@@ -147,7 +158,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
     console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
 
-    const pathPrefix = 'agents/sdd/';
+    const pathPrefix = 'agents/';
     const mergedContent = createMergedContent(
       agentFiles.map(f => pathPrefix + f),
       processContent,
@@ -177,16 +188,15 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
     displayResults(results, agentsDir, config.name, 'Install');
   } else {
-    // Process files individually - create sdd/ subdirectory structure
-    const sddTargetDir = path.join(agentsDir, 'sdd');
+    // Process files individually - create both sdd/ and core/ subdirectory structures
     await processBatch(
-      agentFiles, // Just the filenames
-      sddTargetDir, // Target to sdd/ subdirectory
+      agentFiles, // Files with relative paths (sdd/file.md, core/file.md)
+      agentsDir, // Target to .opencode/agent/
       config.extension,
       processContent,
       config.flatten,
       results,
-      'agents/sdd/' // Keep pathPrefix for source file reading
+      'agents/' // PathPrefix for source file reading
     );
 
     displayResults(results, agentsDir, config.name, 'Install');
