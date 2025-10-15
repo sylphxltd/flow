@@ -36,10 +36,8 @@ type AgentType = keyof typeof AGENT_CONFIGS;
 // ============================================================================
 
 async function getAgentFiles(): Promise<string[]> {
-  // When running from compiled dist folder, we need to resolve from the project root
-  const scriptDir = __dirname;
-  const projectRoot = path.resolve(scriptDir, '..');
-  const agentsDir = path.join(projectRoot, 'agents');
+  // Get agents directory from current working directory
+  const agentsDir = path.join(process.cwd(), 'agents');
   
   // Get all subdirectories in agents/ (excluding archived)
   const subdirs = fs.readdirSync(agentsDir, { withFileTypes: true })
@@ -86,7 +84,7 @@ async function installMemoryPlugin(cwd: string): Promise<void> {
   }
   
   // Copy plugin file from project
-  const sourcePlugin = path.join(__dirname, '..', '.opencode', 'plugin', 'memory-tools.ts');
+  const sourcePlugin = path.join(process.cwd(), 'src', 'opencode', 'plugins', 'memory-tools.ts');
   
   if (fs.existsSync(sourcePlugin)) {
     fs.copyFileSync(sourcePlugin, pluginFile);
@@ -275,9 +273,11 @@ export const MemoryToolsPlugin: Plugin = async () => {
     
     fs.writeFileSync(pluginFile, pluginContent, 'utf8');
     console.log('📦 Created memory plugin for agent coordination');
-  }
+}
 }
 
+// ============================================================================
+// AGENT-SPECIFIC FUNCTIONS
 // ============================================================================
 // MAIN INSTALL FUNCTION
 // ============================================================================

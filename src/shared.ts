@@ -229,7 +229,7 @@ export async function processBatch(
     const isNew = !localInfo;
 
     // Read content from source - construct the full path from project root
-    const projectRoot = path.resolve(__dirname, '..', '..');
+    const projectRoot = process.cwd();
     const sourcePath = path.join(projectRoot, pathPrefix, filePath);
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = processContent(content);

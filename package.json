@@ -2,6 +2,7 @@
   "name": "@sylphxltd/rules",
   "version": "1.0.0",
   "description": "Type-safe development rules for modern web development",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "rules": "dist/index.js"
@@ -13,6 +14,7 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",
+    "@opencode-ai/plugin": "^0.15.3",
     "cli-progress": "^3.12.0",
     "cli-table3": "^0.6.3",
     "commander": "^12.0.0",
