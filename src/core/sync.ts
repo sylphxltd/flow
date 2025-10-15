@@ -174,8 +174,19 @@ function getLocalFileInfo(filePath: string): { content: string; exists: true } |
 }
 
 async function getRuleFiles(): Promise<string[]> {
+  // Handle both development and built environments
   const scriptDir = __dirname;
-  const projectRoot = path.resolve(scriptDir, '..');
+  let projectRoot: string;
+  
+  // Check if we're in a built environment (dist/src/core)
+  if (scriptDir.includes('/dist/src/')) {
+    // Go up from dist/src/core to project root
+    projectRoot = path.resolve(scriptDir, '../../..');
+  } else {
+    // Development environment, go up from src/core to project root
+    projectRoot = path.resolve(scriptDir, '..');
+  }
+  
   const docsRulesDir = path.join(projectRoot, 'docs', RULES_DIR_NAME);
   const files: string[] = [];
 
@@ -281,7 +292,15 @@ async function processFile(
     const isNew = !localInfo;
 
     // Read content from local package files
-    const projectRoot = path.resolve(__dirname, '..');
+    // Handle both development and built environments
+    let projectRoot: string;
+    if (__dirname.includes('/dist/src/')) {
+      // Go up from dist/src/core to project root
+      projectRoot = path.resolve(__dirname, '../../..');
+    } else {
+      // Development environment, go up from src/core to project root
+      projectRoot = path.resolve(__dirname, '..');
+    }
     const sourcePath = path.join(projectRoot, 'docs', filePath);
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = processContent(content, filePath);
@@ -457,7 +476,15 @@ async function mergeAllRules(
 
   for (const filePath of ruleFiles) {
     try {
-      const projectRoot = path.resolve(__dirname, '..');
+      // Handle both development and built environments
+      let projectRoot: string;
+      if (__dirname.includes('/dist/src/')) {
+        // Go up from dist/src/core to project root
+        projectRoot = path.resolve(__dirname, '../../..');
+      } else {
+        // Development environment, go up from src/core to project root
+        projectRoot = path.resolve(__dirname, '..');
+      }
       const sourcePath = path.join(projectRoot, 'docs', filePath);
       let content = fs.readFileSync(sourcePath, 'utf8');
       content = processContent(content, filePath);

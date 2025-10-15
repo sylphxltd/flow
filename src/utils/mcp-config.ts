@@ -1,5 +1,5 @@
 import path from 'path';
-import { OpenCodeConfig, MCPServerConfig } from '../types.js';
+import { OpenCodeConfig } from '../types.js';
 import { readJSONCFile, writeJSONCFile } from './jsonc.js';
 
 /**
@@ -11,7 +11,7 @@ export const MCP_SERVERS = {
     description: 'Rules memory MCP server for agent coordination',
     config: {
       type: 'local' as const,
-      command: ['npx', '-y', '@sylphxltd/rules', 'mcp'] as string[]
+      command: ['npx', 'github:sylphxltd/rules', 'mcp'] as string[]
     }
   },
   everything: {

@@ -8,8 +8,7 @@
       "type": "local",
       "command": [
         "npx",
-        "-y",
-        "@sylphxltd/rules",
+        "github:sylphxltd/rules",
         "mcp"
       ]
     },
