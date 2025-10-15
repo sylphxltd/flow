@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { createCommand } from './utils/command-builder';
 import { showDefaultHelp } from './utils/help';
-import { syncCommand } from './commands/sync';
-import { installCommand } from './commands/install';
-// import { mcpCommand } from './commands/mcp'; // Temporarily disabled
+import { syncCommand } from './commands/sync-command';
+import { installCommand } from './commands/install-command';
+import { mcpCommand } from './commands/mcp-command';
 
 export function createCLI(): Command {
   const program = new Command();
@@ -13,7 +13,7 @@ export function createCLI(): Command {
     .description('Type-safe development rules CLI')
     .version('1.0.0');
 
-  const commands = [syncCommand, installCommand]; // mcpCommand temporarily disabled
+  const commands = [syncCommand, installCommand, mcpCommand];
   
   commands.forEach(commandConfig => {
     program.addCommand(createCommand(commandConfig));

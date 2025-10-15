@@ -1,2 +1,2 @@
-import { CommandConfig } from '../types';
-export declare const installCommand: CommandConfig;
+#!/usr/bin/env node
+export { installAgents } from '../core/install';

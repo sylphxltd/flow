@@ -1,2 +1,2 @@
-import { CommandConfig } from '../types';
-export declare const syncCommand: CommandConfig;
+#!/usr/bin/env node
+export { syncRules } from '../core/sync';

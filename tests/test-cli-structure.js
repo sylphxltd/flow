@@ -1,5 +1,5 @@
 // Simple test to verify CLI structure without running commands
-const { createCLI } = require('./dist/cli.js');
+import { createCLI } from '../dist/src/cli.js';
 
 try {
   const cli = createCLI();

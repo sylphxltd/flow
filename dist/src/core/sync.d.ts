@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 interface SyncOptions {
     agent?: string;
     verbose?: boolean;
