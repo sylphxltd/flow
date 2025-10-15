@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { CommandConfig } from '../types';
+import { CommandConfig } from '../types.js';
 export declare function createCommand(config: CommandConfig): Command;
 export declare const COMMON_OPTIONS: readonly [{
     readonly flags: "--agent <type>";

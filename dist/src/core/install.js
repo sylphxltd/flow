@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { log, getSupportedAgents, getAgentConfig, promptForAgent as sharedPromptForAgent, detectAgentTool as sharedDetectAgentTool, getLocalFileInfo, collectFiles, displayResults, processBatch, createMergedContent, clearObsoleteFiles } from '../shared';
+import { log, getSupportedAgents, getAgentConfig, promptForAgent as sharedPromptForAgent, detectAgentTool as sharedDetectAgentTool, getLocalFileInfo, collectFiles, displayResults, processBatch, createMergedContent, clearObsoleteFiles } from '../shared.js';
 // Agent configurations - Currently only opencode
 const AGENT_CONFIGS = {
     opencode: {

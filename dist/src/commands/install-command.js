@@ -1,6 +1,6 @@
-import { installAgents } from './install';
-import { CLIError } from '../utils/error-handler';
-import { COMMON_OPTIONS } from '../utils/command-builder';
+import { installAgents } from './install.js';
+import { CLIError } from '../utils/error-handler.js';
+import { COMMON_OPTIONS } from '../utils/command-builder.js';
 function validateInstallOptions(options) {
     if (options.agent && options.agent !== 'opencode') {
         throw new CLIError('Currently only opencode is supported for install.', 'UNSUPPORTED_AGENT');

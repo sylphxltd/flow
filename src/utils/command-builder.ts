@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { CommandConfig, CommandOptions } from '../types';
-import { createAsyncHandler } from './error-handler';
+import { CommandConfig, CommandOptions } from '../types.js';
+import { createAsyncHandler } from './error-handler.js';
 
 export function createCommand(config: CommandConfig): Command {
   const command = new Command(config.name);

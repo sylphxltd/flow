@@ -1,2 +1,2 @@
-import { CommandConfig } from '../types';
+import { CommandConfig } from '../types.js';
 export declare const syncCommand: CommandConfig;

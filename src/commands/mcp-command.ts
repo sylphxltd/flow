@@ -1,8 +1,8 @@
-import { CommandConfig, CommandHandler } from '../types';
+import { CommandConfig, CommandHandler } from '../types.js';
 
 const mcpHandler: CommandHandler = async () => {
   // Import and start the memory MCP server
-  await import('../servers/memory-mcp-server');
+  await import('../servers/memory-mcp-server.js');
   
   console.log('🚀 Starting Memory MCP Server...');
   console.log('📍 Database: .memory/memory.db');

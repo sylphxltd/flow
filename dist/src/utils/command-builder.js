@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createAsyncHandler } from './error-handler';
+import { createAsyncHandler } from './error-handler.js';
 export function createCommand(config) {
     const command = new Command(config.name);
     command.description(config.description);

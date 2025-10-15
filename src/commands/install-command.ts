@@ -1,7 +1,7 @@
-import { installAgents } from './install';
-import { CommandOptions, CommandConfig } from '../types';
-import { CLIError } from '../utils/error-handler';
-import { COMMON_OPTIONS } from '../utils/command-builder';
+import { installAgents } from './install.js';
+import { CommandOptions, CommandConfig } from '../types.js';
+import { CLIError } from '../utils/error-handler.js';
+import { COMMON_OPTIONS } from '../utils/command-builder.js';
 
 function validateInstallOptions(options: CommandOptions): void {
   if (options.agent && options.agent !== 'opencode') {

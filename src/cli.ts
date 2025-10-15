@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { createCommand } from './utils/command-builder';
-import { showDefaultHelp } from './utils/help';
-import { syncCommand } from './commands/sync-command';
-import { installCommand } from './commands/install-command';
-import { mcpCommand } from './commands/mcp-command';
+import { createCommand } from './utils/command-builder.js';
+import { showDefaultHelp } from './utils/help.js';
+import { syncCommand } from './commands/sync-command.js';
+import { installCommand } from './commands/install-command.js';
+import { mcpCommand } from './commands/mcp-command.js';
 
 export function createCLI(): Command {
   const program = new Command();

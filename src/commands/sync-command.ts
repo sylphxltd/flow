@@ -1,7 +1,7 @@
-import { syncRules } from './sync';
-import { CommandOptions, CommandConfig } from '../types';
-import { CLIError } from '../utils/error-handler';
-import { COMMON_OPTIONS } from '../utils/command-builder';
+import { syncRules } from './sync.js';
+import { CommandOptions, CommandConfig } from '../types.js';
+import { CLIError } from '../utils/error-handler.js';
+import { COMMON_OPTIONS } from '../utils/command-builder.js';
 
 function validateSyncOptions(options: CommandOptions): void {
   if (options.agent && !['cursor', 'kilocode', 'roocode'].includes(options.agent)) {

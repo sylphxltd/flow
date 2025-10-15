@@ -14,7 +14,7 @@ import {
   processBatch,
   createMergedContent,
   clearObsoleteFiles
-} from '../shared';
+} from '../shared.js';
 
 // Agent configurations - Currently only opencode
 const AGENT_CONFIGS = {

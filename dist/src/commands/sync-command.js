@@ -1,6 +1,6 @@
-import { syncRules } from './sync';
-import { CLIError } from '../utils/error-handler';
-import { COMMON_OPTIONS } from '../utils/command-builder';
+import { syncRules } from './sync.js';
+import { CLIError } from '../utils/error-handler.js';
+import { COMMON_OPTIONS } from '../utils/command-builder.js';
 function validateSyncOptions(options) {
     if (options.agent && !['cursor', 'kilocode', 'roocode'].includes(options.agent)) {
         throw new CLIError(`Invalid agent: ${options.agent}. Supported agents: cursor, kilocode, roocode`, 'INVALID_AGENT');

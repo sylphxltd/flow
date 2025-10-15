@@ -1,2 +1,2 @@
-import { CommonOptions } from '../shared';
+import { CommonOptions } from '../shared.js';
 export declare function installAgents(options: CommonOptions): Promise<void>;
