@@ -1,9 +1,15 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
-import readline from 'readline';
-import cliProgress from 'cli-progress';
-import Table from 'cli-table3';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.installAgents = installAgents;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const readline_1 = __importDefault(require("readline"));
+const cli_progress_1 = __importDefault(require("cli-progress"));
+const cli_table3_1 = __importDefault(require("cli-table3"));
 // Colors for output
 const colors = {
     red: '\x1b[31m',
@@ -40,7 +46,7 @@ function getAgentConfig(agent) {
 // ============================================================================
 async function promptForAgent() {
     const agents = getSupportedAgents();
-    const rl = readline.createInterface({
+    const rl = readline_1.default.createInterface({
         input: process.stdin,
         output: process.stdout
     });
@@ -83,7 +89,7 @@ function detectAgentTool() {
     // Check for existing directories
     for (const agent of getSupportedAgents()) {
         const config = getAgentConfig(agent);
-        if (fs.existsSync(path.join(cwd, config.dir))) {
+        if (fs_1.default.existsSync(path_1.default.join(cwd, config.dir))) {
             return agent;
         }
     }
@@ -95,10 +101,10 @@ function detectAgentTool() {
 // ============================================================================
 function getLocalFileInfo(filePath) {
     try {
-        if (!fs.existsSync(filePath)) {
+        if (!fs_1.default.existsSync(filePath)) {
             return null;
         }
-        const content = fs.readFileSync(filePath, 'utf8');
+        const content = fs_1.default.readFileSync(filePath, 'utf8');
         return { content, exists: true };
     }
     catch {
@@ -108,14 +114,14 @@ function getLocalFileInfo(filePath) {
 async function getAgentFiles() {
     // In bundled CJS, __dirname is the directory of the executing script
     const scriptDir = __dirname;
-    const agentsDir = path.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents');
+    const agentsDir = path_1.default.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents');
     const files = [];
     function collectFiles(dir, relativePath) {
         try {
-            const items = fs.readdirSync(dir, { withFileTypes: true });
+            const items = fs_1.default.readdirSync(dir, { withFileTypes: true });
             for (const item of items) {
-                const itemPath = path.join(dir, item.name);
-                const itemRelative = path.join(relativePath, item.name);
+                const itemPath = path_1.default.join(dir, item.name);
+                const itemRelative = path_1.default.join(relativePath, item.name);
                 if (item.isDirectory()) {
                     collectFiles(itemPath, itemRelative);
                 }
@@ -140,7 +146,7 @@ async function getAgentFiles() {
 function getDescriptionForFile(filePath) {
     if (!filePath)
         return 'Development workflow agent';
-    const baseName = path.basename(filePath, path.extname(filePath));
+    const baseName = path_1.default.basename(filePath, path_1.default.extname(filePath));
     return `Agent for ${baseName.replace(/-/g, ' ')} workflow`;
 }
 // ============================================================================
@@ -149,7 +155,7 @@ function getDescriptionForFile(filePath) {
 async function processFile(filePath, agentsDir, fileExtension, processContent, flatten, results, progressBar) {
     try {
         // filePath is like 'sdd-analyze.md'
-        const parsedPath = path.parse(filePath);
+        const parsedPath = path_1.default.parse(filePath);
         const baseName = parsedPath.name;
         const ext = parsedPath.ext;
         const dir = parsedPath.dir;
@@ -158,24 +164,24 @@ async function processFile(filePath, agentsDir, fileExtension, processContent, f
         if (flatten) {
             const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
             relativePath = `${flattenedName}${fileExtension}`;
-            destPath = path.join(agentsDir, relativePath);
+            destPath = path_1.default.join(agentsDir, relativePath);
         }
         else {
-            const targetDir = dir ? path.join(agentsDir, dir) : agentsDir;
-            fs.mkdirSync(targetDir, { recursive: true });
-            relativePath = path.join(dir, `${baseName}${fileExtension}`);
-            destPath = path.join(targetDir, `${baseName}${fileExtension}`);
+            const targetDir = dir ? path_1.default.join(agentsDir, dir) : agentsDir;
+            fs_1.default.mkdirSync(targetDir, { recursive: true });
+            relativePath = path_1.default.join(dir, `${baseName}${fileExtension}`);
+            destPath = path_1.default.join(targetDir, `${baseName}${fileExtension}`);
         }
         const localInfo = getLocalFileInfo(destPath);
         const isNew = !localInfo;
         // Read content from local package files
         const scriptDir = __dirname;
-        const sourcePath = path.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents', filePath);
-        let content = fs.readFileSync(sourcePath, 'utf8');
+        const sourcePath = path_1.default.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents', filePath);
+        let content = fs_1.default.readFileSync(sourcePath, 'utf8');
         content = processContent(content);
         const localProcessed = localInfo ? processContent(localInfo.content) : '';
         const contentChanged = !localInfo || localProcessed !== content;
-        fs.writeFileSync(destPath, content, 'utf8');
+        fs_1.default.writeFileSync(destPath, content, 'utf8');
         results.push({
             file: relativePath,
             status: contentChanged ? (isNew ? 'added' : 'updated') : 'current',
@@ -201,7 +207,7 @@ function createStatusTable(title, items) {
     if (items.length === 0)
         return;
     console.log(`\n${title} (${items.length}):`);
-    const table = new Table({
+    const table = new cli_table3_1.default({
         head: ['File', 'Action'],
         colWidths: [50, 20],
         style: { head: ['cyan'], border: ['gray'] },
@@ -248,7 +254,7 @@ function displayResults(results, agentsDir, agentName) {
 // ============================================================================
 // MAIN INSTALL FUNCTION
 // ============================================================================
-export async function installAgents(options) {
+async function installAgents(options) {
     const cwd = process.cwd();
     // Initialize results array
     results = [];
@@ -274,13 +280,13 @@ export async function installAgents(options) {
         }
     }
     const config = getAgentConfig(agent);
-    const agentsDir = path.join(cwd, config.dir);
+    const agentsDir = path_1.default.join(cwd, config.dir);
     const processContent = (content) => {
         // For OpenCode agents, preserve YAML front matter - no processing
         return content;
     };
     // Clear obsolete agents if requested
-    if (options.clear && fs.existsSync(agentsDir)) {
+    if (options.clear && fs_1.default.existsSync(agentsDir)) {
         console.log(`🧹 Clearing obsolete agents in ${agentsDir}...`);
         let expectedFiles;
         if (options.merge) {
@@ -291,7 +297,7 @@ export async function installAgents(options) {
             // Get source files for normal mode
             const agentFiles = await getAgentFiles();
             expectedFiles = new Set(agentFiles.map(filePath => {
-                const parsedPath = path.parse(filePath);
+                const parsedPath = path_1.default.parse(filePath);
                 const baseName = parsedPath.name;
                 const dir = parsedPath.dir;
                 if (config.flatten) {
@@ -299,20 +305,20 @@ export async function installAgents(options) {
                     return `${flattenedName}${config.extension}`;
                 }
                 else {
-                    return path.join(dir, `${baseName}${config.extension}`);
+                    return path_1.default.join(dir, `${baseName}${config.extension}`);
                 }
             }));
         }
         // Get existing files
-        const existingFiles = fs.readdirSync(agentsDir, { recursive: true })
+        const existingFiles = fs_1.default.readdirSync(agentsDir, { recursive: true })
             .filter((file) => typeof file === 'string' && file.endsWith('.md'))
-            .map((file) => path.join(agentsDir, file));
+            .map((file) => path_1.default.join(agentsDir, file));
         // Only remove files that are not expected
         for (const file of existingFiles) {
-            const relativePath = path.relative(agentsDir, file);
+            const relativePath = path_1.default.relative(agentsDir, file);
             if (!expectedFiles.has(relativePath)) {
                 try {
-                    fs.unlinkSync(file);
+                    fs_1.default.unlinkSync(file);
                     results.push({
                         file: relativePath,
                         status: 'removed',
@@ -330,7 +336,7 @@ export async function installAgents(options) {
         }
     }
     // Create agents directory
-    fs.mkdirSync(agentsDir, { recursive: true });
+    fs_1.default.mkdirSync(agentsDir, { recursive: true });
     // Get agent files
     const agentFiles = await getAgentFiles();
     // Show initial info
@@ -350,7 +356,7 @@ export async function installAgents(options) {
     if (options.merge) {
         // Merge all agents into a single file
         const mergedFileName = `all-agents${config.extension}`;
-        const mergedFilePath = path.join(agentsDir, mergedFileName);
+        const mergedFilePath = path_1.default.join(agentsDir, mergedFileName);
         console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
         let mergedContent = `# Development Workflow Agents - Complete Collection\n\n`;
         mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
@@ -358,10 +364,10 @@ export async function installAgents(options) {
         for (const filePath of agentFiles) {
             try {
                 const scriptDir = __dirname;
-                const sourcePath = path.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents', filePath);
-                let content = fs.readFileSync(sourcePath, 'utf8');
+                const sourcePath = path_1.default.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents', filePath);
+                let content = fs_1.default.readFileSync(sourcePath, 'utf8');
                 content = processContent(content);
-                const parsedPath = path.parse(filePath);
+                const parsedPath = path_1.default.parse(filePath);
                 const baseName = parsedPath.name;
                 const dir = parsedPath.dir;
                 const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
@@ -382,7 +388,7 @@ export async function installAgents(options) {
         const localProcessed = localInfo ? processContent(localInfo.content) : '';
         const contentChanged = !localInfo || localProcessed !== mergedContent;
         if (contentChanged) {
-            fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');
+            fs_1.default.writeFileSync(mergedFilePath, mergedContent, 'utf8');
             results.push({
                 file: mergedFileName,
                 status: localInfo ? 'updated' : 'added',
@@ -401,7 +407,7 @@ export async function installAgents(options) {
     else {
         // Original file-by-file processing
         // Setup progress bar
-        const progressBar = new cliProgress.SingleBar({
+        const progressBar = new cli_progress_1.default.SingleBar({
             format: '📋 Installing | {bar} | {percentage}% | {value}/{total} files | {file}',
             barCompleteChar: '\u2588',
             barIncompleteChar: '\u2591',

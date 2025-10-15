@@ -1,9 +1,15 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
-import readline from 'readline';
-import cliProgress from 'cli-progress';
-import Table from 'cli-table3';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.syncRules = syncRules;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const readline_1 = __importDefault(require("readline"));
+const cli_progress_1 = __importDefault(require("cli-progress"));
+const cli_table3_1 = __importDefault(require("cli-table3"));
 // Colors for output
 const colors = {
     red: '\x1b[31m',
@@ -66,7 +72,7 @@ function getAgentConfig(agent) {
 // ============================================================================
 async function promptForAgent() {
     const agents = getSupportedAgents();
-    const rl = readline.createInterface({
+    const rl = readline_1.default.createInterface({
         input: process.stdin,
         output: process.stdout
     });
@@ -109,14 +115,14 @@ function detectAgentTool() {
     // Check for existing directories (in order of preference)
     for (const agent of getSupportedAgents()) {
         const config = getAgentConfig(agent);
-        if (fs.existsSync(path.join(cwd, config.dir))) {
+        if (fs_1.default.existsSync(path_1.default.join(cwd, config.dir))) {
             return agent;
         }
     }
     // Check for existing rules directories
     for (const agent of getSupportedAgents()) {
         const config = getAgentConfig(agent);
-        if (fs.existsSync(path.join(cwd, config.dir, 'rules'))) {
+        if (fs_1.default.existsSync(path_1.default.join(cwd, config.dir, 'rules'))) {
             return agent;
         }
     }
@@ -128,10 +134,10 @@ function detectAgentTool() {
 // ============================================================================
 function getLocalFileInfo(filePath) {
     try {
-        if (!fs.existsSync(filePath)) {
+        if (!fs_1.default.existsSync(filePath)) {
             return null;
         }
-        const content = fs.readFileSync(filePath, 'utf8');
+        const content = fs_1.default.readFileSync(filePath, 'utf8');
         return { content, exists: true };
     }
     catch {
@@ -141,14 +147,14 @@ function getLocalFileInfo(filePath) {
 async function getRuleFiles() {
     // In bundled CJS, __dirname is the directory of the executing script
     const scriptDir = __dirname;
-    const docsRulesDir = path.join(scriptDir, '..', 'docs', 'rules');
+    const docsRulesDir = path_1.default.join(scriptDir, '..', 'docs', 'rules');
     const files = [];
     function collectFiles(dir, relativePath) {
         try {
-            const items = fs.readdirSync(dir, { withFileTypes: true });
+            const items = fs_1.default.readdirSync(dir, { withFileTypes: true });
             for (const item of items) {
-                const itemPath = path.join(dir, item.name);
-                const itemRelative = path.join(relativePath, item.name);
+                const itemPath = path_1.default.join(dir, item.name);
+                const itemRelative = path_1.default.join(relativePath, item.name);
                 if (item.isDirectory()) {
                     collectFiles(itemPath, itemRelative);
                 }
@@ -184,7 +190,7 @@ function stripYamlFrontMatter(content) {
 function getDescriptionForFile(filePath) {
     if (!filePath)
         return 'Development rules';
-    const baseName = path.basename(filePath, path.extname(filePath));
+    const baseName = path_1.default.basename(filePath, path_1.default.extname(filePath));
     return `Development rules for ${baseName.replace(/-/g, ' ')}`;
 }
 // ============================================================================
@@ -194,7 +200,7 @@ async function processFile(filePath, rulesDir, fileExtension, processContent, fl
     try {
         // filePath is like 'rules/subdir/file.mdc'
         const relativeToRules = filePath.substring('rules/'.length); // 'subdir/file.mdc'
-        const parsedPath = path.parse(relativeToRules);
+        const parsedPath = path_1.default.parse(relativeToRules);
         const baseName = parsedPath.name; // 'file'
         const ext = parsedPath.ext; // '.mdc' or '.md'
         const dir = parsedPath.dir; // 'subdir' or ''
@@ -204,25 +210,25 @@ async function processFile(filePath, rulesDir, fileExtension, processContent, fl
             // For flatten, replace path separators with dashes
             const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
             relativePath = `${flattenedName}${fileExtension}`;
-            destPath = path.join(rulesDir, relativePath);
+            destPath = path_1.default.join(rulesDir, relativePath);
         }
         else {
             // Keep directory structure
-            const targetDir = dir ? path.join(rulesDir, dir) : rulesDir;
-            fs.mkdirSync(targetDir, { recursive: true });
-            relativePath = path.join(dir, `${baseName}${fileExtension}`);
-            destPath = path.join(targetDir, `${baseName}${fileExtension}`);
+            const targetDir = dir ? path_1.default.join(rulesDir, dir) : rulesDir;
+            fs_1.default.mkdirSync(targetDir, { recursive: true });
+            relativePath = path_1.default.join(dir, `${baseName}${fileExtension}`);
+            destPath = path_1.default.join(targetDir, `${baseName}${fileExtension}`);
         }
         const localInfo = getLocalFileInfo(destPath);
         const isNew = !localInfo;
         // Read content from local package files instead of downloading
         const scriptDir = __dirname;
-        const sourcePath = path.join(scriptDir, '..', 'docs', filePath);
-        let content = fs.readFileSync(sourcePath, 'utf8');
-        content = processContent(content, filePath);
-        const localProcessed = localInfo ? processContent(localInfo.content, relativeToRules) : '';
+        const sourcePath = path_1.default.join(scriptDir, '..', 'docs', filePath);
+        let content = fs_1.default.readFileSync(sourcePath, 'utf8');
+        content = processContent(content);
+        const localProcessed = localInfo ? processContent(localInfo.content) : '';
         const contentChanged = !localInfo || localProcessed !== content;
-        fs.writeFileSync(destPath, content, 'utf8');
+        fs_1.default.writeFileSync(destPath, content, 'utf8');
         results.push({
             file: relativePath,
             status: contentChanged ? (isNew ? 'added' : 'updated') : 'current',
@@ -248,7 +254,7 @@ function createStatusTable(title, items) {
     if (items.length === 0)
         return;
     console.log(`\n${title} (${items.length}):`);
-    const table = new Table({
+    const table = new cli_table3_1.default({
         head: ['File', 'Action'],
         colWidths: [50, 20],
         style: { head: ['cyan'], border: ['gray'] },
@@ -295,7 +301,7 @@ function displayResults(results, rulesDir, agentName) {
 // ============================================================================
 // MAIN SYNC FUNCTION
 // ============================================================================
-export async function syncRules(options) {
+async function syncRules(options) {
     const cwd = process.cwd();
     // Initialize results array
     results = [];
@@ -321,7 +327,7 @@ export async function syncRules(options) {
         }
     }
     const config = getAgentConfig(agent);
-    const rulesDir = path.join(cwd, config.dir, 'rules');
+    const rulesDir = path_1.default.join(cwd, config.dir, 'rules');
     const processContent = (content, filePath) => {
         if (config.stripYaml) {
             return stripYamlFrontMatter(content);
@@ -339,7 +345,7 @@ alwaysApply: true
         }
     };
     // Clear obsolete rules if requested
-    if (options.clear && fs.existsSync(rulesDir)) {
+    if (options.clear && fs_1.default.existsSync(rulesDir)) {
         console.log(`🧹 Clearing obsolete rules in ${rulesDir}...`);
         let expectedFiles;
         if (options.merge) {
@@ -351,7 +357,7 @@ alwaysApply: true
             const ruleFiles = await getRuleFiles();
             expectedFiles = new Set(ruleFiles.map(filePath => {
                 const relativeToRules = filePath.substring('rules/'.length);
-                const parsedPath = path.parse(relativeToRules);
+                const parsedPath = path_1.default.parse(relativeToRules);
                 const baseName = parsedPath.name;
                 const dir = parsedPath.dir;
                 if (config.flatten) {
@@ -359,20 +365,20 @@ alwaysApply: true
                     return `${flattenedName}${config.extension}`;
                 }
                 else {
-                    return path.join(dir, `${baseName}${config.extension}`);
+                    return path_1.default.join(dir, `${baseName}${config.extension}`);
                 }
             }));
         }
         // Get existing files
-        const existingFiles = fs.readdirSync(rulesDir, { recursive: true })
+        const existingFiles = fs_1.default.readdirSync(rulesDir, { recursive: true })
             .filter((file) => typeof file === 'string' && (file.endsWith('.mdc') || file.endsWith('.md')))
-            .map((file) => path.join(rulesDir, file));
+            .map((file) => path_1.default.join(rulesDir, file));
         // Only remove files that are not expected
         for (const file of existingFiles) {
-            const relativePath = path.relative(rulesDir, file);
+            const relativePath = path_1.default.relative(rulesDir, file);
             if (!expectedFiles.has(relativePath)) {
                 try {
-                    fs.unlinkSync(file);
+                    fs_1.default.unlinkSync(file);
                     results.push({
                         file: relativePath,
                         status: 'removed',
@@ -390,7 +396,7 @@ alwaysApply: true
         }
     }
     // Create rules directory
-    fs.mkdirSync(rulesDir, { recursive: true });
+    fs_1.default.mkdirSync(rulesDir, { recursive: true });
     // Get rule files
     const ruleFiles = await getRuleFiles();
     // Show initial info
@@ -410,7 +416,7 @@ alwaysApply: true
     if (options.merge) {
         // Merge all rules into a single file
         const mergedFileName = `all-rules${config.extension}`;
-        const mergedFilePath = path.join(rulesDir, mergedFileName);
+        const mergedFilePath = path_1.default.join(rulesDir, mergedFileName);
         console.log(`📋 Merging ${ruleFiles.length} files into ${mergedFileName}...`);
         let mergedContent = `# Development Rules - Complete Collection\n\n`;
         mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
@@ -418,11 +424,11 @@ alwaysApply: true
         for (const filePath of ruleFiles) {
             try {
                 const scriptDir = __dirname;
-                const sourcePath = path.join(scriptDir, '..', 'docs', filePath);
-                let content = fs.readFileSync(sourcePath, 'utf8');
+                const sourcePath = path_1.default.join(scriptDir, '..', 'docs', filePath);
+                let content = fs_1.default.readFileSync(sourcePath, 'utf8');
                 content = processContent(content, filePath);
                 const relativeToRules = filePath.substring('rules/'.length);
-                const parsedPath = path.parse(relativeToRules);
+                const parsedPath = path_1.default.parse(relativeToRules);
                 const baseName = parsedPath.name;
                 const dir = parsedPath.dir;
                 const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
@@ -443,7 +449,7 @@ alwaysApply: true
         const localProcessed = localInfo ? processContent(localInfo.content, 'all-rules') : '';
         const contentChanged = !localInfo || localProcessed !== mergedContent;
         if (contentChanged) {
-            fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');
+            fs_1.default.writeFileSync(mergedFilePath, mergedContent, 'utf8');
             results.push({
                 file: mergedFileName,
                 status: localInfo ? 'updated' : 'added',
@@ -462,7 +468,7 @@ alwaysApply: true
     else {
         // Original file-by-file processing
         // Setup progress bar
-        const progressBar = new cliProgress.SingleBar({
+        const progressBar = new cli_progress_1.default.SingleBar({
             format: '📋 Processing | {bar} | {percentage}% | {value}/{total} files | {file}',
             barCompleteChar: '\u2588',
             barIncompleteChar: '\u2591',

@@ -1,7 +1,45 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
-import * as fs from "fs/promises";
-import path from "path";
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const mcp_js_1 = require("@modelcontextprotocol/sdk/server/mcp.js");
+const zod_1 = require("zod");
+const fs = __importStar(require("fs/promises"));
+const path_1 = __importDefault(require("path"));
 // Static list of known rules
 const KNOWN_RULES = {
     ai: ['ai-sdk-integration'],
@@ -17,7 +55,7 @@ const KNOWN_RULES = {
 const universalDescription = "This MCP server provides access to type-safe development rules for modern web development. Universal core principles: Enforce single responsibility, keep files/functions concise (<300 lines/file, <50 lines/function), use immutability, validate inputs/security at boundaries, plan with peer review/CI, avoid globals/mutables/hardcoded secrets. Tools are registered for each rule file. Each tool is named 'read_[category]_[rule_name]' (e.g., 'read_core_general') and returns the full rule content when called (parameterless). Always call the relevant tool to review the rule before applying it in your work.";
 console.log("🚀 Starting Rules MCP Server...");
 console.log(`📋 Description: ${universalDescription.substring(0, 100)}...`);
-const server = new McpServer({
+const server = new mcp_js_1.McpServer({
     name: "rules-mcp-server",
     version: "1.0.0",
     description: universalDescription
@@ -27,7 +65,7 @@ console.log("✅ MCP Server instance created");
 async function getRuleContent(category, ruleName) {
     try {
         // Path to the docs folder (same level as dist folder when installed)
-        const docsPath = path.join(__dirname, '..', 'docs', 'rules', category, `${ruleName}.mdc`);
+        const docsPath = path_1.default.join(__dirname, '..', 'docs', 'rules', category, `${ruleName}.mdc`);
         const content = await fs.readFile(docsPath, 'utf-8');
         return content;
     }
@@ -45,7 +83,7 @@ Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
         server.registerTool(toolName, {
             title: `Read ${ruleName} Rule (${category})`,
             description: description,
-            inputSchema: z.object({})
+            inputSchema: zod_1.z.object({})
         }, async (args, extra) => {
             console.log(`📖 Tool called: ${toolName}`);
             try {
@@ -75,4 +113,4 @@ Object.entries(KNOWN_RULES).forEach(([category, rules]) => {
 });
 console.log(`🎉 Total tools registered: ${toolCount}`);
 console.log("🚀 Rules MCP Server ready!");
-export default server;
+exports.default = server;

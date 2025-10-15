@@ -1,8 +1,43 @@
 #!/usr/bin/env node
-import { Command } from 'commander';
-import { syncRules } from './sync';
-import { installAgents } from './install';
-const program = new Command();
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+const commander_1 = require("commander");
+const sync_1 = require("./sync");
+const install_1 = require("./install");
+const program = new commander_1.Command();
 program
     .name('rules')
     .description('Type-safe development rules CLI')
@@ -17,7 +52,7 @@ program
     .option('--merge', 'Merge all rules into a single file')
     .action(async (options) => {
     try {
-        await syncRules(options);
+        await (0, sync_1.syncRules)(options);
     }
     catch (error) {
         console.error(`❌ Error: ${error.message}`);
@@ -39,7 +74,7 @@ program
     }
     options.agent = options.agent || 'opencode';
     try {
-        await installAgents(options);
+        await (0, install_1.installAgents)(options);
     }
     catch (error) {
         console.error(`❌ Error: ${error.message}`);
@@ -53,8 +88,8 @@ program
     console.log('🔌 Starting MCP server transport...');
     try {
         // Lazy load MCP server components only when needed
-        const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
-        const server = (await import('./server')).default;
+        const { StdioServerTransport } = await Promise.resolve().then(() => __importStar(require('@modelcontextprotocol/sdk/server/stdio.js')));
+        const server = (await Promise.resolve().then(() => __importStar(require('./server')))).default;
         const transport = new StdioServerTransport();
         console.log('🔗 Connecting server to transport...');
         await server.connect(transport);

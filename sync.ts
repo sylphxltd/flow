@@ -261,9 +261,9 @@ async function processFile(
     const scriptDir = __dirname;
     const sourcePath = path.join(scriptDir, '..', 'docs', filePath);
     let content = fs.readFileSync(sourcePath, 'utf8');
-    content = processContent(content, filePath);
+    content = processContent(content);
 
-    const localProcessed = localInfo ? processContent(localInfo.content, relativeToRules) : '';
+    const localProcessed = localInfo ? processContent(localInfo.content) : '';
     const contentChanged = !localInfo || localProcessed !== content;
 
     fs.writeFileSync(destPath, content, 'utf8');
