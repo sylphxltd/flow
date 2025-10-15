@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.showDefaultHelp = showDefaultHelp;
-function showDefaultHelp() {
+export function showDefaultHelp() {
     console.log('🚀 Rules CLI - Type-safe development rules');
     console.log('==========================================');
     console.log('');

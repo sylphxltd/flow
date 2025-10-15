@@ -1,42 +1,7 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-const mcp_js_1 = require("@modelcontextprotocol/sdk/server/mcp.js");
-const zod_1 = require("zod");
-const fs = __importStar(require("fs/promises"));
-const path = __importStar(require("path"));
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import * as fs from "fs/promises";
+import * as path from "path";
 // Enhanced logging utility
 class Logger {
     static logLevel = process.env.LOG_LEVEL || 'info';
@@ -203,7 +168,7 @@ function withErrorHandling(fn, context) {
 // Initialize server with enhanced configuration
 Logger.info("🚀 Starting Rules MCP Server...");
 Logger.info(`📋 Description: ${DEFAULT_CONFIG.description.substring(0, 100)}...`);
-const server = new mcp_js_1.McpServer({
+const server = new McpServer({
     name: DEFAULT_CONFIG.name,
     version: DEFAULT_CONFIG.version,
     description: DEFAULT_CONFIG.description
@@ -226,7 +191,7 @@ async function registerTools() {
                     server.registerTool(toolName, {
                         title: `Read ${ruleName} Rule (${category})`,
                         description: description,
-                        inputSchema: zod_1.z.object({})
+                        inputSchema: z.object({})
                     }, withErrorHandling(async (args, extra) => {
                         Logger.info(`📖 Tool called: ${toolName}`);
                         const content = await ruleDiscovery.getRuleContent(category, ruleName);
@@ -273,7 +238,7 @@ async function registerUtilityTools() {
     server.registerTool("list_rules", {
         title: "List All Available Rules",
         description: "List all available rule categories and their rules",
-        inputSchema: zod_1.z.object({})
+        inputSchema: z.object({})
     }, withErrorHandling(async () => {
         Logger.info("📋 Tool called: list_rules");
         const rules = ruleDiscovery.getAvailableRules();
@@ -296,7 +261,7 @@ async function registerUtilityTools() {
     server.registerTool("clear_cache", {
         title: "Clear Rule Cache",
         description: "Clear the internal rule cache to force fresh loading",
-        inputSchema: zod_1.z.object({})
+        inputSchema: z.object({})
     }, withErrorHandling(async () => {
         Logger.info("🗑️  Tool called: clear_cache");
         ruleDiscovery.clearCache();
@@ -336,4 +301,4 @@ registerTools()
     Logger.error("Failed to initialize server", error);
     process.exit(1);
 });
-exports.default = server;
+export default server;

@@ -1,13 +1,7 @@
 #!/usr/bin/env node
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.installAgents = installAgents;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const shared_1 = require("./src/shared");
+import fs from 'fs';
+import path from 'path';
+import { log, getSupportedAgents, getAgentConfig, promptForAgent as sharedPromptForAgent, detectAgentTool as sharedDetectAgentTool, getLocalFileInfo, collectFiles, displayResults, processBatch, createMergedContent, clearObsoleteFiles } from './src/shared';
 // Agent configurations - Currently only opencode
 const AGENT_CONFIGS = {
     opencode: {
@@ -23,48 +17,46 @@ const AGENT_CONFIGS = {
 // AGENT-SPECIFIC FUNCTIONS
 // ============================================================================
 async function getAgentFiles() {
-    // When running from compiled dist folder, we need to resolve from the project root
-    const scriptDir = __dirname;
-    const projectRoot = path_1.default.resolve(scriptDir, '..');
-    const agentsDir = path_1.default.join(projectRoot, 'agents');
+    // Get agents directory from current working directory
+    const agentsDir = path.join(process.cwd(), 'agents');
     // Get all subdirectories in agents/ (excluding archived)
-    const subdirs = fs_1.default.readdirSync(agentsDir, { withFileTypes: true })
+    const subdirs = fs.readdirSync(agentsDir, { withFileTypes: true })
         .filter(dirent => dirent.isDirectory() && dirent.name !== 'archived')
         .map(dirent => dirent.name);
     const allFiles = [];
     // Collect files from each subdirectory
     for (const subdir of subdirs) {
-        const subdirPath = path_1.default.join(agentsDir, subdir);
-        const files = (0, shared_1.collectFiles)(subdirPath, ['.md']);
-        allFiles.push(...files.map(file => path_1.default.join(subdir, file)));
+        const subdirPath = path.join(agentsDir, subdir);
+        const files = collectFiles(subdirPath, ['.md']);
+        allFiles.push(...files.map(file => path.join(subdir, file)));
     }
     return allFiles;
 }
 async function promptForAgent() {
-    const result = await (0, shared_1.promptForAgent)(AGENT_CONFIGS, 'Workflow Install Tool');
+    const result = await sharedPromptForAgent(AGENT_CONFIGS, 'Workflow Install Tool');
     return result;
 }
 function detectAgentTool() {
-    const result = (0, shared_1.detectAgentTool)(AGENT_CONFIGS, 'opencode');
+    const result = sharedDetectAgentTool(AGENT_CONFIGS, 'opencode');
     return result;
 }
 // ============================================================================
 // PLUGIN INSTALLATION
 // ============================================================================
 async function installMemoryPlugin(cwd) {
-    const pluginDir = path_1.default.join(cwd, '.opencode', 'plugin');
-    const pluginFile = path_1.default.join(pluginDir, 'memory-tools.ts');
+    const pluginDir = path.join(cwd, '.opencode', 'plugin');
+    const pluginFile = path.join(pluginDir, 'memory-tools.ts');
     // Create plugin directory
-    fs_1.default.mkdirSync(pluginDir, { recursive: true });
+    fs.mkdirSync(pluginDir, { recursive: true });
     // Check if plugin already exists
-    if (fs_1.default.existsSync(pluginFile)) {
+    if (fs.existsSync(pluginFile)) {
         console.log('📦 Memory plugin already exists, skipping...');
         return;
     }
     // Copy plugin file from project
-    const sourcePlugin = path_1.default.join(__dirname, '..', '.opencode', 'plugin', 'memory-tools.ts');
-    if (fs_1.default.existsSync(sourcePlugin)) {
-        fs_1.default.copyFileSync(sourcePlugin, pluginFile);
+    const sourcePlugin = path.join(process.cwd(), 'src', 'opencode', 'plugins', 'memory-tools.ts');
+    if (fs.existsSync(sourcePlugin)) {
+        fs.copyFileSync(sourcePlugin, pluginFile);
         console.log('📦 Installed memory plugin for agent coordination');
     }
     else {
@@ -248,23 +240,25 @@ export const MemoryToolsPlugin: Plugin = async () => {
     },
   }
 }`;
-        fs_1.default.writeFileSync(pluginFile, pluginContent, 'utf8');
+        fs.writeFileSync(pluginFile, pluginContent, 'utf8');
         console.log('📦 Created memory plugin for agent coordination');
     }
 }
 // ============================================================================
+// AGENT-SPECIFIC FUNCTIONS
+// ============================================================================
 // MAIN INSTALL FUNCTION
 // ============================================================================
-async function installAgents(options) {
+export async function installAgents(options) {
     const cwd = process.cwd();
     const results = [];
     // Determine agent
     let agent;
     if (options.agent) {
         agent = options.agent.toLowerCase();
-        if (!(0, shared_1.getSupportedAgents)(AGENT_CONFIGS).includes(agent)) {
-            (0, shared_1.log)(`❌ Unknown agent: ${agent}`, 'red');
-            (0, shared_1.log)(`Supported agents: ${(0, shared_1.getSupportedAgents)(AGENT_CONFIGS).join(', ')}`, 'yellow');
+        if (!getSupportedAgents(AGENT_CONFIGS).includes(agent)) {
+            log(`❌ Unknown agent: ${agent}`, 'red');
+            log(`Supported agents: ${getSupportedAgents(AGENT_CONFIGS).join(', ')}`, 'yellow');
             throw new Error(`Unknown agent: ${agent}`);
         }
     }
@@ -272,21 +266,21 @@ async function installAgents(options) {
         const detectedAgent = detectAgentTool();
         if (detectedAgent !== 'opencode') {
             agent = detectedAgent;
-            console.log(`📝 Detected agent: ${(0, shared_1.getAgentConfig)(AGENT_CONFIGS, agent).name}`);
+            console.log(`📝 Detected agent: ${getAgentConfig(AGENT_CONFIGS, agent).name}`);
         }
         else {
             console.log('📝 No agent detected or defaulting to OpenCode.');
             agent = await promptForAgent();
         }
     }
-    const config = (0, shared_1.getAgentConfig)(AGENT_CONFIGS, agent);
-    const agentsDir = path_1.default.join(cwd, config.dir);
+    const config = getAgentConfig(AGENT_CONFIGS, agent);
+    const agentsDir = path.join(cwd, config.dir);
     const processContent = (content) => {
         // For OpenCode agents, preserve YAML front matter - no processing
         return content;
     };
     // Clear obsolete agents if requested
-    if (options.clear && fs_1.default.existsSync(agentsDir)) {
+    if (options.clear && fs.existsSync(agentsDir)) {
         let expectedFiles;
         if (options.merge) {
             // In merge mode, only expect the merged file
@@ -296,7 +290,7 @@ async function installAgents(options) {
             // Get source files for normal mode
             const agentFiles = await getAgentFiles();
             expectedFiles = new Set(agentFiles.map(filePath => {
-                const parsedPath = path_1.default.parse(filePath);
+                const parsedPath = path.parse(filePath);
                 const baseName = parsedPath.name;
                 const dir = parsedPath.dir;
                 if (config.flatten) {
@@ -309,10 +303,10 @@ async function installAgents(options) {
                 }
             }));
         }
-        (0, shared_1.clearObsoleteFiles)(agentsDir, expectedFiles, [config.extension], results);
+        clearObsoleteFiles(agentsDir, expectedFiles, [config.extension], results);
     }
     // Create agents directory
-    fs_1.default.mkdirSync(agentsDir, { recursive: true });
+    fs.mkdirSync(agentsDir, { recursive: true });
     // Install memory plugin
     await installMemoryPlugin(cwd);
     // Get agent files
@@ -334,16 +328,16 @@ async function installAgents(options) {
     if (options.merge) {
         // Merge all agents into a single file
         const mergedFileName = `all-agents${config.extension}`;
-        const mergedFilePath = path_1.default.join(agentsDir, mergedFileName);
+        const mergedFilePath = path.join(agentsDir, mergedFileName);
         console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
         const pathPrefix = 'agents/';
-        const mergedContent = (0, shared_1.createMergedContent)(agentFiles.map(f => pathPrefix + f), processContent, 'Development Workflow Agents - Complete Collection', pathPrefix);
+        const mergedContent = createMergedContent(agentFiles.map(f => pathPrefix + f), processContent, 'Development Workflow Agents - Complete Collection', pathPrefix);
         // Check if file needs updating
-        const localInfo = (0, shared_1.getLocalFileInfo)(mergedFilePath);
+        const localInfo = getLocalFileInfo(mergedFilePath);
         const localProcessed = localInfo ? processContent(localInfo.content) : '';
         const contentChanged = !localInfo || localProcessed !== mergedContent;
         if (contentChanged) {
-            fs_1.default.writeFileSync(mergedFilePath, mergedContent, 'utf8');
+            fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');
             results.push({
                 file: mergedFileName,
                 status: localInfo ? 'updated' : 'added',
@@ -357,14 +351,14 @@ async function installAgents(options) {
                 action: 'Already current'
             });
         }
-        (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
+        displayResults(results, agentsDir, config.name, 'Install');
     }
     else {
         // Process files individually - create both sdd/ and core/ subdirectory structures
-        await (0, shared_1.processBatch)(agentFiles, // Files with relative paths (sdd/file.md, core/file.md)
+        await processBatch(agentFiles, // Files with relative paths (sdd/file.md, core/file.md)
         agentsDir, // Target to .opencode/agent/
         config.extension, processContent, config.flatten, results, 'agents/' // PathPrefix for source file reading
         );
-        (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
+        displayResults(results, agentsDir, config.name, 'Install');
     }
 }

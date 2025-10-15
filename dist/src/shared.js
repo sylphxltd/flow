@@ -1,25 +1,9 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.log = log;
-exports.getSupportedAgents = getSupportedAgents;
-exports.getAgentConfig = getAgentConfig;
-exports.promptForAgent = promptForAgent;
-exports.detectAgentTool = detectAgentTool;
-exports.collectFiles = collectFiles;
-exports.getLocalFileInfo = getLocalFileInfo;
-exports.clearObsoleteFiles = clearObsoleteFiles;
-exports.createMergedContent = createMergedContent;
-exports.processBatch = processBatch;
-exports.displayResults = displayResults;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
+import fs from 'fs';
+import path from 'path';
 // ============================================================================
 // LOGGING
 // ============================================================================
-function log(message, color = 'white') {
+export function log(message, color = 'white') {
     const colors = {
         red: '\x1b[31m',
         green: '\x1b[32m',
@@ -36,17 +20,17 @@ function log(message, color = 'white') {
 // ============================================================================
 // AGENT CONFIGURATION
 // ============================================================================
-function getSupportedAgents(configs) {
+export function getSupportedAgents(configs) {
     return Object.keys(configs);
 }
-function getAgentConfig(configs, agent) {
+export function getAgentConfig(configs, agent) {
     const config = configs[agent];
     if (!config) {
         throw new Error(`Agent configuration not found: ${agent}`);
     }
     return config;
 }
-async function promptForAgent(configs, toolName) {
+export async function promptForAgent(configs, toolName) {
     const supportedAgents = getSupportedAgents(configs);
     console.log(`\n📝 ${toolName}`);
     console.log('================');
@@ -59,7 +43,7 @@ async function promptForAgent(configs, toolName) {
     // In a real implementation, you might want to use readline or a CLI prompt library
     return supportedAgents[0];
 }
-function detectAgentTool(configs, defaultAgent = 'opencode') {
+export function detectAgentTool(configs, defaultAgent = 'opencode') {
     // Simple detection logic - could be enhanced
     // For now, return default
     return defaultAgent;
@@ -67,22 +51,22 @@ function detectAgentTool(configs, defaultAgent = 'opencode') {
 // ============================================================================
 // FILE OPERATIONS
 // ============================================================================
-function collectFiles(dir, extensions) {
-    if (!fs_1.default.existsSync(dir)) {
+export function collectFiles(dir, extensions) {
+    if (!fs.existsSync(dir)) {
         return [];
     }
     const files = [];
     function traverse(currentDir) {
-        const items = fs_1.default.readdirSync(currentDir);
+        const items = fs.readdirSync(currentDir);
         for (const item of items) {
-            const fullPath = path_1.default.join(currentDir, item);
-            const stat = fs_1.default.statSync(fullPath);
+            const fullPath = path.join(currentDir, item);
+            const stat = fs.statSync(fullPath);
             if (stat.isDirectory()) {
                 traverse(fullPath);
             }
             else if (extensions.some(ext => item.endsWith(ext))) {
                 // Get relative path from the base directory
-                const relativePath = path_1.default.relative(dir, fullPath);
+                const relativePath = path.relative(dir, fullPath);
                 files.push(relativePath);
             }
         }
@@ -90,29 +74,29 @@ function collectFiles(dir, extensions) {
     traverse(dir);
     return files.sort();
 }
-function getLocalFileInfo(filePath) {
-    if (!fs_1.default.existsSync(filePath)) {
+export function getLocalFileInfo(filePath) {
+    if (!fs.existsSync(filePath)) {
         return null;
     }
-    const stat = fs_1.default.statSync(filePath);
-    const content = fs_1.default.readFileSync(filePath, 'utf8');
+    const stat = fs.statSync(filePath);
+    const content = fs.readFileSync(filePath, 'utf8');
     return {
         content,
         mtime: stat.mtime
     };
 }
-function clearObsoleteFiles(targetDir, expectedFiles, extensions, results) {
-    if (!fs_1.default.existsSync(targetDir)) {
+export function clearObsoleteFiles(targetDir, expectedFiles, extensions, results) {
+    if (!fs.existsSync(targetDir)) {
         return;
     }
-    const items = fs_1.default.readdirSync(targetDir);
+    const items = fs.readdirSync(targetDir);
     for (const item of items) {
-        const itemPath = path_1.default.join(targetDir, item);
-        const stat = fs_1.default.statSync(itemPath);
+        const itemPath = path.join(targetDir, item);
+        const stat = fs.statSync(itemPath);
         if (stat.isFile()) {
             const hasValidExtension = extensions.some(ext => item.endsWith(ext));
             if (hasValidExtension && !expectedFiles.has(item)) {
-                fs_1.default.unlinkSync(itemPath);
+                fs.unlinkSync(itemPath);
                 results.push({
                     file: item,
                     status: 'skipped',
@@ -122,7 +106,7 @@ function clearObsoleteFiles(targetDir, expectedFiles, extensions, results) {
         }
     }
 }
-function createMergedContent(filePaths, processContent, title, pathPrefix = '') {
+export function createMergedContent(filePaths, processContent, title, pathPrefix = '') {
     const sections = [];
     // Add header
     sections.push(`# ${title}`);
@@ -134,11 +118,11 @@ function createMergedContent(filePaths, processContent, title, pathPrefix = '') 
     sections.push('');
     // Add each file
     for (const filePath of filePaths) {
-        const fullPath = path_1.default.resolve(filePath);
-        if (fs_1.default.existsSync(fullPath)) {
-            const content = fs_1.default.readFileSync(fullPath, 'utf8');
+        const fullPath = path.resolve(filePath);
+        if (fs.existsSync(fullPath)) {
+            const content = fs.readFileSync(fullPath, 'utf8');
             const processedContent = processContent(content);
-            sections.push(`## ${path_1.default.basename(filePath, '.md')}`);
+            sections.push(`## ${path.basename(filePath, '.md')}`);
             sections.push('');
             sections.push(processedContent);
             sections.push('');
@@ -148,50 +132,50 @@ function createMergedContent(filePaths, processContent, title, pathPrefix = '') 
     }
     return sections.join('\n');
 }
-async function processBatch(filePaths, targetDir, extension, processContent, flatten, results, pathPrefix = '') {
+export async function processBatch(filePaths, targetDir, extension, processContent, flatten, results, pathPrefix = '') {
     for (const filePath of filePaths) {
         // filePath is now just the filename (e.g., "sdd-constitution.md")
         // not the full path with prefix
         const destPath = flatten
-            ? path_1.default.join(targetDir, `${path_1.default.basename(filePath, path_1.default.extname(filePath))}${extension}`)
-            : path_1.default.join(targetDir, filePath);
+            ? path.join(targetDir, `${path.basename(filePath, path.extname(filePath))}${extension}`)
+            : path.join(targetDir, filePath);
         // Ensure destination directory exists
-        const destDir = path_1.default.dirname(destPath);
-        if (!fs_1.default.existsSync(destDir)) {
-            fs_1.default.mkdirSync(destDir, { recursive: true });
+        const destDir = path.dirname(destPath);
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
         }
         const localInfo = getLocalFileInfo(destPath);
         const isNew = !localInfo;
         // Read content from source - construct the full path from project root
-        const projectRoot = path_1.default.resolve(__dirname, '..', '..');
-        const sourcePath = path_1.default.join(projectRoot, pathPrefix, filePath);
-        let content = fs_1.default.readFileSync(sourcePath, 'utf8');
+        const projectRoot = process.cwd();
+        const sourcePath = path.join(projectRoot, pathPrefix, filePath);
+        let content = fs.readFileSync(sourcePath, 'utf8');
         content = processContent(content);
         const localProcessed = localInfo ? processContent(localInfo.content) : '';
         const contentChanged = !localInfo || localProcessed !== content;
         if (contentChanged) {
             // Ensure destination directory exists
-            const destDirPath = path_1.default.dirname(destPath);
-            if (!fs_1.default.existsSync(destDirPath)) {
-                fs_1.default.mkdirSync(destDirPath, { recursive: true });
+            const destDirPath = path.dirname(destPath);
+            if (!fs.existsSync(destDirPath)) {
+                fs.mkdirSync(destDirPath, { recursive: true });
             }
-            fs_1.default.writeFileSync(destPath, content, 'utf8');
+            fs.writeFileSync(destPath, content, 'utf8');
             results.push({
-                file: path_1.default.relative(targetDir, destPath),
+                file: path.relative(targetDir, destPath),
                 status: isNew ? 'added' : 'updated',
                 action: isNew ? 'Created' : 'Updated'
             });
         }
         else {
             results.push({
-                file: path_1.default.relative(targetDir, destPath),
+                file: path.relative(targetDir, destPath),
                 status: 'current',
                 action: 'Already current'
             });
         }
     }
 }
-function displayResults(results, targetDir, agentName, operation) {
+export function displayResults(results, targetDir, agentName, operation) {
     console.log(`\n📊 ${operation} Results for ${agentName}`);
     console.log('=====================================');
     const grouped = results.reduce((acc, result) => {
