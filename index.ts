@@ -27,6 +27,29 @@ program
   });
 
 program
+  .command('install')
+  .description('Install workflow agents for OpenCode')
+  .option('--agent <type>', 'Force specific agent (opencode)')
+  .option('--verbose', 'Show detailed output')
+  .option('--dry-run', 'Show what would be done without making changes')
+  .option('--clear', 'Clear obsolete agents before installing')
+  .option('--merge', 'Merge all agents into a single file')
+  .action(async (options) => {
+    if (options.agent && options.agent !== 'opencode') {
+      console.log('❌ Currently only opencode is supported for install.');
+      process.exit(1);
+    }
+    options.agent = options.agent || 'opencode';
+    try {
+      const { installAgents } = await import('./install');
+      await installAgents(options);
+    } catch (error) {
+      console.error(`❌ Error: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
   .command('mcp')
   .description('Start the MCP server')
   .action(async () => {
@@ -64,6 +87,7 @@ program.action(() => {
   console.log('  rules sync --dry-run');
   console.log('  rules sync --clear');
   console.log('  rules sync --merge');
+  console.log('  rules install --agent opencode');
   console.log('');
   console.log('Run "rules <command> --help" for more information about a command.');
 });
