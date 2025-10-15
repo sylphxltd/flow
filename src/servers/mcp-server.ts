@@ -54,9 +54,9 @@ interface ServerConfig {
 
 // Default configuration
 const DEFAULT_CONFIG: ServerConfig = {
-  name: "rules-mcp-server",
+  name: "flow-mcp-server",
   version: "1.0.0",
-  description: "This MCP server provides access to type-safe development rules for modern web development. Universal core principles: Enforce single responsibility, keep files/functions concise (<300 lines/file, <50 lines/function), use immutability, validate inputs/security at boundaries, plan with peer review/CI, avoid globals/mutables/hardcoded secrets. Tools are registered for each rule file. Each tool is named 'read_[category]_[rule_name]' (e.g., 'read_core_general') and returns the full rule content when called (parameterless). Always call the relevant tool to review the rule before applying it in your work.",
+  description: "This MCP server provides access to type-safe development flow for modern web development. Universal core principles: Enforce single responsibility, keep files/functions concise (<300 lines/file, <50 lines/function), use immutability, validate inputs/security at boundaries, plan with peer review/CI, avoid globals/mutables/hardcoded secrets. Tools are registered for each flow file. Each tool is named 'read_[category]_[flow_name]' (e.g., 'read_core_general') and returns the full flow content when called (parameterless). Always call the relevant tool to review the flow before applying it in your work.",
   enableCaching: true,
   cacheTimeout: 300000 // 5 minutes
 };
@@ -91,7 +91,7 @@ class RuleDiscovery {
   }
   
   async discoverRules(): Promise<Map<string, string[]>> {
-    Logger.info("Discovering available rules...");
+    Logger.info("Discovering available flow...");
     
     for (const docsPath of this.docsPaths) {
       try {

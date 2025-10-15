@@ -182,9 +182,9 @@ function stripYamlFrontMatter(content) {
 }
 function getDescriptionForFile(filePath) {
     if (!filePath)
-        return 'Development rules';
+        return 'Development flow';
     const baseName = path.basename(filePath, path.extname(filePath));
-    return `Development rules for ${baseName.replace(/-/g, ' ')}`;
+    return `Development flow for ${baseName.replace(/-/g, ' ')}`;
 }
 function createContentProcessor(config) {
     return (content, filePath) => {

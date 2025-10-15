@@ -4,11 +4,11 @@
   // See https://modelcontextprotocol.io for more information
 
   "mcp": {
-    "rules_memory": {
+    "flow_memory": {
       "type": "local",
       "command": [
         "npx",
-        "github:sylphxltd/rules",
+        "github:sylphxltd/flow",
         "mcp"
       ]
     },
