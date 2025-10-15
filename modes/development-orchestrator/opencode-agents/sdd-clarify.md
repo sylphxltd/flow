@@ -1,7 +1,6 @@
 ---
 description: Resolves spec ambiguities via self-research and Q&A; updates spec.md with audit trail
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.3
 tools:
   file_ops: true

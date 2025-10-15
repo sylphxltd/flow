@@ -1,7 +1,6 @@
 ---
 description: Creates tasks.md with granular T-IDs, TDD orientation, and full AC coverage
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.2
 tools:
   file_ops: true

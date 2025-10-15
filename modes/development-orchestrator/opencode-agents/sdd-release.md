@@ -1,7 +1,6 @@
 ---
 description: Audits implementation completeness and quality; gets user approval; merges to main
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.1
 tools:
   file_ops: true

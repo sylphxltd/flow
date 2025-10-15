@@ -1,7 +1,6 @@
 ---
 description: Implements all tasks using strict TDD; collects evidence; reports verification issues
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.2
 tools:
   file_ops: true

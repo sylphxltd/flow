@@ -1,7 +1,6 @@
 ---
 description: Validates planning artifacts; reports all issues to orchestrator for proper re-delegation
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.1
 tools:
   file_ops: true

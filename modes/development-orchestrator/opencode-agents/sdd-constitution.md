@@ -1,7 +1,6 @@
 ---
 description: Creates/updates project-level constitution on main branch per user requirements
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.2
 tools:
   file_ops: true

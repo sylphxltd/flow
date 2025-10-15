@@ -1,7 +1,6 @@
 ---
 description: Creates plan.md with architecture, tech stack, data model, API contracts, and TDD strategy
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.3
 tools:
   file_ops: true

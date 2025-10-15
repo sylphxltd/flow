@@ -1,7 +1,6 @@
 ---
 description: Orchestrates 7-phase SDD workflow via expert delegation with enhanced communication protocols
 mode: primary
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.3
 tools:
   file_ops: true

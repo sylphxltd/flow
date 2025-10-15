@@ -1,7 +1,6 @@
 ---
 description: Creates spec.md with prioritized user stories, measurable ACs, and evidence trail
 mode: subagent
-model: anthropic/claude-sonnet-4-20250514
 temperature: 0.3
 tools:
   file_ops: true
