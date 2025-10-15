@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "rules": "dist/index.js"
+    "rules": "dist/rules-standalone.js"
   },
   "files": [
     "dist",
