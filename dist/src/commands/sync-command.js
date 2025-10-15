@@ -8,7 +8,7 @@ function validateSyncOptions(options) {
 }
 export const syncCommand = {
     name: 'sync',
-    description: 'Sync development rules to your project',
+    description: 'Sync development flow to your project',
     options: [
         { ...COMMON_OPTIONS[0], description: 'Force specific agent (cursor, kilocode, roocode)' },
         ...COMMON_OPTIONS.slice(1)

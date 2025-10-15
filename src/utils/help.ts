@@ -1,20 +1,20 @@
 export function showDefaultHelp(): void {
-  console.log('🚀 Rules CLI - Type-safe development rules');
-  console.log('==========================================');
+  console.log('🚀 Flow CLI - Type-safe development flow');
+  console.log('=========================================');
   console.log('');
   console.log('Available commands:');
-  console.log('  sync     Sync development rules to your project');
+  console.log('  sync     Sync development flow to your project');
   console.log('  install  Install workflow agents for OpenCode');
   console.log('  mcp      Start the MCP server');
   console.log('');
   console.log('Examples:');
-  console.log('  rules sync');
-  console.log('  rules mcp');
-  console.log('  rules sync --agent cursor');
-  console.log('  rules sync --dry-run');
-  console.log('  rules sync --clear');
-  console.log('  rules sync --merge');
-  console.log('  rules install --agent opencode');
+  console.log('  flow sync');
+  console.log('  flow mcp');
+  console.log('  flow sync --agent cursor');
+  console.log('  flow sync --dry-run');
+  console.log('  flow sync --clear');
+  console.log('  flow sync --merge');
+  console.log('  flow install --agent opencode');
   console.log('');
-  console.log('Run "rules <command> --help" for more information about a command.');
+  console.log('Run "flow <command> --help" for more information about a command.');
 }

@@ -1,12 +1,12 @@
-# Rules - Development Rules & Agent Coordination Platform
+# Flow - Development Flow & Agent Coordination Platform
 
-A comprehensive platform for managing development rules, guidelines, and AI agent coordination with persistent memory capabilities. This project provides both a CLI tool for syncing development rules to AI agents and an MCP (Model Context Protocol) server for persistent memory storage and coordination between AI agents.
+A comprehensive platform for managing development flow, guidelines, and AI agent coordination with persistent memory capabilities. This project provides both a CLI tool for syncing development flow to AI agents and an MCP (Model Context Protocol) server for persistent memory storage and coordination between AI agents.
 
 ## 🚀 What This Project Is
 
-**Rules** is a dual-purpose platform that combines:
+**Flow** is a dual-purpose platform that combines:
 
-1. **Development Rules Management** - A curated collection of type-safe development guidelines and best practices for modern web development
+1. **Development Flow Management** - A curated collection of type-safe development guidelines and best practices for modern web development
 2. **Agent Coordination System** - An MCP server providing persistent memory storage for AI agents to coordinate and share state
 
 The platform enables consistent, high-quality code generation across projects while providing the infrastructure for AI agents to work together through shared memory and coordination tools.
@@ -39,20 +39,20 @@ The platform enables consistent, high-quality code generation across projects wh
 
 ```bash
 # Use directly from GitHub without installation
-npx github:sylphxltd/rules
+npx github:sylphxltd/flow
 
 # Or use npx for specific commands
-npx github:sylphxltd/rules sync
-npx github:sylphxltd/rules mcp
-npx github:sylphxltd/rules install
+npx github:sylphxltd/flow sync
+npx github:sylphxltd/flow mcp
+npx github:sylphxltd/flow install
 ```
 
 **Alternative: Clone and Build**
 
 ```bash
 # Clone the repository
-git clone https://github.com/sylphxltd/rules.git
-cd rules
+git clone https://github.com/sylphxltd/flow.git
+cd flow
 
 # Install dependencies and build
 pnpm install
@@ -67,67 +67,67 @@ node dist/index.js sync
 ### Quick Start
 
 ```bash
-# Sync rules to your AI agent (auto-detects environment)
-npx github:sylphxltd/rules sync
+# Sync flow to your AI agent (auto-detects environment)
+npx github:sylphxltd/flow sync
 
 # Start the memory MCP server
-npx github:sylphxltd/rules mcp
+npx github:sylphxltd/flow mcp
 
 # Install agent definitions
-npx github:sylphxltd/rules install
+npx github:sylphxltd/flow install
 ```
 
 ## 🛠️ Available Commands
 
-### `rules sync` - Sync Development Rules
+### `flow sync` - Sync Development Rules
 
-Sync development rules to your AI agent's configuration directory.
+Sync development flow to your AI agent's configuration directory.
 
 ```bash
 # Auto-detect and sync to your agent
-npx github:sylphxltd/rules sync
+npx github:sylphxltd/flow sync
 
 # Specify agent explicitly
-npx github:sylphxltd/rules sync --agent=cursor     # For Cursor AI
-npx github:sylphxltd/rules sync --agent=kilocode   # For Kilocode  
-npx github:sylphxltd/rules sync --agent=roocode    # For RooCode
+npx github:sylphxltd/flow sync --agent=cursor     # For Cursor AI
+npx github:sylphxltd/flow sync --agent=kilocode   # For Kilocode  
+npx github:sylphxltd/flow sync --agent=roocode    # For RooCode
 
 # Preview changes without applying
-npx github:sylphxltd/rules sync --dry-run
+npx github:sylphxltd/flow sync --dry-run
 
-# Force overwrite existing rules
-npx github:sylphxltd/rules sync --force
+# Force overwrite existing flow
+npx github:sylphxltd/flow sync --force
 ```
 
 **Supported Agents:**
-- **Cursor**: `.cursor/rules/*.mdc` (YAML frontmatter)
-- **Kilocode**: `.kilocode/rules/*.md` (plain Markdown)
-- **RooCode**: `.roo/rules/*.md` (plain Markdown)
+- **Cursor**: `.cursor/flow/*.mdc` (YAML frontmatter)
+- **Kilocode**: `.kilocode/flow/*.md` (plain Markdown)
+- **RooCode**: `.roo/flow/*.md` (plain Markdown)
 
-### `rules install` - Install Agent Definitions & MCP Servers
+### `flow install` - Install Agent Definitions & MCP Servers
 
 Install SDD (Structured Development & Delivery) agent definitions for advanced workflows and configure MCP (Model Context Protocol) servers.
 
 ```bash
 # Install all agent definitions
-npx github:sylphxltd/rules install
+npx github:sylphxltd/flow install
 
 # Install with merge mode (single combined file)
-npx github:sylphxltd/rules install --merge
+npx github:sylphxltd/flow install --merge
 
 # Preview installation
-npx github:sylphxltd/rules install --dry-run
+npx github:sylphxltd/flow install --dry-run
 
 # Install MCP servers
-npx github:sylphxltd/rules install --mcp memory      # Install Rules memory server
-npx github:sylphxltd/rules install --mcp everything   # Install MCP Everything server
-npx github:sylphxltd/rules install --mcp memory everything  # Install both servers
+npx github:sylphxltd/flow install --mcp memory      # Install Rules memory server
+npx github:sylphxltd/flow install --mcp everything   # Install MCP Everything server
+npx github:sylphxltd/flow install --mcp memory everything  # Install both servers
 
 # List currently configured MCP servers
-npx github:sylphxltd/rules install --mcp
+npx github:sylphxltd/flow install --mcp
 
 # Install with dry run (preview MCP changes)
-npx github:sylphxltd/rules install --mcp memory --dry-run
+npx github:sylphxltd/flow install --mcp memory --dry-run
 ```
 
 #### MCP Server Options
@@ -151,11 +151,11 @@ When you install MCP servers, the tool automatically creates or updates an `open
   // See https://modelcontextprotocol.io for more information
   
   "mcp": {
-    "rules_memory": {
+    "flow_memory": {
       "type": "local",
       "command": [
         "npx",
-        "github:sylphxltd/rules",
+        "github:sylphxltd/flow",
         "mcp"
       ]
     },
@@ -179,13 +179,13 @@ When you install MCP servers, the tool automatically creates or updates an `open
 - `command`: Command array to start the server
 - `$schema`: JSON schema for validation and IDE support
 
-### `rules mcp` - Start Memory Server
+### `flow mcp` - Start Memory Server
 
 Start the MCP memory server for agent coordination.
 
 ```bash
 # Start the memory server
-npx github:sylphxltd/rules mcp
+npx github:sylphxltd/flow mcp
 
 # Server will be available at stdio for MCP clients
 # Database stored at: .memory/memory.json
@@ -234,7 +234,7 @@ The Rules platform supports the following MCP servers:
   - Full CRUD operations (set, get, search, list, delete, clear)
   - Pattern matching with wildcards
   - Database statistics and monitoring
-- **Installation**: `rules install --mcp memory`
+- **Installation**: `flow install --mcp memory`
 - **Storage Location**: `.memory/memory.json`
 
 #### 2. MCP Everything Server (`everything`)
@@ -245,7 +245,7 @@ The Rules platform supports the following MCP servers:
   - Git operations (status, log, diff, commit)
   - System information and process management
   - Database operations
-- **Installation**: `rules install --mcp everything`
+- **Installation**: `flow install --mcp everything`
 - **Package**: `@modelcontextprotocol/server-everything`
 
 ### Claude Desktop Integration
@@ -255,9 +255,9 @@ Add to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "rules-memory": {
+    "flow-memory": {
       "command": "npx",
-      "args": ["github:sylphxltd/rules", "mcp"]
+      "args": ["github:sylphxltd/flow", "mcp"]
     },
     "mcp-everything": {
       "command": "npx",
@@ -269,7 +269,7 @@ Add to your `claude_desktop_config.json`:
 
 ### OpenCode Integration
 
-OpenCode automatically reads the `opencode.jsonc` configuration file. After installing MCP servers with `rules install --mcp`, the servers are immediately available to your OpenCode AI agents.
+OpenCode automatically reads the `opencode.jsonc` configuration file. After installing MCP servers with `flow install --mcp`, the servers are immediately available to your OpenCode AI agents.
 
 **Manual OpenCode Configuration:**
 If you prefer to configure OpenCode manually, create/edit `opencode.jsonc`:
@@ -277,9 +277,9 @@ If you prefer to configure OpenCode manually, create/edit `opencode.jsonc`:
 ```jsonc
 {
   "mcp": {
-    "rules_memory": {
+    "flow_memory": {
       "type": "local",
-      "command": ["npx", "github:sylphxltd/rules", "mcp"]
+      "command": ["npx", "github:sylphxltd/flow", "mcp"]
     },
     "mcp_everything": {
       "type": "local", 
@@ -299,7 +299,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 const transport = new StdioClientTransport({
   command: "npx",
-  args: ["github:sylphxltd/rules", "mcp"]
+  args: ["github:sylphxltd/flow", "mcp"]
 });
 
 const client = new Client(
@@ -365,7 +365,7 @@ const stats = await client.callTool({
 ## 📁 Project Structure Overview
 
 ```
-rules/
+flow/
 ├── agents/                    # AI agent definitions
 │   ├── sdd/                  # SDD workflow agents
 │   │   ├── development-orchestrator.md
@@ -384,9 +384,9 @@ rules/
 │   │   ├── reviewer.md
 │   │   └── tester.md
 │   └── archived/             # Archived configurations
-├── docs/                     # Documentation and rules
-│   ├── rules/               # Development rule files
-│   │   ├── rules.md
+├── docs/                     # Documentation and flow
+│   ├── flow/               # Development rule files
+│   │   ├── flow.md
 │   │   ├── saas-template.md
 │   │   ├── tech-stack.md
 │   │   └── ui-ux-guidelines.md
@@ -409,10 +409,10 @@ rules/
 
 ```bash
 # Start memory server for team coordination
-npx github:sylphxltd/rules mcp
+npx github:sylphxltd/flow mcp
 
-# In one terminal, sync rules for the team
-npx github:sylphxltd/rules sync --agent=cursor
+# In one terminal, sync flow for the team
+npx github:sylphxltd/flow sync --agent=cursor
 
 # Team members can now share state through memory
 # Agent A stores progress:
@@ -425,11 +425,11 @@ memory_get key "feature/auth/status" namespace "team-project"
 ### Use Case 2: CI/CD Pipeline Integration
 
 ```bash
-# In CI pipeline, sync latest rules
-npx github:sylphxltd/rules sync --agent=cursor --force
+# In CI pipeline, sync latest flow
+npx github:sylphxltd/flow sync --agent=cursor --force
 
 # Store pipeline state
-npx github:sylphxltd/rules mcp &
+npx github:sylphxltd/flow mcp &
 # Then use memory tools to track pipeline stages
 ```
 
@@ -459,12 +459,12 @@ const phase = await client.callTool({
 ### Use Case 4: Project Template Management
 
 ```bash
-# Create new project with rules
+# Create new project with flow
 mkdir my-project && cd my-project
-npx github:sylphxltd/rules sync --agent=cursor
+npx github:sylphxltd/flow sync --agent=cursor
 
 # Store project configuration
-npx github:sylphxltd/rules mcp &
+npx github:sylphxltd/flow mcp &
 # Then configure project-specific memory namespace
 ```
 
@@ -474,17 +474,17 @@ npx github:sylphxltd/rules mcp &
 # Start a new project with full MCP support
 mkdir my-new-project && cd my-new-project
 
-# Install development rules
-npx github:sylphxltd/rules sync --agent=cursor
+# Install development flow
+npx github:sylphxltd/flow sync --agent=cursor
 
 # Install both MCP servers
-npx github:sylphxltd/rules install --mcp memory everything
+npx github:sylphxltd/flow install --mcp memory everything
 
 # Start the memory server
-npx github:sylphxltd/rules mcp &
+npx github:sylphxltd/flow mcp &
 
 # Now your AI agents have:
-# - Development rules and guidelines
+# - Development flow and guidelines
 # - Persistent memory for coordination
 # - Comprehensive tool access (filesystem, web, git, etc.)
 ```
@@ -493,13 +493,13 @@ npx github:sylphxltd/rules mcp &
 
 ```bash
 # Install only the memory server for lightweight coordination
-npx github:sylphxltd/rules install --mcp memory
+npx github:sylphxltd/flow install --mcp memory
 
 # Later, add the everything server for full tool access
-npx github:sylphxltd/rules install --mcp everything
+npx github:sylphxltd/flow install --mcp everything
 
 # List current MCP configuration
-npx github:sylphxltd/rules install --mcp
+npx github:sylphxltd/flow install --mcp
 
 # Remove a server (if needed)
 # Edit opencode.jsonc manually to remove unwanted servers
@@ -509,12 +509,12 @@ npx github:sylphxltd/rules install --mcp
 
 ```bash
 # Complete development environment setup
-npx github:sylphxltd/rules sync --agent=cursor           # Install development rules
-npx github:sylphxltd/rules install --mcp memory everything  # Install MCP servers
-npx github:sylphxltd/rules install                        # Install agent definitions
+npx github:sylphxltd/flow sync --agent=cursor           # Install development flow
+npx github:sylphxltd/flow install --mcp memory everything  # Install MCP servers
+npx github:sylphxltd/flow install                        # Install agent definitions
 
 # Start all services
-npx github:sylphxltd/rules mcp &                          # Start memory server in background
+npx github:sylphxltd/flow mcp &                          # Start memory server in background
 
 # Your environment is now ready with:
 # - Consistent development guidelines
@@ -529,8 +529,8 @@ npx github:sylphxltd/rules mcp &                          # Start memory server 
 
 ```bash
 # Clone repository
-git clone https://github.com/sylphxltd/rules.git
-cd rules
+git clone https://github.com/sylphxltd/flow.git
+cd flow
 
 # Install dependencies
 pnpm install
@@ -557,32 +557,32 @@ node dist/index.js --help
 
 ```bash
 # Test installation from GitHub (from any directory)
-npx github:sylphxltd/rules --help
+npx github:sylphxltd/flow --help
 
 # Test specific commands
-npx github:sylphxltd/rules sync --dry-run
-npx github:sylphxltd/rules install --dry-run
+npx github:sylphxltd/flow sync --dry-run
+npx github:sylphxltd/flow install --dry-run
 ```
 
 ### Adding New Rules
 
-1. Create rule file in `docs/rules/`
+1. Create rule file in `docs/flow/`
 2. Follow the established format and principles
-3. Test with `npx github:sylphxltd/rules sync --dry-run`
+3. Test with `npx github:sylphxltd/flow sync --dry-run`
 4. Submit PR for review
 
 ### Adding New Agent Support
 
 1. Update `src/commands/sync-command.ts`
 2. Add agent configuration to the sync logic
-3. Test with `npx github:sylphxltd/rules sync --agent=new-agent --dry-run`
+3. Test with `npx github:sylphxltd/flow sync --agent=new-agent --dry-run`
 
 ### Adding New MCP Servers
 
 1. Update `src/utils/mcp-config.ts` with server configuration
 2. Add server type to `MCP_SERVERS` object
 3. Update command builder options if needed
-4. Test with `npx github:sylphxltd/rules install --mcp new-server --dry-run`
+4. Test with `npx github:sylphxltd/flow install --mcp new-server --dry-run`
 
 ## 🔧 MCP Troubleshooting & Tips
 
@@ -591,13 +591,13 @@ npx github:sylphxltd/rules install --dry-run
 **MCP Server Not Starting:**
 ```bash
 # Check if the server is properly configured
-npx github:sylphxltd/rules install --mcp
+npx github:sylphxltd/flow install --mcp
 
 # Verify the opencode.jsonc configuration
 cat opencode.jsonc
 
 # Test the memory server directly
-npx github:sylphxltd/rules mcp
+npx github:sylphxltd/flow mcp
 ```
 
 **Memory Database Issues:**
@@ -608,14 +608,14 @@ ls -la .memory/
 # Clear corrupted memory database
 rm .memory/memory.json
 # Restart the server to recreate
-npx github:sylphxltd/rules mcp
+npx github:sylphxltd/flow mcp
 ```
 
 **OpenCode Configuration Problems:**
 ```bash
 # Regenerate configuration
 rm opencode.jsonc
-npx github:sylphxltd/rules install --mcp memory everything
+npx github:sylphxltd/flow install --mcp memory everything
 ```
 
 ### Best Practices
@@ -650,8 +650,8 @@ npx github:sylphxltd/rules install --mcp memory everything
 
 ## 🤝 Community & Support
 
-- **Issues**: [GitHub Issues](https://github.com/sylphxltd/rules/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sylphxltd/rules/discussions)
+- **Issues**: [GitHub Issues](https://github.com/sylphxltd/flow/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sylphxltd/flow/discussions)
 - **Contributing**: See [Contributing Guidelines](CONTRIBUTING.md)
 
 ## 📄 License

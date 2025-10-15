@@ -7,8 +7,8 @@ import { mcpCommand } from './commands/mcp-command.js';
 export function createCLI() {
     const program = new Command();
     program
-        .name('rules')
-        .description('Type-safe development rules CLI')
+        .name('flow')
+        .description('Type-safe development flow CLI')
         .version('1.0.0');
     const commands = [syncCommand, installCommand, mcpCommand];
     commands.forEach(commandConfig => {

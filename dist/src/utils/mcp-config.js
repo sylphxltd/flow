@@ -5,11 +5,11 @@ import { readJSONCFile, writeJSONCFile } from './jsonc.js';
  */
 export const MCP_SERVERS = {
     memory: {
-        name: 'rules_memory',
-        description: 'Rules memory MCP server for agent coordination',
+        name: 'flow_memory',
+        description: 'Flow memory MCP server for agent coordination',
         config: {
             type: 'local',
-            command: ['npx', 'github:sylphxltd/rules', 'mcp']
+            command: ['npx', 'github:sylphxltd/flow', 'mcp']
         }
     },
     everything: {

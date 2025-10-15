@@ -1,7 +1,7 @@
 # Modern SPA UI/UX Guidelines (AI Instruction)
 
 ## Scope
-Apply these rules whenever the AI designs or updates single-page application interfaces. Keep outputs concise, modular, and consistent with modern conversational products (e.g., chat-first SaaS).
+Apply these flow whenever the AI designs or updates single-page application interfaces. Keep outputs concise, modular, and consistent with modern conversational products (e.g., chat-first SaaS).
 
 ## Core Principles
 - Embrace minimalist functionalism: remove decorative clutter; highlight primary content and controls.

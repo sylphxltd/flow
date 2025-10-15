@@ -50,7 +50,7 @@ GraphQL-first, serverless API. Organize backend logic per domain under `src/grap
 ## DevOps/Deploy
 - **Local**: Docker Compose (stack); pnpm/Biome (linting/formatting) + Lefthook (Git hooks manager).
   - Biome Ignore: Tests (`__tests__/**`, `*.test.*`), generated (`*.generated.*`, `dist/**`, `build/**`), project-specific (e.g., `styled-system`, `*.gql.tada.ts`, `drizzle`, `test-results`, `.next`, `node_modules`) via `biome.json` files section.
-  - Biome Config (biome.json): Enable recommended + custom rules; ignoreUnknown false.
+  - Biome Config (biome.json): Enable recommended + custom flow; ignoreUnknown false.
     ```
     {
       "files": {
@@ -70,7 +70,7 @@ GraphQL-first, serverless API. Organize backend logic per domain under `src/grap
       },
       "linter": {
         "enabled": true,
-        "rules": {
+        "flow": {
           "recommended": true,
           "suspicious": {
             "noExplicitAny": "error"

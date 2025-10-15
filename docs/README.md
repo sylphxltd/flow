@@ -1,16 +1,16 @@
-# Optimized Modular AI Development Rules
+# Optimized Modular AI Development Flow
 
-This repository serves as the core hub for prompt engineering guidelines, delivering self-contained rule files for AI agents to produce consistent, high-quality code. Select and compose rules modularly to fit project requirements, ensuring ethical, efficient development.
+This repository serves as the core hub for prompt engineering guidelines, delivering self-contained flow files for AI agents to produce consistent, high-quality code. Select and compose flow modularly to fit project requirements, ensuring ethical, efficient development.
 
 ## Core Objectives
-Design rules to enable AI agents in generating scalable, maintainable code across stacks. Key principles:
+Design flow to enable AI agents in generating scalable, maintainable code across stacks. Key principles:
 - **Modularity**: Build each file as an independent unit—apply standalone or combine without conflicts.
-- **Composability**: Mix rules for custom project needs (e.g., React + TypeScript for web apps).
+- **Composability**: Mix flow for custom project needs (e.g., React + TypeScript for web apps).
 - **Tool Agnosticism**: Focus on patterns, not specific tools; adapt to user preferences.
 - **Self-Containment**: Ensure every file stands alone—no cross-references required.
 
 ## Rule Design Principles
-Craft rules following these imperatives to ensure AI usability and extensibility. Validate new rules against the quality checklist below.
+Craft flow following these imperatives to ensure AI usability and extensibility. Validate new flow against the quality checklist below.
 
 ### Structure and Scope
 - Define precise globs at the file start (e.g., `*.tsx` for React components) to target specific patterns.
@@ -37,22 +37,22 @@ Craft rules following these imperatives to ensure AI usability and extensibility
 ## Usage Guide
 
 ### Quick Installation
-Sync rules to your AI agent's directory with one command. Auto-detects environment; supports dry-run for preview.
+Sync flow to your AI agent's directory with one command. Auto-detects environment; supports dry-run for preview.
 
 ```bash
 # Recommended: Auto-sync
-npx github:sylphxltd/rules
+npx github:sylphxltd/flow
 
 # Specify agent
-npx github:sylphxltd/rules --agent=cursor    # Targets .cursor/rules/*.mdc (YAML frontmatter)
-npx github:sylphxltd/rules --agent=kilocode  # Targets .kilocode/rules/*.md (plain Markdown)
-npx github:sylphxltd/rules --agent=roocode   # Targets .roo/rules/*.md (plain Markdown)
+npx github:sylphxltd/flow --agent=cursor    # Targets .cursor/flow/*.mdc (YAML frontmatter)
+npx github:sylphxltd/flow --agent=kilocode  # Targets .kilocode/flow/*.md (plain Markdown)
+npx github:sylphxltd/flow --agent=roocode   # Targets .roo/flow/*.md (plain Markdown)
 
 # Dry-run preview
-npx github:sylphxltd/rules --dry-run
+npx github:sylphxltd/flow --dry-run
 ```
 
-Post-sync: Restart agent; verify rules load without errors.
+Post-sync: Restart agent; verify flow load without errors.
 
 ## Rule Categories
 Select categories based on project stack. Apply General always; add others as needed. Each file is standalone—compose for your context.
@@ -63,7 +63,7 @@ Select categories based on project stack. Apply General always; add others as ne
 - **`testing.mdc`**: Enforce TDD with 100% coverage across unit/E2E; use Vitest/Playwright.
 
 ### Language-Focused
-- **`typescript.mdc`**: Strict typing rules (e.g., infer types, forbid `any`); apply if using TS/JS.
+- **`typescript.mdc`**: Strict typing flow (e.g., infer types, forbid `any`); apply if using TS/JS.
 
 ### Framework-Focused
 - **`react.mdc`**: Component patterns, hooks, signals for state (e.g., useSignal for reactivity); for React apps.
@@ -88,18 +88,18 @@ Select categories based on project stack. Apply General always; add others as ne
 
 
 ## Maintenance and Contributions
-Maintain rules through regular reviews; contribute via PRs following this process.
+Maintain flow through regular reviews; contribute via PRs following this process.
 
 ### Sync Tool Extension
 Extend the npx sync tool for new AI agents modularly:
-1. Edit `scripts/sync-rules.js`: Add to `AGENT_CONFIGS` object with keys: name, dir (e.g., '.newagent/rules'), ext ('.md' or '.mdc'), yamlFrontmatter (true/false).
-2. Test: Run `npx github:sylphxltd/rules --agent=newagent --dry-run`.
+1. Edit `scripts/sync-flow.js`: Add to `AGENT_CONFIGS` object with keys: name, dir (e.g., '.newagent/flow'), ext ('.md' or '.mdc'), yamlFrontmatter (true/false).
+2. Test: Run `npx github:sylphxltd/flow --agent=newagent --dry-run`.
 3. Auto-handles: Detection, YAML processing, validation.
 
 Supported agents:
-- **Cursor**: `.cursor/rules/*.mdc` (YAML frontmatter for metadata).
-- **Kilocode**: `.kilocode/rules/*.md` (plain Markdown).
-- **RooCode**: `.roo/rules/*.md` (plain Markdown).
+- **Cursor**: `.cursor/flow/*.mdc` (YAML frontmatter for metadata).
+- **Kilocode**: `.kilocode/flow/*.md` (plain Markdown).
+- **RooCode**: `.roo/flow/*.md` (plain Markdown).
 
 ### Adding/Updating Rules
 Follow this sequence to ensure quality:
@@ -107,7 +107,7 @@ Follow this sequence to ensure quality:
 2. **Define Scope**: Set precise globs (e.g., `src/**/*.tsx`); outline boundaries in intro.
 3. **Keep Neutral**: Use patterns over tools (e.g., "Implement lazy queries" not "Use React.lazy").
 4. **Ensure Self-Containment**: Write standalone—no external refs; include all examples.
-5. **Validate Integration**: Compose with 2-3 existing rules; test AI application (e.g., generate sample code).
+5. **Validate Integration**: Compose with 2-3 existing flow; test AI application (e.g., generate sample code).
 
 ### Quality Checklist
 - [ ] Descriptive title; no fluff intro.
@@ -130,4 +130,4 @@ Follow this sequence to ensure quality:
 
 - Rule File Format - Understanding rule file structure
 - Installation Scripts - Automated rule installation and management
-- Contributing Guidelines - How to contribute new rules
+- Contributing Guidelines - How to contribute new flow

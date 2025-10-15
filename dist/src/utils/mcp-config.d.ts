@@ -3,8 +3,8 @@
  */
 export declare const MCP_SERVERS: {
     readonly memory: {
-        readonly name: "rules_memory";
-        readonly description: "Rules memory MCP server for agent coordination";
+        readonly name: "flow_memory";
+        readonly description: "Flow memory MCP server for agent coordination";
         readonly config: {
             readonly type: "local";
             readonly command: string[];

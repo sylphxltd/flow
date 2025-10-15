@@ -38,7 +38,7 @@ Secure role-based access (admin/moderator). Use charts/tables for insights.
 - **Wallet Oversight**: Reconcile balances; flag anomalies (e.g., >$1000 top-up).
 - **Marketing**: Newsletter lists/broadcasts; track open/unsubscribe rates.
 - **Invites/Referrals**: Admin-generate codes/programs; monitor stats/rewards.
-- **Memberships**: CRUD plans (price, top-up rules, discounts, entitlements); enable/disable.
+- **Memberships**: CRUD plans (price, top-up flow, discounts, entitlements); enable/disable.
 - **Notifications**: Send global broadcasts (email/push).
 - **Support**: Ticket queue with reply/status updates (open/resolved).
 - **Audits**: Searchable logs (user/action/timestamp); export for compliance.
