@@ -1,10 +1,10 @@
-# Flow - Development Flow & Agent Coordination Platform
+# Sylphx Flow - Development Flow & Agent Coordination Platform
 
 A comprehensive platform for managing development flow, guidelines, and AI agent coordination with persistent memory capabilities. This project provides both a CLI tool for syncing development flow to AI agents and an MCP (Model Context Protocol) server for persistent memory storage and coordination between AI agents.
 
 ## 🚀 What This Project Is
 
-**Flow** is a dual-purpose platform that combines:
+**Sylphx Flow** is a dual-purpose platform that combines:
 
 1. **Development Flow Management** - A curated collection of type-safe development guidelines and best practices for modern web development
 2. **Agent Coordination System** - An MCP server providing persistent memory storage for AI agents to coordinate and share state

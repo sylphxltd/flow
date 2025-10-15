@@ -10,7 +10,7 @@ export function createCLI(): Command {
 
   program
     .name('sylphx-flow')
-    .description('Type-safe development flow CLI')
+    .description('Sylphx Flow - Type-safe development flow CLI')
     .version('1.0.0');
 
   const commands = [syncCommand, installCommand, mcpCommand];

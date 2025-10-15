@@ -1,5 +1,5 @@
 export function showDefaultHelp() {
-    console.log('🚀 Flow CLI - Type-safe development flow');
+    console.log('🚀 Sylphx Flow CLI - Type-safe development flow');
     console.log('=========================================');
     console.log('');
     console.log('Available commands:');

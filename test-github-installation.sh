@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test script for GitHub installation functionality
-echo "🧪 Testing GitHub Installation for Flow CLI"
+echo "🧪 Testing GitHub Installation for Sylphx Flow CLI"
 echo "=========================================="
 
 # Test 1: Basic help command
