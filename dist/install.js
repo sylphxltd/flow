@@ -7,23 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.installAgents = installAgents;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const readline_1 = __importDefault(require("readline"));
-const cli_progress_1 = __importDefault(require("cli-progress"));
-const cli_table3_1 = __importDefault(require("cli-table3"));
-// Colors for output
-const colors = {
-    red: '\x1b[31m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    blue: '\x1b[34m',
-    reset: '\x1b[0m'
-};
-function log(message, color = 'reset') {
-    console.log(`${colors[color]}${message}${colors.reset}`);
-}
-// Global state
-let progressBar;
-let results = [];
+const shared_1 = require("./src/shared");
 // Agent configurations - Currently only opencode
 const AGENT_CONFIGS = {
     opencode: {
@@ -35,236 +19,35 @@ const AGENT_CONFIGS = {
         description: 'OpenCode (.opencode/agent/*.md with YAML front matter for agents)'
     }
 };
-function getSupportedAgents() {
-    return Object.keys(AGENT_CONFIGS);
-}
-function getAgentConfig(agent) {
-    return AGENT_CONFIGS[agent];
-}
 // ============================================================================
-// USER INTERACTION
+// AGENT-SPECIFIC FUNCTIONS
 // ============================================================================
+async function getAgentFiles() {
+    // When running from compiled dist folder, we need to resolve from the project root
+    const scriptDir = __dirname;
+    const projectRoot = path_1.default.resolve(scriptDir, '..');
+    const agentsDir = path_1.default.join(projectRoot, 'modes', 'development-orchestrator', 'opencode-agents');
+    return (0, shared_1.collectFiles)(agentsDir, ['.md']);
+}
 async function promptForAgent() {
-    const agents = getSupportedAgents();
-    const rl = readline_1.default.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    return new Promise((resolve) => {
-        console.log('\n🚀 Workflow Install Tool');
-        console.log('=====================');
-        console.log('Please select your AI agent:');
-        console.log('');
-        agents.forEach((agent, index) => {
-            const config = getAgentConfig(agent);
-            console.log(`${index + 1}. ${config.name} - ${config.description}`);
-        });
-        console.log('');
-        const askChoice = () => {
-            rl.question('Enter your choice (1-' + agents.length + '): ', (answer) => {
-                const choice = parseInt(answer.trim());
-                if (choice >= 1 && choice <= agents.length) {
-                    rl.close();
-                    resolve(agents[choice - 1]);
-                }
-                else {
-                    console.log(`❌ Invalid choice. Please enter a number between 1 and ${agents.length}.`);
-                    askChoice();
-                }
-            });
-        };
-        askChoice();
-    });
+    return (0, shared_1.promptForAgent)(AGENT_CONFIGS, 'Workflow Install Tool');
 }
 function detectAgentTool() {
-    const cwd = process.cwd();
-    // Check for explicit --agent argument (highest priority)
-    const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
-    if (agentArg) {
-        const agent = agentArg.split('=')[1].toLowerCase();
-        if (getSupportedAgents().includes(agent)) {
-            return agent;
-        }
-    }
-    // Check for existing directories
-    for (const agent of getSupportedAgents()) {
-        const config = getAgentConfig(agent);
-        if (fs_1.default.existsSync(path_1.default.join(cwd, config.dir))) {
-            return agent;
-        }
-    }
-    // Default to opencode
-    return 'opencode';
-}
-// ============================================================================
-// FILE OPERATIONS
-// ============================================================================
-function getLocalFileInfo(filePath) {
-    try {
-        if (!fs_1.default.existsSync(filePath)) {
-            return null;
-        }
-        const content = fs_1.default.readFileSync(filePath, 'utf8');
-        return { content, exists: true };
-    }
-    catch {
-        return null;
-    }
-}
-async function getAgentFiles() {
-    // In bundled CJS, __dirname is the directory of the executing script
-    const scriptDir = __dirname;
-    const agentsDir = path_1.default.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents');
-    const files = [];
-    function collectFiles(dir, relativePath) {
-        try {
-            const items = fs_1.default.readdirSync(dir, { withFileTypes: true });
-            for (const item of items) {
-                const itemPath = path_1.default.join(dir, item.name);
-                const itemRelative = path_1.default.join(relativePath, item.name);
-                if (item.isDirectory()) {
-                    collectFiles(itemPath, itemRelative);
-                }
-                else if (item.isFile() && item.name.endsWith('.md')) {
-                    files.push(itemRelative);
-                }
-            }
-        }
-        catch {
-            // Skip directories/files that can't be read
-        }
-    }
-    try {
-        collectFiles(agentsDir, '');
-    }
-    catch {
-        console.warn('⚠️  Could not read local agents directory, returning empty list');
-        return [];
-    }
-    return files;
-}
-function getDescriptionForFile(filePath) {
-    if (!filePath)
-        return 'Development workflow agent';
-    const baseName = path_1.default.basename(filePath, path_1.default.extname(filePath));
-    return `Agent for ${baseName.replace(/-/g, ' ')} workflow`;
-}
-// ============================================================================
-// FILE PROCESSING
-// ============================================================================
-async function processFile(filePath, agentsDir, fileExtension, processContent, flatten, results, progressBar) {
-    try {
-        // filePath is like 'sdd-analyze.md'
-        const parsedPath = path_1.default.parse(filePath);
-        const baseName = parsedPath.name;
-        const ext = parsedPath.ext;
-        const dir = parsedPath.dir;
-        let relativePath;
-        let destPath;
-        if (flatten) {
-            const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
-            relativePath = `${flattenedName}${fileExtension}`;
-            destPath = path_1.default.join(agentsDir, relativePath);
-        }
-        else {
-            const targetDir = dir ? path_1.default.join(agentsDir, dir) : agentsDir;
-            fs_1.default.mkdirSync(targetDir, { recursive: true });
-            relativePath = path_1.default.join(dir, `${baseName}${fileExtension}`);
-            destPath = path_1.default.join(targetDir, `${baseName}${fileExtension}`);
-        }
-        const localInfo = getLocalFileInfo(destPath);
-        const isNew = !localInfo;
-        // Read content from local package files
-        const scriptDir = __dirname;
-        const sourcePath = path_1.default.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents', filePath);
-        let content = fs_1.default.readFileSync(sourcePath, 'utf8');
-        content = processContent(content);
-        const localProcessed = localInfo ? processContent(localInfo.content) : '';
-        const contentChanged = !localInfo || localProcessed !== content;
-        fs_1.default.writeFileSync(destPath, content, 'utf8');
-        results.push({
-            file: relativePath,
-            status: contentChanged ? (isNew ? 'added' : 'updated') : 'current',
-            action: contentChanged ? (isNew ? 'Added' : 'Updated') : 'Already current'
-        });
-        progressBar.increment();
-        return contentChanged;
-    }
-    catch (error) {
-        results.push({
-            file: filePath,
-            status: 'error',
-            action: `Error: ${error.message}`
-        });
-        progressBar.increment();
-        return false;
-    }
-}
-// ============================================================================
-// OUTPUT DISPLAY
-// ============================================================================
-function createStatusTable(title, items) {
-    if (items.length === 0)
-        return;
-    console.log(`\n${title} (${items.length}):`);
-    const table = new cli_table3_1.default({
-        head: ['File', 'Action'],
-        colWidths: [50, 20],
-        style: { head: ['cyan'], border: ['gray'] },
-        chars: {
-            'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
-            'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
-            'left': '║', 'left-mid': '', 'mid': '', 'mid-mid': '',
-            'right': '║', 'right-mid': '', 'middle': '│'
-        }
-    });
-    items.forEach(result => {
-        table.push([
-            result.file.length > 47 ? result.file.substring(0, 47) + '...' : result.file,
-            { content: result.action, vAlign: 'center' }
-        ]);
-    });
-    console.log(table.toString());
-}
-function displayResults(results, agentsDir, agentName) {
-    const removed = results.filter(r => r.status === 'removed');
-    const added = results.filter(r => r.status === 'added');
-    const updated = results.filter(r => r.status === 'updated');
-    const current = results.filter(r => r.status === 'current');
-    const errors = results.filter(r => r.status === 'error');
-    console.log('\n📊 Install Results:');
-    createStatusTable('🗑️ Removed', removed);
-    createStatusTable('🆕 Added', added);
-    createStatusTable('🔄 Updated', updated);
-    createStatusTable('⏭️ Already Current', current);
-    if (errors.length > 0)
-        createStatusTable('❌ Errors', errors);
-    console.log(`\n🎉 Install completed!`);
-    console.log(`📍 Location: ${agentsDir}`);
-    const summary = [
-        removed.length && `${removed.length} removed`,
-        added.length && `${added.length} added`,
-        updated.length && `${updated.length} updated`,
-        current.length && `${current.length} current`,
-        errors.length && `${errors.length} errors`
-    ].filter(Boolean);
-    console.log(`📈 Summary: ${summary.join(', ')}`);
-    console.log(`💡 Agents will be automatically loaded by ${agentName}`);
+    return (0, shared_1.detectAgentTool)(AGENT_CONFIGS, 'opencode');
 }
 // ============================================================================
 // MAIN INSTALL FUNCTION
 // ============================================================================
 async function installAgents(options) {
     const cwd = process.cwd();
-    // Initialize results array
-    results = [];
+    const results = [];
     // Determine agent
     let agent;
     if (options.agent) {
         agent = options.agent.toLowerCase();
-        if (!getSupportedAgents().includes(agent)) {
-            log(`❌ Unknown agent: ${agent}`, 'red');
-            log(`Supported agents: ${getSupportedAgents().join(', ')}`, 'yellow');
+        if (!(0, shared_1.getSupportedAgents)(AGENT_CONFIGS).includes(agent)) {
+            (0, shared_1.log)(`❌ Unknown agent: ${agent}`, 'red');
+            (0, shared_1.log)(`Supported agents: ${(0, shared_1.getSupportedAgents)(AGENT_CONFIGS).join(', ')}`, 'yellow');
             throw new Error(`Unknown agent: ${agent}`);
         }
     }
@@ -272,14 +55,14 @@ async function installAgents(options) {
         const detectedAgent = detectAgentTool();
         if (detectedAgent !== 'opencode') {
             agent = detectedAgent;
-            console.log(`📝 Detected agent: ${getAgentConfig(agent).name}`);
+            console.log(`📝 Detected agent: ${(0, shared_1.getAgentConfig)(AGENT_CONFIGS, agent).name}`);
         }
         else {
             console.log('📝 No agent detected or defaulting to OpenCode.');
             agent = await promptForAgent();
         }
     }
-    const config = getAgentConfig(agent);
+    const config = (0, shared_1.getAgentConfig)(AGENT_CONFIGS, agent);
     const agentsDir = path_1.default.join(cwd, config.dir);
     const processContent = (content) => {
         // For OpenCode agents, preserve YAML front matter - no processing
@@ -287,7 +70,6 @@ async function installAgents(options) {
     };
     // Clear obsolete agents if requested
     if (options.clear && fs_1.default.existsSync(agentsDir)) {
-        console.log(`🧹 Clearing obsolete agents in ${agentsDir}...`);
         let expectedFiles;
         if (options.merge) {
             // In merge mode, only expect the merged file
@@ -309,31 +91,7 @@ async function installAgents(options) {
                 }
             }));
         }
-        // Get existing files
-        const existingFiles = fs_1.default.readdirSync(agentsDir, { recursive: true })
-            .filter((file) => typeof file === 'string' && file.endsWith('.md'))
-            .map((file) => path_1.default.join(agentsDir, file));
-        // Only remove files that are not expected
-        for (const file of existingFiles) {
-            const relativePath = path_1.default.relative(agentsDir, file);
-            if (!expectedFiles.has(relativePath)) {
-                try {
-                    fs_1.default.unlinkSync(file);
-                    results.push({
-                        file: relativePath,
-                        status: 'removed',
-                        action: 'Removed'
-                    });
-                }
-                catch (error) {
-                    results.push({
-                        file: relativePath,
-                        status: 'error',
-                        action: `Error removing: ${error.message}`
-                    });
-                }
-            }
-        }
+        (0, shared_1.clearObsoleteFiles)(agentsDir, expectedFiles, [config.extension], results);
     }
     // Create agents directory
     fs_1.default.mkdirSync(agentsDir, { recursive: true });
@@ -358,33 +116,10 @@ async function installAgents(options) {
         const mergedFileName = `all-agents${config.extension}`;
         const mergedFilePath = path_1.default.join(agentsDir, mergedFileName);
         console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
-        let mergedContent = `# Development Workflow Agents - Complete Collection\n\n`;
-        mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
-        mergedContent += `---\n\n`;
-        for (const filePath of agentFiles) {
-            try {
-                const scriptDir = __dirname;
-                const sourcePath = path_1.default.join(scriptDir, '..', 'modes', 'development-orchestrator', 'opencode-agents', filePath);
-                let content = fs_1.default.readFileSync(sourcePath, 'utf8');
-                content = processContent(content);
-                const parsedPath = path_1.default.parse(filePath);
-                const baseName = parsedPath.name;
-                const dir = parsedPath.dir;
-                const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
-                mergedContent += `## ${sectionTitle.replace(/-/g, ' ').toUpperCase()}\n\n`;
-                mergedContent += `${content}\n\n`;
-                mergedContent += `---\n\n`;
-            }
-            catch (error) {
-                results.push({
-                    file: filePath,
-                    status: 'error',
-                    action: `Error reading: ${error.message}`
-                });
-            }
-        }
+        const pathPrefix = 'modes/development-orchestrator/opencode-agents/';
+        const mergedContent = (0, shared_1.createMergedContent)(agentFiles.map(f => pathPrefix + f), processContent, 'Development Workflow Agents - Complete Collection', pathPrefix);
         // Check if file needs updating
-        const localInfo = getLocalFileInfo(mergedFilePath);
+        const localInfo = (0, shared_1.getLocalFileInfo)(mergedFilePath);
         const localProcessed = localInfo ? processContent(localInfo.content) : '';
         const contentChanged = !localInfo || localProcessed !== mergedContent;
         if (contentChanged) {
@@ -402,29 +137,12 @@ async function installAgents(options) {
                 action: 'Already current'
             });
         }
-        displayResults(results, agentsDir, config.name);
+        (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }
     else {
-        // Original file-by-file processing
-        // Setup progress bar
-        const progressBar = new cli_progress_1.default.SingleBar({
-            format: '📋 Installing | {bar} | {percentage}% | {value}/{total} files | {file}',
-            barCompleteChar: '\u2588',
-            barIncompleteChar: '\u2591',
-            hideCursor: true
-        });
-        progressBar.start(agentFiles.length, 0, { file: 'Starting...' });
-        // Process files in batches
-        const batchSize = 5;
-        const batches = [];
-        for (let i = 0; i < agentFiles.length; i += batchSize) {
-            batches.push(agentFiles.slice(i, i + batchSize));
-        }
-        for (const batch of batches) {
-            const promises = batch.map(filePath => processFile(filePath, agentsDir, config.extension, processContent, config.flatten, results, progressBar));
-            await Promise.all(promises);
-        }
-        progressBar.stop();
-        displayResults(results, agentsDir, config.name);
+        // Process files individually
+        const pathPrefix = 'modes/development-orchestrator/opencode-agents/';
+        await (0, shared_1.processBatch)(agentFiles.map(f => pathPrefix + f), agentsDir, config.extension, processContent, config.flatten, results, pathPrefix);
+        (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }
 }

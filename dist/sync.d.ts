@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-export declare function syncRules(options: {
+interface SyncOptions {
     agent?: string;
     verbose?: boolean;
     dryRun?: boolean;
     clear?: boolean;
     merge?: boolean;
-}): Promise<void>;
+}
+export declare function syncRules(options: SyncOptions): Promise<void>;
+export {};

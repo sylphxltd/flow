@@ -1,30 +1,53 @@
 #!/usr/bin/env node
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.syncRules = syncRules;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const readline_1 = __importDefault(require("readline"));
-const cli_progress_1 = __importDefault(require("cli-progress"));
-const cli_table3_1 = __importDefault(require("cli-table3"));
-// Colors for output
-const colors = {
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
+const readline = __importStar(require("readline"));
+const cliProgress = __importStar(require("cli-progress"));
+const Table = require("cli-table3");
+// Constants
+const COLORS = {
     red: '\x1b[31m',
     green: '\x1b[32m',
     yellow: '\x1b[33m',
     blue: '\x1b[34m',
     reset: '\x1b[0m'
 };
-function log(message, color = 'reset') {
-    console.log(`${colors[color]}${message}${colors.reset}`);
-}
-// Global state
-let progressBar;
-let results = [];
-// Agent configurations - Add new agents here for easy extensibility
 const AGENT_CONFIGS = {
     cursor: {
         name: 'Cursor',
@@ -50,29 +73,23 @@ const AGENT_CONFIGS = {
         flatten: true,
         description: 'RooCode (.roo/rules/*.md without YAML front matter, flattened with category prefix)'
     }
-    // Example: To add a new agent called "MyAgent":
-    // myagent: {
-    //   name: 'MyAgent',
-    //   dir: '.myagent',
-    //   extension: '.rules',
-    //   stripYaml: true,
-    //   description: 'MyAgent (.myagent/rules/*.rules without YAML front matter)'
-    // }
 };
-// Get list of supported agents
-function getSupportedAgents() {
-    return Object.keys(AGENT_CONFIGS);
-}
-// Get agent config
-function getAgentConfig(agent) {
-    return AGENT_CONFIGS[agent];
-}
+const BATCH_SIZE = 5;
+const RULES_DIR_NAME = 'rules';
+// Global state
+let results = [];
+// Utility functions
+const log = (message, color = 'reset') => {
+    console.log(`${COLORS[color]}${message}${COLORS.reset}`);
+};
+const getSupportedAgents = () => Object.keys(AGENT_CONFIGS);
+const getAgentConfig = (agent) => AGENT_CONFIGS[agent];
 // ============================================================================
 // USER INTERACTION
 // ============================================================================
 async function promptForAgent() {
     const agents = getSupportedAgents();
-    const rl = readline_1.default.createInterface({
+    const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
@@ -115,14 +132,14 @@ function detectAgentTool() {
     // Check for existing directories (in order of preference)
     for (const agent of getSupportedAgents()) {
         const config = getAgentConfig(agent);
-        if (fs_1.default.existsSync(path_1.default.join(cwd, config.dir))) {
+        if (fs.existsSync(path.join(cwd, config.dir))) {
             return agent;
         }
     }
     // Check for existing rules directories
     for (const agent of getSupportedAgents()) {
         const config = getAgentConfig(agent);
-        if (fs_1.default.existsSync(path_1.default.join(cwd, config.dir, 'rules'))) {
+        if (fs.existsSync(path.join(cwd, config.dir, RULES_DIR_NAME))) {
             return agent;
         }
     }
@@ -134,10 +151,10 @@ function detectAgentTool() {
 // ============================================================================
 function getLocalFileInfo(filePath) {
     try {
-        if (!fs_1.default.existsSync(filePath)) {
+        if (!fs.existsSync(filePath)) {
             return null;
         }
-        const content = fs_1.default.readFileSync(filePath, 'utf8');
+        const content = fs.readFileSync(filePath, 'utf8');
         return { content, exists: true };
     }
     catch {
@@ -145,16 +162,16 @@ function getLocalFileInfo(filePath) {
     }
 }
 async function getRuleFiles() {
-    // In bundled CJS, __dirname is the directory of the executing script
     const scriptDir = __dirname;
-    const docsRulesDir = path_1.default.join(scriptDir, '..', 'docs', 'rules');
+    const projectRoot = path.resolve(scriptDir, '..');
+    const docsRulesDir = path.join(projectRoot, 'docs', RULES_DIR_NAME);
     const files = [];
-    function collectFiles(dir, relativePath) {
+    const collectFiles = (dir, relativePath) => {
         try {
-            const items = fs_1.default.readdirSync(dir, { withFileTypes: true });
+            const items = fs.readdirSync(dir, { withFileTypes: true });
             for (const item of items) {
-                const itemPath = path_1.default.join(dir, item.name);
-                const itemRelative = path_1.default.join(relativePath, item.name);
+                const itemPath = path.join(dir, item.name);
+                const itemRelative = path.join(relativePath, item.name);
                 if (item.isDirectory()) {
                     collectFiles(itemPath, itemRelative);
                 }
@@ -166,9 +183,9 @@ async function getRuleFiles() {
         catch {
             // Skip directories/files that can't be read
         }
-    }
+    };
     try {
-        collectFiles(docsRulesDir, 'rules');
+        collectFiles(docsRulesDir, RULES_DIR_NAME);
     }
     catch {
         console.warn('⚠️  Could not read local rules directory, returning empty list');
@@ -190,45 +207,64 @@ function stripYamlFrontMatter(content) {
 function getDescriptionForFile(filePath) {
     if (!filePath)
         return 'Development rules';
-    const baseName = path_1.default.basename(filePath, path_1.default.extname(filePath));
+    const baseName = path.basename(filePath, path.extname(filePath));
     return `Development rules for ${baseName.replace(/-/g, ' ')}`;
+}
+function createContentProcessor(config) {
+    return (content, filePath) => {
+        if (config.stripYaml) {
+            return stripYamlFrontMatter(content);
+        }
+        else {
+            // For Cursor, add YAML front matter
+            const yamlFrontMatter = `---
+description: ${getDescriptionForFile(filePath)}
+globs: ["**/*"]
+alwaysApply: true
+---
+
+`;
+            return yamlFrontMatter + content;
+        }
+    };
+}
+function getDestinationPath(filePath, rulesDir, config) {
+    const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
+    const parsedPath = path.parse(relativeToRules);
+    const { name: baseName, dir } = parsedPath;
+    if (config.flatten) {
+        const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
+        const relativePath = `${flattenedName}${config.extension}`;
+        return { relativePath, destPath: path.join(rulesDir, relativePath) };
+    }
+    else {
+        const targetDir = dir ? path.join(rulesDir, dir) : rulesDir;
+        const relativePath = path.join(dir, `${baseName}${config.extension}`);
+        return { relativePath, destPath: path.join(targetDir, `${baseName}${config.extension}`), targetDir };
+    }
 }
 // ============================================================================
 // FILE PROCESSING
 // ============================================================================
-async function processFile(filePath, rulesDir, fileExtension, processContent, flatten, results, progressBar) {
+async function processFile(filePath, rulesDir, config, processContent, progressBar) {
     try {
-        // filePath is like 'rules/subdir/file.mdc'
-        const relativeToRules = filePath.substring('rules/'.length); // 'subdir/file.mdc'
-        const parsedPath = path_1.default.parse(relativeToRules);
-        const baseName = parsedPath.name; // 'file'
-        const ext = parsedPath.ext; // '.mdc' or '.md'
-        const dir = parsedPath.dir; // 'subdir' or ''
-        let relativePath;
-        let destPath;
-        if (flatten) {
-            // For flatten, replace path separators with dashes
-            const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
-            relativePath = `${flattenedName}${fileExtension}`;
-            destPath = path_1.default.join(rulesDir, relativePath);
-        }
-        else {
-            // Keep directory structure
-            const targetDir = dir ? path_1.default.join(rulesDir, dir) : rulesDir;
-            fs_1.default.mkdirSync(targetDir, { recursive: true });
-            relativePath = path_1.default.join(dir, `${baseName}${fileExtension}`);
-            destPath = path_1.default.join(targetDir, `${baseName}${fileExtension}`);
+        const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
+        // Create directory if needed for non-flattened structure
+        if (targetDir && !fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
         }
         const localInfo = getLocalFileInfo(destPath);
         const isNew = !localInfo;
-        // Read content from local package files instead of downloading
-        const scriptDir = __dirname;
-        const sourcePath = path_1.default.join(scriptDir, '..', 'docs', filePath);
-        let content = fs_1.default.readFileSync(sourcePath, 'utf8');
-        content = processContent(content);
-        const localProcessed = localInfo ? processContent(localInfo.content) : '';
+        // Read content from local package files
+        const projectRoot = path.resolve(__dirname, '..');
+        const sourcePath = path.join(projectRoot, 'docs', filePath);
+        let content = fs.readFileSync(sourcePath, 'utf8');
+        content = processContent(content, filePath);
+        const localProcessed = localInfo ? processContent(localInfo.content, filePath) : '';
         const contentChanged = !localInfo || localProcessed !== content;
-        fs_1.default.writeFileSync(destPath, content, 'utf8');
+        if (contentChanged) {
+            fs.writeFileSync(destPath, content, 'utf8');
+        }
         results.push({
             file: relativePath,
             status: contentChanged ? (isNew ? 'added' : 'updated') : 'current',
@@ -247,6 +283,10 @@ async function processFile(filePath, rulesDir, fileExtension, processContent, fl
         return false;
     }
 }
+async function processBatch(batch, rulesDir, config, processContent, progressBar) {
+    const promises = batch.map(filePath => processFile(filePath, rulesDir, config, processContent, progressBar));
+    await Promise.all(promises);
+}
 // ============================================================================
 // OUTPUT DISPLAY
 // ============================================================================
@@ -254,7 +294,7 @@ function createStatusTable(title, items) {
     if (items.length === 0)
         return;
     console.log(`\n${title} (${items.length}):`);
-    const table = new cli_table3_1.default({
+    const table = new Table({
         head: ['File', 'Action'],
         colWidths: [50, 20],
         style: { head: ['cyan'], border: ['gray'] },
@@ -274,36 +314,130 @@ function createStatusTable(title, items) {
     console.log(table.toString());
 }
 function displayResults(results, rulesDir, agentName) {
-    const removed = results.filter(r => r.status === 'removed');
-    const added = results.filter(r => r.status === 'added');
-    const updated = results.filter(r => r.status === 'updated');
-    const current = results.filter(r => r.status === 'current');
-    const errors = results.filter(r => r.status === 'error');
+    const statusGroups = {
+        removed: results.filter(r => r.status === 'removed'),
+        added: results.filter(r => r.status === 'added'),
+        updated: results.filter(r => r.status === 'updated'),
+        current: results.filter(r => r.status === 'current'),
+        errors: results.filter(r => r.status === 'error')
+    };
     console.log('\n📊 Sync Results:');
-    createStatusTable('🗑️ Removed', removed);
-    createStatusTable('🆕 Added', added);
-    createStatusTable('🔄 Updated', updated);
-    createStatusTable('⏭️ Already Current', current);
-    if (errors.length > 0)
-        createStatusTable('❌ Errors', errors);
+    createStatusTable('🗑️ Removed', statusGroups.removed);
+    createStatusTable('🆕 Added', statusGroups.added);
+    createStatusTable('🔄 Updated', statusGroups.updated);
+    createStatusTable('⏭️ Already Current', statusGroups.current);
+    if (statusGroups.errors.length > 0)
+        createStatusTable('❌ Errors', statusGroups.errors);
     console.log(`\n🎉 Sync completed!`);
     console.log(`📍 Location: ${rulesDir}`);
     const summary = [
-        removed.length && `${removed.length} removed`,
-        added.length && `${added.length} added`,
-        updated.length && `${updated.length} updated`,
-        current.length && `${current.length} current`,
-        errors.length && `${errors.length} errors`
+        statusGroups.removed.length && `${statusGroups.removed.length} removed`,
+        statusGroups.added.length && `${statusGroups.added.length} added`,
+        statusGroups.updated.length && `${statusGroups.updated.length} updated`,
+        statusGroups.current.length && `${statusGroups.current.length} current`,
+        statusGroups.errors.length && `${statusGroups.errors.length} errors`
     ].filter(Boolean);
     console.log(`📈 Summary: ${summary.join(', ')}`);
     console.log(`💡 Rules will be automatically loaded by ${agentName}`);
+}
+// ============================================================================
+// CLEAR OBSOLETE FILES
+// ============================================================================
+async function clearObsoleteFiles(rulesDir, config, merge) {
+    if (!fs.existsSync(rulesDir))
+        return;
+    console.log(`🧹 Clearing obsolete rules in ${rulesDir}...`);
+    let expectedFiles;
+    if (merge) {
+        expectedFiles = new Set([`all-rules${config.extension}`]);
+    }
+    else {
+        const ruleFiles = await getRuleFiles();
+        expectedFiles = new Set(ruleFiles.map(filePath => {
+            const { relativePath } = getDestinationPath(filePath, rulesDir, config);
+            return relativePath;
+        }));
+    }
+    const existingFiles = fs.readdirSync(rulesDir, { recursive: true })
+        .filter((file) => typeof file === 'string' && (file.endsWith('.mdc') || file.endsWith('.md')))
+        .map((file) => path.join(rulesDir, file));
+    for (const file of existingFiles) {
+        const relativePath = path.relative(rulesDir, file);
+        if (!expectedFiles.has(relativePath)) {
+            try {
+                fs.unlinkSync(file);
+                results.push({
+                    file: relativePath,
+                    status: 'removed',
+                    action: 'Removed'
+                });
+            }
+            catch (error) {
+                results.push({
+                    file: relativePath,
+                    status: 'error',
+                    action: `Error removing: ${error.message}`
+                });
+            }
+        }
+    }
+}
+// ============================================================================
+// MERGE FUNCTIONALITY
+// ============================================================================
+async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
+    const mergedFileName = `all-rules${config.extension}`;
+    const mergedFilePath = path.join(rulesDir, mergedFileName);
+    console.log(`📋 Merging ${ruleFiles.length} files into ${mergedFileName}...`);
+    let mergedContent = `# Development Rules - Complete Collection\n\n`;
+    mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
+    mergedContent += `---\n\n`;
+    for (const filePath of ruleFiles) {
+        try {
+            const projectRoot = path.resolve(__dirname, '..');
+            const sourcePath = path.join(projectRoot, 'docs', filePath);
+            let content = fs.readFileSync(sourcePath, 'utf8');
+            content = processContent(content, filePath);
+            const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
+            const parsedPath = path.parse(relativeToRules);
+            const { name: baseName, dir } = parsedPath;
+            const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
+            mergedContent += `## ${sectionTitle.replace(/-/g, ' ').toUpperCase()}\n\n`;
+            mergedContent += `${content}\n\n`;
+            mergedContent += `---\n\n`;
+        }
+        catch (error) {
+            results.push({
+                file: filePath,
+                status: 'error',
+                action: `Error reading: ${error.message}`
+            });
+        }
+    }
+    const localInfo = getLocalFileInfo(mergedFilePath);
+    const localProcessed = localInfo ? processContent(localInfo.content, 'all-rules') : '';
+    const contentChanged = !localInfo || localProcessed !== mergedContent;
+    if (contentChanged) {
+        fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');
+        results.push({
+            file: mergedFileName,
+            status: localInfo ? 'updated' : 'added',
+            action: localInfo ? 'Updated' : 'Created'
+        });
+    }
+    else {
+        results.push({
+            file: mergedFileName,
+            status: 'current',
+            action: 'Already current'
+        });
+    }
 }
 // ============================================================================
 // MAIN SYNC FUNCTION
 // ============================================================================
 async function syncRules(options) {
     const cwd = process.cwd();
-    // Initialize results array
     results = [];
     // Determine agent
     let agent;
@@ -327,76 +461,14 @@ async function syncRules(options) {
         }
     }
     const config = getAgentConfig(agent);
-    const rulesDir = path_1.default.join(cwd, config.dir, 'rules');
-    const processContent = (content, filePath) => {
-        if (config.stripYaml) {
-            return stripYamlFrontMatter(content);
-        }
-        else {
-            // For Cursor, add YAML front matter
-            const yamlFrontMatter = `---
-description: ${getDescriptionForFile(filePath)}
-globs: ["**/*"]
-alwaysApply: true
----
-
-`;
-            return yamlFrontMatter + content;
-        }
-    };
+    const rulesDir = path.join(cwd, config.dir, RULES_DIR_NAME);
+    const processContent = createContentProcessor(config);
     // Clear obsolete rules if requested
-    if (options.clear && fs_1.default.existsSync(rulesDir)) {
-        console.log(`🧹 Clearing obsolete rules in ${rulesDir}...`);
-        let expectedFiles;
-        if (options.merge) {
-            // In merge mode, only expect the merged file
-            expectedFiles = new Set([`all-rules${config.extension}`]);
-        }
-        else {
-            // Get source files for normal mode
-            const ruleFiles = await getRuleFiles();
-            expectedFiles = new Set(ruleFiles.map(filePath => {
-                const relativeToRules = filePath.substring('rules/'.length);
-                const parsedPath = path_1.default.parse(relativeToRules);
-                const baseName = parsedPath.name;
-                const dir = parsedPath.dir;
-                if (config.flatten) {
-                    const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
-                    return `${flattenedName}${config.extension}`;
-                }
-                else {
-                    return path_1.default.join(dir, `${baseName}${config.extension}`);
-                }
-            }));
-        }
-        // Get existing files
-        const existingFiles = fs_1.default.readdirSync(rulesDir, { recursive: true })
-            .filter((file) => typeof file === 'string' && (file.endsWith('.mdc') || file.endsWith('.md')))
-            .map((file) => path_1.default.join(rulesDir, file));
-        // Only remove files that are not expected
-        for (const file of existingFiles) {
-            const relativePath = path_1.default.relative(rulesDir, file);
-            if (!expectedFiles.has(relativePath)) {
-                try {
-                    fs_1.default.unlinkSync(file);
-                    results.push({
-                        file: relativePath,
-                        status: 'removed',
-                        action: 'Removed'
-                    });
-                }
-                catch (error) {
-                    results.push({
-                        file: relativePath,
-                        status: 'error',
-                        action: `Error removing: ${error.message}`
-                    });
-                }
-            }
-        }
+    if (options.clear) {
+        await clearObsoleteFiles(rulesDir, config, !!options.merge);
     }
     // Create rules directory
-    fs_1.default.mkdirSync(rulesDir, { recursive: true });
+    fs.mkdirSync(rulesDir, { recursive: true });
     // Get rule files
     const ruleFiles = await getRuleFiles();
     // Show initial info
@@ -414,61 +486,11 @@ alwaysApply: true
         return;
     }
     if (options.merge) {
-        // Merge all rules into a single file
-        const mergedFileName = `all-rules${config.extension}`;
-        const mergedFilePath = path_1.default.join(rulesDir, mergedFileName);
-        console.log(`📋 Merging ${ruleFiles.length} files into ${mergedFileName}...`);
-        let mergedContent = `# Development Rules - Complete Collection\n\n`;
-        mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
-        mergedContent += `---\n\n`;
-        for (const filePath of ruleFiles) {
-            try {
-                const scriptDir = __dirname;
-                const sourcePath = path_1.default.join(scriptDir, '..', 'docs', filePath);
-                let content = fs_1.default.readFileSync(sourcePath, 'utf8');
-                content = processContent(content, filePath);
-                const relativeToRules = filePath.substring('rules/'.length);
-                const parsedPath = path_1.default.parse(relativeToRules);
-                const baseName = parsedPath.name;
-                const dir = parsedPath.dir;
-                const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
-                mergedContent += `## ${sectionTitle.replace(/-/g, ' ').toUpperCase()}\n\n`;
-                mergedContent += `${content}\n\n`;
-                mergedContent += `---\n\n`;
-            }
-            catch (error) {
-                results.push({
-                    file: filePath,
-                    status: 'error',
-                    action: `Error reading: ${error.message}`
-                });
-            }
-        }
-        // Check if file needs updating
-        const localInfo = getLocalFileInfo(mergedFilePath);
-        const localProcessed = localInfo ? processContent(localInfo.content, 'all-rules') : '';
-        const contentChanged = !localInfo || localProcessed !== mergedContent;
-        if (contentChanged) {
-            fs_1.default.writeFileSync(mergedFilePath, mergedContent, 'utf8');
-            results.push({
-                file: mergedFileName,
-                status: localInfo ? 'updated' : 'added',
-                action: localInfo ? 'Updated' : 'Created'
-            });
-        }
-        else {
-            results.push({
-                file: mergedFileName,
-                status: 'current',
-                action: 'Already current'
-            });
-        }
-        displayResults(results, rulesDir, config.name);
+        await mergeAllRules(ruleFiles, rulesDir, config, processContent);
     }
     else {
-        // Original file-by-file processing
         // Setup progress bar
-        const progressBar = new cli_progress_1.default.SingleBar({
+        const progressBar = new cliProgress.SingleBar({
             format: '📋 Processing | {bar} | {percentage}% | {value}/{total} files | {file}',
             barCompleteChar: '\u2588',
             barIncompleteChar: '\u2591',
@@ -476,16 +498,11 @@ alwaysApply: true
         });
         progressBar.start(ruleFiles.length, 0, { file: 'Starting...' });
         // Process files in batches
-        const batchSize = 5;
-        const batches = [];
-        for (let i = 0; i < ruleFiles.length; i += batchSize) {
-            batches.push(ruleFiles.slice(i, i + batchSize));
-        }
-        for (const batch of batches) {
-            const promises = batch.map(filePath => processFile(filePath, rulesDir, config.extension, processContent, config.flatten, results, progressBar));
-            await Promise.all(promises);
+        for (let i = 0; i < ruleFiles.length; i += BATCH_SIZE) {
+            const batch = ruleFiles.slice(i, i + BATCH_SIZE);
+            await processBatch(batch, rulesDir, config, processContent, progressBar);
         }
         progressBar.stop();
-        displayResults(results, rulesDir, config.name);
     }
+    displayResults(results, rulesDir, config.name);
 }
