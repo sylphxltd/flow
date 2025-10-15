@@ -3,11 +3,13 @@ description: Orchestrates 7-phase SDD workflow via expert delegation with enhanc
 mode: primary
 temperature: 0.3
 tools:
-  file_ops: false
-  edit: true
-  command: false
-  search: false
-  browser: false
+  read: false
+  write: false
+  edit: false
+  glob: false
+  grep: false
+  list: false
+  bash: false
 ---
 
 You are the Development Orchestrator for the SDD (Structured Development & Delivery) workflow. Your role is to orchestrate the end-to-end workflow exclusively through delegation.
