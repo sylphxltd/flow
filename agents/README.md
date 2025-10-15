@@ -8,14 +8,20 @@ This directory contains the agent definitions for the SDD workflow system.
 agents/
 ├── sdd/                    # All SDD workflow agent definitions
 │   ├── development-orchestrator.md
-│   ├── sdd-constitution.md
-│   ├── sdd-specify.md
-│   ├── sdd-clarify.md
-│   ├── sdd-plan.md
-│   ├── sdd-task.md
-│   ├── sdd-analyze.md
-│   ├── sdd-implement.md
-│   └── sdd-release.md
+│   ├── constitution.md
+│   ├── specify.md
+│   ├── clarify.md
+│   ├── plan.md
+│   ├── task.md
+│   ├── analyze.md
+│   ├── implement.md
+│   └── release.md
+├── core/                   # Core specialized agents
+│   ├── coder.md            # Code implementation specialist
+│   ├── planner.md          # Strategic planning specialist
+│   ├── researcher.md       # Research and analysis specialist
+│   ├── reviewer.md         # Code review and quality assurance specialist
+│   └── tester.md           # Comprehensive testing and quality assurance specialist
 ├── archived/               # Archived configuration files
 │   ├── custom_mode.v2.yaml
 │   ├── custom_mode.v3.yaml
@@ -30,14 +36,21 @@ agents/
 - **development-orchestrator.md**: Main orchestrator that manages the 7-phase SDD workflow through expert delegation
 
 ### SDD Phase Agents
-- **sdd-constitution.md**: Handles project-wide policies and constitutional requirements
-- **sdd-specify.md**: Creates detailed specifications with measurable acceptance criteria
-- **sdd-clarify.md**: Resolves ambiguities through Q&A and applies updates to specifications
-- **sdd-plan.md**: Creates comprehensive implementation plans with architecture and testing strategies
-- **sdd-task.md**: Breaks down specifications into granular, testable implementation tasks
-- **sdd-analyze.md**: Validates implementation completeness and quality against requirements
-- **sdd-implement.md**: Executes tasks using strict TDD methodology (Red-Green-Refactor)
-- **sdd-release.md**: Manages release preparation and deployment verification
+- **constitution.md**: Handles project-wide policies and constitutional requirements
+- **specify.md**: Creates detailed specifications with measurable acceptance criteria
+- **clarify.md**: Resolves ambiguities through Q&A and applies updates to specifications
+- **plan.md**: Creates comprehensive implementation plans with architecture and testing strategies
+- **task.md**: Breaks down specifications into granular, testable implementation tasks
+- **analyze.md**: Validates implementation completeness and quality against requirements
+- **implement.md**: Executes tasks using strict TDD methodology (Red-Green-Refactor)
+- **release.md**: Manages release preparation and deployment verification
+
+### Core Specialized Agents
+- **core/coder.md**: Senior software engineer specialized in writing clean, maintainable, and efficient code following best practices and design patterns
+- **core/planner.md**: Strategic planning specialist responsible for breaking down complex tasks into manageable components and creating actionable execution plans
+- **core/researcher.md**: Deep research and information gathering specialist focused on code analysis, pattern recognition, and knowledge synthesis
+- **core/reviewer.md**: Code review and quality assurance specialist responsible for ensuring code quality, security, and maintainability
+- **core/tester.md**: Comprehensive testing and quality assurance specialist focused on ensuring code quality through testing strategies and validation techniques
 
 ## Usage
 
