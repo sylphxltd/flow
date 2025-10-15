@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { syncRules } from './sync';
 import { installAgents } from './install';
+import { installAgents } from './install';
 
 const program = new Command();
 

@@ -211,7 +211,8 @@ async function processFile(
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = processContent(content);
 
-    const contentChanged = !localInfo || processContent(localInfo.content) !== content;
+    const localProcessed = localInfo ? processContent(localInfo.content) : '';
+    const contentChanged = !localInfo || localProcessed !== content;
 
     fs.writeFileSync(destPath, content, 'utf8');
 
@@ -446,7 +447,8 @@ export async function installAgents(options: { agent?: string; verbose?: boolean
 
     // Check if file needs updating
     const localInfo = getLocalFileInfo(mergedFilePath);
-    const contentChanged = !localInfo || localInfo.content !== mergedContent;
+    const localProcessed = localInfo ? processContent(localInfo.content) : '';
+    const contentChanged = !localInfo || localProcessed !== mergedContent;
 
     if (contentChanged) {
       fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');
