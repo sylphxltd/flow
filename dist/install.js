@@ -26,14 +26,16 @@ async function getAgentFiles() {
     // When running from compiled dist folder, we need to resolve from the project root
     const scriptDir = __dirname;
     const projectRoot = path_1.default.resolve(scriptDir, '..');
-    const agentsDir = path_1.default.join(projectRoot, 'modes', 'development-orchestrator', 'opencode-agents');
+    const agentsDir = path_1.default.join(projectRoot, 'agents', 'development-orchestrator', 'opencode-agents');
     return (0, shared_1.collectFiles)(agentsDir, ['.md']);
 }
 async function promptForAgent() {
-    return (0, shared_1.promptForAgent)(AGENT_CONFIGS, 'Workflow Install Tool');
+    const result = await (0, shared_1.promptForAgent)(AGENT_CONFIGS, 'Workflow Install Tool');
+    return result;
 }
 function detectAgentTool() {
-    return (0, shared_1.detectAgentTool)(AGENT_CONFIGS, 'opencode');
+    const result = (0, shared_1.detectAgentTool)(AGENT_CONFIGS, 'opencode');
+    return result;
 }
 // ============================================================================
 // MAIN INSTALL FUNCTION
@@ -116,7 +118,7 @@ async function installAgents(options) {
         const mergedFileName = `all-agents${config.extension}`;
         const mergedFilePath = path_1.default.join(agentsDir, mergedFileName);
         console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
-        const pathPrefix = 'modes/development-orchestrator/opencode-agents/';
+        const pathPrefix = 'agents/development-orchestrator/opencode-agents/';
         const mergedContent = (0, shared_1.createMergedContent)(agentFiles.map(f => pathPrefix + f), processContent, 'Development Workflow Agents - Complete Collection', pathPrefix);
         // Check if file needs updating
         const localInfo = (0, shared_1.getLocalFileInfo)(mergedFilePath);
@@ -141,7 +143,7 @@ async function installAgents(options) {
     }
     else {
         // Process files individually
-        const pathPrefix = 'modes/development-orchestrator/opencode-agents/';
+        const pathPrefix = 'agents/development-orchestrator/opencode-agents/';
         await (0, shared_1.processBatch)(agentFiles.map(f => pathPrefix + f), agentsDir, config.extension, processContent, config.flatten, results, pathPrefix);
         (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }

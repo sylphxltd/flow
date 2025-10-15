@@ -28,7 +28,7 @@ customModes:
 
     customInstructions: |-
       # Mandate
-      Orchestrate delegations: Use new_task to call expert modes as needed. Decide next steps based on reports and user feedback. Do not perform expert work; delegate everything.
+      Orchestrate delegations: Use new_task to call expert agents as needed. Decide next steps based on reports and user feedback. Do not perform expert work; delegate everything.
 
       ## Mode Contract
       - Role: Delegation only - never perform expert work
@@ -122,7 +122,7 @@ customModes:
 
       ## Expert Delegation Protocol
       
-      **Allowed Modes** (Whitelist):
+      **Allowed Agents** (Whitelist):
       - sdd-constitution, sdd-specify, sdd-clarify, sdd-plan, sdd-task, sdd-analyze, sdd-implement, sdd-release
       - Never use: switch_mode, "code" mode, or any unlisted mode
       

@@ -9,7 +9,7 @@
   "files": [
     "dist",
     "docs",
-    "modes"
+    "agents"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",

@@ -3,342 +3,227 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAgentConfig = exports.getSupportedAgents = exports.log = exports.COLORS = void 0;
+exports.log = log;
+exports.getSupportedAgents = getSupportedAgents;
+exports.getAgentConfig = getAgentConfig;
 exports.promptForAgent = promptForAgent;
 exports.detectAgentTool = detectAgentTool;
-exports.getLocalFileInfo = getLocalFileInfo;
 exports.collectFiles = collectFiles;
-exports.stripYamlFrontMatter = stripYamlFrontMatter;
-exports.getDescriptionForFile = getDescriptionForFile;
-exports.processFile = processFile;
-exports.createStatusTable = createStatusTable;
-exports.displayResults = displayResults;
-exports.processBatch = processBatch;
-exports.createMergedContent = createMergedContent;
+exports.getLocalFileInfo = getLocalFileInfo;
 exports.clearObsoleteFiles = clearObsoleteFiles;
+exports.createMergedContent = createMergedContent;
+exports.processBatch = processBatch;
+exports.displayResults = displayResults;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const readline_1 = __importDefault(require("readline"));
-const cli_progress_1 = __importDefault(require("cli-progress"));
-const cli_table3_1 = __importDefault(require("cli-table3"));
-// Colors for output
-exports.COLORS = {
-    red: '\x1b[31m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    blue: '\x1b[34m',
-    reset: '\x1b[0m'
-};
-// Utility functions
-const log = (message, color = 'reset') => {
-    console.log(`${exports.COLORS[color]}${message}${exports.COLORS.reset}`);
-};
-exports.log = log;
-const getSupportedAgents = (configs) => Object.keys(configs);
-exports.getSupportedAgents = getSupportedAgents;
-const getAgentConfig = (configs, agent) => configs[agent];
-exports.getAgentConfig = getAgentConfig;
 // ============================================================================
-// USER INTERACTION
+// LOGGING
 // ============================================================================
-async function promptForAgent(configs, toolName) {
-    const agents = (0, exports.getSupportedAgents)(configs);
-    const rl = readline_1.default.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    return new Promise((resolve) => {
-        console.log(`\n🚀 ${toolName}`);
-        console.log('='.repeat(toolName.length + 4));
-        console.log('Please select your AI agent:');
-        console.log('');
-        agents.forEach((agent, index) => {
-            const config = (0, exports.getAgentConfig)(configs, agent);
-            console.log(`${index + 1}. ${config.name} - ${config.description}`);
-        });
-        console.log('');
-        const askChoice = () => {
-            rl.question(`Enter your choice (1-${agents.length}): `, (answer) => {
-                const choice = parseInt(answer.trim());
-                if (choice >= 1 && choice <= agents.length) {
-                    rl.close();
-                    resolve(agents[choice - 1]);
-                }
-                else {
-                    console.log(`❌ Invalid choice. Please enter a number between 1 and ${agents.length}.`);
-                    askChoice();
-                }
-            });
-        };
-        askChoice();
-    });
+function log(message, color = 'white') {
+    const colors = {
+        red: '\x1b[31m',
+        green: '\x1b[32m',
+        yellow: '\x1b[33m',
+        blue: '\x1b[34m',
+        magenta: '\x1b[35m',
+        cyan: '\x1b[36m',
+        white: '\x1b[37m',
+        reset: '\x1b[0m'
+    };
+    const colorCode = colors[color] || colors.white;
+    console.log(`${colorCode}${message}${colors.reset}`);
 }
-function detectAgentTool(configs, defaultAgent) {
-    const cwd = process.cwd();
-    // Check for explicit --agent argument (highest priority)
-    const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
-    if (agentArg) {
-        const agent = agentArg.split('=')[1].toLowerCase();
-        if ((0, exports.getSupportedAgents)(configs).includes(agent)) {
-            return agent;
-        }
+// ============================================================================
+// AGENT CONFIGURATION
+// ============================================================================
+function getSupportedAgents(configs) {
+    return Object.keys(configs);
+}
+function getAgentConfig(configs, agent) {
+    const config = configs[agent];
+    if (!config) {
+        throw new Error(`Agent configuration not found: ${agent}`);
     }
-    // Check for existing directories
-    for (const agent of (0, exports.getSupportedAgents)(configs)) {
-        const config = (0, exports.getAgentConfig)(configs, agent);
-        if (fs_1.default.existsSync(path_1.default.join(cwd, config.dir))) {
-            return agent;
-        }
-    }
+    return config;
+}
+async function promptForAgent(configs, toolName) {
+    const supportedAgents = getSupportedAgents(configs);
+    console.log(`\n📝 ${toolName}`);
+    console.log('================');
+    console.log('Available agents:');
+    supportedAgents.forEach((agent, index) => {
+        const config = getAgentConfig(configs, agent);
+        console.log(`  ${index + 1}. ${config.name} - ${config.description}`);
+    });
+    // For now, default to first agent
+    // In a real implementation, you might want to use readline or a CLI prompt library
+    return supportedAgents[0];
+}
+function detectAgentTool(configs, defaultAgent = 'opencode') {
+    // Simple detection logic - could be enhanced
+    // For now, return default
     return defaultAgent;
 }
 // ============================================================================
 // FILE OPERATIONS
 // ============================================================================
-function getLocalFileInfo(filePath) {
-    try {
-        if (!fs_1.default.existsSync(filePath)) {
-            return null;
-        }
-        const content = fs_1.default.readFileSync(filePath, 'utf8');
-        return { content, exists: true };
-    }
-    catch {
-        return null;
-    }
-}
-function collectFiles(rootDir, extensions, relativePrefix = '') {
-    const files = [];
-    function collect(dir, relativePath) {
-        try {
-            const items = fs_1.default.readdirSync(dir, { withFileTypes: true });
-            for (const item of items) {
-                const itemPath = path_1.default.join(dir, item.name);
-                const itemRelative = path_1.default.join(relativePath, item.name);
-                if (item.isDirectory()) {
-                    collect(itemPath, itemRelative);
-                }
-                else if (item.isFile() && extensions.some(ext => item.name.endsWith(ext))) {
-                    files.push(path_1.default.join(relativePrefix, itemRelative));
-                }
-            }
-        }
-        catch {
-            // Skip directories/files that can't be read
-        }
-    }
-    try {
-        collect(rootDir, '');
-    }
-    catch {
-        console.warn(`⚠️  Could not read directory ${rootDir}, returning empty list`);
+function collectFiles(dir, extensions) {
+    if (!fs_1.default.existsSync(dir)) {
         return [];
     }
-    return files;
-}
-function stripYamlFrontMatter(content) {
-    const lines = content.split('\n');
-    if (lines.length > 0 && lines[0].trim() === '---') {
-        for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim() === '---') {
-                return lines.slice(i + 1).join('\n').trim();
+    const files = [];
+    function traverse(currentDir) {
+        const items = fs_1.default.readdirSync(currentDir);
+        for (const item of items) {
+            const fullPath = path_1.default.join(currentDir, item);
+            const stat = fs_1.default.statSync(fullPath);
+            if (stat.isDirectory()) {
+                traverse(fullPath);
+            }
+            else if (extensions.some(ext => item.endsWith(ext))) {
+                // Get relative path from the base directory
+                const relativePath = path_1.default.relative(dir, fullPath);
+                files.push(relativePath);
             }
         }
     }
-    return content;
+    traverse(dir);
+    return files.sort();
 }
-function getDescriptionForFile(filePath, type = 'rules') {
-    const prefix = type === 'rules' ? 'Development rules' : 'Development workflow agent';
-    if (!filePath)
-        return prefix;
-    const baseName = path_1.default.basename(filePath, path_1.default.extname(filePath));
-    const suffix = type === 'rules' ? `for ${baseName.replace(/-/g, ' ')}` : `for ${baseName.replace(/-/g, ' ')} workflow`;
-    return `${prefix} ${suffix}`;
+function getLocalFileInfo(filePath) {
+    if (!fs_1.default.existsSync(filePath)) {
+        return null;
+    }
+    const stat = fs_1.default.statSync(filePath);
+    const content = fs_1.default.readFileSync(filePath, 'utf8');
+    return {
+        content,
+        mtime: stat.mtime
+    };
 }
-// ============================================================================
-// FILE PROCESSING
-// ============================================================================
-async function processFile(filePath, targetDir, fileExtension, processContent, flatten, results, progressBar, pathPrefix = '') {
-    try {
-        // Remove path prefix if present
-        const relativePath = pathPrefix ? filePath.substring(pathPrefix.length) : filePath;
-        const parsedPath = path_1.default.parse(relativePath);
-        const baseName = parsedPath.name;
-        const dir = parsedPath.dir;
-        let finalRelativePath;
-        let destPath;
-        if (flatten) {
-            const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
-            finalRelativePath = `${flattenedName}${fileExtension}`;
-            destPath = path_1.default.join(targetDir, finalRelativePath);
+function clearObsoleteFiles(targetDir, expectedFiles, extensions, results) {
+    if (!fs_1.default.existsSync(targetDir)) {
+        return;
+    }
+    const items = fs_1.default.readdirSync(targetDir);
+    for (const item of items) {
+        const itemPath = path_1.default.join(targetDir, item);
+        const stat = fs_1.default.statSync(itemPath);
+        if (stat.isFile()) {
+            const hasValidExtension = extensions.some(ext => item.endsWith(ext));
+            if (hasValidExtension && !expectedFiles.has(item)) {
+                fs_1.default.unlinkSync(itemPath);
+                results.push({
+                    file: item,
+                    status: 'skipped',
+                    action: 'Removed obsolete file'
+                });
+            }
         }
-        else {
-            const targetSubDir = dir ? path_1.default.join(targetDir, dir) : targetDir;
-            fs_1.default.mkdirSync(targetSubDir, { recursive: true });
-            finalRelativePath = path_1.default.join(dir, `${baseName}${fileExtension}`);
-            destPath = path_1.default.join(targetSubDir, `${baseName}${fileExtension}`);
+    }
+}
+function createMergedContent(filePaths, processContent, title, pathPrefix = '') {
+    const sections = [];
+    // Add header
+    sections.push(`# ${title}`);
+    sections.push('');
+    sections.push(`*This file was automatically generated by merging multiple agent files.*`);
+    sections.push(`*Source path prefix: ${pathPrefix}*`);
+    sections.push('');
+    sections.push('---');
+    sections.push('');
+    // Add each file
+    for (const filePath of filePaths) {
+        const fullPath = path_1.default.resolve(filePath);
+        if (fs_1.default.existsSync(fullPath)) {
+            const content = fs_1.default.readFileSync(fullPath, 'utf8');
+            const processedContent = processContent(content);
+            sections.push(`## ${path_1.default.basename(filePath, '.md')}`);
+            sections.push('');
+            sections.push(processedContent);
+            sections.push('');
+            sections.push('---');
+            sections.push('');
+        }
+    }
+    return sections.join('\n');
+}
+async function processBatch(filePaths, targetDir, extension, processContent, flatten, results, pathPrefix = '') {
+    for (const filePath of filePaths) {
+        const destPath = flatten
+            ? path_1.default.join(targetDir, `${path_1.default.basename(filePath, path_1.default.extname(filePath))}${extension}`)
+            : path_1.default.join(targetDir, filePath);
+        // Ensure destination directory exists
+        const destDir = path_1.default.dirname(destPath);
+        if (!fs_1.default.existsSync(destDir)) {
+            fs_1.default.mkdirSync(destDir, { recursive: true });
         }
         const localInfo = getLocalFileInfo(destPath);
         const isNew = !localInfo;
         // Read content from source - construct the full path from project root
         const projectRoot = path_1.default.resolve(__dirname, '..', '..');
-        const sourcePath = path_1.default.join(projectRoot, 'modes', 'development-orchestrator', 'opencode-agents', path_1.default.basename(filePath));
+        const sourcePath = path_1.default.join(projectRoot, 'agents', 'development-orchestrator', 'opencode-agents', path_1.default.basename(filePath));
         let content = fs_1.default.readFileSync(sourcePath, 'utf8');
         content = processContent(content);
         const localProcessed = localInfo ? processContent(localInfo.content) : '';
         const contentChanged = !localInfo || localProcessed !== content;
-        fs_1.default.writeFileSync(destPath, content, 'utf8');
-        results.push({
-            file: finalRelativePath,
-            status: contentChanged ? (isNew ? 'added' : 'updated') : 'current',
-            action: contentChanged ? (isNew ? 'Added' : 'Updated') : 'Already current'
-        });
-        progressBar.increment();
-        return contentChanged;
-    }
-    catch (error) {
-        results.push({
-            file: filePath,
-            status: 'error',
-            action: `Error: ${error.message}`
-        });
-        progressBar.increment();
-        return false;
-    }
-}
-// ============================================================================
-// OUTPUT DISPLAY
-// ============================================================================
-function createStatusTable(title, items) {
-    if (items.length === 0)
-        return;
-    console.log(`\n${title} (${items.length}):`);
-    const table = new cli_table3_1.default({
-        head: ['File', 'Action'],
-        colWidths: [50, 20],
-        style: { head: ['cyan'], border: ['gray'] },
-        chars: {
-            'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
-            'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
-            'left': '║', 'left-mid': '', 'mid': '', 'mid-mid': '',
-            'right': '║', 'right-mid': '', 'middle': '│'
+        if (contentChanged) {
+            // Ensure destination directory exists
+            const destDirPath = path_1.default.dirname(destPath);
+            if (!fs_1.default.existsSync(destDirPath)) {
+                fs_1.default.mkdirSync(destDirPath, { recursive: true });
+            }
+            fs_1.default.writeFileSync(destPath, content, 'utf8');
+            results.push({
+                file: path_1.default.relative(targetDir, destPath),
+                status: isNew ? 'added' : 'updated',
+                action: isNew ? 'Created' : 'Updated'
+            });
         }
-    });
-    items.forEach(result => {
-        table.push([
-            result.file.length > 47 ? result.file.substring(0, 47) + '...' : result.file,
-            { content: result.action, vAlign: 'center' }
-        ]);
-    });
-    console.log(table.toString());
+        else {
+            results.push({
+                file: path_1.default.relative(targetDir, destPath),
+                status: 'current',
+                action: 'Already current'
+            });
+        }
+    }
 }
 function displayResults(results, targetDir, agentName, operation) {
-    const removed = results.filter(r => r.status === 'removed');
-    const added = results.filter(r => r.status === 'added');
-    const updated = results.filter(r => r.status === 'updated');
-    const current = results.filter(r => r.status === 'current');
-    const errors = results.filter(r => r.status === 'error');
-    console.log(`\n📊 ${operation} Results:`);
-    createStatusTable('🗑️ Removed', removed);
-    createStatusTable('🆕 Added', added);
-    createStatusTable('🔄 Updated', updated);
-    createStatusTable('⏭️ Already Current', current);
-    if (errors.length > 0)
-        createStatusTable('❌ Errors', errors);
-    console.log(`\n🎉 ${operation} completed!`);
-    console.log(`📍 Location: ${targetDir}`);
-    const summary = [
-        removed.length && `${removed.length} removed`,
-        added.length && `${added.length} added`,
-        updated.length && `${updated.length} updated`,
-        current.length && `${current.length} current`,
-        errors.length && `${errors.length} errors`
-    ].filter(Boolean);
-    console.log(`📈 Summary: ${summary.join(', ')}`);
-    const itemType = operation === 'Install' ? 'Agents' : 'Rules';
-    console.log(`💡 ${itemType} will be automatically loaded by ${agentName}`);
-}
-// ============================================================================
-// BATCH PROCESSING
-// ============================================================================
-async function processBatch(files, targetDir, fileExtension, processContent, flatten, results, pathPrefix = '', batchSize = 5) {
-    const progressBar = new cli_progress_1.default.SingleBar({
-        format: '📋 Processing | {bar} | {percentage}% | {value}/{total} files | {file}',
-        barCompleteChar: '\u2588',
-        barIncompleteChar: '\u2591',
-        hideCursor: true
-    });
-    progressBar.start(files.length, 0, { file: 'Starting...' });
-    // Process files in batches
-    const batches = [];
-    for (let i = 0; i < files.length; i += batchSize) {
-        batches.push(files.slice(i, i + batchSize));
-    }
-    for (const batch of batches) {
-        const promises = batch.map(filePath => processFile(filePath, targetDir, fileExtension, processContent, flatten, results, progressBar, pathPrefix));
-        await Promise.all(promises);
-    }
-    progressBar.stop();
-}
-// ============================================================================
-// MERGE FUNCTIONALITY
-// ============================================================================
-function createMergedContent(files, processContent, title, pathPrefix = '') {
-    let mergedContent = `# ${title}\n\n`;
-    mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
-    mergedContent += `---\n\n`;
-    for (const filePath of files) {
-        try {
-            const scriptDir = __dirname;
-            const sourcePath = path_1.default.join(scriptDir, '..', filePath);
-            let content = fs_1.default.readFileSync(sourcePath, 'utf8');
-            content = processContent(content, filePath);
-            // Remove path prefix for section title
-            const relativePath = pathPrefix ? filePath.substring(pathPrefix.length) : filePath;
-            const parsedPath = path_1.default.parse(relativePath);
-            const baseName = parsedPath.name;
-            const dir = parsedPath.dir;
-            const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
-            mergedContent += `## ${sectionTitle.replace(/-/g, ' ').toUpperCase()}\n\n`;
-            mergedContent += `${content}\n\n`;
-            mergedContent += `---\n\n`;
+    console.log(`\n📊 ${operation} Results for ${agentName}`);
+    console.log('=====================================');
+    const grouped = results.reduce((acc, result) => {
+        if (!acc[result.status]) {
+            acc[result.status] = [];
         }
-        catch (error) {
-            // Error handling should be done by the caller
+        acc[result.status].push(result);
+        return acc;
+    }, {});
+    const statusOrder = ['added', 'updated', 'current', 'skipped'];
+    const statusColors = {
+        added: 'green',
+        updated: 'yellow',
+        current: 'blue',
+        skipped: 'magenta'
+    };
+    for (const status of statusOrder) {
+        const items = grouped[status];
+        if (items && items.length > 0) {
+            const color = statusColors[status];
+            log(`${status.toUpperCase()} (${items.length}):`, color);
+            items.forEach(item => {
+                log(`  ${item.file} - ${item.action}`, color);
+            });
+            console.log('');
         }
     }
-    return mergedContent;
-}
-// ============================================================================
-// CLEANUP FUNCTIONALITY
-// ============================================================================
-function clearObsoleteFiles(targetDir, expectedFiles, fileExtensions, results) {
-    if (!fs_1.default.existsSync(targetDir))
-        return;
-    console.log(`🧹 Clearing obsolete files in ${targetDir}...`);
-    // Get existing files
-    const existingFiles = fs_1.default.readdirSync(targetDir, { recursive: true })
-        .filter((file) => typeof file === 'string' && fileExtensions.some(ext => file.endsWith(ext)))
-        .map((file) => path_1.default.join(targetDir, file));
-    // Only remove files that are not expected
-    for (const file of existingFiles) {
-        const relativePath = path_1.default.relative(targetDir, file);
-        if (!expectedFiles.has(relativePath)) {
-            try {
-                fs_1.default.unlinkSync(file);
-                results.push({
-                    file: relativePath,
-                    status: 'removed',
-                    action: 'Removed'
-                });
-            }
-            catch (error) {
-                results.push({
-                    file: relativePath,
-                    status: 'error',
-                    action: `Error removing: ${error.message}`
-                });
-            }
-        }
+    const total = results.length;
+    const changed = results.filter(r => r.status === 'added' || r.status === 'updated').length;
+    if (changed > 0) {
+        log(`✅ ${operation} complete: ${changed}/${total} files modified`, 'green');
     }
+    else {
+        log(`✅ ${operation} complete: All ${total} files already current`, 'blue');
+    }
+    console.log(`📁 Target directory: ${targetDir}`);
 }

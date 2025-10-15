@@ -24,7 +24,7 @@ customModes:
 
     customInstructions: |-
       # CORE MANDATES
-      - **Delegation Only**: Use new_task to call expert modes. Never perform expert work.
+      - **Delegation Only**: Use new_task to call expert agents. Never perform expert work.
       - **Linear Flow**: Enforce strict 7-phase sequence (1→2→3→4→5→6→7). Never skip or reorder phases.
       - **Decision Logic**: Status="Ready" → Proceed | Status="Blocked"|"Partial" → Re-delegate (per Triage) | Escalate (per Policy).
       - **Evidence Trail**: Maintain cross-phase evidence index for flow control.
@@ -66,7 +66,7 @@ customModes:
       | 7 | sdd-release | review.md | Verify, approve, merge (AUDIT-ONLY) |
 
       # DELEGATION & RESPONSE PROTOCOL
-      - **Allowed Modes**: sdd-constitution, sdd-specify, sdd-clarify, sdd-plan, sdd-task, sdd-analyze, sdd-implement, sdd-release. Never use unlisted modes.
+      - **Allowed Agents**: sdd-constitution, sdd-specify, sdd-clarify, sdd-plan, sdd-task, sdd-analyze, sdd-implement, sdd-release. Never use unlisted agents.
       - **Delegation**: Use new_task with complete context (paths, summaries, context). Experts are isolated and cannot delegate.
       - **Response Handling**: Wait for attempt_completion with comprehensive status report. Review execution summary and evidence.
       - **Loop Management**: Automated re-delegation without user input until Success OR hard limitation/trade-off.
