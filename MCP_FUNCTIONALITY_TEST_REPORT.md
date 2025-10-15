@@ -23,7 +23,7 @@ Testing the new MCP (Model Context Protocol) installation functionality in the r
 
 **Result:** PASS
 - Successfully lists currently configured MCP servers
-- Shows `rules_memory` server with command: `npx -y @sylphxltd/rules mcp`
+- Shows `rules_memory` server with command: `npx github:sylphxltd/rules mcp`
 - Shows `mcp_everything` server with command: `npx -y @modelcontextprotocol/server-everything`
 - Provides descriptive names for each server
 
@@ -56,7 +56,7 @@ Testing the new MCP (Model Context Protocol) installation functionality in the r
     "mcp": {
       "rules_memory": {
         "type": "local",
-        "command": ["npx", "-y", "@sylphxltd/rules", "mcp"]
+        "command": ["npx", "github:sylphxltd/rules", "mcp"]
       },
       "mcp_everything": {
         "type": "local", 

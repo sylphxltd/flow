@@ -13,7 +13,7 @@ Enhanced the install command to support automatic configuration of MCP (Model Co
 
 ### 2. Supported MCP Servers
 - **memory**: `rules_memory` - Rules memory MCP server for agent coordination
-  - Command: `["npx", "-y", "@sylphxltd/rules", "mcp"]`
+  - Command: `["npx", "github:sylphxltd/rules", "mcp"]`
 - **everything**: `mcp_everything` - MCP Everything server with comprehensive tool collection
   - Command: `["npx", "-y", "@modelcontextprotocol/server-everything"]`
 
@@ -32,7 +32,7 @@ Enhanced the install command to support automatic configuration of MCP (Model Co
   "mcp": {
     "rules_memory": {
       "type": "local",
-      "command": ["npx", "-y", "@sylphxltd/rules", "mcp"]
+      "command": ["npx", "github:sylphxltd/rules", "mcp"]
     },
     "mcp_everything": {
       "type": "local", 

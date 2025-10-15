@@ -9,7 +9,7 @@ export const MCP_SERVERS = {
         description: 'Rules memory MCP server for agent coordination',
         config: {
             type: 'local',
-            command: ['npx', '-y', '@sylphxltd/rules', 'mcp']
+            command: ['npx', 'github:sylphxltd/rules', 'mcp']
         }
     },
     everything: {

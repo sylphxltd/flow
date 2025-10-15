@@ -1,6 +1,5 @@
 import { installAgents } from './install.js';
 import { CLIError } from '../utils/error-handler.js';
-import { COMMON_OPTIONS } from '../utils/command-builder.js';
 import { parseMCPServerTypes, addMCPServers, listMCPServers } from '../utils/mcp-config.js';
 function validateInstallOptions(options) {
     if (options.agent && options.agent !== 'opencode') {
@@ -20,8 +19,12 @@ export const installCommand = {
     name: 'install',
     description: 'Install workflow agents for OpenCode',
     options: [
-        { ...COMMON_OPTIONS[0], description: 'Force specific agent (opencode)' },
-        ...COMMON_OPTIONS.slice(1)
+        { flags: '--agent <type>', description: 'Force specific agent (opencode)' },
+        { flags: '--verbose', description: 'Show detailed output' },
+        { flags: '--dry-run', description: 'Show what would be done without making changes' },
+        { flags: '--clear', description: 'Clear obsolete items before processing' },
+        { flags: '--merge', description: 'Merge all items into a single file' },
+        { flags: '--mcp [servers...]', description: 'Install MCP servers (memory, everything)' }
     ],
     handler: async (options) => {
         validateInstallOptions(options);

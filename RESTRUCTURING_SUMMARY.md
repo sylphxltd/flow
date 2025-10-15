@@ -39,7 +39,7 @@ src/
 - **Persistent Storage**: Uses JSON file storage in `.memory/memory.json`
 - **Standard MCP Format**: Follows MCP server conventions
 - **No OpenCode Dependencies**: Removed `@opencode-ai/plugin` dependency
-- **CLI Integration**: Can be started with `npx @sylphxltd/rules mcp`
+- **CLI Integration**: Can be started with `npx github:sylphxltd/rules mcp`
 
 #### Available Tools
 1. `memory_set` - Store values with optional namespace
@@ -68,13 +68,13 @@ src/
 
 #### New Command
 ```bash
-npx @sylphxltd/rules mcp
+npx github:sylphxltd/rules mcp
 ```
 
 #### Existing Commands (Unchanged)
 ```bash
-npx @sylphxltd/rules sync
-npx @sylphxltd/rules install
+npx github:sylphxltd/rules sync
+npx github:sylphxltd/rules install
 ```
 
 ### 5. Dependencies Updated
@@ -110,7 +110,7 @@ npx @sylphxltd/rules install
 
 ### Starting Memory Server
 ```bash
-npx @sylphxltd/rules mcp
+npx github:sylphxltd/rules mcp
 ```
 
 ### Using Memory Tools (via MCP client)
