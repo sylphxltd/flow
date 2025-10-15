@@ -26,8 +26,19 @@ async function getAgentFiles() {
     // When running from compiled dist folder, we need to resolve from the project root
     const scriptDir = __dirname;
     const projectRoot = path_1.default.resolve(scriptDir, '..');
-    const agentsDir = path_1.default.join(projectRoot, 'agents', 'sdd');
-    return (0, shared_1.collectFiles)(agentsDir, ['.md']);
+    const agentsDir = path_1.default.join(projectRoot, 'agents');
+    // Get all subdirectories in agents/ (excluding archived)
+    const subdirs = fs_1.default.readdirSync(agentsDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory() && dirent.name !== 'archived')
+        .map(dirent => dirent.name);
+    const allFiles = [];
+    // Collect files from each subdirectory
+    for (const subdir of subdirs) {
+        const subdirPath = path_1.default.join(agentsDir, subdir);
+        const files = (0, shared_1.collectFiles)(subdirPath, ['.md']);
+        allFiles.push(...files.map(file => path_1.default.join(subdir, file)));
+    }
+    return allFiles;
 }
 async function promptForAgent() {
     const result = await (0, shared_1.promptForAgent)(AGENT_CONFIGS, 'Workflow Install Tool');
@@ -89,8 +100,8 @@ async function installAgents(options) {
                     return `${flattenedName}${config.extension}`;
                 }
                 else {
-                    // Add sdd/ prefix for target directory structure
-                    return path_1.default.join('sdd', `${baseName}${config.extension}`);
+                    // Keep the relative path structure (sdd/file.md, core/file.md)
+                    return filePath;
                 }
             }));
         }
@@ -119,7 +130,7 @@ async function installAgents(options) {
         const mergedFileName = `all-agents${config.extension}`;
         const mergedFilePath = path_1.default.join(agentsDir, mergedFileName);
         console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
-        const pathPrefix = 'agents/sdd/';
+        const pathPrefix = 'agents/';
         const mergedContent = (0, shared_1.createMergedContent)(agentFiles.map(f => pathPrefix + f), processContent, 'Development Workflow Agents - Complete Collection', pathPrefix);
         // Check if file needs updating
         const localInfo = (0, shared_1.getLocalFileInfo)(mergedFilePath);
@@ -143,11 +154,10 @@ async function installAgents(options) {
         (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }
     else {
-        // Process files individually - create sdd/ subdirectory structure
-        const sddTargetDir = path_1.default.join(agentsDir, 'sdd');
-        await (0, shared_1.processBatch)(agentFiles, // Just the filenames
-        sddTargetDir, // Target to sdd/ subdirectory
-        config.extension, processContent, config.flatten, results, 'agents/sdd/' // Keep pathPrefix for source file reading
+        // Process files individually - create both sdd/ and core/ subdirectory structures
+        await (0, shared_1.processBatch)(agentFiles, // Files with relative paths (sdd/file.md, core/file.md)
+        agentsDir, // Target to .opencode/agent/
+        config.extension, processContent, config.flatten, results, 'agents/' // PathPrefix for source file reading
         );
         (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }
