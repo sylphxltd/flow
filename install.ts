@@ -39,19 +39,23 @@ async function getAgentFiles(): Promise<string[]> {
   // When running from compiled dist folder, we need to resolve from the project root
   const scriptDir = __dirname;
   const projectRoot = path.resolve(scriptDir, '..');
+  const agentsDir = path.join(projectRoot, 'agents');
   
-  // Collect files from both sdd and core directories
-  const sddDir = path.join(projectRoot, 'agents', 'sdd');
-  const coreDir = path.join(projectRoot, 'agents', 'core');
+  // Get all subdirectories in agents/ (excluding archived)
+  const subdirs = fs.readdirSync(agentsDir, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory() && dirent.name !== 'archived')
+    .map(dirent => dirent.name);
   
-  const sddFiles = collectFiles(sddDir, ['.md']);
-  const coreFiles = collectFiles(coreDir, ['.md']);
+  const allFiles: string[] = [];
   
-  // Return all files with their relative paths
-  return [
-    ...sddFiles.map(file => path.join('sdd', file)),
-    ...coreFiles.map(file => path.join('core', file))
-  ];
+  // Collect files from each subdirectory
+  for (const subdir of subdirs) {
+    const subdirPath = path.join(agentsDir, subdir);
+    const files = collectFiles(subdirPath, ['.md']);
+    allFiles.push(...files.map(file => path.join(subdir, file)));
+  }
+  
+  return allFiles;
 }
 
 async function promptForAgent(): Promise<AgentType> {
