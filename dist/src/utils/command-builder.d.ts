@@ -16,4 +16,7 @@ export declare const COMMON_OPTIONS: readonly [{
 }, {
     readonly flags: "--merge";
     readonly description: "Merge all items into a single file";
+}, {
+    readonly flags: "--mcp [servers...]";
+    readonly description: "Install MCP servers (memory, everything)";
 }];

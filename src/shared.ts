@@ -17,6 +17,7 @@ export interface CommonOptions {
   clear?: boolean;
   merge?: boolean;
   verbose?: boolean;
+  mcp?: string[] | null;
 }
 
 export interface AgentConfig {

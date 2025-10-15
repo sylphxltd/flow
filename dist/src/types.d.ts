@@ -4,6 +4,7 @@ export interface CommandOptions {
     dryRun?: boolean;
     clear?: boolean;
     merge?: boolean;
+    mcp?: string[] | null;
 }
 export interface CommandHandler {
     (options: CommandOptions): Promise<void>;
@@ -18,4 +19,12 @@ export interface CommandConfig {
 export interface CommandOption {
     flags: string;
     description: string;
+}
+export interface MCPServerConfig {
+    type: 'local';
+    command: string[];
+}
+export interface OpenCodeConfig {
+    $schema?: string;
+    mcp?: Record<string, MCPServerConfig>;
 }
