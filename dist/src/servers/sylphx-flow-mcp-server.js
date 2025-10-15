@@ -167,11 +167,11 @@ class Logger {
 // MCP SERVER SETUP
 // ============================================================================
 const DEFAULT_CONFIG = {
-    name: "memory-mcp-server",
+    name: "sylphx-flow-mcp-server",
     version: "1.0.0",
-    description: "Persistent memory storage server for agent coordination using JSON file storage. Provides tools for storing, retrieving, searching, and managing memory entries with namespace support and full persistence."
+    description: "Sylphx Flow MCP server providing memory coordination tools for AI agents. Persistent JSON-based storage with namespace support for agent coordination and state management."
 };
-Logger.info("🚀 Starting Memory MCP Server...");
+Logger.info("🚀 Starting Sylphx Flow MCP Server...");
 Logger.info(`📋 Description: ${DEFAULT_CONFIG.description.substring(0, 100)}...`);
 const server = new McpServer({
     name: DEFAULT_CONFIG.name,
@@ -499,7 +499,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // ============================================================================
 // START SERVER
 // ============================================================================
-Logger.success("🚀 Memory MCP Server ready!");
+Logger.success("🚀 Sylphx Flow MCP Server ready!");
 Logger.info(`📍 Storage: ${path.join(process.cwd(), '.memory', 'memory.json')}`);
 Logger.info(`🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats`);
 // Start the server with stdio transport

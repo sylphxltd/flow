@@ -1,8 +1,8 @@
 const mcpHandler = async () => {
-    // Import and start the memory MCP server
-    await import('../servers/memory-mcp-server.js');
-    console.log('🚀 Starting Memory MCP Server...');
-    console.log('📍 Database: .memory/memory.db');
+    // Import and start the Sylphx Flow MCP server
+    await import('../servers/sylphx-flow-mcp-server.js');
+    console.log('🚀 Starting Sylphx Flow MCP Server...');
+    console.log('📍 Database: .memory/memory.json');
     console.log('🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats');
     console.log('💡 Press Ctrl+C to stop the server');
     // The server is already initialized in the module
@@ -11,7 +11,7 @@ const mcpHandler = async () => {
 };
 export const mcpCommand = {
     name: 'mcp',
-    description: 'Start the Memory MCP server for persistent agent coordination',
+    description: 'Start the Sylphx Flow MCP server for persistent agent coordination',
     options: [],
     handler: mcpHandler
 };
