@@ -150,6 +150,8 @@ function createMergedContent(filePaths, processContent, title, pathPrefix = '') 
 }
 async function processBatch(filePaths, targetDir, extension, processContent, flatten, results, pathPrefix = '') {
     for (const filePath of filePaths) {
+        // filePath is now just the filename (e.g., "sdd-constitution.md")
+        // not the full path with prefix
         const destPath = flatten
             ? path_1.default.join(targetDir, `${path_1.default.basename(filePath, path_1.default.extname(filePath))}${extension}`)
             : path_1.default.join(targetDir, filePath);
@@ -162,7 +164,7 @@ async function processBatch(filePaths, targetDir, extension, processContent, fla
         const isNew = !localInfo;
         // Read content from source - construct the full path from project root
         const projectRoot = path_1.default.resolve(__dirname, '..', '..');
-        const sourcePath = path_1.default.join(projectRoot, 'agents', 'sdd', path_1.default.basename(filePath));
+        const sourcePath = path_1.default.join(projectRoot, pathPrefix, filePath);
         let content = fs_1.default.readFileSync(sourcePath, 'utf8');
         content = processContent(content);
         const localProcessed = localInfo ? processContent(localInfo.content) : '';

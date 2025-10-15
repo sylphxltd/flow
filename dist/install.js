@@ -142,9 +142,10 @@ async function installAgents(options) {
         (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }
     else {
-        // Process files individually
-        const pathPrefix = 'agents/sdd/';
-        await (0, shared_1.processBatch)(agentFiles.map(f => pathPrefix + f), agentsDir, config.extension, processContent, config.flatten, results, pathPrefix);
+        // Process files individually - pass just the filenames, not full paths
+        await (0, shared_1.processBatch)(agentFiles, // Just the filenames, not pathPrefix + f
+        agentsDir, config.extension, processContent, config.flatten, results, 'agents/sdd/' // Keep pathPrefix for source file reading
+        );
         (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }
 }

@@ -176,16 +176,15 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
     displayResults(results, agentsDir, config.name, 'Install');
   } else {
-    // Process files individually
-    const pathPrefix = 'agents/sdd/';
+    // Process files individually - pass just the filenames, not full paths
     await processBatch(
-      agentFiles.map(f => pathPrefix + f),
+      agentFiles, // Just the filenames, not pathPrefix + f
       agentsDir,
       config.extension,
       processContent,
       config.flatten,
       results,
-      pathPrefix
+      'agents/sdd/' // Keep pathPrefix for source file reading
     );
 
     displayResults(results, agentsDir, config.name, 'Install');

@@ -213,6 +213,8 @@ export async function processBatch(
   pathPrefix: string = ''
 ): Promise<void> {
   for (const filePath of filePaths) {
+    // filePath is now just the filename (e.g., "sdd-constitution.md")
+    // not the full path with prefix
     const destPath = flatten 
       ? path.join(targetDir, `${path.basename(filePath, path.extname(filePath))}${extension}`)
       : path.join(targetDir, filePath);
@@ -228,7 +230,7 @@ export async function processBatch(
 
     // Read content from source - construct the full path from project root
     const projectRoot = path.resolve(__dirname, '..', '..');
-    const sourcePath = path.join(projectRoot, 'agents', 'sdd', path.basename(filePath));
+    const sourcePath = path.join(projectRoot, pathPrefix, filePath);
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = processContent(content);
 
