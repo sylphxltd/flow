@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -501,4 +502,15 @@ process.on('unhandledRejection', (reason, promise) => {
 Logger.success("🚀 Memory MCP Server ready!");
 Logger.info(`📍 Storage: ${path.join(process.cwd(), '.memory', 'memory.json')}`);
 Logger.info(`🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats`);
+// Start the server with stdio transport
+async function startServer() {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    Logger.info("🔗 Server connected via stdio transport");
+}
+// Start the server
+startServer().catch((error) => {
+    Logger.error("Failed to start server", error);
+    process.exit(1);
+});
 export default server;
