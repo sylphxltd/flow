@@ -263,7 +263,8 @@ async function processFile(
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = processContent(content, filePath);
 
-    const contentChanged = !localInfo || processContent(localInfo.content) !== content;
+    const localProcessed = localInfo ? processContent(localInfo.content, relativeToRules) : '';
+    const contentChanged = !localInfo || localProcessed !== content;
 
     fs.writeFileSync(destPath, content, 'utf8');
 
@@ -511,7 +512,8 @@ alwaysApply: true
 
     // Check if file needs updating
     const localInfo = getLocalFileInfo(mergedFilePath);
-    const contentChanged = !localInfo || localInfo.content !== mergedContent;
+    const localProcessed = localInfo ? processContent(localInfo.content, 'all-rules') : '';
+    const contentChanged = !localInfo || localProcessed !== mergedContent;
 
     if (contentChanged) {
       fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');

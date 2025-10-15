@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { syncRules } from './sync';
+import { installAgents } from './install';
 
 const program = new Command();
 
@@ -41,7 +42,6 @@ program
     }
     options.agent = options.agent || 'opencode';
     try {
-      const { installAgents } = await import('./install');
       await installAgents(options);
     } catch (error) {
       console.error(`❌ Error: ${(error as Error).message}`);
