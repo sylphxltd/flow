@@ -8,13 +8,13 @@ export function showDefaultHelp() {
     console.log('  mcp      Start the MCP server');
     console.log('');
     console.log('Examples:');
-    console.log('  flow sync');
-    console.log('  flow mcp');
-    console.log('  flow sync --agent cursor');
-    console.log('  flow sync --dry-run');
-    console.log('  flow sync --clear');
-    console.log('  flow sync --merge');
-    console.log('  flow install --agent opencode');
+    console.log('  sylphx-flow sync');
+    console.log('  sylphx-flow mcp');
+    console.log('  sylphx-flow sync --agent cursor');
+    console.log('  sylphx-flow sync --dry-run');
+    console.log('  sylphx-flow sync --clear');
+    console.log('  sylphx-flow sync --merge');
+    console.log('  sylphx-flow install --agent opencode');
     console.log('');
-    console.log('Run "flow <command> --help" for more information about a command.');
+    console.log('Run "sylphx-flow <command> --help" for more information about a command.');
 }

@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "flow": "dist/index.js"
+    "sylphx-flow": "dist/index.js"
   },
   "files": [
     "dist",

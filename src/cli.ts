@@ -9,7 +9,7 @@ export function createCLI(): Command {
   const program = new Command();
 
   program
-    .name('flow')
+    .name('sylphx-flow')
     .description('Type-safe development flow CLI')
     .version('1.0.0');
 
