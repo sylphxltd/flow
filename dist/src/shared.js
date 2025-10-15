@@ -162,7 +162,7 @@ async function processBatch(filePaths, targetDir, extension, processContent, fla
         const isNew = !localInfo;
         // Read content from source - construct the full path from project root
         const projectRoot = path_1.default.resolve(__dirname, '..', '..');
-        const sourcePath = path_1.default.join(projectRoot, 'agents', 'development-orchestrator', 'opencode-agents', path_1.default.basename(filePath));
+        const sourcePath = path_1.default.join(projectRoot, 'agents', 'sdd', path_1.default.basename(filePath));
         let content = fs_1.default.readFileSync(sourcePath, 'utf8');
         content = processContent(content);
         const localProcessed = localInfo ? processContent(localInfo.content) : '';

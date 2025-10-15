@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 // ============================================================================
 // TYPES
@@ -229,7 +228,7 @@ export async function processBatch(
 
     // Read content from source - construct the full path from project root
     const projectRoot = path.resolve(__dirname, '..', '..');
-    const sourcePath = path.join(projectRoot, 'agents', 'development-orchestrator', 'opencode-agents', path.basename(filePath));
+    const sourcePath = path.join(projectRoot, 'agents', 'sdd', path.basename(filePath));
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = processContent(content);
 

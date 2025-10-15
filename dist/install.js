@@ -26,7 +26,7 @@ async function getAgentFiles() {
     // When running from compiled dist folder, we need to resolve from the project root
     const scriptDir = __dirname;
     const projectRoot = path_1.default.resolve(scriptDir, '..');
-    const agentsDir = path_1.default.join(projectRoot, 'agents', 'development-orchestrator', 'opencode-agents');
+    const agentsDir = path_1.default.join(projectRoot, 'agents', 'sdd');
     return (0, shared_1.collectFiles)(agentsDir, ['.md']);
 }
 async function promptForAgent() {
@@ -118,7 +118,7 @@ async function installAgents(options) {
         const mergedFileName = `all-agents${config.extension}`;
         const mergedFilePath = path_1.default.join(agentsDir, mergedFileName);
         console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
-        const pathPrefix = 'agents/development-orchestrator/opencode-agents/';
+        const pathPrefix = 'agents/sdd/';
         const mergedContent = (0, shared_1.createMergedContent)(agentFiles.map(f => pathPrefix + f), processContent, 'Development Workflow Agents - Complete Collection', pathPrefix);
         // Check if file needs updating
         const localInfo = (0, shared_1.getLocalFileInfo)(mergedFilePath);
@@ -143,7 +143,7 @@ async function installAgents(options) {
     }
     else {
         // Process files individually
-        const pathPrefix = 'agents/development-orchestrator/opencode-agents/';
+        const pathPrefix = 'agents/sdd/';
         await (0, shared_1.processBatch)(agentFiles.map(f => pathPrefix + f), agentsDir, config.extension, processContent, config.flatten, results, pathPrefix);
         (0, shared_1.displayResults)(results, agentsDir, config.name, 'Install');
     }
