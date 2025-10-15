@@ -3,10 +3,10 @@ description: Orchestrates 7-phase SDD workflow via expert delegation with enhanc
 mode: primary
 temperature: 0.3
 tools:
-  file_ops: true
+  file_ops: false
   edit: true
-  command: true
-  search: true
+  command: false
+  search: false
   browser: false
 ---
 
