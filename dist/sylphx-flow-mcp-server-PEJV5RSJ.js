@@ -510,4 +510,3 @@ var sylphx_flow_mcp_server_default = server;
 export {
   sylphx_flow_mcp_server_default as default
 };
-//# sourceMappingURL=sylphx-flow-mcp-server-6335DKPT.js.map

@@ -1,10 +1,558 @@
 #!/usr/bin/env node
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// src/servers/sylphx-flow-mcp-server.ts
+var sylphx_flow_mcp_server_exports = {};
+__export(sylphx_flow_mcp_server_exports, {
+  default: () => sylphx_flow_mcp_server_default
+});
+async function startServer() {
+  const transport = new import_stdio.StdioServerTransport();
+  await server.connect(transport);
+  Logger.info("\u{1F517} Server connected via stdio transport");
+}
+var import_mcp, import_stdio, import_zod, fs4, path5, MemoryStorage, Logger, DEFAULT_CONFIG, server, memoryStorage, sylphx_flow_mcp_server_default;
+var init_sylphx_flow_mcp_server = __esm({
+  "src/servers/sylphx-flow-mcp-server.ts"() {
+    "use strict";
+    import_mcp = require("@modelcontextprotocol/sdk/server/mcp.js");
+    import_stdio = require("@modelcontextprotocol/sdk/server/stdio.js");
+    import_zod = require("zod");
+    fs4 = __toESM(require("fs/promises"), 1);
+    path5 = __toESM(require("path"), 1);
+    MemoryStorage = class {
+      data = /* @__PURE__ */ new Map();
+      memoryDir;
+      filePath;
+      constructor() {
+        this.memoryDir = path5.join(process.cwd(), ".memory");
+        this.filePath = path5.join(this.memoryDir, "memory.json");
+        fs4.mkdir(this.memoryDir, { recursive: true }).catch(() => {
+        });
+        this.loadData();
+      }
+      getFullKey(key, namespace) {
+        return `${namespace}:${key}`;
+      }
+      async loadData() {
+        try {
+          const data = await fs4.readFile(this.filePath, "utf8");
+          const parsed = JSON.parse(data);
+          this.data = new Map(Object.entries(parsed));
+        } catch {
+          this.data = /* @__PURE__ */ new Map();
+        }
+      }
+      async saveData() {
+        try {
+          const data = Object.fromEntries(this.data);
+          await fs4.writeFile(this.filePath, JSON.stringify(data, null, 2), "utf8");
+        } catch (error) {
+          console.warn("Warning: Could not save memory data:", error);
+        }
+      }
+      set(key, value, namespace = "default") {
+        const fullKey = this.getFullKey(key, namespace);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const timestamp = Date.now();
+        const existing = this.data.get(fullKey);
+        this.data.set(fullKey, {
+          key,
+          namespace,
+          value,
+          timestamp,
+          created_at: existing?.created_at || now,
+          updated_at: now
+        });
+        this.saveData().catch(() => {
+        });
+      }
+      get(key, namespace = "default") {
+        const fullKey = this.getFullKey(key, namespace);
+        return this.data.get(fullKey) || null;
+      }
+      search(pattern, namespace) {
+        const searchPattern = pattern.replace(/\*/g, ".*");
+        const regex = new RegExp(searchPattern);
+        const results2 = [];
+        for (const entry of this.data.values()) {
+          if (namespace && entry.namespace !== namespace) {
+            continue;
+          }
+          if (regex.test(entry.key)) {
+            results2.push(entry);
+          }
+        }
+        return results2.sort((a, b) => b.timestamp - a.timestamp);
+      }
+      list(namespace) {
+        const results2 = [];
+        for (const entry of this.data.values()) {
+          if (namespace && entry.namespace !== namespace) {
+            continue;
+          }
+          results2.push(entry);
+        }
+        return results2.sort((a, b) => b.timestamp - a.timestamp);
+      }
+      delete(key, namespace = "default") {
+        const fullKey = this.getFullKey(key, namespace);
+        const deleted = this.data.delete(fullKey);
+        if (deleted) {
+          this.saveData().catch(() => {
+          });
+        }
+        return deleted;
+      }
+      clear(namespace) {
+        let count = 0;
+        if (namespace) {
+          const keysToDelete = [];
+          for (const [fullKey, entry] of this.data.entries()) {
+            if (entry.namespace === namespace) {
+              keysToDelete.push(fullKey);
+            }
+          }
+          for (const key of keysToDelete) {
+            this.data.delete(key);
+            count++;
+          }
+        } else {
+          count = this.data.size;
+          this.data.clear();
+        }
+        if (count > 0) {
+          this.saveData().catch(() => {
+          });
+        }
+        return count;
+      }
+      getStats() {
+        const entries = Array.from(this.data.values());
+        const namespaces = [...new Set(entries.map((entry) => entry.namespace))];
+        const namespaceStats = namespaces.map((ns) => ({
+          namespace: ns,
+          count: entries.filter((entry) => entry.namespace === ns).length
+        }));
+        const timestamps = entries.map((entry) => entry.timestamp);
+        const oldestEntry = timestamps.length > 0 ? Math.min(...timestamps) : 0;
+        const newestEntry = timestamps.length > 0 ? Math.max(...timestamps) : 0;
+        return {
+          total_entries: entries.length,
+          namespaces: namespaceStats,
+          oldest_entry: oldestEntry,
+          newest_entry: newestEntry
+        };
+      }
+    };
+    Logger = class {
+      static logLevel = process.env.LOG_LEVEL || "info";
+      static info(message, ...args) {
+        if (["info", "debug"].includes(this.logLevel)) {
+          console.log(`\u2139\uFE0F  ${message}`, ...args);
+        }
+      }
+      static debug(message, ...args) {
+        if (this.logLevel === "debug") {
+          console.log(`\u{1F41B} ${message}`, ...args);
+        }
+      }
+      static warn(message, ...args) {
+        console.warn(`\u26A0\uFE0F  ${message}`, ...args);
+      }
+      static error(message, error) {
+        console.error(`\u274C ${message}`);
+        if (error) {
+          console.error(`   Error details:`, error instanceof Error ? error.message : error);
+          if (error instanceof Error && error.stack) {
+            console.error(`   Stack trace:`, error.stack);
+          }
+        }
+      }
+      static success(message, ...args) {
+        console.log(`\u2705 ${message}`, ...args);
+      }
+    };
+    DEFAULT_CONFIG = {
+      name: "sylphx-flow-mcp-server",
+      version: "1.0.0",
+      description: "Sylphx Flow MCP server providing memory coordination tools for AI agents. Persistent JSON-based storage with namespace support for agent coordination and state management."
+    };
+    Logger.info("\u{1F680} Starting Sylphx Flow MCP Server...");
+    Logger.info(`\u{1F4CB} Description: ${DEFAULT_CONFIG.description.substring(0, 100)}...`);
+    server = new import_mcp.McpServer({
+      name: DEFAULT_CONFIG.name,
+      version: DEFAULT_CONFIG.version,
+      description: DEFAULT_CONFIG.description
+    });
+    memoryStorage = new MemoryStorage();
+    Logger.success("\u2705 Memory storage initialized");
+    server.registerTool(
+      "memory_set",
+      {
+        title: "Store Memory",
+        description: "Store a value in persistent memory for agent coordination",
+        inputSchema: import_zod.z.object({
+          key: import_zod.z.string().describe("Memory key (e.g., 'swarm/coder/status')"),
+          value: import_zod.z.string().describe("Value to store (will be JSON stringified)"),
+          namespace: import_zod.z.string().optional().describe("Optional namespace for organization")
+        })
+      },
+      async (args, extra) => {
+        try {
+          const { key, value, namespace = "default" } = args;
+          const parsedValue = JSON.parse(value);
+          memoryStorage.set(key, parsedValue, namespace);
+          Logger.info(`Stored memory: ${namespace}:${key}`);
+          return {
+            content: [{
+              type: "text",
+              text: `\u2705 Stored memory: ${namespace}:${key}`
+            }]
+          };
+        } catch (error) {
+          Logger.error("Error storing memory", error);
+          return {
+            content: [{
+              type: "text",
+              text: `\u274C Error storing memory: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
+    );
+    server.registerTool(
+      "memory_get",
+      {
+        title: "Retrieve Memory",
+        description: "Retrieve a value from persistent memory",
+        inputSchema: import_zod.z.object({
+          key: import_zod.z.string().describe("Memory key to retrieve"),
+          namespace: import_zod.z.string().optional().describe("Optional namespace")
+        })
+      },
+      async (args, extra) => {
+        try {
+          const { key, namespace = "default" } = args;
+          const memory = memoryStorage.get(key, namespace);
+          if (!memory) {
+            return {
+              content: [{
+                type: "text",
+                text: `\u274C Memory not found: ${namespace}:${key}`
+              }],
+              isError: true
+            };
+          }
+          const age = Date.now() - memory.timestamp;
+          Logger.info(`Retrieved memory: ${namespace}:${key}`);
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                key: `${namespace}:${key}`,
+                value: memory.value,
+                timestamp: memory.timestamp,
+                created_at: memory.created_at,
+                updated_at: memory.updated_at,
+                namespace: memory.namespace,
+                age
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          Logger.error("Error retrieving memory", error);
+          return {
+            content: [{
+              type: "text",
+              text: `\u274C Error retrieving memory: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
+    );
+    server.registerTool(
+      "memory_search",
+      {
+        title: "Search Memory",
+        description: "Search memory keys by pattern with optional namespace filtering",
+        inputSchema: import_zod.z.object({
+          pattern: import_zod.z.string().describe("Search pattern (supports * wildcards)"),
+          namespace: import_zod.z.string().optional().describe("Optional namespace to limit search")
+        })
+      },
+      async (args, extra) => {
+        try {
+          const { pattern, namespace } = args;
+          const results2 = memoryStorage.search(pattern, namespace);
+          const processedResults = results2.map((memory) => ({
+            key: `${memory.namespace}:${memory.key}`,
+            value: memory.value,
+            timestamp: memory.timestamp,
+            created_at: memory.created_at,
+            updated_at: memory.updated_at,
+            namespace: memory.namespace,
+            age: Date.now() - memory.timestamp
+          }));
+          Logger.info(`Searched memory: ${pattern} (${results2.length} results)`);
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                pattern,
+                namespace: namespace || "all",
+                count: results2.length,
+                results: processedResults
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          Logger.error("Error searching memory", error);
+          return {
+            content: [{
+              type: "text",
+              text: `\u274C Error searching memory: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
+    );
+    server.registerTool(
+      "memory_list",
+      {
+        title: "List Memory",
+        description: "List all memory keys, optionally filtered by namespace",
+        inputSchema: import_zod.z.object({
+          namespace: import_zod.z.string().optional().describe("Optional namespace to filter")
+        })
+      },
+      async (args, extra) => {
+        try {
+          const { namespace } = args;
+          const entries = memoryStorage.list(namespace);
+          const processedEntries = entries.map((memory) => ({
+            key: `${memory.namespace}:${memory.key}`,
+            namespace: memory.namespace,
+            timestamp: memory.timestamp,
+            created_at: memory.created_at,
+            updated_at: memory.updated_at,
+            age: Date.now() - memory.timestamp
+          }));
+          Logger.info(`Listed memory: ${namespace || "all"} (${entries.length} entries)`);
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                namespace: namespace || "all",
+                count: entries.length,
+                keys: processedEntries
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          Logger.error("Error listing memory", error);
+          return {
+            content: [{
+              type: "text",
+              text: `\u274C Error listing memory: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
+    );
+    server.registerTool(
+      "memory_delete",
+      {
+        title: "Delete Memory",
+        description: "Delete a specific memory entry",
+        inputSchema: import_zod.z.object({
+          key: import_zod.z.string().describe("Memory key to delete"),
+          namespace: import_zod.z.string().optional().describe("Optional namespace")
+        })
+      },
+      async (args, extra) => {
+        try {
+          const { key, namespace = "default" } = args;
+          const deleted = memoryStorage.delete(key, namespace);
+          if (deleted) {
+            Logger.info(`Deleted memory: ${namespace}:${key}`);
+            return {
+              content: [{
+                type: "text",
+                text: `\u2705 Deleted memory: ${namespace}:${key}`
+              }]
+            };
+          } else {
+            return {
+              content: [{
+                type: "text",
+                text: `\u274C Memory not found: ${namespace}:${key}`
+              }],
+              isError: true
+            };
+          }
+        } catch (error) {
+          Logger.error("Error deleting memory", error);
+          return {
+            content: [{
+              type: "text",
+              text: `\u274C Error deleting memory: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
+    );
+    server.registerTool(
+      "memory_clear",
+      {
+        title: "Clear Memory",
+        description: "Clear all memory or specific namespace",
+        inputSchema: import_zod.z.object({
+          namespace: import_zod.z.string().optional().describe("Optional namespace to clear"),
+          confirm: import_zod.z.boolean().describe("Confirmation required for clearing all memory")
+        })
+      },
+      async (args, extra) => {
+        try {
+          const { namespace, confirm } = args;
+          if (!namespace && !confirm) {
+            return {
+              content: [{
+                type: "text",
+                text: `\u274C Confirmation required. Set confirm: true to clear all memory.`
+              }],
+              isError: true
+            };
+          }
+          const count = memoryStorage.clear(namespace);
+          if (namespace) {
+            Logger.info(`Cleared memory namespace: ${namespace} (${count} entries)`);
+            return {
+              content: [{
+                type: "text",
+                text: `\u2705 Cleared ${count} memories from namespace: ${namespace}`
+              }]
+            };
+          } else {
+            Logger.info(`Cleared all memory (${count} entries)`);
+            return {
+              content: [{
+                type: "text",
+                text: `\u2705 Cleared all ${count} memory entries`
+              }]
+            };
+          }
+        } catch (error) {
+          Logger.error("Error clearing memory", error);
+          return {
+            content: [{
+              type: "text",
+              text: `\u274C Error clearing memory: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
+    );
+    server.registerTool(
+      "memory_stats",
+      {
+        title: "Memory Statistics",
+        description: "Get statistics about the memory storage",
+        inputSchema: import_zod.z.object({})
+      },
+      async (args, extra) => {
+        try {
+          const stats = memoryStorage.getStats();
+          Logger.info(`Retrieved memory statistics`);
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                ...stats,
+                database_path: path5.join(process.cwd(), ".memory", "memory.json"),
+                age_days: stats.oldest_entry > 0 ? Math.floor((Date.now() - stats.oldest_entry) / (1e3 * 60 * 60 * 24)) : 0
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          Logger.error("Error getting memory statistics", error);
+          return {
+            content: [{
+              type: "text",
+              text: `\u274C Error getting memory statistics: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
+    );
+    process.on("SIGINT", () => {
+      Logger.info("\u{1F6D1} Received SIGINT, shutting down gracefully...");
+      process.exit(0);
+    });
+    process.on("SIGTERM", () => {
+      Logger.info("\u{1F6D1} Received SIGTERM, shutting down gracefully...");
+      process.exit(0);
+    });
+    process.on("uncaughtException", (error) => {
+      Logger.error("Uncaught Exception", error);
+      process.exit(1);
+    });
+    process.on("unhandledRejection", (reason, promise) => {
+      Logger.error("Unhandled Rejection", reason);
+      process.exit(1);
+    });
+    Logger.success("\u{1F680} Sylphx Flow MCP Server ready!");
+    Logger.info(`\u{1F4CD} Storage: ${path5.join(process.cwd(), ".memory", "memory.json")}`);
+    Logger.info(`\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats`);
+    startServer().catch((error) => {
+      Logger.error("Failed to start server", error);
+      process.exit(1);
+    });
+    sylphx_flow_mcp_server_default = server;
+  }
+});
 
 // src/cli.ts
-import { Command as Command2 } from "commander";
+var import_commander2 = require("commander");
 
 // src/utils/command-builder.ts
-import { Command } from "commander";
+var import_commander = require("commander");
 
 // src/utils/error-handler.ts
 var CLIError = class extends Error {
@@ -35,7 +583,7 @@ function createAsyncHandler(handler, context) {
 
 // src/utils/command-builder.ts
 function createCommand(config) {
-  const command = new Command(config.name);
+  const command = new import_commander.Command(config.name);
   command.description(config.description);
   config.options.forEach((option) => {
     command.option(option.flags, option.description);
@@ -82,13 +630,14 @@ function showDefaultHelp() {
 }
 
 // src/core/sync.ts
-import * as fs from "fs";
-import * as path from "path";
-import * as readline from "readline";
-import * as cliProgress from "cli-progress";
-import Table from "cli-table3";
-import { fileURLToPath } from "url";
-var __filename = fileURLToPath(import.meta.url);
+var fs = __toESM(require("fs"), 1);
+var path = __toESM(require("path"), 1);
+var readline = __toESM(require("readline"), 1);
+var cliProgress = __toESM(require("cli-progress"), 1);
+var import_cli_table3 = __toESM(require("cli-table3"), 1);
+var import_url = require("url");
+var import_meta = {};
+var __filename = (0, import_url.fileURLToPath)(import_meta.url);
 var __dirname = path.dirname(__filename);
 var COLORS = {
   red: "\x1B[31m",
@@ -324,7 +873,7 @@ function createStatusTable(title, items) {
   if (items.length === 0) return;
   console.log(`
 ${title} (${items.length}):`);
-  const table = new Table({
+  const table = new import_cli_table3.default({
     head: ["File", "Action"],
     colWidths: [50, 20],
     style: { head: ["cyan"], border: ["gray"] },
@@ -562,12 +1111,12 @@ var syncCommand = {
 };
 
 // src/core/install.ts
-import fs3 from "fs";
-import path3 from "path";
+var import_fs2 = __toESM(require("fs"), 1);
+var import_path2 = __toESM(require("path"), 1);
 
 // src/shared.ts
-import fs2 from "fs";
-import path2 from "path";
+var import_fs = __toESM(require("fs"), 1);
+var import_path = __toESM(require("path"), 1);
 function log2(message, color = "white") {
   const colors = {
     red: "\x1B[31m",
@@ -608,19 +1157,19 @@ function detectAgentTool2(configs, defaultAgent = "opencode") {
   return defaultAgent;
 }
 function collectFiles(dir, extensions) {
-  if (!fs2.existsSync(dir)) {
+  if (!import_fs.default.existsSync(dir)) {
     return [];
   }
   const files = [];
   function traverse(currentDir) {
-    const items = fs2.readdirSync(currentDir);
+    const items = import_fs.default.readdirSync(currentDir);
     for (const item of items) {
-      const fullPath = path2.join(currentDir, item);
-      const stat = fs2.statSync(fullPath);
+      const fullPath = import_path.default.join(currentDir, item);
+      const stat = import_fs.default.statSync(fullPath);
       if (stat.isDirectory()) {
         traverse(fullPath);
       } else if (extensions.some((ext) => item.endsWith(ext))) {
-        const relativePath = path2.relative(dir, fullPath);
+        const relativePath = import_path.default.relative(dir, fullPath);
         files.push(relativePath);
       }
     }
@@ -629,28 +1178,28 @@ function collectFiles(dir, extensions) {
   return files.sort();
 }
 function getLocalFileInfo2(filePath) {
-  if (!fs2.existsSync(filePath)) {
+  if (!import_fs.default.existsSync(filePath)) {
     return null;
   }
-  const stat = fs2.statSync(filePath);
-  const content = fs2.readFileSync(filePath, "utf8");
+  const stat = import_fs.default.statSync(filePath);
+  const content = import_fs.default.readFileSync(filePath, "utf8");
   return {
     content,
     mtime: stat.mtime
   };
 }
 function clearObsoleteFiles2(targetDir, expectedFiles, extensions, results2) {
-  if (!fs2.existsSync(targetDir)) {
+  if (!import_fs.default.existsSync(targetDir)) {
     return;
   }
-  const items = fs2.readdirSync(targetDir);
+  const items = import_fs.default.readdirSync(targetDir);
   for (const item of items) {
-    const itemPath = path2.join(targetDir, item);
-    const stat = fs2.statSync(itemPath);
+    const itemPath = import_path.default.join(targetDir, item);
+    const stat = import_fs.default.statSync(itemPath);
     if (stat.isFile()) {
       const hasValidExtension = extensions.some((ext) => item.endsWith(ext));
       if (hasValidExtension && !expectedFiles.has(item)) {
-        fs2.unlinkSync(itemPath);
+        import_fs.default.unlinkSync(itemPath);
         results2.push({
           file: item,
           status: "skipped",
@@ -670,11 +1219,11 @@ function createMergedContent(filePaths, processContent, title, pathPrefix = "") 
   sections.push("---");
   sections.push("");
   for (const filePath of filePaths) {
-    const fullPath = path2.resolve(filePath);
-    if (fs2.existsSync(fullPath)) {
-      const content = fs2.readFileSync(fullPath, "utf8");
+    const fullPath = import_path.default.resolve(filePath);
+    if (import_fs.default.existsSync(fullPath)) {
+      const content = import_fs.default.readFileSync(fullPath, "utf8");
       const processedContent = processContent(content);
-      sections.push(`## ${path2.basename(filePath, ".md")}`);
+      sections.push(`## ${import_path.default.basename(filePath, ".md")}`);
       sections.push("");
       sections.push(processedContent);
       sections.push("");
@@ -686,33 +1235,33 @@ function createMergedContent(filePaths, processContent, title, pathPrefix = "") 
 }
 async function processBatch2(filePaths, targetDir, extension, processContent, flatten, results2, pathPrefix = "") {
   for (const filePath of filePaths) {
-    const destPath = flatten ? path2.join(targetDir, `${path2.basename(filePath, path2.extname(filePath))}${extension}`) : path2.join(targetDir, filePath);
-    const destDir = path2.dirname(destPath);
-    if (!fs2.existsSync(destDir)) {
-      fs2.mkdirSync(destDir, { recursive: true });
+    const destPath = flatten ? import_path.default.join(targetDir, `${import_path.default.basename(filePath, import_path.default.extname(filePath))}${extension}`) : import_path.default.join(targetDir, filePath);
+    const destDir = import_path.default.dirname(destPath);
+    if (!import_fs.default.existsSync(destDir)) {
+      import_fs.default.mkdirSync(destDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo2(destPath);
     const isNew = !localInfo;
     const projectRoot = process.cwd();
-    const sourcePath = path2.join(projectRoot, pathPrefix, filePath);
-    let content = fs2.readFileSync(sourcePath, "utf8");
+    const sourcePath = import_path.default.join(projectRoot, pathPrefix, filePath);
+    let content = import_fs.default.readFileSync(sourcePath, "utf8");
     content = processContent(content);
     const localProcessed = localInfo ? processContent(localInfo.content) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      const destDirPath = path2.dirname(destPath);
-      if (!fs2.existsSync(destDirPath)) {
-        fs2.mkdirSync(destDirPath, { recursive: true });
+      const destDirPath = import_path.default.dirname(destPath);
+      if (!import_fs.default.existsSync(destDirPath)) {
+        import_fs.default.mkdirSync(destDirPath, { recursive: true });
       }
-      fs2.writeFileSync(destPath, content, "utf8");
+      import_fs.default.writeFileSync(destPath, content, "utf8");
       results2.push({
-        file: path2.relative(targetDir, destPath),
+        file: import_path.default.relative(targetDir, destPath),
         status: isNew ? "added" : "updated",
         action: isNew ? "Created" : "Updated"
       });
     } else {
       results2.push({
-        file: path2.relative(targetDir, destPath),
+        file: import_path.default.relative(targetDir, destPath),
         status: "current",
         action: "Already current"
       });
@@ -770,13 +1319,13 @@ var AGENT_CONFIGS2 = {
   }
 };
 async function getAgentFiles() {
-  const agentsDir = path3.join(process.cwd(), "agents");
-  const subdirs = fs3.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
+  const agentsDir = import_path2.default.join(process.cwd(), "agents");
+  const subdirs = import_fs2.default.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   const allFiles = [];
   for (const subdir of subdirs) {
-    const subdirPath = path3.join(agentsDir, subdir);
+    const subdirPath = import_path2.default.join(agentsDir, subdir);
     const files = collectFiles(subdirPath, [".md"]);
-    allFiles.push(...files.map((file) => path3.join(subdir, file)));
+    allFiles.push(...files.map((file) => import_path2.default.join(subdir, file)));
   }
   return allFiles;
 }
@@ -789,16 +1338,16 @@ function detectAgentTool3() {
   return result;
 }
 async function installMemoryPlugin(cwd) {
-  const pluginDir = path3.join(cwd, ".opencode", "plugin");
-  const pluginFile = path3.join(pluginDir, "memory-tools.ts");
-  fs3.mkdirSync(pluginDir, { recursive: true });
-  if (fs3.existsSync(pluginFile)) {
+  const pluginDir = import_path2.default.join(cwd, ".opencode", "plugin");
+  const pluginFile = import_path2.default.join(pluginDir, "memory-tools.ts");
+  import_fs2.default.mkdirSync(pluginDir, { recursive: true });
+  if (import_fs2.default.existsSync(pluginFile)) {
     console.log("\u{1F4E6} Memory plugin already exists, skipping...");
     return;
   }
-  const sourcePlugin = path3.join(process.cwd(), "src", "opencode", "plugins", "memory-tools.ts");
-  if (fs3.existsSync(sourcePlugin)) {
-    fs3.copyFileSync(sourcePlugin, pluginFile);
+  const sourcePlugin = import_path2.default.join(process.cwd(), "src", "opencode", "plugins", "memory-tools.ts");
+  if (import_fs2.default.existsSync(sourcePlugin)) {
+    import_fs2.default.copyFileSync(sourcePlugin, pluginFile);
     console.log("\u{1F4E6} Installed memory plugin for agent coordination");
   } else {
     const pluginContent = `import { type Plugin, tool } from "@opencode-ai/plugin"
@@ -980,7 +1529,7 @@ export const MemoryToolsPlugin: Plugin = async () => {
     },
   }
 }`;
-    fs3.writeFileSync(pluginFile, pluginContent, "utf8");
+    import_fs2.default.writeFileSync(pluginFile, pluginContent, "utf8");
     console.log("\u{1F4E6} Created memory plugin for agent coordination");
   }
 }
@@ -1006,11 +1555,11 @@ async function installAgents(options) {
     }
   }
   const config = getAgentConfig2(AGENT_CONFIGS2, agent);
-  const agentsDir = path3.join(cwd, config.dir);
+  const agentsDir = import_path2.default.join(cwd, config.dir);
   const processContent = (content) => {
     return content;
   };
-  if (options.clear && fs3.existsSync(agentsDir)) {
+  if (options.clear && import_fs2.default.existsSync(agentsDir)) {
     let expectedFiles;
     if (options.merge) {
       expectedFiles = /* @__PURE__ */ new Set([`all-agents${config.extension}`]);
@@ -1018,7 +1567,7 @@ async function installAgents(options) {
       const agentFiles2 = await getAgentFiles();
       expectedFiles = new Set(
         agentFiles2.map((filePath) => {
-          const parsedPath = path3.parse(filePath);
+          const parsedPath = import_path2.default.parse(filePath);
           const baseName = parsedPath.name;
           const dir = parsedPath.dir;
           if (config.flatten) {
@@ -1032,7 +1581,7 @@ async function installAgents(options) {
     }
     clearObsoleteFiles2(agentsDir, expectedFiles, [config.extension], results2);
   }
-  fs3.mkdirSync(agentsDir, { recursive: true });
+  import_fs2.default.mkdirSync(agentsDir, { recursive: true });
   await installMemoryPlugin(cwd);
   const agentFiles = await getAgentFiles();
   console.log(`\u{1F680} Workflow Install Tool`);
@@ -1050,7 +1599,7 @@ async function installAgents(options) {
   }
   if (options.merge) {
     const mergedFileName = `all-agents${config.extension}`;
-    const mergedFilePath = path3.join(agentsDir, mergedFileName);
+    const mergedFilePath = import_path2.default.join(agentsDir, mergedFileName);
     console.log(`\u{1F4CB} Merging ${agentFiles.length} files into ${mergedFileName}...`);
     const pathPrefix = "agents/";
     const mergedContent = createMergedContent(
@@ -1063,7 +1612,7 @@ async function installAgents(options) {
     const localProcessed = localInfo ? processContent(localInfo.content) : "";
     const contentChanged = !localInfo || localProcessed !== mergedContent;
     if (contentChanged) {
-      fs3.writeFileSync(mergedFilePath, mergedContent, "utf8");
+      import_fs2.default.writeFileSync(mergedFilePath, mergedContent, "utf8");
       results2.push({
         file: mergedFileName,
         status: localInfo ? "updated" : "added",
@@ -1095,7 +1644,7 @@ async function installAgents(options) {
 }
 
 // src/utils/mcp-config.ts
-import path4 from "path";
+var import_path3 = __toESM(require("path"), 1);
 
 // src/utils/jsonc.ts
 function parseJSONC(content) {
@@ -1183,14 +1732,14 @@ $1"mcp": {`
   return json;
 }
 async function readJSONCFile(filePath) {
-  const fs4 = await import("fs/promises");
-  const content = await fs4.readFile(filePath, "utf8");
+  const fs5 = await import("fs/promises");
+  const content = await fs5.readFile(filePath, "utf8");
   return parseJSONC(content);
 }
 async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs4 = await import("fs/promises");
+  const fs5 = await import("fs/promises");
   const content = stringifyJSONC(obj, schema, indent);
-  await fs4.writeFile(filePath, content, "utf8");
+  await fs5.writeFile(filePath, content, "utf8");
 }
 
 // src/utils/mcp-config.ts
@@ -1213,7 +1762,7 @@ var MCP_SERVERS = {
   }
 };
 function getOpenCodeConfigPath(cwd) {
-  return path4.join(cwd, "opencode.jsonc");
+  return import_path3.default.join(cwd, "opencode.jsonc");
 }
 async function readOpenCodeConfig(cwd) {
   const configPath = getOpenCodeConfigPath(cwd);
@@ -1240,16 +1789,16 @@ async function addMCPServers(cwd, serverTypes) {
   }
   let addedCount = 0;
   for (const serverType of serverTypes) {
-    const server = MCP_SERVERS[serverType];
-    if (!server) {
+    const server2 = MCP_SERVERS[serverType];
+    if (!server2) {
       console.warn(`Warning: Unknown MCP server type: ${serverType}`);
       continue;
     }
-    if (config.mcp[server.name]) {
-      console.log(`\u2139\uFE0F  MCP server already exists: ${server.name}`);
+    if (config.mcp[server2.name]) {
+      console.log(`\u2139\uFE0F  MCP server already exists: ${server2.name}`);
     } else {
-      config.mcp[server.name] = server.config;
-      console.log(`\u{1F4E6} Added MCP server: ${server.name} (${server.description})`);
+      config.mcp[server2.name] = server2.config;
+      console.log(`\u{1F4E6} Added MCP server: ${server2.name} (${server2.description})`);
       addedCount++;
     }
   }
@@ -1342,7 +1891,7 @@ var installCommand = {
 
 // src/commands/mcp-command.ts
 var mcpHandler = async () => {
-  await import("./sylphx-flow-mcp-server-PEJV5RSJ.js");
+  await Promise.resolve().then(() => (init_sylphx_flow_mcp_server(), sylphx_flow_mcp_server_exports));
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .memory/memory.json");
   console.log("\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats");
@@ -1358,7 +1907,7 @@ var mcpCommand = {
 
 // src/cli.ts
 function createCLI() {
-  const program = new Command2();
+  const program = new import_commander2.Command();
   program.name("sylphx-flow").description("Sylphx Flow - Type-safe development flow CLI").version("1.0.0");
   const commands = [syncCommand, installCommand, mcpCommand];
   commands.forEach((commandConfig) => {
