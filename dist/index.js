@@ -121,14 +121,14 @@ $1"mcp": {`
   return json;
 }
 async function readJSONCFile(filePath) {
-  const fs4 = await import("fs/promises");
-  const content = await fs4.readFile(filePath, "utf8");
+  const fs5 = await import("fs/promises");
+  const content = await fs5.readFile(filePath, "utf8");
   return parseJSONC(content);
 }
 async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs4 = await import("fs/promises");
+  const fs5 = await import("fs/promises");
   const content = stringifyJSONC(obj, schema, indent);
-  await fs4.writeFile(filePath, content, "utf8");
+  await fs5.writeFile(filePath, content, "utf8");
 }
 
 // src/utils/mcp-config.ts
@@ -293,7 +293,9 @@ async function promptForAPIKeys(serverTypes) {
         apiKeys[envVar] = answer;
         console.log(`\u2705 Set ${envVar}`);
       } else {
-        console.log(`\u26A0\uFE0F  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`);
+        console.log(
+          `\u26A0\uFE0F  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`
+        );
       }
     }
   }
@@ -727,7 +729,14 @@ var initCommand = {
         console.log("\u{1F50D} Dry run: Would install all MCP servers");
         console.log("   \u2022 memory, everything, gpt-image, perplexity, context7, gemini-search");
       } else {
-        const allServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
+        const allServers = [
+          "memory",
+          "everything",
+          "gpt-image",
+          "perplexity",
+          "context7",
+          "gemini-search"
+        ];
         await addMCPServers(process.cwd(), allServers);
         const serversNeedingKeys = allServers.filter(
           (server) => ["gpt-image", "perplexity", "gemini-search"].includes(server)
@@ -773,9 +782,18 @@ var mcpInstallHandler = async (options) => {
   if (options.all) {
     console.log("\u{1F527} Installing all available MCP tools...");
     if (options.dryRun) {
-      console.log("\u{1F50D} Dry run: Would install all MCP tools: memory, everything, gpt-image, perplexity, context7, gemini-search");
+      console.log(
+        "\u{1F50D} Dry run: Would install all MCP tools: memory, everything, gpt-image, perplexity, context7, gemini-search"
+      );
     } else {
-      const allServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
+      const allServers = [
+        "memory",
+        "everything",
+        "gpt-image",
+        "perplexity",
+        "context7",
+        "gemini-search"
+      ];
       await addMCPServers(process.cwd(), allServers);
       console.log("\u2705 All MCP tools installed");
     }
@@ -786,8 +804,18 @@ var mcpInstallHandler = async (options) => {
   }
   const validServers = parseMCPServerTypes(servers);
   if (validServers.length === 0) {
-    const availableServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
-    throw new CLIError(`Invalid MCP tools. Available: ${availableServers.join(", ")}`, "INVALID_MCP_SERVERS");
+    const availableServers = [
+      "memory",
+      "everything",
+      "gpt-image",
+      "perplexity",
+      "context7",
+      "gemini-search"
+    ];
+    throw new CLIError(
+      `Invalid MCP tools. Available: ${availableServers.join(", ")}`,
+      "INVALID_MCP_SERVERS"
+    );
   }
   console.log(`\u{1F527} Installing MCP tools: ${validServers.join(", ")}`);
   if (options.dryRun) {
@@ -807,8 +835,18 @@ var mcpConfigHandler = async (options) => {
   }
   const validServers = parseMCPServerTypes([server]);
   if (validServers.length === 0) {
-    const availableServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
-    throw new CLIError(`Invalid MCP server: ${server}. Available: ${availableServers.join(", ")}`, "INVALID_MCP_SERVER");
+    const availableServers = [
+      "memory",
+      "everything",
+      "gpt-image",
+      "perplexity",
+      "context7",
+      "gemini-search"
+    ];
+    throw new CLIError(
+      `Invalid MCP server: ${server}. Available: ${availableServers.join(", ")}`,
+      "INVALID_MCP_SERVER"
+    );
   }
   await configureMCPServer(process.cwd(), validServers[0]);
 };
@@ -827,7 +865,10 @@ var mcpCommand = {
       name: "install",
       description: "Install MCP tools for OpenCode",
       options: [
-        { flags: "<servers...>", description: "MCP tools to install (memory, everything, gpt-image, perplexity, context7, gemini-search)" },
+        {
+          flags: "<servers...>",
+          description: "MCP tools to install (memory, everything, gpt-image, perplexity, context7, gemini-search)"
+        },
         { flags: "--all", description: "Install all available MCP tools" },
         { flags: "--dry-run", description: "Show what would be done without making changes" }
       ],
@@ -843,11 +884,283 @@ var mcpCommand = {
       name: "config",
       description: "Configure API keys for MCP tools",
       options: [
-        { flags: "<server>", description: "MCP server to configure (gpt-image, perplexity, gemini-search)" }
+        {
+          flags: "<server>",
+          description: "MCP server to configure (gpt-image, perplexity, gemini-search)"
+        }
       ],
       handler: mcpConfigHandler
     }
   ]
+};
+
+// src/commands/memory-command.ts
+import * as fs3 from "fs/promises";
+import * as path4 from "path";
+import Table from "cli-table3";
+var MemoryStorage = class {
+  filePath;
+  constructor() {
+    this.filePath = path4.join(process.cwd(), ".sylphx-flow", "memory.db");
+  }
+  async loadData() {
+    try {
+      const data = await fs3.readFile(this.filePath, "utf8");
+      const parsed = JSON.parse(data);
+      return new Map(Object.entries(parsed));
+    } catch {
+      return /* @__PURE__ */ new Map();
+    }
+  }
+  async saveData(data) {
+    try {
+      const obj = Object.fromEntries(data);
+      await fs3.writeFile(this.filePath, JSON.stringify(obj, null, 2), "utf8");
+    } catch (error) {
+      console.warn("Warning: Could not save memory data:", error);
+    }
+  }
+  async getAll() {
+    const data = await this.loadData();
+    return Array.from(data.values()).sort((a, b) => b.timestamp - a.timestamp);
+  }
+  async search(pattern, namespace) {
+    const data = await this.loadData();
+    const searchPattern = pattern.replace(/\*/g, ".*");
+    const regex = new RegExp(searchPattern);
+    return Array.from(data.values()).filter((entry) => {
+      if (namespace && entry.namespace !== namespace) return false;
+      return regex.test(entry.key);
+    }).sort((a, b) => b.timestamp - a.timestamp);
+  }
+  async delete(key, namespace = "default") {
+    const data = await this.loadData();
+    const fullKey = `${namespace}:${key}`;
+    const deleted = data.delete(fullKey);
+    if (deleted) {
+      await this.saveData(data);
+    }
+    return deleted;
+  }
+  async clear(namespace) {
+    const data = await this.loadData();
+    let count = 0;
+    if (namespace) {
+      const keysToDelete = [];
+      for (const [fullKey, entry] of data.entries()) {
+        if (entry.namespace === namespace) {
+          keysToDelete.push(fullKey);
+        }
+      }
+      for (const key of keysToDelete) {
+        data.delete(key);
+        count++;
+      }
+    } else {
+      count = data.size;
+      data.clear();
+    }
+    if (count > 0) {
+      await this.saveData(data);
+    }
+    return count;
+  }
+  async getStats() {
+    const data = await this.loadData();
+    const entries = Array.from(data.values());
+    const namespaces = [...new Set(entries.map((entry) => entry.namespace))];
+    const namespaceStats = namespaces.map((ns) => ({
+      namespace: ns,
+      count: entries.filter((entry) => entry.namespace === ns).length
+    }));
+    const timestamps = entries.map((entry) => entry.timestamp);
+    const oldestEntry = timestamps.length > 0 ? Math.min(...timestamps) : 0;
+    const newestEntry = timestamps.length > 0 ? Math.max(...timestamps) : 0;
+    return {
+      total_entries: entries.length,
+      namespaces: namespaceStats,
+      oldest_entry: oldestEntry,
+      newest_entry: newestEntry
+    };
+  }
+};
+var memoryListHandler = async (options) => {
+  const memory = new MemoryStorage();
+  const entries = await memory.getAll();
+  if (options.namespace) {
+    const filtered = entries.filter((entry) => entry.namespace === options.namespace);
+    console.log(`\u{1F4CB} Memory entries in namespace '${options.namespace}':`);
+    console.log(`Total: ${filtered.length} entries
+`);
+    const table = new Table({
+      head: ["Key", "Value", "Updated"],
+      colWidths: [20, 40, 20]
+    });
+    filtered.slice(0, options.limit || 50).forEach((entry) => {
+      const value = typeof entry.value === "string" ? entry.value.substring(0, 50) + (entry.value.length > 50 ? "..." : "") : JSON.stringify(entry.value).substring(0, 50) + "...";
+      table.push([entry.key, value, new Date(entry.updated_at).toLocaleString()]);
+    });
+    console.log(table.toString());
+  } else {
+    console.log(`\u{1F4CB} All memory entries (showing first ${options.limit || 50}):`);
+    console.log(`Total: ${entries.length} entries
+`);
+    const table = new Table({
+      head: ["Namespace", "Key", "Value", "Updated"],
+      colWidths: [15, 20, 35, 20]
+    });
+    entries.slice(0, options.limit || 50).forEach((entry) => {
+      const value = typeof entry.value === "string" ? entry.value.substring(0, 50) + (entry.value.length > 50 ? "..." : "") : JSON.stringify(entry.value).substring(0, 50) + "...";
+      table.push([entry.namespace, entry.key, value, new Date(entry.updated_at).toLocaleString()]);
+    });
+    console.log(table.toString());
+  }
+};
+var memorySearchHandler = async (options) => {
+  if (!options.pattern) {
+    console.log("\u274C Please provide a search pattern");
+    console.log("   Usage: sylphx-flow memory search <pattern>");
+    return;
+  }
+  const memory = new MemoryStorage();
+  const entries = await memory.search(options.pattern, options.namespace);
+  console.log(`\u{1F50D} Search results for pattern "${options.pattern}"`);
+  if (options.namespace) {
+    console.log(`Namespace: ${options.namespace}`);
+  }
+  console.log(`Found: ${entries.length} entries
+`);
+  if (entries.length === 0) {
+    console.log("No entries found.");
+    return;
+  }
+  const table = new Table({
+    head: ["Namespace", "Key", "Value", "Updated"],
+    colWidths: [15, 20, 35, 20]
+  });
+  entries.forEach((entry) => {
+    const value = typeof entry.value === "string" ? entry.value.substring(0, 50) + (entry.value.length > 50 ? "..." : "") : JSON.stringify(entry.value).substring(0, 50) + "...";
+    table.push([entry.namespace, entry.key, value, new Date(entry.updated_at).toLocaleString()]);
+  });
+  console.log(table.toString());
+};
+var memoryDeleteHandler = async (options) => {
+  const memory = new MemoryStorage();
+  const deleted = await memory.delete(options.key, options.namespace || "default");
+  if (deleted) {
+    console.log(`\u2705 Deleted memory entry: ${options.namespace || "default"}:${options.key}`);
+  } else {
+    console.log(`\u274C Memory entry not found: ${options.namespace || "default"}:${options.key}`);
+  }
+};
+var memoryClearHandler = async (options) => {
+  if (!options.confirm) {
+    console.log("\u274C Please use --confirm to clear memory entries");
+    console.log("   This action cannot be undone!");
+    return;
+  }
+  const memory = new MemoryStorage();
+  const count = await memory.clear(options.namespace);
+  if (options.namespace) {
+    console.log(`\u2705 Cleared ${count} entries from namespace: ${options.namespace}`);
+  } else {
+    console.log(`\u2705 Cleared all ${count} memory entries`);
+  }
+};
+var memoryStatsHandler = async () => {
+  const memory = new MemoryStorage();
+  const stats = await memory.getStats();
+  console.log("\u{1F4CA} Memory Statistics");
+  console.log("==================");
+  console.log(`Total Entries: ${stats.total_entries}`);
+  console.log(`Namespaces: ${stats.namespaces.length}`);
+  console.log("");
+  if (stats.namespaces.length > 0) {
+    console.log("Namespaces:");
+    stats.namespaces.forEach((ns) => {
+      console.log(`  \u2022 ${ns.namespace}: ${ns.count} entries`);
+    });
+  }
+  if (stats.oldest_entry > 0) {
+    const oldestDate = new Date(stats.oldest_entry).toLocaleString();
+    const newestDate = new Date(stats.newest_entry).toLocaleString();
+    console.log("");
+    console.log(`Oldest Entry: ${oldestDate}`);
+    console.log(`Newest Entry: ${newestDate}`);
+  }
+  console.log("");
+  console.log(`\u{1F4CD} Database: .sylphx-flow/memory.db`);
+};
+var memoryTUIHandler = async () => {
+  console.log("\u{1F680} Starting Memory Manager TUI...");
+  console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
+  console.log("");
+  console.log("\u{1F4CB} Available Commands:");
+  console.log("  \u2022 npx github:sylphxltd/flow memory list");
+  console.log("  \u2022 npx github:sylphxltd/flow memory search <pattern>");
+  console.log("  \u2022 npx github:sylphxltd/flow memory delete <key>");
+  console.log("  \u2022 npx github:sylphxltd/flow memory clear --confirm");
+  console.log("  \u2022 npx github:sylphxltd/flow memory stats");
+  console.log("");
+  console.log("\u{1F4A1} Use the subcommands above for memory management.");
+  console.log("   Full TUI interface coming soon!");
+};
+var memoryCommand = {
+  name: "memory",
+  description: "Manage Sylphx Flow memory database",
+  options: [],
+  subcommands: [
+    {
+      name: "tui",
+      description: "Launch interactive Terminal User Interface (coming soon)",
+      options: [],
+      handler: memoryTUIHandler
+    },
+    {
+      name: "list",
+      description: "List memory entries",
+      options: [
+        { flags: "--namespace <name>", description: "Filter by namespace" },
+        { flags: "--limit <number>", description: "Limit number of entries (default: 50)" }
+      ],
+      handler: memoryListHandler
+    },
+    {
+      name: "search",
+      description: "Search memory entries by pattern",
+      options: [
+        { flags: "--pattern <pattern>", description: "Search pattern (supports * wildcards)" },
+        { flags: "--namespace <name>", description: "Filter by namespace" }
+      ],
+      handler: memorySearchHandler
+    },
+    {
+      name: "delete",
+      description: "Delete a specific memory entry",
+      options: [
+        { flags: "--key <key>", description: "Memory key to delete" },
+        { flags: "--namespace <name>", description: "Namespace (default: default)" }
+      ],
+      handler: memoryDeleteHandler
+    },
+    {
+      name: "clear",
+      description: "Clear memory entries",
+      options: [
+        { flags: "--namespace <name>", description: "Clear specific namespace (optional)" },
+        { flags: "--confirm", description: "Confirm the clear operation" }
+      ],
+      handler: memoryClearHandler
+    },
+    {
+      name: "stats",
+      description: "Show memory statistics",
+      options: [],
+      handler: memoryStatsHandler
+    }
+  ],
+  handler: memoryTUIHandler
+  // Default to TUI
 };
 
 // src/utils/command-builder.ts
@@ -886,14 +1199,14 @@ var COMMON_OPTIONS = [
 ];
 
 // src/core/sync.ts
-import * as fs3 from "fs";
-import * as path4 from "path";
+import * as fs4 from "fs";
+import * as path5 from "path";
 import * as readline from "readline";
 import { fileURLToPath } from "url";
 import * as cliProgress from "cli-progress";
-import Table from "cli-table3";
+import Table2 from "cli-table3";
 var __filename = fileURLToPath(import.meta.url);
-var __dirname = path4.dirname(__filename);
+var __dirname = path5.dirname(__filename);
 var COLORS = {
   red: "\x1B[31m",
   green: "\x1B[32m",
@@ -977,13 +1290,13 @@ function detectAgentTool3() {
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs3.existsSync(path4.join(cwd, config.dir))) {
+    if (fs4.existsSync(path5.join(cwd, config.dir))) {
       return agent;
     }
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs3.existsSync(path4.join(cwd, config.dir, RULES_DIR_NAME))) {
+    if (fs4.existsSync(path5.join(cwd, config.dir, RULES_DIR_NAME))) {
       return agent;
     }
   }
@@ -991,10 +1304,10 @@ function detectAgentTool3() {
 }
 function getLocalFileInfo2(filePath) {
   try {
-    if (!fs3.existsSync(filePath)) {
+    if (!fs4.existsSync(filePath)) {
       return null;
     }
-    const content = fs3.readFileSync(filePath, "utf8");
+    const content = fs4.readFileSync(filePath, "utf8");
     return { content, exists: true };
   } catch {
     return null;
@@ -1004,18 +1317,18 @@ async function getRuleFiles() {
   const scriptDir = __dirname;
   let projectRoot;
   if (scriptDir.includes("/dist/src/")) {
-    projectRoot = path4.resolve(scriptDir, "../../..");
+    projectRoot = path5.resolve(scriptDir, "../../..");
   } else {
-    projectRoot = path4.resolve(scriptDir, "..");
+    projectRoot = path5.resolve(scriptDir, "..");
   }
-  const docsRulesDir = path4.join(projectRoot, "docs", RULES_DIR_NAME);
+  const docsRulesDir = path5.join(projectRoot, "docs", RULES_DIR_NAME);
   const files = [];
   const collectFiles2 = (dir, relativePath) => {
     try {
-      const items = fs3.readdirSync(dir, { withFileTypes: true });
+      const items = fs4.readdirSync(dir, { withFileTypes: true });
       for (const item of items) {
-        const itemPath = path4.join(dir, item.name);
-        const itemRelative = path4.join(relativePath, item.name);
+        const itemPath = path5.join(dir, item.name);
+        const itemRelative = path5.join(relativePath, item.name);
         if (item.isDirectory()) {
           collectFiles2(itemPath, itemRelative);
         } else if (item.isFile() && (item.name.endsWith(".mdc") || item.name.endsWith(".md"))) {
@@ -1048,7 +1361,7 @@ function getDescriptionForFile(filePath) {
   if (!filePath) {
     return "Development flow";
   }
-  const baseName = path4.basename(filePath, path4.extname(filePath));
+  const baseName = path5.basename(filePath, path5.extname(filePath));
   return `Development flow for ${baseName.replace(/-/g, " ")}`;
 }
 function createContentProcessor(config) {
@@ -1068,42 +1381,42 @@ alwaysApply: true
 }
 function getDestinationPath(filePath, rulesDir, config) {
   const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-  const parsedPath = path4.parse(relativeToRules);
+  const parsedPath = path5.parse(relativeToRules);
   const { name: baseName, dir } = parsedPath;
   if (config.flatten) {
     const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
     const relativePath2 = `${flattenedName}${config.extension}`;
-    return { relativePath: relativePath2, destPath: path4.join(rulesDir, relativePath2) };
+    return { relativePath: relativePath2, destPath: path5.join(rulesDir, relativePath2) };
   }
-  const targetDir = dir ? path4.join(rulesDir, dir) : rulesDir;
-  const relativePath = path4.join(dir, `${baseName}${config.extension}`);
+  const targetDir = dir ? path5.join(rulesDir, dir) : rulesDir;
+  const relativePath = path5.join(dir, `${baseName}${config.extension}`);
   return {
     relativePath,
-    destPath: path4.join(targetDir, `${baseName}${config.extension}`),
+    destPath: path5.join(targetDir, `${baseName}${config.extension}`),
     targetDir
   };
 }
 async function processFile(filePath, rulesDir, config, processContent, progressBar) {
   try {
     const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
-    if (targetDir && !fs3.existsSync(targetDir)) {
-      fs3.mkdirSync(targetDir, { recursive: true });
+    if (targetDir && !fs4.existsSync(targetDir)) {
+      fs4.mkdirSync(targetDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo2(destPath);
     const isNew = !localInfo;
     let projectRoot;
     if (__dirname.includes("/dist/src/")) {
-      projectRoot = path4.resolve(__dirname, "../../..");
+      projectRoot = path5.resolve(__dirname, "../../..");
     } else {
-      projectRoot = path4.resolve(__dirname, "..");
+      projectRoot = path5.resolve(__dirname, "..");
     }
-    const sourcePath = path4.join(projectRoot, "docs", filePath);
-    let content = fs3.readFileSync(sourcePath, "utf8");
+    const sourcePath = path5.join(projectRoot, "docs", filePath);
+    let content = fs4.readFileSync(sourcePath, "utf8");
     content = processContent(content, filePath);
     const localProcessed = localInfo ? processContent(localInfo.content, filePath) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs3.writeFileSync(destPath, content, "utf8");
+      fs4.writeFileSync(destPath, content, "utf8");
     }
     results.push({
       file: relativePath,
@@ -1134,7 +1447,7 @@ function createStatusTable(title, items) {
   }
   console.log(`
 ${title} (${items.length}):`);
-  const table = new Table({
+  const table = new Table2({
     head: ["File", "Action"],
     colWidths: [50, 20],
     style: { head: ["cyan"], border: ["gray"] },
@@ -1193,7 +1506,7 @@ function displayResults2(results2, rulesDir, agentName) {
   console.log(`\u{1F4A1} Rules will be automatically loaded by ${agentName}`);
 }
 async function clearObsoleteFiles2(rulesDir, config, merge) {
-  if (!fs3.existsSync(rulesDir)) {
+  if (!fs4.existsSync(rulesDir)) {
     return;
   }
   console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
@@ -1209,14 +1522,14 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
       })
     );
   }
-  const existingFiles = fs3.readdirSync(rulesDir, { recursive: true }).filter(
+  const existingFiles = fs4.readdirSync(rulesDir, { recursive: true }).filter(
     (file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))
-  ).map((file) => path4.join(rulesDir, file));
+  ).map((file) => path5.join(rulesDir, file));
   for (const file of existingFiles) {
-    const relativePath = path4.relative(rulesDir, file);
+    const relativePath = path5.relative(rulesDir, file);
     if (!expectedFiles.has(relativePath)) {
       try {
-        fs3.unlinkSync(file);
+        fs4.unlinkSync(file);
         results.push({
           file: relativePath,
           status: "removed",
@@ -1234,7 +1547,7 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
 }
 async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const mergedFileName = `all-rules${config.extension}`;
-  const mergedFilePath = path4.join(rulesDir, mergedFileName);
+  const mergedFilePath = path5.join(rulesDir, mergedFileName);
   console.log(`\u{1F4CB} Merging ${ruleFiles.length} files into ${mergedFileName}...`);
   let mergedContent = "# Development Rules - Complete Collection\n\n";
   mergedContent += `Generated on: ${(/* @__PURE__ */ new Date()).toISOString()}
@@ -1245,15 +1558,15 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
     try {
       let projectRoot;
       if (__dirname.includes("/dist/src/")) {
-        projectRoot = path4.resolve(__dirname, "../../..");
+        projectRoot = path5.resolve(__dirname, "../../..");
       } else {
-        projectRoot = path4.resolve(__dirname, "..");
+        projectRoot = path5.resolve(__dirname, "..");
       }
-      const sourcePath = path4.join(projectRoot, "docs", filePath);
-      let content = fs3.readFileSync(sourcePath, "utf8");
+      const sourcePath = path5.join(projectRoot, "docs", filePath);
+      let content = fs4.readFileSync(sourcePath, "utf8");
       content = processContent(content, filePath);
       const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-      const parsedPath = path4.parse(relativeToRules);
+      const parsedPath = path5.parse(relativeToRules);
       const { name: baseName, dir } = parsedPath;
       const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
       mergedContent += `## ${sectionTitle.replace(/-/g, " ").toUpperCase()}
@@ -1275,7 +1588,7 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const localProcessed = localInfo ? processContent(localInfo.content, "all-rules") : "";
   const contentChanged = !localInfo || localProcessed !== mergedContent;
   if (contentChanged) {
-    fs3.writeFileSync(mergedFilePath, mergedContent, "utf8");
+    fs4.writeFileSync(mergedFilePath, mergedContent, "utf8");
     results.push({
       file: mergedFileName,
       status: localInfo ? "updated" : "added",
@@ -1311,12 +1624,12 @@ async function syncRules(options) {
     }
   }
   const config = getAgentConfig2(agent);
-  const rulesDir = path4.join(cwd, config.dir, RULES_DIR_NAME);
+  const rulesDir = path5.join(cwd, config.dir, RULES_DIR_NAME);
   const processContent = createContentProcessor(config);
   if (options.clear) {
     await clearObsoleteFiles2(rulesDir, config, !!options.merge);
   }
-  fs3.mkdirSync(rulesDir, { recursive: true });
+  fs4.mkdirSync(rulesDir, { recursive: true });
   const ruleFiles = await getRuleFiles();
   console.log("\u{1F680} Rules Sync Tool");
   console.log("================");
@@ -1367,7 +1680,9 @@ var syncCommand = {
     ...COMMON_OPTIONS.slice(1)
   ],
   handler: async (options) => {
-    console.warn('\u26A0\uFE0F  WARNING: The "sync" command is deprecated and will be removed in a future version.');
+    console.warn(
+      '\u26A0\uFE0F  WARNING: The "sync" command is deprecated and will be removed in a future version.'
+    );
     console.warn('   Use "npx github:sylphxltd/flow init" instead for new projects.');
     console.warn("   The sync command only works with legacy agents (cursor, kilocode, roocode).");
     console.warn("");
@@ -1402,7 +1717,7 @@ function showDefaultHelp() {
 function createCLI() {
   const program = new Command2();
   program.name("sylphx-flow").description("Sylphx Flow - Type-safe development flow CLI").version("1.0.0");
-  const commands = [syncCommand, initCommand, mcpCommand];
+  const commands = [syncCommand, initCommand, mcpCommand, memoryCommand];
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
