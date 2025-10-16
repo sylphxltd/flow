@@ -40,7 +40,7 @@ async function getAgentFiles(): Promise<string[]> {
   // We need to resolve relative to the script location, not process.cwd()
   const scriptPath = path.resolve(process.argv[1]);
   const scriptDir = path.dirname(scriptPath);
-  const agentsDir = path.join(scriptDir, '..', 'agents');
+  const agentsDir = path.join(scriptDir, '..', '..', 'agents');
 
   if (!fs.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
@@ -204,7 +204,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     // Use same logic as getAgentFiles() - relative to script location
     const scriptPath = path.resolve(process.argv[1]);
     const scriptDir = path.dirname(scriptPath);
-    const agentsSourceDir = path.join(scriptDir, '..', 'agents');
+    const agentsSourceDir = path.join(scriptDir, '..', '..', 'agents');
 
     for (const agentFile of agentFiles) {
       const sourcePath = path.join(agentsSourceDir, agentFile);
