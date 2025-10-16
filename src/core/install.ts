@@ -1,19 +1,19 @@
-import fs from 'fs';
-import path from 'path';
-import { 
-  ProcessResult, 
-  CommonOptions,
-  log,
-  getSupportedAgents,
-  getAgentConfig,
-  promptForAgent as sharedPromptForAgent,
-  detectAgentTool as sharedDetectAgentTool,
-  getLocalFileInfo,
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  type CommonOptions,
+  type ProcessResult,
+  clearObsoleteFiles,
   collectFiles,
-  displayResults,
-  processBatch,
   createMergedContent,
-  clearObsoleteFiles
+  displayResults,
+  getAgentConfig,
+  getLocalFileInfo,
+  getSupportedAgents,
+  log,
+  processBatch,
+  detectAgentTool as sharedDetectAgentTool,
+  promptForAgent as sharedPromptForAgent,
 } from '../shared.js';
 
 // Agent configurations - Currently only opencode
@@ -24,8 +24,8 @@ const AGENT_CONFIGS = {
     extension: '.md',
     stripYaml: false,
     flatten: false,
-    description: 'OpenCode (.opencode/agent/*.md with YAML front matter for agents)'
-  }
+    description: 'OpenCode (.opencode/agent/*.md with YAML front matter for agents)',
+  },
 } as const;
 
 type AgentType = keyof typeof AGENT_CONFIGS;
@@ -37,21 +37,22 @@ type AgentType = keyof typeof AGENT_CONFIGS;
 async function getAgentFiles(): Promise<string[]> {
   // Get agents directory from current working directory
   const agentsDir = path.join(process.cwd(), 'agents');
-  
+
   // Get all subdirectories in agents/ (excluding archived)
-  const subdirs = fs.readdirSync(agentsDir, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory() && dirent.name !== 'archived')
-    .map(dirent => dirent.name);
-  
+  const subdirs = fs
+    .readdirSync(agentsDir, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
+    .map((dirent) => dirent.name);
+
   const allFiles: string[] = [];
-  
+
   // Collect files from each subdirectory
   for (const subdir of subdirs) {
     const subdirPath = path.join(agentsDir, subdir);
     const files = collectFiles(subdirPath, ['.md']);
-    allFiles.push(...files.map(file => path.join(subdir, file)));
+    allFiles.push(...files.map((file) => path.join(subdir, file)));
   }
-  
+
   return allFiles;
 }
 
@@ -69,22 +70,23 @@ function detectAgentTool(): AgentType {
 // PLUGIN INSTALLATION
 // ============================================================================
 
+// Note: This function is async to maintain compatibility with callers that use await
 async function installMemoryPlugin(cwd: string): Promise<void> {
   const pluginDir = path.join(cwd, '.opencode', 'plugin');
   const pluginFile = path.join(pluginDir, 'memory-tools.ts');
-  
+
   // Create plugin directory
   fs.mkdirSync(pluginDir, { recursive: true });
-  
+
   // Check if plugin already exists
   if (fs.existsSync(pluginFile)) {
     console.log('📦 Memory plugin already exists, skipping...');
     return;
   }
-  
+
   // Copy plugin file from project
   const sourcePlugin = path.join(process.cwd(), 'src', 'opencode', 'plugins', 'memory-tools.ts');
-  
+
   if (fs.existsSync(sourcePlugin)) {
     fs.copyFileSync(sourcePlugin, pluginFile);
     console.log('📦 Installed memory plugin for agent coordination');
@@ -269,7 +271,7 @@ export const MemoryToolsPlugin: Plugin = async () => {
     },
   }
 }`;
-    
+
     fs.writeFileSync(pluginFile, pluginContent, 'utf8');
     console.log('📦 Created memory plugin for agent coordination');
   }
@@ -321,7 +323,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
       // Get source files for normal mode
       const agentFiles = await getAgentFiles();
       expectedFiles = new Set(
-        agentFiles.map(filePath => {
+        agentFiles.map((filePath) => {
           const parsedPath = path.parse(filePath);
           const baseName = parsedPath.name;
           const dir = parsedPath.dir;
@@ -329,10 +331,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
           if (config.flatten) {
             const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
             return `${flattenedName}${config.extension}`;
-          } else {
-            // Keep the relative path structure (sdd/file.md, core/file.md)
-            return filePath;
           }
+          // Keep the relative path structure (sdd/file.md, core/file.md)
+          return filePath;
         })
       );
     }
@@ -350,13 +351,13 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const agentFiles = await getAgentFiles();
 
   // Show initial info
-  console.log(`🚀 Workflow Install Tool`);
-  console.log(`=====================`);
+  console.log('🚀 Workflow Install Tool');
+  console.log('=====================');
   console.log(`📝 Agent: ${config.name}`);
   console.log(`📁 Target: ${agentsDir}`);
   console.log(`📋 Files: ${agentFiles.length}`);
   if (options.merge) {
-    console.log(`🔗 Mode: Merge all agents into single file`);
+    console.log('🔗 Mode: Merge all agents into single file');
   }
   console.log('');
 
@@ -374,7 +375,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
     const pathPrefix = 'agents/';
     const mergedContent = createMergedContent(
-      agentFiles.map(f => pathPrefix + f),
+      agentFiles.map((f) => pathPrefix + f),
       processContent,
       'Development Workflow Agents - Complete Collection',
       pathPrefix
@@ -390,20 +391,20 @@ export async function installAgents(options: CommonOptions): Promise<void> {
       results.push({
         file: mergedFileName,
         status: localInfo ? 'updated' : 'added',
-        action: localInfo ? 'Updated' : 'Created'
+        action: localInfo ? 'Updated' : 'Created',
       });
     } else {
       results.push({
         file: mergedFileName,
         status: 'current',
-        action: 'Already current'
+        action: 'Already current',
       });
     }
 
     displayResults(results, agentsDir, config.name, 'Install');
   } else {
     // Process files individually - create both sdd/ and core/ subdirectory structures
-    await processBatch(
+    processBatch(
       agentFiles, // Files with relative paths (sdd/file.md, core/file.md)
       agentsDir, // Target to .opencode/agent/
       config.extension,

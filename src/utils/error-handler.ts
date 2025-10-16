@@ -1,5 +1,8 @@
 export class CLIError extends Error {
-  constructor(message: string, public code?: string) {
+  constructor(
+    message: string,
+    public code?: string
+  ) {
     super(message);
     this.name = 'CLIError';
   }
@@ -8,13 +11,13 @@ export class CLIError extends Error {
 export function handleError(error: unknown, context?: string): never {
   const message = error instanceof Error ? error.message : String(error);
   const contextMsg = context ? ` (${context})` : '';
-  
+
   console.error(`❌ Error${contextMsg}: ${message}`);
-  
+
   if (error instanceof CLIError && error.code) {
     console.error(`   Code: ${error.code}`);
   }
-  
+
   process.exit(1);
 }
 

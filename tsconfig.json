@@ -16,13 +16,6 @@
     "allowImportingTsExtensions": false,
     "noEmit": false
   },
-  "include": [
-    "**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "scripts",
-    "src/commands/mcp.ts"
-  ]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "scripts", "src/commands/mcp.ts"]
 }

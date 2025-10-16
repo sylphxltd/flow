@@ -1,37 +1,37 @@
 import { Command } from 'commander';
-import { CommandConfig, CommandOptions } from '../types.js';
+import type { CommandConfig, CommandOptions } from '../types.js';
 import { createAsyncHandler } from './error-handler.js';
 
 export function createCommand(config: CommandConfig): Command {
   const command = new Command(config.name);
-  
+
   command.description(config.description);
-  
-  config.options.forEach(option => {
+
+  for (const option of config.options) {
     command.option(option.flags, option.description);
-  });
-  
+  }
+
   // Add subcommands if they exist
   if (config.subcommands) {
-    config.subcommands.forEach(subcommand => {
+    for (const subcommand of config.subcommands) {
       command.addCommand(createCommand(subcommand));
-    });
+    }
   }
-  
+
   // Only add handler if this command has one (not just a container for subcommands)
   if (config.handler) {
     const handler = createAsyncHandler(config.handler, config.name);
-    
+
     if (config.validator) {
       command.action((options: CommandOptions) => {
-        config.validator!(options);
+        config.validator?.(options);
         return handler(options);
       });
     } else {
       command.action(handler);
     }
   }
-  
+
   return command;
 }
 
@@ -41,5 +41,5 @@ export const COMMON_OPTIONS = [
   { flags: '--dry-run', description: 'Show what would be done without making changes' },
   { flags: '--clear', description: 'Clear obsolete items before processing' },
   { flags: '--merge', description: 'Merge all items into a single file' },
-  { flags: '--mcp [servers...]', description: 'Install MCP servers (memory, everything)' }
+  { flags: '--mcp [servers...]', description: 'Install MCP servers (memory, everything)' },
 ] as const;

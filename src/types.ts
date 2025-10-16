@@ -9,9 +9,7 @@ export interface CommandOptions {
   all?: boolean;
 }
 
-export interface CommandHandler {
-  (options: CommandOptions): Promise<void>;
-}
+export type CommandHandler = (options: CommandOptions) => Promise<void>;
 
 export interface CommandConfig {
   name: string;

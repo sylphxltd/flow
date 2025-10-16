@@ -1,7 +1,7 @@
-import { syncRules } from './sync.js';
-import { CommandOptions, CommandConfig } from '../types.js';
-import { CLIError } from '../utils/error-handler.js';
+import type { CommandConfig, CommandOptions } from '../types.js';
 import { COMMON_OPTIONS } from '../utils/command-builder.js';
+import { CLIError } from '../utils/error-handler.js';
+import { syncRules } from './sync.js';
 
 function validateSyncOptions(options: CommandOptions): void {
   if (options.agent && !['cursor', 'kilocode', 'roocode'].includes(options.agent)) {
@@ -17,8 +17,8 @@ export const syncCommand: CommandConfig = {
   description: 'Sync development flow to your project',
   options: [
     { ...COMMON_OPTIONS[0], description: 'Force specific agent (cursor, kilocode, roocode)' },
-    ...COMMON_OPTIONS.slice(1)
+    ...COMMON_OPTIONS.slice(1),
   ],
   handler: syncRules,
-  validator: validateSyncOptions
+  validator: validateSyncOptions,
 };

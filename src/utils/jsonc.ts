@@ -12,13 +12,15 @@ export function parseJSONC(content: string): any {
   try {
     // Remove single-line comments (//) but not inside strings
     let cleaned = removeComments(content);
-    
+
     // Remove trailing commas before closing brackets/braces
     cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
-    
+
     return JSON.parse(cleaned);
   } catch (error) {
-    throw new Error(`Failed to parse JSONC: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse JSONC: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -31,23 +33,23 @@ function removeComments(content: string): string {
   let inSingleLineComment = false;
   let inMultiLineComment = false;
   let escapeNext = false;
-  
+
   for (let i = 0; i < content.length; i++) {
     const char = content[i];
     const nextChar = content[i + 1];
-    
+
     if (escapeNext) {
       result += char;
       escapeNext = false;
       continue;
     }
-    
+
     if (char === '\\' && inString) {
       result += char;
       escapeNext = true;
       continue;
     }
-    
+
     if (inString) {
       if (char === '"') {
         inString = false;
@@ -55,7 +57,7 @@ function removeComments(content: string): string {
       result += char;
       continue;
     }
-    
+
     if (inSingleLineComment) {
       if (char === '\n') {
         inSingleLineComment = false;
@@ -63,7 +65,7 @@ function removeComments(content: string): string {
       }
       continue;
     }
-    
+
     if (inMultiLineComment) {
       if (char === '*' && nextChar === '/') {
         inMultiLineComment = false;
@@ -71,28 +73,28 @@ function removeComments(content: string): string {
       }
       continue;
     }
-    
+
     if (char === '"') {
       inString = true;
       result += char;
       continue;
     }
-    
+
     if (char === '/' && nextChar === '/') {
       inSingleLineComment = true;
       i++; // Skip the second '/'
       continue;
     }
-    
+
     if (char === '/' && nextChar === '*') {
       inMultiLineComment = true;
       i++; // Skip the '*'
       continue;
     }
-    
+
     result += char;
   }
-  
+
   return result;
 }
 
@@ -103,16 +105,16 @@ function removeComments(content: string): string {
  * @param indent - Indentation spaces (default: 2)
  * @returns The formatted JSON string
  */
-export function stringifyJSONC(obj: any, schema?: string, indent: number = 2): string {
+export function stringifyJSONC(obj: any, schema?: string, indent = 2): string {
   const config = { ...obj };
-  
+
   // Add schema if provided and not already present
   if (schema && !config.$schema) {
     config.$schema = schema;
   }
-  
+
   const json = JSON.stringify(config, null, indent);
-  
+
   // Add helpful comments for MCP configuration
   if (config.mcp && Object.keys(config.mcp).length > 0) {
     return json.replace(
@@ -122,7 +124,7 @@ $1// See https://modelcontextprotocol.io for more information
 $1"mcp": {`
     );
   }
-  
+
   return json;
 }
 
@@ -132,7 +134,7 @@ $1"mcp": {`
  * @returns The parsed object
  */
 export async function readJSONCFile(filePath: string): Promise<any> {
-  const fs = await import('fs/promises');
+  const fs = await import('node:fs/promises');
   const content = await fs.readFile(filePath, 'utf8');
   return parseJSONC(content);
 }
@@ -145,12 +147,12 @@ export async function readJSONCFile(filePath: string): Promise<any> {
  * @param indent - Indentation spaces
  */
 export async function writeJSONCFile(
-  filePath: string, 
-  obj: any, 
-  schema?: string, 
-  indent: number = 2
+  filePath: string,
+  obj: any,
+  schema?: string,
+  indent = 2
 ): Promise<void> {
-  const fs = await import('fs/promises');
+  const fs = await import('node:fs/promises');
   const content = stringifyJSONC(obj, schema, indent);
   await fs.writeFile(filePath, content, 'utf8');
 }

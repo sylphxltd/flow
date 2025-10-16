@@ -1,9 +1,9 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as readline from 'readline';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as readline from 'node:readline';
+import { fileURLToPath } from 'node:url';
 import * as cliProgress from 'cli-progress';
 import Table from 'cli-table3';
-import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,7 +40,7 @@ const COLORS = {
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  reset: '\x1b[0m'
+  reset: '\x1b[0m',
 } as const;
 
 const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
@@ -50,7 +50,7 @@ const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
     extension: '.mdc',
     stripYaml: false,
     flatten: false,
-    description: 'Cursor (.cursor/rules/*.mdc with YAML front matter)'
+    description: 'Cursor (.cursor/rules/*.mdc with YAML front matter)',
   },
   kilocode: {
     name: 'Kilocode',
@@ -58,7 +58,8 @@ const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
     extension: '.md',
     stripYaml: true,
     flatten: true,
-    description: 'Kilocode (.kilocode/rules/*.md without YAML front matter, flattened with category prefix)'
+    description:
+      'Kilocode (.kilocode/rules/*.md without YAML front matter, flattened with category prefix)',
   },
   roocode: {
     name: 'RooCode',
@@ -66,8 +67,9 @@ const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
     extension: '.md',
     stripYaml: true,
     flatten: true,
-    description: 'RooCode (.roo/rules/*.md without YAML front matter, flattened with category prefix)'
-  }
+    description:
+      'RooCode (.roo/rules/*.md without YAML front matter, flattened with category prefix)',
+  },
 };
 
 const BATCH_SIZE = 5;
@@ -92,7 +94,7 @@ async function promptForAgent(): Promise<AgentType> {
   const agents = getSupportedAgents();
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   });
 
   return new Promise((resolve) => {
@@ -109,8 +111,8 @@ async function promptForAgent(): Promise<AgentType> {
     console.log('');
 
     const askChoice = () => {
-      rl.question('Enter your choice (1-' + agents.length + '): ', (answer) => {
-        const choice = parseInt(answer.trim());
+      rl.question(`Enter your choice (1-${agents.length}): `, (answer) => {
+        const choice = Number.parseInt(answer.trim());
         if (choice >= 1 && choice <= agents.length) {
           rl.close();
           resolve(agents[choice - 1]);
@@ -129,7 +131,7 @@ function detectAgentTool(): AgentType {
   const cwd = process.cwd();
 
   // Check for explicit --agent argument (highest priority)
-  const agentArg = process.argv.find(arg => arg.startsWith('--agent='));
+  const agentArg = process.argv.find((arg) => arg.startsWith('--agent='));
   if (agentArg) {
     const agent = agentArg.split('=')[1].toLowerCase() as AgentType;
     if (getSupportedAgents().includes(agent)) {
@@ -177,7 +179,7 @@ async function getRuleFiles(): Promise<string[]> {
   // Handle both development and built environments
   const scriptDir = __dirname;
   let projectRoot: string;
-  
+
   // Check if we're in a built environment (dist/src/core)
   if (scriptDir.includes('/dist/src/')) {
     // Go up from dist/src/core to project root
@@ -186,7 +188,7 @@ async function getRuleFiles(): Promise<string[]> {
     // Development environment, go up from src/core to project root
     projectRoot = path.resolve(scriptDir, '..');
   }
-  
+
   const docsRulesDir = path.join(projectRoot, 'docs', RULES_DIR_NAME);
   const files: string[] = [];
 
@@ -222,7 +224,10 @@ function stripYamlFrontMatter(content: string): string {
   if (lines.length > 0 && lines[0].trim() === '---') {
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim() === '---') {
-        return lines.slice(i + 1).join('\n').trim();
+        return lines
+          .slice(i + 1)
+          .join('\n')
+          .trim();
       }
     }
   }
@@ -230,7 +235,9 @@ function stripYamlFrontMatter(content: string): string {
 }
 
 function getDescriptionForFile(filePath?: string): string {
-  if (!filePath) return 'Development flow';
+  if (!filePath) {
+    return 'Development flow';
+  }
   const baseName = path.basename(filePath, path.extname(filePath));
   return `Development flow for ${baseName.replace(/-/g, ' ')}`;
 }
@@ -239,21 +246,24 @@ function createContentProcessor(config: AgentConfig) {
   return (content: string, filePath?: string): string => {
     if (config.stripYaml) {
       return stripYamlFrontMatter(content);
-    } else {
-      // For Cursor, add YAML front matter
-      const yamlFrontMatter = `---
+    }
+    // For Cursor, add YAML front matter
+    const yamlFrontMatter = `---
 description: ${getDescriptionForFile(filePath)}
 globs: ["**/*"]
 alwaysApply: true
 ---
 
 `;
-      return yamlFrontMatter + content;
-    }
+    return yamlFrontMatter + content;
   };
 }
 
-function getDestinationPath(filePath: string, rulesDir: string, config: AgentConfig): { relativePath: string; destPath: string; targetDir?: string } {
+function getDestinationPath(
+  filePath: string,
+  rulesDir: string,
+  config: AgentConfig
+): { relativePath: string; destPath: string; targetDir?: string } {
   const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
   const parsedPath = path.parse(relativeToRules);
   const { name: baseName, dir } = parsedPath;
@@ -262,11 +272,14 @@ function getDestinationPath(filePath: string, rulesDir: string, config: AgentCon
     const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
     const relativePath = `${flattenedName}${config.extension}`;
     return { relativePath, destPath: path.join(rulesDir, relativePath) };
-  } else {
-    const targetDir = dir ? path.join(rulesDir, dir) : rulesDir;
-    const relativePath = path.join(dir, `${baseName}${config.extension}`);
-    return { relativePath, destPath: path.join(targetDir, `${baseName}${config.extension}`), targetDir };
   }
+  const targetDir = dir ? path.join(rulesDir, dir) : rulesDir;
+  const relativePath = path.join(dir, `${baseName}${config.extension}`);
+  return {
+    relativePath,
+    destPath: path.join(targetDir, `${baseName}${config.extension}`),
+    targetDir,
+  };
 }
 
 // ============================================================================
@@ -282,7 +295,7 @@ async function processFile(
 ): Promise<boolean> {
   try {
     const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
-    
+
     // Create directory if needed for non-flattened structure
     if (targetDir && !fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
@@ -315,7 +328,7 @@ async function processFile(
     results.push({
       file: relativePath,
       status: contentChanged ? (isNew ? 'added' : 'updated') : 'current',
-      action: contentChanged ? (isNew ? 'Added' : 'Updated') : 'Already current'
+      action: contentChanged ? (isNew ? 'Added' : 'Updated') : 'Already current',
     });
 
     progressBar.increment();
@@ -324,7 +337,7 @@ async function processFile(
     results.push({
       file: filePath,
       status: 'error',
-      action: `Error: ${error.message}`
+      action: `Error: ${error.message}`,
     });
     progressBar.increment();
     return false;
@@ -338,7 +351,7 @@ async function processBatch(
   processContent: (content: string, filePath?: string) => string,
   progressBar: InstanceType<typeof cliProgress.SingleBar>
 ): Promise<void> {
-  const promises = batch.map(filePath =>
+  const promises = batch.map((filePath) =>
     processFile(filePath, rulesDir, config, processContent, progressBar)
   );
   await Promise.all(promises);
@@ -349,7 +362,9 @@ async function processBatch(
 // ============================================================================
 
 function createStatusTable(title: string, items: ProcessResult[]): void {
-  if (items.length === 0) return;
+  if (items.length === 0) {
+    return;
+  }
 
   console.log(`\n${title} (${items.length}):`);
 
@@ -358,17 +373,28 @@ function createStatusTable(title: string, items: ProcessResult[]): void {
     colWidths: [50, 20],
     style: { head: ['cyan'], border: ['gray'] },
     chars: {
-      'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
-      'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
-      'left': '║', 'left-mid': '', 'mid': '', 'mid-mid': '',
-      'right': '║', 'right-mid': '', 'middle': '│'
-    }
+      top: '═',
+      'top-mid': '╤',
+      'top-left': '╔',
+      'top-right': '╗',
+      bottom: '═',
+      'bottom-mid': '╧',
+      'bottom-left': '╚',
+      'bottom-right': '╝',
+      left: '║',
+      'left-mid': '',
+      mid: '',
+      'mid-mid': '',
+      right: '║',
+      'right-mid': '',
+      middle: '│',
+    },
   });
 
-  items.forEach(result => {
+  items.forEach((result) => {
     table.push([
-      result.file.length > 47 ? result.file.substring(0, 47) + '...' : result.file,
-      { content: result.action, vAlign: 'center' }
+      result.file.length > 47 ? `${result.file.substring(0, 47)}...` : result.file,
+      { content: result.action, vAlign: 'center' },
     ]);
   });
 
@@ -377,11 +403,11 @@ function createStatusTable(title: string, items: ProcessResult[]): void {
 
 function displayResults(results: ProcessResult[], rulesDir: string, agentName: string): void {
   const statusGroups = {
-    removed: results.filter(r => r.status === 'removed'),
-    added: results.filter(r => r.status === 'added'),
-    updated: results.filter(r => r.status === 'updated'),
-    current: results.filter(r => r.status === 'current'),
-    errors: results.filter(r => r.status === 'error')
+    removed: results.filter((r) => r.status === 'removed'),
+    added: results.filter((r) => r.status === 'added'),
+    updated: results.filter((r) => r.status === 'updated'),
+    current: results.filter((r) => r.status === 'current'),
+    errors: results.filter((r) => r.status === 'error'),
   };
 
   console.log('\n📊 Sync Results:');
@@ -390,9 +416,11 @@ function displayResults(results: ProcessResult[], rulesDir: string, agentName: s
   createStatusTable('🆕 Added', statusGroups.added);
   createStatusTable('🔄 Updated', statusGroups.updated);
   createStatusTable('⏭️ Already Current', statusGroups.current);
-  if (statusGroups.errors.length > 0) createStatusTable('❌ Errors', statusGroups.errors);
+  if (statusGroups.errors.length > 0) {
+    createStatusTable('❌ Errors', statusGroups.errors);
+  }
 
-  console.log(`\n🎉 Sync completed!`);
+  console.log('\n🎉 Sync completed!');
   console.log(`📍 Location: ${rulesDir}`);
 
   const summary = [
@@ -400,7 +428,7 @@ function displayResults(results: ProcessResult[], rulesDir: string, agentName: s
     statusGroups.added.length && `${statusGroups.added.length} added`,
     statusGroups.updated.length && `${statusGroups.updated.length} updated`,
     statusGroups.current.length && `${statusGroups.current.length} current`,
-    statusGroups.errors.length && `${statusGroups.errors.length} errors`
+    statusGroups.errors.length && `${statusGroups.errors.length} errors`,
   ].filter(Boolean);
 
   console.log(`📈 Summary: ${summary.join(', ')}`);
@@ -411,8 +439,14 @@ function displayResults(results: ProcessResult[], rulesDir: string, agentName: s
 // CLEAR OBSOLETE FILES
 // ============================================================================
 
-async function clearObsoleteFiles(rulesDir: string, config: AgentConfig, merge: boolean): Promise<void> {
-  if (!fs.existsSync(rulesDir)) return;
+async function clearObsoleteFiles(
+  rulesDir: string,
+  config: AgentConfig,
+  merge: boolean
+): Promise<void> {
+  if (!fs.existsSync(rulesDir)) {
+    return;
+  }
 
   console.log(`🧹 Clearing obsolete rules in ${rulesDir}...`);
 
@@ -423,15 +457,19 @@ async function clearObsoleteFiles(rulesDir: string, config: AgentConfig, merge: 
   } else {
     const ruleFiles = await getRuleFiles();
     expectedFiles = new Set(
-      ruleFiles.map(filePath => {
+      ruleFiles.map((filePath) => {
         const { relativePath } = getDestinationPath(filePath, rulesDir, config);
         return relativePath;
       })
     );
   }
 
-  const existingFiles = fs.readdirSync(rulesDir, { recursive: true })
-    .filter((file): file is string => typeof file === 'string' && (file.endsWith('.mdc') || file.endsWith('.md')))
+  const existingFiles = fs
+    .readdirSync(rulesDir, { recursive: true })
+    .filter(
+      (file): file is string =>
+        typeof file === 'string' && (file.endsWith('.mdc') || file.endsWith('.md'))
+    )
     .map((file) => path.join(rulesDir, file));
 
   for (const file of existingFiles) {
@@ -442,13 +480,13 @@ async function clearObsoleteFiles(rulesDir: string, config: AgentConfig, merge: 
         results.push({
           file: relativePath,
           status: 'removed',
-          action: 'Removed'
+          action: 'Removed',
         });
       } catch (error: any) {
         results.push({
           file: relativePath,
           status: 'error',
-          action: `Error removing: ${error.message}`
+          action: `Error removing: ${error.message}`,
         });
       }
     }
@@ -470,9 +508,9 @@ async function mergeAllRules(
 
   console.log(`📋 Merging ${ruleFiles.length} files into ${mergedFileName}...`);
 
-  let mergedContent = `# Development Rules - Complete Collection\n\n`;
+  let mergedContent = '# Development Rules - Complete Collection\n\n';
   mergedContent += `Generated on: ${new Date().toISOString()}\n\n`;
-  mergedContent += `---\n\n`;
+  mergedContent += '---\n\n';
 
   for (const filePath of ruleFiles) {
     try {
@@ -496,12 +534,12 @@ async function mergeAllRules(
       const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
       mergedContent += `## ${sectionTitle.replace(/-/g, ' ').toUpperCase()}\n\n`;
       mergedContent += `${content}\n\n`;
-      mergedContent += `---\n\n`;
+      mergedContent += '---\n\n';
     } catch (error: any) {
       results.push({
         file: filePath,
         status: 'error',
-        action: `Error reading: ${error.message}`
+        action: `Error reading: ${error.message}`,
       });
     }
   }
@@ -515,13 +553,13 @@ async function mergeAllRules(
     results.push({
       file: mergedFileName,
       status: localInfo ? 'updated' : 'added',
-      action: localInfo ? 'Updated' : 'Created'
+      action: localInfo ? 'Updated' : 'Created',
     });
   } else {
     results.push({
       file: mergedFileName,
       status: 'current',
-      action: 'Already current'
+      action: 'Already current',
     });
   }
 }
@@ -570,13 +608,13 @@ export async function syncRules(options: SyncOptions): Promise<void> {
   const ruleFiles = await getRuleFiles();
 
   // Show initial info
-  console.log(`🚀 Rules Sync Tool`);
-  console.log(`================`);
+  console.log('🚀 Rules Sync Tool');
+  console.log('================');
   console.log(`📝 Agent: ${config.name}`);
   console.log(`📁 Target: ${rulesDir}`);
   console.log(`📋 Files: ${ruleFiles.length}`);
   if (options.merge) {
-    console.log(`🔗 Mode: Merge all rules into single file`);
+    console.log('🔗 Mode: Merge all rules into single file');
   }
   console.log('');
 
@@ -593,7 +631,7 @@ export async function syncRules(options: SyncOptions): Promise<void> {
       format: '📋 Processing | {bar} | {percentage}% | {value}/{total} files | {file}',
       barCompleteChar: '\u2588',
       barIncompleteChar: '\u2591',
-      hideCursor: true
+      hideCursor: true,
     });
 
     progressBar.start(ruleFiles.length, 0, { file: 'Starting...' });
@@ -601,7 +639,7 @@ export async function syncRules(options: SyncOptions): Promise<void> {
     // Process files in batches
     for (let i = 0; i < ruleFiles.length; i += BATCH_SIZE) {
       const batch = ruleFiles.slice(i, i + BATCH_SIZE);
-      await processBatch(batch, rulesDir, config, processContent, progressBar);
+      processBatch(batch, rulesDir, config, processContent, progressBar);
     }
 
     progressBar.stop();
