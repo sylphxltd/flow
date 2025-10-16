@@ -6,11 +6,20 @@
   "mcp": {
     "flow_memory": {
       "type": "local",
-      "command": ["npx", "github:sylphxltd/flow", "mcp", "start"]
+      "command": [
+        "npx",
+        "github:sylphxltd/flow",
+        "mcp",
+        "start"
+      ]
     },
     "mcp_everything": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-everything"
+      ]
     }
   },
   "$schema": "https://opencode.ai/config.json"

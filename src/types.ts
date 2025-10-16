@@ -4,7 +4,7 @@ export interface CommandOptions {
   dryRun?: boolean;
   clear?: boolean;
   merge?: boolean;
-  mcp?: string[] | null;
+  mcp?: string[] | null | boolean;
   servers?: string[];
   all?: boolean;
 }

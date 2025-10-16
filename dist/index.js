@@ -594,7 +594,7 @@ var initCommand = {
     { flags: "--verbose", description: "Show detailed output" },
     { flags: "--dry-run", description: "Show what would be done without making changes" },
     { flags: "--clear", description: "Clear obsolete items before processing" },
-    { flags: "--mcp", description: "Install all available MCP tools" }
+    { flags: "--no-mcp", description: "Skip MCP tools installation" }
   ],
   handler: async (options) => {
     validateInitOptions(options);
@@ -602,7 +602,7 @@ var initCommand = {
     console.log("======================");
     console.log(`\u{1F916} Agent: ${options.agent}`);
     console.log("");
-    if (options.mcp) {
+    if (options.mcp !== false) {
       console.log("\u{1F4E6} Installing MCP tools...");
       if (options.dryRun) {
         console.log("\u{1F50D} Dry run: Would install memory & everything servers");
@@ -617,7 +617,9 @@ var initCommand = {
     console.log("\u{1F389} Setup complete!");
     console.log("");
     console.log("\u{1F4CB} Next steps:");
-    console.log("   \u2022 Start MCP server: npx github:sylphxltd/flow mcp start");
+    if (options.mcp !== false) {
+      console.log("   \u2022 Start MCP server: npx github:sylphxltd/flow mcp start");
+    }
     console.log("   \u2022 Sync agents:     npx github:sylphxltd/flow sync");
     console.log("   \u2022 List MCP tools:  npx github:sylphxltd/flow mcp list");
   }
