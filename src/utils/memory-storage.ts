@@ -28,7 +28,33 @@ export class MemoryStorage {
     try {
       const data = await fs.readFile(this.filePath, 'utf8');
       const parsed = JSON.parse(data);
-      return new Map(Object.entries(parsed));
+
+      // Check if it's already in flat format or namespace format
+      if (parsed.namespaces) {
+        // Convert namespace format to flat format
+        const flatMap = new Map<string, MemoryEntry>();
+        const now = Date.now();
+        const isoString = new Date(now).toISOString();
+
+        Object.entries(parsed.namespaces).forEach(([namespace, nsData]) => {
+          Object.entries(nsData as Record<string, any>).forEach(([key, value]) => {
+            const entry: MemoryEntry = {
+              key,
+              namespace,
+              value,
+              timestamp: now,
+              created_at: isoString,
+              updated_at: isoString,
+            };
+            flatMap.set(`${namespace}:${key}`, entry);
+          });
+        });
+
+        return flatMap;
+      } else {
+        // Already in flat format
+        return new Map(Object.entries(parsed));
+      }
     } catch {
       return new Map();
     }
@@ -48,28 +74,28 @@ export class MemoryStorage {
     return Array.from(data.values()).sort((a, b) => b.timestamp - a.timestamp);
   }
 
-  async search(pattern: string, namespace?: string): Promise<[string, any, string][][]> {
+  async search(pattern: string, namespace?: string): Promise<MemoryEntry[]> {
     const data = await this.loadData();
-    const results: [string, any, string][][] = [];
-    
+    const results: MemoryEntry[] = [];
+
     const regex = new RegExp(pattern.replace(/\*/g, '.*'), 'i');
-    
+
     for (const entry of data.values()) {
       if (namespace && entry.namespace !== namespace) continue;
-      
+
       if (regex.test(entry.key) || regex.test(JSON.stringify(entry.value))) {
-        results.push([entry.key, entry.value, entry.namespace]);
+        results.push(entry);
       }
     }
-    
-    return results;
+
+    return results.sort((a, b) => b.timestamp - a.timestamp);
   }
 
   async set(key: string, value: any, namespace = 'default'): Promise<void> {
     const data = await this.loadData();
     const now = Date.now();
     const isoString = new Date(now).toISOString();
-    
+
     const entry: MemoryEntry = {
       key,
       namespace,
@@ -78,7 +104,7 @@ export class MemoryStorage {
       created_at: isoString,
       updated_at: isoString,
     };
-    
+
     data.set(`${namespace}:${key}`, entry);
     await this.saveData(data);
   }
@@ -100,7 +126,7 @@ export class MemoryStorage {
 
   async clear(namespace?: string): Promise<void> {
     const data = await this.loadData();
-    
+
     if (namespace) {
       // Clear specific namespace
       const keysToDelete: string[] = [];
@@ -109,12 +135,12 @@ export class MemoryStorage {
           keysToDelete.push(fullKey);
         }
       }
-      keysToDelete.forEach(key => data.delete(key));
+      keysToDelete.forEach((key) => data.delete(key));
     } else {
       // Clear all
       data.clear();
     }
-    
+
     await this.saveData(data);
   }
 
@@ -127,18 +153,19 @@ export class MemoryStorage {
   }> {
     const data = await this.loadData();
     const entries = Array.from(data.values());
-    
-    const namespaces = Array.from(new Set(entries.map(e => e.namespace)));
+
+    const namespaces = Array.from(new Set(entries.map((e) => e.namespace)));
     const namespaceCounts: Record<string, number> = {};
-    
-    entries.forEach(entry => {
+
+    entries.forEach((entry) => {
       namespaceCounts[entry.namespace] = (namespaceCounts[entry.namespace] || 0) + 1;
     });
-    
+
     const sortedEntries = entries.sort((a, b) => a.timestamp - b.timestamp);
     const oldestEntry = sortedEntries.length > 0 ? sortedEntries[0].created_at : null;
-    const newestEntry = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1].created_at : null;
-    
+    const newestEntry =
+      sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1].created_at : null;
+
     return {
       totalEntries: entries.length,
       namespaces,
@@ -153,10 +180,10 @@ export class MemoryStorage {
     try {
       const data = await fs.readFile(this.filePath, 'utf8');
       const parsed = JSON.parse(data);
-      
+
       // Convert flat structure to namespace structure
       const namespaces: Record<string, Record<string, any>> = {};
-      
+
       if (parsed.namespaces) {
         // Already in namespace format
         return parsed;
@@ -169,7 +196,7 @@ export class MemoryStorage {
           }
           namespaces[namespace][key] = entry.value;
         });
-        
+
         return { namespaces };
       }
     } catch {

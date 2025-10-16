@@ -7,7 +7,7 @@ export function createCommand(config: CommandConfig): Command {
 
   command.description(config.description);
 
-  for (const option of config.options) {
+  for (const option of config.options || []) {
     command.option(option.flags, option.description);
   }
 
