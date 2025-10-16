@@ -35,25 +35,79 @@ type AgentType = keyof typeof AGENT_CONFIGS;
 // ============================================================================
 
 async function getAgentFiles(): Promise<string[]> {
-  // Get agents directory from current working directory
-  const agentsDir = path.join(process.cwd(), 'agents');
+  // Try to get agents from current working directory first
+  const localAgentsDir = path.join(process.cwd(), 'agents');
 
-  // Get all subdirectories in agents/ (excluding archived)
-  const subdirs = fs
-    .readdirSync(agentsDir, { withFileTypes: true })
-    .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
-    .map((dirent) => dirent.name);
+  // If local agents directory exists, use it
+  if (fs.existsSync(localAgentsDir)) {
+    try {
+      const subdirs = fs
+        .readdirSync(localAgentsDir, { withFileTypes: true })
+        .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
+        .map((dirent) => dirent.name);
 
-  const allFiles: string[] = [];
+      const allFiles: string[] = [];
 
-  // Collect files from each subdirectory
-  for (const subdir of subdirs) {
-    const subdirPath = path.join(agentsDir, subdir);
-    const files = collectFiles(subdirPath, ['.md']);
-    allFiles.push(...files.map((file) => path.join(subdir, file)));
+      // Collect files from each subdirectory
+      for (const subdir of subdirs) {
+        const subdirPath = path.join(localAgentsDir, subdir);
+        const files = collectFiles(subdirPath, ['.md']);
+        allFiles.push(...files.map((file) => path.join(subdir, file)));
+      }
+
+      if (allFiles.length > 0) {
+        return allFiles;
+      }
+    } catch (error) {
+      // Fall through to use bundled agents
+    }
   }
 
-  return allFiles;
+  // Fall back to bundled agents from Sylphx Flow installation
+  // Use a more reliable approach to find the agents directory
+  // Try multiple possible locations where agents might be installed
+  const possiblePaths = [
+    // When running from node_modules in a user project
+    path.join(process.cwd(), 'node_modules/@sylphxltd/flow/agents'),
+    // When running from the source directory
+    path.join(process.cwd(), 'agents'),
+    // When running globally
+    path.join(__dirname, '../../agents'),
+  ];
+
+  let bundledAgentsDir: string | undefined;
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      bundledAgentsDir = possiblePath;
+      break;
+    }
+  }
+
+  if (!bundledAgentsDir) {
+    // Last resort: try to find agents relative to this file
+    bundledAgentsDir = path.join(__dirname, '../../agents');
+  }
+
+  if (fs.existsSync(bundledAgentsDir)) {
+    const subdirs = fs
+      .readdirSync(bundledAgentsDir, { withFileTypes: true })
+      .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
+      .map((dirent) => dirent.name);
+
+    const allFiles: string[] = [];
+
+    // Collect files from each subdirectory
+    for (const subdir of subdirs) {
+      const subdirPath = path.join(bundledAgentsDir, subdir);
+      const files = collectFiles(subdirPath, ['.md']);
+      allFiles.push(...files.map((file) => path.join(subdir, file)));
+    }
+
+    return allFiles;
+  }
+
+  // If no agents found anywhere, return empty array
+  return [];
 }
 
 async function promptForAgent(): Promise<AgentType> {
