@@ -5,4 +5,8 @@ export default defineConfig({
   format: ['esm', 'cjs'],
   outDir: 'dist',
   clean: true,
+  esbuildOptions: (options) => {
+    options.jsx = 'automatic';
+    options.jsxImportSource = 'react';
+  },
 });

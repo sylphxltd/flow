@@ -14,8 +14,10 @@
     "resolveJsonModule": true,
     "types": ["node"],
     "allowImportingTsExtensions": false,
-    "noEmit": false
+    "noEmit": false,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist", "scripts", "src/commands/mcp.ts"]
 }

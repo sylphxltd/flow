@@ -716,14 +716,14 @@ $1"mcp": {`
   return json;
 }
 async function readJSONCFile(filePath) {
-  const fs6 = await import("fs/promises");
-  const content = await fs6.readFile(filePath, "utf8");
+  const fs7 = await import("fs/promises");
+  const content = await fs7.readFile(filePath, "utf8");
   return parseJSONC(content);
 }
 async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs6 = await import("fs/promises");
+  const fs7 = await import("fs/promises");
   const content = stringifyJSONC(obj, schema, indent);
-  await fs6.writeFile(filePath, content, "utf8");
+  await fs7.writeFile(filePath, content, "utf8");
 }
 
 // src/utils/mcp-config.ts
@@ -1758,6 +1758,521 @@ var memoryCommand = {
   // Default to TUI
 };
 
+// src/commands/memory-tui-command.ts
+var import_ink2 = require("ink");
+var import_react2 = __toESM(require("react"), 1);
+
+// src/components/SimpleMemoryTUI.tsx
+var import_react = require("react");
+var import_ink = require("ink");
+var import_ink_text_input = __toESM(require("ink-text-input"), 1);
+var import_ink_select_input = __toESM(require("ink-select-input"), 1);
+
+// src/utils/memory-storage.ts
+var fs5 = __toESM(require("fs/promises"), 1);
+var path6 = __toESM(require("path"), 1);
+var MemoryStorage3 = class {
+  filePath;
+  constructor() {
+    this.filePath = path6.join(process.cwd(), ".sylphx-flow", "memory.db");
+  }
+  async loadData() {
+    try {
+      const data = await fs5.readFile(this.filePath, "utf8");
+      const parsed = JSON.parse(data);
+      return new Map(Object.entries(parsed));
+    } catch {
+      return /* @__PURE__ */ new Map();
+    }
+  }
+  async saveData(data) {
+    try {
+      const obj = Object.fromEntries(data);
+      await fs5.writeFile(this.filePath, JSON.stringify(obj, null, 2), "utf8");
+    } catch (error) {
+      console.warn("Warning: Could not save memory data:", error);
+    }
+  }
+  async getAll() {
+    const data = await this.loadData();
+    return Array.from(data.values()).sort((a, b) => b.timestamp - a.timestamp);
+  }
+  async search(pattern, namespace) {
+    const data = await this.loadData();
+    const results2 = [];
+    const regex = new RegExp(pattern.replace(/\*/g, ".*"), "i");
+    for (const entry of data.values()) {
+      if (namespace && entry.namespace !== namespace) continue;
+      if (regex.test(entry.key) || regex.test(JSON.stringify(entry.value))) {
+        results2.push([entry.key, entry.value, entry.namespace]);
+      }
+    }
+    return results2;
+  }
+  async set(key, value, namespace = "default") {
+    const data = await this.loadData();
+    const now = Date.now();
+    const isoString = new Date(now).toISOString();
+    const entry = {
+      key,
+      namespace,
+      value,
+      timestamp: now,
+      created_at: isoString,
+      updated_at: isoString
+    };
+    data.set(`${namespace}:${key}`, entry);
+    await this.saveData(data);
+  }
+  async get(key, namespace = "default") {
+    const data = await this.loadData();
+    const entry = data.get(`${namespace}:${key}`);
+    return entry?.value || null;
+  }
+  async delete(key, namespace = "default") {
+    const data = await this.loadData();
+    const deleted = data.delete(`${namespace}:${key}`);
+    if (deleted) {
+      await this.saveData(data);
+    }
+    return deleted;
+  }
+  async clear(namespace) {
+    const data = await this.loadData();
+    if (namespace) {
+      const keysToDelete = [];
+      for (const [fullKey, entry] of data.entries()) {
+        if (entry.namespace === namespace) {
+          keysToDelete.push(fullKey);
+        }
+      }
+      keysToDelete.forEach((key) => data.delete(key));
+    } else {
+      data.clear();
+    }
+    await this.saveData(data);
+  }
+  async getStats() {
+    const data = await this.loadData();
+    const entries = Array.from(data.values());
+    const namespaces = Array.from(new Set(entries.map((e) => e.namespace)));
+    const namespaceCounts = {};
+    entries.forEach((entry) => {
+      namespaceCounts[entry.namespace] = (namespaceCounts[entry.namespace] || 0) + 1;
+    });
+    const sortedEntries = entries.sort((a, b) => a.timestamp - b.timestamp);
+    const oldestEntry = sortedEntries.length > 0 ? sortedEntries[0].created_at : null;
+    const newestEntry = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1].created_at : null;
+    return {
+      totalEntries: entries.length,
+      namespaces,
+      namespaceCounts,
+      oldestEntry,
+      newestEntry
+    };
+  }
+  // Load the full memory data structure (for compatibility with MCP server)
+  async load() {
+    try {
+      const data = await fs5.readFile(this.filePath, "utf8");
+      const parsed = JSON.parse(data);
+      const namespaces = {};
+      if (parsed.namespaces) {
+        return parsed;
+      } else {
+        Object.entries(parsed).forEach(([fullKey, entry]) => {
+          const [namespace, key] = fullKey.split(":", 2);
+          if (!namespaces[namespace]) {
+            namespaces[namespace] = {};
+          }
+          namespaces[namespace][key] = entry.value;
+        });
+        return { namespaces };
+      }
+    } catch {
+      return { namespaces: {} };
+    }
+  }
+};
+
+// src/components/SimpleMemoryTUI.tsx
+var import_jsx_runtime = require("react/jsx-runtime");
+var SimpleMemoryTUI = () => {
+  const { exit } = (0, import_ink.useApp)();
+  const [viewMode, setViewMode] = (0, import_react.useState)("list");
+  const [entries, setEntries] = (0, import_react.useState)([]);
+  const [selectedEntry, setSelectedEntry] = (0, import_react.useState)(null);
+  const [searchQuery, setSearchQuery] = (0, import_react.useState)("");
+  const [namespace, setNamespace] = (0, import_react.useState)("all");
+  const [editKey, setEditKey] = (0, import_react.useState)("");
+  const [editValue, setEditValue] = (0, import_react.useState)("");
+  const [editNamespace, setEditNamespace] = (0, import_react.useState)("default");
+  const [message, setMessage] = (0, import_react.useState)("");
+  const [stats, setStats] = (0, import_react.useState)(null);
+  const memory = new MemoryStorage3();
+  const loadEntries = (0, import_react.useCallback)(async () => {
+    try {
+      const data = await memory.load();
+      const flatEntries = [];
+      Object.entries(data.namespaces || {}).forEach(([ns, nsData]) => {
+        Object.entries(nsData).forEach(([key, value]) => {
+          flatEntries.push({
+            key,
+            value: typeof value === "string" ? value : JSON.stringify(value),
+            namespace: ns,
+            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+            created_at: (/* @__PURE__ */ new Date()).toISOString(),
+            updated_at: (/* @__PURE__ */ new Date()).toISOString()
+          });
+        });
+      });
+      setEntries(flatEntries);
+    } catch (error) {
+      setMessage(`\u274C Error loading entries: ${error}`);
+    }
+  }, []);
+  const loadStats = (0, import_react.useCallback)(async () => {
+    try {
+      const data = await memory.load();
+      const namespaces = Object.keys(data.namespaces || {});
+      const totalEntries = entries.length;
+      const namespaceCounts = {};
+      namespaces.forEach((ns) => {
+        namespaceCounts[ns] = Object.keys(data.namespaces?.[ns] || {}).length;
+      });
+      setStats({
+        totalEntries,
+        namespaces: namespaces.length,
+        namespaceCounts,
+        oldestEntry: entries.length > 0 ? "2025-10-01" : "N/A",
+        newestEntry: entries.length > 0 ? "2025-10-16" : "N/A"
+      });
+    } catch (error) {
+      setMessage(`\u274C Error loading stats: ${error}`);
+    }
+  }, [entries]);
+  (0, import_react.useEffect)(() => {
+    loadEntries();
+  }, [loadEntries]);
+  (0, import_react.useEffect)(() => {
+    if (viewMode === "stats") {
+      loadStats();
+    }
+  }, [viewMode, loadStats]);
+  (0, import_ink.useInput)((input, key) => {
+    if (key.escape) {
+      exit();
+    }
+    if (viewMode === "list") {
+      if (input === "q") exit();
+      if (input === "s") setViewMode("search");
+      if (input === "n") setViewMode("edit");
+      if (input === "d") setViewMode("delete");
+      if (input === "t") setViewMode("stats");
+      if (input === "r") loadEntries();
+    }
+    if (viewMode === "search" && key.escape) {
+      setViewMode("list");
+      setSearchQuery("");
+    }
+    if (viewMode === "details" && key.escape) {
+      setViewMode("list");
+      setSelectedEntry(null);
+    }
+    if (viewMode === "edit" && key.escape) {
+      setViewMode("list");
+      setEditKey("");
+      setEditValue("");
+      setEditNamespace("default");
+    }
+    if (viewMode === "delete" && key.escape) {
+      setViewMode("list");
+      setSelectedEntry(null);
+    }
+    if (viewMode === "stats" && key.escape) {
+      setViewMode("list");
+    }
+  });
+  const handleEntrySelect = (entry) => {
+    setSelectedEntry(entry);
+    setViewMode("details");
+  };
+  const handleSearch = async () => {
+    try {
+      const results2 = await memory.search(searchQuery);
+      const searchResults = results2.flat().map(([key, value, ns]) => ({
+        key,
+        value: typeof value === "string" ? value : JSON.stringify(value),
+        namespace: ns || "default",
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        created_at: (/* @__PURE__ */ new Date()).toISOString(),
+        updated_at: (/* @__PURE__ */ new Date()).toISOString()
+      }));
+      setEntries(searchResults);
+      setMessage(`\u{1F50D} Found ${searchResults.length} results for "${searchQuery}"`);
+    } catch (error) {
+      setMessage(`\u274C Search error: ${error}`);
+    }
+  };
+  const handleSave = async () => {
+    try {
+      await memory.set(editKey, editValue, editNamespace);
+      setMessage(`\u2705 Saved "${editKey}" to "${editNamespace}"`);
+      setEditKey("");
+      setEditValue("");
+      setEditNamespace("default");
+      setViewMode("list");
+      await loadEntries();
+    } catch (error) {
+      setMessage(`\u274C Save error: ${error}`);
+    }
+  };
+  const handleDelete = async () => {
+    if (!selectedEntry) return;
+    try {
+      await memory.delete(selectedEntry.key, selectedEntry.namespace);
+      setMessage(`\u{1F5D1}\uFE0F Deleted "${selectedEntry.key}" from "${selectedEntry.namespace}"`);
+      setSelectedEntry(null);
+      setViewMode("list");
+      await loadEntries();
+    } catch (error) {
+      setMessage(`\u274C Delete error: ${error}`);
+    }
+  };
+  const filteredEntries = namespace === "all" ? entries : entries.filter((e) => e.namespace === namespace);
+  const renderList = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "green", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "green", children: "\u{1F9E0} Sylphx Flow Memory Manager" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: "cyan", children: [
+        "Entries: ",
+        filteredEntries.length,
+        " | Namespace: ",
+        namespace
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Spacer, {}),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press 'q' to quit, 's' search, 'n' new, 't' stats" })
+    ] }),
+    message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "Filter by namespace:" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        import_ink_select_input.default,
+        {
+          items: ["all", ...Array.from(new Set(entries.map((e) => e.namespace)))].map((ns) => ({
+            label: ns,
+            value: ns
+          })),
+          onSelect: (item) => setNamespace(item.value)
+        }
+      )
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", borderStyle: "single", padding: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "blue", children: "Memory Entries:" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Newline, {}),
+      filteredEntries.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "No entries found" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        import_ink_select_input.default,
+        {
+          items: filteredEntries.map((entry) => ({
+            label: `${entry.namespace}:${entry.key} - ${entry.value.substring(0, 50)}...`,
+            value: entry
+          })),
+          onSelect: handleEntrySelect
+        }
+      )
+    ] })
+  ] });
+  const renderSearch = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "blue", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "blue", children: "\u{1F50D} Search Memory" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "Search pattern (supports * wildcards):" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        import_ink_text_input.default,
+        {
+          value: searchQuery,
+          onChange: setSearchQuery,
+          onSubmit: handleSearch,
+          placeholder: "*theme*"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to go back, ENTER to search" }) })
+  ] });
+  const renderDetails = () => {
+    if (!selectedEntry) return null;
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "yellow", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "yellow", children: "\u{1F4C4} Entry Details" }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespace:" }),
+          " ",
+          selectedEntry.namespace
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Key:" }),
+          " ",
+          selectedEntry.key
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Value:" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "single", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: selectedEntry.value }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Timestamp:" }),
+          " ",
+          selectedEntry.timestamp
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to go back, 'd' to delete, 'e' to edit" }) }),
+      message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) })
+    ] });
+  };
+  const renderEdit = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "magenta", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { bold: true, color: "magenta", children: [
+      "\u270F\uFE0F ",
+      selectedEntry ? "Edit" : "New",
+      " Entry"
+    ] }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespace:" }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        import_ink_text_input.default,
+        {
+          value: editNamespace,
+          onChange: setEditNamespace,
+          placeholder: "default"
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Key:" }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        import_ink_text_input.default,
+        {
+          value: editKey,
+          onChange: setEditKey,
+          placeholder: "project:framework"
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Value:" }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        import_ink_text_input.default,
+        {
+          value: editValue,
+          onChange: setEditValue,
+          placeholder: "React + TypeScript",
+          onSubmit: handleSave
+        }
+      )
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to cancel, ENTER to save" }) }),
+    message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) })
+  ] });
+  const renderDelete = () => {
+    if (!selectedEntry) return null;
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "red", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "red", children: "\u{1F5D1}\uFE0F Confirm Delete" }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "Are you sure you want to delete:" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespace:" }),
+          " ",
+          selectedEntry.namespace
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Key:" }),
+          " ",
+          selectedEntry.key
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Value:" }),
+          " ",
+          selectedEntry.value.substring(0, 100),
+          "..."
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "red", children: "Press 'y' to confirm, any other key to cancel" }) }),
+      message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) })
+    ] });
+  };
+  const renderStats = () => {
+    if (!stats) return null;
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "cyan", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "cyan", children: "\u{1F4CA} Memory Statistics" }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Total Entries:" }),
+          " ",
+          stats.totalEntries
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespaces:" }),
+          " ",
+          stats.namespaces
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Oldest Entry:" }),
+          " ",
+          stats.oldestEntry
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Newest Entry:" }),
+          " ",
+          stats.newestEntry
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "blue", children: "Namespace Breakdown:" }),
+        Object.entries(stats.namespaceCounts).map(([ns, count]) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          "  \u2022 ",
+          ns,
+          ": ",
+          count,
+          " entries"
+        ] }, ns))
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to go back" }) })
+    ] });
+  };
+  (0, import_ink.useInput)((input, key) => {
+    if (viewMode === "delete" && input === "y") {
+      handleDelete();
+    } else if (viewMode === "delete" && key.return) {
+      setViewMode("list");
+      setSelectedEntry(null);
+    }
+    if (viewMode === "details" && selectedEntry && input === "d") {
+      setViewMode("delete");
+    }
+    if (viewMode === "details" && selectedEntry && input === "e") {
+      setEditKey(selectedEntry.key);
+      setEditValue(selectedEntry.value);
+      setEditNamespace(selectedEntry.namespace);
+      setViewMode("edit");
+    }
+  });
+  switch (viewMode) {
+    case "search":
+      return renderSearch();
+    case "details":
+      return renderDetails();
+    case "edit":
+      return renderEdit();
+    case "delete":
+      return renderDelete();
+    case "stats":
+      return renderStats();
+    default:
+      return renderList();
+  }
+};
+
+// src/commands/memory-tui-command.ts
+var memoryTuiCommand = {
+  name: "memory-tui",
+  description: "Launch interactive memory management TUI",
+  options: []
+};
+var handleMemoryTui = async () => {
+  const { waitUntilExit } = (0, import_ink2.render)(import_react2.default.createElement(SimpleMemoryTUI));
+  await waitUntilExit();
+};
+
 // src/utils/command-builder.ts
 var import_commander = require("commander");
 function createCommand(config) {
@@ -1794,15 +2309,15 @@ var COMMON_OPTIONS = [
 ];
 
 // src/core/sync.ts
-var fs5 = __toESM(require("fs"), 1);
-var path6 = __toESM(require("path"), 1);
+var fs6 = __toESM(require("fs"), 1);
+var path7 = __toESM(require("path"), 1);
 var readline = __toESM(require("readline"), 1);
 var import_node_url = require("url");
 var cliProgress = __toESM(require("cli-progress"), 1);
 var import_cli_table32 = __toESM(require("cli-table3"), 1);
 var import_meta = {};
 var __filename = (0, import_node_url.fileURLToPath)(import_meta.url);
-var __dirname = path6.dirname(__filename);
+var __dirname = path7.dirname(__filename);
 var COLORS = {
   red: "\x1B[31m",
   green: "\x1B[32m",
@@ -1886,13 +2401,13 @@ function detectAgentTool3() {
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs5.existsSync(path6.join(cwd, config.dir))) {
+    if (fs6.existsSync(path7.join(cwd, config.dir))) {
       return agent;
     }
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs5.existsSync(path6.join(cwd, config.dir, RULES_DIR_NAME))) {
+    if (fs6.existsSync(path7.join(cwd, config.dir, RULES_DIR_NAME))) {
       return agent;
     }
   }
@@ -1900,10 +2415,10 @@ function detectAgentTool3() {
 }
 function getLocalFileInfo2(filePath) {
   try {
-    if (!fs5.existsSync(filePath)) {
+    if (!fs6.existsSync(filePath)) {
       return null;
     }
-    const content = fs5.readFileSync(filePath, "utf8");
+    const content = fs6.readFileSync(filePath, "utf8");
     return { content, exists: true };
   } catch {
     return null;
@@ -1913,18 +2428,18 @@ async function getRuleFiles() {
   const scriptDir = __dirname;
   let projectRoot;
   if (scriptDir.includes("/dist/src/")) {
-    projectRoot = path6.resolve(scriptDir, "../../..");
+    projectRoot = path7.resolve(scriptDir, "../../..");
   } else {
-    projectRoot = path6.resolve(scriptDir, "..");
+    projectRoot = path7.resolve(scriptDir, "..");
   }
-  const docsRulesDir = path6.join(projectRoot, "docs", RULES_DIR_NAME);
+  const docsRulesDir = path7.join(projectRoot, "docs", RULES_DIR_NAME);
   const files = [];
   const collectFiles2 = (dir, relativePath) => {
     try {
-      const items = fs5.readdirSync(dir, { withFileTypes: true });
+      const items = fs6.readdirSync(dir, { withFileTypes: true });
       for (const item of items) {
-        const itemPath = path6.join(dir, item.name);
-        const itemRelative = path6.join(relativePath, item.name);
+        const itemPath = path7.join(dir, item.name);
+        const itemRelative = path7.join(relativePath, item.name);
         if (item.isDirectory()) {
           collectFiles2(itemPath, itemRelative);
         } else if (item.isFile() && (item.name.endsWith(".mdc") || item.name.endsWith(".md"))) {
@@ -1957,7 +2472,7 @@ function getDescriptionForFile(filePath) {
   if (!filePath) {
     return "Development flow";
   }
-  const baseName = path6.basename(filePath, path6.extname(filePath));
+  const baseName = path7.basename(filePath, path7.extname(filePath));
   return `Development flow for ${baseName.replace(/-/g, " ")}`;
 }
 function createContentProcessor(config) {
@@ -1977,42 +2492,42 @@ alwaysApply: true
 }
 function getDestinationPath(filePath, rulesDir, config) {
   const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-  const parsedPath = path6.parse(relativeToRules);
+  const parsedPath = path7.parse(relativeToRules);
   const { name: baseName, dir } = parsedPath;
   if (config.flatten) {
     const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
     const relativePath2 = `${flattenedName}${config.extension}`;
-    return { relativePath: relativePath2, destPath: path6.join(rulesDir, relativePath2) };
+    return { relativePath: relativePath2, destPath: path7.join(rulesDir, relativePath2) };
   }
-  const targetDir = dir ? path6.join(rulesDir, dir) : rulesDir;
-  const relativePath = path6.join(dir, `${baseName}${config.extension}`);
+  const targetDir = dir ? path7.join(rulesDir, dir) : rulesDir;
+  const relativePath = path7.join(dir, `${baseName}${config.extension}`);
   return {
     relativePath,
-    destPath: path6.join(targetDir, `${baseName}${config.extension}`),
+    destPath: path7.join(targetDir, `${baseName}${config.extension}`),
     targetDir
   };
 }
 async function processFile(filePath, rulesDir, config, processContent, progressBar) {
   try {
     const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
-    if (targetDir && !fs5.existsSync(targetDir)) {
-      fs5.mkdirSync(targetDir, { recursive: true });
+    if (targetDir && !fs6.existsSync(targetDir)) {
+      fs6.mkdirSync(targetDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo2(destPath);
     const isNew = !localInfo;
     let projectRoot;
     if (__dirname.includes("/dist/src/")) {
-      projectRoot = path6.resolve(__dirname, "../../..");
+      projectRoot = path7.resolve(__dirname, "../../..");
     } else {
-      projectRoot = path6.resolve(__dirname, "..");
+      projectRoot = path7.resolve(__dirname, "..");
     }
-    const sourcePath = path6.join(projectRoot, "docs", filePath);
-    let content = fs5.readFileSync(sourcePath, "utf8");
+    const sourcePath = path7.join(projectRoot, "docs", filePath);
+    let content = fs6.readFileSync(sourcePath, "utf8");
     content = processContent(content, filePath);
     const localProcessed = localInfo ? processContent(localInfo.content, filePath) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs5.writeFileSync(destPath, content, "utf8");
+      fs6.writeFileSync(destPath, content, "utf8");
     }
     results.push({
       file: relativePath,
@@ -2102,7 +2617,7 @@ function displayResults2(results2, rulesDir, agentName) {
   console.log(`\u{1F4A1} Rules will be automatically loaded by ${agentName}`);
 }
 async function clearObsoleteFiles2(rulesDir, config, merge) {
-  if (!fs5.existsSync(rulesDir)) {
+  if (!fs6.existsSync(rulesDir)) {
     return;
   }
   console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
@@ -2118,14 +2633,14 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
       })
     );
   }
-  const existingFiles = fs5.readdirSync(rulesDir, { recursive: true }).filter(
+  const existingFiles = fs6.readdirSync(rulesDir, { recursive: true }).filter(
     (file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))
-  ).map((file) => path6.join(rulesDir, file));
+  ).map((file) => path7.join(rulesDir, file));
   for (const file of existingFiles) {
-    const relativePath = path6.relative(rulesDir, file);
+    const relativePath = path7.relative(rulesDir, file);
     if (!expectedFiles.has(relativePath)) {
       try {
-        fs5.unlinkSync(file);
+        fs6.unlinkSync(file);
         results.push({
           file: relativePath,
           status: "removed",
@@ -2143,7 +2658,7 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
 }
 async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const mergedFileName = `all-rules${config.extension}`;
-  const mergedFilePath = path6.join(rulesDir, mergedFileName);
+  const mergedFilePath = path7.join(rulesDir, mergedFileName);
   console.log(`\u{1F4CB} Merging ${ruleFiles.length} files into ${mergedFileName}...`);
   let mergedContent = "# Development Rules - Complete Collection\n\n";
   mergedContent += `Generated on: ${(/* @__PURE__ */ new Date()).toISOString()}
@@ -2154,15 +2669,15 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
     try {
       let projectRoot;
       if (__dirname.includes("/dist/src/")) {
-        projectRoot = path6.resolve(__dirname, "../../..");
+        projectRoot = path7.resolve(__dirname, "../../..");
       } else {
-        projectRoot = path6.resolve(__dirname, "..");
+        projectRoot = path7.resolve(__dirname, "..");
       }
-      const sourcePath = path6.join(projectRoot, "docs", filePath);
-      let content = fs5.readFileSync(sourcePath, "utf8");
+      const sourcePath = path7.join(projectRoot, "docs", filePath);
+      let content = fs6.readFileSync(sourcePath, "utf8");
       content = processContent(content, filePath);
       const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-      const parsedPath = path6.parse(relativeToRules);
+      const parsedPath = path7.parse(relativeToRules);
       const { name: baseName, dir } = parsedPath;
       const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
       mergedContent += `## ${sectionTitle.replace(/-/g, " ").toUpperCase()}
@@ -2184,7 +2699,7 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const localProcessed = localInfo ? processContent(localInfo.content, "all-rules") : "";
   const contentChanged = !localInfo || localProcessed !== mergedContent;
   if (contentChanged) {
-    fs5.writeFileSync(mergedFilePath, mergedContent, "utf8");
+    fs6.writeFileSync(mergedFilePath, mergedContent, "utf8");
     results.push({
       file: mergedFileName,
       status: localInfo ? "updated" : "added",
@@ -2220,12 +2735,12 @@ async function syncRules(options) {
     }
   }
   const config = getAgentConfig2(agent);
-  const rulesDir = path6.join(cwd, config.dir, RULES_DIR_NAME);
+  const rulesDir = path7.join(cwd, config.dir, RULES_DIR_NAME);
   const processContent = createContentProcessor(config);
   if (options.clear) {
     await clearObsoleteFiles2(rulesDir, config, !!options.merge);
   }
-  fs5.mkdirSync(rulesDir, { recursive: true });
+  fs6.mkdirSync(rulesDir, { recursive: true });
   const ruleFiles = await getRuleFiles();
   console.log("\u{1F680} Rules Sync Tool");
   console.log("================");
@@ -2313,10 +2828,11 @@ function showDefaultHelp() {
 function createCLI() {
   const program = new import_commander2.Command();
   program.name("sylphx-flow").description("Sylphx Flow - Type-safe development flow CLI").version("1.0.0");
-  const commands = [syncCommand, initCommand, mcpCommand, memoryCommand];
+  const commands = [syncCommand, initCommand, mcpCommand, memoryCommand, memoryTuiCommand];
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
+  program.command("memory-tui").alias("mtui").description("Launch interactive memory management TUI").action(handleMemoryTui);
   program.action(() => {
     showDefaultHelp();
   });

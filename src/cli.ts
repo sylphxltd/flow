@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { initCommand } from './commands/init-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
 import { memoryCommand } from './commands/memory-command.js';
+import { memoryTuiCommand, handleMemoryTui } from './commands/memory-tui-command.js';
 import { syncCommand } from './commands/sync-command.js';
 import { createCommand } from './utils/command-builder.js';
 import { showDefaultHelp } from './utils/help.js';
@@ -19,6 +20,13 @@ export function createCLI(): Command {
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
+
+  // Add TUI command separately since it has special handler
+  program
+    .command('memory-tui')
+    .alias('mtui')
+    .description('Launch interactive memory management TUI')
+    .action(handleMemoryTui);
 
   program.action(() => {
     showDefaultHelp();
