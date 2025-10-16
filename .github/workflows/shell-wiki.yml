@@ -26,7 +26,7 @@ jobs:
         
     - name: Deploy Wiki
       run: |
-        echo "🚀 Starting wiki deployment..."
+        echo "🚀 Starting wiki deployment v2..."
         
         # Check if wiki-pages exists
         if [ ! -d "wiki-pages" ]; then
