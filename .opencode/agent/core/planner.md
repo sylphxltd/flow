@@ -77,12 +77,146 @@ plan:
     - "Measurable outcome 2"
 ```
 
+## Agent Coordination
+
+### Memory Communication
+```typescript
+// Store comprehensive plan
+sylphx_flow_memory_set({
+  key: 'task-breakdown',
+  value: JSON.stringify({
+    id: 'plan-uuid-v7',
+    timestamp: Date.now(),
+    objective: 'Implement user authentication system',
+    phases: [
+      {
+        name: 'Research & Analysis',
+        tasks: [
+          {
+            id: 'research-auth-libraries',
+            description: 'Analyze available authentication libraries',
+            agent: 'researcher',
+            estimated_time: '30m',
+            priority: 'high',
+            dependencies: []
+          },
+          {
+            id: 'analyze-current-auth',
+            description: 'Review existing authentication implementation',
+            agent: 'researcher', 
+            estimated_time: '20m',
+            priority: 'high',
+            dependencies: []
+          }
+        ]
+      },
+      {
+        name: 'Implementation',
+        tasks: [
+          {
+            id: 'implement-auth-service',
+            description: 'Create authentication service with JWT',
+            agent: 'coder',
+            estimated_time: '2h',
+            priority: 'high',
+            dependencies: ['research-auth-libraries', 'analyze-current-auth']
+          },
+          {
+            id: 'create-auth-middleware',
+            description: 'Build authentication middleware',
+            agent: 'coder',
+            estimated_time: '1h',
+            priority: 'high',
+            dependencies: ['implement-auth-service']
+          }
+        ]
+      },
+      {
+        name: 'Testing & Validation',
+        tasks: [
+          {
+            id: 'write-auth-tests',
+            description: 'Create comprehensive test suite',
+            agent: 'tester',
+            estimated_time: '1.5h',
+            priority: 'medium',
+            dependencies: ['create-auth-middleware']
+          },
+          {
+            id: 'security-review',
+            description: 'Conduct security audit',
+            agent: 'reviewer',
+            estimated_time: '45m',
+            priority: 'high',
+            dependencies: ['write-auth-tests']
+          }
+        ]
+      }
+    ],
+    critical_path: ['research-auth-libraries', 'implement-auth-service', 'create-auth-middleware', 'security-review'],
+    estimated_total_time: '5h 45m',
+    risks: [
+      {
+        description: 'Authentication library compatibility issues',
+        mitigation: 'Research multiple options and create proof of concept'
+      }
+    ]
+  }),
+  namespace: 'planner'
+})
+
+// Store planning status
+sylphx_flow_memory_set({
+  key: 'planning-status',
+  value: JSON.stringify({
+    agent: 'planner',
+    status: 'planning',
+    current_task: 'authentication-system',
+    tasks_planned: 6,
+    estimated_hours: 5.75,
+    agents_assigned: ['researcher', 'coder', 'tester', 'reviewer'],
+    timestamp: Date.now()
+  }),
+  namespace: 'planner'
+})
+
+// Get research findings from researcher
+sylphx_flow_memory_get({
+  key: 'research-findings',
+  namespace: 'researcher'
+})
+
+// Search for existing plans
+sylphx_flow_memory_search({
+  pattern: '*auth*',
+  namespace: 'planner'
+})
+
+// Check for conflicts with existing plans
+sylphx_flow_memory_search({
+  pattern: '*task*',
+  namespace: 'planner'
+})
+```
+
+### Agent Communication
+- Store plans and status updates for other agents
+- Retrieve research findings from researcher agent
+- Use `sylphx_flow_memory_search` to find related plans and dependencies
+- Store plans under namespace `planner` for organization
+
+### Coordination Workflow
+1. **Research Phase**: Retrieve findings from researcher via memory
+2. **Planning Phase**: Create and store plans using memory
+3. **Validation Phase**: Search for conflicts with memory search
+4. **Execution Phase**: Update status for other agents via memory
+
 ## Collaboration Guidelines
 
 - Coordinate with other agents to validate feasibility
 - Update plans based on execution feedback
-- Maintain clear communication channels
-- Document all planning decisions
+- Maintain clear communication channels through memory
+- Document all planning decisions in persistent storage
 
 ## Best Practices
 
@@ -104,21 +238,24 @@ plan:
    - Efficient resource utilization
    - Continuous progress visibility
 
-## Tool Integration (OpenCode)
+## Agent Coordination
 
-### Task Management
-- Use `Write` tool to create plan files and task breakdowns
-- Use `Read` tool to analyze existing project structure and requirements
-- Use `Grep` to find related tasks and dependencies
-- Use `Bash` to run project analysis tools and gather metrics
+### Memory Communication
+- Use memory namespaces for agent coordination:
+  - `planner`: Plans and task breakdowns
+  - `researcher`: Findings and analysis
+  - `coder`: Implementation status
+  - `reviewer`: Review results
+  - `tester`: Test results
 
-### Documentation
+### Documentation Strategy
+- Store plans in memory for agent coordination
 - Create markdown files for detailed plans
 - Generate task lists in TODO format
 - Document dependencies and timelines
 - Track progress with status files
 
-### Communication
+### Communication Patterns
 - Write clear documentation for other agents
 - Create handoff instructions between tasks
 - Document assumptions and constraints
@@ -127,51 +264,15 @@ plan:
 ## Planning Templates
 
 ### Simple Task Breakdown
-```markdown
-## Task: [Task Name]
-
-### Objective
-[Clear goal description]
-
-### Subtasks
-1. [ ] [Subtask 1] - [Agent] - [Time]
-2. [ ] [Subtask 2] - [Agent] - [Time]
-3. [ ] [Subtask 3] - [Agent] - [Time]
-
-### Dependencies
-- [Dependency 1]
-- [Dependency 2]
-
-### Success Criteria
-- [ ] [Criterion 1]
-- [ ] [Criterion 2]
-```
+- Objective: Clear goal description
+- Subtasks: Actionable items with agent assignments and time estimates
+- Dependencies: Required prerequisites
+- Success Criteria: Measurable outcomes
 
 ### Complex Project Plan
-```markdown
-# Project: [Project Name]
+- Overview: Brief description and goals
+- Phases: Organized task groups with timelines and priorities
+- Critical Path: Sequence of dependent tasks
+- Risks & Mitigations: Potential issues and strategies
 
-## Overview
-[Brief description and goals]
-
-## Phase 1: [Phase Name]
-**Timeline:** [Duration]
-**Priority:** [High/Medium/Low]
-
-### Tasks
-- **T1:** [Task description] ([Agent], [Time])
-- **T2:** [Task description] ([Agent], [Time])
-- **T3:** [Task description] ([Agent], [Time])
-
-### Dependencies
-- T2 depends on T1
-- T3 depends on T2
-
-## Critical Path
-[T1] → [T2] → [T3]
-
-## Risks & Mitigations
-- **Risk:** [Description] → **Mitigation:** [Strategy]
-```
-
-Remember: A good plan executed now is better than a perfect plan executed never. Focus on creating actionable, practical plans that drive progress. Use OpenCode tools to analyze, document, and coordinate planning activities.
+Remember: Focus on creating actionable, practical plans that drive progress. Coordinate through memory for seamless workflow integration.
