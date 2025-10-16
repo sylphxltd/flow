@@ -51,6 +51,10 @@ jobs:
         git init
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Set branch to main before committing
+        git checkout -b main || git branch -m main
+        
         git add .
         
         # Check if there are changes
@@ -64,10 +68,8 @@ jobs:
         # Try to push to wiki
         echo "🔄 Attempting to push to wiki..."
         
-        # Try different branch combinations
-        git push -f https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git master:main 2>/dev/null || \
-        git push -f https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git main:main 2>/dev/null || \
-        git push -f https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git HEAD:main 2>/dev/null || {
+        # Push with proper branch handling
+        git push -f https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git main:main || {
           echo "⚠️ Push failed - wiki might not exist yet"
           echo "📝 You may need to create the first page manually at:"
           echo "   https://github.com/${{ github.repository }}/wiki"
