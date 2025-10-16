@@ -55,10 +55,9 @@ export const initCommand: CommandConfig = {
     console.log('🎉 Setup complete!');
     console.log('');
     console.log('📋 Next steps:');
+    console.log('   • Open OpenCode and start using your agents!');
     if (options.mcp !== false) {
-      console.log('   • Start MCP server: npx github:sylphxltd/flow mcp start');
-      console.log('   • List MCP tools:  npx github:sylphxltd/flow mcp list');
+      console.log('   • MCP tools will be automatically loaded by OpenCode');
     }
-    console.log('   • Your agents are ready to use!');
   },
 };

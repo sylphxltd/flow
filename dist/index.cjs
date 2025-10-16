@@ -1212,11 +1212,10 @@ var initCommand = {
     console.log("\u{1F389} Setup complete!");
     console.log("");
     console.log("\u{1F4CB} Next steps:");
+    console.log("   \u2022 Open OpenCode and start using your agents!");
     if (options.mcp !== false) {
-      console.log("   \u2022 Start MCP server: npx github:sylphxltd/flow mcp start");
-      console.log("   \u2022 List MCP tools:  npx github:sylphxltd/flow mcp list");
+      console.log("   \u2022 MCP tools will be automatically loaded by OpenCode");
     }
-    console.log("   \u2022 Your agents are ready to use!");
   }
 };
 

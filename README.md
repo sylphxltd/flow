@@ -43,8 +43,8 @@ npx github:sylphxltd/flow
 
 # Or use npx for specific commands
 npx github:sylphxltd/flow init
-npx github:sylphxltd/flow mcp start
 # npx github:sylphxltd/flow sync  # [DEPRECATED] Use init instead
+# npx github:sylphxltd/flow mcp start  # Optional: MCP tools auto-load in OpenCode
 ```
 
 **Alternative: Clone and Build**
@@ -70,10 +70,10 @@ node dist/index.js sync
 # Initialize project with Sylphx Flow (installs agents + MCP tools)
 npx github:sylphxltd/flow init
 
-# Sync flow to your AI agent (auto-detects environment)
+# Sync flow to your AI agent (deprecated, use init instead)
 npx github:sylphxltd/flow sync
 
-# Start the memory MCP server
+# Manually start MCP server (optional - auto-loads in OpenCode)
 npx github:sylphxltd/flow mcp start
 ```
 
