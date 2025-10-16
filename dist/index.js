@@ -344,7 +344,7 @@ async function configureMCPServer(cwd, serverType) {
   console.log(`\u2705 Updated ${server.name} with API keys`);
 }
 
-// src/core/install.ts
+// src/core/init.ts
 import fs2 from "fs";
 import path3 from "path";
 
@@ -495,7 +495,7 @@ function displayResults(results2, targetDir, agentName, operation, verbose = fal
   console.log(`\u{1F4C1} Target directory: ${targetDir}`);
 }
 
-// src/core/install.ts
+// src/core/init.ts
 var AGENT_CONFIGS = {
   opencode: {
     name: "OpenCode",
@@ -2184,18 +2184,16 @@ function showDefaultHelp() {
   console.log("=========================================");
   console.log("");
   console.log("Available commands:");
+  console.log("  init     Initialize project with Sylphx Flow");
   console.log("  sync     Sync development flow to your project");
-  console.log("  install  Install workflow agents for OpenCode");
-  console.log("  mcp      Start the MCP server");
+  console.log("  mcp      Manage MCP tools");
+  console.log("  memory   Manage memory storage");
   console.log("");
   console.log("Examples:");
+  console.log("  sylphx-flow init");
   console.log("  sylphx-flow sync");
-  console.log("  sylphx-flow mcp");
-  console.log("  sylphx-flow sync --agent cursor");
-  console.log("  sylphx-flow sync --dry-run");
-  console.log("  sylphx-flow sync --clear");
-  console.log("  sylphx-flow sync --merge");
-  console.log("  sylphx-flow install --agent opencode");
+  console.log("  sylphx-flow mcp install --all");
+  console.log("  sylphx-flow memory set key value");
   console.log("");
   console.log('Run "sylphx-flow <command> --help" for more information about a command.');
 }

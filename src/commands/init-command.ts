@@ -1,7 +1,7 @@
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { addMCPServers, configureMCPServer, promptForAPIKeys } from '../utils/mcp-config.js';
-import { installAgents } from './install.js';
+import { installAgents } from '../core/init.js';
 
 function validateInitOptions(options: CommandOptions): void {
   // Default to opencode agent
