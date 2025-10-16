@@ -124,14 +124,14 @@ $1"mcp": {`
   return json;
 }
 async function readJSONCFile(filePath) {
-  const fs4 = await import("fs/promises");
-  const content = await fs4.readFile(filePath, "utf8");
+  const fs3 = await import("fs/promises");
+  const content = await fs3.readFile(filePath, "utf8");
   return parseJSONC(content);
 }
 async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs4 = await import("fs/promises");
+  const fs3 = await import("fs/promises");
   const content = stringifyJSONC(obj, schema, indent);
-  await fs4.writeFile(filePath, content, "utf8");
+  await fs3.writeFile(filePath, content, "utf8");
 }
 
 // src/utils/mcp-config.ts
@@ -189,8 +189,8 @@ function getOpenCodeConfigPath(cwd) {
 async function readOpenCodeConfig(cwd) {
   const configPath = getOpenCodeConfigPath(cwd);
   try {
-    const { existsSync: existsSync2 } = await import("fs");
-    if (!existsSync2(configPath)) {
+    const { existsSync } = await import("fs");
+    if (!existsSync(configPath)) {
       return {};
     }
     return await readJSONCFile(configPath);
@@ -266,8 +266,8 @@ function parseMCPServerTypes(args) {
   return servers;
 }
 async function promptForAPIKeys(serverTypes) {
-  const { createInterface: createInterface2 } = await import("readline");
-  const rl = createInterface2({
+  const { createInterface } = await import("readline");
+  const rl = createInterface({
     input: process.stdin,
     output: process.stdout
   });
@@ -279,9 +279,9 @@ async function promptForAPIKeys(serverTypes) {
 \u{1F511} Configuring API keys for ${server.description}:`);
     for (const envVar of server.requiredEnvVars) {
       const question = `Enter ${envVar} (or press Enter to skip): `;
-      const answer = await new Promise((resolve2) => {
+      const answer = await new Promise((resolve) => {
         rl.question(question, (input) => {
-          resolve2(input.trim());
+          resolve(input.trim());
         });
       });
       if (answer) {
@@ -422,7 +422,7 @@ function getLocalFileInfo(filePath) {
     mtime: stat.mtime
   };
 }
-function clearObsoleteFiles(targetDir, expectedFiles, extensions, results2) {
+function clearObsoleteFiles(targetDir, expectedFiles, extensions, results) {
   if (!fs.existsSync(targetDir)) {
     return;
   }
@@ -434,7 +434,7 @@ function clearObsoleteFiles(targetDir, expectedFiles, extensions, results2) {
       const hasValidExtension = extensions.some((ext) => item.endsWith(ext));
       if (hasValidExtension && !expectedFiles.has(item)) {
         fs.unlinkSync(itemPath);
-        results2.push({
+        results.push({
           file: item,
           status: "skipped",
           action: "Removed obsolete file"
@@ -443,10 +443,10 @@ function clearObsoleteFiles(targetDir, expectedFiles, extensions, results2) {
     }
   }
 }
-function displayResults(results2, targetDir, agentName, operation, verbose = false) {
+function displayResults(results, targetDir, agentName, operation, verbose = false) {
   if (!verbose) {
-    const total2 = results2.length;
-    const changed2 = results2.filter((r) => r.status === "added" || r.status === "updated").length;
+    const total2 = results.length;
+    const changed2 = results.filter((r) => r.status === "added" || r.status === "updated").length;
     if (changed2 > 0) {
       console.log(`\u2705 ${changed2} files updated`);
     } else {
@@ -457,7 +457,7 @@ function displayResults(results2, targetDir, agentName, operation, verbose = fal
   console.log(`
 \u{1F4CA} ${operation} Results for ${agentName}`);
   console.log("=====================================");
-  const grouped = results2.reduce(
+  const grouped = results.reduce(
     (acc, result) => {
       if (!acc[result.status]) {
         acc[result.status] = [];
@@ -485,8 +485,8 @@ function displayResults(results2, targetDir, agentName, operation, verbose = fal
       console.log("");
     }
   }
-  const total = results2.length;
-  const changed = results2.filter((r) => r.status === "added" || r.status === "updated").length;
+  const total = results.length;
+  const changed = results.filter((r) => r.status === "added" || r.status === "updated").length;
   if (changed > 0) {
     log(`\u2705 ${operation} complete: ${changed}/${total} files modified`, "green");
   } else {
@@ -532,7 +532,7 @@ function detectAgentTool2() {
 }
 async function installAgents(options) {
   const cwd = process.cwd();
-  const results2 = [];
+  const results = [];
   let agent;
   if (options.agent) {
     agent = options.agent.toLowerCase();
@@ -571,7 +571,7 @@ async function installAgents(options) {
         return filePath;
       })
     );
-    clearObsoleteFiles(agentsDir, expectedFiles, [config.extension], results2);
+    clearObsoleteFiles(agentsDir, expectedFiles, [config.extension], results);
   }
   fs2.mkdirSync(agentsDir, { recursive: true });
   const agentFiles = await getAgentFiles();
@@ -603,20 +603,20 @@ async function installAgents(options) {
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
       fs2.writeFileSync(destPath, content, "utf8");
-      results2.push({
+      results.push({
         file: agentFile,
         status: localInfo ? "updated" : "added",
         action: localInfo ? "Updated" : "Created"
       });
     } else {
-      results2.push({
+      results.push({
         file: agentFile,
         status: "current",
         action: "Already current"
       });
     }
   }
-  displayResults(results2, agentsDir, config.name, "Install", options.verbose);
+  displayResults(results, agentsDir, config.name, "Install", options.verbose);
 }
 
 // src/commands/init-command.ts
@@ -849,18 +849,18 @@ var memorySearchHandler = async (options) => {
     process.exit(1);
   }
   const memory = new LibSQLMemoryStorage();
-  const results2 = await memory.search(options.pattern, options.namespace);
+  const results = await memory.search(options.pattern, options.namespace);
   console.log(`\u{1F50D} Search results for pattern: ${options.pattern}`);
   if (options.namespace && options.namespace !== "all") {
     console.log(`Namespace: ${options.namespace}`);
   }
-  console.log(`Found: ${results2.length} results
+  console.log(`Found: ${results.length} results
 `);
-  if (results2.length === 0) {
+  if (results.length === 0) {
     console.log("No matching entries found.");
     return;
   }
-  results2.forEach((entry, index) => {
+  results.forEach((entry, index) => {
     const safeValue = entry.value || "";
     const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : JSON.stringify(safeValue).substring(0, 50) + "...";
     console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
@@ -1674,509 +1674,6 @@ function createCommand(config) {
   }
   return command;
 }
-var COMMON_OPTIONS = [
-  { flags: "--agent <type>", description: "Force specific agent" },
-  { flags: "--verbose", description: "Show detailed output" },
-  { flags: "--dry-run", description: "Show what would be done without making changes" },
-  { flags: "--clear", description: "Clear obsolete items before processing" },
-  {
-    flags: "--mcp [servers...]",
-    description: "Install MCP servers (memory, gpt-image, perplexity, context7, gemini-search)"
-  }
-];
-
-// src/core/sync.ts
-import * as fs3 from "fs";
-import * as path4 from "path";
-import * as readline from "readline";
-import { fileURLToPath } from "url";
-import * as cliProgress from "cli-progress";
-import Table from "cli-table3";
-var __filename = fileURLToPath(import.meta.url);
-var __dirname = path4.dirname(__filename);
-var COLORS = {
-  red: "\x1B[31m",
-  green: "\x1B[32m",
-  yellow: "\x1B[33m",
-  blue: "\x1B[34m",
-  reset: "\x1B[0m"
-};
-var AGENT_CONFIGS2 = {
-  cursor: {
-    name: "Cursor",
-    dir: ".cursor",
-    extension: ".mdc",
-    stripYaml: false,
-    flatten: false,
-    description: "Cursor (.cursor/rules/*.mdc with YAML front matter)"
-  },
-  kilocode: {
-    name: "Kilocode",
-    dir: ".kilocode",
-    extension: ".md",
-    stripYaml: true,
-    flatten: true,
-    description: "Kilocode (.kilocode/rules/*.md without YAML front matter, flattened with category prefix)"
-  },
-  roocode: {
-    name: "RooCode",
-    dir: ".roo",
-    extension: ".md",
-    stripYaml: true,
-    flatten: true,
-    description: "RooCode (.roo/rules/*.md without YAML front matter, flattened with category prefix)"
-  }
-};
-var BATCH_SIZE = 5;
-var RULES_DIR_NAME = "rules";
-var results = [];
-var log2 = (message, color = "reset") => {
-  console.log(`${COLORS[color]}${message}${COLORS.reset}`);
-};
-var getSupportedAgents2 = () => Object.keys(AGENT_CONFIGS2);
-var getAgentConfig2 = (agent) => AGENT_CONFIGS2[agent];
-async function promptForAgent3() {
-  const agents = getSupportedAgents2();
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  return new Promise((resolve2) => {
-    console.log("\n\u{1F680} Rules Sync Tool");
-    console.log("================");
-    console.log("Please select your AI agent:");
-    console.log("");
-    agents.forEach((agent, index) => {
-      const config = getAgentConfig2(agent);
-      console.log(`${index + 1}. ${config.name} - ${config.description}`);
-    });
-    console.log("");
-    const askChoice = () => {
-      rl.question(`Enter your choice (1-${agents.length}): `, (answer) => {
-        const choice = Number.parseInt(answer.trim());
-        if (choice >= 1 && choice <= agents.length) {
-          rl.close();
-          resolve2(agents[choice - 1]);
-        } else {
-          console.log(`\u274C Invalid choice. Please enter a number between 1 and ${agents.length}.`);
-          askChoice();
-        }
-      });
-    };
-    askChoice();
-  });
-}
-function detectAgentTool3() {
-  const cwd = process.cwd();
-  const agentArg = process.argv.find((arg) => arg.startsWith("--agent="));
-  if (agentArg) {
-    const agent = agentArg.split("=")[1].toLowerCase();
-    if (getSupportedAgents2().includes(agent)) {
-      return agent;
-    }
-  }
-  for (const agent of getSupportedAgents2()) {
-    const config = getAgentConfig2(agent);
-    if (fs3.existsSync(path4.join(cwd, config.dir))) {
-      return agent;
-    }
-  }
-  for (const agent of getSupportedAgents2()) {
-    const config = getAgentConfig2(agent);
-    if (fs3.existsSync(path4.join(cwd, config.dir, RULES_DIR_NAME))) {
-      return agent;
-    }
-  }
-  return "cursor";
-}
-function getLocalFileInfo2(filePath) {
-  try {
-    if (!fs3.existsSync(filePath)) {
-      return null;
-    }
-    const content = fs3.readFileSync(filePath, "utf8");
-    return { content, exists: true };
-  } catch {
-    return null;
-  }
-}
-async function getRuleFiles() {
-  const scriptDir = __dirname;
-  let projectRoot;
-  if (scriptDir.includes("/dist/src/")) {
-    projectRoot = path4.resolve(scriptDir, "../../..");
-  } else {
-    projectRoot = path4.resolve(scriptDir, "..");
-  }
-  const docsRulesDir = path4.join(projectRoot, "docs", RULES_DIR_NAME);
-  const files = [];
-  const collectFiles2 = (dir, relativePath) => {
-    try {
-      const items = fs3.readdirSync(dir, { withFileTypes: true });
-      for (const item of items) {
-        const itemPath = path4.join(dir, item.name);
-        const itemRelative = path4.join(relativePath, item.name);
-        if (item.isDirectory()) {
-          collectFiles2(itemPath, itemRelative);
-        } else if (item.isFile() && (item.name.endsWith(".mdc") || item.name.endsWith(".md"))) {
-          files.push(itemRelative);
-        }
-      }
-    } catch {
-    }
-  };
-  try {
-    collectFiles2(docsRulesDir, RULES_DIR_NAME);
-  } catch {
-    console.warn("\u26A0\uFE0F  Could not read local rules directory, returning empty list");
-    return [];
-  }
-  return files;
-}
-function stripYamlFrontMatter(content) {
-  const lines = content.split("\n");
-  if (lines.length > 0 && lines[0].trim() === "---") {
-    for (let i = 1; i < lines.length; i++) {
-      if (lines[i].trim() === "---") {
-        return lines.slice(i + 1).join("\n").trim();
-      }
-    }
-  }
-  return content;
-}
-function getDescriptionForFile(filePath) {
-  if (!filePath) {
-    return "Development flow";
-  }
-  const baseName = path4.basename(filePath, path4.extname(filePath));
-  return `Development flow for ${baseName.replace(/-/g, " ")}`;
-}
-function createContentProcessor(config) {
-  return (content, filePath) => {
-    if (config.stripYaml) {
-      return stripYamlFrontMatter(content);
-    }
-    const yamlFrontMatter = `---
-description: ${getDescriptionForFile(filePath)}
-globs: ["**/*"]
-alwaysApply: true
----
-
-`;
-    return yamlFrontMatter + content;
-  };
-}
-function getDestinationPath(filePath, rulesDir, config) {
-  const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-  const parsedPath = path4.parse(relativeToRules);
-  const { name: baseName, dir } = parsedPath;
-  if (config.flatten) {
-    const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
-    const relativePath2 = `${flattenedName}${config.extension}`;
-    return { relativePath: relativePath2, destPath: path4.join(rulesDir, relativePath2) };
-  }
-  const targetDir = dir ? path4.join(rulesDir, dir) : rulesDir;
-  const relativePath = path4.join(dir, `${baseName}${config.extension}`);
-  return {
-    relativePath,
-    destPath: path4.join(targetDir, `${baseName}${config.extension}`),
-    targetDir
-  };
-}
-async function processFile(filePath, rulesDir, config, processContent, progressBar) {
-  try {
-    const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
-    if (targetDir && !fs3.existsSync(targetDir)) {
-      fs3.mkdirSync(targetDir, { recursive: true });
-    }
-    const localInfo = getLocalFileInfo2(destPath);
-    const isNew = !localInfo;
-    let projectRoot;
-    if (__dirname.includes("/dist/src/")) {
-      projectRoot = path4.resolve(__dirname, "../../..");
-    } else {
-      projectRoot = path4.resolve(__dirname, "..");
-    }
-    const sourcePath = path4.join(projectRoot, "docs", filePath);
-    let content = fs3.readFileSync(sourcePath, "utf8");
-    content = processContent(content, filePath);
-    const localProcessed = localInfo ? processContent(localInfo.content, filePath) : "";
-    const contentChanged = !localInfo || localProcessed !== content;
-    if (contentChanged) {
-      fs3.writeFileSync(destPath, content, "utf8");
-    }
-    results.push({
-      file: relativePath,
-      status: contentChanged ? isNew ? "added" : "updated" : "current",
-      action: contentChanged ? isNew ? "Added" : "Updated" : "Already current"
-    });
-    progressBar.increment();
-    return contentChanged;
-  } catch (error) {
-    results.push({
-      file: filePath,
-      status: "error",
-      action: `Error: ${error.message}`
-    });
-    progressBar.increment();
-    return false;
-  }
-}
-async function processBatch(batch, rulesDir, config, processContent, progressBar) {
-  const promises = batch.map(
-    (filePath) => processFile(filePath, rulesDir, config, processContent, progressBar)
-  );
-  await Promise.all(promises);
-}
-function createStatusTable(title, items) {
-  if (items.length === 0) {
-    return;
-  }
-  console.log(`
-${title} (${items.length}):`);
-  const table = new Table({
-    head: ["File", "Action"],
-    colWidths: [50, 20],
-    style: { head: ["cyan"], border: ["gray"] },
-    chars: {
-      top: "\u2550",
-      "top-mid": "\u2564",
-      "top-left": "\u2554",
-      "top-right": "\u2557",
-      bottom: "\u2550",
-      "bottom-mid": "\u2567",
-      "bottom-left": "\u255A",
-      "bottom-right": "\u255D",
-      left: "\u2551",
-      "left-mid": "",
-      mid: "",
-      "mid-mid": "",
-      right: "\u2551",
-      "right-mid": "",
-      middle: "\u2502"
-    }
-  });
-  items.forEach((result) => {
-    table.push([
-      result.file.length > 47 ? `${result.file.substring(0, 47)}...` : result.file,
-      { content: result.action, vAlign: "center" }
-    ]);
-  });
-  console.log(table.toString());
-}
-function displayResults2(results2, rulesDir, agentName) {
-  const statusGroups = {
-    removed: results2.filter((r) => r.status === "removed"),
-    added: results2.filter((r) => r.status === "added"),
-    updated: results2.filter((r) => r.status === "updated"),
-    current: results2.filter((r) => r.status === "current"),
-    errors: results2.filter((r) => r.status === "error")
-  };
-  console.log("\n\u{1F4CA} Sync Results:");
-  createStatusTable("\u{1F5D1}\uFE0F Removed", statusGroups.removed);
-  createStatusTable("\u{1F195} Added", statusGroups.added);
-  createStatusTable("\u{1F504} Updated", statusGroups.updated);
-  createStatusTable("\u23ED\uFE0F Already Current", statusGroups.current);
-  if (statusGroups.errors.length > 0) {
-    createStatusTable("\u274C Errors", statusGroups.errors);
-  }
-  console.log("\n\u{1F389} Sync completed!");
-  console.log(`\u{1F4CD} Location: ${rulesDir}`);
-  const summary = [
-    statusGroups.removed.length && `${statusGroups.removed.length} removed`,
-    statusGroups.added.length && `${statusGroups.added.length} added`,
-    statusGroups.updated.length && `${statusGroups.updated.length} updated`,
-    statusGroups.current.length && `${statusGroups.current.length} current`,
-    statusGroups.errors.length && `${statusGroups.errors.length} errors`
-  ].filter(Boolean);
-  console.log(`\u{1F4C8} Summary: ${summary.join(", ")}`);
-  console.log(`\u{1F4A1} Rules will be automatically loaded by ${agentName}`);
-}
-async function clearObsoleteFiles2(rulesDir, config, merge) {
-  if (!fs3.existsSync(rulesDir)) {
-    return;
-  }
-  console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
-  let expectedFiles;
-  if (merge) {
-    expectedFiles = /* @__PURE__ */ new Set([`all-rules${config.extension}`]);
-  } else {
-    const ruleFiles = await getRuleFiles();
-    expectedFiles = new Set(
-      ruleFiles.map((filePath) => {
-        const { relativePath } = getDestinationPath(filePath, rulesDir, config);
-        return relativePath;
-      })
-    );
-  }
-  const existingFiles = fs3.readdirSync(rulesDir, { recursive: true }).filter(
-    (file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))
-  ).map((file) => path4.join(rulesDir, file));
-  for (const file of existingFiles) {
-    const relativePath = path4.relative(rulesDir, file);
-    if (!expectedFiles.has(relativePath)) {
-      try {
-        fs3.unlinkSync(file);
-        results.push({
-          file: relativePath,
-          status: "removed",
-          action: "Removed"
-        });
-      } catch (error) {
-        results.push({
-          file: relativePath,
-          status: "error",
-          action: `Error removing: ${error.message}`
-        });
-      }
-    }
-  }
-}
-async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
-  const mergedFileName = `all-rules${config.extension}`;
-  const mergedFilePath = path4.join(rulesDir, mergedFileName);
-  console.log(`\u{1F4CB} Merging ${ruleFiles.length} files into ${mergedFileName}...`);
-  let mergedContent = "# Development Rules - Complete Collection\n\n";
-  mergedContent += `Generated on: ${(/* @__PURE__ */ new Date()).toISOString()}
-
-`;
-  mergedContent += "---\n\n";
-  for (const filePath of ruleFiles) {
-    try {
-      let projectRoot;
-      if (__dirname.includes("/dist/src/")) {
-        projectRoot = path4.resolve(__dirname, "../../..");
-      } else {
-        projectRoot = path4.resolve(__dirname, "..");
-      }
-      const sourcePath = path4.join(projectRoot, "docs", filePath);
-      let content = fs3.readFileSync(sourcePath, "utf8");
-      content = processContent(content, filePath);
-      const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-      const parsedPath = path4.parse(relativeToRules);
-      const { name: baseName, dir } = parsedPath;
-      const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
-      mergedContent += `## ${sectionTitle.replace(/-/g, " ").toUpperCase()}
-
-`;
-      mergedContent += `${content}
-
-`;
-      mergedContent += "---\n\n";
-    } catch (error) {
-      results.push({
-        file: filePath,
-        status: "error",
-        action: `Error reading: ${error.message}`
-      });
-    }
-  }
-  const localInfo = getLocalFileInfo2(mergedFilePath);
-  const localProcessed = localInfo ? processContent(localInfo.content, "all-rules") : "";
-  const contentChanged = !localInfo || localProcessed !== mergedContent;
-  if (contentChanged) {
-    fs3.writeFileSync(mergedFilePath, mergedContent, "utf8");
-    results.push({
-      file: mergedFileName,
-      status: localInfo ? "updated" : "added",
-      action: localInfo ? "Updated" : "Created"
-    });
-  } else {
-    results.push({
-      file: mergedFileName,
-      status: "current",
-      action: "Already current"
-    });
-  }
-}
-async function syncRules(options) {
-  const cwd = process.cwd();
-  results = [];
-  let agent;
-  if (options.agent) {
-    agent = options.agent.toLowerCase();
-    if (!getSupportedAgents2().includes(agent)) {
-      log2(`\u274C Unknown agent: ${agent}`, "red");
-      log2(`Supported agents: ${getSupportedAgents2().join(", ")}`, "yellow");
-      throw new Error(`Unknown agent: ${agent}`);
-    }
-  } else {
-    const detectedAgent = detectAgentTool3();
-    if (detectedAgent !== "cursor") {
-      agent = detectedAgent;
-      console.log(`\u{1F4DD} Detected agent: ${getAgentConfig2(agent).name}`);
-    } else {
-      console.log("\u{1F4DD} No agent detected or defaulting to Cursor.");
-      agent = await promptForAgent3();
-    }
-  }
-  const config = getAgentConfig2(agent);
-  const rulesDir = path4.join(cwd, config.dir, RULES_DIR_NAME);
-  const processContent = createContentProcessor(config);
-  if (options.clear) {
-    await clearObsoleteFiles2(rulesDir, config, !!options.merge);
-  }
-  fs3.mkdirSync(rulesDir, { recursive: true });
-  const ruleFiles = await getRuleFiles();
-  console.log("\u{1F680} Rules Sync Tool");
-  console.log("================");
-  console.log(`\u{1F4DD} Agent: ${config.name}`);
-  console.log(`\u{1F4C1} Target: ${rulesDir}`);
-  console.log(`\u{1F4CB} Files: ${ruleFiles.length}`);
-  if (options.merge) {
-    console.log("\u{1F517} Mode: Merge all rules into single file");
-  }
-  console.log("");
-  if (options.dryRun) {
-    console.log("\u2705 Dry run completed - no files were modified");
-    return;
-  }
-  if (options.merge) {
-    await mergeAllRules(ruleFiles, rulesDir, config, processContent);
-  } else {
-    const progressBar = new cliProgress.SingleBar({
-      format: "\u{1F4CB} Processing | {bar} | {percentage}% | {value}/{total} files | {file}",
-      barCompleteChar: "\u2588",
-      barIncompleteChar: "\u2591",
-      hideCursor: true
-    });
-    progressBar.start(ruleFiles.length, 0, { file: "Starting..." });
-    for (let i = 0; i < ruleFiles.length; i += BATCH_SIZE) {
-      const batch = ruleFiles.slice(i, i + BATCH_SIZE);
-      processBatch(batch, rulesDir, config, processContent, progressBar);
-    }
-    progressBar.stop();
-  }
-  displayResults2(results, rulesDir, config.name);
-}
-
-// src/commands/sync-command.ts
-function validateSyncOptions(options) {
-  if (options.agent && !["cursor", "kilocode", "roocode"].includes(options.agent)) {
-    throw new CLIError(
-      `Invalid agent: ${options.agent}. Supported agents: cursor, kilocode, roocode`,
-      "INVALID_AGENT"
-    );
-  }
-}
-var syncCommand = {
-  name: "sync",
-  description: '[DEPRECATED] Sync development flow to your project - use "init" instead',
-  options: [
-    { ...COMMON_OPTIONS[0], description: "Force specific agent (cursor, kilocode, roocode)" },
-    ...COMMON_OPTIONS.slice(1)
-  ],
-  handler: async (options) => {
-    console.warn(
-      '\u26A0\uFE0F  WARNING: The "sync" command is deprecated and will be removed in a future version.'
-    );
-    console.warn('   Use "npx github:sylphxltd/flow init" instead for new projects.');
-    console.warn("   The sync command only works with legacy agents (cursor, kilocode, roocode).");
-    console.warn("");
-    await syncRules(options);
-  },
-  validator: validateSyncOptions
-};
 
 // src/utils/help.ts
 function showDefaultHelp() {
@@ -2185,13 +1682,11 @@ function showDefaultHelp() {
   console.log("");
   console.log("Available commands:");
   console.log("  init     Initialize project with Sylphx Flow");
-  console.log("  sync     Sync development flow to your project");
   console.log("  mcp      Manage MCP tools");
   console.log("  memory   Manage memory storage");
   console.log("");
   console.log("Examples:");
   console.log("  sylphx-flow init");
-  console.log("  sylphx-flow sync");
   console.log("  sylphx-flow mcp install --all");
   console.log("  sylphx-flow memory set key value");
   console.log("");
@@ -2202,7 +1697,7 @@ function showDefaultHelp() {
 function createCLI() {
   const program = new Command2();
   program.name("sylphx-flow").description("Sylphx Flow - Type-safe development flow CLI").version("1.0.0");
-  const commands = [syncCommand, initCommand, mcpCommand, memoryCommand];
+  const commands = [initCommand, mcpCommand, memoryCommand];
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
