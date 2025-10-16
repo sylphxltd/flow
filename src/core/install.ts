@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   type CommonOptions,
   type ProcessResult,
@@ -35,79 +36,31 @@ type AgentType = keyof typeof AGENT_CONFIGS;
 // ============================================================================
 
 async function getAgentFiles(): Promise<string[]> {
-  // Try to get agents from current working directory first
-  const localAgentsDir = path.join(process.cwd(), 'agents');
+  // Since dist/index.js is the entry point and agents is at ../agents relative to it
+  // We need to resolve relative to the script location, not process.cwd()
+  const scriptPath = path.resolve(process.argv[1]);
+  const scriptDir = path.dirname(scriptPath);
+  const agentsDir = path.join(scriptDir, '..', 'agents');
 
-  // If local agents directory exists, use it
-  if (fs.existsSync(localAgentsDir)) {
-    try {
-      const subdirs = fs
-        .readdirSync(localAgentsDir, { withFileTypes: true })
-        .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
-        .map((dirent) => dirent.name);
-
-      const allFiles: string[] = [];
-
-      // Collect files from each subdirectory
-      for (const subdir of subdirs) {
-        const subdirPath = path.join(localAgentsDir, subdir);
-        const files = collectFiles(subdirPath, ['.md']);
-        allFiles.push(...files.map((file) => path.join(subdir, file)));
-      }
-
-      if (allFiles.length > 0) {
-        return allFiles;
-      }
-    } catch (error) {
-      // Fall through to use bundled agents
-    }
+  if (!fs.existsSync(agentsDir)) {
+    throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
 
-  // Fall back to bundled agents from Sylphx Flow installation
-  // Use a more reliable approach to find the agents directory
-  // Try multiple possible locations where agents might be installed
-  const possiblePaths = [
-    // When running from node_modules in a user project
-    path.join(process.cwd(), 'node_modules/@sylphxltd/flow/agents'),
-    // When running from the source directory
-    path.join(process.cwd(), 'agents'),
-    // When running globally
-    path.join(__dirname, '../../agents'),
-  ];
+  const subdirs = fs
+    .readdirSync(agentsDir, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
+    .map((dirent) => dirent.name);
 
-  let bundledAgentsDir: string | undefined;
-  for (const possiblePath of possiblePaths) {
-    if (fs.existsSync(possiblePath)) {
-      bundledAgentsDir = possiblePath;
-      break;
-    }
+  const allFiles: string[] = [];
+
+  // Collect files from each subdirectory
+  for (const subdir of subdirs) {
+    const subdirPath = path.join(agentsDir, subdir);
+    const files = collectFiles(subdirPath, ['.md']);
+    allFiles.push(...files.map((file) => path.join(subdir, file)));
   }
 
-  if (!bundledAgentsDir) {
-    // Last resort: try to find agents relative to this file
-    bundledAgentsDir = path.join(__dirname, '../../agents');
-  }
-
-  if (fs.existsSync(bundledAgentsDir)) {
-    const subdirs = fs
-      .readdirSync(bundledAgentsDir, { withFileTypes: true })
-      .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
-      .map((dirent) => dirent.name);
-
-    const allFiles: string[] = [];
-
-    // Collect files from each subdirectory
-    for (const subdir of subdirs) {
-      const subdirPath = path.join(bundledAgentsDir, subdir);
-      const files = collectFiles(subdirPath, ['.md']);
-      allFiles.push(...files.map((file) => path.join(subdir, file)));
-    }
-
-    return allFiles;
-  }
-
-  // If no agents found anywhere, return empty array
-  return [];
+  return allFiles;
 }
 
 async function promptForAgent(): Promise<AgentType> {
@@ -248,15 +201,46 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     displayResults(results, agentsDir, config.name, 'Install', options.verbose);
   } else {
     // Process files individually - create both sdd/ and core/ subdirectory structures
-    processBatch(
-      agentFiles, // Files with relative paths (sdd/file.md, core/file.md)
-      agentsDir, // Target to .opencode/agent/
-      config.extension,
-      processContent,
-      config.flatten,
-      results,
-      'agents/' // PathPrefix for source file reading
-    );
+    // Use same logic as getAgentFiles() - relative to script location
+    const scriptPath = path.resolve(process.argv[1]);
+    const scriptDir = path.dirname(scriptPath);
+    const agentsSourceDir = path.join(scriptDir, '..', 'agents');
+
+    for (const agentFile of agentFiles) {
+      const sourcePath = path.join(agentsSourceDir, agentFile);
+      const destPath = path.join(agentsDir, agentFile);
+
+      // Ensure destination directory exists
+      const destDir = path.dirname(destPath);
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+      }
+
+      const localInfo = getLocalFileInfo(destPath);
+      const isNew = !localInfo;
+
+      // Read content from source
+      let content = fs.readFileSync(sourcePath, 'utf8');
+      content = processContent(content);
+
+      const localProcessed = localInfo ? processContent(localInfo.content) : '';
+      const contentChanged = !localInfo || localProcessed !== content;
+
+      if (contentChanged) {
+        fs.writeFileSync(destPath, content, 'utf8');
+        results.push({
+          file: agentFile,
+          status: localInfo ? 'updated' : 'added',
+          action: localInfo ? 'Updated' : 'Created',
+        });
+      } else {
+        results.push({
+          file: agentFile,
+          status: 'current',
+          action: 'Already current',
+        });
+      }
+    }
 
     displayResults(results, agentsDir, config.name, 'Install', options.verbose);
   }
