@@ -218,13 +218,13 @@ When you install MCP servers, the tool automatically creates or updates an `open
 - `command`: Command array to start the server
 - `$schema`: JSON schema for validation and IDE support
 
-### `flow mcp` - Start Memory Server
+### `flow mcp` - Manage MCP Tools
 
-Start the MCP memory server for agent coordination.
+Manage MCP (Model Context Protocol) tools and servers.
 
 ```bash
 # Start the memory server
-npx github:sylphxltd/flow mcp
+npx github:sylphxltd/flow mcp start
 
 # Server will be available at stdio for MCP clients
 # Database stored at: .memory/memory.json
@@ -448,7 +448,7 @@ flow/
 
 ```bash
 # Start memory server for team coordination
-npx github:sylphxltd/flow mcp
+npx github:sylphxltd/flow mcp start
 
 # In one terminal, sync flow for the team
 npx github:sylphxltd/flow sync --agent=cursor
@@ -636,7 +636,7 @@ npx github:sylphxltd/flow install --mcp
 cat opencode.jsonc
 
 # Test the memory server directly
-npx github:sylphxltd/flow mcp
+npx github:sylphxltd/flow mcp start
 ```
 
 **Memory Database Issues:**
@@ -647,7 +647,7 @@ ls -la .memory/
 # Clear corrupted memory database
 rm .memory/memory.json
 # Restart the server to recreate
-npx github:sylphxltd/flow mcp
+npx github:sylphxltd/flow mcp start
 ```
 
 **OpenCode Configuration Problems:**

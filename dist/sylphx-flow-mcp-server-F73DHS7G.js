@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 // src/servers/sylphx-flow-mcp-server.ts
+import * as fs from "fs/promises";
+import * as path from "path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import * as fs from "fs/promises";
-import * as path from "path";
 var MemoryStorage = class {
   data = /* @__PURE__ */ new Map();
   memoryDir;
@@ -131,15 +131,15 @@ var MemoryStorage = class {
     };
   }
 };
-var Logger = class {
+var Logger = class _Logger {
   static logLevel = process.env.LOG_LEVEL || "info";
   static info(message, ...args) {
-    if (["info", "debug"].includes(this.logLevel)) {
+    if (["info", "debug"].includes(_Logger.logLevel)) {
       console.log(`\u2139\uFE0F  ${message}`, ...args);
     }
   }
   static debug(message, ...args) {
-    if (this.logLevel === "debug") {
+    if (_Logger.logLevel === "debug") {
       console.log(`\u{1F41B} ${message}`, ...args);
     }
   }
@@ -149,9 +149,9 @@ var Logger = class {
   static error(message, error) {
     console.error(`\u274C ${message}`);
     if (error) {
-      console.error(`   Error details:`, error instanceof Error ? error.message : error);
+      console.error("   Error details:", error instanceof Error ? error.message : error);
       if (error instanceof Error && error.stack) {
-        console.error(`   Stack trace:`, error.stack);
+        console.error("   Stack trace:", error.stack);
       }
     }
   }
@@ -190,18 +190,22 @@ server.registerTool(
       memoryStorage.set(key, parsedValue, namespace);
       Logger.info(`Stored memory: ${namespace}:${key}`);
       return {
-        content: [{
-          type: "text",
-          text: `\u2705 Stored memory: ${namespace}:${key}`
-        }]
+        content: [
+          {
+            type: "text",
+            text: `\u2705 Stored memory: ${namespace}:${key}`
+          }
+        ]
       };
     } catch (error) {
       Logger.error("Error storing memory", error);
       return {
-        content: [{
-          type: "text",
-          text: `\u274C Error storing memory: ${error.message}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `\u274C Error storing memory: ${error.message}`
+          }
+        ],
         isError: true
       };
     }
@@ -222,36 +226,46 @@ server.registerTool(
       const memory = memoryStorage.get(key, namespace);
       if (!memory) {
         return {
-          content: [{
-            type: "text",
-            text: `\u274C Memory not found: ${namespace}:${key}`
-          }],
+          content: [
+            {
+              type: "text",
+              text: `\u274C Memory not found: ${namespace}:${key}`
+            }
+          ],
           isError: true
         };
       }
       const age = Date.now() - memory.timestamp;
       Logger.info(`Retrieved memory: ${namespace}:${key}`);
       return {
-        content: [{
-          type: "text",
-          text: JSON.stringify({
-            key: `${namespace}:${key}`,
-            value: memory.value,
-            timestamp: memory.timestamp,
-            created_at: memory.created_at,
-            updated_at: memory.updated_at,
-            namespace: memory.namespace,
-            age
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                key: `${namespace}:${key}`,
+                value: memory.value,
+                timestamp: memory.timestamp,
+                created_at: memory.created_at,
+                updated_at: memory.updated_at,
+                namespace: memory.namespace,
+                age
+              },
+              null,
+              2
+            )
+          }
+        ]
       };
     } catch (error) {
       Logger.error("Error retrieving memory", error);
       return {
-        content: [{
-          type: "text",
-          text: `\u274C Error retrieving memory: ${error.message}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `\u274C Error retrieving memory: ${error.message}`
+          }
+        ],
         isError: true
       };
     }
@@ -281,23 +295,31 @@ server.registerTool(
       }));
       Logger.info(`Searched memory: ${pattern} (${results.length} results)`);
       return {
-        content: [{
-          type: "text",
-          text: JSON.stringify({
-            pattern,
-            namespace: namespace || "all",
-            count: results.length,
-            results: processedResults
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                pattern,
+                namespace: namespace || "all",
+                count: results.length,
+                results: processedResults
+              },
+              null,
+              2
+            )
+          }
+        ]
       };
     } catch (error) {
       Logger.error("Error searching memory", error);
       return {
-        content: [{
-          type: "text",
-          text: `\u274C Error searching memory: ${error.message}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `\u274C Error searching memory: ${error.message}`
+          }
+        ],
         isError: true
       };
     }
@@ -325,22 +347,30 @@ server.registerTool(
       }));
       Logger.info(`Listed memory: ${namespace || "all"} (${entries.length} entries)`);
       return {
-        content: [{
-          type: "text",
-          text: JSON.stringify({
-            namespace: namespace || "all",
-            count: entries.length,
-            keys: processedEntries
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                namespace: namespace || "all",
+                count: entries.length,
+                keys: processedEntries
+              },
+              null,
+              2
+            )
+          }
+        ]
       };
     } catch (error) {
       Logger.error("Error listing memory", error);
       return {
-        content: [{
-          type: "text",
-          text: `\u274C Error listing memory: ${error.message}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `\u274C Error listing memory: ${error.message}`
+          }
+        ],
         isError: true
       };
     }
@@ -362,27 +392,32 @@ server.registerTool(
       if (deleted) {
         Logger.info(`Deleted memory: ${namespace}:${key}`);
         return {
-          content: [{
-            type: "text",
-            text: `\u2705 Deleted memory: ${namespace}:${key}`
-          }]
-        };
-      } else {
-        return {
-          content: [{
-            type: "text",
-            text: `\u274C Memory not found: ${namespace}:${key}`
-          }],
-          isError: true
+          content: [
+            {
+              type: "text",
+              text: `\u2705 Deleted memory: ${namespace}:${key}`
+            }
+          ]
         };
       }
+      return {
+        content: [
+          {
+            type: "text",
+            text: `\u274C Memory not found: ${namespace}:${key}`
+          }
+        ],
+        isError: true
+      };
     } catch (error) {
       Logger.error("Error deleting memory", error);
       return {
-        content: [{
-          type: "text",
-          text: `\u274C Error deleting memory: ${error.message}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `\u274C Error deleting memory: ${error.message}`
+          }
+        ],
         isError: true
       };
     }
@@ -402,10 +437,12 @@ server.registerTool(
       const { namespace, confirm } = args;
       if (!namespace && !confirm) {
         return {
-          content: [{
-            type: "text",
-            text: `\u274C Confirmation required. Set confirm: true to clear all memory.`
-          }],
+          content: [
+            {
+              type: "text",
+              text: "\u274C Confirmation required. Set confirm: true to clear all memory."
+            }
+          ],
           isError: true
         };
       }
@@ -413,27 +450,32 @@ server.registerTool(
       if (namespace) {
         Logger.info(`Cleared memory namespace: ${namespace} (${count} entries)`);
         return {
-          content: [{
-            type: "text",
-            text: `\u2705 Cleared ${count} memories from namespace: ${namespace}`
-          }]
-        };
-      } else {
-        Logger.info(`Cleared all memory (${count} entries)`);
-        return {
-          content: [{
-            type: "text",
-            text: `\u2705 Cleared all ${count} memory entries`
-          }]
+          content: [
+            {
+              type: "text",
+              text: `\u2705 Cleared ${count} memories from namespace: ${namespace}`
+            }
+          ]
         };
       }
+      Logger.info(`Cleared all memory (${count} entries)`);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `\u2705 Cleared all ${count} memory entries`
+          }
+        ]
+      };
     } catch (error) {
       Logger.error("Error clearing memory", error);
       return {
-        content: [{
-          type: "text",
-          text: `\u274C Error clearing memory: ${error.message}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `\u274C Error clearing memory: ${error.message}`
+          }
+        ],
         isError: true
       };
     }
@@ -447,27 +489,35 @@ server.registerTool(
       // No input parameters required
     }
   },
-  async (args) => {
+  async (_args) => {
     try {
       const stats = memoryStorage.getStats();
-      Logger.info(`Retrieved memory statistics`);
+      Logger.info("Retrieved memory statistics");
       return {
-        content: [{
-          type: "text",
-          text: JSON.stringify({
-            ...stats,
-            database_path: path.join(process.cwd(), ".memory", "memory.json"),
-            age_days: stats.oldest_entry > 0 ? Math.floor((Date.now() - stats.oldest_entry) / (1e3 * 60 * 60 * 24)) : 0
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                ...stats,
+                database_path: path.join(process.cwd(), ".memory", "memory.json"),
+                age_days: stats.oldest_entry > 0 ? Math.floor((Date.now() - stats.oldest_entry) / (1e3 * 60 * 60 * 24)) : 0
+              },
+              null,
+              2
+            )
+          }
+        ]
       };
     } catch (error) {
       Logger.error("Error getting memory statistics", error);
       return {
-        content: [{
-          type: "text",
-          text: `\u274C Error getting memory statistics: ${error.message}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `\u274C Error getting memory statistics: ${error.message}`
+          }
+        ],
         isError: true
       };
     }
@@ -485,13 +535,15 @@ process.on("uncaughtException", (error) => {
   Logger.error("Uncaught Exception", error);
   process.exit(1);
 });
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason, _promise) => {
   Logger.error("Unhandled Rejection", reason);
   process.exit(1);
 });
 Logger.success("\u{1F680} Sylphx Flow MCP Server ready!");
 Logger.info(`\u{1F4CD} Storage: ${path.join(process.cwd(), ".memory", "memory.json")}`);
-Logger.info(`\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats`);
+Logger.info(
+  "\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats"
+);
 async function startServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);

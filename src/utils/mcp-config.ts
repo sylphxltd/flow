@@ -11,7 +11,7 @@ export const MCP_SERVERS = {
     description: 'Flow memory MCP server for agent coordination',
     config: {
       type: 'local' as const,
-      command: ['npx', 'github:sylphxltd/flow', 'mcp'] as string[],
+      command: ['npx', 'github:sylphxltd/flow', 'mcp', 'start'] as string[],
     },
   },
   everything: {
