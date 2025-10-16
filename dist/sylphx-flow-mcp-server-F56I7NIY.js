@@ -8,9 +8,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 var DEFAULT_CONFIG = {
-  name: "flow_memory",
+  name: "sylphx_flow",
   version: "1.0.0",
-  description: "Sylphx Flow MCP server providing memory coordination tools for AI agents. Persistent SQLite-based storage with namespace support for agent coordination and state management."
+  description: "Sylphx Flow MCP server providing coordination tools for AI agents. Persistent SQLite-based storage with namespace support for agent coordination and state management."
 };
 var Logger = {
   info: (message) => console.error(`[INFO] ${message}`),

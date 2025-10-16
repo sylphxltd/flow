@@ -137,19 +137,11 @@ async function writeJSONCFile(filePath, obj, schema, indent = 2) {
 // src/utils/mcp-config.ts
 var MCP_SERVERS = {
   memory: {
-    name: "flow_memory",
-    description: "Flow memory MCP server for agent coordination",
+    name: "sylphx_flow",
+    description: "Sylphx Flow MCP server for agent coordination",
     config: {
       type: "local",
       command: ["npx", "-y", "github:sylphxltd/flow", "mcp", "start"]
-    }
-  },
-  everything: {
-    name: "mcp_everything",
-    description: "MCP Everything server - comprehensive tool collection",
-    config: {
-      type: "local",
-      command: ["npx", "-y", "@modelcontextprotocol/server-everything"]
     }
   },
   "gpt-image": {
@@ -475,41 +467,6 @@ function createMergedContent(filePaths, processContent, title, pathPrefix = "") 
   }
   return sections.join("\n");
 }
-function processBatch(filePaths, targetDir, extension, processContent, flatten, results2, pathPrefix = "") {
-  for (const filePath of filePaths) {
-    const destPath = flatten ? path2.join(targetDir, `${path2.basename(filePath, path2.extname(filePath))}${extension}`) : path2.join(targetDir, filePath);
-    const destDir = path2.dirname(destPath);
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true });
-    }
-    const localInfo = getLocalFileInfo(destPath);
-    const isNew = !localInfo;
-    const projectRoot = process.cwd();
-    const sourcePath = path2.join(projectRoot, pathPrefix, filePath);
-    let content = fs.readFileSync(sourcePath, "utf8");
-    content = processContent(content);
-    const localProcessed = localInfo ? processContent(localInfo.content) : "";
-    const contentChanged = !localInfo || localProcessed !== content;
-    if (contentChanged) {
-      const destDirPath = path2.dirname(destPath);
-      if (!fs.existsSync(destDirPath)) {
-        fs.mkdirSync(destDirPath, { recursive: true });
-      }
-      fs.writeFileSync(destPath, content, "utf8");
-      results2.push({
-        file: path2.relative(targetDir, destPath),
-        status: isNew ? "added" : "updated",
-        action: isNew ? "Created" : "Updated"
-      });
-    } else {
-      results2.push({
-        file: path2.relative(targetDir, destPath),
-        status: "current",
-        action: "Already current"
-      });
-    }
-  }
-}
 function displayResults(results2, targetDir, agentName, operation, verbose = false) {
   if (!verbose) {
     const total2 = results2.length;
@@ -574,7 +531,12 @@ var AGENT_CONFIGS = {
   }
 };
 async function getAgentFiles() {
-  const agentsDir = path3.join(process.cwd(), "agents");
+  const scriptPath = path3.resolve(process.argv[1]);
+  const scriptDir = path3.dirname(scriptPath);
+  const agentsDir = path3.join(scriptDir, "..", "agents");
+  if (!fs2.existsSync(agentsDir)) {
+    throw new Error(`Could not find agents directory at: ${agentsDir}`);
+  }
   const subdirs = fs2.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   const allFiles = [];
   for (const subdir of subdirs) {
@@ -684,18 +646,37 @@ async function installAgents(options) {
     }
     displayResults(results2, agentsDir, config.name, "Install", options.verbose);
   } else {
-    processBatch(
-      agentFiles,
-      // Files with relative paths (sdd/file.md, core/file.md)
-      agentsDir,
-      // Target to .opencode/agent/
-      config.extension,
-      processContent,
-      config.flatten,
-      results2,
-      "agents/"
-      // PathPrefix for source file reading
-    );
+    const scriptPath = path3.resolve(process.argv[1]);
+    const scriptDir = path3.dirname(scriptPath);
+    const agentsSourceDir = path3.join(scriptDir, "..", "agents");
+    for (const agentFile of agentFiles) {
+      const sourcePath = path3.join(agentsSourceDir, agentFile);
+      const destPath = path3.join(agentsDir, agentFile);
+      const destDir = path3.dirname(destPath);
+      if (!fs2.existsSync(destDir)) {
+        fs2.mkdirSync(destDir, { recursive: true });
+      }
+      const localInfo = getLocalFileInfo(destPath);
+      const isNew = !localInfo;
+      let content = fs2.readFileSync(sourcePath, "utf8");
+      content = processContent(content);
+      const localProcessed = localInfo ? processContent(localInfo.content) : "";
+      const contentChanged = !localInfo || localProcessed !== content;
+      if (contentChanged) {
+        fs2.writeFileSync(destPath, content, "utf8");
+        results2.push({
+          file: agentFile,
+          status: localInfo ? "updated" : "added",
+          action: localInfo ? "Updated" : "Created"
+        });
+      } else {
+        results2.push({
+          file: agentFile,
+          status: "current",
+          action: "Already current"
+        });
+      }
+    }
     displayResults(results2, agentsDir, config.name, "Install", options.verbose);
   }
 }
@@ -730,11 +711,10 @@ var initCommand = {
       console.log("\u{1F4E6} Installing MCP tools...");
       if (options.dryRun) {
         console.log("\u{1F50D} Dry run: Would install all MCP servers");
-        console.log("   \u2022 memory, everything, gpt-image, perplexity, context7, gemini-search");
+        console.log("   \u2022 memory, gpt-image, perplexity, context7, gemini-search");
       } else {
         const allServers = [
           "memory",
-          "everything",
           "gpt-image",
           "perplexity",
           "context7",
@@ -771,7 +751,7 @@ var initCommand = {
 
 // src/commands/mcp-command.ts
 var mcpStartHandler = async () => {
-  await import("./sylphx-flow-mcp-server-VLX445OP.js");
+  await import("./sylphx-flow-mcp-server-F56I7NIY.js");
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
   console.log(
@@ -786,12 +766,11 @@ var mcpInstallHandler = async (options) => {
     console.log("\u{1F527} Installing all available MCP tools...");
     if (options.dryRun) {
       console.log(
-        "\u{1F50D} Dry run: Would install all MCP tools: memory, everything, gpt-image, perplexity, context7, gemini-search"
+        "\u{1F50D} Dry run: Would install all MCP tools: memory, gpt-image, perplexity, context7, gemini-search"
       );
     } else {
       const allServers = [
         "memory",
-        "everything",
         "gpt-image",
         "perplexity",
         "context7",
@@ -807,14 +786,7 @@ var mcpInstallHandler = async (options) => {
   }
   const validServers = parseMCPServerTypes(servers);
   if (validServers.length === 0) {
-    const availableServers = [
-      "memory",
-      "everything",
-      "gpt-image",
-      "perplexity",
-      "context7",
-      "gemini-search"
-    ];
+    const availableServers = ["memory", "gpt-image", "perplexity", "context7", "gemini-search"];
     throw new CLIError(
       `Invalid MCP tools. Available: ${availableServers.join(", ")}`,
       "INVALID_MCP_SERVERS"
@@ -838,14 +810,7 @@ var mcpConfigHandler = async (options) => {
   }
   const validServers = parseMCPServerTypes([server]);
   if (validServers.length === 0) {
-    const availableServers = [
-      "memory",
-      "everything",
-      "gpt-image",
-      "perplexity",
-      "context7",
-      "gemini-search"
-    ];
+    const availableServers = ["memory", "gpt-image", "perplexity", "context7", "gemini-search"];
     throw new CLIError(
       `Invalid MCP server: ${server}. Available: ${availableServers.join(", ")}`,
       "INVALID_MCP_SERVER"
@@ -870,7 +835,7 @@ var mcpCommand = {
       options: [
         {
           flags: "<servers...>",
-          description: "MCP tools to install (memory, everything, gpt-image, perplexity, context7, gemini-search)"
+          description: "MCP tools to install (memory, gpt-image, perplexity, context7, gemini-search)"
         },
         { flags: "--all", description: "Install all available MCP tools" },
         { flags: "--dry-run", description: "Show what would be done without making changes" }
@@ -1777,7 +1742,10 @@ var COMMON_OPTIONS = [
   { flags: "--dry-run", description: "Show what would be done without making changes" },
   { flags: "--clear", description: "Clear obsolete items before processing" },
   { flags: "--merge", description: "Merge all items into a single file" },
-  { flags: "--mcp [servers...]", description: "Install MCP servers (memory, everything)" }
+  {
+    flags: "--mcp [servers...]",
+    description: "Install MCP servers (memory, gpt-image, perplexity, context7, gemini-search)"
+  }
 ];
 
 // src/core/sync.ts
