@@ -57,8 +57,8 @@ export const initCommand: CommandConfig = {
     console.log('📋 Next steps:');
     if (options.mcp !== false) {
       console.log('   • Start MCP server: npx github:sylphxltd/flow mcp start');
+      console.log('   • List MCP tools:  npx github:sylphxltd/flow mcp list');
     }
-    console.log('   • Sync agents:     npx github:sylphxltd/flow sync');
-    console.log('   • List MCP tools:  npx github:sylphxltd/flow mcp list');
+    console.log('   • Your agents are ready to use!');
   },
 };

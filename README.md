@@ -42,9 +42,9 @@ The platform enables consistent, high-quality code generation across projects wh
 npx github:sylphxltd/flow
 
 # Or use npx for specific commands
-npx github:sylphxltd/flow sync
 npx github:sylphxltd/flow init
 npx github:sylphxltd/flow mcp start
+# npx github:sylphxltd/flow sync  # [DEPRECATED] Use init instead
 ```
 
 **Alternative: Clone and Build**
@@ -97,15 +97,15 @@ npx github:sylphxltd/flow init --dry-run
 npx github:sylphxltd/flow init --no-mcp
 ```
 
-### `flow sync` - Sync Development Rules
+### `flow sync` - Sync Development Rules [DEPRECATED]
 
-Sync development flow to your AI agent's configuration directory.
+> ⚠️ **This command is deprecated** and will be removed in a future version.
+> Use `npx github:sylphxltd/flow init` instead for new projects.
+
+The sync command only works with legacy agents (cursor, kilocode, roocode) and is kept for backward compatibility.
 
 ```bash
-# Auto-detect and sync to your agent
-npx github:sylphxltd/flow sync
-
-# Specify agent explicitly
+# Legacy usage (not recommended for new projects)
 npx github:sylphxltd/flow sync --agent=cursor     # For Cursor AI
 npx github:sylphxltd/flow sync --agent=kilocode   # For Kilocode  
 npx github:sylphxltd/flow sync --agent=roocode    # For RooCode

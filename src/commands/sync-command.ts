@@ -14,11 +14,20 @@ function validateSyncOptions(options: CommandOptions): void {
 
 export const syncCommand: CommandConfig = {
   name: 'sync',
-  description: 'Sync development flow to your project',
+  description: '[DEPRECATED] Sync development flow to your project - use "init" instead',
   options: [
     { ...COMMON_OPTIONS[0], description: 'Force specific agent (cursor, kilocode, roocode)' },
     ...COMMON_OPTIONS.slice(1),
   ],
-  handler: syncRules,
+  handler: async (options: CommandOptions) => {
+    // Show deprecation warning
+    console.warn('⚠️  WARNING: The "sync" command is deprecated and will be removed in a future version.');
+    console.warn('   Use "npx github:sylphxltd/flow init" instead for new projects.');
+    console.warn('   The sync command only works with legacy agents (cursor, kilocode, roocode).');
+    console.warn('');
+    
+    // Call the original sync handler
+    await syncRules(options);
+  },
   validator: validateSyncOptions,
 };

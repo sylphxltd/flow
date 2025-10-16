@@ -619,9 +619,9 @@ var initCommand = {
     console.log("\u{1F4CB} Next steps:");
     if (options.mcp !== false) {
       console.log("   \u2022 Start MCP server: npx github:sylphxltd/flow mcp start");
+      console.log("   \u2022 List MCP tools:  npx github:sylphxltd/flow mcp list");
     }
-    console.log("   \u2022 Sync agents:     npx github:sylphxltd/flow sync");
-    console.log("   \u2022 List MCP tools:  npx github:sylphxltd/flow mcp list");
+    console.log("   \u2022 Your agents are ready to use!");
   }
 };
 
@@ -1207,12 +1207,18 @@ function validateSyncOptions(options) {
 }
 var syncCommand = {
   name: "sync",
-  description: "Sync development flow to your project",
+  description: '[DEPRECATED] Sync development flow to your project - use "init" instead',
   options: [
     { ...COMMON_OPTIONS[0], description: "Force specific agent (cursor, kilocode, roocode)" },
     ...COMMON_OPTIONS.slice(1)
   ],
-  handler: syncRules,
+  handler: async (options) => {
+    console.warn('\u26A0\uFE0F  WARNING: The "sync" command is deprecated and will be removed in a future version.');
+    console.warn('   Use "npx github:sylphxltd/flow init" instead for new projects.');
+    console.warn("   The sync command only works with legacy agents (cursor, kilocode, roocode).");
+    console.warn("");
+    await syncRules(options);
+  },
   validator: validateSyncOptions
 };
 
