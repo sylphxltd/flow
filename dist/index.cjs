@@ -583,13 +583,21 @@ function createCommand(config) {
   config.options.forEach((option) => {
     command.option(option.flags, option.description);
   });
-  const handler = createAsyncHandler(config.handler, config.name);
-  command.action(handler);
-  if (config.validator) {
-    command.action((options) => {
-      config.validator(options);
-      return handler(options);
+  if (config.subcommands) {
+    config.subcommands.forEach((subcommand) => {
+      command.addCommand(createCommand(subcommand));
     });
+  }
+  if (config.handler) {
+    const handler = createAsyncHandler(config.handler, config.name);
+    if (config.validator) {
+      command.action((options) => {
+        config.validator(options);
+        return handler(options);
+      });
+    } else {
+      command.action(handler);
+    }
   }
   return command;
 }
@@ -1830,62 +1838,57 @@ function parseMCPServerTypes(args) {
   return servers;
 }
 
-// src/commands/install-command.ts
-function validateInstallOptions(options) {
-  if (options.agent && options.agent !== "opencode") {
+// src/commands/init-command.ts
+function validateInitOptions(options) {
+  options.agent = options.agent || "opencode";
+  if (options.agent !== "opencode") {
     throw new CLIError(
-      "Currently only opencode is supported for install.",
+      "Currently only opencode is supported for init.",
       "UNSUPPORTED_AGENT"
     );
   }
-  options.agent = options.agent || "opencode";
-  if (options.mcp && Array.isArray(options.mcp) && options.mcp.length > 0) {
-    const validServers = parseMCPServerTypes(options.mcp);
-    if (validServers.length === 0) {
-      throw new CLIError(
-        "Invalid MCP servers. Available: memory, everything",
-        "INVALID_MCP_SERVERS"
-      );
-    }
-    options.mcp = validServers;
+  if (options.merge) {
+    throw new CLIError(
+      "The --merge option is not supported with init command.",
+      "INVALID_OPTION"
+    );
   }
 }
-var installCommand = {
-  name: "install",
-  description: "Install workflow agents for OpenCode",
+var initCommand = {
+  name: "init",
+  description: "Initialize project with Sylphx Flow development agents and MCP tools",
   options: [
-    { flags: "--agent <type>", description: "Force specific agent (opencode)" },
+    { flags: "--agent <type>", description: "Force specific agent (default: opencode)" },
     { flags: "--verbose", description: "Show detailed output" },
     { flags: "--dry-run", description: "Show what would be done without making changes" },
     { flags: "--clear", description: "Clear obsolete items before processing" },
-    { flags: "--merge", description: "Merge all items into a single file" },
-    { flags: "--mcp [servers...]", description: "Install MCP servers (memory, everything)" }
+    { flags: "--mcp", description: "Install all available MCP tools" }
   ],
   handler: async (options) => {
-    validateInstallOptions(options);
+    validateInitOptions(options);
+    console.log("\u{1F680} Initializing Sylphx Flow development environment...");
+    console.log(`\u{1F916} Agent: ${options.agent}`);
     if (options.mcp) {
-      if (Array.isArray(options.mcp) && options.mcp.length > 0) {
-        console.log("\u{1F527} Installing MCP servers...");
-        const serverTypes = parseMCPServerTypes(options.mcp);
-        if (serverTypes.length > 0) {
-          if (!options.dryRun) {
-            await addMCPServers(process.cwd(), serverTypes);
-          } else {
-            console.log("\u{1F50D} Dry run: Would install MCP servers:", serverTypes.join(", "));
-          }
-          console.log("");
-        }
+      console.log("\u{1F527} Installing MCP tools...");
+      if (!options.dryRun) {
+        await addMCPServers(process.cwd(), ["memory", "everything"]);
+        console.log("\u2705 MCP tools installed");
       } else {
-        await listMCPServers(process.cwd());
-        return;
+        console.log("\u{1F50D} Dry run: Would install MCP tools: memory, everything");
       }
+      console.log("");
     }
     await installAgents(options);
+    console.log("");
+    console.log("\u{1F389} Sylphx Flow initialization complete!");
+    console.log("\u{1F4D6} Next steps:");
+    console.log("   - Start MCP server: sylphx-flow mcp start");
+    console.log("   - List available MCP tools: sylphx-flow mcp list");
   }
 };
 
 // src/commands/mcp-command.ts
-var mcpHandler = async () => {
+var mcpStartHandler = async () => {
   await Promise.resolve().then(() => (init_sylphx_flow_mcp_server(), sylphx_flow_mcp_server_exports));
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .memory/memory.json");
@@ -1893,18 +1896,77 @@ var mcpHandler = async () => {
   console.log("\u{1F4A1} Press Ctrl+C to stop the server");
   process.stdin.resume();
 };
+var mcpInstallHandler = async (options) => {
+  const servers = options.servers || [];
+  if (options.all) {
+    console.log("\u{1F527} Installing all available MCP tools...");
+    if (!options.dryRun) {
+      await addMCPServers(process.cwd(), ["memory", "everything"]);
+      console.log("\u2705 All MCP tools installed");
+    } else {
+      console.log("\u{1F50D} Dry run: Would install MCP tools: memory, everything");
+    }
+    return;
+  }
+  if (servers.length === 0) {
+    throw new CLIError(
+      "Please specify MCP tools to install or use --all",
+      "NO_SERVERS_SPECIFIED"
+    );
+  }
+  const validServers = parseMCPServerTypes(servers);
+  if (validServers.length === 0) {
+    throw new CLIError(
+      "Invalid MCP tools. Available: memory, everything",
+      "INVALID_MCP_SERVERS"
+    );
+  }
+  console.log(`\u{1F527} Installing MCP tools: ${validServers.join(", ")}`);
+  if (!options.dryRun) {
+    await addMCPServers(process.cwd(), validServers);
+    console.log("\u2705 MCP tools installed");
+  } else {
+    console.log("\u{1F50D} Dry run: Would install MCP tools:", validServers.join(", "));
+  }
+};
+var mcpListHandler = async () => {
+  await listMCPServers(process.cwd());
+};
 var mcpCommand = {
   name: "mcp",
-  description: "Start the Sylphx Flow MCP server for persistent agent coordination",
+  description: "Manage MCP (Model Context Protocol) tools and servers",
   options: [],
-  handler: mcpHandler
+  subcommands: [
+    {
+      name: "start",
+      description: "Start the Sylphx Flow MCP server",
+      options: [],
+      handler: mcpStartHandler
+    },
+    {
+      name: "install",
+      description: "Install MCP tools for OpenCode",
+      options: [
+        { flags: "<servers...>", description: "MCP tools to install (memory, everything)" },
+        { flags: "--all", description: "Install all available MCP tools" },
+        { flags: "--dry-run", description: "Show what would be done without making changes" }
+      ],
+      handler: mcpInstallHandler
+    },
+    {
+      name: "list",
+      description: "List all available MCP tools",
+      options: [],
+      handler: mcpListHandler
+    }
+  ]
 };
 
 // src/cli.ts
 function createCLI() {
   const program = new import_commander2.Command();
   program.name("sylphx-flow").description("Sylphx Flow - Type-safe development flow CLI").version("1.0.0");
-  const commands = [syncCommand, installCommand, mcpCommand];
+  const commands = [syncCommand, initCommand, mcpCommand];
   commands.forEach((commandConfig) => {
     program.addCommand(createCommand(commandConfig));
   });

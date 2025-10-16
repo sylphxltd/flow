@@ -11,14 +11,25 @@ export function createCommand(config: CommandConfig): Command {
     command.option(option.flags, option.description);
   });
   
-  const handler = createAsyncHandler(config.handler, config.name);
-  command.action(handler);
-  
-  if (config.validator) {
-    command.action((options: CommandOptions) => {
-      config.validator!(options);
-      return handler(options);
+  // Add subcommands if they exist
+  if (config.subcommands) {
+    config.subcommands.forEach(subcommand => {
+      command.addCommand(createCommand(subcommand));
     });
+  }
+  
+  // Only add handler if this command has one (not just a container for subcommands)
+  if (config.handler) {
+    const handler = createAsyncHandler(config.handler, config.name);
+    
+    if (config.validator) {
+      command.action((options: CommandOptions) => {
+        config.validator!(options);
+        return handler(options);
+      });
+    } else {
+      command.action(handler);
+    }
   }
   
   return command;

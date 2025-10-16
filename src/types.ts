@@ -5,6 +5,8 @@ export interface CommandOptions {
   clear?: boolean;
   merge?: boolean;
   mcp?: string[] | null;
+  servers?: string[];
+  all?: boolean;
 }
 
 export interface CommandHandler {
@@ -15,8 +17,9 @@ export interface CommandConfig {
   name: string;
   description: string;
   options: CommandOption[];
-  handler: CommandHandler;
+  handler?: CommandHandler;
   validator?: (options: CommandOptions) => void;
+  subcommands?: CommandConfig[];
 }
 
 export interface CommandOption {

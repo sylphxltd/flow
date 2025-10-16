@@ -43,8 +43,8 @@ npx github:sylphxltd/flow
 
 # Or use npx for specific commands
 npx github:sylphxltd/flow sync
-npx github:sylphxltd/flow mcp
-npx github:sylphxltd/flow install
+npx github:sylphxltd/flow init
+npx github:sylphxltd/flow mcp start
 ```
 
 **Alternative: Clone and Build**
@@ -67,17 +67,35 @@ node dist/index.js sync
 ### Quick Start
 
 ```bash
+# Initialize project with Sylphx Flow (installs agents + MCP tools)
+npx github:sylphxltd/flow init
+
 # Sync flow to your AI agent (auto-detects environment)
 npx github:sylphxltd/flow sync
 
 # Start the memory MCP server
-npx github:sylphxltd/flow mcp
-
-# Install agent definitions
-npx github:sylphxltd/flow install
+npx github:sylphxltd/flow mcp start
 ```
 
 ## 🛠️ Available Commands
+
+### `flow init` - Initialize Project
+
+Initialize your project with Sylphx Flow development agents and MCP tools.
+
+```bash
+# Initialize with default opencode agent and MCP tools
+npx github:sylphxltd/flow init
+
+# Initialize with specific agent
+npx github:sylphxltd/flow init --agent=opencode
+
+# Preview what would be installed
+npx github:sylphxltd/flow init --dry-run
+
+# Initialize without MCP tools
+npx github:sylphxltd/flow init --no-mcp
+```
 
 ### `flow sync` - Sync Development Rules
 
@@ -97,6 +115,27 @@ npx github:sylphxltd/flow sync --dry-run
 
 # Force overwrite existing flow
 npx github:sylphxltd/flow sync --force
+```
+
+### `flow mcp` - Manage MCP Tools
+
+Manage MCP (Model Context Protocol) tools and servers.
+
+```bash
+# Start the Sylphx Flow MCP server
+npx github:sylphxltd/flow mcp start
+
+# Install specific MCP tools
+npx github:sylphxltd/flow mcp install memory everything
+
+# Install all available MCP tools
+npx github:sylphxltd/flow mcp install --all
+
+# List all available MCP tools
+npx github:sylphxltd/flow mcp list
+
+# Preview MCP tool installation
+npx github:sylphxltd/flow mcp install --all --dry-run
 ```
 
 **Supported Agents:**

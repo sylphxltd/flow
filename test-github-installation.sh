@@ -27,31 +27,31 @@ else
     exit 1
 fi
 
-# Test 3: Install command help
-echo "📋 Test 3: Install help"
-if npx ./sylphxltd-flow-1.0.0.tgz install --help > /dev/null 2>&1; then
-    echo "✅ Install help works (local package)"
-elif npx github:sylphxltd/flow install --help > /dev/null 2>&1; then
-    echo "✅ Install help works (GitHub package)"
+# Test 3: Init command help
+echo "📋 Test 3: Init help"
+if npx ./sylphxltd-flow-1.0.0.tgz init --help > /dev/null 2>&1; then
+    echo "✅ Init help works (local package)"
+elif npx github:sylphxltd/flow init --help > /dev/null 2>&1; then
+    echo "✅ Init help works (GitHub package)"
 else
-    echo "❌ Install help failed"
+    echo "❌ Init help failed"
     exit 1
 fi
 
-# Test 4: MCP listing (note: may fail due to npx caching, but functionality works)
+# Test 4: MCP listing
 echo "📋 Test 4: MCP listing"
-echo "ℹ️  Note: This test may fail due to npx caching, but the functionality works"
-if npx ./sylphxltd-flow-1.0.0.tgz install --mcp > /dev/null 2>&1; then
+if npx ./sylphxltd-flow-1.0.0.tgz mcp list > /dev/null 2>&1; then
     echo "✅ MCP listing works (local package)"
-elif npx github:sylphxltd/flow install --mcp > /dev/null 2>&1; then
+elif npx github:sylphxltd/flow mcp list > /dev/null 2>&1; then
     echo "✅ MCP listing works (GitHub package)"
 else
-    echo "⚠️  MCP listing failed (likely due to npx caching, but functionality is correct)"
+    echo "❌ MCP listing failed"
+    exit 1
 fi
 
 # Test 5: Verify MCP functionality with built version
 echo "📋 Test 5: MCP functionality verification"
-node dist/index.js install --mcp > /dev/null 2>&1
+node dist/index.js mcp list > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "✅ MCP functionality verified with built version"
 else
@@ -66,9 +66,11 @@ echo "📦 Or test locally with: npx ./sylphxltd-flow-1.0.0.tgz"
 echo ""
 echo "📋 Available commands:"
 echo "  - sylphx-flow --help          Show help"
+echo "  - sylphx-flow init            Initialize project with agents and MCP tools"
 echo "  - sylphx-flow sync            Sync development flow"
-echo "  - sylphx-flow install         Install workflow agents"
-echo "  - sylphx-flow mcp             Start MCP server"
+echo "  - sylphx-flow mcp start       Start MCP server"
+echo "  - sylphx-flow mcp install     Install MCP tools"
+echo "  - sylphx-flow mcp list        List available MCP tools"
 echo ""
 echo "✅ MCP Server Features:"
 echo "  - Memory coordination tools for AI agents"
@@ -76,8 +78,10 @@ echo "  - Persistent JSON-based storage"
 echo "  - Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear"
 echo ""
 echo "📖 Usage Examples:"
+echo "  npx github:sylphxltd/flow init"
 echo "  npx github:sylphxltd/flow sync --agent=cursor"
-echo "  npx github:sylphxltd/flow install --mcp memory everything"
-echo "  npx github:sylphxltd/flow mcp"
+echo "  npx github:sylphxltd/flow mcp start"
+echo "  npx github:sylphxltd/flow mcp install --all"
+echo "  npx github:sylphxltd/flow mcp list"
 echo ""
 echo "🔗 For more information, see: https://github.com/sylphxltd/flow"
