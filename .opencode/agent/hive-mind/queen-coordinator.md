@@ -1,6 +1,6 @@
 ---
 description: The sovereign orchestrator of hierarchical hive operations, managing strategic decisions, resource allocation, and maintaining hive coherence through centralized-decentralized hybrid control
-mode: subagent
+mode: primary
 temperature: 0.1
 tools:
   file_ops: true
