@@ -1,0 +1,81 @@
+name: Shell Wiki Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'wiki-pages/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+    - name: Deploy Wiki
+      run: |
+        echo "🚀 Starting wiki deployment..."
+        
+        # Check if wiki-pages exists
+        if [ ! -d "wiki-pages" ]; then
+          echo "❌ wiki-pages directory not found"
+          exit 1
+        fi
+        
+        # Check if there are markdown files
+        if [ ! "$(ls -A wiki-pages/*.md 2>/dev/null)" ]; then
+          echo "❌ No markdown files found in wiki-pages"
+          exit 1
+        fi
+        
+        echo "📚 Found $(ls wiki-pages/*.md | wc -l) wiki pages to publish"
+        
+        # Create temporary directory
+        mkdir -p wiki-temp
+        cp wiki-pages/*.md wiki-temp/
+        
+        # Initialize git repo for wiki
+        cd wiki-temp
+        git init
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        
+        # Check if there are changes
+        if git diff --staged --quiet; then
+          echo "ℹ️ No changes to publish"
+          exit 0
+        fi
+        
+        git commit -m "📚 Update wiki pages [auto]"
+        
+        # Try to push to wiki
+        echo "🔄 Attempting to push to wiki..."
+        
+        # Try different branch combinations
+        git push -f https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git master:main 2>/dev/null || \
+        git push -f https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git main:main 2>/dev/null || \
+        git push -f https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git HEAD:main 2>/dev/null || {
+          echo "⚠️ Push failed - wiki might not exist yet"
+          echo "📝 You may need to create the first page manually at:"
+          echo "   https://github.com/${{ github.repository }}/wiki"
+          exit 1
+        }
+        
+        echo "✅ Wiki published successfully!"
+        
+        # List published files
+        echo "📄 Published files:"
+        ls -la *.md

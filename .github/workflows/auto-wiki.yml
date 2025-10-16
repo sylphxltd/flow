@@ -62,7 +62,19 @@ jobs:
           await exec.exec('git', ['add', '.']);
           
           // Check if there are changes
-          const status = await exec.exec('git', ['status', '--porcelain'], { silent: true });
+          let status = '';
+          try {
+            await exec.exec('git', ['status', '--porcelain'], { 
+              silent: true,
+              listeners: {
+                stdout: (data) => { status += data.toString(); },
+                stderr: (data) => { console.error(data.toString()); }
+              }
+            });
+          } catch (error) {
+            console.log('Error checking git status:', error);
+          }
+          
           if (!status.trim()) {
             console.log('ℹ️ No changes to publish');
             return;
@@ -72,7 +84,15 @@ jobs:
           
           // Try to push to wiki
           try {
-            await exec.exec('git', ['push', '-f', `https://${process.env.GITHUB_TOKEN}@github.com/${{ github.repository }}.wiki.git`, 'main:main']);
+            // Use the GITHUB_TOKEN from environment
+            const token = '${{ secrets.GITHUB_TOKEN }}';
+            // Try main branch first, then master as fallback
+            try {
+              await exec.exec('git', ['push', '-f', `https://${token}@github.com/${{ github.repository }}.wiki.git`, 'main:main']);
+            } catch (mainError) {
+              console.log('⚠️ main branch push failed, trying master...');
+              await exec.exec('git', ['push', '-f', `https://${token}@github.com/${{ github.repository }}.wiki.git`, 'master:main']);
+            }
             console.log('✅ Wiki published successfully!');
           } catch (error) {
             console.log('⚠️ Push failed, wiki might not exist yet');

@@ -104,9 +104,11 @@ flow/
 
 ## 📚 Documentation
 
+> **📝 Note**: The wiki is being automatically deployed but needs manual initialization. Visit [github.com/sylphxltd/flow/wiki](https://github.com/sylphxltd/flow/wiki) and create the first page to activate it.
+
 - **📖 [Wiki](https://github.com/sylphxltd/flow/wiki)** - Detailed documentation
-- **🔧 [Configuration Guide](https://github.com/sylphxltd/flow/wiki/Configuration)** - Setup instructions
-- **🤖 [Agent Integration](https://github.com/sylphxltd/flow/wiki/Agent-Integration)** - Agent-specific setup
+- **🔧 [Configuration Guide](https://github.com/sylphxltd/flow/wiki/Installation-&-Setup)** - Setup instructions
+- **🤖 [Agent Integration](https://github.com/sylphxltd/flow/wiki/CLI-Commands)** - Agent-specific setup
 - **🧠 [Memory System](https://github.com/sylphxltd/flow/wiki/Memory-System)** - Memory management details
 
 ## 🤝 Contributing
