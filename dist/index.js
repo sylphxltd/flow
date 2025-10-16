@@ -134,17 +134,21 @@ async function writeJSONCFile(filePath, obj, schema, indent = 2) {
   await fs3.writeFile(filePath, content, "utf8");
 }
 
-// src/utils/mcp-config.ts
-var MCP_SERVERS = {
-  memory: {
+// src/config/servers.ts
+var MCP_SERVER_REGISTRY = {
+  "sylphx-flow": {
+    id: "sylphx-flow",
     name: "sylphx_flow",
-    description: "Sylphx Flow MCP server for agent coordination",
+    description: "Sylphx Flow MCP server for agent coordination and memory management",
     config: {
       type: "local",
       command: ["npx", "-y", "github:sylphxltd/flow", "mcp", "start"]
-    }
+    },
+    category: "core",
+    defaultInInit: true
   },
   "gpt-image": {
+    id: "gpt-image",
     name: "gpt-image-1-mcp",
     description: "GPT Image generation MCP server",
     config: {
@@ -152,9 +156,12 @@ var MCP_SERVERS = {
       command: ["npx", "@napolab/gpt-image-1-mcp"],
       environment: { OPENAI_API_KEY: "" }
     },
-    requiredEnvVars: ["OPENAI_API_KEY"]
+    requiredEnvVars: ["OPENAI_API_KEY"],
+    category: "ai",
+    defaultInInit: true
   },
   perplexity: {
+    id: "perplexity",
     name: "perplexity-ask",
     description: "Perplexity Ask MCP server for search and queries",
     config: {
@@ -162,17 +169,23 @@ var MCP_SERVERS = {
       command: ["npx", "-y", "server-perplexity-ask"],
       environment: { PERPLEXITY_API_KEY: "" }
     },
-    requiredEnvVars: ["PERPLEXITY_API_KEY"]
+    requiredEnvVars: ["PERPLEXITY_API_KEY"],
+    category: "ai",
+    defaultInInit: true
   },
   context7: {
+    id: "context7",
     name: "context7",
-    description: "Context7 HTTP MCP server",
+    description: "Context7 HTTP MCP server for documentation retrieval",
     config: {
       type: "remote",
       url: "https://mcp.context7.com/mcp"
-    }
+    },
+    category: "external",
+    defaultInInit: true
   },
   "gemini-search": {
+    id: "gemini-search",
     name: "gemini-google-search",
     description: "Gemini Google Search MCP server",
     config: {
@@ -180,9 +193,26 @@ var MCP_SERVERS = {
       command: ["npx", "-y", "mcp-gemini-google-search"],
       environment: { GEMINI_API_KEY: "", GEMINI_MODEL: "gemini-2.5-flash" }
     },
-    requiredEnvVars: ["GEMINI_API_KEY"]
+    requiredEnvVars: ["GEMINI_API_KEY"],
+    category: "ai",
+    defaultInInit: true
   }
 };
+function getAllServerIDs() {
+  return Object.keys(MCP_SERVER_REGISTRY);
+}
+function getDefaultServers() {
+  return Object.entries(MCP_SERVER_REGISTRY).filter(([, server]) => server.defaultInInit).map(([id]) => id);
+}
+function getServersRequiringAPIKeys() {
+  return Object.entries(MCP_SERVER_REGISTRY).filter(([, server]) => server.requiredEnvVars && server.requiredEnvVars.length > 0).map(([id]) => id);
+}
+function isValidServerID(id) {
+  return id in MCP_SERVER_REGISTRY;
+}
+
+// src/utils/mcp-config.ts
+var MCP_SERVERS = MCP_SERVER_REGISTRY;
 function getOpenCodeConfigPath(cwd) {
   return path.join(cwd, "opencode.jsonc");
 }
@@ -255,11 +285,11 @@ async function listMCPServers(cwd) {
 function parseMCPServerTypes(args) {
   const servers = [];
   for (const arg of args) {
-    if (arg in MCP_SERVERS) {
+    if (isValidServerID(arg)) {
       servers.push(arg);
     } else {
       console.warn(
-        `Warning: Unknown MCP server '${arg}'. Available: ${Object.keys(MCP_SERVERS).join(", ")}`
+        `Warning: Unknown MCP server '${arg}'. Available: ${getAllServerIDs().join(", ")}`
       );
     }
   }
@@ -647,21 +677,13 @@ var initCommand = {
     console.log("");
     if (options.mcp !== false) {
       console.log("\u{1F4E6} Installing MCP tools...");
+      const defaultServers = getDefaultServers();
       if (options.dryRun) {
         console.log("\u{1F50D} Dry run: Would install all MCP servers");
-        console.log("   \u2022 memory, gpt-image, perplexity, context7, gemini-search");
+        console.log(`   \u2022 ${defaultServers.join(", ")}`);
       } else {
-        const allServers = [
-          "memory",
-          "gpt-image",
-          "perplexity",
-          "context7",
-          "gemini-search"
-        ];
-        await addMCPServers(process.cwd(), allServers);
-        const serversNeedingKeys = allServers.filter(
-          (server) => ["gpt-image", "perplexity", "gemini-search"].includes(server)
-        );
+        await addMCPServers(process.cwd(), defaultServers);
+        const serversNeedingKeys = getServersRequiringAPIKeys();
         if (serversNeedingKeys.length > 0) {
           console.log("\n\u{1F511} Some MCP tools require API keys:");
           const apiKeys = await promptForAPIKeys(serversNeedingKeys);
@@ -702,18 +724,10 @@ var mcpInstallHandler = async (options) => {
   const servers = options.servers || [];
   if (options.all) {
     console.log("\u{1F527} Installing all available MCP tools...");
+    const allServers = getAllServerIDs();
     if (options.dryRun) {
-      console.log(
-        "\u{1F50D} Dry run: Would install all MCP tools: memory, gpt-image, perplexity, context7, gemini-search"
-      );
+      console.log(`\u{1F50D} Dry run: Would install all MCP tools: ${allServers.join(", ")}`);
     } else {
-      const allServers = [
-        "memory",
-        "gpt-image",
-        "perplexity",
-        "context7",
-        "gemini-search"
-      ];
       await addMCPServers(process.cwd(), allServers);
       console.log("\u2705 All MCP tools installed");
     }
@@ -724,7 +738,7 @@ var mcpInstallHandler = async (options) => {
   }
   const validServers = parseMCPServerTypes(servers);
   if (validServers.length === 0) {
-    const availableServers = ["memory", "gpt-image", "perplexity", "context7", "gemini-search"];
+    const availableServers = getAllServerIDs();
     throw new CLIError(
       `Invalid MCP tools. Available: ${availableServers.join(", ")}`,
       "INVALID_MCP_SERVERS"
@@ -748,7 +762,7 @@ var mcpConfigHandler = async (options) => {
   }
   const validServers = parseMCPServerTypes([server]);
   if (validServers.length === 0) {
-    const availableServers = ["memory", "gpt-image", "perplexity", "context7", "gemini-search"];
+    const availableServers = getAllServerIDs();
     throw new CLIError(
       `Invalid MCP server: ${server}. Available: ${availableServers.join(", ")}`,
       "INVALID_MCP_SERVER"
@@ -773,7 +787,7 @@ var mcpCommand = {
       options: [
         {
           flags: "<servers...>",
-          description: "MCP tools to install (memory, gpt-image, perplexity, context7, gemini-search)"
+          description: `MCP tools to install (${getAllServerIDs().join(", ")})`
         },
         { flags: "--all", description: "Install all available MCP tools" },
         { flags: "--dry-run", description: "Show what would be done without making changes" }
@@ -792,7 +806,7 @@ var mcpCommand = {
       options: [
         {
           flags: "<server>",
-          description: "MCP server to configure (gpt-image, perplexity, gemini-search)"
+          description: `MCP server to configure (${getServersRequiringAPIKeys().join(", ")})`
         }
       ],
       handler: mcpConfigHandler
@@ -1674,6 +1688,16 @@ function createCommand(config) {
   }
   return command;
 }
+var COMMON_OPTIONS = [
+  { flags: "--target <type>", description: "Force specific target" },
+  { flags: "--verbose", description: "Show detailed output" },
+  { flags: "--dry-run", description: "Show what would be done without making changes" },
+  { flags: "--clear", description: "Clear obsolete items before processing" },
+  {
+    flags: "--mcp [servers...]",
+    description: `Install MCP servers (${getAllServerIDs().join(", ")})`
+  }
+];
 
 // src/utils/help.ts
 function showDefaultHelp() {

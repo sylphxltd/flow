@@ -6,6 +6,7 @@ import {
   listMCPServers,
   parseMCPServerTypes,
 } from '../utils/mcp-config.js';
+import { getAllServerIDs, getServersRequiringAPIKeys } from '../config/servers.js';
 
 // MCP start handler
 const mcpStartHandler: CommandHandler = async () => {
@@ -34,18 +35,11 @@ const mcpInstallHandler: CommandHandler = async (options: {
 
   if (options.all) {
     console.log('🔧 Installing all available MCP tools...');
+    const allServers = getAllServerIDs();
+
     if (options.dryRun) {
-      console.log(
-        '🔍 Dry run: Would install all MCP tools: memory, gpt-image, perplexity, context7, gemini-search'
-      );
+      console.log(`🔍 Dry run: Would install all MCP tools: ${allServers.join(', ')}`);
     } else {
-      const allServers: string[] = [
-        'memory',
-        'gpt-image',
-        'perplexity',
-        'context7',
-        'gemini-search',
-      ];
       await addMCPServers(process.cwd(), allServers);
       console.log('✅ All MCP tools installed');
     }
@@ -58,7 +52,7 @@ const mcpInstallHandler: CommandHandler = async (options: {
 
   const validServers = parseMCPServerTypes(servers);
   if (validServers.length === 0) {
-    const availableServers = ['memory', 'gpt-image', 'perplexity', 'context7', 'gemini-search'];
+    const availableServers = getAllServerIDs();
     throw new CLIError(
       `Invalid MCP tools. Available: ${availableServers.join(', ')}`,
       'INVALID_MCP_SERVERS'
@@ -88,7 +82,7 @@ const mcpConfigHandler: CommandHandler = async (options) => {
 
   const validServers = parseMCPServerTypes([server]);
   if (validServers.length === 0) {
-    const availableServers = ['memory', 'gpt-image', 'perplexity', 'context7', 'gemini-search'];
+    const availableServers = getAllServerIDs();
     throw new CLIError(
       `Invalid MCP server: ${server}. Available: ${availableServers.join(', ')}`,
       'INVALID_MCP_SERVER'
@@ -115,8 +109,7 @@ export const mcpCommand: CommandConfig = {
       options: [
         {
           flags: '<servers...>',
-          description:
-            'MCP tools to install (memory, gpt-image, perplexity, context7, gemini-search)',
+          description: `MCP tools to install (${getAllServerIDs().join(', ')})`,
         },
         { flags: '--all', description: 'Install all available MCP tools' },
         { flags: '--dry-run', description: 'Show what would be done without making changes' },
@@ -135,7 +128,7 @@ export const mcpCommand: CommandConfig = {
       options: [
         {
           flags: '<server>',
-          description: 'MCP server to configure (gpt-image, perplexity, gemini-search)',
+          description: `MCP server to configure (${getServersRequiringAPIKeys().join(', ')})`,
         },
       ],
       handler: mcpConfigHandler,

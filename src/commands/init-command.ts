@@ -1,6 +1,7 @@
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { addMCPServers, configureMCPServer, promptForAPIKeys } from '../utils/mcp-config.js';
+import { getDefaultServers, getServersRequiringAPIKeys } from '../config/servers.js';
 import { installAgents } from '../core/init.js';
 
 function validateInitOptions(options: CommandOptions): void {
@@ -38,23 +39,16 @@ export const initCommand: CommandConfig = {
     // Install MCP tools by default (unless --no-mcp is specified)
     if (options.mcp !== false) {
       console.log('📦 Installing MCP tools...');
+      const defaultServers = getDefaultServers();
+
       if (options.dryRun) {
         console.log('🔍 Dry run: Would install all MCP servers');
-        console.log('   • memory, gpt-image, perplexity, context7, gemini-search');
+        console.log(`   • ${defaultServers.join(', ')}`);
       } else {
-        const allServers: string[] = [
-          'memory',
-          'gpt-image',
-          'perplexity',
-          'context7',
-          'gemini-search',
-        ];
-        await addMCPServers(process.cwd(), allServers);
+        await addMCPServers(process.cwd(), defaultServers);
 
         // Prompt for API keys for servers that need them
-        const serversNeedingKeys = allServers.filter((server) =>
-          ['gpt-image', 'perplexity', 'gemini-search'].includes(server)
-        );
+        const serversNeedingKeys = getServersRequiringAPIKeys();
 
         if (serversNeedingKeys.length > 0) {
           console.log('\n🔑 Some MCP tools require API keys:');

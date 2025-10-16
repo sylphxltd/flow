@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { createAsyncHandler } from './error-handler.js';
+import { getAllServerIDs } from '../config/servers.js';
 
 export function createCommand(config: CommandConfig): Command {
   const command = new Command(config.name);
@@ -42,6 +43,6 @@ export const COMMON_OPTIONS = [
   { flags: '--clear', description: 'Clear obsolete items before processing' },
   {
     flags: '--mcp [servers...]',
-    description: 'Install MCP servers (memory, gpt-image, perplexity, context7, gemini-search)',
+    description: `Install MCP servers (${getAllServerIDs().join(', ')})`,
   },
 ] as const;

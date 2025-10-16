@@ -1,68 +1,25 @@
 import path from 'node:path';
-import type { MCPServerConfigUnion, OpenCodeConfig } from '../types.js';
+import type { OpenCodeConfig } from '../types.js';
 import { readJSONCFile, writeJSONCFile } from './jsonc.js';
+import {
+  MCP_SERVER_REGISTRY,
+  type MCPServerID,
+  type MCPServerDefinition,
+  getAllServerIDs,
+  getDefaultServers,
+  getServersRequiringAPIKeys,
+  isValidServerID,
+  getServerDefinition,
+} from '../config/servers.js';
 
-interface MCPServerDefinition {
-  name: string;
-  description: string;
-  config: MCPServerConfigUnion;
-  requiredEnvVars?: string[];
-}
+// Re-export for backward compatibility
+export type MCPServerType = MCPServerID;
 
 /**
- * MCP server configurations
+ * Get MCP server definitions (backward compatibility)
+ * @deprecated Use MCP_SERVER_REGISTRY from '../config/servers.js' instead
  */
-export const MCP_SERVERS: Record<string, MCPServerDefinition> = {
-  memory: {
-    name: 'sylphx_flow',
-    description: 'Sylphx Flow MCP server for agent coordination',
-    config: {
-      type: 'local' as const,
-      command: ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'] as string[],
-    },
-  },
-
-  'gpt-image': {
-    name: 'gpt-image-1-mcp',
-    description: 'GPT Image generation MCP server',
-    config: {
-      type: 'local' as const,
-      command: ['npx', '@napolab/gpt-image-1-mcp'] as string[],
-      environment: { OPENAI_API_KEY: '' },
-    },
-    requiredEnvVars: ['OPENAI_API_KEY'],
-  },
-  perplexity: {
-    name: 'perplexity-ask',
-    description: 'Perplexity Ask MCP server for search and queries',
-    config: {
-      type: 'local' as const,
-      command: ['npx', '-y', 'server-perplexity-ask'] as string[],
-      environment: { PERPLEXITY_API_KEY: '' },
-    },
-    requiredEnvVars: ['PERPLEXITY_API_KEY'],
-  },
-  context7: {
-    name: 'context7',
-    description: 'Context7 HTTP MCP server',
-    config: {
-      type: 'remote' as const,
-      url: 'https://mcp.context7.com/mcp',
-    },
-  },
-  'gemini-search': {
-    name: 'gemini-google-search',
-    description: 'Gemini Google Search MCP server',
-    config: {
-      type: 'local' as const,
-      command: ['npx', '-y', 'mcp-gemini-google-search'] as string[],
-      environment: { GEMINI_API_KEY: '', GEMINI_MODEL: 'gemini-2.5-flash' },
-    },
-    requiredEnvVars: ['GEMINI_API_KEY'],
-  },
-};
-
-export type MCPServerType = keyof typeof MCP_SERVERS;
+export const MCP_SERVERS: Record<string, MCPServerDefinition> = MCP_SERVER_REGISTRY;
 
 /**
  * Get the opencode.jsonc file path
@@ -217,16 +174,32 @@ export function parseMCPServerTypes(args: string[]): MCPServerType[] {
   const servers: MCPServerType[] = [];
 
   for (const arg of args) {
-    if (arg in MCP_SERVERS) {
-      servers.push(arg as MCPServerType);
+    if (isValidServerID(arg)) {
+      servers.push(arg);
     } else {
       console.warn(
-        `Warning: Unknown MCP server '${arg}'. Available: ${Object.keys(MCP_SERVERS).join(', ')}`
+        `Warning: Unknown MCP server '${arg}'. Available: ${getAllServerIDs().join(', ')}`
       );
     }
   }
 
   return servers;
+}
+
+/**
+ * Get all available server IDs (for backward compatibility)
+ * @deprecated Use getAllServerIDs from '../config/servers.js' instead
+ */
+export function getAllAvailableServers(): MCPServerType[] {
+  return getAllServerIDs();
+}
+
+/**
+ * Get default servers for init (for backward compatibility)
+ * @deprecated Use getDefaultServers from '../config/servers.js' instead
+ */
+export function getDefaultServersForInit(): MCPServerType[] {
+  return getDefaultServers();
 }
 
 /**
