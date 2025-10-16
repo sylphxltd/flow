@@ -206,10 +206,9 @@ npx github:sylphxltd/flow memory search --pattern "*"
 
 ### Getting Help
 
-- [Troubleshooting Guide](Troubleshooting) - Detailed solutions
 - [GitHub Issues](https://github.com/sylphxltd/flow/issues) - Report problems
 - [Discussions](https://github.com/sylphxltd/flow/discussions) - Ask questions
 
 ---
 
-**Next Steps**: [Quick Start Guide](Quick-Start-Guide)
+**Next Steps**: [Memory System](Memory-System), [CLI Commands](CLI-Commands)

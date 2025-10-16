@@ -363,4 +363,4 @@ npx github:sylphxltd/flow init --verbose
 
 ---
 
-**Related**: [Memory System](Memory-System), [MCP Tools](MCP-Tools), [Installation](Installation-&-Setup)
+**Related**: [Memory System](Memory-System), [Installation & Setup](Installation-&-Setup)
