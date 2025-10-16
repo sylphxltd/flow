@@ -344,22 +344,17 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   // Create agents directory
   fs.mkdirSync(agentsDir, { recursive: true });
 
-  // Install memory plugin
-  await installMemoryPlugin(cwd);
-
   // Get agent files
   const agentFiles = await getAgentFiles();
 
-  // Show initial info
-  console.log('🚀 Workflow Install Tool');
-  console.log('=====================');
-  console.log(`📝 Agent: ${config.name}`);
-  console.log(`📁 Target: ${agentsDir}`);
-  console.log(`📋 Files: ${agentFiles.length}`);
-  if (options.merge) {
-    console.log('🔗 Mode: Merge all agents into single file');
+  // Show agent setup info
+  if (!options.quiet) {
+    console.log(`📁 Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + '/', '')}`);
+    if (options.merge) {
+      console.log('🔗 Mode: Merge all agents into single file');
+    }
+    console.log('');
   }
-  console.log('');
 
   if (options.dryRun) {
     console.log('✅ Dry run completed - no files were modified');

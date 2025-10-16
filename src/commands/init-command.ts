@@ -30,17 +30,19 @@ export const initCommand: CommandConfig = {
   handler: async (options: CommandOptions) => {
     validateInitOptions(options);
 
-    console.log('🚀 Initializing Sylphx Flow development environment...');
+    console.log('🚀 Sylphx Flow Setup');
+    console.log('======================');
     console.log(`🤖 Agent: ${options.agent}`);
+    console.log('');
 
     // Install MCP tools if requested
     if (options.mcp) {
-      console.log('🔧 Installing MCP tools...');
+      console.log('📦 Installing MCP tools...');
       if (options.dryRun) {
-        console.log('🔍 Dry run: Would install MCP tools: memory, everything');
+        console.log('🔍 Dry run: Would install memory & everything servers');
       } else {
         await addMCPServers(process.cwd(), ['memory', 'everything']);
-        console.log('✅ MCP tools installed');
+        console.log('✅ MCP tools configured');
       }
       console.log('');
     }
@@ -49,9 +51,11 @@ export const initCommand: CommandConfig = {
     await installAgents(options);
 
     console.log('');
-    console.log('🎉 Sylphx Flow initialization complete!');
-    console.log('📖 Next steps:');
-    console.log('   - Start MCP server: sylphx-flow mcp start');
-    console.log('   - List available MCP tools: sylphx-flow mcp list');
+    console.log('🎉 Setup complete!');
+    console.log('');
+    console.log('📋 Next steps:');
+    console.log('   • Start MCP server: npx github:sylphxltd/flow mcp start');
+    console.log('   • Sync agents:     npx github:sylphxltd/flow sync');
+    console.log('   • List MCP tools:  npx github:sylphxltd/flow mcp list');
   },
 };

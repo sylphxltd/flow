@@ -1053,202 +1053,6 @@ function detectAgentTool2() {
   const result = detectAgentTool(AGENT_CONFIGS, "opencode");
   return result;
 }
-async function installMemoryPlugin(cwd) {
-  const pluginDir = import_node_path3.default.join(cwd, ".opencode", "plugin");
-  const pluginFile = import_node_path3.default.join(pluginDir, "memory-tools.ts");
-  import_node_fs2.default.mkdirSync(pluginDir, { recursive: true });
-  if (import_node_fs2.default.existsSync(pluginFile)) {
-    console.log("\u{1F4E6} Memory plugin already exists, skipping...");
-    return;
-  }
-  const sourcePlugin = import_node_path3.default.join(process.cwd(), "src", "opencode", "plugins", "memory-tools.ts");
-  if (import_node_fs2.default.existsSync(sourcePlugin)) {
-    import_node_fs2.default.copyFileSync(sourcePlugin, pluginFile);
-    console.log("\u{1F4E6} Installed memory plugin for agent coordination");
-  } else {
-    const pluginContent = `import { type Plugin, tool } from "@opencode-ai/plugin"
-
-// Simple in-memory storage for coordination between agents
-const memoryStore = new Map<string, any>()
-
-export const MemoryToolsPlugin: Plugin = async () => {
-  return {
-    tool: {
-      // Store a value in memory
-      memory_set: tool({
-        description: "Store a value in shared memory for agent coordination",
-        args: {
-          key: tool.schema.string().describe("Memory key (e.g., 'swarm/coder/status')"),
-          value: tool.schema.string().describe("Value to store (will be JSON stringified)"),
-          namespace: tool.schema.string().optional().describe("Optional namespace for organization"),
-        },
-        async execute(args) {
-          try {
-            const fullKey = args.namespace ? \`\${args.namespace}:\${args.key}\` : args.key
-            const parsedValue = JSON.parse(args.value)
-            memoryStore.set(fullKey, {
-              value: parsedValue,
-              timestamp: Date.now(),
-              namespace: args.namespace || 'default'
-            })
-            return \`\u2705 Stored memory: \${fullKey}\`
-          } catch (error: any) {
-            return \`\u274C Error storing memory: \${error.message}\`
-          }
-        },
-      }),
-
-      // Retrieve a value from memory
-      memory_get: tool({
-        description: "Retrieve a value from shared memory",
-        args: {
-          key: tool.schema.string().describe("Memory key to retrieve"),
-          namespace: tool.schema.string().optional().describe("Optional namespace"),
-        },
-        async execute(args) {
-          try {
-            const fullKey = args.namespace ? \`\${args.namespace}:\${args.key}\` : args.key
-            const memory = memoryStore.get(fullKey)
-            
-            if (!memory) {
-              return \`\u274C Memory not found: \${fullKey}\`
-            }
-            
-            return JSON.stringify({
-              key: fullKey,
-              value: memory.value,
-              timestamp: memory.timestamp,
-              namespace: memory.namespace,
-              age: Date.now() - memory.timestamp
-            }, null, 2)
-          } catch (error: any) {
-            return \`\u274C Error retrieving memory: \${error.message}\`
-          }
-        },
-      }),
-
-      // Search memory keys by pattern
-      memory_search: tool({
-        description: "Search memory keys by pattern",
-        args: {
-          pattern: tool.schema.string().describe("Search pattern (supports wildcards)"),
-          namespace: tool.schema.string().optional().describe("Optional namespace to limit search"),
-        },
-        async execute(args) {
-          try {
-            const searchPattern = args.namespace ? \`\${args.namespace}:\${args.pattern}\` : args.pattern
-            const regex = new RegExp(searchPattern.replace(/\\*/g, '.*'))
-            
-            const results = Array.from(memoryStore.entries())
-              .filter(([key]) => regex.test(key))
-              .map(([key, memory]) => ({
-                key,
-                value: memory.value,
-                timestamp: memory.timestamp,
-                namespace: memory.namespace,
-                age: Date.now() - memory.timestamp
-              }))
-            
-            return JSON.stringify({
-              pattern: searchPattern,
-              count: results.length,
-              results: results
-            }, null, 2)
-          } catch (error: any) {
-            return \`\u274C Error searching memory: \${error.message}\`
-          }
-        },
-      }),
-
-      // List all memory keys
-      memory_list: tool({
-        description: "List all memory keys, optionally filtered by namespace",
-        args: {
-          namespace: tool.schema.string().optional().describe("Optional namespace to filter"),
-        },
-        async execute(args) {
-          try {
-            const entries = Array.from(memoryStore.entries())
-              .filter(([, memory]) => !args.namespace || memory.namespace === args.namespace)
-            
-            return JSON.stringify({
-              namespace: args.namespace || 'all',
-              count: entries.length,
-              keys: entries.map(([key, memory]) => ({
-                key,
-                namespace: memory.namespace,
-                timestamp: memory.timestamp,
-                age: Date.now() - memory.timestamp
-              }))
-            }, null, 2)
-          } catch (error: any) {
-            return \`\u274C Error listing memory: \${error.message}\`
-          }
-        },
-      }),
-
-      // Delete memory
-      memory_delete: tool({
-        description: "Delete a memory entry",
-        args: {
-          key: tool.schema.string().describe("Memory key to delete"),
-          namespace: tool.schema.string().optional().describe("Optional namespace"),
-        },
-        async execute(args) {
-          try {
-            const fullKey = args.namespace ? \`\${args.namespace}:\${args.key}\` : args.key
-            const deleted = memoryStore.delete(fullKey)
-            
-            if (deleted) {
-              return \`\u2705 Deleted memory: \${fullKey}\`
-            } else {
-              return \`\u274C Memory not found: \${fullKey}\`
-            }
-          } catch (error: any) {
-            return \`\u274C Error deleting memory: \${error.message}\`
-          }
-        },
-      }),
-
-      // Clear all memory or specific namespace
-      memory_clear: tool({
-        description: "Clear all memory or specific namespace",
-        args: {
-          namespace: tool.schema.string().optional().describe("Optional namespace to clear"),
-          confirm: tool.schema.boolean().describe("Confirmation required for clearing all memory"),
-        },
-        async execute(args) {
-          try {
-            if (!args.namespace && !args.confirm) {
-              return \`\u274C Confirmation required. Set confirm: true to clear all memory.\`
-            }
-            
-            if (args.namespace) {
-              // Clear specific namespace
-              const keysToDelete = Array.from(memoryStore.entries())
-                .filter(([, memory]) => memory.namespace === args.namespace)
-                .map(([key]) => key)
-              
-              keysToDelete.forEach(key => memoryStore.delete(key))
-              return \`\u2705 Cleared \${keysToDelete.length} memories from namespace: \${args.namespace}\`
-            } else {
-              // Clear all memory
-              const count = memoryStore.size
-              memoryStore.clear()
-              return \`\u2705 Cleared all \${count} memory entries\`
-            }
-          } catch (error: any) {
-            return \`\u274C Error clearing memory: \${error.message}\`
-          }
-        },
-      }),
-    },
-  }
-}`;
-    import_node_fs2.default.writeFileSync(pluginFile, pluginContent, "utf8");
-    console.log("\u{1F4E6} Created memory plugin for agent coordination");
-  }
-}
 async function installAgents(options) {
   const cwd = process.cwd();
   const results2 = [];
@@ -1297,17 +1101,14 @@ async function installAgents(options) {
     clearObsoleteFiles(agentsDir, expectedFiles, [config.extension], results2);
   }
   import_node_fs2.default.mkdirSync(agentsDir, { recursive: true });
-  await installMemoryPlugin(cwd);
   const agentFiles = await getAgentFiles();
-  console.log("\u{1F680} Workflow Install Tool");
-  console.log("=====================");
-  console.log(`\u{1F4DD} Agent: ${config.name}`);
-  console.log(`\u{1F4C1} Target: ${agentsDir}`);
-  console.log(`\u{1F4CB} Files: ${agentFiles.length}`);
-  if (options.merge) {
-    console.log("\u{1F517} Mode: Merge all agents into single file");
+  if (!options.quiet) {
+    console.log(`\u{1F4C1} Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + "/", "")}`);
+    if (options.merge) {
+      console.log("\u{1F517} Mode: Merge all agents into single file");
+    }
+    console.log("");
   }
-  console.log("");
   if (options.dryRun) {
     console.log("\u2705 Dry run completed - no files were modified");
     return;
@@ -1380,24 +1181,28 @@ var initCommand = {
   ],
   handler: async (options) => {
     validateInitOptions(options);
-    console.log("\u{1F680} Initializing Sylphx Flow development environment...");
+    console.log("\u{1F680} Sylphx Flow Setup");
+    console.log("======================");
     console.log(`\u{1F916} Agent: ${options.agent}`);
+    console.log("");
     if (options.mcp) {
-      console.log("\u{1F527} Installing MCP tools...");
+      console.log("\u{1F4E6} Installing MCP tools...");
       if (options.dryRun) {
-        console.log("\u{1F50D} Dry run: Would install MCP tools: memory, everything");
+        console.log("\u{1F50D} Dry run: Would install memory & everything servers");
       } else {
         await addMCPServers(process.cwd(), ["memory", "everything"]);
-        console.log("\u2705 MCP tools installed");
+        console.log("\u2705 MCP tools configured");
       }
       console.log("");
     }
     await installAgents(options);
     console.log("");
-    console.log("\u{1F389} Sylphx Flow initialization complete!");
-    console.log("\u{1F4D6} Next steps:");
-    console.log("   - Start MCP server: sylphx-flow mcp start");
-    console.log("   - List available MCP tools: sylphx-flow mcp list");
+    console.log("\u{1F389} Setup complete!");
+    console.log("");
+    console.log("\u{1F4CB} Next steps:");
+    console.log("   \u2022 Start MCP server: npx github:sylphxltd/flow mcp start");
+    console.log("   \u2022 Sync agents:     npx github:sylphxltd/flow sync");
+    console.log("   \u2022 List MCP tools:  npx github:sylphxltd/flow mcp list");
   }
 };
 
