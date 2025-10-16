@@ -2038,11 +2038,11 @@ var MemoryTUI = () => {
       state.page + 1
     ] })
   ] });
-  const renderList = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+  const renderList = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", height: "100%", width: "100%", children: [
     renderHeader(),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "[a]dd [e]dit [d]elete [r]efresh [h]elp [q]uit | [n]ext [p]rev" }) }),
     state.message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: state.message }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, flexDirection: "column", children: state.loading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "Loading..." }) : state.filteredEntries.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "No memory entries found" }) : state.filteredEntries.slice(state.page * state.pageSize, (state.page + 1) * state.pageSize).map((entry, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: state.loading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { justifyContent: "center", alignItems: "center", flexGrow: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "Loading..." }) }) : state.filteredEntries.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { justifyContent: "center", alignItems: "center", flexGrow: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "No memory entries found" }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { flexDirection: "column", flexGrow: 1, children: state.filteredEntries.slice(state.page * state.pageSize, (state.page + 1) * state.pageSize).map((entry, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: index === state.selectedIndex ? "green" : "cyan", children: [
         index === state.selectedIndex ? "\u25B6" : " ",
         " ",
@@ -2055,85 +2055,132 @@ var MemoryTUI = () => {
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { dimColor: true, children: [
         " ",
         "= ",
-        JSON.stringify(entry.value).substring(0, 60),
-        JSON.stringify(entry.value).length > 60 ? "..." : ""
+        JSON.stringify(entry.value).substring(0, 80),
+        JSON.stringify(entry.value).length > 80 ? "..." : ""
       ] })
-    ] }, `${entry.namespace}-${entry.key}-${entry.timestamp}`)) })
-  ] });
-  const renderHelp = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "green", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "green", children: "\u{1F4D6} Help - Memory Manager" }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginTop: 1, flexDirection: "column", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "cyan", children: "Navigation:" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "n/p" }),
-        " - Next/Previous entry"
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "a" }),
-        " - Add new entry"
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "e" }),
-        " - Edit selected entry"
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "d" }),
-        " - Delete selected entry"
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "r" }),
-        " - Refresh entries"
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "h" }),
-        " - Toggle this help screen"
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "q/ESC" }),
-        " - Quit/Go back"
-      ] })
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press 'h' to go back to list" }) })
-  ] });
-  const renderConfirmDelete = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "red", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "red", children: "\u26A0\uFE0F Confirm Delete" }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginTop: 1, flexDirection: "column", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-        "Delete entry:",
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: "cyan", children: [
-          state.deleteConfirmEntry?.namespace,
-          ":",
-          state.deleteConfirmEntry?.key
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { dimColor: true, children: [
-        "Value: ",
-        JSON.stringify(state.deleteConfirmEntry?.value).substring(0, 100)
-      ] })
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "y" }),
-      " - Yes, delete | ",
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "n" }),
-      " - No, cancel"
+    ] }, `${entry.namespace}-${entry.key}-${entry.timestamp}`)) }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: "gray", children: [
+      "Total: ",
+      state.entries.length,
+      " entries | Page ",
+      state.page + 1,
+      " of",
+      " ",
+      Math.ceil(state.filteredEntries.length / state.pageSize),
+      " | Selected:",
+      " ",
+      state.filteredEntries[state.selectedIndex]?.namespace,
+      ":",
+      state.filteredEntries[state.selectedIndex]?.key || "None"
     ] }) })
   ] });
-  switch (state.viewMode) {
-    case "help":
-      return renderHelp();
-    case "confirm-delete":
-      return renderConfirmDelete();
-    default:
-      return renderList();
-  }
+  const renderHelp = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", height: "100%", width: "100%", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "green", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "green", children: "\u{1F4D6} Help - Memory Manager" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "cyan", children: "Navigation:" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "n/p" }),
+          " - Next/Previous entry"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "a" }),
+          " - Add new entry"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "e" }),
+          " - Edit selected entry"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "d" }),
+          " - Delete selected entry"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "r" }),
+          " - Refresh entries"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "h" }),
+          " - Toggle this help screen"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "q/ESC" }),
+          " - Quit/Go back"
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "yellow", children: "Features:" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "\u2022 View all memory entries with pagination" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "\u2022 Navigate with keyboard shortcuts" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "\u2022 Delete entries with confirmation" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "\u2022 Real-time data loading from libSQL database" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "\u2022 External state management for React+Ink compatibility" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "magenta", children: "Status:" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "\u2022 Database: libSQL (.sylphx-flow/memory.db)" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          "\u2022 Entries loaded: ",
+          state.entries.length
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "\u2022 Compatibility: React 19.2.0 + Ink 6.3.1" })
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press 'h' to go back to list" }) })
+  ] });
+  const renderConfirmDelete = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", height: "100%", width: "100%", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "red", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "red", children: "\u26A0\uFE0F Confirm Delete" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, justifyContent: "center", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 2, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          "Delete entry:",
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: "cyan", children: [
+            state.deleteConfirmEntry?.namespace,
+            ":",
+            state.deleteConfirmEntry?.key
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { dimColor: true, children: [
+          "Value: ",
+          JSON.stringify(state.deleteConfirmEntry?.value).substring(0, 120),
+          JSON.stringify(state.deleteConfirmEntry?.value || "").length > 120 ? "..." : ""
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { dimColor: true, children: [
+          "Updated: ",
+          state.deleteConfirmEntry?.updated_at
+        ] }) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "yellow", children: "This action cannot be undone!" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "y" }),
+          " - Yes, delete this entry | ",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "n" }),
+          " - No, cancel"
+        ] }) })
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press 'n' to cancel, 'y' to confirm deletion" }) })
+  ] });
+  const renderContent = () => {
+    switch (state.viewMode) {
+      case "help":
+        return renderHelp();
+      case "confirm-delete":
+        return renderConfirmDelete();
+      default:
+        return renderList();
+    }
+  };
+  return renderContent();
 };
 
 // src/commands/memory-tui-command.ts
