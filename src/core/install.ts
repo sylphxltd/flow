@@ -36,14 +36,31 @@ type AgentType = keyof typeof AGENT_CONFIGS;
 // ============================================================================
 
 async function getAgentFiles(): Promise<string[]> {
-  // Since dist/index.js is the entry point and agents is at ../agents relative to it
-  // We need to resolve relative to the script location, not process.cwd()
+  // Try multiple possible locations for agents directory
   const scriptPath = path.resolve(process.argv[1]);
   const scriptDir = path.dirname(scriptPath);
-  const agentsDir = path.join(scriptDir, '..', 'agents');
 
-  if (!fs.existsSync(agentsDir)) {
-    throw new Error(`Could not find agents directory at: ${agentsDir}`);
+  const possiblePaths = [
+    // Standard package structure: dist/index.js -> ../agents
+    path.join(scriptDir, '..', 'agents'),
+    // npx might put agents in node_modules/agents
+    path.join(scriptDir, '..', '..', 'agents'),
+    // Package root with @sylphxltd/flow prefix
+    path.join(scriptDir, '..', '..', '@sylphxltd', 'flow', 'agents'),
+  ];
+
+  let agentsDir: string | undefined;
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      agentsDir = possiblePath;
+      break;
+    }
+  }
+
+  if (!agentsDir) {
+    throw new Error(
+      `Could not find agents directory. Tried:\n${possiblePaths.map((p) => `  - ${p}`).join('\n')}`
+    );
   }
 
   const subdirs = fs
@@ -201,10 +218,29 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     displayResults(results, agentsDir, config.name, 'Install', options.verbose);
   } else {
     // Process files individually - create both sdd/ and core/ subdirectory structures
-    // Use same logic as getAgentFiles() - relative to script location
+    // Use same logic as getAgentFiles() - find agents directory
     const scriptPath = path.resolve(process.argv[1]);
     const scriptDir = path.dirname(scriptPath);
-    const agentsSourceDir = path.join(scriptDir, '..', 'agents');
+
+    const possiblePaths = [
+      path.join(scriptDir, '..', 'agents'),
+      path.join(scriptDir, '..', '..', 'agents'),
+      path.join(scriptDir, '..', '..', '@sylphxltd', 'flow', 'agents'),
+    ];
+
+    let agentsSourceDir: string | undefined;
+    for (const possiblePath of possiblePaths) {
+      if (fs.existsSync(possiblePath)) {
+        agentsSourceDir = possiblePath;
+        break;
+      }
+    }
+
+    if (!agentsSourceDir) {
+      throw new Error(
+        `Could not find agents source directory. Tried:\n${possiblePaths.map((p) => `  - ${p}`).join('\n')}`
+      );
+    }
 
     for (const agentFile of agentFiles) {
       const sourcePath = path.join(agentsSourceDir, agentFile);
