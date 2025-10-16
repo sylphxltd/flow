@@ -91,6 +91,18 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     category: 'ai',
     defaultInInit: true,
   },
+
+  grep: {
+    id: 'grep',
+    name: 'grep',
+    description: 'GitHub grep MCP server for searching GitHub repositories',
+    config: {
+      type: 'remote' as const,
+      url: 'https://mcp.grep.app',
+    },
+    category: 'external',
+    defaultInInit: false,
+  },
 };
 
 /**
