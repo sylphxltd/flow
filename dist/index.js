@@ -1299,159 +1299,308 @@ var memoryCommand = {
 import { render } from "ink";
 import React2 from "react";
 
-// src/components/MemoryTUI.tsx
-import { useState, useEffect, useCallback } from "react";
+// src/components/FullscreenMemoryTUI.tsx
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import { jsx, jsxs } from "react/jsx-runtime";
-var externalState = {
-  entries: [],
-  loading: false,
-  message: "",
-  renderKey: 0
-};
-var MemoryTUI = () => {
+var FullscreenMemoryTUI = () => {
   const { exit } = useApp();
-  const [, forceUpdate] = useState({});
-  const memory = new LibSQLMemoryStorage();
-  const forceRender = useCallback(() => {
-    externalState.renderKey++;
-    forceUpdate({});
-  }, []);
-  const getState = () => ({
-    entries: externalState.entries,
-    filteredEntries: filterEntries(externalState.entries),
-    loading: externalState.loading,
-    message: externalState.message,
+  const [state, setState] = useState({
+    entries: [],
+    filteredEntries: [],
+    loading: false,
+    message: "",
     viewMode: "list",
     selectedIndex: 0,
-    searchQuery: "",
-    sortBy: "updated_at",
-    sortOrder: "desc",
-    page: 0,
-    pageSize: 10,
     selectedEntry: null,
     deleteConfirmEntry: null,
-    newEntry: { namespace: "default", key: "", value: "" },
-    editEntry: { namespace: "", key: "", value: "" }
+    searchQuery: "",
+    editForm: { namespace: "", key: "", value: "", cursor: 0 },
+    addForm: { namespace: "default", key: "", value: "", cursor: 0, field: "namespace" },
+    viewScrollOffset: 0,
+    showHelp: false
   });
-  const filterEntries = (entries) => {
-    return entries.sort((a, b) => {
-      const aTime = new Date(a.updated_at).getTime();
-      const bTime = new Date(b.updated_at).getTime();
-      return bTime - aTime;
-    });
-  };
+  const memory = useMemo(() => new LibSQLMemoryStorage(), []);
   const loadEntries = useCallback(async () => {
-    console.log("MemoryTUI: Loading entries...");
-    externalState.loading = true;
-    externalState.message = "Loading entries...";
-    forceRender();
+    setState((prev) => ({ ...prev, loading: true, message: "Loading..." }));
     try {
       const allEntries = await memory.getAll();
-      console.log(`MemoryTUI: Loaded ${allEntries.length} entries`);
-      externalState.entries = allEntries;
-      externalState.loading = false;
-      externalState.message = `Loaded ${allEntries.length} entries`;
+      const sortedEntries = allEntries.sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+      setState((prev) => ({
+        ...prev,
+        entries: sortedEntries,
+        filteredEntries: sortedEntries,
+        loading: false,
+        message: `Loaded ${allEntries.length} entries`,
+        selectedIndex: Math.min(prev.selectedIndex, Math.max(0, sortedEntries.length - 1))
+      }));
     } catch (error) {
-      console.error("MemoryTUI: Error loading entries:", error);
-      externalState.loading = false;
-      externalState.message = `Error: ${error}`;
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        message: `Error: ${error}`
+      }));
     }
-    forceRender();
-  }, [memory, forceRender]);
+  }, []);
+  const saveEntry = useCallback(
+    async (namespace, key, value) => {
+      try {
+        await memory.set(key, value, namespace);
+        setState((prev) => ({
+          ...prev,
+          message: `Saved: ${namespace}:${key}`,
+          viewMode: "list"
+        }));
+        await loadEntries();
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          message: `Save error: ${error}`
+        }));
+      }
+    },
+    [loadEntries]
+  );
   const deleteEntry = useCallback(
     async (entry) => {
       try {
         await memory.delete(entry.key, entry.namespace);
-        externalState.message = `Deleted entry: ${entry.namespace}:${entry.key}`;
+        setState((prev) => ({
+          ...prev,
+          message: `Deleted: ${entry.namespace}:${entry.key}`,
+          viewMode: "list",
+          deleteConfirmEntry: null
+        }));
         await loadEntries();
       } catch (error) {
-        externalState.message = `Error deleting entry: ${error}`;
-        forceRender();
+        setState((prev) => ({
+          ...prev,
+          message: `Delete error: ${error}`
+        }));
       }
     },
-    [memory, loadEntries, forceRender]
+    [loadEntries]
   );
+  const searchEntries = useCallback((query, entries) => {
+    if (!query.trim()) {
+      setState((prev) => ({ ...prev, filteredEntries: entries }));
+      return;
+    }
+    const filtered = entries.filter(
+      (entry) => entry.namespace.toLowerCase().includes(query.toLowerCase()) || entry.key.toLowerCase().includes(query.toLowerCase()) || JSON.stringify(entry.value).toLowerCase().includes(query.toLowerCase())
+    );
+    setState((prev) => ({
+      ...prev,
+      filteredEntries: filtered,
+      selectedIndex: 0
+    }));
+  }, []);
   useEffect(() => {
     loadEntries();
-  }, []);
+  }, [loadEntries]);
   useInput((input, key) => {
-    const state2 = getState();
-    if (key.escape || input === "q") {
-      if (state2.viewMode !== "list") {
-        state2.viewMode = "list";
-        forceRender();
+    if (key.ctrl && input === "c") {
+      exit();
+      return;
+    }
+    if (key.escape) {
+      if (state.viewMode !== "list") {
+        setState((prev) => ({ ...prev, viewMode: "list" }));
       } else {
         exit();
       }
       return;
     }
-    if (input === "r") {
-      loadEntries();
+    if (input === "?" || key.ctrl && input === "h") {
+      setState((prev) => ({ ...prev, showHelp: !prev.showHelp }));
       return;
     }
-    if (input === "h") {
-      state2.viewMode = state2.viewMode === "help" ? "list" : "help";
-      forceRender();
-      return;
-    }
-    if (state2.viewMode === "list") {
-      if (input === "a") {
-        state2.viewMode = "add";
-        forceRender();
-      } else if (input === "n" && state2.selectedIndex < state2.filteredEntries.length - 1) {
-        state2.selectedIndex++;
-        forceRender();
-      } else if (input === "p" && state2.selectedIndex > 0) {
-        state2.selectedIndex--;
-        forceRender();
-      } else if (input === "e" && state2.filteredEntries[state2.selectedIndex]) {
-        const entry = state2.filteredEntries[state2.selectedIndex];
-        state2.editEntry = {
-          namespace: entry.namespace,
-          key: entry.key,
-          value: JSON.stringify(entry.value, null, 2)
-        };
-        state2.viewMode = "edit";
-        forceRender();
-      } else if (input === "d" && state2.filteredEntries[state2.selectedIndex]) {
-        state2.deleteConfirmEntry = state2.filteredEntries[state2.selectedIndex];
-        state2.viewMode = "confirm-delete";
-        forceRender();
+    if (state.viewMode === "list") {
+      if (key.upArrow && state.selectedIndex > 0) {
+        setState((prev) => ({ ...prev, selectedIndex: prev.selectedIndex - 1 }));
+      } else if (key.downArrow && state.selectedIndex < state.filteredEntries.length - 1) {
+        setState((prev) => ({ ...prev, selectedIndex: prev.selectedIndex + 1 }));
+      } else if (key.return && state.filteredEntries[state.selectedIndex]) {
+        const entry = state.filteredEntries[state.selectedIndex];
+        setState((prev) => ({
+          ...prev,
+          selectedEntry: entry,
+          viewMode: "view",
+          viewScrollOffset: 0
+        }));
+      } else if (input === " " && state.filteredEntries[state.selectedIndex]) {
+        const entry = state.filteredEntries[state.selectedIndex];
+        setState((prev) => ({
+          ...prev,
+          editForm: {
+            namespace: entry.namespace,
+            key: entry.key,
+            value: JSON.stringify(entry.value, null, 2),
+            cursor: 0
+          },
+          viewMode: "edit"
+        }));
+      } else if (input === "n") {
+        setState((prev) => ({
+          ...prev,
+          addForm: { namespace: "default", key: "", value: "", cursor: 0, field: "namespace" },
+          viewMode: "add"
+        }));
+      } else if (input === "d" && state.filteredEntries[state.selectedIndex]) {
+        setState((prev) => ({
+          ...prev,
+          deleteConfirmEntry: prev.filteredEntries[prev.selectedIndex],
+          viewMode: "confirm-delete"
+        }));
+      } else if (input === "/") {
+        setState((prev) => ({ ...prev, viewMode: "search", searchQuery: "" }));
+      } else if (input === "r") {
+        loadEntries();
       }
     }
-    if (state2.viewMode === "confirm-delete") {
-      if (input === "y" && state2.deleteConfirmEntry) {
-        deleteEntry(state2.deleteConfirmEntry);
-        state2.viewMode = "list";
-        state2.deleteConfirmEntry = null;
-      } else if (input === "n") {
-        state2.viewMode = "list";
-        state2.deleteConfirmEntry = null;
-        forceRender();
+    if (state.viewMode === "view") {
+      if (key.upArrow && state.viewScrollOffset > 0) {
+        setState((prev) => ({ ...prev, viewScrollOffset: prev.viewScrollOffset - 1 }));
+      } else if (key.downArrow) {
+        setState((prev) => ({ ...prev, viewScrollOffset: prev.viewScrollOffset + 1 }));
+      } else if (input === " ") {
+        if (state.selectedEntry) {
+          setState((prev) => ({
+            ...prev,
+            editForm: {
+              namespace: state.selectedEntry.namespace,
+              key: state.selectedEntry.key,
+              value: JSON.stringify(state.selectedEntry.value, null, 2),
+              cursor: 0
+            },
+            viewMode: "edit"
+          }));
+        }
+      }
+    }
+    if (state.viewMode === "edit") {
+      if (key.return) {
+        try {
+          const value = JSON.parse(state.editForm.value);
+          saveEntry(state.editForm.namespace, state.editForm.key, value);
+        } catch (error) {
+          setState((prev) => ({ ...prev, message: `JSON format error: ${error}` }));
+        }
+      } else if (key.backspace || key.delete) {
+        const newValue = state.editForm.value.slice(0, -1);
+        setState((prev) => ({
+          ...prev,
+          editForm: {
+            ...prev.editForm,
+            value: newValue,
+            cursor: Math.max(0, prev.editForm.cursor - 1)
+          }
+        }));
+      } else if (input && !key.ctrl && !key.meta && input.length === 1) {
+        const newValue = state.editForm.value + input;
+        setState((prev) => ({
+          ...prev,
+          editForm: { ...prev.editForm, value: newValue, cursor: prev.editForm.cursor + 1 }
+        }));
+      } else if (key.leftArrow && state.editForm.cursor > 0) {
+        setState((prev) => ({
+          ...prev,
+          editForm: { ...prev.editForm, cursor: prev.editForm.cursor - 1 }
+        }));
+      } else if (key.rightArrow && state.editForm.cursor < state.editForm.value.length) {
+        setState((prev) => ({
+          ...prev,
+          editForm: { ...prev.editForm, cursor: prev.editForm.cursor + 1 }
+        }));
+      }
+    }
+    if (state.viewMode === "add") {
+      if (key.tab) {
+        const fields = ["namespace", "key", "value"];
+        const currentIndex = fields.indexOf(state.addForm.field);
+        const nextIndex = (currentIndex + 1) % fields.length;
+        setState((prev) => ({
+          ...prev,
+          addForm: { ...prev.addForm, field: fields[nextIndex], cursor: 0 }
+        }));
+      } else if (key.return && state.addForm.field === "value") {
+        try {
+          const value = JSON.parse(state.addForm.value);
+          saveEntry(state.addForm.namespace, state.addForm.key, value);
+        } catch (error) {
+          setState((prev) => ({ ...prev, message: `JSON format error: ${error}` }));
+        }
+      } else if (key.backspace || key.delete) {
+        const currentValue = state.addForm[state.addForm.field];
+        const newValue = currentValue.slice(0, -1);
+        setState((prev) => ({
+          ...prev,
+          addForm: {
+            ...prev.addForm,
+            [state.addForm.field]: newValue,
+            cursor: Math.max(0, prev.addForm.cursor - 1)
+          }
+        }));
+      } else if (input && !key.ctrl && !key.meta && input.length === 1) {
+        const currentValue = state.addForm[state.addForm.field];
+        const newValue = currentValue + input;
+        setState((prev) => ({
+          ...prev,
+          addForm: {
+            ...prev.addForm,
+            [state.addForm.field]: newValue,
+            cursor: prev.addForm.cursor + 1
+          }
+        }));
+      }
+    }
+    if (state.viewMode === "search") {
+      if (key.return) {
+        searchEntries(state.searchQuery, state.entries);
+        setState((prev) => ({ ...prev, viewMode: "list" }));
+      } else if (key.backspace || key.delete) {
+        const newQuery = state.searchQuery.slice(0, -1);
+        setState((prev) => ({ ...prev, searchQuery: newQuery }));
+        searchEntries(newQuery, state.entries);
+      } else if (input && !key.ctrl && !key.meta && input.length === 1) {
+        const newQuery = state.searchQuery + input;
+        setState((prev) => ({ ...prev, searchQuery: newQuery }));
+        searchEntries(newQuery, state.entries);
+      }
+    }
+    if (state.viewMode === "confirm-delete") {
+      if (input === "y" && state.deleteConfirmEntry) {
+        deleteEntry(state.deleteConfirmEntry);
+      } else if (input === "n" || key.escape) {
+        setState((prev) => ({
+          ...prev,
+          viewMode: "list",
+          deleteConfirmEntry: null
+        }));
       }
     }
   });
-  const state = getState();
-  const renderHeader = () => /* @__PURE__ */ jsxs(Box, { borderStyle: "double", borderColor: "blue", padding: 1, children: [
-    /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "\u{1F9E0} Sylphx Flow Memory Manager" }),
-    /* @__PURE__ */ jsxs(Text, { color: "gray", children: [
-      " ",
-      "| Entries: ",
-      state.entries.length,
-      " | Page: ",
-      state.page + 1
-    ] })
-  ] });
   const renderList = () => /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
-    renderHeader(),
-    /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "[a]dd [e]dit [d]elete [r]efresh [h]elp [q]uit | [n]ext [p]rev" }) }),
+    /* @__PURE__ */ jsxs(Box, { borderStyle: "double", borderColor: "blue", padding: 1, children: [
+      /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "\u{1F9E0} Memory Manager" }),
+      /* @__PURE__ */ jsxs(Text, { color: "gray", children: [
+        " ",
+        "| ",
+        state.filteredEntries.length,
+        "/",
+        state.entries.length,
+        " entries"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "[\u2191\u2193] Select [Enter] View [Space] Edit [n] New [d] Delete [/] Search [r] Refresh [?] Help [Ctrl+C] Quit" }) }),
     state.message && /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsx(Text, { color: "yellow", children: state.message }) }),
-    /* @__PURE__ */ jsx(Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: state.loading ? /* @__PURE__ */ jsx(Box, { justifyContent: "center", alignItems: "center", flexGrow: 1, children: /* @__PURE__ */ jsx(Text, { children: "Loading..." }) }) : state.filteredEntries.length === 0 ? /* @__PURE__ */ jsx(Box, { justifyContent: "center", alignItems: "center", flexGrow: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "No memory entries found" }) }) : /* @__PURE__ */ jsx(Box, { flexDirection: "column", flexGrow: 1, children: state.filteredEntries.slice(state.page * state.pageSize, (state.page + 1) * state.pageSize).map((entry, index) => /* @__PURE__ */ jsxs(Box, { marginBottom: 1, children: [
+    /* @__PURE__ */ jsx(Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: state.loading ? /* @__PURE__ */ jsx(Box, { justifyContent: "center", alignItems: "center", flexGrow: 1, children: /* @__PURE__ */ jsx(Text, { children: "Loading..." }) }) : state.filteredEntries.length === 0 ? /* @__PURE__ */ jsx(Box, { justifyContent: "center", alignItems: "center", flexGrow: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "No entries found" }) }) : /* @__PURE__ */ jsx(Box, { flexDirection: "column", flexGrow: 1, children: state.filteredEntries.map((entry, index) => /* @__PURE__ */ jsxs(Box, { marginBottom: 1, children: [
       /* @__PURE__ */ jsxs(Text, { color: index === state.selectedIndex ? "green" : "cyan", children: [
         index === state.selectedIndex ? "\u25B6" : " ",
         " ",
-        state.page * state.pageSize + index + 1,
+        index + 1,
         ". ",
         entry.namespace,
         ":",
@@ -1463,82 +1612,176 @@ var MemoryTUI = () => {
         JSON.stringify(entry.value).substring(0, 80),
         JSON.stringify(entry.value).length > 80 ? "..." : ""
       ] })
-    ] }, `${entry.namespace}-${entry.key}-${entry.timestamp}`)) }) }),
+    ] }, `${entry.namespace}-${entry.key}-${index}`)) }) }),
     /* @__PURE__ */ jsx(Box, { marginTop: 1, borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ jsxs(Text, { color: "gray", children: [
-      "Total: ",
-      state.entries.length,
-      " entries | Page ",
-      state.page + 1,
-      " of",
-      " ",
-      Math.ceil(state.filteredEntries.length / state.pageSize),
-      " | Selected:",
-      " ",
+      "Selected: ",
       state.filteredEntries[state.selectedIndex]?.namespace,
       ":",
       state.filteredEntries[state.selectedIndex]?.key || "None"
     ] }) })
   ] });
-  const renderHelp = () => /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
-    /* @__PURE__ */ jsx(Box, { borderStyle: "double", borderColor: "green", padding: 1, children: /* @__PURE__ */ jsx(Text, { bold: true, color: "green", children: "\u{1F4D6} Help - Memory Manager" }) }),
+  const renderView = () => {
+    if (!state.selectedEntry) return null;
+    const valueStr = JSON.stringify(state.selectedEntry.value, null, 2);
+    const lines = valueStr.split("\n");
+    const visibleLines = lines.slice(state.viewScrollOffset, state.viewScrollOffset + 20);
+    return /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
+      /* @__PURE__ */ jsx(Box, { borderStyle: "double", borderColor: "cyan", padding: 1, children: /* @__PURE__ */ jsx(Text, { bold: true, color: "cyan", children: "\u{1F4C4} View Entry" }) }),
+      /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "[\u2191\u2193] Scroll [Space] Edit [ESC] Back" }) }),
+      /* @__PURE__ */ jsxs(Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: [
+        /* @__PURE__ */ jsxs(Box, { marginBottom: 1, children: [
+          /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "Namespace:" }),
+          /* @__PURE__ */ jsxs(Text, { children: [
+            " ",
+            state.selectedEntry.namespace
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs(Box, { marginBottom: 1, children: [
+          /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "Key:" }),
+          /* @__PURE__ */ jsxs(Text, { children: [
+            " ",
+            state.selectedEntry.key
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs(Box, { marginBottom: 1, children: [
+          /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "Updated:" }),
+          /* @__PURE__ */ jsxs(Text, { children: [
+            " ",
+            state.selectedEntry.updated_at
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs(Box, { flexDirection: "column", flexGrow: 1, children: [
+          /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "Value:" }),
+          /* @__PURE__ */ jsxs(
+            Box,
+            {
+              flexDirection: "column",
+              borderStyle: "single",
+              borderColor: "gray",
+              padding: 1,
+              flexGrow: 1,
+              children: [
+                visibleLines.map((line, index) => /* @__PURE__ */ jsx(Text, { children: line }, index)),
+                lines.length > 20 && /* @__PURE__ */ jsxs(Text, { color: "gray", children: [
+                  "--- ",
+                  lines.length - 20,
+                  " more lines ---"
+                ] })
+              ]
+            }
+          )
+        ] })
+      ] })
+    ] });
+  };
+  const renderEdit = () => /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
+    /* @__PURE__ */ jsx(Box, { borderStyle: "double", borderColor: "yellow", padding: 1, children: /* @__PURE__ */ jsx(Text, { bold: true, color: "yellow", children: "\u270F\uFE0F Edit Entry" }) }),
+    /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "[Enter] Save [ESC] Cancel [\u2191\u2193\u2190\u2192] Navigate text" }) }),
     /* @__PURE__ */ jsxs(Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: [
-      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", marginBottom: 1, children: [
-        /* @__PURE__ */ jsx(Text, { bold: true, color: "cyan", children: "Navigation:" }),
+      /* @__PURE__ */ jsxs(Box, { marginBottom: 1, children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "Namespace:" }),
         /* @__PURE__ */ jsxs(Text, { children: [
           " ",
-          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "n/p" }),
-          " - Next/Previous entry"
-        ] }),
-        /* @__PURE__ */ jsxs(Text, { children: [
-          " ",
-          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "a" }),
-          " - Add new entry"
-        ] }),
-        /* @__PURE__ */ jsxs(Text, { children: [
-          " ",
-          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "e" }),
-          " - Edit selected entry"
-        ] }),
-        /* @__PURE__ */ jsxs(Text, { children: [
-          " ",
-          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "d" }),
-          " - Delete selected entry"
-        ] }),
-        /* @__PURE__ */ jsxs(Text, { children: [
-          " ",
-          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "r" }),
-          " - Refresh entries"
-        ] }),
-        /* @__PURE__ */ jsxs(Text, { children: [
-          " ",
-          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "h" }),
-          " - Toggle this help screen"
-        ] }),
-        /* @__PURE__ */ jsxs(Text, { children: [
-          " ",
-          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "q/ESC" }),
-          " - Quit/Go back"
+          state.editForm.namespace
         ] })
       ] }),
-      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", marginBottom: 1, children: [
-        /* @__PURE__ */ jsx(Text, { bold: true, color: "yellow", children: "Features:" }),
-        /* @__PURE__ */ jsx(Text, { children: "\u2022 View all memory entries with pagination" }),
-        /* @__PURE__ */ jsx(Text, { children: "\u2022 Navigate with keyboard shortcuts" }),
-        /* @__PURE__ */ jsx(Text, { children: "\u2022 Delete entries with confirmation" }),
-        /* @__PURE__ */ jsx(Text, { children: "\u2022 Real-time data loading from libSQL database" }),
-        /* @__PURE__ */ jsx(Text, { children: "\u2022 External state management for React+Ink compatibility" })
-      ] }),
-      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", children: [
-        /* @__PURE__ */ jsx(Text, { bold: true, color: "magenta", children: "Status:" }),
-        /* @__PURE__ */ jsx(Text, { children: "\u2022 Database: libSQL (.sylphx-flow/memory.db)" }),
+      /* @__PURE__ */ jsxs(Box, { marginBottom: 1, children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "Key:" }),
         /* @__PURE__ */ jsxs(Text, { children: [
-          "\u2022 Entries loaded: ",
-          state.entries.length
-        ] }),
-        /* @__PURE__ */ jsx(Text, { children: "\u2022 Compatibility: React 19.2.0 + Ink 6.3.1" })
+          " ",
+          state.editForm.key
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", flexGrow: 1, children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: "blue", children: "JSON Value:" }),
+        /* @__PURE__ */ jsxs(
+          Box,
+          {
+            flexDirection: "column",
+            borderStyle: "single",
+            borderColor: "gray",
+            padding: 1,
+            flexGrow: 1,
+            children: [
+              /* @__PURE__ */ jsx(Text, { children: "Edit JSON content:" }),
+              /* @__PURE__ */ jsxs(Box, { marginTop: 1, children: [
+                /* @__PURE__ */ jsx(Text, { color: "cyan", children: state.editForm.value }),
+                /* @__PURE__ */ jsx(Text, { children: "_" })
+              ] })
+            ]
+          }
+        )
       ] })
     ] }),
-    /* @__PURE__ */ jsx(Box, { borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ jsx(Text, { dimColor: true, children: "Press 'h' to go back to list" }) })
+    /* @__PURE__ */ jsx(Box, { marginTop: 1, borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "Tip: Enter valid JSON format, then press Enter to save" }) })
+  ] });
+  const renderAdd = () => /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
+    /* @__PURE__ */ jsx(Box, { borderStyle: "double", borderColor: "green", padding: 1, children: /* @__PURE__ */ jsx(Text, { bold: true, color: "green", children: "\u2795 Add Entry" }) }),
+    /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "[Tab] Switch fields [Enter] Save [ESC] Cancel" }) }),
+    /* @__PURE__ */ jsxs(Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: [
+      /* @__PURE__ */ jsx(Box, { marginBottom: 1, children: /* @__PURE__ */ jsxs(Text, { bold: true, color: state.addForm.field === "namespace" ? "green" : "blue", children: [
+        "Namespace: ",
+        state.addForm.namespace,
+        state.addForm.field === "namespace" && /* @__PURE__ */ jsx(Text, { children: "_" })
+      ] }) }),
+      /* @__PURE__ */ jsx(Box, { marginBottom: 1, children: /* @__PURE__ */ jsxs(Text, { bold: true, color: state.addForm.field === "key" ? "green" : "blue", children: [
+        "Key: ",
+        state.addForm.key,
+        state.addForm.field === "key" && /* @__PURE__ */ jsx(Text, { children: "_" })
+      ] }) }),
+      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", flexGrow: 1, children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: state.addForm.field === "value" ? "green" : "blue", children: "JSON Value:" }),
+        /* @__PURE__ */ jsxs(
+          Box,
+          {
+            flexDirection: "column",
+            borderStyle: "single",
+            borderColor: "gray",
+            padding: 1,
+            flexGrow: 1,
+            children: [
+              /* @__PURE__ */ jsx(Text, { children: "Enter JSON value:" }),
+              /* @__PURE__ */ jsxs(Box, { marginTop: 1, children: [
+                /* @__PURE__ */ jsx(Text, { color: "cyan", children: state.addForm.value }),
+                state.addForm.field === "value" && /* @__PURE__ */ jsx(Text, { children: "_" })
+              ] })
+            ]
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(Box, { marginTop: 1, borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ jsxs(Text, { color: "gray", children: [
+      "Current field: ",
+      state.addForm.field,
+      " | Tab to switch | Enter to save on value field"
+    ] }) })
+  ] });
+  const renderSearch = () => /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
+    /* @__PURE__ */ jsx(Box, { borderStyle: "double", borderColor: "magenta", padding: 1, children: /* @__PURE__ */ jsx(Text, { bold: true, color: "magenta", children: "\u{1F50D} Search Entries" }) }),
+    /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsx(Text, { color: "gray", children: "Type search term, Enter to confirm, ESC to cancel" }) }),
+    /* @__PURE__ */ jsxs(Box, { marginTop: 1, children: [
+      /* @__PURE__ */ jsx(Text, { children: "Search: " }),
+      /* @__PURE__ */ jsx(Text, { color: "cyan", children: state.searchQuery }),
+      /* @__PURE__ */ jsx(Text, { children: "_" })
+    ] }),
+    /* @__PURE__ */ jsxs(Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: [
+      /* @__PURE__ */ jsxs(Text, { color: "gray", children: [
+        "Found ",
+        state.filteredEntries.length,
+        " results:"
+      ] }),
+      state.filteredEntries.slice(0, 10).map((entry, index) => /* @__PURE__ */ jsx(Box, { children: /* @__PURE__ */ jsxs(Text, { children: [
+        "\u2022 ",
+        entry.namespace,
+        ":",
+        entry.key
+      ] }) }, index)),
+      state.filteredEntries.length > 10 && /* @__PURE__ */ jsxs(Text, { color: "gray", children: [
+        "... and ",
+        state.filteredEntries.length - 10,
+        " more results"
+      ] })
+    ] })
   ] });
   const renderConfirmDelete = () => /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
     /* @__PURE__ */ jsx(Box, { borderStyle: "double", borderColor: "red", padding: 1, children: /* @__PURE__ */ jsx(Text, { bold: true, color: "red", children: "\u26A0\uFE0F Confirm Delete" }) }),
@@ -1557,41 +1800,165 @@ var MemoryTUI = () => {
           "Value: ",
           JSON.stringify(state.deleteConfirmEntry?.value).substring(0, 120),
           JSON.stringify(state.deleteConfirmEntry?.value || "").length > 120 ? "..." : ""
-        ] }) }),
-        /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsxs(Text, { dimColor: true, children: [
-          "Updated: ",
-          state.deleteConfirmEntry?.updated_at
         ] }) })
       ] }),
       /* @__PURE__ */ jsxs(Box, { flexDirection: "column", children: [
         /* @__PURE__ */ jsx(Text, { bold: true, color: "yellow", children: "This action cannot be undone!" }),
         /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsxs(Text, { children: [
           /* @__PURE__ */ jsx(Text, { color: "cyan", children: "y" }),
-          " - Yes, delete this entry | ",
+          " - Yes, delete | ",
           /* @__PURE__ */ jsx(Text, { color: "cyan", children: "n" }),
-          " - No, cancel"
+          " - No, cancel |",
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "ESC" }),
+          " - Back"
         ] }) })
       ] })
-    ] }),
-    /* @__PURE__ */ jsx(Box, { borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ jsx(Text, { dimColor: true, children: "Press 'n' to cancel, 'y' to confirm deletion" }) })
+    ] })
   ] });
-  const renderContent = () => {
-    switch (state.viewMode) {
-      case "help":
-        return renderHelp();
-      case "confirm-delete":
-        return renderConfirmDelete();
-      default:
-        return renderList();
-    }
-  };
-  return renderContent();
+  const renderHelp = () => /* @__PURE__ */ jsxs(Box, { flexDirection: "column", height: "100%", width: "100%", children: [
+    /* @__PURE__ */ jsx(Box, { borderStyle: "double", borderColor: "green", padding: 1, children: /* @__PURE__ */ jsx(Text, { bold: true, color: "green", children: "\u{1F4D6} Memory Manager - Help" }) }),
+    /* @__PURE__ */ jsxs(Box, { marginTop: 1, flexDirection: "column", flexGrow: 1, children: [
+      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: "cyan", children: "Basic Operations:" }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "\u2191\u2193" }),
+          " - Navigate up/down"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Enter" }),
+          " - View selected entry details"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Space" }),
+          " - Edit selected entry"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "n" }),
+          " - New entry"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "d" }),
+          " - Delete selected entry"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "/" }),
+          " - Search entries"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "r" }),
+          " - Refresh list"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: "cyan", children: "Edit Mode:" }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Enter" }),
+          " - Save changes"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "ESC" }),
+          " - Cancel edit"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "\u2191\u2193\u2190\u2192" }),
+          " - Navigate text"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Backspace" }),
+          " - Delete text"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", marginBottom: 1, children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: "cyan", children: "Add Mode:" }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Tab" }),
+          " - Switch fields (Namespace\u2192Key\u2192Value)"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Enter" }),
+          " - Save on value field"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "ESC" }),
+          " - Cancel add"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(Box, { flexDirection: "column", children: [
+        /* @__PURE__ */ jsx(Text, { bold: true, color: "cyan", children: "System:" }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "?" }),
+          " or ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Ctrl+H" }),
+          " - Toggle help"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "ESC" }),
+          " - Go back / Exit"
+        ] }),
+        /* @__PURE__ */ jsxs(Text, { children: [
+          " ",
+          /* @__PURE__ */ jsx(Text, { color: "cyan", children: "Ctrl+C" }),
+          " - Force exit"
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(Box, { borderStyle: "single", borderColor: "gray", padding: 1, children: /* @__PURE__ */ jsx(Text, { dimColor: true, children: "Press ? or Ctrl+H to close help" }) })
+  ] });
+  if (state.showHelp) {
+    return renderHelp();
+  }
+  switch (state.viewMode) {
+    case "view":
+      return renderView();
+    case "edit":
+      return renderEdit();
+    case "add":
+      return renderAdd();
+    case "search":
+      return renderSearch();
+    case "confirm-delete":
+      return renderConfirmDelete();
+    default:
+      return renderList();
+  }
 };
 
 // src/commands/memory-tui-command.ts
 var handleMemoryTui = async () => {
-  const { waitUntilExit } = render(React2.createElement(MemoryTUI));
-  await waitUntilExit();
+  process.stdout.write("\x1B[2J\x1B[H");
+  const { waitUntilExit } = render(React2.createElement(FullscreenMemoryTUI), {
+    // Configure Ink for fullscreen experience
+    exitOnCtrlC: false,
+    // Handle Ctrl+C manually in useInput
+    patchConsole: false,
+    // Prevent console output interference
+    debug: false,
+    // Set to true for development debugging
+    maxFps: 60
+    // Higher FPS for smoother experience
+  });
+  try {
+    await waitUntilExit();
+  } finally {
+    process.stdout.write("\x1B[2J\x1B[H");
+  }
 };
 
 // src/utils/command-builder.ts
