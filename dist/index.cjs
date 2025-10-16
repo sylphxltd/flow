@@ -54,8 +54,8 @@ var init_sylphx_flow_mcp_server = __esm({
       memoryDir;
       filePath;
       constructor() {
-        this.memoryDir = path4.join(process.cwd(), ".memory");
-        this.filePath = path4.join(this.memoryDir, "memory.json");
+        this.memoryDir = path4.join(process.cwd(), ".sylphx-flow");
+        this.filePath = path4.join(this.memoryDir, "memory.db");
         fs3.mkdir(this.memoryDir, { recursive: true }).catch(() => {
         });
         this.loadData();
@@ -543,7 +543,7 @@ var init_sylphx_flow_mcp_server = __esm({
                 text: JSON.stringify(
                   {
                     ...stats,
-                    database_path: path4.join(process.cwd(), ".memory", "memory.json"),
+                    database_path: path4.join(process.cwd(), ".sylphx-flow", "memory.db"),
                     age_days: stats.oldest_entry > 0 ? Math.floor((Date.now() - stats.oldest_entry) / (1e3 * 60 * 60 * 24)) : 0
                   },
                   null,
@@ -583,7 +583,7 @@ var init_sylphx_flow_mcp_server = __esm({
       process.exit(1);
     });
     Logger.success("\u{1F680} Sylphx Flow MCP Server ready!");
-    Logger.info(`\u{1F4CD} Storage: ${path4.join(process.cwd(), ".memory", "memory.json")}`);
+    Logger.info(`\u{1F4CD} Storage: ${path4.join(process.cwd(), ".sylphx-flow", "memory.db")}`);
     Logger.info(
       "\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats"
     );
@@ -1356,7 +1356,7 @@ var initCommand = {
 var mcpStartHandler = async () => {
   await Promise.resolve().then(() => (init_sylphx_flow_mcp_server(), sylphx_flow_mcp_server_exports));
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
-  console.log("\u{1F4CD} Database: .memory/memory.json");
+  console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
   console.log(
     "\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats"
   );

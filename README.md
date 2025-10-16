@@ -227,7 +227,7 @@ Manage MCP (Model Context Protocol) tools and servers.
 npx github:sylphxltd/flow mcp start
 
 # Server will be available at stdio for MCP clients
-# Database stored at: .memory/memory.json
+# Database stored at: .sylphx-flow/memory.db
 ```
 
 ## 🧠 MCP Memory Server Functionality
@@ -253,7 +253,7 @@ The memory server provides persistent storage capabilities for AI agents through
 
 ### Memory Storage Details
 
-- **Location**: `.memory/memory.json` in your working directory
+- **Location**: `.sylphx-flow/memory.db` in your working directory
 - **Format**: JSON with automatic persistence
 - **Namespaces**: Organize memories by project, agent, or purpose
 - **Timestamps**: Track creation and update times
@@ -274,7 +274,7 @@ The Rules platform supports the following MCP servers:
   - Pattern matching with wildcards
   - Database statistics and monitoring
 - **Installation**: `flow install --mcp memory`
-- **Storage Location**: `.memory/memory.json`
+- **Storage Location**: `.sylphx-flow/memory.db`
 
 #### 2. MCP Everything Server (`everything`)
 - **Purpose**: Comprehensive tool collection for general AI assistance
@@ -437,7 +437,7 @@ flow/
 │   ├── opencode/          # OpenCode plugin integration
 │   └── utils/             # Utility functions
 ├── dist/                  # Compiled JavaScript output
-├── .memory/              # Memory database storage
+├── .sylphx-flow/         # Sylphx Flow data storage
 ├── opencode.jsonc        # OpenCode MCP configuration (auto-generated)
 └── package.json          # Project configuration
 ```
@@ -642,10 +642,10 @@ npx github:sylphxltd/flow mcp start
 **Memory Database Issues:**
 ```bash
 # Check memory database location
-ls -la .memory/
+ls -la .sylphx-flow/
 
 # Clear corrupted memory database
-rm .memory/memory.json
+rm .sylphx-flow/memory.db
 # Restart the server to recreate
 npx github:sylphxltd/flow mcp start
 ```
@@ -661,7 +661,7 @@ npx github:sylphxltd/flow install --mcp memory everything
 
 1. **Use Namespaces**: Organize memories by project or agent to avoid conflicts
 2. **Regular Cleanup**: Use `memory_clear` to remove old or test data
-3. **Backup Memory**: Copy `.memory/memory.json` for important project state
+3. **Backup Memory**: Copy `.sylphx-flow/memory.db` for important project state
 4. **Monitor Usage**: Use `memory_stats` to track database size and performance
 
 ### Performance Tips
@@ -675,7 +675,7 @@ npx github:sylphxltd/flow install --mcp memory everything
 
 - Memory data is stored in plain text JSON
 - Don't store sensitive information (passwords, API keys) in memory
-- Use appropriate file permissions for `.memory/` directory
+- Use appropriate file permissions for `.sylphx-flow/` directory
 - Regular backup of important memory data
 
 ## 📚 Additional Resources

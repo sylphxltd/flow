@@ -8,7 +8,7 @@ const mcpStartHandler: CommandHandler = async () => {
   await import('../servers/sylphx-flow-mcp-server.js');
 
   console.log('🚀 Starting Sylphx Flow MCP Server...');
-  console.log('📍 Database: .memory/memory.json');
+  console.log('📍 Database: .sylphx-flow/memory.db');
   console.log(
     '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
   );

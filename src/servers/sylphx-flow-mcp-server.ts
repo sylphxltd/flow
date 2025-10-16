@@ -24,10 +24,10 @@ class MemoryStorage {
   private filePath: string;
 
   constructor() {
-    this.memoryDir = path.join(process.cwd(), '.memory');
-    this.filePath = path.join(this.memoryDir, 'memory.json');
+    this.memoryDir = path.join(process.cwd(), '.sylphx-flow');
+    this.filePath = path.join(this.memoryDir, 'memory.db');
 
-    // Ensure .memory directory exists
+    // Ensure .sylphx-flow directory exists
     fs.mkdir(this.memoryDir, { recursive: true }).catch(() => {});
 
     // Load existing data
@@ -599,7 +599,7 @@ server.registerTool(
             text: JSON.stringify(
               {
                 ...stats,
-                database_path: path.join(process.cwd(), '.memory', 'memory.json'),
+                database_path: path.join(process.cwd(), '.sylphx-flow', 'memory.db'),
                 age_days:
                   stats.oldest_entry > 0
                     ? Math.floor((Date.now() - stats.oldest_entry) / (1000 * 60 * 60 * 24))
@@ -655,7 +655,7 @@ process.on('unhandledRejection', (reason, _promise) => {
 // ============================================================================
 
 Logger.success('🚀 Sylphx Flow MCP Server ready!');
-Logger.info(`📍 Storage: ${path.join(process.cwd(), '.memory', 'memory.json')}`);
+Logger.info(`📍 Storage: ${path.join(process.cwd(), '.sylphx-flow', 'memory.db')}`);
 Logger.info(
   '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
 );
