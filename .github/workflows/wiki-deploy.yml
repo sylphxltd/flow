@@ -1,0 +1,29 @@
+name: Publish Wiki
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'wiki-pages/**'
+      - '.github/workflows/wiki-deploy.yml'
+concurrency:
+  group: publish-wiki
+  cancel-in-progress: true
+permissions:
+  contents: write
+
+jobs:
+  publish-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Move wiki pages to wiki/ folder
+        run: |
+          mkdir -p wiki
+          cp wiki-pages/*.md wiki/
+          
+      - uses: Andrew-Chen-Wang/github-wiki-action@v4
+        with:
+          path: wiki
+          commit-message: "Update wiki ${{ github.sha }}"
