@@ -396,7 +396,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
       });
     }
 
-    displayResults(results, agentsDir, config.name, 'Install');
+    displayResults(results, agentsDir, config.name, 'Install', options.verbose);
   } else {
     // Process files individually - create both sdd/ and core/ subdirectory structures
     processBatch(
@@ -409,6 +409,6 @@ export async function installAgents(options: CommonOptions): Promise<void> {
       'agents/' // PathPrefix for source file reading
     );
 
-    displayResults(results, agentsDir, config.name, 'Install');
+    displayResults(results, agentsDir, config.name, 'Install', options.verbose);
   }
 }

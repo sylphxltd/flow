@@ -266,8 +266,22 @@ export function displayResults(
   results: ProcessResult[],
   targetDir: string,
   agentName: string,
-  operation: string
+  operation: string,
+  verbose = false
 ): void {
+  if (!verbose) {
+    // Simple summary for non-verbose mode
+    const total = results.length;
+    const changed = results.filter((r) => r.status === 'added' || r.status === 'updated').length;
+    
+    if (changed > 0) {
+      console.log(`✅ ${changed} files updated`);
+    } else {
+      console.log(`✅ All ${total} files already current`);
+    }
+    return;
+  }
+
   console.log(`\n📊 ${operation} Results for ${agentName}`);
   console.log('=====================================');
 

@@ -981,7 +981,17 @@ function processBatch(filePaths, targetDir, extension, processContent, flatten, 
     }
   }
 }
-function displayResults(results2, targetDir, agentName, operation) {
+function displayResults(results2, targetDir, agentName, operation, verbose = false) {
+  if (!verbose) {
+    const total2 = results2.length;
+    const changed2 = results2.filter((r) => r.status === "added" || r.status === "updated").length;
+    if (changed2 > 0) {
+      console.log(`\u2705 ${changed2} files updated`);
+    } else {
+      console.log(`\u2705 All ${total2} files already current`);
+    }
+    return;
+  }
   console.log(`
 \u{1F4CA} ${operation} Results for ${agentName}`);
   console.log("=====================================");
@@ -1141,7 +1151,7 @@ async function installAgents(options) {
         action: "Already current"
       });
     }
-    displayResults(results2, agentsDir, config.name, "Install");
+    displayResults(results2, agentsDir, config.name, "Install", options.verbose);
   } else {
     processBatch(
       agentFiles,
@@ -1155,7 +1165,7 @@ async function installAgents(options) {
       "agents/"
       // PathPrefix for source file reading
     );
-    displayResults(results2, agentsDir, config.name, "Install");
+    displayResults(results2, agentsDir, config.name, "Install", options.verbose);
   }
 }
 
