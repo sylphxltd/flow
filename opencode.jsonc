@@ -6,38 +6,22 @@
   "mcp": {
     "flow_memory": {
       "type": "local",
-      "command": [
-        "npx",
-        "github:sylphxltd/flow",
-        "mcp",
-        "start"
-      ]
+      "command": ["npx", "github:sylphxltd/flow", "mcp", "start"]
     },
     "mcp_everything": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-everything"
-      ]
+      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
     },
     "gpt-image-1-mcp": {
       "type": "local",
-      "command": [
-        "npx",
-        "@napolab/gpt-image-1-mcp"
-      ],
+      "command": ["npx", "@napolab/gpt-image-1-mcp"],
       "env": {
         "OPENAI_API_KEY": ""
       }
     },
     "perplexity-ask": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "server-perplexity-ask"
-      ],
+      "command": ["npx", "-y", "server-perplexity-ask"],
       "env": {
         "PERPLEXITY_API_KEY": ""
       }
@@ -48,11 +32,7 @@
     },
     "gemini-google-search": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "mcp-gemini-google-search"
-      ],
+      "command": ["npx", "-y", "mcp-gemini-google-search"],
       "env": {
         "GEMINI_API_KEY": "",
         "GEMINI_MODEL": "gemini-2.5-flash"

@@ -1,0 +1,10 @@
+{
+  "default:project-name": {
+    "key": "project-name",
+    "namespace": "default",
+    "value": "Sylphx Flow CLI",
+    "timestamp": 1729094400000,
+    "created_at": "2024-10-16T10:00:00.000Z",
+    "updated_at": "2024-10-16T10:00:00.000Z"
+  }
+}

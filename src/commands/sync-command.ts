@@ -21,11 +21,13 @@ export const syncCommand: CommandConfig = {
   ],
   handler: async (options: CommandOptions) => {
     // Show deprecation warning
-    console.warn('⚠️  WARNING: The "sync" command is deprecated and will be removed in a future version.');
+    console.warn(
+      '⚠️  WARNING: The "sync" command is deprecated and will be removed in a future version.'
+    );
     console.warn('   Use "npx github:sylphxltd/flow init" instead for new projects.');
     console.warn('   The sync command only works with legacy agents (cursor, kilocode, roocode).');
     console.warn('');
-    
+
     // Call the original sync handler
     await syncRules(options);
   },

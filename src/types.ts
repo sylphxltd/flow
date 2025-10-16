@@ -8,6 +8,14 @@ export interface CommandOptions {
   servers?: string[];
   server?: string;
   all?: boolean;
+  // Memory command options
+  namespace?: string;
+  limit?: number;
+  pattern?: string;
+  key?: string;
+  confirm?: boolean;
+  // Dynamic argument properties
+  [key: string]: any;
 }
 
 export type CommandHandler = (options: CommandOptions) => Promise<void>;
@@ -16,6 +24,7 @@ export interface CommandConfig {
   name: string;
   description: string;
   options: CommandOption[];
+  arguments?: CommandArgument[];
   handler?: CommandHandler;
   validator?: (options: CommandOptions) => void;
   subcommands?: CommandConfig[];
@@ -24,6 +33,12 @@ export interface CommandConfig {
 export interface CommandOption {
   flags: string;
   description: string;
+}
+
+export interface CommandArgument {
+  name: string;
+  description: string;
+  required?: boolean;
 }
 
 export interface MCPServerConfig {

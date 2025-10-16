@@ -401,6 +401,52 @@ const stats = await client.callTool({
 });
 ```
 
+### `flow memory` - Manage Memory Database
+
+Manage the Sylphx Flow memory database directly from the command line. This provides a convenient way to view, search, and manage memory entries without using the MCP protocol.
+
+```bash
+# Show memory statistics
+npx github:sylphxltd/flow memory stats
+
+# List all memory entries
+npx github:sylphxltd/flow memory list
+
+# List entries from specific namespace
+npx github:sylphxltd/flow memory list --namespace "user"
+
+# Search memory entries with pattern (supports * wildcards)
+npx github:sylphxltd/flow memory search --pattern "*theme*"
+
+# Search within specific namespace
+npx github:sylphxltd/flow memory search --pattern "config/*" --namespace "project"
+
+# Delete a specific memory entry
+npx github:sylphxltd/flow memory delete --key "theme" --namespace "user"
+
+# Clear all entries from a namespace (requires confirmation)
+npx github:sylphxltd/flow memory clear --namespace "temp" --confirm
+
+# Clear all memory entries (requires confirmation)
+npx github:sylphxltd/flow memory clear --confirm
+
+# Launch interactive TUI (coming soon)
+npx github:sylphxltd/flow memory tui
+```
+
+#### Memory Command Features
+
+- **Statistics**: View total entries, namespaces, and database usage
+- **Listing**: Display all entries or filter by namespace with table formatting
+- **Searching**: Pattern-based search with wildcard support (`*` matches any characters)
+- **Management**: Delete specific entries or clear namespaces with confirmation
+- **Namespace Support**: Organize and filter memories by namespace
+- **Table Display**: Clean, formatted output with timestamps and truncated values
+
+#### Database Location
+
+The memory database is stored at `.sylphx-flow/memory.db` in your working directory. This is a JSON file that can be manually inspected or backed up if needed.
+
 ## 📁 Project Structure Overview
 
 ```

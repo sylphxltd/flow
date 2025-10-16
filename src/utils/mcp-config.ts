@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { OpenCodeConfig, MCPServerConfigUnion } from '../types.js';
+import type { MCPServerConfigUnion, OpenCodeConfig } from '../types.js';
 import { readJSONCFile, writeJSONCFile } from './jsonc.js';
 
 interface MCPServerDefinition {
@@ -205,7 +205,7 @@ export async function listMCPServers(cwd: string): Promise<void> {
     } else if (serverConfig.type === 'streamable-http') {
       configInfo = `HTTP: ${serverConfig.url}`;
     }
-    
+
     console.log(`  • ${name}: ${configInfo}`);
 
     // Find the server type for additional info
@@ -239,7 +239,9 @@ export function parseMCPServerTypes(args: string[]): MCPServerType[] {
 /**
  * Prompt user for API keys interactively
  */
-export async function promptForAPIKeys(serverTypes: MCPServerType[]): Promise<Record<string, string>> {
+export async function promptForAPIKeys(
+  serverTypes: MCPServerType[]
+): Promise<Record<string, string>> {
   const { createInterface } = await import('node:readline');
   const rl = createInterface({
     input: process.stdin,
@@ -253,10 +255,10 @@ export async function promptForAPIKeys(serverTypes: MCPServerType[]): Promise<Re
     if (!server?.requiredEnvVars?.length) continue;
 
     console.log(`\n🔑 Configuring API keys for ${server.description}:`);
-    
+
     for (const envVar of server.requiredEnvVars) {
       const question = `Enter ${envVar} (or press Enter to skip): `;
-      
+
       const answer = await new Promise<string>((resolve) => {
         rl.question(question, (input) => {
           resolve(input.trim());
@@ -267,7 +269,9 @@ export async function promptForAPIKeys(serverTypes: MCPServerType[]): Promise<Re
         apiKeys[envVar] = answer;
         console.log(`✅ Set ${envVar}`);
       } else {
-        console.log(`⚠️  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`);
+        console.log(
+          `⚠️  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`
+        );
       }
     }
   }
@@ -292,9 +296,9 @@ export async function configureMCPServer(cwd: string, serverType: MCPServerType)
   }
 
   console.log(`🔧 Configuring ${server.description}...`);
-  
+
   const apiKeys = await promptForAPIKeys([serverType]);
-  
+
   if (Object.keys(apiKeys).length === 0) {
     console.log('❌ No API keys provided');
     return;
@@ -302,7 +306,7 @@ export async function configureMCPServer(cwd: string, serverType: MCPServerType)
 
   // Read current config
   const config = await readOpenCodeConfig(cwd);
-  
+
   // Initialize mcp section if it doesn't exist
   if (!config.mcp) {
     config.mcp = {};

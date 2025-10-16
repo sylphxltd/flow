@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { initCommand } from './commands/init-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
+import { memoryCommand } from './commands/memory-command.js';
 import { syncCommand } from './commands/sync-command.js';
 import { createCommand } from './utils/command-builder.js';
 import { showDefaultHelp } from './utils/help.js';
@@ -13,7 +14,7 @@ export function createCLI(): Command {
     .description('Sylphx Flow - Type-safe development flow CLI')
     .version('1.0.0');
 
-  const commands = [syncCommand, initCommand, mcpCommand];
+  const commands = [syncCommand, initCommand, mcpCommand, memoryCommand];
 
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
