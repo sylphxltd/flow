@@ -4,11 +4,11 @@ import { addMCPServers, configureMCPServer, promptForAPIKeys } from '../utils/mc
 import { installAgents } from '../core/init.js';
 
 function validateInitOptions(options: CommandOptions): void {
-  // Default to opencode agent
-  options.agent = options.agent || 'opencode';
+  // Default to opencode target
+  options.target = options.target || 'opencode';
 
-  if (options.agent !== 'opencode') {
-    throw new CLIError('Currently only opencode is supported for init.', 'UNSUPPORTED_AGENT');
+  if (options.target !== 'opencode') {
+    throw new CLIError('Currently only opencode is supported for init.', 'UNSUPPORTED_TARGET');
   }
 
   // Remove unsupported options for init
@@ -21,7 +21,7 @@ export const initCommand: CommandConfig = {
   name: 'init',
   description: 'Initialize project with Sylphx Flow development agents and MCP tools',
   options: [
-    { flags: '--agent <type>', description: 'Force specific agent (default: opencode)' },
+    { flags: '--target <type>', description: 'Force specific target (default: opencode)' },
     { flags: '--verbose', description: 'Show detailed output' },
     { flags: '--dry-run', description: 'Show what would be done without making changes' },
     { flags: '--clear', description: 'Clear obsolete items before processing' },
@@ -32,7 +32,7 @@ export const initCommand: CommandConfig = {
 
     console.log('🚀 Sylphx Flow Setup');
     console.log('======================');
-    console.log(`🤖 Agent: ${options.agent}`);
+    console.log(`🎯 Target: ${options.target}`);
     console.log('');
 
     // Install MCP tools by default (unless --no-mcp is specified)

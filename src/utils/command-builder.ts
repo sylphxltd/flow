@@ -36,7 +36,7 @@ export function createCommand(config: CommandConfig): Command {
 }
 
 export const COMMON_OPTIONS = [
-  { flags: '--agent <type>', description: 'Force specific agent' },
+  { flags: '--target <type>', description: 'Force specific target' },
   { flags: '--verbose', description: 'Show detailed output' },
   { flags: '--dry-run', description: 'Show what would be done without making changes' },
   { flags: '--clear', description: 'Clear obsolete items before processing' },

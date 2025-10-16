@@ -12,11 +12,10 @@ export interface ProcessResult {
 }
 
 export interface CommonOptions {
-  agent?: string;
+  target?: string;
+  verbose?: boolean;
   dryRun?: boolean;
   clear?: boolean;
-  verbose?: boolean;
-  quiet?: boolean;
   mcp?: string[] | null | boolean;
 }
 

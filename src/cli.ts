@@ -22,11 +22,7 @@ export function createCLI(): Command {
   }
 
   // Add TUI command separately since it has special handler
-  program
-    .command('memory-tui')
-    .alias('mtui')
-    .description('Launch interactive memory management TUI')
-    .action(handleMemoryTui);
+  program.command('tui').description('Launch interactive Sylphx Flow TUI').action(handleMemoryTui);
 
   program.action(() => {
     showDefaultHelp();

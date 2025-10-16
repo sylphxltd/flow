@@ -82,22 +82,22 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const cwd = process.cwd();
   const results: ProcessResult[] = [];
 
-  // Determine agent
+  // Determine target
   let agent: AgentType;
-  if (options.agent) {
-    agent = options.agent.toLowerCase() as AgentType;
+  if (options.target) {
+    agent = options.target.toLowerCase() as AgentType;
     if (!getSupportedAgents(AGENT_CONFIGS).includes(agent)) {
-      log(`❌ Unknown agent: ${agent}`, 'red');
-      log(`Supported agents: ${getSupportedAgents(AGENT_CONFIGS).join(', ')}`, 'yellow');
-      throw new Error(`Unknown agent: ${agent}`);
+      log(`❌ Unknown target: ${agent}`, 'red');
+      log(`Supported targets: ${getSupportedAgents(AGENT_CONFIGS).join(', ')}`, 'yellow');
+      throw new Error(`Unknown target: ${agent}`);
     }
   } else {
     const detectedAgent = detectAgentTool();
     if (detectedAgent !== 'opencode') {
       agent = detectedAgent;
-      console.log(`📝 Detected agent: ${getAgentConfig(AGENT_CONFIGS, agent).name}`);
+      console.log(`📝 Detected target: ${getAgentConfig(AGENT_CONFIGS, agent).name}`);
     } else {
-      console.log('📝 No agent detected or defaulting to OpenCode.');
+      console.log('📝 No target detected or defaulting to OpenCode.');
       agent = await promptForAgent();
     }
   }

@@ -1,5 +1,5 @@
 export interface CommandOptions {
-  agent?: string;
+  target?: string;
   verbose?: boolean;
   dryRun?: boolean;
   clear?: boolean;

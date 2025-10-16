@@ -534,20 +534,20 @@ async function installAgents(options) {
   const cwd = process.cwd();
   const results = [];
   let agent;
-  if (options.agent) {
-    agent = options.agent.toLowerCase();
+  if (options.target) {
+    agent = options.target.toLowerCase();
     if (!getSupportedAgents(AGENT_CONFIGS).includes(agent)) {
-      log(`\u274C Unknown agent: ${agent}`, "red");
-      log(`Supported agents: ${getSupportedAgents(AGENT_CONFIGS).join(", ")}`, "yellow");
-      throw new Error(`Unknown agent: ${agent}`);
+      log(`\u274C Unknown target: ${agent}`, "red");
+      log(`Supported targets: ${getSupportedAgents(AGENT_CONFIGS).join(", ")}`, "yellow");
+      throw new Error(`Unknown target: ${agent}`);
     }
   } else {
     const detectedAgent = detectAgentTool2();
     if (detectedAgent !== "opencode") {
       agent = detectedAgent;
-      console.log(`\u{1F4DD} Detected agent: ${getAgentConfig(AGENT_CONFIGS, agent).name}`);
+      console.log(`\u{1F4DD} Detected target: ${getAgentConfig(AGENT_CONFIGS, agent).name}`);
     } else {
-      console.log("\u{1F4DD} No agent detected or defaulting to OpenCode.");
+      console.log("\u{1F4DD} No target detected or defaulting to OpenCode.");
       agent = await promptForAgent2();
     }
   }
@@ -621,9 +621,9 @@ async function installAgents(options) {
 
 // src/commands/init-command.ts
 function validateInitOptions(options) {
-  options.agent = options.agent || "opencode";
-  if (options.agent !== "opencode") {
-    throw new CLIError("Currently only opencode is supported for init.", "UNSUPPORTED_AGENT");
+  options.target = options.target || "opencode";
+  if (options.target !== "opencode") {
+    throw new CLIError("Currently only opencode is supported for init.", "UNSUPPORTED_TARGET");
   }
   if (options.merge) {
     throw new CLIError("The --merge option is not supported with init command.", "INVALID_OPTION");
@@ -633,7 +633,7 @@ var initCommand = {
   name: "init",
   description: "Initialize project with Sylphx Flow development agents and MCP tools",
   options: [
-    { flags: "--agent <type>", description: "Force specific agent (default: opencode)" },
+    { flags: "--target <type>", description: "Force specific target (default: opencode)" },
     { flags: "--verbose", description: "Show detailed output" },
     { flags: "--dry-run", description: "Show what would be done without making changes" },
     { flags: "--clear", description: "Clear obsolete items before processing" },
@@ -643,7 +643,7 @@ var initCommand = {
     validateInitOptions(options);
     console.log("\u{1F680} Sylphx Flow Setup");
     console.log("======================");
-    console.log(`\u{1F916} Agent: ${options.agent}`);
+    console.log(`\u{1F3AF} Target: ${options.target}`);
     console.log("");
     if (options.mcp !== false) {
       console.log("\u{1F4E6} Installing MCP tools...");
@@ -1684,11 +1684,14 @@ function showDefaultHelp() {
   console.log("  init     Initialize project with Sylphx Flow");
   console.log("  mcp      Manage MCP tools");
   console.log("  memory   Manage memory storage");
+  console.log("  tui      Interactive TUI for all operations");
   console.log("");
   console.log("Examples:");
   console.log("  sylphx-flow init");
+  console.log("  sylphx-flow init --target opencode");
   console.log("  sylphx-flow mcp install --all");
   console.log("  sylphx-flow memory set key value");
+  console.log("  sylphx-flow tui");
   console.log("");
   console.log('Run "sylphx-flow <command> --help" for more information about a command.');
 }
@@ -1701,7 +1704,7 @@ function createCLI() {
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
-  program.command("memory-tui").alias("mtui").description("Launch interactive memory management TUI").action(handleMemoryTui);
+  program.command("tui").description("Launch interactive Sylphx Flow TUI").action(handleMemoryTui);
   program.action(() => {
     showDefaultHelp();
   });
