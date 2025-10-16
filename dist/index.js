@@ -533,9 +533,26 @@ var AGENT_CONFIGS = {
 async function getAgentFiles() {
   const scriptPath = path3.resolve(process.argv[1]);
   const scriptDir = path3.dirname(scriptPath);
-  const agentsDir = path3.join(scriptDir, "..", "agents");
-  if (!fs2.existsSync(agentsDir)) {
-    throw new Error(`Could not find agents directory at: ${agentsDir}`);
+  const possiblePaths = [
+    // Standard package structure: dist/index.js -> ../agents
+    path3.join(scriptDir, "..", "agents"),
+    // npx might put agents in node_modules/agents
+    path3.join(scriptDir, "..", "..", "agents"),
+    // Package root with @sylphxltd/flow prefix
+    path3.join(scriptDir, "..", "..", "@sylphxltd", "flow", "agents")
+  ];
+  let agentsDir;
+  for (const possiblePath of possiblePaths) {
+    if (fs2.existsSync(possiblePath)) {
+      agentsDir = possiblePath;
+      break;
+    }
+  }
+  if (!agentsDir) {
+    throw new Error(
+      `Could not find agents directory. Tried:
+${possiblePaths.map((p) => `  - ${p}`).join("\n")}`
+    );
   }
   const subdirs = fs2.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   const allFiles = [];
@@ -648,7 +665,24 @@ async function installAgents(options) {
   } else {
     const scriptPath = path3.resolve(process.argv[1]);
     const scriptDir = path3.dirname(scriptPath);
-    const agentsSourceDir = path3.join(scriptDir, "..", "agents");
+    const possiblePaths = [
+      path3.join(scriptDir, "..", "agents"),
+      path3.join(scriptDir, "..", "..", "agents"),
+      path3.join(scriptDir, "..", "..", "@sylphxltd", "flow", "agents")
+    ];
+    let agentsSourceDir;
+    for (const possiblePath of possiblePaths) {
+      if (fs2.existsSync(possiblePath)) {
+        agentsSourceDir = possiblePath;
+        break;
+      }
+    }
+    if (!agentsSourceDir) {
+      throw new Error(
+        `Could not find agents source directory. Tried:
+${possiblePaths.map((p) => `  - ${p}`).join("\n")}`
+      );
+    }
     for (const agentFile of agentFiles) {
       const sourcePath = path3.join(agentsSourceDir, agentFile);
       const destPath = path3.join(agentsDir, agentFile);
