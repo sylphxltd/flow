@@ -159,9 +159,43 @@ npx github:sylphxltd/flow memory clear --confirm
 ##### `memory tui` - Launch Interactive TUI
 ```bash
 npx github:sylphxltd/flow memory tui
+# or use the alias
+npx github:sylphxltd/flow mtui
 ```
 
-*Note: TUI is coming soon. Currently shows usage information.*
+Launch a powerful interactive terminal UI for memory management.
+
+**Features:**
+- 📋 **List View** - Browse all memory entries with namespace filtering
+- 🔍 **Search** - Wildcard search patterns (`*theme*`, `config/*`)
+- ✏️ **Edit Mode** - Create or modify memory entries
+- 🗑️ **Delete** - Remove entries with confirmation
+- 📊 **Statistics** - View memory usage and namespace breakdown
+- ⌨️ **Keyboard Shortcuts** - Quick navigation
+
+**Keyboard Shortcuts:**
+- `q` - Quit TUI
+- `s` - Search mode
+- `n` - New entry
+- `d` - Delete selected entry
+- `t` - Statistics view
+- `r` - Refresh list
+- `ESC` - Go back / Cancel
+- `ENTER` - Confirm / Select
+
+**Example Workflow:**
+```bash
+# Launch TUI
+npx github:sylphxltd/flow mtui
+
+# Inside TUI:
+# 1. Press 's' to search for "*config*"
+# 2. Select an entry to view details
+# 3. Press 'e' to edit the entry
+# 4. Press 'd' to delete (with 'y' confirmation)
+# 5. Press 't' to view statistics
+# 6. Press 'q' to quit
+```
 
 ### `flow mcp` - Manage MCP Tools
 

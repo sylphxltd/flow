@@ -81,6 +81,11 @@ That's it! Your AI agents now have persistent memory and follow consistent devel
 - **[Memory System](Memory-System)** - Understand AI agent memory
 - **[CLI Commands](CLI-Commands)** - Full command reference
 
+### 🎯 Interactive Tools
+- **[Memory TUI](CLI-Commands#memory-tui---launch-interactive-tui)** - Interactive memory management
+- **Real-time Statistics** - Monitor AI agent memory usage
+- **Visual Interface** - Easy-to-use terminal UI for complex operations
+
 ### Advanced Topics
 - **Agent Integration** - Set up Cursor, Kilocode, etc.
 - **MCP Tools** - Extend with additional tools
