@@ -59,7 +59,7 @@ async function getAgentFiles(): Promise<string[]> {
 
   if (!agentsDir) {
     throw new Error(
-      `Could not find agents directory. Tried:\n${possiblePaths.map((p) => `  - ${p}`).join('\n')}`
+      `Could not find agents directory. Script: ${scriptPath}, ScriptDir: ${scriptDir}\nTried:\n${possiblePaths.map((p) => `  - ${p} (exists: ${fs.existsSync(p)})`).join('\n')}`
     );
   }
 
