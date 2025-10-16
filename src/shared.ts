@@ -273,7 +273,7 @@ export function displayResults(
     // Simple summary for non-verbose mode
     const total = results.length;
     const changed = results.filter((r) => r.status === 'added' || r.status === 'updated').length;
-    
+
     if (changed > 0) {
       console.log(`✅ ${changed} files updated`);
     } else {
