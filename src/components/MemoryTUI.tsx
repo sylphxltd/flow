@@ -192,7 +192,7 @@ export const MemoryTUI: React.FC = () => {
   );
 
   const renderList = () => (
-    <Box flexDirection="column">
+    <Box flexDirection="column" height="100%" width="100%">
       {renderHeader()}
 
       <Box marginTop={1}>
@@ -205,115 +205,174 @@ export const MemoryTUI: React.FC = () => {
         </Box>
       )}
 
-      <Box marginTop={1} flexDirection="column">
+      <Box marginTop={1} flexDirection="column" flexGrow={1}>
         {state.loading ? (
-          <Text>Loading...</Text>
+          <Box justifyContent="center" alignItems="center" flexGrow={1}>
+            <Text>Loading...</Text>
+          </Box>
         ) : state.filteredEntries.length === 0 ? (
-          <Text color="gray">No memory entries found</Text>
+          <Box justifyContent="center" alignItems="center" flexGrow={1}>
+            <Text color="gray">No memory entries found</Text>
+          </Box>
         ) : (
-          state.filteredEntries
-            .slice(state.page * state.pageSize, (state.page + 1) * state.pageSize)
-            .map((entry, index) => (
-              <Box key={`${entry.namespace}-${entry.key}-${entry.timestamp}`}>
-                <Text color={index === state.selectedIndex ? 'green' : 'cyan'}>
-                  {index === state.selectedIndex ? '▶' : ' '}{' '}
-                  {state.page * state.pageSize + index + 1}. {entry.namespace}:{entry.key}
-                </Text>
-                <Text dimColor>
-                  {' '}
-                  = {JSON.stringify(entry.value).substring(0, 60)}
-                  {JSON.stringify(entry.value).length > 60 ? '...' : ''}
-                </Text>
-              </Box>
-            ))
+          <Box flexDirection="column" flexGrow={1}>
+            {state.filteredEntries
+              .slice(state.page * state.pageSize, (state.page + 1) * state.pageSize)
+              .map((entry, index) => (
+                <Box key={`${entry.namespace}-${entry.key}-${entry.timestamp}`} marginBottom={1}>
+                  <Text color={index === state.selectedIndex ? 'green' : 'cyan'}>
+                    {index === state.selectedIndex ? '▶' : ' '}{' '}
+                    {state.page * state.pageSize + index + 1}. {entry.namespace}:{entry.key}
+                  </Text>
+                  <Text dimColor>
+                    {' '}
+                    = {JSON.stringify(entry.value).substring(0, 80)}
+                    {JSON.stringify(entry.value).length > 80 ? '...' : ''}
+                  </Text>
+                </Box>
+              ))}
+          </Box>
         )}
+      </Box>
+
+      <Box marginTop={1} borderStyle="single" borderColor="gray" padding={1}>
+        <Text color="gray">
+          Total: {state.entries.length} entries | Page {state.page + 1} of{' '}
+          {Math.ceil(state.filteredEntries.length / state.pageSize)} | Selected:{' '}
+          {state.filteredEntries[state.selectedIndex]?.namespace}:
+          {state.filteredEntries[state.selectedIndex]?.key || 'None'}
+        </Text>
       </Box>
     </Box>
   );
 
   const renderHelp = () => (
-    <Box flexDirection="column">
+    <Box flexDirection="column" height="100%" width="100%">
       <Box borderStyle="double" borderColor="green" padding={1}>
         <Text bold color="green">
           📖 Help - Memory Manager
         </Text>
       </Box>
 
-      <Box marginTop={1} flexDirection="column">
-        <Text bold color="cyan">
-          Navigation:
-        </Text>
-        <Text>
-          {' '}
-          <Text color="cyan">n/p</Text> - Next/Previous entry
-        </Text>
-        <Text>
-          {' '}
-          <Text color="cyan">a</Text> - Add new entry
-        </Text>
-        <Text>
-          {' '}
-          <Text color="cyan">e</Text> - Edit selected entry
-        </Text>
-        <Text>
-          {' '}
-          <Text color="cyan">d</Text> - Delete selected entry
-        </Text>
-        <Text>
-          {' '}
-          <Text color="cyan">r</Text> - Refresh entries
-        </Text>
-        <Text>
-          {' '}
-          <Text color="cyan">h</Text> - Toggle this help screen
-        </Text>
-        <Text>
-          {' '}
-          <Text color="cyan">q/ESC</Text> - Quit/Go back
-        </Text>
+      <Box marginTop={1} flexDirection="column" flexGrow={1}>
+        <Box flexDirection="column" marginBottom={1}>
+          <Text bold color="cyan">
+            Navigation:
+          </Text>
+          <Text>
+            {' '}
+            <Text color="cyan">n/p</Text> - Next/Previous entry
+          </Text>
+          <Text>
+            {' '}
+            <Text color="cyan">a</Text> - Add new entry
+          </Text>
+          <Text>
+            {' '}
+            <Text color="cyan">e</Text> - Edit selected entry
+          </Text>
+          <Text>
+            {' '}
+            <Text color="cyan">d</Text> - Delete selected entry
+          </Text>
+          <Text>
+            {' '}
+            <Text color="cyan">r</Text> - Refresh entries
+          </Text>
+          <Text>
+            {' '}
+            <Text color="cyan">h</Text> - Toggle this help screen
+          </Text>
+          <Text>
+            {' '}
+            <Text color="cyan">q/ESC</Text> - Quit/Go back
+          </Text>
+        </Box>
+
+        <Box flexDirection="column" marginBottom={1}>
+          <Text bold color="yellow">
+            Features:
+          </Text>
+          <Text>• View all memory entries with pagination</Text>
+          <Text>• Navigate with keyboard shortcuts</Text>
+          <Text>• Delete entries with confirmation</Text>
+          <Text>• Real-time data loading from libSQL database</Text>
+          <Text>• External state management for React+Ink compatibility</Text>
+        </Box>
+
+        <Box flexDirection="column">
+          <Text bold color="magenta">
+            Status:
+          </Text>
+          <Text>• Database: libSQL (.sylphx-flow/memory.db)</Text>
+          <Text>• Entries loaded: {state.entries.length}</Text>
+          <Text>• Compatibility: React 19.2.0 + Ink 6.3.1</Text>
+        </Box>
       </Box>
 
-      <Box marginTop={1}>
+      <Box borderStyle="single" borderColor="gray" padding={1}>
         <Text dimColor>Press 'h' to go back to list</Text>
       </Box>
     </Box>
   );
 
   const renderConfirmDelete = () => (
-    <Box flexDirection="column">
+    <Box flexDirection="column" height="100%" width="100%">
       <Box borderStyle="double" borderColor="red" padding={1}>
         <Text bold color="red">
           ⚠️ Confirm Delete
         </Text>
       </Box>
 
-      <Box marginTop={1} flexDirection="column">
-        <Text>
-          Delete entry:{' '}
-          <Text color="cyan">
-            {state.deleteConfirmEntry?.namespace}:{state.deleteConfirmEntry?.key}
+      <Box marginTop={1} flexDirection="column" flexGrow={1} justifyContent="center">
+        <Box flexDirection="column" marginBottom={2}>
+          <Text>
+            Delete entry:{' '}
+            <Text color="cyan">
+              {state.deleteConfirmEntry?.namespace}:{state.deleteConfirmEntry?.key}
+            </Text>
           </Text>
-        </Text>
-        <Text dimColor>
-          Value: {JSON.stringify(state.deleteConfirmEntry?.value).substring(0, 100)}
-        </Text>
+          <Box marginTop={1}>
+            <Text dimColor>
+              Value: {JSON.stringify(state.deleteConfirmEntry?.value).substring(0, 120)}
+              {JSON.stringify(state.deleteConfirmEntry?.value || '').length > 120 ? '...' : ''}
+            </Text>
+          </Box>
+          <Box marginTop={1}>
+            <Text dimColor>Updated: {state.deleteConfirmEntry?.updated_at}</Text>
+          </Box>
+        </Box>
+
+        <Box flexDirection="column">
+          <Text bold color="yellow">
+            This action cannot be undone!
+          </Text>
+          <Box marginTop={1}>
+            <Text>
+              <Text color="cyan">y</Text> - Yes, delete this entry | <Text color="cyan">n</Text> -
+              No, cancel
+            </Text>
+          </Box>
+        </Box>
       </Box>
 
-      <Box marginTop={1}>
-        <Text>
-          <Text color="cyan">y</Text> - Yes, delete | <Text color="cyan">n</Text> - No, cancel
-        </Text>
+      <Box borderStyle="single" borderColor="gray" padding={1}>
+        <Text dimColor>Press 'n' to cancel, 'y' to confirm deletion</Text>
       </Box>
     </Box>
   );
 
   // Render based on current view mode
-  switch (state.viewMode) {
-    case 'help':
-      return renderHelp();
-    case 'confirm-delete':
-      return renderConfirmDelete();
-    default:
-      return renderList();
-  }
+  const renderContent = () => {
+    switch (state.viewMode) {
+      case 'help':
+        return renderHelp();
+      case 'confirm-delete':
+        return renderConfirmDelete();
+      default:
+        return renderList();
+    }
+  };
+
+  return renderContent();
 };
