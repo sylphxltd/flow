@@ -6,13 +6,11 @@ import {
   type ProcessResult,
   clearObsoleteFiles,
   collectFiles,
-  createMergedContent,
   displayResults,
   getAgentConfig,
   getLocalFileInfo,
   getSupportedAgents,
   log,
-  processBatch,
   detectAgentTool as sharedDetectAgentTool,
   promptForAgent as sharedPromptForAgent,
 } from '../shared.js';
@@ -115,27 +113,22 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   if (options.clear && fs.existsSync(agentsDir)) {
     let expectedFiles: Set<string>;
 
-    if (options.merge) {
-      // In merge mode, only expect the merged file
-      expectedFiles = new Set([`all-agents${config.extension}`]);
-    } else {
-      // Get source files for normal mode
-      const agentFiles = await getAgentFiles();
-      expectedFiles = new Set(
-        agentFiles.map((filePath) => {
-          const parsedPath = path.parse(filePath);
-          const baseName = parsedPath.name;
-          const dir = parsedPath.dir;
+    // Get source files for normal mode
+    const agentFiles = await getAgentFiles();
+    expectedFiles = new Set(
+      agentFiles.map((filePath) => {
+        const parsedPath = path.parse(filePath);
+        const baseName = parsedPath.name;
+        const dir = parsedPath.dir;
 
-          if (config.flatten) {
-            const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
-            return `${flattenedName}${config.extension}`;
-          }
-          // Keep the relative path structure (sdd/file.md, core/file.md)
-          return filePath;
-        })
-      );
-    }
+        if (config.flatten) {
+          const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
+          return `${flattenedName}${config.extension}`;
+        }
+        // Keep the relative path structure (sdd/file.md, core/file.md)
+        return filePath;
+      })
+    );
 
     clearObsoleteFiles(agentsDir, expectedFiles, [config.extension], results);
   }
@@ -151,9 +144,6 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     console.log(
       `📁 Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + '/', '')}`
     );
-    if (options.merge) {
-      console.log('🔗 Mode: Merge all agents into single file');
-    }
     console.log('');
   }
 
@@ -162,85 +152,47 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     return;
   }
 
-  if (options.merge) {
-    // Merge all agents into a single file
-    const mergedFileName = `all-agents${config.extension}`;
-    const mergedFilePath = path.join(agentsDir, mergedFileName);
+  // Process files individually - create both sdd/ and core/ subdirectory structures
+  // Use same logic as getAgentFiles() - simple path resolution
+  const scriptPath = path.resolve(process.argv[1]);
+  const scriptDir = path.dirname(scriptPath);
+  const agentsSourceDir = path.join(scriptDir, 'agents');
 
-    console.log(`📋 Merging ${agentFiles.length} files into ${mergedFileName}...`);
+  for (const agentFile of agentFiles) {
+    const sourcePath = path.join(agentsSourceDir, agentFile);
+    const destPath = path.join(agentsDir, agentFile);
 
-    const pathPrefix = 'agents/';
-    const mergedContent = createMergedContent(
-      agentFiles.map((f) => pathPrefix + f),
-      processContent,
-      'Development Workflow Agents - Complete Collection',
-      pathPrefix
-    );
+    // Ensure destination directory exists
+    const destDir = path.dirname(destPath);
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
 
-    // Check if file needs updating
-    const localInfo = getLocalFileInfo(mergedFilePath);
+    const localInfo = getLocalFileInfo(destPath);
+    const isNew = !localInfo;
+
+    // Read content from source
+    let content = fs.readFileSync(sourcePath, 'utf8');
+    content = processContent(content);
+
     const localProcessed = localInfo ? processContent(localInfo.content) : '';
-    const contentChanged = !localInfo || localProcessed !== mergedContent;
+    const contentChanged = !localInfo || localProcessed !== content;
 
     if (contentChanged) {
-      fs.writeFileSync(mergedFilePath, mergedContent, 'utf8');
+      fs.writeFileSync(destPath, content, 'utf8');
       results.push({
-        file: mergedFileName,
+        file: agentFile,
         status: localInfo ? 'updated' : 'added',
         action: localInfo ? 'Updated' : 'Created',
       });
     } else {
       results.push({
-        file: mergedFileName,
+        file: agentFile,
         status: 'current',
         action: 'Already current',
       });
     }
-
-    displayResults(results, agentsDir, config.name, 'Install', options.verbose);
-  } else {
-    // Process files individually - create both sdd/ and core/ subdirectory structures
-    // Use same logic as getAgentFiles() - simple path resolution
-    const scriptPath = path.resolve(process.argv[1]);
-    const scriptDir = path.dirname(scriptPath);
-    const agentsSourceDir = path.join(scriptDir, 'agents');
-
-    for (const agentFile of agentFiles) {
-      const sourcePath = path.join(agentsSourceDir, agentFile);
-      const destPath = path.join(agentsDir, agentFile);
-
-      // Ensure destination directory exists
-      const destDir = path.dirname(destPath);
-      if (!fs.existsSync(destDir)) {
-        fs.mkdirSync(destDir, { recursive: true });
-      }
-
-      const localInfo = getLocalFileInfo(destPath);
-      const isNew = !localInfo;
-
-      // Read content from source
-      let content = fs.readFileSync(sourcePath, 'utf8');
-      content = processContent(content);
-
-      const localProcessed = localInfo ? processContent(localInfo.content) : '';
-      const contentChanged = !localInfo || localProcessed !== content;
-
-      if (contentChanged) {
-        fs.writeFileSync(destPath, content, 'utf8');
-        results.push({
-          file: agentFile,
-          status: localInfo ? 'updated' : 'added',
-          action: localInfo ? 'Updated' : 'Created',
-        });
-      } else {
-        results.push({
-          file: agentFile,
-          status: 'current',
-          action: 'Already current',
-        });
-      }
-    }
-
-    displayResults(results, agentsDir, config.name, 'Install', options.verbose);
   }
+
+  displayResults(results, agentsDir, config.name, 'Install', options.verbose);
 }

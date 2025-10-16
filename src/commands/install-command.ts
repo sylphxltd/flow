@@ -31,7 +31,6 @@ export const installCommand: CommandConfig = {
     { flags: '--verbose', description: 'Show detailed output' },
     { flags: '--dry-run', description: 'Show what would be done without making changes' },
     { flags: '--clear', description: 'Clear obsolete items before processing' },
-    { flags: '--merge', description: 'Merge all items into a single file' },
     {
       flags: '--mcp [servers...]',
       description: 'Install MCP servers (memory, gpt-image, perplexity, context7, gemini-search)',

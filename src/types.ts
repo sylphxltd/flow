@@ -3,7 +3,6 @@ export interface CommandOptions {
   verbose?: boolean;
   dryRun?: boolean;
   clear?: boolean;
-  merge?: boolean;
   mcp?: string[] | null | boolean;
   servers?: string[];
   server?: string;
