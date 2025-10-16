@@ -127,7 +127,7 @@ You are a senior code reviewer responsible for ensuring code quality, security, 
 ### Key Memory Patterns
 ```typescript
 // Store review results
-memory_set({
+sylphx_flow_memory_set({
   key: 'review-results',
   value: JSON.stringify({
     id: 'review-uuid-v7',
@@ -161,7 +161,7 @@ memory_set({
 })
 
 // Store quality metrics
-memory_set({
+sylphx_flow_memory_set({
   key: 'quality-metrics',
   value: JSON.stringify({
     project: 'sylphx-flow',
@@ -172,6 +172,24 @@ memory_set({
     performance_score: 7.8,
     maintainability_score: 8.1
   }),
+  namespace: 'reviewer'
+})
+
+// Get research findings for context
+sylphx_flow_memory_get({
+  key: 'research-findings',
+  namespace: 'researcher'
+})
+
+// Get implementation details from coder
+sylphx_flow_memory_get({
+  key: 'implementation-status',
+  namespace: 'coder'
+})
+
+// Search for similar issues
+sylphx_flow_memory_search({
+  pattern: '*security*',
   namespace: 'reviewer'
 })
 ```

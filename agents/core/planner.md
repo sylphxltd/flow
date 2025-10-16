@@ -79,10 +79,130 @@ plan:
 
 ## Agent Coordination
 
+### Memory Communication
+```typescript
+// Store comprehensive plan
+sylphx_flow_memory_set({
+  key: 'task-breakdown',
+  value: JSON.stringify({
+    id: 'plan-uuid-v7',
+    timestamp: Date.now(),
+    objective: 'Implement user authentication system',
+    phases: [
+      {
+        name: 'Research & Analysis',
+        tasks: [
+          {
+            id: 'research-auth-libraries',
+            description: 'Analyze available authentication libraries',
+            agent: 'researcher',
+            estimated_time: '30m',
+            priority: 'high',
+            dependencies: []
+          },
+          {
+            id: 'analyze-current-auth',
+            description: 'Review existing authentication implementation',
+            agent: 'researcher', 
+            estimated_time: '20m',
+            priority: 'high',
+            dependencies: []
+          }
+        ]
+      },
+      {
+        name: 'Implementation',
+        tasks: [
+          {
+            id: 'implement-auth-service',
+            description: 'Create authentication service with JWT',
+            agent: 'coder',
+            estimated_time: '2h',
+            priority: 'high',
+            dependencies: ['research-auth-libraries', 'analyze-current-auth']
+          },
+          {
+            id: 'create-auth-middleware',
+            description: 'Build authentication middleware',
+            agent: 'coder',
+            estimated_time: '1h',
+            priority: 'high',
+            dependencies: ['implement-auth-service']
+          }
+        ]
+      },
+      {
+        name: 'Testing & Validation',
+        tasks: [
+          {
+            id: 'write-auth-tests',
+            description: 'Create comprehensive test suite',
+            agent: 'tester',
+            estimated_time: '1.5h',
+            priority: 'medium',
+            dependencies: ['create-auth-middleware']
+          },
+          {
+            id: 'security-review',
+            description: 'Conduct security audit',
+            agent: 'reviewer',
+            estimated_time: '45m',
+            priority: 'high',
+            dependencies: ['write-auth-tests']
+          }
+        ]
+      }
+    ],
+    critical_path: ['research-auth-libraries', 'implement-auth-service', 'create-auth-middleware', 'security-review'],
+    estimated_total_time: '5h 45m',
+    risks: [
+      {
+        description: 'Authentication library compatibility issues',
+        mitigation: 'Research multiple options and create proof of concept'
+      }
+    ]
+  }),
+  namespace: 'planner'
+})
+
+// Store planning status
+sylphx_flow_memory_set({
+  key: 'planning-status',
+  value: JSON.stringify({
+    agent: 'planner',
+    status: 'planning',
+    current_task: 'authentication-system',
+    tasks_planned: 6,
+    estimated_hours: 5.75,
+    agents_assigned: ['researcher', 'coder', 'tester', 'reviewer'],
+    timestamp: Date.now()
+  }),
+  namespace: 'planner'
+})
+
+// Get research findings from researcher
+sylphx_flow_memory_get({
+  key: 'research-findings',
+  namespace: 'researcher'
+})
+
+// Search for existing plans
+sylphx_flow_memory_search({
+  pattern: '*auth*',
+  namespace: 'planner'
+})
+
+// Check for conflicts with existing plans
+sylphx_flow_memory_search({
+  pattern: '*task*',
+  namespace: 'planner'
+})
+```
+
 ### Agent Communication
 - Store plans and status updates for other agents
 - Retrieve research findings from researcher agent
-- Use `memory_search` to find related plans and dependencies
+- Use `sylphx_flow_memory_search` to find related plans and dependencies
 - Store plans under namespace `planner` for organization
 
 ### Coordination Workflow

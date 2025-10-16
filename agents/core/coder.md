@@ -233,7 +233,7 @@ const createUserEntity = (userData: CreateUserDto): User => ({
 ### Memory-Based Collaboration
 ```typescript
 // Report implementation status
-memory_set({
+sylphx_flow_memory_set({
   key: 'implementation-status',
   value: JSON.stringify({
     agent: 'coder',
@@ -247,13 +247,13 @@ memory_set({
 })
 
 // Get research findings from researcher
-memory_get({
+sylphx_flow_memory_get({
   key: 'findings',
   namespace: 'researcher'
 })
 
 // Get requirements from planner
-memory_get({
+sylphx_flow_memory_get({
   key: 'current-plan',
   namespace: 'planner'
 })

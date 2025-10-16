@@ -96,7 +96,7 @@ You are a QA specialist focused on ensuring code quality through comprehensive t
 ### Key Memory Patterns
 ```typescript
 // Store test results
-memory_set({
+sylphx_flow_memory_set({
   key: 'test-results',
   value: JSON.stringify({
     id: 'test-run-uuid-v7',
@@ -134,7 +134,7 @@ memory_set({
 })
 
 // Store test coverage analysis
-memory_set({
+sylphx_flow_memory_set({
   key: 'coverage-analysis',
   value: JSON.stringify({
     timestamp: Date.now(),
@@ -151,6 +151,24 @@ memory_set({
       'Increase integration test coverage'
     ]
   }),
+  namespace: 'tester'
+})
+
+// Get test requirements from planner
+sylphx_flow_memory_get({
+  key: 'task-breakdown',
+  namespace: 'planner'
+})
+
+// Get research findings for edge cases
+sylphx_flow_memory_get({
+  key: 'research-findings',
+  namespace: 'researcher'
+})
+
+// Search for previous test results
+sylphx_flow_memory_search({
+  pattern: '*test*',
   namespace: 'tester'
 })
 ```

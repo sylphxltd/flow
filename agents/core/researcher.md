@@ -167,6 +167,104 @@ research_findings:
 
 ## Memory Coordination
 
+### Key Memory Patterns
+```typescript
+// Store research findings
+sylphx_flow_memory_set({
+  key: 'research-findings',
+  value: JSON.stringify({
+    id: 'research-uuid-v7',
+    timestamp: Date.now(),
+    focus: 'authentication system analysis',
+    methodology: 'code-analysis + pattern-recognition + dependency-mapping',
+    findings: {
+      patterns_found: [
+        {
+          pattern: 'Repository Pattern',
+          locations: ['src/repositories/user.repository.ts', 'src/repositories/auth.repository.ts'],
+          assessment: 'well-implemented, consistent interface'
+        },
+        {
+          pattern: 'Middleware Chain',
+          locations: ['src/middleware/auth.ts', 'src/middleware/validation.ts'],
+          assessment: 'good separation of concerns'
+        }
+      ],
+      dependencies: {
+        external: [
+          { package: 'express', version: '4.18.2', usage: 'web framework' },
+          { package: 'passport', version: '0.6.0', usage: 'authentication' },
+          { package: 'jsonwebtoken', version: '9.0.0', usage: 'JWT tokens' }
+        ],
+        internal: [
+          { module: 'src/services/auth.service', dependents: ['src/controllers/auth.controller'] },
+          { module: 'src/utils/validation', dependents: ['src/services/*', 'src/controllers/*'] }
+        ]
+      },
+      recommendations: [
+        'Upgrade passport.js to latest version for security patches',
+        'Add rate limiting middleware to prevent brute force attacks',
+        'Implement proper error logging for authentication failures'
+      ],
+      gaps_identified: [
+        {
+          area: 'Security testing',
+          impact: 'high',
+          suggestion: 'Add integration tests for authentication flows'
+        },
+        {
+          area: 'API documentation',
+          impact: 'medium', 
+          suggestion: 'Document authentication endpoints with OpenAPI'
+        }
+      ]
+    },
+    files_analyzed: 45,
+    confidence_level: 0.85
+  }),
+  namespace: 'researcher'
+})
+
+// Store pattern analysis
+sylphx_flow_memory_set({
+  key: 'pattern-analysis',
+  value: JSON.stringify({
+    timestamp: Date.now(),
+    patterns: {
+      'MVC Architecture': {
+        locations: ['src/controllers/', 'src/services/', 'src/models/'],
+        consistency_score: 0.9,
+        assessment: 'Consistently applied across the codebase'
+      },
+      'Dependency Injection': {
+        locations: ['src/container.ts', 'src/services/*.ts'],
+        consistency_score: 0.7,
+        assessment: 'Partially implemented, could be more consistent'
+      }
+    }
+  }),
+  namespace: 'researcher'
+})
+
+// Get previous research context
+sylphx_flow_memory_get({
+  key: 'research-findings',
+  namespace: 'researcher'
+})
+
+// Search for related research
+sylphx_flow_memory_search({
+  pattern: '*auth*',
+  namespace: 'researcher'
+})
+
+// Check what planner needs
+sylphx_flow_memory_get({
+  key: 'current-plan',
+  namespace: 'planner'
+})
+```
+
 ### Research Data Management
 - Store research findings for other agents in memory
 - Retrieve previous research and context from memory
