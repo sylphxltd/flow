@@ -648,7 +648,7 @@ async function installAgents(options) {
   } else {
     const scriptPath = path3.resolve(process.argv[1]);
     const scriptDir = path3.dirname(scriptPath);
-    const agentsSourceDir = path3.join(scriptDir, "..", "agents");
+    const agentsSourceDir = path3.join(scriptDir, "agents");
     for (const agentFile of agentFiles) {
       const sourcePath = path3.join(agentsSourceDir, agentFile);
       const destPath = path3.join(agentsDir, agentFile);

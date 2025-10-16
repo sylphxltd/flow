@@ -1280,7 +1280,7 @@ async function installAgents(options) {
   } else {
     const scriptPath = import_node_path3.default.resolve(process.argv[1]);
     const scriptDir = import_node_path3.default.dirname(scriptPath);
-    const agentsSourceDir = import_node_path3.default.join(scriptDir, "..", "agents");
+    const agentsSourceDir = import_node_path3.default.join(scriptDir, "agents");
     for (const agentFile of agentFiles) {
       const sourcePath = import_node_path3.default.join(agentsSourceDir, agentFile);
       const destPath = import_node_path3.default.join(agentsDir, agentFile);

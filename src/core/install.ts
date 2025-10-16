@@ -203,7 +203,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     // Use same logic as getAgentFiles() - simple path resolution
     const scriptPath = path.resolve(process.argv[1]);
     const scriptDir = path.dirname(scriptPath);
-    const agentsSourceDir = path.join(scriptDir, '..', 'agents');
+    const agentsSourceDir = path.join(scriptDir, 'agents');
 
     for (const agentFile of agentFiles) {
       const sourcePath = path.join(agentsSourceDir, agentFile);
