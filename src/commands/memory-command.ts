@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import type { CommandConfig, CommandHandler } from '../types.js';
-import { LibSQLMemoryStorage, type MemoryEntry } from '../utils/libsql-storage.js';
+import { LibSQLMemoryStorage } from '../utils/libsql-storage.js';
 
 // Memory list handler
 const memoryListHandler: CommandHandler = async (options) => {

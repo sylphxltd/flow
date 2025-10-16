@@ -9,10 +9,6 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -30,182 +26,263 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
+// src/utils/libsql-storage.ts
+var import_client, fs3, path4, LibSQLMemoryStorage;
+var init_libsql_storage = __esm({
+  "src/utils/libsql-storage.ts"() {
+    "use strict";
+    import_client = require("@libsql/client");
+    fs3 = __toESM(require("fs"), 1);
+    path4 = __toESM(require("path"), 1);
+    LibSQLMemoryStorage = class {
+      client;
+      dbPath;
+      constructor() {
+        const memoryDir = path4.join(process.cwd(), ".sylphx-flow");
+        if (!fs3.existsSync(memoryDir)) {
+          fs3.mkdirSync(memoryDir, { recursive: true });
+        }
+        this.dbPath = path4.join(memoryDir, "memory.db");
+        this.client = (0, import_client.createClient)({
+          url: `file:${this.dbPath}`
+        });
+        this.initializeTables();
+      }
+      async initializeTables() {
+        const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS memory (
+        key TEXT NOT NULL,
+        namespace TEXT NOT NULL DEFAULT 'default',
+        value TEXT NOT NULL,
+        timestamp INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (key, namespace)
+      )
+    `;
+        await this.client.execute(createTableSQL);
+        await this.client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_memory_namespace ON memory(namespace);
+    `);
+        await this.client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_memory_timestamp ON memory(timestamp);
+    `);
+        await this.client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_memory_key ON memory(key);
+    `);
+      }
+      serializeValue(value) {
+        return JSON.stringify(value);
+      }
+      deserializeValue(value) {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      async set(key, value, namespace = "default") {
+        const now = /* @__PURE__ */ new Date();
+        const timestamp = now.getTime();
+        const created_at = now.toISOString();
+        const updated_at = created_at;
+        const serializedValue = this.serializeValue(value);
+        const existing = await this.get(key, namespace);
+        if (existing) {
+          const updateSQL = `
+        UPDATE memory 
+        SET value = ?, timestamp = ?, updated_at = ?
+        WHERE key = ? AND namespace = ?
+      `;
+          await this.client.execute({
+            sql: updateSQL,
+            args: [serializedValue, timestamp, updated_at, key, namespace]
+          });
+        } else {
+          const insertSQL = `
+        INSERT INTO memory (key, namespace, value, timestamp, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+          await this.client.execute({
+            sql: insertSQL,
+            args: [key, namespace, serializedValue, timestamp, created_at, updated_at]
+          });
+        }
+      }
+      async get(key, namespace = "default") {
+        const selectSQL = `
+      SELECT key, namespace, value, timestamp, created_at, updated_at
+      FROM memory
+      WHERE key = ? AND namespace = ?
+    `;
+        const result = await this.client.execute({
+          sql: selectSQL,
+          args: [key, namespace]
+        });
+        if (result.rows.length === 0) {
+          return null;
+        }
+        const row = result.rows[0];
+        return {
+          key: row.key,
+          namespace: row.namespace,
+          value: this.deserializeValue(row.value),
+          timestamp: row.timestamp,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        };
+      }
+      async getAll() {
+        const selectSQL = `
+      SELECT key, namespace, value, timestamp, created_at, updated_at
+      FROM memory
+      ORDER BY timestamp DESC
+    `;
+        const result = await this.client.execute(selectSQL);
+        return result.rows.map((row) => ({
+          key: row.key,
+          namespace: row.namespace,
+          value: this.deserializeValue(row.value),
+          timestamp: row.timestamp,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        }));
+      }
+      async search(pattern, namespace) {
+        const searchPattern = pattern.replace(/\*/g, "%");
+        let selectSQL = `
+      SELECT key, namespace, value, timestamp, created_at, updated_at
+      FROM memory
+      WHERE key LIKE ? OR value LIKE ?
+    `;
+        const args = [searchPattern, searchPattern];
+        if (namespace && namespace !== "all") {
+          selectSQL += " AND namespace = ?";
+          args.push(namespace);
+        }
+        selectSQL += " ORDER BY timestamp DESC";
+        const result = await this.client.execute({
+          sql: selectSQL,
+          args
+        });
+        return result.rows.map((row) => ({
+          key: row.key,
+          namespace: row.namespace,
+          value: this.deserializeValue(row.value),
+          timestamp: row.timestamp,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        }));
+      }
+      async delete(key, namespace = "default") {
+        const deleteSQL = `
+      DELETE FROM memory
+      WHERE key = ? AND namespace = ?
+    `;
+        const result = await this.client.execute({
+          sql: deleteSQL,
+          args: [key, namespace]
+        });
+        return result.rowsAffected > 0;
+      }
+      async clear(namespace) {
+        if (namespace && namespace !== "all") {
+          const deleteSQL = "DELETE FROM memory WHERE namespace = ?";
+          await this.client.execute({
+            sql: deleteSQL,
+            args: [namespace]
+          });
+        } else {
+          const deleteSQL = "DELETE FROM memory";
+          await this.client.execute(deleteSQL);
+        }
+      }
+      async getStats() {
+        const countResult = await this.client.execute("SELECT COUNT(*) as count FROM memory");
+        const totalEntries = countResult.rows[0].count;
+        const namespaceResult = await this.client.execute(`
+      SELECT namespace, COUNT(*) as count
+      FROM memory
+      GROUP BY namespace
+      ORDER BY namespace
+    `);
+        const namespaces = namespaceResult.rows.map((row) => row.namespace);
+        const namespaceCounts = {};
+        namespaceResult.rows.forEach((row) => {
+          namespaceCounts[row.namespace] = row.count;
+        });
+        const timeResult = await this.client.execute(`
+      SELECT 
+        MIN(created_at) as oldest,
+        MAX(created_at) as newest
+      FROM memory
+    `);
+        const timeRow = timeResult.rows[0];
+        const oldestEntry = timeRow.oldest;
+        const newestEntry = timeRow.newest;
+        return {
+          totalEntries,
+          namespaces,
+          namespaceCounts,
+          oldestEntry,
+          newestEntry
+        };
+      }
+      // Load method for compatibility with existing code
+      async load() {
+        const entries = await this.getAll();
+        const namespaces = {};
+        entries.forEach((entry) => {
+          if (!namespaces[entry.namespace]) {
+            namespaces[entry.namespace] = {};
+          }
+          namespaces[entry.namespace][entry.key] = entry.value;
+        });
+        return { namespaces };
+      }
+      // Close database connection
+      async close() {
+      }
+      // Get database path for debugging
+      getDatabasePath() {
+        return this.dbPath;
+      }
+    };
+  }
+});
+
 // src/servers/sylphx-flow-mcp-server.ts
 var sylphx_flow_mcp_server_exports = {};
-__export(sylphx_flow_mcp_server_exports, {
-  default: () => sylphx_flow_mcp_server_default
-});
-async function startServer() {
-  const transport = new import_stdio.StdioServerTransport();
-  await server.connect(transport);
-  Logger.info("\u{1F517} Server connected via stdio transport");
+async function main() {
+  try {
+    const transport = new import_stdio.StdioServerTransport();
+    await server.connect(transport);
+    Logger.success("\u2705 MCP Server connected and ready");
+  } catch (error) {
+    Logger.error("Failed to start MCP server", error);
+    process.exit(1);
+  }
 }
-var fs3, path4, import_mcp, import_stdio, import_zod, MemoryStorage, Logger, DEFAULT_CONFIG, server, memoryStorage, sylphx_flow_mcp_server_default;
+var import_mcp, import_stdio, import_zod, DEFAULT_CONFIG, Logger, server, memoryStorage;
 var init_sylphx_flow_mcp_server = __esm({
   "src/servers/sylphx-flow-mcp-server.ts"() {
     "use strict";
-    fs3 = __toESM(require("fs/promises"), 1);
-    path4 = __toESM(require("path"), 1);
     import_mcp = require("@modelcontextprotocol/sdk/server/mcp.js");
     import_stdio = require("@modelcontextprotocol/sdk/server/stdio.js");
     import_zod = require("zod");
-    MemoryStorage = class {
-      data = /* @__PURE__ */ new Map();
-      memoryDir;
-      filePath;
-      constructor() {
-        this.memoryDir = path4.join(process.cwd(), ".sylphx-flow");
-        this.filePath = path4.join(this.memoryDir, "memory.db");
-        fs3.mkdir(this.memoryDir, { recursive: true }).catch(() => {
-        });
-        this.loadData();
-      }
-      getFullKey(key, namespace) {
-        return `${namespace}:${key}`;
-      }
-      async loadData() {
-        try {
-          const data = await fs3.readFile(this.filePath, "utf8");
-          const parsed = JSON.parse(data);
-          this.data = new Map(Object.entries(parsed));
-        } catch {
-          this.data = /* @__PURE__ */ new Map();
-        }
-      }
-      async saveData() {
-        try {
-          const data = Object.fromEntries(this.data);
-          await fs3.writeFile(this.filePath, JSON.stringify(data, null, 2), "utf8");
-        } catch (error) {
-          console.warn("Warning: Could not save memory data:", error);
-        }
-      }
-      set(key, value, namespace = "default") {
-        const fullKey = this.getFullKey(key, namespace);
-        const now = (/* @__PURE__ */ new Date()).toISOString();
-        const timestamp = Date.now();
-        const existing = this.data.get(fullKey);
-        this.data.set(fullKey, {
-          key,
-          namespace,
-          value,
-          timestamp,
-          created_at: existing?.created_at || now,
-          updated_at: now
-        });
-        this.saveData().catch(() => {
-        });
-      }
-      get(key, namespace = "default") {
-        const fullKey = this.getFullKey(key, namespace);
-        return this.data.get(fullKey) || null;
-      }
-      search(pattern, namespace) {
-        const searchPattern = pattern.replace(/\*/g, ".*");
-        const regex = new RegExp(searchPattern);
-        const results2 = [];
-        for (const entry of this.data.values()) {
-          if (namespace && entry.namespace !== namespace) {
-            continue;
-          }
-          if (regex.test(entry.key)) {
-            results2.push(entry);
-          }
-        }
-        return results2.sort((a, b) => b.timestamp - a.timestamp);
-      }
-      list(namespace) {
-        const results2 = [];
-        for (const entry of this.data.values()) {
-          if (namespace && entry.namespace !== namespace) {
-            continue;
-          }
-          results2.push(entry);
-        }
-        return results2.sort((a, b) => b.timestamp - a.timestamp);
-      }
-      delete(key, namespace = "default") {
-        const fullKey = this.getFullKey(key, namespace);
-        const deleted = this.data.delete(fullKey);
-        if (deleted) {
-          this.saveData().catch(() => {
-          });
-        }
-        return deleted;
-      }
-      clear(namespace) {
-        let count = 0;
-        if (namespace) {
-          const keysToDelete = [];
-          for (const [fullKey, entry] of this.data.entries()) {
-            if (entry.namespace === namespace) {
-              keysToDelete.push(fullKey);
-            }
-          }
-          for (const key of keysToDelete) {
-            this.data.delete(key);
-            count++;
-          }
-        } else {
-          count = this.data.size;
-          this.data.clear();
-        }
-        if (count > 0) {
-          this.saveData().catch(() => {
-          });
-        }
-        return count;
-      }
-      getStats() {
-        const entries = Array.from(this.data.values());
-        const namespaces = [...new Set(entries.map((entry) => entry.namespace))];
-        const namespaceStats = namespaces.map((ns) => ({
-          namespace: ns,
-          count: entries.filter((entry) => entry.namespace === ns).length
-        }));
-        const timestamps = entries.map((entry) => entry.timestamp);
-        const oldestEntry = timestamps.length > 0 ? Math.min(...timestamps) : 0;
-        const newestEntry = timestamps.length > 0 ? Math.max(...timestamps) : 0;
-        return {
-          total_entries: entries.length,
-          namespaces: namespaceStats,
-          oldest_entry: oldestEntry,
-          newest_entry: newestEntry
-        };
-      }
-    };
-    Logger = class _Logger {
-      static logLevel = process.env.LOG_LEVEL || "info";
-      static info(message, ...args) {
-        if (["info", "debug"].includes(_Logger.logLevel)) {
-          console.log(`\u2139\uFE0F  ${message}`, ...args);
-        }
-      }
-      static debug(message, ...args) {
-        if (_Logger.logLevel === "debug") {
-          console.log(`\u{1F41B} ${message}`, ...args);
-        }
-      }
-      static warn(message, ...args) {
-        console.warn(`\u26A0\uFE0F  ${message}`, ...args);
-      }
-      static error(message, error) {
-        console.error(`\u274C ${message}`);
-        if (error) {
-          console.error("   Error details:", error instanceof Error ? error.message : error);
-          if (error instanceof Error && error.stack) {
-            console.error("   Stack trace:", error.stack);
-          }
-        }
-      }
-      static success(message, ...args) {
-        console.log(`\u2705 ${message}`, ...args);
-      }
-    };
+    init_libsql_storage();
     DEFAULT_CONFIG = {
-      name: "sylphx-flow-mcp-server",
+      name: "flow_memory",
       version: "1.0.0",
-      description: "Sylphx Flow MCP server providing memory coordination tools for AI agents. Persistent JSON-based storage with namespace support for agent coordination and state management."
+      description: "Sylphx Flow MCP server providing memory coordination tools for AI agents. Persistent SQLite-based storage with namespace support for agent coordination and state management."
+    };
+    Logger = {
+      info: (message) => console.error(`[INFO] ${message}`),
+      success: (message) => console.error(`[SUCCESS] ${message}`),
+      error: (message, error) => {
+        console.error(`[ERROR] ${message}`);
+        if (error) console.error(error);
+      }
     };
     Logger.info("\u{1F680} Starting Sylphx Flow MCP Server...");
     Logger.info(`\u{1F4CB} Description: ${DEFAULT_CONFIG.description.substring(0, 100)}...`);
@@ -214,7 +291,7 @@ var init_sylphx_flow_mcp_server = __esm({
       version: DEFAULT_CONFIG.version,
       description: DEFAULT_CONFIG.description
     });
-    memoryStorage = new MemoryStorage();
+    memoryStorage = new LibSQLMemoryStorage();
     Logger.success("\u2705 Memory storage initialized");
     server.registerTool(
       "memory_set",
@@ -230,7 +307,7 @@ var init_sylphx_flow_mcp_server = __esm({
         try {
           const { key, value, namespace = "default" } = args;
           const parsedValue = JSON.parse(value);
-          memoryStorage.set(key, parsedValue, namespace);
+          await memoryStorage.set(key, parsedValue, namespace);
           Logger.info(`Stored memory: ${namespace}:${key}`);
           return {
             content: [
@@ -266,7 +343,7 @@ var init_sylphx_flow_mcp_server = __esm({
       async (args) => {
         try {
           const { key, namespace = "default" } = args;
-          const memory = memoryStorage.get(key, namespace);
+          const memory = await memoryStorage.get(key, namespace);
           if (!memory) {
             return {
               content: [
@@ -288,11 +365,11 @@ var init_sylphx_flow_mcp_server = __esm({
                   {
                     key: `${namespace}:${key}`,
                     value: memory.value,
+                    namespace: memory.namespace,
                     timestamp: memory.timestamp,
                     created_at: memory.created_at,
                     updated_at: memory.updated_at,
-                    namespace: memory.namespace,
-                    age
+                    age_seconds: Math.floor(age / 1e3)
                   },
                   null,
                   2
@@ -317,26 +394,22 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_search",
       {
-        description: "Search memory keys by pattern with optional namespace filtering",
+        description: "Search memory entries by pattern",
         inputSchema: {
-          pattern: import_zod.z.string().describe("Search pattern (supports * wildcards)"),
+          pattern: import_zod.z.string().describe("Search pattern (matches keys, namespaces, and values)"),
           namespace: import_zod.z.string().optional().describe("Optional namespace to limit search")
         }
       },
       async (args) => {
         try {
           const { pattern, namespace } = args;
-          const results2 = memoryStorage.search(pattern, namespace);
-          const processedResults = results2.map((memory) => ({
-            key: `${memory.namespace}:${memory.key}`,
-            value: memory.value,
-            timestamp: memory.timestamp,
-            created_at: memory.created_at,
-            updated_at: memory.updated_at,
-            namespace: memory.namespace,
-            age: Date.now() - memory.timestamp
-          }));
-          Logger.info(`Searched memory: ${pattern} (${results2.length} results)`);
+          const allEntries = await memoryStorage.getAll();
+          const results2 = allEntries.filter((entry) => {
+            const matchesPattern = entry.key.toLowerCase().includes(pattern.toLowerCase()) || entry.namespace.toLowerCase().includes(pattern.toLowerCase()) || JSON.stringify(entry.value).toLowerCase().includes(pattern.toLowerCase());
+            const matchesNamespace = !namespace || entry.namespace === namespace;
+            return matchesPattern && matchesNamespace;
+          });
+          Logger.info(`Searched memory: "${pattern}" (${results2.length} results)`);
           return {
             content: [
               {
@@ -346,7 +419,13 @@ var init_sylphx_flow_mcp_server = __esm({
                     pattern,
                     namespace: namespace || "all",
                     count: results2.length,
-                    results: processedResults
+                    results: results2.map((entry) => ({
+                      key: entry.key,
+                      namespace: entry.namespace,
+                      value: entry.value,
+                      timestamp: entry.timestamp,
+                      updated_at: entry.updated_at
+                    }))
                   },
                   null,
                   2
@@ -371,24 +450,16 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_list",
       {
-        description: "List all memory keys, optionally filtered by namespace",
+        description: "List all memory entries",
         inputSchema: {
-          namespace: import_zod.z.string().optional().describe("Optional namespace to filter")
+          namespace: import_zod.z.string().optional().describe("Optional namespace to filter by")
         }
       },
       async (args) => {
         try {
           const { namespace } = args;
-          const entries = memoryStorage.list(namespace);
-          const processedEntries = entries.map((memory) => ({
-            key: `${memory.namespace}:${memory.key}`,
-            namespace: memory.namespace,
-            timestamp: memory.timestamp,
-            created_at: memory.created_at,
-            updated_at: memory.updated_at,
-            age: Date.now() - memory.timestamp
-          }));
-          Logger.info(`Listed memory: ${namespace || "all"} (${entries.length} entries)`);
+          const entries = await memoryStorage.getAll();
+          Logger.info(`Listed memory: ${entries.length} entries`);
           return {
             content: [
               {
@@ -397,7 +468,13 @@ var init_sylphx_flow_mcp_server = __esm({
                   {
                     namespace: namespace || "all",
                     count: entries.length,
-                    keys: processedEntries
+                    entries: entries.map((entry) => ({
+                      key: entry.key,
+                      namespace: entry.namespace,
+                      value: entry.value,
+                      timestamp: entry.timestamp,
+                      updated_at: entry.updated_at
+                    }))
                   },
                   null,
                   2
@@ -422,7 +499,7 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_delete",
       {
-        description: "Delete a specific memory entry",
+        description: "Delete a memory entry",
         inputSchema: {
           key: import_zod.z.string().describe("Memory key to delete"),
           namespace: import_zod.z.string().optional().describe("Optional namespace")
@@ -431,26 +508,26 @@ var init_sylphx_flow_mcp_server = __esm({
       async (args) => {
         try {
           const { key, namespace = "default" } = args;
-          const deleted = memoryStorage.delete(key, namespace);
-          if (deleted) {
-            Logger.info(`Deleted memory: ${namespace}:${key}`);
+          const deleted = await memoryStorage.delete(key, namespace);
+          if (!deleted) {
             return {
               content: [
                 {
                   type: "text",
-                  text: `\u2705 Deleted memory: ${namespace}:${key}`
+                  text: `\u274C Memory not found: ${namespace}:${key}`
                 }
-              ]
+              ],
+              isError: true
             };
           }
+          Logger.info(`Deleted memory: ${namespace}:${key}`);
           return {
             content: [
               {
                 type: "text",
-                text: `\u274C Memory not found: ${namespace}:${key}`
+                text: `\u2705 Deleted memory: ${namespace}:${key}`
               }
-            ],
-            isError: true
+            ]
           };
         } catch (error) {
           Logger.error("Error deleting memory", error);
@@ -469,44 +546,21 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_clear",
       {
-        description: "Clear all memory or specific namespace",
+        description: "Clear memory entries",
         inputSchema: {
-          namespace: import_zod.z.string().optional().describe("Optional namespace to clear"),
-          confirm: import_zod.z.boolean().optional().describe("Confirmation required for clearing all memory")
+          namespace: import_zod.z.string().optional().describe("Optional namespace to clear (omits to clear all)")
         }
       },
       async (args) => {
         try {
-          const { namespace, confirm } = args;
-          if (!namespace && !confirm) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: "\u274C Confirmation required. Set confirm: true to clear all memory."
-                }
-              ],
-              isError: true
-            };
-          }
-          const count = memoryStorage.clear(namespace);
-          if (namespace) {
-            Logger.info(`Cleared memory namespace: ${namespace} (${count} entries)`);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `\u2705 Cleared ${count} memories from namespace: ${namespace}`
-                }
-              ]
-            };
-          }
-          Logger.info(`Cleared all memory (${count} entries)`);
+          const { namespace } = args;
+          await memoryStorage.clear(namespace);
+          Logger.info(`Cleared memory: ${namespace || "all"}`);
           return {
             content: [
               {
                 type: "text",
-                text: `\u2705 Cleared all ${count} memory entries`
+                text: `\u2705 Cleared memory: ${namespace || "all namespaces"}`
               }
             ]
           };
@@ -527,24 +581,24 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_stats",
       {
-        description: "Get statistics about the memory storage",
-        inputSchema: {
-          // No input parameters required
-        }
+        description: "Get memory storage statistics",
+        inputSchema: {}
       },
-      async (_args) => {
+      async () => {
         try {
-          const stats = memoryStorage.getStats();
-          Logger.info("Retrieved memory statistics");
+          const stats = await memoryStorage.getStats();
+          Logger.info("Retrieved memory stats");
           return {
             content: [
               {
                 type: "text",
                 text: JSON.stringify(
                   {
-                    ...stats,
-                    database_path: path4.join(process.cwd(), ".sylphx-flow", "memory.db"),
-                    age_days: stats.oldest_entry > 0 ? Math.floor((Date.now() - stats.oldest_entry) / (1e3 * 60 * 60 * 24)) : 0
+                    total_entries: stats.totalEntries,
+                    namespaces: stats.namespaces,
+                    oldest_entry: stats.oldestEntry,
+                    newest_entry: stats.newestEntry,
+                    database_path: ".sylphx-flow/memory.db"
                   },
                   null,
                   2
@@ -553,12 +607,12 @@ var init_sylphx_flow_mcp_server = __esm({
             ]
           };
         } catch (error) {
-          Logger.error("Error getting memory statistics", error);
+          Logger.error("Error getting memory stats", error);
           return {
             content: [
               {
                 type: "text",
-                text: `\u274C Error getting memory statistics: ${error.message}`
+                text: `\u274C Error getting memory stats: ${error.message}`
               }
             ],
             isError: true
@@ -567,31 +621,17 @@ var init_sylphx_flow_mcp_server = __esm({
       }
     );
     process.on("SIGINT", () => {
-      Logger.info("\u{1F6D1} Received SIGINT, shutting down gracefully...");
+      Logger.info("\u{1F6D1} Shutting down MCP server...");
       process.exit(0);
     });
     process.on("SIGTERM", () => {
-      Logger.info("\u{1F6D1} Received SIGTERM, shutting down gracefully...");
+      Logger.info("\u{1F6D1} Shutting down MCP server...");
       process.exit(0);
     });
-    process.on("uncaughtException", (error) => {
-      Logger.error("Uncaught Exception", error);
+    main().catch((error) => {
+      Logger.error("Fatal error starting server", error);
       process.exit(1);
     });
-    process.on("unhandledRejection", (reason, _promise) => {
-      Logger.error("Unhandled Rejection", reason);
-      process.exit(1);
-    });
-    Logger.success("\u{1F680} Sylphx Flow MCP Server ready!");
-    Logger.info(`\u{1F4CD} Storage: ${path4.join(process.cwd(), ".sylphx-flow", "memory.db")}`);
-    Logger.info(
-      "\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats"
-    );
-    startServer().catch((error) => {
-      Logger.error("Failed to start server", error);
-      process.exit(1);
-    });
-    sylphx_flow_mcp_server_default = server;
   }
 });
 
@@ -716,14 +756,14 @@ $1"mcp": {`
   return json;
 }
 async function readJSONCFile(filePath) {
-  const fs6 = await import("fs/promises");
-  const content = await fs6.readFile(filePath, "utf8");
+  const fs5 = await import("fs/promises");
+  const content = await fs5.readFile(filePath, "utf8");
   return parseJSONC(content);
 }
 async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs6 = await import("fs/promises");
+  const fs5 = await import("fs/promises");
   const content = stringifyJSONC(obj, schema, indent);
-  await fs6.writeFile(filePath, content, "utf8");
+  await fs5.writeFile(filePath, content, "utf8");
 }
 
 // src/utils/mcp-config.ts
@@ -1489,226 +1529,8 @@ var mcpCommand = {
   ]
 };
 
-// src/utils/libsql-storage.ts
-var import_client = require("@libsql/client");
-var fs4 = __toESM(require("fs"), 1);
-var path5 = __toESM(require("path"), 1);
-var LibSQLMemoryStorage = class {
-  client;
-  dbPath;
-  constructor() {
-    const memoryDir = path5.join(process.cwd(), ".sylphx-flow");
-    if (!fs4.existsSync(memoryDir)) {
-      fs4.mkdirSync(memoryDir, { recursive: true });
-    }
-    this.dbPath = path5.join(memoryDir, "memory.db");
-    this.client = (0, import_client.createClient)({
-      url: `file:${this.dbPath}`
-    });
-    this.initializeTables();
-  }
-  async initializeTables() {
-    const createTableSQL = `
-      CREATE TABLE IF NOT EXISTS memory (
-        key TEXT NOT NULL,
-        namespace TEXT NOT NULL DEFAULT 'default',
-        value TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY (key, namespace)
-      )
-    `;
-    await this.client.execute(createTableSQL);
-    await this.client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_namespace ON memory(namespace);
-    `);
-    await this.client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_timestamp ON memory(timestamp);
-    `);
-    await this.client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_key ON memory(key);
-    `);
-  }
-  serializeValue(value) {
-    return JSON.stringify(value);
-  }
-  deserializeValue(value) {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  }
-  async set(key, value, namespace = "default") {
-    const now = /* @__PURE__ */ new Date();
-    const timestamp = now.getTime();
-    const created_at = now.toISOString();
-    const updated_at = created_at;
-    const serializedValue = this.serializeValue(value);
-    const existing = await this.get(key, namespace);
-    if (existing) {
-      const updateSQL = `
-        UPDATE memory 
-        SET value = ?, timestamp = ?, updated_at = ?
-        WHERE key = ? AND namespace = ?
-      `;
-      await this.client.execute({
-        sql: updateSQL,
-        args: [serializedValue, timestamp, updated_at, key, namespace]
-      });
-    } else {
-      const insertSQL = `
-        INSERT INTO memory (key, namespace, value, timestamp, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-      await this.client.execute({
-        sql: insertSQL,
-        args: [key, namespace, serializedValue, timestamp, created_at, updated_at]
-      });
-    }
-  }
-  async get(key, namespace = "default") {
-    const selectSQL = `
-      SELECT key, namespace, value, timestamp, created_at, updated_at
-      FROM memory
-      WHERE key = ? AND namespace = ?
-    `;
-    const result = await this.client.execute({
-      sql: selectSQL,
-      args: [key, namespace]
-    });
-    if (result.rows.length === 0) {
-      return null;
-    }
-    const row = result.rows[0];
-    return {
-      key: row.key,
-      namespace: row.namespace,
-      value: this.deserializeValue(row.value),
-      timestamp: row.timestamp,
-      created_at: row.created_at,
-      updated_at: row.updated_at
-    };
-  }
-  async getAll() {
-    const selectSQL = `
-      SELECT key, namespace, value, timestamp, created_at, updated_at
-      FROM memory
-      ORDER BY timestamp DESC
-    `;
-    const result = await this.client.execute(selectSQL);
-    return result.rows.map((row) => ({
-      key: row.key,
-      namespace: row.namespace,
-      value: this.deserializeValue(row.value),
-      timestamp: row.timestamp,
-      created_at: row.created_at,
-      updated_at: row.updated_at
-    }));
-  }
-  async search(pattern, namespace) {
-    const searchPattern = pattern.replace(/\*/g, "%");
-    let selectSQL = `
-      SELECT key, namespace, value, timestamp, created_at, updated_at
-      FROM memory
-      WHERE key LIKE ? OR value LIKE ?
-    `;
-    const args = [searchPattern, searchPattern];
-    if (namespace && namespace !== "all") {
-      selectSQL += " AND namespace = ?";
-      args.push(namespace);
-    }
-    selectSQL += " ORDER BY timestamp DESC";
-    const result = await this.client.execute({
-      sql: selectSQL,
-      args
-    });
-    return result.rows.map((row) => ({
-      key: row.key,
-      namespace: row.namespace,
-      value: this.deserializeValue(row.value),
-      timestamp: row.timestamp,
-      created_at: row.created_at,
-      updated_at: row.updated_at
-    }));
-  }
-  async delete(key, namespace = "default") {
-    const deleteSQL = `
-      DELETE FROM memory
-      WHERE key = ? AND namespace = ?
-    `;
-    const result = await this.client.execute({
-      sql: deleteSQL,
-      args: [key, namespace]
-    });
-    return result.rowsAffected > 0;
-  }
-  async clear(namespace) {
-    if (namespace && namespace !== "all") {
-      const deleteSQL = "DELETE FROM memory WHERE namespace = ?";
-      await this.client.execute({
-        sql: deleteSQL,
-        args: [namespace]
-      });
-    } else {
-      const deleteSQL = "DELETE FROM memory";
-      await this.client.execute(deleteSQL);
-    }
-  }
-  async getStats() {
-    const countResult = await this.client.execute("SELECT COUNT(*) as count FROM memory");
-    const totalEntries = countResult.rows[0].count;
-    const namespaceResult = await this.client.execute(`
-      SELECT namespace, COUNT(*) as count
-      FROM memory
-      GROUP BY namespace
-      ORDER BY namespace
-    `);
-    const namespaces = namespaceResult.rows.map((row) => row.namespace);
-    const namespaceCounts = {};
-    namespaceResult.rows.forEach((row) => {
-      namespaceCounts[row.namespace] = row.count;
-    });
-    const timeResult = await this.client.execute(`
-      SELECT 
-        MIN(created_at) as oldest,
-        MAX(created_at) as newest
-      FROM memory
-    `);
-    const timeRow = timeResult.rows[0];
-    const oldestEntry = timeRow.oldest;
-    const newestEntry = timeRow.newest;
-    return {
-      totalEntries,
-      namespaces,
-      namespaceCounts,
-      oldestEntry,
-      newestEntry
-    };
-  }
-  // Load method for compatibility with existing code
-  async load() {
-    const entries = await this.getAll();
-    const namespaces = {};
-    entries.forEach((entry) => {
-      if (!namespaces[entry.namespace]) {
-        namespaces[entry.namespace] = {};
-      }
-      namespaces[entry.namespace][entry.key] = entry.value;
-    });
-    return { namespaces };
-  }
-  // Close database connection
-  async close() {
-  }
-  // Get database path for debugging
-  getDatabasePath() {
-    return this.dbPath;
-  }
-};
-
 // src/commands/memory-command.ts
+init_libsql_storage();
 var memoryListHandler = async (options) => {
   const memory = new LibSQLMemoryStorage();
   const entries = await memory.getAll();
@@ -1897,6 +1719,7 @@ var import_react2 = __toESM(require("react"), 1);
 // src/components/FullscreenMemoryTUI.tsx
 var import_react = require("react");
 var import_ink = require("ink");
+init_libsql_storage();
 var import_jsx_runtime = require("react/jsx-runtime");
 var FullscreenMemoryTUI = () => {
   const { exit } = (0, import_ink.useApp)();
@@ -2592,15 +2415,15 @@ var COMMON_OPTIONS = [
 ];
 
 // src/core/sync.ts
-var fs5 = __toESM(require("fs"), 1);
-var path6 = __toESM(require("path"), 1);
+var fs4 = __toESM(require("fs"), 1);
+var path5 = __toESM(require("path"), 1);
 var readline = __toESM(require("readline"), 1);
 var import_node_url = require("url");
 var cliProgress = __toESM(require("cli-progress"), 1);
 var import_cli_table3 = __toESM(require("cli-table3"), 1);
 var import_meta = {};
 var __filename = (0, import_node_url.fileURLToPath)(import_meta.url);
-var __dirname = path6.dirname(__filename);
+var __dirname = path5.dirname(__filename);
 var COLORS = {
   red: "\x1B[31m",
   green: "\x1B[32m",
@@ -2684,13 +2507,13 @@ function detectAgentTool3() {
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs5.existsSync(path6.join(cwd, config.dir))) {
+    if (fs4.existsSync(path5.join(cwd, config.dir))) {
       return agent;
     }
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs5.existsSync(path6.join(cwd, config.dir, RULES_DIR_NAME))) {
+    if (fs4.existsSync(path5.join(cwd, config.dir, RULES_DIR_NAME))) {
       return agent;
     }
   }
@@ -2698,10 +2521,10 @@ function detectAgentTool3() {
 }
 function getLocalFileInfo2(filePath) {
   try {
-    if (!fs5.existsSync(filePath)) {
+    if (!fs4.existsSync(filePath)) {
       return null;
     }
-    const content = fs5.readFileSync(filePath, "utf8");
+    const content = fs4.readFileSync(filePath, "utf8");
     return { content, exists: true };
   } catch {
     return null;
@@ -2711,18 +2534,18 @@ async function getRuleFiles() {
   const scriptDir = __dirname;
   let projectRoot;
   if (scriptDir.includes("/dist/src/")) {
-    projectRoot = path6.resolve(scriptDir, "../../..");
+    projectRoot = path5.resolve(scriptDir, "../../..");
   } else {
-    projectRoot = path6.resolve(scriptDir, "..");
+    projectRoot = path5.resolve(scriptDir, "..");
   }
-  const docsRulesDir = path6.join(projectRoot, "docs", RULES_DIR_NAME);
+  const docsRulesDir = path5.join(projectRoot, "docs", RULES_DIR_NAME);
   const files = [];
   const collectFiles2 = (dir, relativePath) => {
     try {
-      const items = fs5.readdirSync(dir, { withFileTypes: true });
+      const items = fs4.readdirSync(dir, { withFileTypes: true });
       for (const item of items) {
-        const itemPath = path6.join(dir, item.name);
-        const itemRelative = path6.join(relativePath, item.name);
+        const itemPath = path5.join(dir, item.name);
+        const itemRelative = path5.join(relativePath, item.name);
         if (item.isDirectory()) {
           collectFiles2(itemPath, itemRelative);
         } else if (item.isFile() && (item.name.endsWith(".mdc") || item.name.endsWith(".md"))) {
@@ -2755,7 +2578,7 @@ function getDescriptionForFile(filePath) {
   if (!filePath) {
     return "Development flow";
   }
-  const baseName = path6.basename(filePath, path6.extname(filePath));
+  const baseName = path5.basename(filePath, path5.extname(filePath));
   return `Development flow for ${baseName.replace(/-/g, " ")}`;
 }
 function createContentProcessor(config) {
@@ -2775,42 +2598,42 @@ alwaysApply: true
 }
 function getDestinationPath(filePath, rulesDir, config) {
   const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-  const parsedPath = path6.parse(relativeToRules);
+  const parsedPath = path5.parse(relativeToRules);
   const { name: baseName, dir } = parsedPath;
   if (config.flatten) {
     const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
     const relativePath2 = `${flattenedName}${config.extension}`;
-    return { relativePath: relativePath2, destPath: path6.join(rulesDir, relativePath2) };
+    return { relativePath: relativePath2, destPath: path5.join(rulesDir, relativePath2) };
   }
-  const targetDir = dir ? path6.join(rulesDir, dir) : rulesDir;
-  const relativePath = path6.join(dir, `${baseName}${config.extension}`);
+  const targetDir = dir ? path5.join(rulesDir, dir) : rulesDir;
+  const relativePath = path5.join(dir, `${baseName}${config.extension}`);
   return {
     relativePath,
-    destPath: path6.join(targetDir, `${baseName}${config.extension}`),
+    destPath: path5.join(targetDir, `${baseName}${config.extension}`),
     targetDir
   };
 }
 async function processFile(filePath, rulesDir, config, processContent, progressBar) {
   try {
     const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
-    if (targetDir && !fs5.existsSync(targetDir)) {
-      fs5.mkdirSync(targetDir, { recursive: true });
+    if (targetDir && !fs4.existsSync(targetDir)) {
+      fs4.mkdirSync(targetDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo2(destPath);
     const isNew = !localInfo;
     let projectRoot;
     if (__dirname.includes("/dist/src/")) {
-      projectRoot = path6.resolve(__dirname, "../../..");
+      projectRoot = path5.resolve(__dirname, "../../..");
     } else {
-      projectRoot = path6.resolve(__dirname, "..");
+      projectRoot = path5.resolve(__dirname, "..");
     }
-    const sourcePath = path6.join(projectRoot, "docs", filePath);
-    let content = fs5.readFileSync(sourcePath, "utf8");
+    const sourcePath = path5.join(projectRoot, "docs", filePath);
+    let content = fs4.readFileSync(sourcePath, "utf8");
     content = processContent(content, filePath);
     const localProcessed = localInfo ? processContent(localInfo.content, filePath) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs5.writeFileSync(destPath, content, "utf8");
+      fs4.writeFileSync(destPath, content, "utf8");
     }
     results.push({
       file: relativePath,
@@ -2900,7 +2723,7 @@ function displayResults2(results2, rulesDir, agentName) {
   console.log(`\u{1F4A1} Rules will be automatically loaded by ${agentName}`);
 }
 async function clearObsoleteFiles2(rulesDir, config, merge) {
-  if (!fs5.existsSync(rulesDir)) {
+  if (!fs4.existsSync(rulesDir)) {
     return;
   }
   console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
@@ -2916,14 +2739,14 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
       })
     );
   }
-  const existingFiles = fs5.readdirSync(rulesDir, { recursive: true }).filter(
+  const existingFiles = fs4.readdirSync(rulesDir, { recursive: true }).filter(
     (file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))
-  ).map((file) => path6.join(rulesDir, file));
+  ).map((file) => path5.join(rulesDir, file));
   for (const file of existingFiles) {
-    const relativePath = path6.relative(rulesDir, file);
+    const relativePath = path5.relative(rulesDir, file);
     if (!expectedFiles.has(relativePath)) {
       try {
-        fs5.unlinkSync(file);
+        fs4.unlinkSync(file);
         results.push({
           file: relativePath,
           status: "removed",
@@ -2941,7 +2764,7 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
 }
 async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const mergedFileName = `all-rules${config.extension}`;
-  const mergedFilePath = path6.join(rulesDir, mergedFileName);
+  const mergedFilePath = path5.join(rulesDir, mergedFileName);
   console.log(`\u{1F4CB} Merging ${ruleFiles.length} files into ${mergedFileName}...`);
   let mergedContent = "# Development Rules - Complete Collection\n\n";
   mergedContent += `Generated on: ${(/* @__PURE__ */ new Date()).toISOString()}
@@ -2952,15 +2775,15 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
     try {
       let projectRoot;
       if (__dirname.includes("/dist/src/")) {
-        projectRoot = path6.resolve(__dirname, "../../..");
+        projectRoot = path5.resolve(__dirname, "../../..");
       } else {
-        projectRoot = path6.resolve(__dirname, "..");
+        projectRoot = path5.resolve(__dirname, "..");
       }
-      const sourcePath = path6.join(projectRoot, "docs", filePath);
-      let content = fs5.readFileSync(sourcePath, "utf8");
+      const sourcePath = path5.join(projectRoot, "docs", filePath);
+      let content = fs4.readFileSync(sourcePath, "utf8");
       content = processContent(content, filePath);
       const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-      const parsedPath = path6.parse(relativeToRules);
+      const parsedPath = path5.parse(relativeToRules);
       const { name: baseName, dir } = parsedPath;
       const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
       mergedContent += `## ${sectionTitle.replace(/-/g, " ").toUpperCase()}
@@ -2982,7 +2805,7 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const localProcessed = localInfo ? processContent(localInfo.content, "all-rules") : "";
   const contentChanged = !localInfo || localProcessed !== mergedContent;
   if (contentChanged) {
-    fs5.writeFileSync(mergedFilePath, mergedContent, "utf8");
+    fs4.writeFileSync(mergedFilePath, mergedContent, "utf8");
     results.push({
       file: mergedFileName,
       status: localInfo ? "updated" : "added",
@@ -3018,12 +2841,12 @@ async function syncRules(options) {
     }
   }
   const config = getAgentConfig2(agent);
-  const rulesDir = path6.join(cwd, config.dir, RULES_DIR_NAME);
+  const rulesDir = path5.join(cwd, config.dir, RULES_DIR_NAME);
   const processContent = createContentProcessor(config);
   if (options.clear) {
     await clearObsoleteFiles2(rulesDir, config, !!options.merge);
   }
-  fs5.mkdirSync(rulesDir, { recursive: true });
+  fs4.mkdirSync(rulesDir, { recursive: true });
   const ruleFiles = await getRuleFiles();
   console.log("\u{1F680} Rules Sync Tool");
   console.log("================");

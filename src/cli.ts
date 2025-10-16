@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { initCommand } from './commands/init-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
 import { memoryCommand } from './commands/memory-command.js';
-import { memoryTuiCommand, handleMemoryTui } from './commands/memory-tui-command.js';
+import { handleMemoryTui } from './commands/memory-tui-command.js';
 import { syncCommand } from './commands/sync-command.js';
 import { createCommand } from './utils/command-builder.js';
 import { showDefaultHelp } from './utils/help.js';

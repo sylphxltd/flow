@@ -1,231 +1,28 @@
 #!/usr/bin/env node
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { LibSQLMemoryStorage, type MemoryEntry } from '../utils/libsql-storage.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
 // ============================================================================
 
-interface MemoryEntry {
-  key: string;
-  namespace: string;
-  value: any;
-  timestamp: number;
-  created_at: string;
-  updated_at: string;
-}
-
-class MemoryStorage {
-  private data: Map<string, MemoryEntry> = new Map();
-  private memoryDir: string;
-  private filePath: string;
-
-  constructor() {
-    this.memoryDir = path.join(process.cwd(), '.sylphx-flow');
-    this.filePath = path.join(this.memoryDir, 'memory.db');
-
-    // Ensure .sylphx-flow directory exists
-    fs.mkdir(this.memoryDir, { recursive: true }).catch(() => {});
-
-    // Load existing data
-    this.loadData();
-  }
-
-  private getFullKey(key: string, namespace: string): string {
-    return `${namespace}:${key}`;
-  }
-
-  private async loadData(): Promise<void> {
-    try {
-      const data = await fs.readFile(this.filePath, 'utf8');
-      const parsed = JSON.parse(data);
-      this.data = new Map(Object.entries(parsed));
-    } catch {
-      // File doesn't exist or is invalid, start with empty storage
-      this.data = new Map();
-    }
-  }
-
-  private async saveData(): Promise<void> {
-    try {
-      const data = Object.fromEntries(this.data);
-      await fs.writeFile(this.filePath, JSON.stringify(data, null, 2), 'utf8');
-    } catch (error) {
-      console.warn('Warning: Could not save memory data:', error);
-    }
-  }
-
-  set(key: string, value: any, namespace = 'default'): void {
-    const fullKey = this.getFullKey(key, namespace);
-    const now = new Date().toISOString();
-    const timestamp = Date.now();
-
-    const existing = this.data.get(fullKey);
-
-    this.data.set(fullKey, {
-      key,
-      namespace,
-      value,
-      timestamp,
-      created_at: existing?.created_at || now,
-      updated_at: now,
-    });
-
-    // Save asynchronously (don't await to avoid blocking)
-    this.saveData().catch(() => {});
-  }
-
-  get(key: string, namespace = 'default'): MemoryEntry | null {
-    const fullKey = this.getFullKey(key, namespace);
-    return this.data.get(fullKey) || null;
-  }
-
-  search(pattern: string, namespace?: string): MemoryEntry[] {
-    const searchPattern = pattern.replace(/\*/g, '.*');
-    const regex = new RegExp(searchPattern);
-
-    const results: MemoryEntry[] = [];
-
-    for (const entry of this.data.values()) {
-      if (namespace && entry.namespace !== namespace) {
-        continue;
-      }
-
-      if (regex.test(entry.key)) {
-        results.push(entry);
-      }
-    }
-
-    return results.sort((a, b) => b.timestamp - a.timestamp);
-  }
-
-  list(namespace?: string): MemoryEntry[] {
-    const results: MemoryEntry[] = [];
-
-    for (const entry of this.data.values()) {
-      if (namespace && entry.namespace !== namespace) {
-        continue;
-      }
-      results.push(entry);
-    }
-
-    return results.sort((a, b) => b.timestamp - a.timestamp);
-  }
-
-  delete(key: string, namespace = 'default'): boolean {
-    const fullKey = this.getFullKey(key, namespace);
-    const deleted = this.data.delete(fullKey);
-
-    if (deleted) {
-      this.saveData().catch(() => {});
-    }
-
-    return deleted;
-  }
-
-  clear(namespace?: string): number {
-    let count = 0;
-
-    if (namespace) {
-      const keysToDelete: string[] = [];
-      for (const [fullKey, entry] of this.data.entries()) {
-        if (entry.namespace === namespace) {
-          keysToDelete.push(fullKey);
-        }
-      }
-
-      for (const key of keysToDelete) {
-        this.data.delete(key);
-        count++;
-      }
-    } else {
-      count = this.data.size;
-      this.data.clear();
-    }
-
-    if (count > 0) {
-      this.saveData().catch(() => {});
-    }
-
-    return count;
-  }
-
-  getStats(): {
-    total_entries: number;
-    namespaces: { namespace: string; count: number }[];
-    oldest_entry: number;
-    newest_entry: number;
-  } {
-    const entries = Array.from(this.data.values());
-    const namespaces = [...new Set(entries.map((entry) => entry.namespace))];
-    const namespaceStats = namespaces.map((ns) => ({
-      namespace: ns,
-      count: entries.filter((entry) => entry.namespace === ns).length,
-    }));
-
-    const timestamps = entries.map((entry) => entry.timestamp);
-    const oldestEntry = timestamps.length > 0 ? Math.min(...timestamps) : 0;
-    const newestEntry = timestamps.length > 0 ? Math.max(...timestamps) : 0;
-
-    return {
-      total_entries: entries.length,
-      namespaces: namespaceStats,
-      oldest_entry: oldestEntry,
-      newest_entry: newestEntry,
-    };
-  }
-}
-
-// ============================================================================
-// LOGGER
-// ============================================================================
-
-class Logger {
-  private static logLevel = process.env.LOG_LEVEL || 'info';
-
-  static info(message: string, ...args: any[]) {
-    if (['info', 'debug'].includes(Logger.logLevel)) {
-      console.log(`ℹ️  ${message}`, ...args);
-    }
-  }
-
-  static debug(message: string, ...args: any[]) {
-    if (Logger.logLevel === 'debug') {
-      console.log(`🐛 ${message}`, ...args);
-    }
-  }
-
-  static warn(message: string, ...args: any[]) {
-    console.warn(`⚠️  ${message}`, ...args);
-  }
-
-  static error(message: string, error?: Error | any) {
-    console.error(`❌ ${message}`);
-    if (error) {
-      console.error('   Error details:', error instanceof Error ? error.message : error);
-      if (error instanceof Error && error.stack) {
-        console.error('   Stack trace:', error.stack);
-      }
-    }
-  }
-
-  static success(message: string, ...args: any[]) {
-    console.log(`✅ ${message}`, ...args);
-  }
-}
-
-// ============================================================================
-// MCP SERVER SETUP
-// ============================================================================
-
 const DEFAULT_CONFIG = {
-  name: 'sylphx-flow-mcp-server',
+  name: 'flow_memory',
   version: '1.0.0',
   description:
-    'Sylphx Flow MCP server providing memory coordination tools for AI agents. Persistent JSON-based storage with namespace support for agent coordination and state management.',
+    'Sylphx Flow MCP server providing memory coordination tools for AI agents. Persistent SQLite-based storage with namespace support for agent coordination and state management.',
+};
+
+// Logger utility
+const Logger = {
+  info: (message: string) => console.error(`[INFO] ${message}`),
+  success: (message: string) => console.error(`[SUCCESS] ${message}`),
+  error: (message: string, error?: any) => {
+    console.error(`[ERROR] ${message}`);
+    if (error) console.error(error);
+  },
 };
 
 Logger.info('🚀 Starting Sylphx Flow MCP Server...');
@@ -238,7 +35,7 @@ const server = new McpServer({
 });
 
 // Initialize memory storage
-const memoryStorage = new MemoryStorage();
+const memoryStorage = new LibSQLMemoryStorage();
 Logger.success('✅ Memory storage initialized');
 
 // ============================================================================
@@ -261,7 +58,7 @@ server.registerTool(
       const { key, value, namespace = 'default' } = args;
       const parsedValue = JSON.parse(value);
 
-      memoryStorage.set(key, parsedValue, namespace);
+      await memoryStorage.set(key, parsedValue, namespace);
 
       Logger.info(`Stored memory: ${namespace}:${key}`);
       return {
@@ -300,7 +97,7 @@ server.registerTool(
   async (args: any) => {
     try {
       const { key, namespace = 'default' } = args;
-      const memory = memoryStorage.get(key, namespace);
+      const memory = await memoryStorage.get(key, namespace);
 
       if (!memory) {
         return {
@@ -325,11 +122,11 @@ server.registerTool(
               {
                 key: `${namespace}:${key}`,
                 value: memory.value,
+                namespace: memory.namespace,
                 timestamp: memory.timestamp,
                 created_at: memory.created_at,
                 updated_at: memory.updated_at,
-                namespace: memory.namespace,
-                age: age,
+                age_seconds: Math.floor(age / 1000),
               },
               null,
               2
@@ -352,42 +149,48 @@ server.registerTool(
   }
 );
 
-// Search memory keys by pattern
+// Search memory entries
 server.registerTool(
   'memory_search',
   {
-    description: 'Search memory keys by pattern with optional namespace filtering',
+    description: 'Search memory entries by pattern',
     inputSchema: {
-      pattern: z.string().describe('Search pattern (supports * wildcards)'),
+      pattern: z.string().describe('Search pattern (matches keys, namespaces, and values)'),
       namespace: z.string().optional().describe('Optional namespace to limit search'),
     },
   },
   async (args: any) => {
     try {
       const { pattern, namespace } = args;
-      const results = memoryStorage.search(pattern, namespace);
+      const allEntries = await memoryStorage.getAll();
+      const results = allEntries.filter((entry: MemoryEntry) => {
+        const matchesPattern =
+          entry.key.toLowerCase().includes(pattern.toLowerCase()) ||
+          entry.namespace.toLowerCase().includes(pattern.toLowerCase()) ||
+          JSON.stringify(entry.value).toLowerCase().includes(pattern.toLowerCase());
 
-      const processedResults = results.map((memory) => ({
-        key: `${memory.namespace}:${memory.key}`,
-        value: memory.value,
-        timestamp: memory.timestamp,
-        created_at: memory.created_at,
-        updated_at: memory.updated_at,
-        namespace: memory.namespace,
-        age: Date.now() - memory.timestamp,
-      }));
+        const matchesNamespace = !namespace || entry.namespace === namespace;
 
-      Logger.info(`Searched memory: ${pattern} (${results.length} results)`);
+        return matchesPattern && matchesNamespace;
+      });
+
+      Logger.info(`Searched memory: "${pattern}" (${results.length} results)`);
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify(
               {
-                pattern: pattern,
+                pattern,
                 namespace: namespace || 'all',
                 count: results.length,
-                results: processedResults,
+                results: results.map((entry: MemoryEntry) => ({
+                  key: entry.key,
+                  namespace: entry.namespace,
+                  value: entry.value,
+                  timestamp: entry.timestamp,
+                  updated_at: entry.updated_at,
+                })),
               },
               null,
               2
@@ -410,30 +213,21 @@ server.registerTool(
   }
 );
 
-// List all memory keys
+// List all memory entries
 server.registerTool(
   'memory_list',
   {
-    description: 'List all memory keys, optionally filtered by namespace',
+    description: 'List all memory entries',
     inputSchema: {
-      namespace: z.string().optional().describe('Optional namespace to filter'),
+      namespace: z.string().optional().describe('Optional namespace to filter by'),
     },
   },
   async (args: any) => {
     try {
       const { namespace } = args;
-      const entries = memoryStorage.list(namespace);
+      const entries = await memoryStorage.getAll();
 
-      const processedEntries = entries.map((memory) => ({
-        key: `${memory.namespace}:${memory.key}`,
-        namespace: memory.namespace,
-        timestamp: memory.timestamp,
-        created_at: memory.created_at,
-        updated_at: memory.updated_at,
-        age: Date.now() - memory.timestamp,
-      }));
-
-      Logger.info(`Listed memory: ${namespace || 'all'} (${entries.length} entries)`);
+      Logger.info(`Listed memory: ${entries.length} entries`);
       return {
         content: [
           {
@@ -442,7 +236,13 @@ server.registerTool(
               {
                 namespace: namespace || 'all',
                 count: entries.length,
-                keys: processedEntries,
+                entries: entries.map((entry: MemoryEntry) => ({
+                  key: entry.key,
+                  namespace: entry.namespace,
+                  value: entry.value,
+                  timestamp: entry.timestamp,
+                  updated_at: entry.updated_at,
+                })),
               },
               null,
               2
@@ -465,11 +265,11 @@ server.registerTool(
   }
 );
 
-// Delete memory
+// Delete a memory entry
 server.registerTool(
   'memory_delete',
   {
-    description: 'Delete a specific memory entry',
+    description: 'Delete a memory entry',
     inputSchema: {
       key: z.string().describe('Memory key to delete'),
       namespace: z.string().optional().describe('Optional namespace'),
@@ -478,27 +278,28 @@ server.registerTool(
   async (args: any) => {
     try {
       const { key, namespace = 'default' } = args;
-      const deleted = memoryStorage.delete(key, namespace);
+      const deleted = await memoryStorage.delete(key, namespace);
 
-      if (deleted) {
-        Logger.info(`Deleted memory: ${namespace}:${key}`);
+      if (!deleted) {
         return {
           content: [
             {
               type: 'text',
-              text: `✅ Deleted memory: ${namespace}:${key}`,
+              text: `❌ Memory not found: ${namespace}:${key}`,
             },
           ],
+          isError: true,
         };
       }
+
+      Logger.info(`Deleted memory: ${namespace}:${key}`);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Memory not found: ${namespace}:${key}`,
+            text: `✅ Deleted memory: ${namespace}:${key}`,
           },
         ],
-        isError: true,
       };
     } catch (error: any) {
       Logger.error('Error deleting memory', error);
@@ -515,51 +316,26 @@ server.registerTool(
   }
 );
 
-// Clear all memory or specific namespace
+// Clear memory entries
 server.registerTool(
   'memory_clear',
   {
-    description: 'Clear all memory or specific namespace',
+    description: 'Clear memory entries',
     inputSchema: {
-      namespace: z.string().optional().describe('Optional namespace to clear'),
-      confirm: z.boolean().optional().describe('Confirmation required for clearing all memory'),
+      namespace: z.string().optional().describe('Optional namespace to clear (omits to clear all)'),
     },
   },
   async (args: any) => {
     try {
-      const { namespace, confirm } = args;
+      const { namespace } = args;
+      await memoryStorage.clear(namespace);
 
-      if (!namespace && !confirm) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: '❌ Confirmation required. Set confirm: true to clear all memory.',
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      const count = memoryStorage.clear(namespace);
-
-      if (namespace) {
-        Logger.info(`Cleared memory namespace: ${namespace} (${count} entries)`);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✅ Cleared ${count} memories from namespace: ${namespace}`,
-            },
-          ],
-        };
-      }
-      Logger.info(`Cleared all memory (${count} entries)`);
+      Logger.info(`Cleared memory: ${namespace || 'all'}`);
       return {
         content: [
           {
             type: 'text',
-            text: `✅ Cleared all ${count} memory entries`,
+            text: `✅ Cleared memory: ${namespace || 'all namespaces'}`,
           },
         ],
       };
@@ -578,32 +354,29 @@ server.registerTool(
   }
 );
 
-// Get database statistics
+// Get memory statistics
 server.registerTool(
   'memory_stats',
   {
-    description: 'Get statistics about the memory storage',
-    inputSchema: {
-      // No input parameters required
-    },
+    description: 'Get memory storage statistics',
+    inputSchema: {},
   },
-  async (_args: any) => {
+  async () => {
     try {
-      const stats = memoryStorage.getStats();
+      const stats = await memoryStorage.getStats();
 
-      Logger.info('Retrieved memory statistics');
+      Logger.info('Retrieved memory stats');
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify(
               {
-                ...stats,
-                database_path: path.join(process.cwd(), '.sylphx-flow', 'memory.db'),
-                age_days:
-                  stats.oldest_entry > 0
-                    ? Math.floor((Date.now() - stats.oldest_entry) / (1000 * 60 * 60 * 24))
-                    : 0,
+                total_entries: stats.totalEntries,
+                namespaces: stats.namespaces,
+                oldest_entry: stats.oldestEntry,
+                newest_entry: stats.newestEntry,
+                database_path: '.sylphx-flow/memory.db',
               },
               null,
               2
@@ -612,12 +385,12 @@ server.registerTool(
         ],
       };
     } catch (error: any) {
-      Logger.error('Error getting memory statistics', error);
+      Logger.error('Error getting memory stats', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error getting memory statistics: ${error.message}`,
+            text: `❌ Error getting memory stats: ${error.message}`,
           },
         ],
         isError: true,
@@ -627,50 +400,33 @@ server.registerTool(
 );
 
 // ============================================================================
-// ERROR HANDLING AND GRACEFUL SHUTDOWN
+// SERVER STARTUP
 // ============================================================================
 
+async function main() {
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    Logger.success('✅ MCP Server connected and ready');
+  } catch (error: any) {
+    Logger.error('Failed to start MCP server', error);
+    process.exit(1);
+  }
+}
+
+// Handle graceful shutdown
 process.on('SIGINT', () => {
-  Logger.info('🛑 Received SIGINT, shutting down gracefully...');
+  Logger.info('🛑 Shutting down MCP server...');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  Logger.info('🛑 Received SIGTERM, shutting down gracefully...');
+  Logger.info('🛑 Shutting down MCP server...');
   process.exit(0);
 });
 
-process.on('uncaughtException', (error) => {
-  Logger.error('Uncaught Exception', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, _promise) => {
-  Logger.error('Unhandled Rejection', reason);
-  process.exit(1);
-});
-
-// ============================================================================
-// START SERVER
-// ============================================================================
-
-Logger.success('🚀 Sylphx Flow MCP Server ready!');
-Logger.info(`📍 Storage: ${path.join(process.cwd(), '.sylphx-flow', 'memory.db')}`);
-Logger.info(
-  '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
-);
-
-// Start the server with stdio transport
-async function startServer() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  Logger.info('🔗 Server connected via stdio transport');
-}
-
 // Start the server
-startServer().catch((error) => {
-  Logger.error('Failed to start server', error);
+main().catch((error) => {
+  Logger.error('Fatal error starting server', error);
   process.exit(1);
 });
-
-export default server;

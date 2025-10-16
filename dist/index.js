@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import {
+  LibSQLMemoryStorage
+} from "./chunk-VBFBG4QV.js";
 
 // src/cli.ts
 import { Command as Command2 } from "commander";
@@ -121,14 +124,14 @@ $1"mcp": {`
   return json;
 }
 async function readJSONCFile(filePath) {
-  const fs5 = await import("fs/promises");
-  const content = await fs5.readFile(filePath, "utf8");
+  const fs4 = await import("fs/promises");
+  const content = await fs4.readFile(filePath, "utf8");
   return parseJSONC(content);
 }
 async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs5 = await import("fs/promises");
+  const fs4 = await import("fs/promises");
   const content = stringifyJSONC(obj, schema, indent);
-  await fs5.writeFile(filePath, content, "utf8");
+  await fs4.writeFile(filePath, content, "utf8");
 }
 
 // src/utils/mcp-config.ts
@@ -194,8 +197,8 @@ function getOpenCodeConfigPath(cwd) {
 async function readOpenCodeConfig(cwd) {
   const configPath = getOpenCodeConfigPath(cwd);
   try {
-    const { existsSync: existsSync3 } = await import("fs");
-    if (!existsSync3(configPath)) {
+    const { existsSync: existsSync2 } = await import("fs");
+    if (!existsSync2(configPath)) {
       return {};
     }
     return await readJSONCFile(configPath);
@@ -768,7 +771,7 @@ var initCommand = {
 
 // src/commands/mcp-command.ts
 var mcpStartHandler = async () => {
-  await import("./sylphx-flow-mcp-server-JV4CYNQO.js");
+  await import("./sylphx-flow-mcp-server-VLX445OP.js");
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
   console.log(
@@ -892,225 +895,6 @@ var mcpCommand = {
       handler: mcpConfigHandler
     }
   ]
-};
-
-// src/utils/libsql-storage.ts
-import { createClient } from "@libsql/client";
-import * as fs3 from "fs";
-import * as path4 from "path";
-var LibSQLMemoryStorage = class {
-  client;
-  dbPath;
-  constructor() {
-    const memoryDir = path4.join(process.cwd(), ".sylphx-flow");
-    if (!fs3.existsSync(memoryDir)) {
-      fs3.mkdirSync(memoryDir, { recursive: true });
-    }
-    this.dbPath = path4.join(memoryDir, "memory.db");
-    this.client = createClient({
-      url: `file:${this.dbPath}`
-    });
-    this.initializeTables();
-  }
-  async initializeTables() {
-    const createTableSQL = `
-      CREATE TABLE IF NOT EXISTS memory (
-        key TEXT NOT NULL,
-        namespace TEXT NOT NULL DEFAULT 'default',
-        value TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY (key, namespace)
-      )
-    `;
-    await this.client.execute(createTableSQL);
-    await this.client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_namespace ON memory(namespace);
-    `);
-    await this.client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_timestamp ON memory(timestamp);
-    `);
-    await this.client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_key ON memory(key);
-    `);
-  }
-  serializeValue(value) {
-    return JSON.stringify(value);
-  }
-  deserializeValue(value) {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  }
-  async set(key, value, namespace = "default") {
-    const now = /* @__PURE__ */ new Date();
-    const timestamp = now.getTime();
-    const created_at = now.toISOString();
-    const updated_at = created_at;
-    const serializedValue = this.serializeValue(value);
-    const existing = await this.get(key, namespace);
-    if (existing) {
-      const updateSQL = `
-        UPDATE memory 
-        SET value = ?, timestamp = ?, updated_at = ?
-        WHERE key = ? AND namespace = ?
-      `;
-      await this.client.execute({
-        sql: updateSQL,
-        args: [serializedValue, timestamp, updated_at, key, namespace]
-      });
-    } else {
-      const insertSQL = `
-        INSERT INTO memory (key, namespace, value, timestamp, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-      await this.client.execute({
-        sql: insertSQL,
-        args: [key, namespace, serializedValue, timestamp, created_at, updated_at]
-      });
-    }
-  }
-  async get(key, namespace = "default") {
-    const selectSQL = `
-      SELECT key, namespace, value, timestamp, created_at, updated_at
-      FROM memory
-      WHERE key = ? AND namespace = ?
-    `;
-    const result = await this.client.execute({
-      sql: selectSQL,
-      args: [key, namespace]
-    });
-    if (result.rows.length === 0) {
-      return null;
-    }
-    const row = result.rows[0];
-    return {
-      key: row.key,
-      namespace: row.namespace,
-      value: this.deserializeValue(row.value),
-      timestamp: row.timestamp,
-      created_at: row.created_at,
-      updated_at: row.updated_at
-    };
-  }
-  async getAll() {
-    const selectSQL = `
-      SELECT key, namespace, value, timestamp, created_at, updated_at
-      FROM memory
-      ORDER BY timestamp DESC
-    `;
-    const result = await this.client.execute(selectSQL);
-    return result.rows.map((row) => ({
-      key: row.key,
-      namespace: row.namespace,
-      value: this.deserializeValue(row.value),
-      timestamp: row.timestamp,
-      created_at: row.created_at,
-      updated_at: row.updated_at
-    }));
-  }
-  async search(pattern, namespace) {
-    const searchPattern = pattern.replace(/\*/g, "%");
-    let selectSQL = `
-      SELECT key, namespace, value, timestamp, created_at, updated_at
-      FROM memory
-      WHERE key LIKE ? OR value LIKE ?
-    `;
-    const args = [searchPattern, searchPattern];
-    if (namespace && namespace !== "all") {
-      selectSQL += " AND namespace = ?";
-      args.push(namespace);
-    }
-    selectSQL += " ORDER BY timestamp DESC";
-    const result = await this.client.execute({
-      sql: selectSQL,
-      args
-    });
-    return result.rows.map((row) => ({
-      key: row.key,
-      namespace: row.namespace,
-      value: this.deserializeValue(row.value),
-      timestamp: row.timestamp,
-      created_at: row.created_at,
-      updated_at: row.updated_at
-    }));
-  }
-  async delete(key, namespace = "default") {
-    const deleteSQL = `
-      DELETE FROM memory
-      WHERE key = ? AND namespace = ?
-    `;
-    const result = await this.client.execute({
-      sql: deleteSQL,
-      args: [key, namespace]
-    });
-    return result.rowsAffected > 0;
-  }
-  async clear(namespace) {
-    if (namespace && namespace !== "all") {
-      const deleteSQL = "DELETE FROM memory WHERE namespace = ?";
-      await this.client.execute({
-        sql: deleteSQL,
-        args: [namespace]
-      });
-    } else {
-      const deleteSQL = "DELETE FROM memory";
-      await this.client.execute(deleteSQL);
-    }
-  }
-  async getStats() {
-    const countResult = await this.client.execute("SELECT COUNT(*) as count FROM memory");
-    const totalEntries = countResult.rows[0].count;
-    const namespaceResult = await this.client.execute(`
-      SELECT namespace, COUNT(*) as count
-      FROM memory
-      GROUP BY namespace
-      ORDER BY namespace
-    `);
-    const namespaces = namespaceResult.rows.map((row) => row.namespace);
-    const namespaceCounts = {};
-    namespaceResult.rows.forEach((row) => {
-      namespaceCounts[row.namespace] = row.count;
-    });
-    const timeResult = await this.client.execute(`
-      SELECT 
-        MIN(created_at) as oldest,
-        MAX(created_at) as newest
-      FROM memory
-    `);
-    const timeRow = timeResult.rows[0];
-    const oldestEntry = timeRow.oldest;
-    const newestEntry = timeRow.newest;
-    return {
-      totalEntries,
-      namespaces,
-      namespaceCounts,
-      oldestEntry,
-      newestEntry
-    };
-  }
-  // Load method for compatibility with existing code
-  async load() {
-    const entries = await this.getAll();
-    const namespaces = {};
-    entries.forEach((entry) => {
-      if (!namespaces[entry.namespace]) {
-        namespaces[entry.namespace] = {};
-      }
-      namespaces[entry.namespace][entry.key] = entry.value;
-    });
-    return { namespaces };
-  }
-  // Close database connection
-  async close() {
-  }
-  // Get database path for debugging
-  getDatabasePath() {
-    return this.dbPath;
-  }
 };
 
 // src/commands/memory-command.ts
@@ -1997,14 +1781,14 @@ var COMMON_OPTIONS = [
 ];
 
 // src/core/sync.ts
-import * as fs4 from "fs";
-import * as path5 from "path";
+import * as fs3 from "fs";
+import * as path4 from "path";
 import * as readline from "readline";
 import { fileURLToPath } from "url";
 import * as cliProgress from "cli-progress";
 import Table from "cli-table3";
 var __filename = fileURLToPath(import.meta.url);
-var __dirname = path5.dirname(__filename);
+var __dirname = path4.dirname(__filename);
 var COLORS = {
   red: "\x1B[31m",
   green: "\x1B[32m",
@@ -2088,13 +1872,13 @@ function detectAgentTool3() {
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs4.existsSync(path5.join(cwd, config.dir))) {
+    if (fs3.existsSync(path4.join(cwd, config.dir))) {
       return agent;
     }
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs4.existsSync(path5.join(cwd, config.dir, RULES_DIR_NAME))) {
+    if (fs3.existsSync(path4.join(cwd, config.dir, RULES_DIR_NAME))) {
       return agent;
     }
   }
@@ -2102,10 +1886,10 @@ function detectAgentTool3() {
 }
 function getLocalFileInfo2(filePath) {
   try {
-    if (!fs4.existsSync(filePath)) {
+    if (!fs3.existsSync(filePath)) {
       return null;
     }
-    const content = fs4.readFileSync(filePath, "utf8");
+    const content = fs3.readFileSync(filePath, "utf8");
     return { content, exists: true };
   } catch {
     return null;
@@ -2115,18 +1899,18 @@ async function getRuleFiles() {
   const scriptDir = __dirname;
   let projectRoot;
   if (scriptDir.includes("/dist/src/")) {
-    projectRoot = path5.resolve(scriptDir, "../../..");
+    projectRoot = path4.resolve(scriptDir, "../../..");
   } else {
-    projectRoot = path5.resolve(scriptDir, "..");
+    projectRoot = path4.resolve(scriptDir, "..");
   }
-  const docsRulesDir = path5.join(projectRoot, "docs", RULES_DIR_NAME);
+  const docsRulesDir = path4.join(projectRoot, "docs", RULES_DIR_NAME);
   const files = [];
   const collectFiles2 = (dir, relativePath) => {
     try {
-      const items = fs4.readdirSync(dir, { withFileTypes: true });
+      const items = fs3.readdirSync(dir, { withFileTypes: true });
       for (const item of items) {
-        const itemPath = path5.join(dir, item.name);
-        const itemRelative = path5.join(relativePath, item.name);
+        const itemPath = path4.join(dir, item.name);
+        const itemRelative = path4.join(relativePath, item.name);
         if (item.isDirectory()) {
           collectFiles2(itemPath, itemRelative);
         } else if (item.isFile() && (item.name.endsWith(".mdc") || item.name.endsWith(".md"))) {
@@ -2159,7 +1943,7 @@ function getDescriptionForFile(filePath) {
   if (!filePath) {
     return "Development flow";
   }
-  const baseName = path5.basename(filePath, path5.extname(filePath));
+  const baseName = path4.basename(filePath, path4.extname(filePath));
   return `Development flow for ${baseName.replace(/-/g, " ")}`;
 }
 function createContentProcessor(config) {
@@ -2179,42 +1963,42 @@ alwaysApply: true
 }
 function getDestinationPath(filePath, rulesDir, config) {
   const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-  const parsedPath = path5.parse(relativeToRules);
+  const parsedPath = path4.parse(relativeToRules);
   const { name: baseName, dir } = parsedPath;
   if (config.flatten) {
     const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
     const relativePath2 = `${flattenedName}${config.extension}`;
-    return { relativePath: relativePath2, destPath: path5.join(rulesDir, relativePath2) };
+    return { relativePath: relativePath2, destPath: path4.join(rulesDir, relativePath2) };
   }
-  const targetDir = dir ? path5.join(rulesDir, dir) : rulesDir;
-  const relativePath = path5.join(dir, `${baseName}${config.extension}`);
+  const targetDir = dir ? path4.join(rulesDir, dir) : rulesDir;
+  const relativePath = path4.join(dir, `${baseName}${config.extension}`);
   return {
     relativePath,
-    destPath: path5.join(targetDir, `${baseName}${config.extension}`),
+    destPath: path4.join(targetDir, `${baseName}${config.extension}`),
     targetDir
   };
 }
 async function processFile(filePath, rulesDir, config, processContent, progressBar) {
   try {
     const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
-    if (targetDir && !fs4.existsSync(targetDir)) {
-      fs4.mkdirSync(targetDir, { recursive: true });
+    if (targetDir && !fs3.existsSync(targetDir)) {
+      fs3.mkdirSync(targetDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo2(destPath);
     const isNew = !localInfo;
     let projectRoot;
     if (__dirname.includes("/dist/src/")) {
-      projectRoot = path5.resolve(__dirname, "../../..");
+      projectRoot = path4.resolve(__dirname, "../../..");
     } else {
-      projectRoot = path5.resolve(__dirname, "..");
+      projectRoot = path4.resolve(__dirname, "..");
     }
-    const sourcePath = path5.join(projectRoot, "docs", filePath);
-    let content = fs4.readFileSync(sourcePath, "utf8");
+    const sourcePath = path4.join(projectRoot, "docs", filePath);
+    let content = fs3.readFileSync(sourcePath, "utf8");
     content = processContent(content, filePath);
     const localProcessed = localInfo ? processContent(localInfo.content, filePath) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs4.writeFileSync(destPath, content, "utf8");
+      fs3.writeFileSync(destPath, content, "utf8");
     }
     results.push({
       file: relativePath,
@@ -2304,7 +2088,7 @@ function displayResults2(results2, rulesDir, agentName) {
   console.log(`\u{1F4A1} Rules will be automatically loaded by ${agentName}`);
 }
 async function clearObsoleteFiles2(rulesDir, config, merge) {
-  if (!fs4.existsSync(rulesDir)) {
+  if (!fs3.existsSync(rulesDir)) {
     return;
   }
   console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
@@ -2320,14 +2104,14 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
       })
     );
   }
-  const existingFiles = fs4.readdirSync(rulesDir, { recursive: true }).filter(
+  const existingFiles = fs3.readdirSync(rulesDir, { recursive: true }).filter(
     (file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))
-  ).map((file) => path5.join(rulesDir, file));
+  ).map((file) => path4.join(rulesDir, file));
   for (const file of existingFiles) {
-    const relativePath = path5.relative(rulesDir, file);
+    const relativePath = path4.relative(rulesDir, file);
     if (!expectedFiles.has(relativePath)) {
       try {
-        fs4.unlinkSync(file);
+        fs3.unlinkSync(file);
         results.push({
           file: relativePath,
           status: "removed",
@@ -2345,7 +2129,7 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
 }
 async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const mergedFileName = `all-rules${config.extension}`;
-  const mergedFilePath = path5.join(rulesDir, mergedFileName);
+  const mergedFilePath = path4.join(rulesDir, mergedFileName);
   console.log(`\u{1F4CB} Merging ${ruleFiles.length} files into ${mergedFileName}...`);
   let mergedContent = "# Development Rules - Complete Collection\n\n";
   mergedContent += `Generated on: ${(/* @__PURE__ */ new Date()).toISOString()}
@@ -2356,15 +2140,15 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
     try {
       let projectRoot;
       if (__dirname.includes("/dist/src/")) {
-        projectRoot = path5.resolve(__dirname, "../../..");
+        projectRoot = path4.resolve(__dirname, "../../..");
       } else {
-        projectRoot = path5.resolve(__dirname, "..");
+        projectRoot = path4.resolve(__dirname, "..");
       }
-      const sourcePath = path5.join(projectRoot, "docs", filePath);
-      let content = fs4.readFileSync(sourcePath, "utf8");
+      const sourcePath = path4.join(projectRoot, "docs", filePath);
+      let content = fs3.readFileSync(sourcePath, "utf8");
       content = processContent(content, filePath);
       const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-      const parsedPath = path5.parse(relativeToRules);
+      const parsedPath = path4.parse(relativeToRules);
       const { name: baseName, dir } = parsedPath;
       const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
       mergedContent += `## ${sectionTitle.replace(/-/g, " ").toUpperCase()}
@@ -2386,7 +2170,7 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const localProcessed = localInfo ? processContent(localInfo.content, "all-rules") : "";
   const contentChanged = !localInfo || localProcessed !== mergedContent;
   if (contentChanged) {
-    fs4.writeFileSync(mergedFilePath, mergedContent, "utf8");
+    fs3.writeFileSync(mergedFilePath, mergedContent, "utf8");
     results.push({
       file: mergedFileName,
       status: localInfo ? "updated" : "added",
@@ -2422,12 +2206,12 @@ async function syncRules(options) {
     }
   }
   const config = getAgentConfig2(agent);
-  const rulesDir = path5.join(cwd, config.dir, RULES_DIR_NAME);
+  const rulesDir = path4.join(cwd, config.dir, RULES_DIR_NAME);
   const processContent = createContentProcessor(config);
   if (options.clear) {
     await clearObsoleteFiles2(rulesDir, config, !!options.merge);
   }
-  fs4.mkdirSync(rulesDir, { recursive: true });
+  fs3.mkdirSync(rulesDir, { recursive: true });
   const ruleFiles = await getRuleFiles();
   console.log("\u{1F680} Rules Sync Tool");
   console.log("================");
