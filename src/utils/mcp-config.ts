@@ -35,7 +35,7 @@ export const MCP_SERVERS: Record<string, MCPServerDefinition> = {
     config: {
       type: 'local' as const,
       command: ['npx', '@napolab/gpt-image-1-mcp'] as string[],
-      env: { OPENAI_API_KEY: '' },
+      environment: { OPENAI_API_KEY: '' },
     },
     requiredEnvVars: ['OPENAI_API_KEY'],
   },
@@ -45,7 +45,7 @@ export const MCP_SERVERS: Record<string, MCPServerDefinition> = {
     config: {
       type: 'local' as const,
       command: ['npx', '-y', 'server-perplexity-ask'] as string[],
-      env: { PERPLEXITY_API_KEY: '' },
+      environment: { PERPLEXITY_API_KEY: '' },
     },
     requiredEnvVars: ['PERPLEXITY_API_KEY'],
   },
@@ -53,7 +53,7 @@ export const MCP_SERVERS: Record<string, MCPServerDefinition> = {
     name: 'context7',
     description: 'Context7 HTTP MCP server',
     config: {
-      type: 'streamable-http' as const,
+      type: 'remote' as const,
       url: 'https://mcp.context7.com/mcp',
     },
   },
@@ -63,7 +63,7 @@ export const MCP_SERVERS: Record<string, MCPServerDefinition> = {
     config: {
       type: 'local' as const,
       command: ['npx', '-y', 'mcp-gemini-google-search'] as string[],
-      env: { GEMINI_API_KEY: '', GEMINI_MODEL: 'gemini-2.5-flash' },
+      environment: { GEMINI_API_KEY: '', GEMINI_MODEL: 'gemini-2.5-flash' },
     },
     requiredEnvVars: ['GEMINI_API_KEY'],
   },
@@ -202,7 +202,7 @@ export async function listMCPServers(cwd: string): Promise<void> {
     let configInfo = '';
     if (serverConfig.type === 'local') {
       configInfo = serverConfig.command.join(' ');
-    } else if (serverConfig.type === 'streamable-http') {
+    } else if (serverConfig.type === 'remote') {
       configInfo = `HTTP: ${serverConfig.url}`;
     }
 
@@ -318,8 +318,8 @@ export async function configureMCPServer(cwd: string, serverType: MCPServerType)
     // Update existing local config
     config.mcp[server.name] = {
       ...currentConfig,
-      env: {
-        ...(currentConfig.env || {}),
+      environment: {
+        ...(currentConfig.environment || {}),
         ...apiKeys,
       },
     };
@@ -329,8 +329,8 @@ export async function configureMCPServer(cwd: string, serverType: MCPServerType)
     if (baseConfig.type === 'local') {
       config.mcp[server.name] = {
         ...baseConfig,
-        env: {
-          ...(baseConfig.env || {}),
+        environment: {
+          ...(baseConfig.environment || {}),
           ...apiKeys,
         },
       };

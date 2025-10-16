@@ -44,11 +44,11 @@ export interface CommandArgument {
 export interface MCPServerConfig {
   type: 'local';
   command: string[];
-  env?: Record<string, string>;
+  environment?: Record<string, string>;
 }
 
 export interface MCPServerConfigHTTP {
-  type: 'streamable-http';
+  type: 'remote';
   url: string;
 }
 
