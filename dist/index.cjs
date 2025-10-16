@@ -716,14 +716,14 @@ $1"mcp": {`
   return json;
 }
 async function readJSONCFile(filePath) {
-  const fs7 = await import("fs/promises");
-  const content = await fs7.readFile(filePath, "utf8");
+  const fs6 = await import("fs/promises");
+  const content = await fs6.readFile(filePath, "utf8");
   return parseJSONC(content);
 }
 async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs7 = await import("fs/promises");
+  const fs6 = await import("fs/promises");
   const content = stringifyJSONC(obj, schema, indent);
-  await fs7.writeFile(filePath, content, "utf8");
+  await fs6.writeFile(filePath, content, "utf8");
 }
 
 // src/utils/mcp-config.ts
@@ -750,7 +750,7 @@ var MCP_SERVERS = {
     config: {
       type: "local",
       command: ["npx", "@napolab/gpt-image-1-mcp"],
-      env: { OPENAI_API_KEY: "" }
+      environment: { OPENAI_API_KEY: "" }
     },
     requiredEnvVars: ["OPENAI_API_KEY"]
   },
@@ -760,7 +760,7 @@ var MCP_SERVERS = {
     config: {
       type: "local",
       command: ["npx", "-y", "server-perplexity-ask"],
-      env: { PERPLEXITY_API_KEY: "" }
+      environment: { PERPLEXITY_API_KEY: "" }
     },
     requiredEnvVars: ["PERPLEXITY_API_KEY"]
   },
@@ -768,7 +768,7 @@ var MCP_SERVERS = {
     name: "context7",
     description: "Context7 HTTP MCP server",
     config: {
-      type: "streamable-http",
+      type: "remote",
       url: "https://mcp.context7.com/mcp"
     }
   },
@@ -778,7 +778,7 @@ var MCP_SERVERS = {
     config: {
       type: "local",
       command: ["npx", "-y", "mcp-gemini-google-search"],
-      env: { GEMINI_API_KEY: "", GEMINI_MODEL: "gemini-2.5-flash" }
+      environment: { GEMINI_API_KEY: "", GEMINI_MODEL: "gemini-2.5-flash" }
     },
     requiredEnvVars: ["GEMINI_API_KEY"]
   }
@@ -789,8 +789,8 @@ function getOpenCodeConfigPath(cwd) {
 async function readOpenCodeConfig(cwd) {
   const configPath = getOpenCodeConfigPath(cwd);
   try {
-    const { existsSync: existsSync2 } = await import("fs");
-    if (!existsSync2(configPath)) {
+    const { existsSync: existsSync3 } = await import("fs");
+    if (!existsSync3(configPath)) {
       return {};
     }
     return await readJSONCFile(configPath);
@@ -841,7 +841,7 @@ async function listMCPServers(cwd) {
     let configInfo = "";
     if (serverConfig.type === "local") {
       configInfo = serverConfig.command.join(" ");
-    } else if (serverConfig.type === "streamable-http") {
+    } else if (serverConfig.type === "remote") {
       configInfo = `HTTP: ${serverConfig.url}`;
     }
     console.log(`  \u2022 ${name}: ${configInfo}`);
@@ -921,8 +921,8 @@ async function configureMCPServer(cwd, serverType) {
   if (currentConfig && currentConfig.type === "local") {
     config.mcp[server2.name] = {
       ...currentConfig,
-      env: {
-        ...currentConfig.env || {},
+      environment: {
+        ...currentConfig.environment || {},
         ...apiKeys
       }
     };
@@ -931,8 +931,8 @@ async function configureMCPServer(cwd, serverType) {
     if (baseConfig.type === "local") {
       config.mcp[server2.name] = {
         ...baseConfig,
-        env: {
-          ...baseConfig.env || {},
+        environment: {
+          ...baseConfig.environment || {},
           ...apiKeys
         }
       };
@@ -1489,158 +1489,300 @@ var mcpCommand = {
   ]
 };
 
-// src/commands/memory-command.ts
-var fs4 = __toESM(require("fs/promises"), 1);
+// src/utils/libsql-storage.ts
+var import_client = require("@libsql/client");
+var fs4 = __toESM(require("fs"), 1);
 var path5 = __toESM(require("path"), 1);
-var import_cli_table3 = __toESM(require("cli-table3"), 1);
-var MemoryStorage2 = class {
-  filePath;
+var LibSQLMemoryStorage = class {
+  client;
+  dbPath;
   constructor() {
-    this.filePath = path5.join(process.cwd(), ".sylphx-flow", "memory.db");
+    const memoryDir = path5.join(process.cwd(), ".sylphx-flow");
+    if (!fs4.existsSync(memoryDir)) {
+      fs4.mkdirSync(memoryDir, { recursive: true });
+    }
+    this.dbPath = path5.join(memoryDir, "memory.db");
+    this.client = (0, import_client.createClient)({
+      url: `file:${this.dbPath}`
+    });
+    this.initializeTables();
   }
-  async loadData() {
+  async initializeTables() {
+    const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS memory (
+        key TEXT NOT NULL,
+        namespace TEXT NOT NULL DEFAULT 'default',
+        value TEXT NOT NULL,
+        timestamp INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (key, namespace)
+      )
+    `;
+    await this.client.execute(createTableSQL);
+    await this.client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_memory_namespace ON memory(namespace);
+    `);
+    await this.client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_memory_timestamp ON memory(timestamp);
+    `);
+    await this.client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_memory_key ON memory(key);
+    `);
+  }
+  serializeValue(value) {
+    return JSON.stringify(value);
+  }
+  deserializeValue(value) {
     try {
-      const data = await fs4.readFile(this.filePath, "utf8");
-      const parsed = JSON.parse(data);
-      return new Map(Object.entries(parsed));
+      return JSON.parse(value);
     } catch {
-      return /* @__PURE__ */ new Map();
+      return value;
     }
   }
-  async saveData(data) {
-    try {
-      const obj = Object.fromEntries(data);
-      await fs4.writeFile(this.filePath, JSON.stringify(obj, null, 2), "utf8");
-    } catch (error) {
-      console.warn("Warning: Could not save memory data:", error);
-    }
-  }
-  async getAll() {
-    const data = await this.loadData();
-    return Array.from(data.values()).sort((a, b) => b.timestamp - a.timestamp);
-  }
-  async search(pattern, namespace) {
-    const data = await this.loadData();
-    const searchPattern = pattern.replace(/\*/g, ".*");
-    const regex = new RegExp(searchPattern);
-    return Array.from(data.values()).filter((entry) => {
-      if (namespace && entry.namespace !== namespace) return false;
-      return regex.test(entry.key);
-    }).sort((a, b) => b.timestamp - a.timestamp);
-  }
-  async delete(key, namespace = "default") {
-    const data = await this.loadData();
-    const fullKey = `${namespace}:${key}`;
-    const deleted = data.delete(fullKey);
-    if (deleted) {
-      await this.saveData(data);
-    }
-    return deleted;
-  }
-  async clear(namespace) {
-    const data = await this.loadData();
-    let count = 0;
-    if (namespace) {
-      const keysToDelete = [];
-      for (const [fullKey, entry] of data.entries()) {
-        if (entry.namespace === namespace) {
-          keysToDelete.push(fullKey);
-        }
-      }
-      for (const key of keysToDelete) {
-        data.delete(key);
-        count++;
-      }
+  async set(key, value, namespace = "default") {
+    const now = /* @__PURE__ */ new Date();
+    const timestamp = now.getTime();
+    const created_at = now.toISOString();
+    const updated_at = created_at;
+    const serializedValue = this.serializeValue(value);
+    const existing = await this.get(key, namespace);
+    if (existing) {
+      const updateSQL = `
+        UPDATE memory 
+        SET value = ?, timestamp = ?, updated_at = ?
+        WHERE key = ? AND namespace = ?
+      `;
+      await this.client.execute({
+        sql: updateSQL,
+        args: [serializedValue, timestamp, updated_at, key, namespace]
+      });
     } else {
-      count = data.size;
-      data.clear();
+      const insertSQL = `
+        INSERT INTO memory (key, namespace, value, timestamp, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      await this.client.execute({
+        sql: insertSQL,
+        args: [key, namespace, serializedValue, timestamp, created_at, updated_at]
+      });
     }
-    if (count > 0) {
-      await this.saveData(data);
-    }
-    return count;
   }
-  async getStats() {
-    const data = await this.loadData();
-    const entries = Array.from(data.values());
-    const namespaces = [...new Set(entries.map((entry) => entry.namespace))];
-    const namespaceStats = namespaces.map((ns) => ({
-      namespace: ns,
-      count: entries.filter((entry) => entry.namespace === ns).length
-    }));
-    const timestamps = entries.map((entry) => entry.timestamp);
-    const oldestEntry = timestamps.length > 0 ? Math.min(...timestamps) : 0;
-    const newestEntry = timestamps.length > 0 ? Math.max(...timestamps) : 0;
+  async get(key, namespace = "default") {
+    const selectSQL = `
+      SELECT key, namespace, value, timestamp, created_at, updated_at
+      FROM memory
+      WHERE key = ? AND namespace = ?
+    `;
+    const result = await this.client.execute({
+      sql: selectSQL,
+      args: [key, namespace]
+    });
+    if (result.rows.length === 0) {
+      return null;
+    }
+    const row = result.rows[0];
     return {
-      total_entries: entries.length,
-      namespaces: namespaceStats,
-      oldest_entry: oldestEntry,
-      newest_entry: newestEntry
+      key: row.key,
+      namespace: row.namespace,
+      value: this.deserializeValue(row.value),
+      timestamp: row.timestamp,
+      created_at: row.created_at,
+      updated_at: row.updated_at
     };
   }
+  async getAll() {
+    const selectSQL = `
+      SELECT key, namespace, value, timestamp, created_at, updated_at
+      FROM memory
+      ORDER BY timestamp DESC
+    `;
+    const result = await this.client.execute(selectSQL);
+    return result.rows.map((row) => ({
+      key: row.key,
+      namespace: row.namespace,
+      value: this.deserializeValue(row.value),
+      timestamp: row.timestamp,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
+  }
+  async search(pattern, namespace) {
+    const searchPattern = pattern.replace(/\*/g, "%");
+    let selectSQL = `
+      SELECT key, namespace, value, timestamp, created_at, updated_at
+      FROM memory
+      WHERE key LIKE ? OR value LIKE ?
+    `;
+    const args = [searchPattern, searchPattern];
+    if (namespace && namespace !== "all") {
+      selectSQL += " AND namespace = ?";
+      args.push(namespace);
+    }
+    selectSQL += " ORDER BY timestamp DESC";
+    const result = await this.client.execute({
+      sql: selectSQL,
+      args
+    });
+    return result.rows.map((row) => ({
+      key: row.key,
+      namespace: row.namespace,
+      value: this.deserializeValue(row.value),
+      timestamp: row.timestamp,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
+  }
+  async delete(key, namespace = "default") {
+    const deleteSQL = `
+      DELETE FROM memory
+      WHERE key = ? AND namespace = ?
+    `;
+    const result = await this.client.execute({
+      sql: deleteSQL,
+      args: [key, namespace]
+    });
+    return result.rowsAffected > 0;
+  }
+  async clear(namespace) {
+    if (namespace && namespace !== "all") {
+      const deleteSQL = "DELETE FROM memory WHERE namespace = ?";
+      await this.client.execute({
+        sql: deleteSQL,
+        args: [namespace]
+      });
+    } else {
+      const deleteSQL = "DELETE FROM memory";
+      await this.client.execute(deleteSQL);
+    }
+  }
+  async getStats() {
+    const countResult = await this.client.execute("SELECT COUNT(*) as count FROM memory");
+    const totalEntries = countResult.rows[0].count;
+    const namespaceResult = await this.client.execute(`
+      SELECT namespace, COUNT(*) as count
+      FROM memory
+      GROUP BY namespace
+      ORDER BY namespace
+    `);
+    const namespaces = namespaceResult.rows.map((row) => row.namespace);
+    const namespaceCounts = {};
+    namespaceResult.rows.forEach((row) => {
+      namespaceCounts[row.namespace] = row.count;
+    });
+    const timeResult = await this.client.execute(`
+      SELECT 
+        MIN(created_at) as oldest,
+        MAX(created_at) as newest
+      FROM memory
+    `);
+    const timeRow = timeResult.rows[0];
+    const oldestEntry = timeRow.oldest;
+    const newestEntry = timeRow.newest;
+    return {
+      totalEntries,
+      namespaces,
+      namespaceCounts,
+      oldestEntry,
+      newestEntry
+    };
+  }
+  // Load method for compatibility with existing code
+  async load() {
+    const entries = await this.getAll();
+    const namespaces = {};
+    entries.forEach((entry) => {
+      if (!namespaces[entry.namespace]) {
+        namespaces[entry.namespace] = {};
+      }
+      namespaces[entry.namespace][entry.key] = entry.value;
+    });
+    return { namespaces };
+  }
+  // Close database connection
+  async close() {
+  }
+  // Get database path for debugging
+  getDatabasePath() {
+    return this.dbPath;
+  }
 };
+
+// src/commands/memory-command.ts
 var memoryListHandler = async (options) => {
-  const memory = new MemoryStorage2();
+  const memory = new LibSQLMemoryStorage();
   const entries = await memory.getAll();
-  if (options.namespace) {
+  if (options.namespace && options.namespace !== "all") {
     const filtered = entries.filter((entry) => entry.namespace === options.namespace);
-    console.log(`\u{1F4CB} Memory entries in namespace '${options.namespace}':`);
+    console.log(`\u{1F4CB} Memory entries in namespace: ${options.namespace}`);
     console.log(`Total: ${filtered.length} entries
 `);
-    const table = new import_cli_table3.default({
-      head: ["Key", "Value", "Updated"],
-      colWidths: [20, 40, 20]
+    if (filtered.length === 0) {
+      console.log("No entries found in this namespace.");
+      return;
+    }
+    const limit = options.limit || 50;
+    const display = filtered.slice(0, limit);
+    display.forEach((entry, index) => {
+      const safeValue = entry.value || "";
+      const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : JSON.stringify(safeValue).substring(0, 50) + "...";
+      console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
+      console.log(`   Value: ${value}`);
+      console.log(`   Updated: ${entry.updated_at}`);
+      console.log("");
     });
-    filtered.slice(0, options.limit || 50).forEach((entry) => {
-      const value = typeof entry.value === "string" ? entry.value.substring(0, 50) + (entry.value.length > 50 ? "..." : "") : JSON.stringify(entry.value).substring(0, 50) + "...";
-      table.push([entry.key, value, new Date(entry.updated_at).toLocaleString()]);
-    });
-    console.log(table.toString());
   } else {
     console.log(`\u{1F4CB} All memory entries (showing first ${options.limit || 50}):`);
     console.log(`Total: ${entries.length} entries
 `);
-    const table = new import_cli_table3.default({
-      head: ["Namespace", "Key", "Value", "Updated"],
-      colWidths: [15, 20, 35, 20]
+    if (entries.length === 0) {
+      console.log("No memory entries found.");
+      return;
+    }
+    const limit = options.limit || 50;
+    const display = entries.slice(0, limit);
+    display.forEach((entry, index) => {
+      const safeValue = entry.value || "";
+      const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : JSON.stringify(safeValue).substring(0, 50) + "...";
+      console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
+      console.log(`   Value: ${value}`);
+      console.log(`   Updated: ${entry.updated_at}`);
+      console.log("");
     });
-    entries.slice(0, options.limit || 50).forEach((entry) => {
-      const value = typeof entry.value === "string" ? entry.value.substring(0, 50) + (entry.value.length > 50 ? "..." : "") : JSON.stringify(entry.value).substring(0, 50) + "...";
-      table.push([entry.namespace, entry.key, value, new Date(entry.updated_at).toLocaleString()]);
-    });
-    console.log(table.toString());
   }
 };
 var memorySearchHandler = async (options) => {
   if (!options.pattern) {
-    console.log("\u274C Please provide a search pattern");
-    console.log("   Usage: sylphx-flow memory search <pattern>");
-    return;
+    console.error("\u274C Search pattern is required. Use --pattern <pattern>");
+    process.exit(1);
   }
-  const memory = new MemoryStorage2();
-  const entries = await memory.search(options.pattern, options.namespace);
-  console.log(`\u{1F50D} Search results for pattern "${options.pattern}"`);
-  if (options.namespace) {
+  const memory = new LibSQLMemoryStorage();
+  const results2 = await memory.search(options.pattern, options.namespace);
+  console.log(`\u{1F50D} Search results for pattern: ${options.pattern}`);
+  if (options.namespace && options.namespace !== "all") {
     console.log(`Namespace: ${options.namespace}`);
   }
-  console.log(`Found: ${entries.length} entries
+  console.log(`Found: ${results2.length} results
 `);
-  if (entries.length === 0) {
-    console.log("No entries found.");
+  if (results2.length === 0) {
+    console.log("No matching entries found.");
     return;
   }
-  const table = new import_cli_table3.default({
-    head: ["Namespace", "Key", "Value", "Updated"],
-    colWidths: [15, 20, 35, 20]
+  results2.forEach((entry, index) => {
+    const safeValue = entry.value || "";
+    const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : JSON.stringify(safeValue).substring(0, 50) + "...";
+    console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
+    console.log(`   Value: ${value}`);
+    console.log(`   Updated: ${entry.updated_at}`);
+    console.log("");
   });
-  entries.forEach((entry) => {
-    const value = typeof entry.value === "string" ? entry.value.substring(0, 50) + (entry.value.length > 50 ? "..." : "") : JSON.stringify(entry.value).substring(0, 50) + "...";
-    table.push([entry.namespace, entry.key, value, new Date(entry.updated_at).toLocaleString()]);
-  });
-  console.log(table.toString());
 };
 var memoryDeleteHandler = async (options) => {
-  const memory = new MemoryStorage2();
+  if (!options.key) {
+    console.error("\u274C Key is required. Use --key <key>");
+    process.exit(1);
+  }
+  const memory = new LibSQLMemoryStorage();
   const deleted = await memory.delete(options.key, options.namespace || "default");
   if (deleted) {
     console.log(`\u2705 Deleted memory entry: ${options.namespace || "default"}:${options.key}`);
@@ -1650,101 +1792,87 @@ var memoryDeleteHandler = async (options) => {
 };
 var memoryClearHandler = async (options) => {
   if (!options.confirm) {
-    console.log("\u274C Please use --confirm to clear memory entries");
-    console.log("   This action cannot be undone!");
-    return;
+    console.error("\u274C Confirmation required. Use --confirm to clear memory entries");
+    process.exit(1);
   }
-  const memory = new MemoryStorage2();
-  const count = await memory.clear(options.namespace);
+  const memory = new LibSQLMemoryStorage();
   if (options.namespace) {
-    console.log(`\u2705 Cleared ${count} entries from namespace: ${options.namespace}`);
+    await memory.clear(options.namespace);
+    console.log(`\u2705 Cleared all memory entries in namespace: ${options.namespace}`);
   } else {
-    console.log(`\u2705 Cleared all ${count} memory entries`);
+    await memory.clear();
+    console.log("\u2705 Cleared all memory entries");
   }
 };
 var memoryStatsHandler = async () => {
-  const memory = new MemoryStorage2();
+  const memory = new LibSQLMemoryStorage();
   const stats = await memory.getStats();
   console.log("\u{1F4CA} Memory Statistics");
   console.log("==================");
-  console.log(`Total Entries: ${stats.total_entries}`);
+  console.log(`Total Entries: ${stats.totalEntries}`);
   console.log(`Namespaces: ${stats.namespaces.length}`);
   console.log("");
   if (stats.namespaces.length > 0) {
     console.log("Namespaces:");
     stats.namespaces.forEach((ns) => {
-      console.log(`  \u2022 ${ns.namespace}: ${ns.count} entries`);
+      const count = stats.namespaceCounts[ns] || 0;
+      console.log(`  \u2022 ${ns}: ${count} entries`);
     });
-  }
-  if (stats.oldest_entry > 0) {
-    const oldestDate = new Date(stats.oldest_entry).toLocaleString();
-    const newestDate = new Date(stats.newest_entry).toLocaleString();
     console.log("");
-    console.log(`Oldest Entry: ${oldestDate}`);
-    console.log(`Newest Entry: ${newestDate}`);
   }
+  console.log(`Oldest Entry: ${stats.oldestEntry || "N/A"}`);
+  console.log(`Newest Entry: ${stats.newestEntry || "N/A"}`);
   console.log("");
   console.log(`\u{1F4CD} Database: .sylphx-flow/memory.db`);
 };
-var memoryTUIHandler = async () => {
-  console.log("\u{1F680} Starting Memory Manager TUI...");
-  console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
-  console.log("");
-  console.log("\u{1F4CB} Available Commands:");
-  console.log("  \u2022 npx github:sylphxltd/flow memory list");
-  console.log("  \u2022 npx github:sylphxltd/flow memory search <pattern>");
-  console.log("  \u2022 npx github:sylphxltd/flow memory delete <key>");
-  console.log("  \u2022 npx github:sylphxltd/flow memory clear --confirm");
-  console.log("  \u2022 npx github:sylphxltd/flow memory stats");
-  console.log("");
-  console.log("\u{1F4A1} Use the subcommands above for memory management.");
-  console.log("   Full TUI interface coming soon!");
+var memorySetHandler = async (options) => {
+  const args = process.argv.slice(2);
+  const keyIndex = args.indexOf("set") + 1;
+  const valueIndex = keyIndex + 1;
+  if (keyIndex >= args.length || valueIndex >= args.length) {
+    console.error("\u274C Usage: flow memory set <key> <value> [--namespace <namespace>]");
+    process.exit(1);
+  }
+  const key = args[keyIndex];
+  const value = args[valueIndex];
+  const namespace = options.namespace || "default";
+  const memory = new LibSQLMemoryStorage();
+  await memory.set(key, value, namespace);
+  console.log(`\u2705 Set memory entry: ${namespace}:${key} = "${value}"`);
 };
 var memoryCommand = {
   name: "memory",
-  description: "Manage Sylphx Flow memory database",
-  options: [],
+  description: "Manage memory database",
+  options: [
+    { flags: "--namespace <name>", description: "Filter by namespace" },
+    { flags: "--limit <number>", description: "Limit number of entries" },
+    { flags: "--pattern <pattern>", description: "Search pattern" },
+    { flags: "--key <key>", description: "Memory key to delete" },
+    { flags: "--confirm", description: "Confirm clear operation" }
+  ],
   subcommands: [
-    {
-      name: "tui",
-      description: "Launch interactive Terminal User Interface (coming soon)",
-      options: [],
-      handler: memoryTUIHandler
-    },
     {
       name: "list",
       description: "List memory entries",
-      options: [
-        { flags: "--namespace <name>", description: "Filter by namespace" },
-        { flags: "--limit <number>", description: "Limit number of entries (default: 50)" }
-      ],
+      options: [],
       handler: memoryListHandler
     },
     {
       name: "search",
-      description: "Search memory entries by pattern",
-      options: [
-        { flags: "--pattern <pattern>", description: "Search pattern (supports * wildcards)" },
-        { flags: "--namespace <name>", description: "Filter by namespace" }
-      ],
+      description: "Search memory entries",
+      options: [],
       handler: memorySearchHandler
     },
     {
       name: "delete",
-      description: "Delete a specific memory entry",
-      options: [
-        { flags: "--key <key>", description: "Memory key to delete" },
-        { flags: "--namespace <name>", description: "Namespace (default: default)" }
-      ],
+      description: "Delete memory entry",
+      options: [],
       handler: memoryDeleteHandler
     },
     {
       name: "clear",
       description: "Clear memory entries",
-      options: [
-        { flags: "--namespace <name>", description: "Clear specific namespace (optional)" },
-        { flags: "--confirm", description: "Confirm the clear operation" }
-      ],
+      options: [],
       handler: memoryClearHandler
     },
     {
@@ -1752,524 +1880,265 @@ var memoryCommand = {
       description: "Show memory statistics",
       options: [],
       handler: memoryStatsHandler
+    },
+    {
+      name: "set",
+      description: "Set memory entry",
+      options: [],
+      handler: memorySetHandler
     }
-  ],
-  handler: memoryTUIHandler
-  // Default to TUI
+  ]
 };
 
 // src/commands/memory-tui-command.ts
 var import_ink2 = require("ink");
 var import_react2 = __toESM(require("react"), 1);
 
-// src/components/SimpleMemoryTUI.tsx
+// src/components/MemoryTUI.tsx
 var import_react = require("react");
 var import_ink = require("ink");
-var import_ink_text_input = __toESM(require("ink-text-input"), 1);
-var import_ink_select_input = __toESM(require("ink-select-input"), 1);
-
-// src/utils/memory-storage.ts
-var fs5 = __toESM(require("fs/promises"), 1);
-var path6 = __toESM(require("path"), 1);
-var MemoryStorage3 = class {
-  filePath;
-  constructor() {
-    this.filePath = path6.join(process.cwd(), ".sylphx-flow", "memory.db");
-  }
-  async loadData() {
-    try {
-      const data = await fs5.readFile(this.filePath, "utf8");
-      const parsed = JSON.parse(data);
-      return new Map(Object.entries(parsed));
-    } catch {
-      return /* @__PURE__ */ new Map();
-    }
-  }
-  async saveData(data) {
-    try {
-      const obj = Object.fromEntries(data);
-      await fs5.writeFile(this.filePath, JSON.stringify(obj, null, 2), "utf8");
-    } catch (error) {
-      console.warn("Warning: Could not save memory data:", error);
-    }
-  }
-  async getAll() {
-    const data = await this.loadData();
-    return Array.from(data.values()).sort((a, b) => b.timestamp - a.timestamp);
-  }
-  async search(pattern, namespace) {
-    const data = await this.loadData();
-    const results2 = [];
-    const regex = new RegExp(pattern.replace(/\*/g, ".*"), "i");
-    for (const entry of data.values()) {
-      if (namespace && entry.namespace !== namespace) continue;
-      if (regex.test(entry.key) || regex.test(JSON.stringify(entry.value))) {
-        results2.push([entry.key, entry.value, entry.namespace]);
-      }
-    }
-    return results2;
-  }
-  async set(key, value, namespace = "default") {
-    const data = await this.loadData();
-    const now = Date.now();
-    const isoString = new Date(now).toISOString();
-    const entry = {
-      key,
-      namespace,
-      value,
-      timestamp: now,
-      created_at: isoString,
-      updated_at: isoString
-    };
-    data.set(`${namespace}:${key}`, entry);
-    await this.saveData(data);
-  }
-  async get(key, namespace = "default") {
-    const data = await this.loadData();
-    const entry = data.get(`${namespace}:${key}`);
-    return entry?.value || null;
-  }
-  async delete(key, namespace = "default") {
-    const data = await this.loadData();
-    const deleted = data.delete(`${namespace}:${key}`);
-    if (deleted) {
-      await this.saveData(data);
-    }
-    return deleted;
-  }
-  async clear(namespace) {
-    const data = await this.loadData();
-    if (namespace) {
-      const keysToDelete = [];
-      for (const [fullKey, entry] of data.entries()) {
-        if (entry.namespace === namespace) {
-          keysToDelete.push(fullKey);
-        }
-      }
-      keysToDelete.forEach((key) => data.delete(key));
-    } else {
-      data.clear();
-    }
-    await this.saveData(data);
-  }
-  async getStats() {
-    const data = await this.loadData();
-    const entries = Array.from(data.values());
-    const namespaces = Array.from(new Set(entries.map((e) => e.namespace)));
-    const namespaceCounts = {};
-    entries.forEach((entry) => {
-      namespaceCounts[entry.namespace] = (namespaceCounts[entry.namespace] || 0) + 1;
-    });
-    const sortedEntries = entries.sort((a, b) => a.timestamp - b.timestamp);
-    const oldestEntry = sortedEntries.length > 0 ? sortedEntries[0].created_at : null;
-    const newestEntry = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1].created_at : null;
-    return {
-      totalEntries: entries.length,
-      namespaces,
-      namespaceCounts,
-      oldestEntry,
-      newestEntry
-    };
-  }
-  // Load the full memory data structure (for compatibility with MCP server)
-  async load() {
-    try {
-      const data = await fs5.readFile(this.filePath, "utf8");
-      const parsed = JSON.parse(data);
-      const namespaces = {};
-      if (parsed.namespaces) {
-        return parsed;
-      } else {
-        Object.entries(parsed).forEach(([fullKey, entry]) => {
-          const [namespace, key] = fullKey.split(":", 2);
-          if (!namespaces[namespace]) {
-            namespaces[namespace] = {};
-          }
-          namespaces[namespace][key] = entry.value;
-        });
-        return { namespaces };
-      }
-    } catch {
-      return { namespaces: {} };
-    }
-  }
-};
-
-// src/components/SimpleMemoryTUI.tsx
 var import_jsx_runtime = require("react/jsx-runtime");
-var SimpleMemoryTUI = () => {
+var externalState = {
+  entries: [],
+  loading: false,
+  message: "",
+  renderKey: 0
+};
+var MemoryTUI = () => {
   const { exit } = (0, import_ink.useApp)();
-  const [viewMode, setViewMode] = (0, import_react.useState)("list");
-  const [entries, setEntries] = (0, import_react.useState)([]);
-  const [selectedEntry, setSelectedEntry] = (0, import_react.useState)(null);
-  const [searchQuery, setSearchQuery] = (0, import_react.useState)("");
-  const [namespace, setNamespace] = (0, import_react.useState)("all");
-  const [editKey, setEditKey] = (0, import_react.useState)("");
-  const [editValue, setEditValue] = (0, import_react.useState)("");
-  const [editNamespace, setEditNamespace] = (0, import_react.useState)("default");
-  const [message, setMessage] = (0, import_react.useState)("");
-  const [stats, setStats] = (0, import_react.useState)(null);
-  const memory = new MemoryStorage3();
-  const loadEntries = (0, import_react.useCallback)(async () => {
-    try {
-      const data = await memory.load();
-      const flatEntries = [];
-      Object.entries(data.namespaces || {}).forEach(([ns, nsData]) => {
-        Object.entries(nsData).forEach(([key, value]) => {
-          flatEntries.push({
-            key,
-            value: typeof value === "string" ? value : JSON.stringify(value),
-            namespace: ns,
-            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-            created_at: (/* @__PURE__ */ new Date()).toISOString(),
-            updated_at: (/* @__PURE__ */ new Date()).toISOString()
-          });
-        });
-      });
-      setEntries(flatEntries);
-    } catch (error) {
-      setMessage(`\u274C Error loading entries: ${error}`);
-    }
+  const [, forceUpdate] = (0, import_react.useState)({});
+  const memory = new LibSQLMemoryStorage();
+  const forceRender = (0, import_react.useCallback)(() => {
+    externalState.renderKey++;
+    forceUpdate({});
   }, []);
-  const loadStats = (0, import_react.useCallback)(async () => {
+  const getState = () => ({
+    entries: externalState.entries,
+    filteredEntries: filterEntries(externalState.entries),
+    loading: externalState.loading,
+    message: externalState.message,
+    viewMode: "list",
+    selectedIndex: 0,
+    searchQuery: "",
+    sortBy: "updated_at",
+    sortOrder: "desc",
+    page: 0,
+    pageSize: 10,
+    selectedEntry: null,
+    deleteConfirmEntry: null,
+    newEntry: { namespace: "default", key: "", value: "" },
+    editEntry: { namespace: "", key: "", value: "" }
+  });
+  const filterEntries = (entries) => {
+    return entries.sort((a, b) => {
+      const aTime = new Date(a.updated_at).getTime();
+      const bTime = new Date(b.updated_at).getTime();
+      return bTime - aTime;
+    });
+  };
+  const loadEntries = (0, import_react.useCallback)(async () => {
+    console.log("MemoryTUI: Loading entries...");
+    externalState.loading = true;
+    externalState.message = "Loading entries...";
+    forceRender();
     try {
-      const data = await memory.load();
-      const namespaces = Object.keys(data.namespaces || {});
-      const totalEntries = entries.length;
-      const namespaceCounts = {};
-      namespaces.forEach((ns) => {
-        namespaceCounts[ns] = Object.keys(data.namespaces?.[ns] || {}).length;
-      });
-      setStats({
-        totalEntries,
-        namespaces: namespaces.length,
-        namespaceCounts,
-        oldestEntry: entries.length > 0 ? "2025-10-01" : "N/A",
-        newestEntry: entries.length > 0 ? "2025-10-16" : "N/A"
-      });
+      const allEntries = await memory.getAll();
+      console.log(`MemoryTUI: Loaded ${allEntries.length} entries`);
+      externalState.entries = allEntries;
+      externalState.loading = false;
+      externalState.message = `Loaded ${allEntries.length} entries`;
     } catch (error) {
-      setMessage(`\u274C Error loading stats: ${error}`);
+      console.error("MemoryTUI: Error loading entries:", error);
+      externalState.loading = false;
+      externalState.message = `Error: ${error}`;
     }
-  }, [entries]);
+    forceRender();
+  }, [memory, forceRender]);
+  const deleteEntry = (0, import_react.useCallback)(
+    async (entry) => {
+      try {
+        await memory.delete(entry.key, entry.namespace);
+        externalState.message = `Deleted entry: ${entry.namespace}:${entry.key}`;
+        await loadEntries();
+      } catch (error) {
+        externalState.message = `Error deleting entry: ${error}`;
+        forceRender();
+      }
+    },
+    [memory, loadEntries, forceRender]
+  );
   (0, import_react.useEffect)(() => {
     loadEntries();
-  }, [loadEntries]);
-  (0, import_react.useEffect)(() => {
-    if (viewMode === "stats") {
-      loadStats();
-    }
-  }, [viewMode, loadStats]);
+  }, []);
   (0, import_ink.useInput)((input, key) => {
-    if (key.escape) {
-      exit();
+    const state2 = getState();
+    if (key.escape || input === "q") {
+      if (state2.viewMode !== "list") {
+        state2.viewMode = "list";
+        forceRender();
+      } else {
+        exit();
+      }
+      return;
     }
-    if (viewMode === "list") {
-      if (input === "q") exit();
-      if (input === "s") setViewMode("search");
-      if (input === "n") setViewMode("edit");
-      if (input === "d") setViewMode("delete");
-      if (input === "t") setViewMode("stats");
-      if (input === "r") loadEntries();
+    if (input === "r") {
+      loadEntries();
+      return;
     }
-    if (viewMode === "search" && key.escape) {
-      setViewMode("list");
-      setSearchQuery("");
+    if (input === "h") {
+      state2.viewMode = state2.viewMode === "help" ? "list" : "help";
+      forceRender();
+      return;
     }
-    if (viewMode === "details" && key.escape) {
-      setViewMode("list");
-      setSelectedEntry(null);
+    if (state2.viewMode === "list") {
+      if (input === "a") {
+        state2.viewMode = "add";
+        forceRender();
+      } else if (input === "n" && state2.selectedIndex < state2.filteredEntries.length - 1) {
+        state2.selectedIndex++;
+        forceRender();
+      } else if (input === "p" && state2.selectedIndex > 0) {
+        state2.selectedIndex--;
+        forceRender();
+      } else if (input === "e" && state2.filteredEntries[state2.selectedIndex]) {
+        const entry = state2.filteredEntries[state2.selectedIndex];
+        state2.editEntry = {
+          namespace: entry.namespace,
+          key: entry.key,
+          value: JSON.stringify(entry.value, null, 2)
+        };
+        state2.viewMode = "edit";
+        forceRender();
+      } else if (input === "d" && state2.filteredEntries[state2.selectedIndex]) {
+        state2.deleteConfirmEntry = state2.filteredEntries[state2.selectedIndex];
+        state2.viewMode = "confirm-delete";
+        forceRender();
+      }
     }
-    if (viewMode === "edit" && key.escape) {
-      setViewMode("list");
-      setEditKey("");
-      setEditValue("");
-      setEditNamespace("default");
-    }
-    if (viewMode === "delete" && key.escape) {
-      setViewMode("list");
-      setSelectedEntry(null);
-    }
-    if (viewMode === "stats" && key.escape) {
-      setViewMode("list");
+    if (state2.viewMode === "confirm-delete") {
+      if (input === "y" && state2.deleteConfirmEntry) {
+        deleteEntry(state2.deleteConfirmEntry);
+        state2.viewMode = "list";
+        state2.deleteConfirmEntry = null;
+      } else if (input === "n") {
+        state2.viewMode = "list";
+        state2.deleteConfirmEntry = null;
+        forceRender();
+      }
     }
   });
-  const handleEntrySelect = (entry) => {
-    setSelectedEntry(entry);
-    setViewMode("details");
-  };
-  const handleSearch = async () => {
-    try {
-      const results2 = await memory.search(searchQuery);
-      const searchResults = results2.flat().map(([key, value, ns]) => ({
-        key,
-        value: typeof value === "string" ? value : JSON.stringify(value),
-        namespace: ns || "default",
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        created_at: (/* @__PURE__ */ new Date()).toISOString(),
-        updated_at: (/* @__PURE__ */ new Date()).toISOString()
-      }));
-      setEntries(searchResults);
-      setMessage(`\u{1F50D} Found ${searchResults.length} results for "${searchQuery}"`);
-    } catch (error) {
-      setMessage(`\u274C Search error: ${error}`);
-    }
-  };
-  const handleSave = async () => {
-    try {
-      await memory.set(editKey, editValue, editNamespace);
-      setMessage(`\u2705 Saved "${editKey}" to "${editNamespace}"`);
-      setEditKey("");
-      setEditValue("");
-      setEditNamespace("default");
-      setViewMode("list");
-      await loadEntries();
-    } catch (error) {
-      setMessage(`\u274C Save error: ${error}`);
-    }
-  };
-  const handleDelete = async () => {
-    if (!selectedEntry) return;
-    try {
-      await memory.delete(selectedEntry.key, selectedEntry.namespace);
-      setMessage(`\u{1F5D1}\uFE0F Deleted "${selectedEntry.key}" from "${selectedEntry.namespace}"`);
-      setSelectedEntry(null);
-      setViewMode("list");
-      await loadEntries();
-    } catch (error) {
-      setMessage(`\u274C Delete error: ${error}`);
-    }
-  };
-  const filteredEntries = namespace === "all" ? entries : entries.filter((e) => e.namespace === namespace);
-  const renderList = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "green", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "green", children: "\u{1F9E0} Sylphx Flow Memory Manager" }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: "cyan", children: [
-        "Entries: ",
-        filteredEntries.length,
-        " | Namespace: ",
-        namespace
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Spacer, {}),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press 'q' to quit, 's' search, 'n' new, 't' stats" })
-    ] }),
-    message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "Filter by namespace:" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        import_ink_select_input.default,
-        {
-          items: ["all", ...Array.from(new Set(entries.map((e) => e.namespace)))].map((ns) => ({
-            label: ns,
-            value: ns
-          })),
-          onSelect: (item) => setNamespace(item.value)
-        }
-      )
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", borderStyle: "single", padding: 1, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "blue", children: "Memory Entries:" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Newline, {}),
-      filteredEntries.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "No entries found" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        import_ink_select_input.default,
-        {
-          items: filteredEntries.map((entry) => ({
-            label: `${entry.namespace}:${entry.key} - ${entry.value.substring(0, 50)}...`,
-            value: entry
-          })),
-          onSelect: handleEntrySelect
-        }
-      )
+  const state = getState();
+  const renderHeader = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { borderStyle: "double", borderColor: "blue", padding: 1, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "blue", children: "\u{1F9E0} Sylphx Flow Memory Manager" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: "gray", children: [
+      " ",
+      "| Entries: ",
+      state.entries.length,
+      " | Page: ",
+      state.page + 1
     ] })
   ] });
-  const renderSearch = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "blue", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "blue", children: "\u{1F50D} Search Memory" }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "Search pattern (supports * wildcards):" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        import_ink_text_input.default,
-        {
-          value: searchQuery,
-          onChange: setSearchQuery,
-          onSubmit: handleSearch,
-          placeholder: "*theme*"
-        }
-      )
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to go back, ENTER to search" }) })
+  const renderList = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+    renderHeader(),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "[a]dd [e]dit [d]elete [r]efresh [h]elp [q]uit | [n]ext [p]rev" }) }),
+    state.message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: state.message }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, flexDirection: "column", children: state.loading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "Loading..." }) : state.filteredEntries.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "gray", children: "No memory entries found" }) : state.filteredEntries.slice(state.page * state.pageSize, (state.page + 1) * state.pageSize).map((entry, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: index === state.selectedIndex ? "green" : "cyan", children: [
+        index === state.selectedIndex ? "\u25B6" : " ",
+        " ",
+        state.page * state.pageSize + index + 1,
+        ". ",
+        entry.namespace,
+        ":",
+        entry.key
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { dimColor: true, children: [
+        " ",
+        "= ",
+        JSON.stringify(entry.value).substring(0, 60),
+        JSON.stringify(entry.value).length > 60 ? "..." : ""
+      ] })
+    ] }, `${entry.namespace}-${entry.key}-${entry.timestamp}`)) })
   ] });
-  const renderDetails = () => {
-    if (!selectedEntry) return null;
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "yellow", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "yellow", children: "\u{1F4C4} Entry Details" }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespace:" }),
-          " ",
-          selectedEntry.namespace
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Key:" }),
-          " ",
-          selectedEntry.key
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Value:" }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "single", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: selectedEntry.value }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Timestamp:" }),
-          " ",
-          selectedEntry.timestamp
-        ] })
+  const renderHelp = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "green", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "green", children: "\u{1F4D6} Help - Memory Manager" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginTop: 1, flexDirection: "column", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "cyan", children: "Navigation:" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "n/p" }),
+        " - Next/Previous entry"
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to go back, 'd' to delete, 'e' to edit" }) }),
-      message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) })
-    ] });
-  };
-  const renderEdit = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "magenta", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { bold: true, color: "magenta", children: [
-      "\u270F\uFE0F ",
-      selectedEntry ? "Edit" : "New",
-      " Entry"
-    ] }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespace:" }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        import_ink_text_input.default,
-        {
-          value: editNamespace,
-          onChange: setEditNamespace,
-          placeholder: "default"
-        }
-      ),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Key:" }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        import_ink_text_input.default,
-        {
-          value: editKey,
-          onChange: setEditKey,
-          placeholder: "project:framework"
-        }
-      ),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Value:" }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        import_ink_text_input.default,
-        {
-          value: editValue,
-          onChange: setEditValue,
-          placeholder: "React + TypeScript",
-          onSubmit: handleSave
-        }
-      )
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "a" }),
+        " - Add new entry"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "e" }),
+        " - Edit selected entry"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "d" }),
+        " - Delete selected entry"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "r" }),
+        " - Refresh entries"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "h" }),
+        " - Toggle this help screen"
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "q/ESC" }),
+        " - Quit/Go back"
+      ] })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to cancel, ENTER to save" }) }),
-    message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) })
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press 'h' to go back to list" }) })
   ] });
-  const renderDelete = () => {
-    if (!selectedEntry) return null;
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "red", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "red", children: "\u{1F5D1}\uFE0F Confirm Delete" }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { children: "Are you sure you want to delete:" }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespace:" }),
-          " ",
-          selectedEntry.namespace
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Key:" }),
-          " ",
-          selectedEntry.key
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Value:" }),
-          " ",
-          selectedEntry.value.substring(0, 100),
-          "..."
+  const renderConfirmDelete = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "red", padding: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "red", children: "\u26A0\uFE0F Confirm Delete" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginTop: 1, flexDirection: "column", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+        "Delete entry:",
+        " ",
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { color: "cyan", children: [
+          state.deleteConfirmEntry?.namespace,
+          ":",
+          state.deleteConfirmEntry?.key
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "red", children: "Press 'y' to confirm, any other key to cancel" }) }),
-      message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "yellow", children: message }) })
-    ] });
-  };
-  const renderStats = () => {
-    if (!stats) return null;
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { borderStyle: "double", borderColor: "cyan", padding: 1, marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "cyan", children: "\u{1F4CA} Memory Statistics" }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { flexDirection: "column", marginBottom: 1, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Total Entries:" }),
-          " ",
-          stats.totalEntries
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Namespaces:" }),
-          " ",
-          stats.namespaces
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Oldest Entry:" }),
-          " ",
-          stats.oldestEntry
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "Newest Entry:" }),
-          " ",
-          stats.newestEntry
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Box, { marginBottom: 1, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { bold: true, color: "blue", children: "Namespace Breakdown:" }),
-        Object.entries(stats.namespaceCounts).map(([ns, count]) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
-          "  \u2022 ",
-          ns,
-          ": ",
-          count,
-          " entries"
-        ] }, ns))
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { dimColor: true, children: "Press ESC to go back" }) })
-    ] });
-  };
-  (0, import_ink.useInput)((input, key) => {
-    if (viewMode === "delete" && input === "y") {
-      handleDelete();
-    } else if (viewMode === "delete" && key.return) {
-      setViewMode("list");
-      setSelectedEntry(null);
-    }
-    if (viewMode === "details" && selectedEntry && input === "d") {
-      setViewMode("delete");
-    }
-    if (viewMode === "details" && selectedEntry && input === "e") {
-      setEditKey(selectedEntry.key);
-      setEditValue(selectedEntry.value);
-      setEditNamespace(selectedEntry.namespace);
-      setViewMode("edit");
-    }
-  });
-  switch (viewMode) {
-    case "search":
-      return renderSearch();
-    case "details":
-      return renderDetails();
-    case "edit":
-      return renderEdit();
-    case "delete":
-      return renderDelete();
-    case "stats":
-      return renderStats();
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { dimColor: true, children: [
+        "Value: ",
+        JSON.stringify(state.deleteConfirmEntry?.value).substring(0, 100)
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Box, { marginTop: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_ink.Text, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "y" }),
+      " - Yes, delete | ",
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_ink.Text, { color: "cyan", children: "n" }),
+      " - No, cancel"
+    ] }) })
+  ] });
+  switch (state.viewMode) {
+    case "help":
+      return renderHelp();
+    case "confirm-delete":
+      return renderConfirmDelete();
     default:
       return renderList();
   }
 };
 
 // src/commands/memory-tui-command.ts
-var memoryTuiCommand = {
-  name: "memory-tui",
-  description: "Launch interactive memory management TUI",
-  options: []
-};
 var handleMemoryTui = async () => {
-  const { waitUntilExit } = (0, import_ink2.render)(import_react2.default.createElement(SimpleMemoryTUI));
+  const { waitUntilExit } = (0, import_ink2.render)(import_react2.default.createElement(MemoryTUI));
   await waitUntilExit();
 };
 
@@ -2278,7 +2147,7 @@ var import_commander = require("commander");
 function createCommand(config) {
   const command = new import_commander.Command(config.name);
   command.description(config.description);
-  for (const option of config.options) {
+  for (const option of config.options || []) {
     command.option(option.flags, option.description);
   }
   if (config.subcommands) {
@@ -2309,15 +2178,15 @@ var COMMON_OPTIONS = [
 ];
 
 // src/core/sync.ts
-var fs6 = __toESM(require("fs"), 1);
-var path7 = __toESM(require("path"), 1);
+var fs5 = __toESM(require("fs"), 1);
+var path6 = __toESM(require("path"), 1);
 var readline = __toESM(require("readline"), 1);
 var import_node_url = require("url");
 var cliProgress = __toESM(require("cli-progress"), 1);
-var import_cli_table32 = __toESM(require("cli-table3"), 1);
+var import_cli_table3 = __toESM(require("cli-table3"), 1);
 var import_meta = {};
 var __filename = (0, import_node_url.fileURLToPath)(import_meta.url);
-var __dirname = path7.dirname(__filename);
+var __dirname = path6.dirname(__filename);
 var COLORS = {
   red: "\x1B[31m",
   green: "\x1B[32m",
@@ -2401,13 +2270,13 @@ function detectAgentTool3() {
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs6.existsSync(path7.join(cwd, config.dir))) {
+    if (fs5.existsSync(path6.join(cwd, config.dir))) {
       return agent;
     }
   }
   for (const agent of getSupportedAgents2()) {
     const config = getAgentConfig2(agent);
-    if (fs6.existsSync(path7.join(cwd, config.dir, RULES_DIR_NAME))) {
+    if (fs5.existsSync(path6.join(cwd, config.dir, RULES_DIR_NAME))) {
       return agent;
     }
   }
@@ -2415,10 +2284,10 @@ function detectAgentTool3() {
 }
 function getLocalFileInfo2(filePath) {
   try {
-    if (!fs6.existsSync(filePath)) {
+    if (!fs5.existsSync(filePath)) {
       return null;
     }
-    const content = fs6.readFileSync(filePath, "utf8");
+    const content = fs5.readFileSync(filePath, "utf8");
     return { content, exists: true };
   } catch {
     return null;
@@ -2428,18 +2297,18 @@ async function getRuleFiles() {
   const scriptDir = __dirname;
   let projectRoot;
   if (scriptDir.includes("/dist/src/")) {
-    projectRoot = path7.resolve(scriptDir, "../../..");
+    projectRoot = path6.resolve(scriptDir, "../../..");
   } else {
-    projectRoot = path7.resolve(scriptDir, "..");
+    projectRoot = path6.resolve(scriptDir, "..");
   }
-  const docsRulesDir = path7.join(projectRoot, "docs", RULES_DIR_NAME);
+  const docsRulesDir = path6.join(projectRoot, "docs", RULES_DIR_NAME);
   const files = [];
   const collectFiles2 = (dir, relativePath) => {
     try {
-      const items = fs6.readdirSync(dir, { withFileTypes: true });
+      const items = fs5.readdirSync(dir, { withFileTypes: true });
       for (const item of items) {
-        const itemPath = path7.join(dir, item.name);
-        const itemRelative = path7.join(relativePath, item.name);
+        const itemPath = path6.join(dir, item.name);
+        const itemRelative = path6.join(relativePath, item.name);
         if (item.isDirectory()) {
           collectFiles2(itemPath, itemRelative);
         } else if (item.isFile() && (item.name.endsWith(".mdc") || item.name.endsWith(".md"))) {
@@ -2472,7 +2341,7 @@ function getDescriptionForFile(filePath) {
   if (!filePath) {
     return "Development flow";
   }
-  const baseName = path7.basename(filePath, path7.extname(filePath));
+  const baseName = path6.basename(filePath, path6.extname(filePath));
   return `Development flow for ${baseName.replace(/-/g, " ")}`;
 }
 function createContentProcessor(config) {
@@ -2492,42 +2361,42 @@ alwaysApply: true
 }
 function getDestinationPath(filePath, rulesDir, config) {
   const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-  const parsedPath = path7.parse(relativeToRules);
+  const parsedPath = path6.parse(relativeToRules);
   const { name: baseName, dir } = parsedPath;
   if (config.flatten) {
     const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
     const relativePath2 = `${flattenedName}${config.extension}`;
-    return { relativePath: relativePath2, destPath: path7.join(rulesDir, relativePath2) };
+    return { relativePath: relativePath2, destPath: path6.join(rulesDir, relativePath2) };
   }
-  const targetDir = dir ? path7.join(rulesDir, dir) : rulesDir;
-  const relativePath = path7.join(dir, `${baseName}${config.extension}`);
+  const targetDir = dir ? path6.join(rulesDir, dir) : rulesDir;
+  const relativePath = path6.join(dir, `${baseName}${config.extension}`);
   return {
     relativePath,
-    destPath: path7.join(targetDir, `${baseName}${config.extension}`),
+    destPath: path6.join(targetDir, `${baseName}${config.extension}`),
     targetDir
   };
 }
 async function processFile(filePath, rulesDir, config, processContent, progressBar) {
   try {
     const { relativePath, destPath, targetDir } = getDestinationPath(filePath, rulesDir, config);
-    if (targetDir && !fs6.existsSync(targetDir)) {
-      fs6.mkdirSync(targetDir, { recursive: true });
+    if (targetDir && !fs5.existsSync(targetDir)) {
+      fs5.mkdirSync(targetDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo2(destPath);
     const isNew = !localInfo;
     let projectRoot;
     if (__dirname.includes("/dist/src/")) {
-      projectRoot = path7.resolve(__dirname, "../../..");
+      projectRoot = path6.resolve(__dirname, "../../..");
     } else {
-      projectRoot = path7.resolve(__dirname, "..");
+      projectRoot = path6.resolve(__dirname, "..");
     }
-    const sourcePath = path7.join(projectRoot, "docs", filePath);
-    let content = fs6.readFileSync(sourcePath, "utf8");
+    const sourcePath = path6.join(projectRoot, "docs", filePath);
+    let content = fs5.readFileSync(sourcePath, "utf8");
     content = processContent(content, filePath);
     const localProcessed = localInfo ? processContent(localInfo.content, filePath) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs6.writeFileSync(destPath, content, "utf8");
+      fs5.writeFileSync(destPath, content, "utf8");
     }
     results.push({
       file: relativePath,
@@ -2558,7 +2427,7 @@ function createStatusTable(title, items) {
   }
   console.log(`
 ${title} (${items.length}):`);
-  const table = new import_cli_table32.default({
+  const table = new import_cli_table3.default({
     head: ["File", "Action"],
     colWidths: [50, 20],
     style: { head: ["cyan"], border: ["gray"] },
@@ -2617,7 +2486,7 @@ function displayResults2(results2, rulesDir, agentName) {
   console.log(`\u{1F4A1} Rules will be automatically loaded by ${agentName}`);
 }
 async function clearObsoleteFiles2(rulesDir, config, merge) {
-  if (!fs6.existsSync(rulesDir)) {
+  if (!fs5.existsSync(rulesDir)) {
     return;
   }
   console.log(`\u{1F9F9} Clearing obsolete rules in ${rulesDir}...`);
@@ -2633,14 +2502,14 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
       })
     );
   }
-  const existingFiles = fs6.readdirSync(rulesDir, { recursive: true }).filter(
+  const existingFiles = fs5.readdirSync(rulesDir, { recursive: true }).filter(
     (file) => typeof file === "string" && (file.endsWith(".mdc") || file.endsWith(".md"))
-  ).map((file) => path7.join(rulesDir, file));
+  ).map((file) => path6.join(rulesDir, file));
   for (const file of existingFiles) {
-    const relativePath = path7.relative(rulesDir, file);
+    const relativePath = path6.relative(rulesDir, file);
     if (!expectedFiles.has(relativePath)) {
       try {
-        fs6.unlinkSync(file);
+        fs5.unlinkSync(file);
         results.push({
           file: relativePath,
           status: "removed",
@@ -2658,7 +2527,7 @@ async function clearObsoleteFiles2(rulesDir, config, merge) {
 }
 async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const mergedFileName = `all-rules${config.extension}`;
-  const mergedFilePath = path7.join(rulesDir, mergedFileName);
+  const mergedFilePath = path6.join(rulesDir, mergedFileName);
   console.log(`\u{1F4CB} Merging ${ruleFiles.length} files into ${mergedFileName}...`);
   let mergedContent = "# Development Rules - Complete Collection\n\n";
   mergedContent += `Generated on: ${(/* @__PURE__ */ new Date()).toISOString()}
@@ -2669,15 +2538,15 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
     try {
       let projectRoot;
       if (__dirname.includes("/dist/src/")) {
-        projectRoot = path7.resolve(__dirname, "../../..");
+        projectRoot = path6.resolve(__dirname, "../../..");
       } else {
-        projectRoot = path7.resolve(__dirname, "..");
+        projectRoot = path6.resolve(__dirname, "..");
       }
-      const sourcePath = path7.join(projectRoot, "docs", filePath);
-      let content = fs6.readFileSync(sourcePath, "utf8");
+      const sourcePath = path6.join(projectRoot, "docs", filePath);
+      let content = fs5.readFileSync(sourcePath, "utf8");
       content = processContent(content, filePath);
       const relativeToRules = filePath.substring(`${RULES_DIR_NAME}/`.length);
-      const parsedPath = path7.parse(relativeToRules);
+      const parsedPath = path6.parse(relativeToRules);
       const { name: baseName, dir } = parsedPath;
       const sectionTitle = dir ? `${dir}/${baseName}` : baseName;
       mergedContent += `## ${sectionTitle.replace(/-/g, " ").toUpperCase()}
@@ -2699,7 +2568,7 @@ async function mergeAllRules(ruleFiles, rulesDir, config, processContent) {
   const localProcessed = localInfo ? processContent(localInfo.content, "all-rules") : "";
   const contentChanged = !localInfo || localProcessed !== mergedContent;
   if (contentChanged) {
-    fs6.writeFileSync(mergedFilePath, mergedContent, "utf8");
+    fs5.writeFileSync(mergedFilePath, mergedContent, "utf8");
     results.push({
       file: mergedFileName,
       status: localInfo ? "updated" : "added",
@@ -2735,12 +2604,12 @@ async function syncRules(options) {
     }
   }
   const config = getAgentConfig2(agent);
-  const rulesDir = path7.join(cwd, config.dir, RULES_DIR_NAME);
+  const rulesDir = path6.join(cwd, config.dir, RULES_DIR_NAME);
   const processContent = createContentProcessor(config);
   if (options.clear) {
     await clearObsoleteFiles2(rulesDir, config, !!options.merge);
   }
-  fs6.mkdirSync(rulesDir, { recursive: true });
+  fs5.mkdirSync(rulesDir, { recursive: true });
   const ruleFiles = await getRuleFiles();
   console.log("\u{1F680} Rules Sync Tool");
   console.log("================");
@@ -2828,7 +2697,7 @@ function showDefaultHelp() {
 function createCLI() {
   const program = new import_commander2.Command();
   program.name("sylphx-flow").description("Sylphx Flow - Type-safe development flow CLI").version("1.0.0");
-  const commands = [syncCommand, initCommand, mcpCommand, memoryCommand, memoryTuiCommand];
+  const commands = [syncCommand, initCommand, mcpCommand, memoryCommand];
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
