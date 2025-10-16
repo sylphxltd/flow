@@ -14,21 +14,14 @@ interface MCPServerDefinition {
  */
 export const MCP_SERVERS: Record<string, MCPServerDefinition> = {
   memory: {
-    name: 'flow_memory',
-    description: 'Flow memory MCP server for agent coordination',
+    name: 'sylphx_flow',
+    description: 'Sylphx Flow MCP server for agent coordination',
     config: {
       type: 'local' as const,
       command: ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'] as string[],
     },
   },
-  everything: {
-    name: 'mcp_everything',
-    description: 'MCP Everything server - comprehensive tool collection',
-    config: {
-      type: 'local' as const,
-      command: ['npx', '-y', '@modelcontextprotocol/server-everything'] as string[],
-    },
-  },
+
   'gpt-image': {
     name: 'gpt-image-1-mcp',
     description: 'GPT Image generation MCP server',

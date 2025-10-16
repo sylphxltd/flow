@@ -15,7 +15,7 @@ function validateInstallOptions(options: CommandOptions): void {
     const validServers = parseMCPServerTypes(options.mcp);
     if (validServers.length === 0) {
       throw new CLIError(
-        'Invalid MCP servers. Available: memory, everything',
+        'Invalid MCP servers. Available: memory, gpt-image, perplexity, context7, gemini-search',
         'INVALID_MCP_SERVERS'
       );
     }
@@ -32,7 +32,10 @@ export const installCommand: CommandConfig = {
     { flags: '--dry-run', description: 'Show what would be done without making changes' },
     { flags: '--clear', description: 'Clear obsolete items before processing' },
     { flags: '--merge', description: 'Merge all items into a single file' },
-    { flags: '--mcp [servers...]', description: 'Install MCP servers (memory, everything)' },
+    {
+      flags: '--mcp [servers...]',
+      description: 'Install MCP servers (memory, gpt-image, perplexity, context7, gemini-search)',
+    },
   ],
   handler: async (options: CommandOptions) => {
     validateInstallOptions(options);

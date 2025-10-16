@@ -90,8 +90,16 @@ const heavyModule = () => import('./heavy-module');
 ### 3. Test-Driven Development
 
 ```javascript
-// Write test first
+// Write test first using Vitest
+import { describe, it, expect, beforeEach } from 'vitest';
+
 describe('UserService', () => {
+  let service: UserService;
+  
+  beforeEach(() => {
+    service = new UserService(mockDatabase);
+  });
+
   it('should calculate discount correctly', () => {
     const user = createMockUser({ purchases: 10 });
     const discount = service.calculateDiscount(user);
@@ -189,37 +197,78 @@ src/
  */
 ```
 
-## Tool Integration (OpenCode)
+### Project Standards
 
-### File Operations
-- Use `Read` tool to examine existing code structure
-- Use `Edit` tool for precise code modifications
-- Use `Write` tool for creating new files
-- Use `Glob` and `Grep` for code discovery and analysis
+```javascript
+// Follow functional programming patterns
+export const createUserService = (database: Database): UserService => ({
+  calculateDiscount: (user: User): number => {
+    // Pure function implementation
+  },
+  
+  createUser: async (userData: CreateUserDto): Promise<User> => {
+    // Error handling with custom error types
+    try {
+      const validatedUser = UserSchema.parse(userData);
+      return await database.users.create(validatedUser);
+    } catch (error) {
+      throw new ValidationError('Invalid user data', error);
+    }
+  }
+});
 
-### Command Execution
-- Use `Bash` tool for running tests, linting, and build processes
-- Execute package managers (npm, yarn, pnpm) for dependency management
-- Run development servers and build scripts
-- Perform code quality checks and formatting
+// Use UUID v7 for IDs
+import { v7 as uuidv7 } from 'uuid';
 
-### Search & Discovery
-- Use `Grep` to find code patterns and dependencies
-- Use `Glob` to locate files by naming conventions
-- Search for existing implementations to maintain consistency
+const createUserEntity = (userData: CreateUserDto): User => ({
+  id: uuidv7(),
+  ...userData,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+});
+```
 
-### Performance Monitoring
-- Run performance tests via command line
-- Use profiling tools available in the project
-- Monitor bundle sizes and load times
-- Analyze runtime performance with built-in tools
+## Agent Coordination
 
-## Collaboration
+### Memory-Based Collaboration
+```typescript
+// Report implementation status
+memory_set({
+  key: 'implementation-status',
+  value: JSON.stringify({
+    agent: 'coder',
+    status: 'implementing|testing|completed|blocked',
+    feature: 'user authentication',
+    files: ['auth.service.ts', 'auth.controller.ts'],
+    timestamp: Date.now(),
+    progress: 65
+  }),
+  namespace: 'coder'
+})
 
-- Coordinate with team members through clear documentation
-- Follow established project patterns and conventions
-- Provide comprehensive commit messages
-- Document technical decisions in code comments
-- Share knowledge through README files and documentation
+// Get research findings from researcher
+memory_get({
+  key: 'findings',
+  namespace: 'researcher'
+})
 
-Remember: Good code is written for humans to read, and only incidentally for machines to execute. Focus on clarity, maintainability, and correctness. Use OpenCode tools effectively to analyze, modify, and test code.
+// Get requirements from planner
+memory_get({
+  key: 'current-plan',
+  namespace: 'planner'
+})
+```
+
+### Workflow Integration
+- **Planning Phase**: Retrieve requirements and research findings from memory
+- **Implementation Phase**: Store progress and decisions for coordination
+- **Testing Phase**: Coordinate with tester for validation requirements
+- **Review Phase**: Share implementation results with reviewer
+
+### Quality Standards
+- Run biome linting and formatting before completion
+- Execute test suite and ensure coverage
+- Perform TypeScript type checking
+- Follow functional programming patterns from project guidelines
+
+Remember: Coordinate through memory for seamless workflow integration. Focus on clean, maintainable code that meets requirements.

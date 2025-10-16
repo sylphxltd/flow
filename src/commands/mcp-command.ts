@@ -36,12 +36,11 @@ const mcpInstallHandler: CommandHandler = async (options: {
     console.log('🔧 Installing all available MCP tools...');
     if (options.dryRun) {
       console.log(
-        '🔍 Dry run: Would install all MCP tools: memory, everything, gpt-image, perplexity, context7, gemini-search'
+        '🔍 Dry run: Would install all MCP tools: memory, gpt-image, perplexity, context7, gemini-search'
       );
     } else {
       const allServers: string[] = [
         'memory',
-        'everything',
         'gpt-image',
         'perplexity',
         'context7',
@@ -59,14 +58,7 @@ const mcpInstallHandler: CommandHandler = async (options: {
 
   const validServers = parseMCPServerTypes(servers);
   if (validServers.length === 0) {
-    const availableServers = [
-      'memory',
-      'everything',
-      'gpt-image',
-      'perplexity',
-      'context7',
-      'gemini-search',
-    ];
+    const availableServers = ['memory', 'gpt-image', 'perplexity', 'context7', 'gemini-search'];
     throw new CLIError(
       `Invalid MCP tools. Available: ${availableServers.join(', ')}`,
       'INVALID_MCP_SERVERS'
@@ -96,14 +88,7 @@ const mcpConfigHandler: CommandHandler = async (options) => {
 
   const validServers = parseMCPServerTypes([server]);
   if (validServers.length === 0) {
-    const availableServers = [
-      'memory',
-      'everything',
-      'gpt-image',
-      'perplexity',
-      'context7',
-      'gemini-search',
-    ];
+    const availableServers = ['memory', 'gpt-image', 'perplexity', 'context7', 'gemini-search'];
     throw new CLIError(
       `Invalid MCP server: ${server}. Available: ${availableServers.join(', ')}`,
       'INVALID_MCP_SERVER'
@@ -131,7 +116,7 @@ export const mcpCommand: CommandConfig = {
         {
           flags: '<servers...>',
           description:
-            'MCP tools to install (memory, everything, gpt-image, perplexity, context7, gemini-search)',
+            'MCP tools to install (memory, gpt-image, perplexity, context7, gemini-search)',
         },
         { flags: '--all', description: 'Install all available MCP tools' },
         { flags: '--dry-run', description: 'Show what would be done without making changes' },

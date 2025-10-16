@@ -40,11 +40,10 @@ export const initCommand: CommandConfig = {
       console.log('📦 Installing MCP tools...');
       if (options.dryRun) {
         console.log('🔍 Dry run: Would install all MCP servers');
-        console.log('   • memory, everything, gpt-image, perplexity, context7, gemini-search');
+        console.log('   • memory, gpt-image, perplexity, context7, gemini-search');
       } else {
         const allServers: string[] = [
           'memory',
-          'everything',
           'gpt-image',
           'perplexity',
           'context7',

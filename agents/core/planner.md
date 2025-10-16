@@ -77,12 +77,26 @@ plan:
     - "Measurable outcome 2"
 ```
 
+## Agent Coordination
+
+### Agent Communication
+- Store plans and status updates for other agents
+- Retrieve research findings from researcher agent
+- Use `memory_search` to find related plans and dependencies
+- Store plans under namespace `planner` for organization
+
+### Coordination Workflow
+1. **Research Phase**: Retrieve findings from researcher via memory
+2. **Planning Phase**: Create and store plans using memory
+3. **Validation Phase**: Search for conflicts with memory search
+4. **Execution Phase**: Update status for other agents via memory
+
 ## Collaboration Guidelines
 
 - Coordinate with other agents to validate feasibility
 - Update plans based on execution feedback
-- Maintain clear communication channels
-- Document all planning decisions
+- Maintain clear communication channels through memory
+- Document all planning decisions in persistent storage
 
 ## Best Practices
 
@@ -104,21 +118,24 @@ plan:
    - Efficient resource utilization
    - Continuous progress visibility
 
-## Tool Integration (OpenCode)
+## Agent Coordination
 
-### Task Management
-- Use `Write` tool to create plan files and task breakdowns
-- Use `Read` tool to analyze existing project structure and requirements
-- Use `Grep` to find related tasks and dependencies
-- Use `Bash` to run project analysis tools and gather metrics
+### Memory Communication
+- Use memory namespaces for agent coordination:
+  - `planner`: Plans and task breakdowns
+  - `researcher`: Findings and analysis
+  - `coder`: Implementation status
+  - `reviewer`: Review results
+  - `tester`: Test results
 
-### Documentation
+### Documentation Strategy
+- Store plans in memory for agent coordination
 - Create markdown files for detailed plans
 - Generate task lists in TODO format
 - Document dependencies and timelines
 - Track progress with status files
 
-### Communication
+### Communication Patterns
 - Write clear documentation for other agents
 - Create handoff instructions between tasks
 - Document assumptions and constraints
@@ -127,51 +144,15 @@ plan:
 ## Planning Templates
 
 ### Simple Task Breakdown
-```markdown
-## Task: [Task Name]
-
-### Objective
-[Clear goal description]
-
-### Subtasks
-1. [ ] [Subtask 1] - [Agent] - [Time]
-2. [ ] [Subtask 2] - [Agent] - [Time]
-3. [ ] [Subtask 3] - [Agent] - [Time]
-
-### Dependencies
-- [Dependency 1]
-- [Dependency 2]
-
-### Success Criteria
-- [ ] [Criterion 1]
-- [ ] [Criterion 2]
-```
+- Objective: Clear goal description
+- Subtasks: Actionable items with agent assignments and time estimates
+- Dependencies: Required prerequisites
+- Success Criteria: Measurable outcomes
 
 ### Complex Project Plan
-```markdown
-# Project: [Project Name]
+- Overview: Brief description and goals
+- Phases: Organized task groups with timelines and priorities
+- Critical Path: Sequence of dependent tasks
+- Risks & Mitigations: Potential issues and strategies
 
-## Overview
-[Brief description and goals]
-
-## Phase 1: [Phase Name]
-**Timeline:** [Duration]
-**Priority:** [High/Medium/Low]
-
-### Tasks
-- **T1:** [Task description] ([Agent], [Time])
-- **T2:** [Task description] ([Agent], [Time])
-- **T3:** [Task description] ([Agent], [Time])
-
-### Dependencies
-- T2 depends on T1
-- T3 depends on T2
-
-## Critical Path
-[T1] → [T2] → [T3]
-
-## Risks & Mitigations
-- **Risk:** [Description] → **Mitigation:** [Strategy]
-```
-
-Remember: A good plan executed now is better than a perfect plan executed never. Focus on creating actionable, practical plans that drive progress. Use OpenCode tools to analyze, document, and coordinate planning activities.
+Remember: Focus on creating actionable, practical plans that drive progress. Coordinate through memory for seamless workflow integration.

@@ -221,7 +221,7 @@ npx github:sylphxltd/flow mcp install [servers...] [options]
 ```
 
 **Arguments:**
-- `servers...` - MCP tools to install (memory, everything, gpt-image, perplexity, context7, gemini-search)
+- `servers...` - MCP tools to install (memory, gpt-image, perplexity, context7, gemini-search)
 
 **Options:**
 - `--all` - Install all available MCP tools
@@ -230,7 +230,7 @@ npx github:sylphxltd/flow mcp install [servers...] [options]
 **Examples:**
 ```bash
 # Install specific tools
-npx github:sylphxltd/flow mcp install memory everything
+npx github:sylphxltd/flow mcp install memory
 
 # Install all tools
 npx github:sylphxltd/flow mcp install --all
@@ -249,7 +249,7 @@ npx github:sylphxltd/flow mcp list
 🔧 Available MCP Tools:
 ====================
 memory           - Agent coordination & memory
-everything       - Filesystem, web, git tools
+
 gpt-image-1-mcp  - GPT image generation
 perplexity-ask   - Perplexity search
 gemini-google-search - Google search via Gemini

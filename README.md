@@ -83,7 +83,7 @@ Users can manage the same database via CLI:
 | Tool | Purpose | API Key Required |
 |------|---------|------------------|
 | `memory` | Agent coordination & memory | ❌ |
-| `everything` | Filesystem, web, git tools | ❌ |
+
 | `gpt-image-1-mcp` | GPT image generation | ✅ |
 | `perplexity-ask` | Perplexity search | ✅ |
 | `gemini-google-search` | Google search via Gemini | ✅ |

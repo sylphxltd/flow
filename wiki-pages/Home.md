@@ -105,7 +105,7 @@ That's it! Your AI agents now have persistent memory and follow consistent devel
 | Tool | Purpose | API Key |
 |------|---------|---------|
 | `memory` | Agent coordination | ❌ Not required |
-| `everything` | Filesystem, web, git | ❌ Not required |
+
 | `gpt-image-1-mcp` | GPT image generation | ✅ Required |
 | `perplexity-ask` | Perplexity search | ✅ Required |
 | `gemini-google-search` | Google search | ✅ Required |
