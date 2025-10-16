@@ -1165,26 +1165,9 @@ var AGENT_CONFIGS = {
 async function getAgentFiles() {
   const scriptPath = import_node_path3.default.resolve(process.argv[1]);
   const scriptDir = import_node_path3.default.dirname(scriptPath);
-  const possiblePaths = [
-    // Standard package structure: dist/index.js -> ../agents
-    import_node_path3.default.join(scriptDir, "..", "agents"),
-    // npx might put agents in node_modules/agents
-    import_node_path3.default.join(scriptDir, "..", "..", "agents"),
-    // Package root with @sylphxltd/flow prefix
-    import_node_path3.default.join(scriptDir, "..", "..", "@sylphxltd", "flow", "agents")
-  ];
-  let agentsDir;
-  for (const possiblePath of possiblePaths) {
-    if (import_node_fs2.default.existsSync(possiblePath)) {
-      agentsDir = possiblePath;
-      break;
-    }
-  }
-  if (!agentsDir) {
-    throw new Error(
-      `Could not find agents directory. Tried:
-${possiblePaths.map((p) => `  - ${p}`).join("\n")}`
-    );
+  const agentsDir = import_node_path3.default.join(scriptDir, "..", "agents");
+  if (!import_node_fs2.default.existsSync(agentsDir)) {
+    throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
   const subdirs = import_node_fs2.default.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   const allFiles = [];
@@ -1297,24 +1280,7 @@ async function installAgents(options) {
   } else {
     const scriptPath = import_node_path3.default.resolve(process.argv[1]);
     const scriptDir = import_node_path3.default.dirname(scriptPath);
-    const possiblePaths = [
-      import_node_path3.default.join(scriptDir, "..", "agents"),
-      import_node_path3.default.join(scriptDir, "..", "..", "agents"),
-      import_node_path3.default.join(scriptDir, "..", "..", "@sylphxltd", "flow", "agents")
-    ];
-    let agentsSourceDir;
-    for (const possiblePath of possiblePaths) {
-      if (import_node_fs2.default.existsSync(possiblePath)) {
-        agentsSourceDir = possiblePath;
-        break;
-      }
-    }
-    if (!agentsSourceDir) {
-      throw new Error(
-        `Could not find agents source directory. Tried:
-${possiblePaths.map((p) => `  - ${p}`).join("\n")}`
-      );
-    }
+    const agentsSourceDir = import_node_path3.default.join(scriptDir, "..", "agents");
     for (const agentFile of agentFiles) {
       const sourcePath = import_node_path3.default.join(agentsSourceDir, agentFile);
       const destPath = import_node_path3.default.join(agentsDir, agentFile);
