@@ -43,8 +43,8 @@
     "dev": "tsx index.ts",
     "start": "node dist/index.js",
     "clean": "rm -rf dist",
-    "prepublishOnly": "pnpm build",
-    "prepare": "pnpm build"
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -55,12 +55,12 @@
     "cli-progress": "^3.12.0",
     "cli-table3": "^0.6.3",
     "commander": "^12.0.0",
+    "typescript": "^5.9.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
     "esbuild": "^0.25.10",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "tsx": "^4.20.5"
   }
 }
