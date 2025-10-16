@@ -1,12 +1,14 @@
+import { getAllServerIDs, getServersRequiringAPIKeys } from '../config/servers.js';
+import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandHandler } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import {
-  addMCPServers,
-  configureMCPServer,
-  listMCPServers,
-  parseMCPServerTypes,
-} from '../utils/mcp-config.js';
-import { getAllServerIDs, getServersRequiringAPIKeys } from '../config/servers.js';
+  addMCPServersToTarget,
+  configureMCPServerForTarget,
+  listMCPServersForTarget,
+  targetSupportsMCPServers,
+  validateTarget,
+} from '../utils/target-config.js';
 
 // MCP start handler
 const mcpStartHandler: CommandHandler = async () => {
@@ -30,17 +32,25 @@ const mcpInstallHandler: CommandHandler = async (options: {
   servers?: string[];
   all?: boolean;
   dryRun?: boolean;
+  target?: string;
 }) => {
+  // Resolve target
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+
+  if (!targetSupportsMCPServers(targetId)) {
+    throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
+  }
+
   const servers = options.servers || [];
 
   if (options.all) {
-    console.log('🔧 Installing all available MCP tools...');
+    console.log(`🔧 Installing all available MCP tools for ${targetId}...`);
     const allServers = getAllServerIDs();
 
     if (options.dryRun) {
       console.log(`🔍 Dry run: Would install all MCP tools: ${allServers.join(', ')}`);
     } else {
-      await addMCPServers(process.cwd(), allServers);
+      await addMCPServersToTarget(process.cwd(), targetId, allServers);
       console.log('✅ All MCP tools installed');
     }
     return;
@@ -50,7 +60,18 @@ const mcpInstallHandler: CommandHandler = async (options: {
     throw new CLIError('Please specify MCP tools to install or use --all', 'NO_SERVERS_SPECIFIED');
   }
 
-  const validServers = parseMCPServerTypes(servers);
+  // Validate server types
+  const validServers: string[] = [];
+  for (const server of servers) {
+    if (getAllServerIDs().includes(server as any)) {
+      validServers.push(server);
+    } else {
+      console.warn(
+        `Warning: Unknown MCP server '${server}'. Available: ${getAllServerIDs().join(', ')}`
+      );
+    }
+  }
+
   if (validServers.length === 0) {
     const availableServers = getAllServerIDs();
     throw new CLIError(
@@ -59,18 +80,20 @@ const mcpInstallHandler: CommandHandler = async (options: {
     );
   }
 
-  console.log(`🔧 Installing MCP tools: ${validServers.join(', ')}`);
+  console.log(`🔧 Installing MCP tools for ${targetId}: ${validServers.join(', ')}`);
   if (options.dryRun) {
     console.log('🔍 Dry run: Would install MCP tools:', validServers.join(', '));
   } else {
-    await addMCPServers(process.cwd(), validServers);
+    await addMCPServersToTarget(process.cwd(), targetId, validServers as any);
     console.log('✅ MCP tools installed');
   }
 };
 
 // MCP list handler
-const mcpListHandler: CommandHandler = async () => {
-  await listMCPServers(process.cwd());
+const mcpListHandler: CommandHandler = async (options) => {
+  // Resolve target
+  const targetId = await targetManager.resolveTarget({ target: options?.target });
+  await listMCPServersForTarget(process.cwd(), targetId);
 };
 
 // MCP config handler
@@ -80,8 +103,15 @@ const mcpConfigHandler: CommandHandler = async (options) => {
     throw new CLIError('Please specify a server to configure', 'NO_SERVER_SPECIFIED');
   }
 
-  const validServers = parseMCPServerTypes([server]);
-  if (validServers.length === 0) {
+  // Resolve target
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+
+  if (!targetSupportsMCPServers(targetId)) {
+    throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
+  }
+
+  // Validate server
+  if (!getAllServerIDs().includes(server as any)) {
     const availableServers = getAllServerIDs();
     throw new CLIError(
       `Invalid MCP server: ${server}. Available: ${availableServers.join(', ')}`,
@@ -89,13 +119,18 @@ const mcpConfigHandler: CommandHandler = async (options) => {
     );
   }
 
-  await configureMCPServer(process.cwd(), validServers[0]);
+  await configureMCPServerForTarget(process.cwd(), targetId, server as any);
 };
 
 export const mcpCommand: CommandConfig = {
   name: 'mcp',
   description: 'Manage MCP (Model Context Protocol) tools and servers',
-  options: [],
+  options: [
+    {
+      flags: '--target <type>',
+      description: `Target platform (${targetManager.getImplementedTargets().join(', ')}, default: auto-detect)`,
+    },
+  ],
   subcommands: [
     {
       name: 'start',
@@ -105,7 +140,7 @@ export const mcpCommand: CommandConfig = {
     },
     {
       name: 'install',
-      description: 'Install MCP tools for OpenCode',
+      description: 'Install MCP tools for the target platform',
       options: [
         {
           flags: '<servers...>',
@@ -118,7 +153,7 @@ export const mcpCommand: CommandConfig = {
     },
     {
       name: 'list',
-      description: 'List all available MCP tools',
+      description: 'List configured MCP tools for the target platform',
       options: [],
       handler: mcpListHandler,
     },

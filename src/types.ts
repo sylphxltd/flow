@@ -57,3 +57,62 @@ export interface OpenCodeConfig {
   $schema?: string;
   mcp?: Record<string, MCPServerConfigUnion>;
 }
+
+// ============================================================================
+// TARGET SYSTEM TYPES
+// ============================================================================
+
+export interface TargetConfig {
+  /** Directory where agents are installed */
+  agentDir: string;
+  /** File extension for agent files */
+  agentExtension: string;
+  /** Format of agent files */
+  agentFormat: 'yaml-frontmatter' | 'json' | 'yaml' | 'markdown';
+  /** Whether to strip YAML front matter from content */
+  stripYaml: boolean;
+  /** Whether to flatten directory structure */
+  flatten: boolean;
+  /** Configuration file name */
+  configFile: string;
+  /** Configuration file schema URL (optional) */
+  configSchema: string | null;
+  /** Path to MCP configuration in config file */
+  mcpConfigPath: string;
+  /** Installation-specific configuration */
+  installation: {
+    /** Whether to create the agent directory */
+    createAgentDir: boolean;
+    /** Whether to create the config file */
+    createConfigFile: boolean;
+    /** Whether MCP servers are supported */
+    supportedMcpServers: boolean;
+  };
+}
+
+export interface TargetTransformer {
+  /** Transform agent content for the target */
+  transformAgentContent(content: string, metadata?: any): string;
+  /** Transform MCP server configuration for the target */
+  transformMCPConfig(config: MCPServerConfigUnion): any;
+  /** Get the configuration file path for the target */
+  getConfigPath(cwd: string): string;
+  /** Read the target's configuration file */
+  readConfig(cwd: string): Promise<any>;
+  /** Write the target's configuration file */
+  writeConfig(cwd: string, config: any): Promise<void>;
+  /** Validate target-specific requirements */
+  validateRequirements(cwd: string): Promise<void>;
+  /** Get target-specific help text */
+  getHelpText(): string;
+}
+
+export interface CommonOptions {
+  target?: string;
+  verbose?: boolean;
+  dryRun?: boolean;
+  clear?: boolean;
+  mcp?: string[] | null | boolean;
+  quiet?: boolean;
+  agent?: string;
+}

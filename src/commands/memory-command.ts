@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandHandler } from '../types.js';
 import { LibSQLMemoryStorage } from '../utils/libsql-storage.js';
 
@@ -179,49 +180,65 @@ const memorySetHandler: CommandHandler = async (options) => {
 // Export commands
 export const memoryCommand: CommandConfig = {
   name: 'memory',
-  description: 'Manage memory database',
+  description: 'Manage memory storage (set, get, search, list, delete, clear)',
   options: [
-    { flags: '--namespace <name>', description: 'Filter by namespace' },
-    { flags: '--limit <number>', description: 'Limit number of entries' },
-    { flags: '--pattern <pattern>', description: 'Search pattern' },
-    { flags: '--key <key>', description: 'Memory key to delete' },
-    { flags: '--confirm', description: 'Confirm clear operation' },
+    {
+      flags: '--target <type>',
+      description: `Target platform (${targetManager.getImplementedTargets().join(', ')}, default: auto-detect)`,
+    },
   ],
   subcommands: [
     {
       name: 'list',
       description: 'List memory entries',
-      options: [],
+      options: [
+        { flags: '--namespace <name>', description: 'Filter by namespace (default: all)' },
+        { flags: '--limit <number>', description: 'Limit number of entries (default: 50)' },
+      ],
       handler: memoryListHandler,
     },
     {
       name: 'search',
       description: 'Search memory entries',
-      options: [],
+      options: [
+        { flags: '<pattern>', description: 'Search pattern' },
+        { flags: '--namespace <name>', description: 'Filter by namespace (default: all)' },
+      ],
       handler: memorySearchHandler,
     },
     {
       name: 'delete',
       description: 'Delete memory entry',
-      options: [],
+      options: [
+        { flags: '<key>', description: 'Memory key to delete' },
+        { flags: '--namespace <name>', description: 'Namespace (default: default)' },
+        { flags: '--confirm', description: 'Skip confirmation prompt' },
+      ],
       handler: memoryDeleteHandler,
     },
     {
       name: 'clear',
       description: 'Clear memory entries',
-      options: [],
+      options: [
+        { flags: '--namespace <name>', description: 'Clear specific namespace (default: all)' },
+        { flags: '--confirm', description: 'Skip confirmation prompt' },
+      ],
       handler: memoryClearHandler,
     },
     {
       name: 'stats',
       description: 'Show memory statistics',
-      options: [],
+      options: [{ flags: '--namespace <name>', description: 'Filter by namespace (default: all)' }],
       handler: memoryStatsHandler,
     },
     {
       name: 'set',
       description: 'Set memory entry',
-      options: [],
+      arguments: [
+        { name: 'key', description: 'Memory key', required: true },
+        { name: 'value', description: 'Memory value', required: true },
+      ],
+      options: [{ flags: '--namespace <name>', description: 'Namespace (default: default)' }],
       handler: memorySetHandler,
     },
   ],

@@ -22,7 +22,11 @@ export function createCLI(): Command {
   }
 
   // Add TUI command separately since it has special handler
-  program.command('tui').description('Launch interactive Sylphx Flow TUI').action(handleMemoryTui);
+  program
+    .command('tui')
+    .description('Launch interactive Sylphx Flow TUI')
+    .option('--target <type>', `Target platform (opencode, default: auto-detect)`)
+    .action(handleMemoryTui);
 
   program.action(() => {
     showDefaultHelp();

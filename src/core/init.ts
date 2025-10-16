@@ -7,30 +7,13 @@ import {
   clearObsoleteFiles,
   collectFiles,
   displayResults,
-  getAgentConfig,
   getLocalFileInfo,
-  getSupportedAgents,
   log,
-  detectAgentTool as sharedDetectAgentTool,
-  promptForAgent as sharedPromptForAgent,
 } from '../shared.js';
-
-// Agent configurations - Currently only opencode
-const AGENT_CONFIGS = {
-  opencode: {
-    name: 'OpenCode',
-    dir: '.opencode/agent',
-    extension: '.md',
-    stripYaml: false,
-    flatten: false,
-    description: 'OpenCode (.opencode/agent/*.md with YAML front matter for agents)',
-  },
-} as const;
-
-type AgentType = keyof typeof AGENT_CONFIGS;
+import { targetManager } from './target-manager.js';
 
 // ============================================================================
-// AGENT-SPECIFIC FUNCTIONS
+// AGENT FILE FUNCTIONS
 // ============================================================================
 
 async function getAgentFiles(): Promise<string[]> {
@@ -60,16 +43,6 @@ async function getAgentFiles(): Promise<string[]> {
   return allFiles;
 }
 
-async function promptForAgent(): Promise<AgentType> {
-  const result = await sharedPromptForAgent(AGENT_CONFIGS, 'Workflow Install Tool');
-  return result as AgentType;
-}
-
-function detectAgentTool(): AgentType {
-  const result = sharedDetectAgentTool(AGENT_CONFIGS, 'opencode');
-  return result as AgentType;
-}
-
 // ============================================================================
 // MAIN INSTALL FUNCTION
 // ============================================================================
@@ -82,31 +55,23 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const cwd = process.cwd();
   const results: ProcessResult[] = [];
 
-  // Determine target
-  let agent: AgentType;
-  if (options.target) {
-    agent = options.target.toLowerCase() as AgentType;
-    if (!getSupportedAgents(AGENT_CONFIGS).includes(agent)) {
-      log(`❌ Unknown target: ${agent}`, 'red');
-      log(`Supported targets: ${getSupportedAgents(AGENT_CONFIGS).join(', ')}`, 'yellow');
-      throw new Error(`Unknown target: ${agent}`);
-    }
-  } else {
-    const detectedAgent = detectAgentTool();
-    if (detectedAgent !== 'opencode') {
-      agent = detectedAgent;
-      console.log(`📝 Detected target: ${getAgentConfig(AGENT_CONFIGS, agent).name}`);
-    } else {
-      console.log('📝 No target detected or defaulting to OpenCode.');
-      agent = await promptForAgent();
-    }
+  // Resolve target using the target manager
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const target = targetManager.getTargetDefinition(targetId);
+  const transformer = await targetManager.getTransformer(targetId);
+
+  if (!transformer) {
+    throw new Error(`No transformer available for target: ${targetId}`);
   }
 
-  const config = getAgentConfig(AGENT_CONFIGS, agent);
-  const agentsDir = path.join(cwd, config.dir);
+  console.log(`📝 Using target: ${target.name}`);
+
+  const config = target.config;
+  const agentsDir = path.join(cwd, config.agentDir);
+
+  // Use the transformer to process content
   const processContent = (content: string) => {
-    // For OpenCode agents, preserve YAML front matter - no processing
-    return content;
+    return transformer.transformAgentContent(content);
   };
 
   // Clear obsolete agents if requested
@@ -123,14 +88,14 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
         if (config.flatten) {
           const flattenedName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
-          return `${flattenedName}${config.extension}`;
+          return `${flattenedName}${config.agentExtension}`;
         }
         // Keep the relative path structure (sdd/file.md, core/file.md)
         return filePath;
       })
     );
 
-    clearObsoleteFiles(agentsDir, expectedFiles, [config.extension], results);
+    clearObsoleteFiles(agentsDir, expectedFiles, [config.agentExtension], results);
   }
 
   // Create agents directory
@@ -140,7 +105,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const agentFiles = await getAgentFiles();
 
   // Show agent setup info
-  if (!options.quiet) {
+  if (options.quiet !== true) {
     console.log(
       `📁 Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + '/', '')}`
     );
@@ -194,5 +159,5 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     }
   }
 
-  displayResults(results, agentsDir, config.name, 'Install', options.verbose);
+  displayResults(results, agentsDir, target.name, 'Install', options.verbose);
 }

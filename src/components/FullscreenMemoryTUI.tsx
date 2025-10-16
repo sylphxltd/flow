@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
+import type React from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LibSQLMemoryStorage, type MemoryEntry } from '../utils/libsql-storage.js';
 
 type ViewMode = 'list' | 'view' | 'edit' | 'add' | 'search' | 'help' | 'confirm-delete';

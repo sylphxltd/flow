@@ -24,9 +24,16 @@ export const handleMemoryTui = async () => {
   }
 };
 
+import { targetManager } from '../core/target-manager.js';
+
 export const memoryTuiCommand: CommandConfig = {
   name: 'memory-tui',
   description: 'Launch interactive memory management TUI',
-  options: [],
+  options: [
+    {
+      flags: '--target <type>',
+      description: `Target platform (${targetManager.getImplementedTargets().join(', ')}, default: auto-detect)`,
+    },
+  ],
   handler: handleMemoryTui,
 };

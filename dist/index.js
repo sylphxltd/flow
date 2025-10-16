@@ -1,138 +1,10 @@
 #!/usr/bin/env node
 import {
   LibSQLMemoryStorage
-} from "./chunk-VBFBG4QV.js";
+} from "./chunk-YAGG6WK2.js";
 
 // src/cli.ts
 import { Command as Command2 } from "commander";
-
-// src/utils/error-handler.ts
-var CLIError = class extends Error {
-  constructor(message, code) {
-    super(message);
-    this.code = code;
-    this.name = "CLIError";
-  }
-};
-function handleError(error, context) {
-  const message = error instanceof Error ? error.message : String(error);
-  const contextMsg = context ? ` (${context})` : "";
-  console.error(`\u274C Error${contextMsg}: ${message}`);
-  if (error instanceof CLIError && error.code) {
-    console.error(`   Code: ${error.code}`);
-  }
-  process.exit(1);
-}
-function createAsyncHandler(handler, context) {
-  return async (options) => {
-    try {
-      await handler(options);
-    } catch (error) {
-      handleError(error, context);
-    }
-  };
-}
-
-// src/utils/mcp-config.ts
-import path from "path";
-
-// src/utils/jsonc.ts
-function parseJSONC(content) {
-  try {
-    let cleaned = removeComments(content);
-    cleaned = cleaned.replace(/,(\s*[}\]])/g, "$1");
-    return JSON.parse(cleaned);
-  } catch (error) {
-    throw new Error(
-      `Failed to parse JSONC: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
-  }
-}
-function removeComments(content) {
-  let result = "";
-  let inString = false;
-  let inSingleLineComment = false;
-  let inMultiLineComment = false;
-  let escapeNext = false;
-  for (let i = 0; i < content.length; i++) {
-    const char = content[i];
-    const nextChar = content[i + 1];
-    if (escapeNext) {
-      result += char;
-      escapeNext = false;
-      continue;
-    }
-    if (char === "\\" && inString) {
-      result += char;
-      escapeNext = true;
-      continue;
-    }
-    if (inString) {
-      if (char === '"') {
-        inString = false;
-      }
-      result += char;
-      continue;
-    }
-    if (inSingleLineComment) {
-      if (char === "\n") {
-        inSingleLineComment = false;
-        result += char;
-      }
-      continue;
-    }
-    if (inMultiLineComment) {
-      if (char === "*" && nextChar === "/") {
-        inMultiLineComment = false;
-        i++;
-      }
-      continue;
-    }
-    if (char === '"') {
-      inString = true;
-      result += char;
-      continue;
-    }
-    if (char === "/" && nextChar === "/") {
-      inSingleLineComment = true;
-      i++;
-      continue;
-    }
-    if (char === "/" && nextChar === "*") {
-      inMultiLineComment = true;
-      i++;
-      continue;
-    }
-    result += char;
-  }
-  return result;
-}
-function stringifyJSONC(obj, schema, indent = 2) {
-  const config = { ...obj };
-  if (schema && !config.$schema) {
-    config.$schema = schema;
-  }
-  const json = JSON.stringify(config, null, indent);
-  if (config.mcp && Object.keys(config.mcp).length > 0) {
-    return json.replace(
-      /(\s*)"mcp": {/,
-      `$1// MCP (Model Context Protocol) server configuration
-$1// See https://modelcontextprotocol.io for more information
-$1"mcp": {`
-    );
-  }
-  return json;
-}
-async function readJSONCFile(filePath) {
-  const fs3 = await import("fs/promises");
-  const content = await fs3.readFile(filePath, "utf8");
-  return parseJSONC(content);
-}
-async function writeJSONCFile(filePath, obj, schema, indent = 2) {
-  const fs3 = await import("fs/promises");
-  const content = stringifyJSONC(obj, schema, indent);
-  await fs3.writeFile(filePath, content, "utf8");
-}
 
 // src/config/servers.ts
 var MCP_SERVER_REGISTRY = {
@@ -207,180 +79,14 @@ function getDefaultServers() {
 function getServersRequiringAPIKeys() {
   return Object.entries(MCP_SERVER_REGISTRY).filter(([, server]) => server.requiredEnvVars && server.requiredEnvVars.length > 0).map(([id]) => id);
 }
-function isValidServerID(id) {
-  return id in MCP_SERVER_REGISTRY;
-}
-
-// src/utils/mcp-config.ts
-var MCP_SERVERS = MCP_SERVER_REGISTRY;
-function getOpenCodeConfigPath(cwd) {
-  return path.join(cwd, "opencode.jsonc");
-}
-async function readOpenCodeConfig(cwd) {
-  const configPath = getOpenCodeConfigPath(cwd);
-  try {
-    const { existsSync } = await import("fs");
-    if (!existsSync(configPath)) {
-      return {};
-    }
-    return await readJSONCFile(configPath);
-  } catch (error) {
-    console.warn(
-      `Warning: Could not read opencode.jsonc: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
-    return {};
-  }
-}
-async function writeOpenCodeConfig(cwd, config) {
-  const configPath = getOpenCodeConfigPath(cwd);
-  const schema = "https://opencode.ai/config.json";
-  await writeJSONCFile(configPath, config, schema);
-}
-async function addMCPServers(cwd, serverTypes) {
-  const config = await readOpenCodeConfig(cwd);
-  if (!config.mcp) {
-    config.mcp = {};
-  }
-  let addedCount = 0;
-  for (const serverType of serverTypes) {
-    const server = MCP_SERVERS[serverType];
-    if (!server) {
-      console.warn(`Warning: Unknown MCP server type: ${serverType}`);
-      continue;
-    }
-    if (config.mcp[server.name]) {
-      console.log(`\u2139\uFE0F  MCP server already exists: ${server.name}`);
-    } else {
-      config.mcp[server.name] = server.config;
-      console.log(`\u{1F4E6} Added MCP server: ${server.name} (${server.description})`);
-      addedCount++;
-    }
-  }
-  await writeOpenCodeConfig(cwd, config);
-  console.log(`\u2705 Updated opencode.jsonc with ${addedCount} new MCP server(s)`);
-}
-async function listMCPServers(cwd) {
-  const config = await readOpenCodeConfig(cwd);
-  if (!config.mcp || Object.keys(config.mcp).length === 0) {
-    console.log("\u2139\uFE0F  No MCP servers configured");
-    return;
-  }
-  console.log("\u{1F4CB} Currently configured MCP servers:");
-  console.log("");
-  for (const [name, serverConfig] of Object.entries(config.mcp)) {
-    let configInfo = "";
-    if (serverConfig.type === "local") {
-      configInfo = serverConfig.command.join(" ");
-    } else if (serverConfig.type === "remote") {
-      configInfo = `HTTP: ${serverConfig.url}`;
-    }
-    console.log(`  \u2022 ${name}: ${configInfo}`);
-    const serverInfo = Object.values(MCP_SERVERS).find((s) => s.name === name);
-    if (serverInfo) {
-      console.log(`    ${serverInfo.description}`);
-    }
-    console.log("");
-  }
-}
-function parseMCPServerTypes(args) {
-  const servers = [];
-  for (const arg of args) {
-    if (isValidServerID(arg)) {
-      servers.push(arg);
-    } else {
-      console.warn(
-        `Warning: Unknown MCP server '${arg}'. Available: ${getAllServerIDs().join(", ")}`
-      );
-    }
-  }
-  return servers;
-}
-async function promptForAPIKeys(serverTypes) {
-  const { createInterface } = await import("readline");
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  const apiKeys = {};
-  for (const serverType of serverTypes) {
-    const server = MCP_SERVERS[serverType];
-    if (!server?.requiredEnvVars?.length) continue;
-    console.log(`
-\u{1F511} Configuring API keys for ${server.description}:`);
-    for (const envVar of server.requiredEnvVars) {
-      const question = `Enter ${envVar} (or press Enter to skip): `;
-      const answer = await new Promise((resolve) => {
-        rl.question(question, (input) => {
-          resolve(input.trim());
-        });
-      });
-      if (answer) {
-        apiKeys[envVar] = answer;
-        console.log(`\u2705 Set ${envVar}`);
-      } else {
-        console.log(
-          `\u26A0\uFE0F  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`
-        );
-      }
-    }
-  }
-  rl.close();
-  return apiKeys;
-}
-async function configureMCPServer(cwd, serverType) {
-  const server = MCP_SERVERS[serverType];
-  if (!server) {
-    console.error(`\u274C Unknown MCP server: ${serverType}`);
-    return;
-  }
-  if (!server.requiredEnvVars?.length) {
-    console.log(`\u2139\uFE0F  ${server.name} does not require any API keys`);
-    return;
-  }
-  console.log(`\u{1F527} Configuring ${server.description}...`);
-  const apiKeys = await promptForAPIKeys([serverType]);
-  if (Object.keys(apiKeys).length === 0) {
-    console.log("\u274C No API keys provided");
-    return;
-  }
-  const config = await readOpenCodeConfig(cwd);
-  if (!config.mcp) {
-    config.mcp = {};
-  }
-  const currentConfig = config.mcp[server.name];
-  if (currentConfig && currentConfig.type === "local") {
-    config.mcp[server.name] = {
-      ...currentConfig,
-      environment: {
-        ...currentConfig.environment || {},
-        ...apiKeys
-      }
-    };
-  } else {
-    const baseConfig = server.config;
-    if (baseConfig.type === "local") {
-      config.mcp[server.name] = {
-        ...baseConfig,
-        environment: {
-          ...baseConfig.environment || {},
-          ...apiKeys
-        }
-      };
-    } else {
-      config.mcp[server.name] = baseConfig;
-    }
-  }
-  await writeOpenCodeConfig(cwd, config);
-  console.log(`\u2705 Updated ${server.name} with API keys`);
-}
 
 // src/core/init.ts
-import fs2 from "fs";
+import fs3 from "fs";
 import path3 from "path";
 
 // src/shared.ts
 import fs from "fs";
-import path2 from "path";
+import path from "path";
 function log(message, color = "white") {
   const colors = {
     red: "\x1B[31m",
@@ -395,31 +101,6 @@ function log(message, color = "white") {
   const colorCode = colors[color] || colors.white;
   console.log(`${colorCode}${message}${colors.reset}`);
 }
-function getSupportedAgents(configs) {
-  return Object.keys(configs);
-}
-function getAgentConfig(configs, agent) {
-  const config = configs[agent];
-  if (!config) {
-    throw new Error(`Agent configuration not found: ${agent}`);
-  }
-  return config;
-}
-async function promptForAgent(configs, toolName) {
-  const supportedAgents = getSupportedAgents(configs);
-  console.log(`
-\u{1F4DD} ${toolName}`);
-  console.log("================");
-  console.log("Available agents:");
-  supportedAgents.forEach((agent, index) => {
-    const config = getAgentConfig(configs, agent);
-    console.log(`  ${index + 1}. ${config.name} - ${config.description}`);
-  });
-  return supportedAgents[0];
-}
-function detectAgentTool(_configs, defaultAgent = "opencode") {
-  return defaultAgent;
-}
 function collectFiles(dir, extensions) {
   if (!fs.existsSync(dir)) {
     return [];
@@ -428,12 +109,12 @@ function collectFiles(dir, extensions) {
   function traverse(currentDir) {
     const items = fs.readdirSync(currentDir);
     for (const item of items) {
-      const fullPath = path2.join(currentDir, item);
+      const fullPath = path.join(currentDir, item);
       const stat = fs.statSync(fullPath);
       if (stat.isDirectory()) {
         traverse(fullPath);
       } else if (extensions.some((ext) => item.endsWith(ext))) {
-        const relativePath = path2.relative(dir, fullPath);
+        const relativePath = path.relative(dir, fullPath);
         files.push(relativePath);
       }
     }
@@ -458,7 +139,7 @@ function clearObsoleteFiles(targetDir, expectedFiles, extensions, results) {
   }
   const items = fs.readdirSync(targetDir);
   for (const item of items) {
-    const itemPath = path2.join(targetDir, item);
+    const itemPath = path.join(targetDir, item);
     const stat = fs.statSync(itemPath);
     if (stat.isFile()) {
       const hasValidExtension = extensions.some((ext) => item.endsWith(ext));
@@ -525,25 +206,386 @@ function displayResults(results, targetDir, agentName, operation, verbose = fals
   console.log(`\u{1F4C1} Target directory: ${targetDir}`);
 }
 
-// src/core/init.ts
-var AGENT_CONFIGS = {
+// src/core/target-manager.ts
+import fs2 from "fs/promises";
+import path2 from "path";
+
+// src/config/targets.ts
+var TARGET_REGISTRY = {
   opencode: {
+    id: "opencode",
     name: "OpenCode",
-    dir: ".opencode/agent",
-    extension: ".md",
-    stripYaml: false,
-    flatten: false,
-    description: "OpenCode (.opencode/agent/*.md with YAML front matter for agents)"
+    description: "OpenCode IDE with YAML front matter agents (.opencode/agent/*.md)",
+    config: {
+      agentDir: ".opencode/agent",
+      agentExtension: ".md",
+      agentFormat: "yaml-frontmatter",
+      stripYaml: false,
+      flatten: false,
+      configFile: "opencode.jsonc",
+      configSchema: "https://opencode.ai/config.json",
+      mcpConfigPath: "mcp",
+      installation: {
+        createAgentDir: true,
+        createConfigFile: true,
+        supportedMcpServers: true
+      }
+    },
+    category: "ide",
+    isDefault: true,
+    isImplemented: true
+  },
+  cursor: {
+    id: "cursor",
+    name: "Cursor",
+    description: "Cursor AI editor with JSON agents (.cursor/rules/*.json)",
+    config: {
+      agentDir: ".cursor/rules",
+      agentExtension: ".json",
+      agentFormat: "json",
+      stripYaml: true,
+      flatten: true,
+      configFile: "cursor.json",
+      configSchema: null,
+      mcpConfigPath: "mcpServers",
+      installation: {
+        createAgentDir: true,
+        createConfigFile: true,
+        supportedMcpServers: false
+        // Not yet implemented
+      }
+    },
+    category: "ide",
+    isImplemented: false
+    // Future implementation
+  },
+  vscode: {
+    id: "vscode",
+    name: "VS Code",
+    description: "Visual Studio Code with workspace agents (.vscode/agents/*.md)",
+    config: {
+      agentDir: ".vscode/agents",
+      agentExtension: ".md",
+      agentFormat: "markdown",
+      stripYaml: true,
+      flatten: false,
+      configFile: "settings.json",
+      configSchema: null,
+      mcpConfigPath: "mcp.servers",
+      installation: {
+        createAgentDir: true,
+        createConfigFile: false,
+        // Uses existing settings.json
+        supportedMcpServers: false
+        // Not yet implemented
+      }
+    },
+    category: "ide",
+    isImplemented: false
+    // Future implementation
+  },
+  cli: {
+    id: "cli",
+    name: "CLI",
+    description: "Command-line interface with YAML agents (.sylphx/agents/*.yaml)",
+    config: {
+      agentDir: ".sylphx/agents",
+      agentExtension: ".yaml",
+      agentFormat: "yaml",
+      stripYaml: false,
+      flatten: false,
+      configFile: "sylphx.json",
+      configSchema: null,
+      mcpConfigPath: "mcp",
+      installation: {
+        createAgentDir: true,
+        createConfigFile: true,
+        supportedMcpServers: true
+      }
+    },
+    category: "cli",
+    isImplemented: false
+    // Future implementation
   }
 };
+function getAllTargetIDs() {
+  return Object.keys(TARGET_REGISTRY);
+}
+function getImplementedTargetIDs() {
+  return Object.entries(TARGET_REGISTRY).filter(([, target]) => target.isImplemented).map(([id]) => id);
+}
+function getDefaultTarget() {
+  const defaultTarget = Object.entries(TARGET_REGISTRY).find(([, target]) => target.isDefault);
+  if (!defaultTarget) {
+    throw new Error("No default target configured");
+  }
+  return defaultTarget[0];
+}
+function isValidTargetID(id) {
+  return id in TARGET_REGISTRY;
+}
+function getTargetDefinition(id) {
+  const target = TARGET_REGISTRY[id];
+  if (!target) {
+    throw new Error(`Unknown target: ${id}`);
+  }
+  return target;
+}
+function isTargetImplemented(id) {
+  return TARGET_REGISTRY[id]?.isImplemented ?? false;
+}
+function getTargetsWithMCPSupport() {
+  return Object.entries(TARGET_REGISTRY).filter(([, target]) => target.config.installation.supportedMcpServers).map(([id]) => id);
+}
+
+// src/core/target-manager.ts
+var TargetManager = class {
+  transformers = /* @__PURE__ */ new Map();
+  initialized = false;
+  constructor() {
+    this.initializeDefaultTransformers().catch((error) => {
+      console.error("Failed to initialize transformers:", error);
+    });
+  }
+  /**
+   * Ensure transformers are initialized before use
+   */
+  async ensureInitialized() {
+    if (!this.initialized) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (!this.initialized) {
+        await this.initializeDefaultTransformers();
+      }
+    }
+  }
+  /**
+   * Initialize default transformers for implemented targets
+   */
+  async initializeDefaultTransformers() {
+    if (this.initialized) return;
+    try {
+      const { OpenCodeTransformer } = await import("./opencode-RWJGU63G.js");
+      const { CursorTransformer } = await import("./cursor-5ZX6CTBY.js");
+      const { VSCodeTransformer } = await import("./vscode-RKRXUQP6.js");
+      this.registerTransformer(
+        "opencode",
+        new OpenCodeTransformer(getTargetDefinition("opencode").config)
+      );
+      this.initialized = true;
+    } catch (error) {
+      console.error("Failed to initialize transformers:", error);
+      throw error;
+    }
+  }
+  /**
+   * Register a transformer for a target
+   */
+  registerTransformer(targetId, transformer) {
+    this.transformers.set(targetId, transformer);
+  }
+  /**
+   * Get transformer for a target
+   */
+  async getTransformer(targetId) {
+    await this.ensureInitialized();
+    return this.transformers.get(targetId);
+  }
+  /**
+   * Get all available targets
+   */
+  getAvailableTargets() {
+    return getAllTargetIDs();
+  }
+  /**
+   * Get implemented targets only
+   */
+  getImplementedTargets() {
+    return getImplementedTargetIDs();
+  }
+  /**
+   * Get targets that support MCP servers
+   */
+  getTargetsWithMCPSupport() {
+    return getTargetsWithMCPSupport();
+  }
+  /**
+   * Get default target
+   */
+  getDefaultTarget() {
+    return getDefaultTarget();
+  }
+  /**
+   * Validate target ID
+   */
+  validateTarget(targetId) {
+    if (!isValidTargetID(targetId)) {
+      const available = this.getAvailableTargets();
+      throw new Error(`Invalid target '${targetId}'. Available targets: ${available.join(", ")}`);
+    }
+    if (!isTargetImplemented(targetId)) {
+      throw new Error(
+        `Target '${targetId}' is not yet implemented. Available targets: ${this.getImplementedTargets().join(", ")}`
+      );
+    }
+    return targetId;
+  }
+  /**
+   * Resolve target from options or detection
+   */
+  async resolveTarget(options) {
+    if (options.target) {
+      return this.validateTarget(options.target);
+    }
+    const detectedTarget = await this.detectTarget();
+    if (detectedTarget) {
+      return detectedTarget;
+    }
+    return this.getDefaultTarget();
+  }
+  /**
+   * Detect target from current directory structure
+   */
+  async detectTarget() {
+    const cwd = process.cwd();
+    const targetChecks = [
+      {
+        target: "opencode",
+        check: async () => {
+          const configPath = path2.join(cwd, "opencode.jsonc");
+          const agentDir = path2.join(cwd, ".opencode");
+          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          return configExists || agentDirExists;
+        }
+      },
+      {
+        target: "cursor",
+        check: async () => {
+          const configPath = path2.join(cwd, "cursor.json");
+          const agentDir = path2.join(cwd, ".cursor");
+          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          return configExists || agentDirExists;
+        }
+      },
+      {
+        target: "vscode",
+        check: async () => {
+          const configPath = path2.join(cwd, ".vscode", "settings.json");
+          return fs2.access(configPath).then(() => true).catch(() => false);
+        }
+      },
+      {
+        target: "cli",
+        check: async () => {
+          const configPath = path2.join(cwd, "sylphx.json");
+          const agentDir = path2.join(cwd, ".sylphx");
+          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          return configExists || agentDirExists;
+        }
+      }
+    ];
+    for (const { target, check } of targetChecks) {
+      if (isTargetImplemented(target) && await check()) {
+        return target;
+      }
+    }
+    return null;
+  }
+  /**
+   * Get target configuration
+   */
+  getTargetConfig(targetId) {
+    const target = getTargetDefinition(targetId);
+    return target.config;
+  }
+  /**
+   * Get target definition
+   */
+  getTargetDefinition(targetId) {
+    return getTargetDefinition(targetId);
+  }
+  /**
+   * Check if target supports MCP servers
+   */
+  supportsMCPServers(targetId) {
+    const config = this.getTargetConfig(targetId);
+    return config.installation.supportedMcpServers;
+  }
+  /**
+   * Get agent directory path for target
+   */
+  getAgentDirectory(targetId, cwd = process.cwd()) {
+    const config = this.getTargetConfig(targetId);
+    return path2.join(cwd, config.agentDir);
+  }
+  /**
+   * Get configuration file path for target
+   */
+  getConfigFilePath(targetId, cwd = process.cwd()) {
+    const config = this.getTargetConfig(targetId);
+    return path2.join(cwd, config.configFile);
+  }
+  /**
+   * Get help text for all targets
+   */
+  getTargetsHelpText() {
+    const implemented = this.getImplementedTargets();
+    if (implemented.length === 0) {
+      return "No targets are currently implemented.";
+    }
+    let help = "Available targets:\n";
+    for (const targetId of implemented) {
+      const target = getTargetDefinition(targetId);
+      const isDefault = targetId === this.getDefaultTarget();
+      const defaultMarker = isDefault ? " (default)" : "";
+      help += `  ${targetId}${defaultMarker} - ${target.description}
+`;
+    }
+    return help;
+  }
+  /**
+   * Get help text for a specific target
+   */
+  async getTargetHelpText(targetId) {
+    const target = getTargetDefinition(targetId);
+    const transformer = await this.getTransformer(targetId);
+    let help = `${target.name} (${targetId})
+`;
+    help += `${target.description}
+
+`;
+    help += `Configuration:
+`;
+    help += `  Agent Directory: ${target.config.agentDir}
+`;
+    help += `  Agent Extension: ${target.config.agentExtension}
+`;
+    help += `  Agent Format: ${target.config.agentFormat}
+`;
+    help += `  Config File: ${target.config.configFile}
+`;
+    help += `  MCP Support: ${target.config.installation.supportedMcpServers ? "Yes" : "No"}
+
+`;
+    if (transformer) {
+      help += transformer.getHelpText();
+    }
+    return help;
+  }
+};
+var targetManager = new TargetManager();
+
+// src/core/init.ts
 async function getAgentFiles() {
   const scriptPath = path3.resolve(process.argv[1]);
   const scriptDir = path3.dirname(scriptPath);
   const agentsDir = path3.join(scriptDir, "..", "agents");
-  if (!fs2.existsSync(agentsDir)) {
+  if (!fs3.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
-  const subdirs = fs2.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
+  const subdirs = fs3.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   const allFiles = [];
   for (const subdir of subdirs) {
     const subdirPath = path3.join(agentsDir, subdir);
@@ -552,41 +594,22 @@ async function getAgentFiles() {
   }
   return allFiles;
 }
-async function promptForAgent2() {
-  const result = await promptForAgent(AGENT_CONFIGS, "Workflow Install Tool");
-  return result;
-}
-function detectAgentTool2() {
-  const result = detectAgentTool(AGENT_CONFIGS, "opencode");
-  return result;
-}
 async function installAgents(options) {
   const cwd = process.cwd();
   const results = [];
-  let agent;
-  if (options.target) {
-    agent = options.target.toLowerCase();
-    if (!getSupportedAgents(AGENT_CONFIGS).includes(agent)) {
-      log(`\u274C Unknown target: ${agent}`, "red");
-      log(`Supported targets: ${getSupportedAgents(AGENT_CONFIGS).join(", ")}`, "yellow");
-      throw new Error(`Unknown target: ${agent}`);
-    }
-  } else {
-    const detectedAgent = detectAgentTool2();
-    if (detectedAgent !== "opencode") {
-      agent = detectedAgent;
-      console.log(`\u{1F4DD} Detected target: ${getAgentConfig(AGENT_CONFIGS, agent).name}`);
-    } else {
-      console.log("\u{1F4DD} No target detected or defaulting to OpenCode.");
-      agent = await promptForAgent2();
-    }
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const target = targetManager.getTargetDefinition(targetId);
+  const transformer = await targetManager.getTransformer(targetId);
+  if (!transformer) {
+    throw new Error(`No transformer available for target: ${targetId}`);
   }
-  const config = getAgentConfig(AGENT_CONFIGS, agent);
-  const agentsDir = path3.join(cwd, config.dir);
+  console.log(`\u{1F4DD} Using target: ${target.name}`);
+  const config = target.config;
+  const agentsDir = path3.join(cwd, config.agentDir);
   const processContent = (content) => {
-    return content;
+    return transformer.transformAgentContent(content);
   };
-  if (options.clear && fs2.existsSync(agentsDir)) {
+  if (options.clear && fs3.existsSync(agentsDir)) {
     let expectedFiles;
     const agentFiles2 = await getAgentFiles();
     expectedFiles = new Set(
@@ -596,16 +619,16 @@ async function installAgents(options) {
         const dir = parsedPath.dir;
         if (config.flatten) {
           const flattenedName = dir ? `${dir.replace(/[\/\\]/g, "-")}-${baseName}` : baseName;
-          return `${flattenedName}${config.extension}`;
+          return `${flattenedName}${config.agentExtension}`;
         }
         return filePath;
       })
     );
-    clearObsoleteFiles(agentsDir, expectedFiles, [config.extension], results);
+    clearObsoleteFiles(agentsDir, expectedFiles, [config.agentExtension], results);
   }
-  fs2.mkdirSync(agentsDir, { recursive: true });
+  fs3.mkdirSync(agentsDir, { recursive: true });
   const agentFiles = await getAgentFiles();
-  if (!options.quiet) {
+  if (options.quiet !== true) {
     console.log(
       `\u{1F4C1} Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + "/", "")}`
     );
@@ -622,17 +645,17 @@ async function installAgents(options) {
     const sourcePath = path3.join(agentsSourceDir, agentFile);
     const destPath = path3.join(agentsDir, agentFile);
     const destDir = path3.dirname(destPath);
-    if (!fs2.existsSync(destDir)) {
-      fs2.mkdirSync(destDir, { recursive: true });
+    if (!fs3.existsSync(destDir)) {
+      fs3.mkdirSync(destDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
-    let content = fs2.readFileSync(sourcePath, "utf8");
+    let content = fs3.readFileSync(sourcePath, "utf8");
     content = processContent(content);
     const localProcessed = localInfo ? processContent(localInfo.content) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs2.writeFileSync(destPath, content, "utf8");
+      fs3.writeFileSync(destPath, content, "utf8");
       results.push({
         file: agentFile,
         status: localInfo ? "updated" : "added",
@@ -646,14 +669,218 @@ async function installAgents(options) {
       });
     }
   }
-  displayResults(results, agentsDir, config.name, "Install", options.verbose);
+  displayResults(results, agentsDir, target.name, "Install", options.verbose);
+}
+
+// src/utils/error-handler.ts
+var CLIError = class extends Error {
+  constructor(message, code) {
+    super(message);
+    this.code = code;
+    this.name = "CLIError";
+  }
+};
+function handleError(error, context) {
+  const message = error instanceof Error ? error.message : String(error);
+  const contextMsg = context ? ` (${context})` : "";
+  console.error(`\u274C Error${contextMsg}: ${message}`);
+  if (error instanceof CLIError && error.code) {
+    console.error(`   Code: ${error.code}`);
+  }
+  process.exit(1);
+}
+function createAsyncHandler(handler, context) {
+  return async (options) => {
+    try {
+      await handler(options);
+    } catch (error) {
+      handleError(error, context);
+    }
+  };
+}
+
+// src/utils/target-config.ts
+async function addMCPServersToTarget(cwd, targetId, serverTypes) {
+  const target = targetManager.getTargetDefinition(targetId);
+  const transformer = await targetManager.getTransformer(targetId);
+  if (!transformer) {
+    throw new Error(`No transformer available for target: ${targetId}`);
+  }
+  if (!target.config.installation.supportedMcpServers) {
+    throw new Error(`Target ${targetId} does not support MCP servers`);
+  }
+  const config = await transformer.readConfig(cwd);
+  const mcpConfigPath = target.config.mcpConfigPath;
+  const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
+  setNestedProperty(config, mcpConfigPath, mcpSection);
+  let addedCount = 0;
+  for (const serverType of serverTypes) {
+    const server = MCP_SERVER_REGISTRY[serverType];
+    if (!server) {
+      console.warn(`Warning: Unknown MCP server type: ${serverType}`);
+      continue;
+    }
+    if (mcpSection[server.name]) {
+      console.log(`\u2139\uFE0F  MCP server already exists: ${server.name}`);
+    } else {
+      const transformedConfig = transformer.transformMCPConfig(server.config);
+      mcpSection[server.name] = transformedConfig;
+      console.log(`\u{1F4E6} Added MCP server: ${server.name} (${server.description})`);
+      addedCount++;
+    }
+  }
+  await transformer.writeConfig(cwd, config);
+  console.log(`\u2705 Updated ${target.config.configFile} with ${addedCount} new MCP server(s)`);
+}
+async function listMCPServersForTarget(cwd, targetId) {
+  const target = targetManager.getTargetDefinition(targetId);
+  const transformer = await targetManager.getTransformer(targetId);
+  if (!transformer) {
+    throw new Error(`No transformer available for target: ${targetId}`);
+  }
+  const config = await transformer.readConfig(cwd);
+  const mcpConfigPath = target.config.mcpConfigPath;
+  const mcpSection = getNestedProperty(config, mcpConfigPath);
+  if (!mcpSection || Object.keys(mcpSection).length === 0) {
+    console.log("\u2139\uFE0F  No MCP servers configured");
+    return;
+  }
+  console.log(`\u{1F4CB} Currently configured MCP servers for ${target.name}:`);
+  console.log("");
+  for (const [name, serverConfig] of Object.entries(mcpSection)) {
+    let configInfo = "";
+    if (serverConfig && typeof serverConfig === "object" && "type" in serverConfig) {
+      if (serverConfig.type === "local") {
+        configInfo = serverConfig.command?.join(" ") || "Unknown command";
+      } else if (serverConfig.type === "remote") {
+        configInfo = `HTTP: ${serverConfig.url}`;
+      }
+    }
+    console.log(`  \u2022 ${name}: ${configInfo}`);
+    const serverInfo = Object.values(MCP_SERVER_REGISTRY).find((s) => s.name === name);
+    if (serverInfo) {
+      console.log(`    ${serverInfo.description}`);
+    }
+    console.log("");
+  }
+}
+async function configureMCPServerForTarget(cwd, targetId, serverType) {
+  const target = targetManager.getTargetDefinition(targetId);
+  const transformer = await targetManager.getTransformer(targetId);
+  if (!transformer) {
+    throw new Error(`No transformer available for target: ${targetId}`);
+  }
+  const server = MCP_SERVER_REGISTRY[serverType];
+  if (!server) {
+    console.error(`\u274C Unknown MCP server: ${serverType}`);
+    return;
+  }
+  if (!server.requiredEnvVars?.length) {
+    console.log(`\u2139\uFE0F  ${server.name} does not require any API keys`);
+    return;
+  }
+  console.log(`\u{1F527} Configuring ${server.description} for ${target.name}...`);
+  const apiKeys = await promptForAPIKeys([serverType]);
+  if (Object.keys(apiKeys).length === 0) {
+    console.log("\u274C No API keys provided");
+    return;
+  }
+  const config = await transformer.readConfig(cwd);
+  const mcpConfigPath = target.config.mcpConfigPath;
+  const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
+  const currentConfig = mcpSection[server.name];
+  if (currentConfig && currentConfig.type === "local") {
+    mcpSection[server.name] = {
+      ...currentConfig,
+      environment: {
+        ...currentConfig.environment || {},
+        ...apiKeys
+      }
+    };
+  } else {
+    const baseConfig = server.config;
+    if (baseConfig.type === "local") {
+      const transformedConfig = transformer.transformMCPConfig(baseConfig);
+      mcpSection[server.name] = {
+        ...transformedConfig,
+        environment: {
+          ...baseConfig.environment || {},
+          ...apiKeys
+        }
+      };
+    } else {
+      const transformedConfig = transformer.transformMCPConfig(baseConfig);
+      mcpSection[server.name] = transformedConfig;
+    }
+  }
+  setNestedProperty(config, mcpConfigPath, mcpSection);
+  await transformer.writeConfig(cwd, config);
+  console.log(`\u2705 Updated ${server.name} with API keys for ${target.name}`);
+}
+function validateTarget(targetId) {
+  return targetManager.validateTarget(targetId);
+}
+function targetSupportsMCPServers(targetId) {
+  return targetManager.supportsMCPServers(targetId);
+}
+function getNestedProperty(obj, path4) {
+  return path4.split(".").reduce((current, key) => current?.[key], obj);
+}
+function setNestedProperty(obj, path4, value) {
+  const keys = path4.split(".");
+  const lastKey = keys.pop();
+  const target = keys.reduce((current, key) => {
+    if (!current[key] || typeof current[key] !== "object") {
+      current[key] = {};
+    }
+    return current[key];
+  }, obj);
+  target[lastKey] = value;
+}
+async function promptForAPIKeys(serverTypes) {
+  const { createInterface } = await import("readline");
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  const apiKeys = {};
+  for (const serverType of serverTypes) {
+    const server = MCP_SERVER_REGISTRY[serverType];
+    if (!server?.requiredEnvVars?.length) continue;
+    console.log(`
+\u{1F511} Configuring API keys for ${server.description}:`);
+    for (const envVar of server.requiredEnvVars) {
+      const question = `Enter ${envVar} (or press Enter to skip): `;
+      const answer = await new Promise((resolve) => {
+        rl.question(question, (input) => {
+          resolve(input.trim());
+        });
+      });
+      if (answer) {
+        apiKeys[envVar] = answer;
+        console.log(`\u2705 Set ${envVar}`);
+      } else {
+        console.log(
+          `\u26A0\uFE0F  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`
+        );
+      }
+    }
+  }
+  rl.close();
+  return apiKeys;
 }
 
 // src/commands/init-command.ts
-function validateInitOptions(options) {
-  options.target = options.target || "opencode";
-  if (options.target !== "opencode") {
-    throw new CLIError("Currently only opencode is supported for init.", "UNSUPPORTED_TARGET");
+async function validateInitOptions(options) {
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+  options.target = targetId;
+  try {
+    validateTarget(targetId);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new CLIError(error.message, "UNSUPPORTED_TARGET");
+    }
+    throw error;
   }
   if (options.merge) {
     throw new CLIError("The --merge option is not supported with init command.", "INVALID_OPTION");
@@ -663,38 +890,42 @@ var initCommand = {
   name: "init",
   description: "Initialize project with Sylphx Flow development agents and MCP tools",
   options: [
-    { flags: "--target <type>", description: "Force specific target (default: opencode)" },
+    {
+      flags: "--target <type>",
+      description: `Force specific target (${targetManager.getImplementedTargets().join(", ")}, default: opencode)`
+    },
     { flags: "--verbose", description: "Show detailed output" },
     { flags: "--dry-run", description: "Show what would be done without making changes" },
     { flags: "--clear", description: "Clear obsolete items before processing" },
     { flags: "--no-mcp", description: "Skip MCP tools installation" }
   ],
   handler: async (options) => {
-    validateInitOptions(options);
+    await validateInitOptions(options);
+    const targetId = options.target;
     console.log("\u{1F680} Sylphx Flow Setup");
     console.log("======================");
-    console.log(`\u{1F3AF} Target: ${options.target}`);
+    console.log(`\u{1F3AF} Target: ${targetId}`);
     console.log("");
-    if (options.mcp !== false) {
+    if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
       console.log("\u{1F4E6} Installing MCP tools...");
       const defaultServers = getDefaultServers();
       if (options.dryRun) {
         console.log("\u{1F50D} Dry run: Would install all MCP servers");
         console.log(`   \u2022 ${defaultServers.join(", ")}`);
       } else {
-        await addMCPServers(process.cwd(), defaultServers);
+        await addMCPServersToTarget(process.cwd(), targetId, defaultServers);
         const serversNeedingKeys = getServersRequiringAPIKeys();
         if (serversNeedingKeys.length > 0) {
           console.log("\n\u{1F511} Some MCP tools require API keys:");
-          const apiKeys = await promptForAPIKeys(serversNeedingKeys);
-          if (Object.keys(apiKeys).length > 0) {
-            for (const serverType of serversNeedingKeys) {
-              await configureMCPServer(process.cwd(), serverType);
-            }
+          for (const serverType of serversNeedingKeys) {
+            await configureMCPServerForTarget(process.cwd(), targetId, serverType);
           }
         }
         console.log("\u2705 MCP tools configured");
       }
+      console.log("");
+    } else if (options.mcp !== false && !targetSupportsMCPServers(targetId)) {
+      console.log("\u26A0\uFE0F  MCP tools are not supported for this target");
       console.log("");
     }
     await installAgents(options);
@@ -702,16 +933,22 @@ var initCommand = {
     console.log("\u{1F389} Setup complete!");
     console.log("");
     console.log("\u{1F4CB} Next steps:");
-    console.log("   \u2022 Open OpenCode and start using your agents!");
-    if (options.mcp !== false) {
-      console.log("   \u2022 MCP tools will be automatically loaded by OpenCode");
+    const target = targetManager.getTargetDefinition(targetId);
+    if (targetId === "opencode") {
+      console.log("   \u2022 Open OpenCode and start using your agents!");
+      if (options.mcp !== false) {
+        console.log("   \u2022 MCP tools will be automatically loaded by OpenCode");
+      }
+    } else {
+      console.log(`   \u2022 Start using your agents with ${target.name}!`);
+      console.log(`   \u2022 Run 'sylphx-flow init --help' for target-specific information`);
     }
   }
 };
 
 // src/commands/mcp-command.ts
 var mcpStartHandler = async () => {
-  await import("./sylphx-flow-mcp-server-F56I7NIY.js");
+  await import("./sylphx-flow-mcp-server-G2GUVJZT.js");
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
   console.log(
@@ -721,14 +958,18 @@ var mcpStartHandler = async () => {
   process.stdin.resume();
 };
 var mcpInstallHandler = async (options) => {
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+  if (!targetSupportsMCPServers(targetId)) {
+    throw new CLIError(`Target ${targetId} does not support MCP servers`, "UNSUPPORTED_TARGET");
+  }
   const servers = options.servers || [];
   if (options.all) {
-    console.log("\u{1F527} Installing all available MCP tools...");
+    console.log(`\u{1F527} Installing all available MCP tools for ${targetId}...`);
     const allServers = getAllServerIDs();
     if (options.dryRun) {
       console.log(`\u{1F50D} Dry run: Would install all MCP tools: ${allServers.join(", ")}`);
     } else {
-      await addMCPServers(process.cwd(), allServers);
+      await addMCPServersToTarget(process.cwd(), targetId, allServers);
       console.log("\u2705 All MCP tools installed");
     }
     return;
@@ -736,7 +977,16 @@ var mcpInstallHandler = async (options) => {
   if (servers.length === 0) {
     throw new CLIError("Please specify MCP tools to install or use --all", "NO_SERVERS_SPECIFIED");
   }
-  const validServers = parseMCPServerTypes(servers);
+  const validServers = [];
+  for (const server of servers) {
+    if (getAllServerIDs().includes(server)) {
+      validServers.push(server);
+    } else {
+      console.warn(
+        `Warning: Unknown MCP server '${server}'. Available: ${getAllServerIDs().join(", ")}`
+      );
+    }
+  }
   if (validServers.length === 0) {
     const availableServers = getAllServerIDs();
     throw new CLIError(
@@ -744,36 +994,45 @@ var mcpInstallHandler = async (options) => {
       "INVALID_MCP_SERVERS"
     );
   }
-  console.log(`\u{1F527} Installing MCP tools: ${validServers.join(", ")}`);
+  console.log(`\u{1F527} Installing MCP tools for ${targetId}: ${validServers.join(", ")}`);
   if (options.dryRun) {
     console.log("\u{1F50D} Dry run: Would install MCP tools:", validServers.join(", "));
   } else {
-    await addMCPServers(process.cwd(), validServers);
+    await addMCPServersToTarget(process.cwd(), targetId, validServers);
     console.log("\u2705 MCP tools installed");
   }
 };
-var mcpListHandler = async () => {
-  await listMCPServers(process.cwd());
+var mcpListHandler = async (options) => {
+  const targetId = await targetManager.resolveTarget({ target: options?.target });
+  await listMCPServersForTarget(process.cwd(), targetId);
 };
 var mcpConfigHandler = async (options) => {
   const server = options.server;
   if (!server) {
     throw new CLIError("Please specify a server to configure", "NO_SERVER_SPECIFIED");
   }
-  const validServers = parseMCPServerTypes([server]);
-  if (validServers.length === 0) {
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+  if (!targetSupportsMCPServers(targetId)) {
+    throw new CLIError(`Target ${targetId} does not support MCP servers`, "UNSUPPORTED_TARGET");
+  }
+  if (!getAllServerIDs().includes(server)) {
     const availableServers = getAllServerIDs();
     throw new CLIError(
       `Invalid MCP server: ${server}. Available: ${availableServers.join(", ")}`,
       "INVALID_MCP_SERVER"
     );
   }
-  await configureMCPServer(process.cwd(), validServers[0]);
+  await configureMCPServerForTarget(process.cwd(), targetId, server);
 };
 var mcpCommand = {
   name: "mcp",
   description: "Manage MCP (Model Context Protocol) tools and servers",
-  options: [],
+  options: [
+    {
+      flags: "--target <type>",
+      description: `Target platform (${targetManager.getImplementedTargets().join(", ")}, default: auto-detect)`
+    }
+  ],
   subcommands: [
     {
       name: "start",
@@ -783,7 +1042,7 @@ var mcpCommand = {
     },
     {
       name: "install",
-      description: "Install MCP tools for OpenCode",
+      description: "Install MCP tools for the target platform",
       options: [
         {
           flags: "<servers...>",
@@ -796,7 +1055,7 @@ var mcpCommand = {
     },
     {
       name: "list",
-      description: "List all available MCP tools",
+      description: "List configured MCP tools for the target platform",
       options: [],
       handler: mcpListHandler
     },
@@ -948,49 +1207,65 @@ var memorySetHandler = async (options) => {
 };
 var memoryCommand = {
   name: "memory",
-  description: "Manage memory database",
+  description: "Manage memory storage (set, get, search, list, delete, clear)",
   options: [
-    { flags: "--namespace <name>", description: "Filter by namespace" },
-    { flags: "--limit <number>", description: "Limit number of entries" },
-    { flags: "--pattern <pattern>", description: "Search pattern" },
-    { flags: "--key <key>", description: "Memory key to delete" },
-    { flags: "--confirm", description: "Confirm clear operation" }
+    {
+      flags: "--target <type>",
+      description: `Target platform (${targetManager.getImplementedTargets().join(", ")}, default: auto-detect)`
+    }
   ],
   subcommands: [
     {
       name: "list",
       description: "List memory entries",
-      options: [],
+      options: [
+        { flags: "--namespace <name>", description: "Filter by namespace (default: all)" },
+        { flags: "--limit <number>", description: "Limit number of entries (default: 50)" }
+      ],
       handler: memoryListHandler
     },
     {
       name: "search",
       description: "Search memory entries",
-      options: [],
+      options: [
+        { flags: "<pattern>", description: "Search pattern" },
+        { flags: "--namespace <name>", description: "Filter by namespace (default: all)" }
+      ],
       handler: memorySearchHandler
     },
     {
       name: "delete",
       description: "Delete memory entry",
-      options: [],
+      options: [
+        { flags: "<key>", description: "Memory key to delete" },
+        { flags: "--namespace <name>", description: "Namespace (default: default)" },
+        { flags: "--confirm", description: "Skip confirmation prompt" }
+      ],
       handler: memoryDeleteHandler
     },
     {
       name: "clear",
       description: "Clear memory entries",
-      options: [],
+      options: [
+        { flags: "--namespace <name>", description: "Clear specific namespace (default: all)" },
+        { flags: "--confirm", description: "Skip confirmation prompt" }
+      ],
       handler: memoryClearHandler
     },
     {
       name: "stats",
       description: "Show memory statistics",
-      options: [],
+      options: [{ flags: "--namespace <name>", description: "Filter by namespace (default: all)" }],
       handler: memoryStatsHandler
     },
     {
       name: "set",
       description: "Set memory entry",
-      options: [],
+      arguments: [
+        { name: "key", description: "Memory key", required: true },
+        { name: "value", description: "Memory value", required: true }
+      ],
+      options: [{ flags: "--namespace <name>", description: "Namespace (default: default)" }],
       handler: memorySetHandler
     }
   ]
@@ -998,11 +1273,11 @@ var memoryCommand = {
 
 // src/commands/memory-tui-command.ts
 import { render } from "ink";
-import React2 from "react";
+import React from "react";
 
 // src/components/FullscreenMemoryTUI.tsx
-import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Text, useApp, useInput } from "ink";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 var FullscreenMemoryTUI = () => {
   const { exit } = useApp();
@@ -1644,7 +1919,7 @@ var FullscreenMemoryTUI = () => {
 // src/commands/memory-tui-command.ts
 var handleMemoryTui = async () => {
   process.stdout.write("\x1B[2J\x1B[H");
-  const { waitUntilExit } = render(React2.createElement(FullscreenMemoryTUI), {
+  const { waitUntilExit } = render(React.createElement(FullscreenMemoryTUI), {
     // Configure Ink for fullscreen experience
     exitOnCtrlC: false,
     // Handle Ctrl+C manually in useInput
@@ -1660,6 +1935,17 @@ var handleMemoryTui = async () => {
   } finally {
     process.stdout.write("\x1B[2J\x1B[H");
   }
+};
+var memoryTuiCommand = {
+  name: "memory-tui",
+  description: "Launch interactive memory management TUI",
+  options: [
+    {
+      flags: "--target <type>",
+      description: `Target platform (${targetManager.getImplementedTargets().join(", ")}, default: auto-detect)`
+    }
+  ],
+  handler: handleMemoryTui
 };
 
 // src/utils/command-builder.ts
@@ -1728,7 +2014,7 @@ function createCLI() {
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
-  program.command("tui").description("Launch interactive Sylphx Flow TUI").action(handleMemoryTui);
+  program.command("tui").description("Launch interactive Sylphx Flow TUI").option("--target <type>", `Target platform (opencode, default: auto-detect)`).action(handleMemoryTui);
   program.action(() => {
     showDefaultHelp();
   });

@@ -17,6 +17,7 @@ export interface CommonOptions {
   dryRun?: boolean;
   clear?: boolean;
   mcp?: string[] | null | boolean;
+  quiet?: boolean;
 }
 
 export interface AgentConfig {

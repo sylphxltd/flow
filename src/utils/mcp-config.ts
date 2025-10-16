@@ -1,16 +1,16 @@
 import path from 'node:path';
-import type { OpenCodeConfig } from '../types.js';
-import { readJSONCFile, writeJSONCFile } from './jsonc.js';
 import {
-  MCP_SERVER_REGISTRY,
-  type MCPServerID,
   type MCPServerDefinition,
+  type MCPServerID,
+  MCP_SERVER_REGISTRY,
   getAllServerIDs,
   getDefaultServers,
+  getServerDefinition,
   getServersRequiringAPIKeys,
   isValidServerID,
-  getServerDefinition,
 } from '../config/servers.js';
+import type { OpenCodeConfig } from '../types.js';
+import { readJSONCFile, writeJSONCFile } from './jsonc.js';
 
 // Re-export for backward compatibility
 export type MCPServerType = MCPServerID;
