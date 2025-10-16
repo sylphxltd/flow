@@ -733,7 +733,7 @@ var MCP_SERVERS = {
     description: "Flow memory MCP server for agent coordination",
     config: {
       type: "local",
-      command: ["npx", "github:sylphxltd/flow", "mcp", "start"]
+      command: ["npx", "-y", "github:sylphxltd/flow", "mcp", "start"]
     }
   },
   everything: {
@@ -743,6 +743,44 @@ var MCP_SERVERS = {
       type: "local",
       command: ["npx", "-y", "@modelcontextprotocol/server-everything"]
     }
+  },
+  "gpt-image": {
+    name: "gpt-image-1-mcp",
+    description: "GPT Image generation MCP server",
+    config: {
+      type: "local",
+      command: ["npx", "@napolab/gpt-image-1-mcp"],
+      env: { OPENAI_API_KEY: "" }
+    },
+    requiredEnvVars: ["OPENAI_API_KEY"]
+  },
+  perplexity: {
+    name: "perplexity-ask",
+    description: "Perplexity Ask MCP server for search and queries",
+    config: {
+      type: "local",
+      command: ["npx", "-y", "server-perplexity-ask"],
+      env: { PERPLEXITY_API_KEY: "" }
+    },
+    requiredEnvVars: ["PERPLEXITY_API_KEY"]
+  },
+  context7: {
+    name: "context7",
+    description: "Context7 HTTP MCP server",
+    config: {
+      type: "streamable-http",
+      url: "https://mcp.context7.com/mcp"
+    }
+  },
+  "gemini-search": {
+    name: "gemini-google-search",
+    description: "Gemini Google Search MCP server",
+    config: {
+      type: "local",
+      command: ["npx", "-y", "mcp-gemini-google-search"],
+      env: { GEMINI_API_KEY: "", GEMINI_MODEL: "gemini-2.5-flash" }
+    },
+    requiredEnvVars: ["GEMINI_API_KEY"]
   }
 };
 function getOpenCodeConfigPath(cwd) {
@@ -800,8 +838,13 @@ async function listMCPServers(cwd) {
   console.log("\u{1F4CB} Currently configured MCP servers:");
   console.log("");
   for (const [name, serverConfig] of Object.entries(config.mcp)) {
-    const command = serverConfig.command.join(" ");
-    console.log(`  \u2022 ${name}: ${command}`);
+    let configInfo = "";
+    if (serverConfig.type === "local") {
+      configInfo = serverConfig.command.join(" ");
+    } else if (serverConfig.type === "streamable-http") {
+      configInfo = `HTTP: ${serverConfig.url}`;
+    }
+    console.log(`  \u2022 ${name}: ${configInfo}`);
     const serverInfo = Object.values(MCP_SERVERS).find((s) => s.name === name);
     if (serverInfo) {
       console.log(`    ${serverInfo.description}`);
@@ -821,6 +864,82 @@ function parseMCPServerTypes(args) {
     }
   }
   return servers;
+}
+async function promptForAPIKeys(serverTypes) {
+  const { createInterface: createInterface2 } = await import("readline");
+  const rl = createInterface2({
+    input: process.stdin,
+    output: process.stdout
+  });
+  const apiKeys = {};
+  for (const serverType of serverTypes) {
+    const server2 = MCP_SERVERS[serverType];
+    if (!server2?.requiredEnvVars?.length) continue;
+    console.log(`
+\u{1F511} Configuring API keys for ${server2.description}:`);
+    for (const envVar of server2.requiredEnvVars) {
+      const question = `Enter ${envVar} (or press Enter to skip): `;
+      const answer = await new Promise((resolve2) => {
+        rl.question(question, (input) => {
+          resolve2(input.trim());
+        });
+      });
+      if (answer) {
+        apiKeys[envVar] = answer;
+        console.log(`\u2705 Set ${envVar}`);
+      } else {
+        console.log(`\u26A0\uFE0F  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`);
+      }
+    }
+  }
+  rl.close();
+  return apiKeys;
+}
+async function configureMCPServer(cwd, serverType) {
+  const server2 = MCP_SERVERS[serverType];
+  if (!server2) {
+    console.error(`\u274C Unknown MCP server: ${serverType}`);
+    return;
+  }
+  if (!server2.requiredEnvVars?.length) {
+    console.log(`\u2139\uFE0F  ${server2.name} does not require any API keys`);
+    return;
+  }
+  console.log(`\u{1F527} Configuring ${server2.description}...`);
+  const apiKeys = await promptForAPIKeys([serverType]);
+  if (Object.keys(apiKeys).length === 0) {
+    console.log("\u274C No API keys provided");
+    return;
+  }
+  const config = await readOpenCodeConfig(cwd);
+  if (!config.mcp) {
+    config.mcp = {};
+  }
+  const currentConfig = config.mcp[server2.name];
+  if (currentConfig && currentConfig.type === "local") {
+    config.mcp[server2.name] = {
+      ...currentConfig,
+      env: {
+        ...currentConfig.env || {},
+        ...apiKeys
+      }
+    };
+  } else {
+    const baseConfig = server2.config;
+    if (baseConfig.type === "local") {
+      config.mcp[server2.name] = {
+        ...baseConfig,
+        env: {
+          ...baseConfig.env || {},
+          ...apiKeys
+        }
+      };
+    } else {
+      config.mcp[server2.name] = baseConfig;
+    }
+  }
+  await writeOpenCodeConfig(cwd, config);
+  console.log(`\u2705 Updated ${server2.name} with API keys`);
 }
 
 // src/core/install.ts
@@ -1200,9 +1319,23 @@ var initCommand = {
     if (options.mcp !== false) {
       console.log("\u{1F4E6} Installing MCP tools...");
       if (options.dryRun) {
-        console.log("\u{1F50D} Dry run: Would install memory & everything servers");
+        console.log("\u{1F50D} Dry run: Would install all MCP servers");
+        console.log("   \u2022 memory, everything, gpt-image, perplexity, context7, gemini-search");
       } else {
-        await addMCPServers(process.cwd(), ["memory", "everything"]);
+        const allServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
+        await addMCPServers(process.cwd(), allServers);
+        const serversNeedingKeys = allServers.filter(
+          (server2) => ["gpt-image", "perplexity", "gemini-search"].includes(server2)
+        );
+        if (serversNeedingKeys.length > 0) {
+          console.log("\n\u{1F511} Some MCP tools require API keys:");
+          const apiKeys = await promptForAPIKeys(serversNeedingKeys);
+          if (Object.keys(apiKeys).length > 0) {
+            for (const serverType of serversNeedingKeys) {
+              await configureMCPServer(process.cwd(), serverType);
+            }
+          }
+        }
         console.log("\u2705 MCP tools configured");
       }
       console.log("");
@@ -1235,9 +1368,10 @@ var mcpInstallHandler = async (options) => {
   if (options.all) {
     console.log("\u{1F527} Installing all available MCP tools...");
     if (options.dryRun) {
-      console.log("\u{1F50D} Dry run: Would install MCP tools: memory, everything");
+      console.log("\u{1F50D} Dry run: Would install all MCP tools: memory, everything, gpt-image, perplexity, context7, gemini-search");
     } else {
-      await addMCPServers(process.cwd(), ["memory", "everything"]);
+      const allServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
+      await addMCPServers(process.cwd(), allServers);
       console.log("\u2705 All MCP tools installed");
     }
     return;
@@ -1247,7 +1381,8 @@ var mcpInstallHandler = async (options) => {
   }
   const validServers = parseMCPServerTypes(servers);
   if (validServers.length === 0) {
-    throw new CLIError("Invalid MCP tools. Available: memory, everything", "INVALID_MCP_SERVERS");
+    const availableServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
+    throw new CLIError(`Invalid MCP tools. Available: ${availableServers.join(", ")}`, "INVALID_MCP_SERVERS");
   }
   console.log(`\u{1F527} Installing MCP tools: ${validServers.join(", ")}`);
   if (options.dryRun) {
@@ -1259,6 +1394,18 @@ var mcpInstallHandler = async (options) => {
 };
 var mcpListHandler = async () => {
   await listMCPServers(process.cwd());
+};
+var mcpConfigHandler = async (options) => {
+  const server2 = options.server;
+  if (!server2) {
+    throw new CLIError("Please specify a server to configure", "NO_SERVER_SPECIFIED");
+  }
+  const validServers = parseMCPServerTypes([server2]);
+  if (validServers.length === 0) {
+    const availableServers = ["memory", "everything", "gpt-image", "perplexity", "context7", "gemini-search"];
+    throw new CLIError(`Invalid MCP server: ${server2}. Available: ${availableServers.join(", ")}`, "INVALID_MCP_SERVER");
+  }
+  await configureMCPServer(process.cwd(), validServers[0]);
 };
 var mcpCommand = {
   name: "mcp",
@@ -1275,7 +1422,7 @@ var mcpCommand = {
       name: "install",
       description: "Install MCP tools for OpenCode",
       options: [
-        { flags: "<servers...>", description: "MCP tools to install (memory, everything)" },
+        { flags: "<servers...>", description: "MCP tools to install (memory, everything, gpt-image, perplexity, context7, gemini-search)" },
         { flags: "--all", description: "Install all available MCP tools" },
         { flags: "--dry-run", description: "Show what would be done without making changes" }
       ],
@@ -1286,6 +1433,14 @@ var mcpCommand = {
       description: "List all available MCP tools",
       options: [],
       handler: mcpListHandler
+    },
+    {
+      name: "config",
+      description: "Configure API keys for MCP tools",
+      options: [
+        { flags: "<server>", description: "MCP server to configure (gpt-image, perplexity, gemini-search)" }
+      ],
+      handler: mcpConfigHandler
     }
   ]
 };

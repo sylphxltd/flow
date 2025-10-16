@@ -1,6 +1,6 @@
 import type { CommandConfig, CommandHandler } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
-import { addMCPServers, listMCPServers, parseMCPServerTypes } from '../utils/mcp-config.js';
+import { addMCPServers, listMCPServers, parseMCPServerTypes, configureMCPServer } from '../utils/mcp-config.js';
 
 // MCP start handler
 const mcpStartHandler: CommandHandler = async () => {
@@ -30,9 +30,10 @@ const mcpInstallHandler: CommandHandler = async (options: {
   if (options.all) {
     console.log('🔧 Installing all available MCP tools...');
     if (options.dryRun) {
-      console.log('🔍 Dry run: Would install MCP tools: memory, everything');
+      console.log('🔍 Dry run: Would install all MCP tools: memory, everything, gpt-image, perplexity, context7, gemini-search');
     } else {
-      await addMCPServers(process.cwd(), ['memory', 'everything']);
+      const allServers: string[] = ['memory', 'everything', 'gpt-image', 'perplexity', 'context7', 'gemini-search'];
+      await addMCPServers(process.cwd(), allServers);
       console.log('✅ All MCP tools installed');
     }
     return;
@@ -44,7 +45,8 @@ const mcpInstallHandler: CommandHandler = async (options: {
 
   const validServers = parseMCPServerTypes(servers);
   if (validServers.length === 0) {
-    throw new CLIError('Invalid MCP tools. Available: memory, everything', 'INVALID_MCP_SERVERS');
+    const availableServers = ['memory', 'everything', 'gpt-image', 'perplexity', 'context7', 'gemini-search'];
+    throw new CLIError(`Invalid MCP tools. Available: ${availableServers.join(', ')}`, 'INVALID_MCP_SERVERS');
   }
 
   console.log(`🔧 Installing MCP tools: ${validServers.join(', ')}`);
@@ -59,6 +61,22 @@ const mcpInstallHandler: CommandHandler = async (options: {
 // MCP list handler
 const mcpListHandler: CommandHandler = async () => {
   await listMCPServers(process.cwd());
+};
+
+// MCP config handler
+const mcpConfigHandler: CommandHandler = async (options) => {
+  const server = options.server as string;
+  if (!server) {
+    throw new CLIError('Please specify a server to configure', 'NO_SERVER_SPECIFIED');
+  }
+
+  const validServers = parseMCPServerTypes([server]);
+  if (validServers.length === 0) {
+    const availableServers = ['memory', 'everything', 'gpt-image', 'perplexity', 'context7', 'gemini-search'];
+    throw new CLIError(`Invalid MCP server: ${server}. Available: ${availableServers.join(', ')}`, 'INVALID_MCP_SERVER');
+  }
+
+  await configureMCPServer(process.cwd(), validServers[0]);
 };
 
 export const mcpCommand: CommandConfig = {
@@ -76,7 +94,7 @@ export const mcpCommand: CommandConfig = {
       name: 'install',
       description: 'Install MCP tools for OpenCode',
       options: [
-        { flags: '<servers...>', description: 'MCP tools to install (memory, everything)' },
+        { flags: '<servers...>', description: 'MCP tools to install (memory, everything, gpt-image, perplexity, context7, gemini-search)' },
         { flags: '--all', description: 'Install all available MCP tools' },
         { flags: '--dry-run', description: 'Show what would be done without making changes' },
       ],
@@ -87,6 +105,14 @@ export const mcpCommand: CommandConfig = {
       description: 'List all available MCP tools',
       options: [],
       handler: mcpListHandler,
+    },
+    {
+      name: 'config',
+      description: 'Configure API keys for MCP tools',
+      options: [
+        { flags: '<server>', description: 'MCP server to configure (gpt-image, perplexity, gemini-search)' },
+      ],
+      handler: mcpConfigHandler,
     },
   ],
 };

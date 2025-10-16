@@ -6,6 +6,7 @@ export interface CommandOptions {
   merge?: boolean;
   mcp?: string[] | null | boolean;
   servers?: string[];
+  server?: string;
   all?: boolean;
 }
 
@@ -28,9 +29,17 @@ export interface CommandOption {
 export interface MCPServerConfig {
   type: 'local';
   command: string[];
+  env?: Record<string, string>;
 }
+
+export interface MCPServerConfigHTTP {
+  type: 'streamable-http';
+  url: string;
+}
+
+export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP;
 
 export interface OpenCodeConfig {
   $schema?: string;
-  mcp?: Record<string, MCPServerConfig>;
+  mcp?: Record<string, MCPServerConfigUnion>;
 }
