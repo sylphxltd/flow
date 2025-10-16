@@ -219,15 +219,14 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_set",
       {
-        title: "Store Memory",
         description: "Store a value in persistent memory for agent coordination",
-        inputSchema: import_zod.z.object({
+        inputSchema: {
           key: import_zod.z.string().describe("Memory key (e.g., 'swarm/coder/status')"),
           value: import_zod.z.string().describe("Value to store (will be JSON stringified)"),
           namespace: import_zod.z.string().optional().describe("Optional namespace for organization")
-        })
+        }
       },
-      async (args, extra) => {
+      async (args) => {
         try {
           const { key, value, namespace = "default" } = args;
           const parsedValue = JSON.parse(value);
@@ -254,14 +253,13 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_get",
       {
-        title: "Retrieve Memory",
         description: "Retrieve a value from persistent memory",
-        inputSchema: import_zod.z.object({
+        inputSchema: {
           key: import_zod.z.string().describe("Memory key to retrieve"),
           namespace: import_zod.z.string().optional().describe("Optional namespace")
-        })
+        }
       },
-      async (args, extra) => {
+      async (args) => {
         try {
           const { key, namespace = "default" } = args;
           const memory = memoryStorage.get(key, namespace);
@@ -305,14 +303,13 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_search",
       {
-        title: "Search Memory",
         description: "Search memory keys by pattern with optional namespace filtering",
-        inputSchema: import_zod.z.object({
+        inputSchema: {
           pattern: import_zod.z.string().describe("Search pattern (supports * wildcards)"),
           namespace: import_zod.z.string().optional().describe("Optional namespace to limit search")
-        })
+        }
       },
-      async (args, extra) => {
+      async (args) => {
         try {
           const { pattern, namespace } = args;
           const results2 = memoryStorage.search(pattern, namespace);
@@ -352,13 +349,12 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_list",
       {
-        title: "List Memory",
         description: "List all memory keys, optionally filtered by namespace",
-        inputSchema: import_zod.z.object({
+        inputSchema: {
           namespace: import_zod.z.string().optional().describe("Optional namespace to filter")
-        })
+        }
       },
-      async (args, extra) => {
+      async (args) => {
         try {
           const { namespace } = args;
           const entries = memoryStorage.list(namespace);
@@ -396,14 +392,13 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_delete",
       {
-        title: "Delete Memory",
         description: "Delete a specific memory entry",
-        inputSchema: import_zod.z.object({
+        inputSchema: {
           key: import_zod.z.string().describe("Memory key to delete"),
           namespace: import_zod.z.string().optional().describe("Optional namespace")
-        })
+        }
       },
-      async (args, extra) => {
+      async (args) => {
         try {
           const { key, namespace = "default" } = args;
           const deleted = memoryStorage.delete(key, namespace);
@@ -439,14 +434,13 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_clear",
       {
-        title: "Clear Memory",
         description: "Clear all memory or specific namespace",
-        inputSchema: import_zod.z.object({
+        inputSchema: {
           namespace: import_zod.z.string().optional().describe("Optional namespace to clear"),
-          confirm: import_zod.z.boolean().describe("Confirmation required for clearing all memory")
-        })
+          confirm: import_zod.z.boolean().optional().describe("Confirmation required for clearing all memory")
+        }
       },
-      async (args, extra) => {
+      async (args) => {
         try {
           const { namespace, confirm } = args;
           if (!namespace && !confirm) {
@@ -491,11 +485,12 @@ var init_sylphx_flow_mcp_server = __esm({
     server.registerTool(
       "memory_stats",
       {
-        title: "Memory Statistics",
         description: "Get statistics about the memory storage",
-        inputSchema: import_zod.z.object({})
+        inputSchema: {
+          // No input parameters required
+        }
       },
-      async (args, extra) => {
+      async (args) => {
         try {
           const stats = memoryStorage.getStats();
           Logger.info(`Retrieved memory statistics`);

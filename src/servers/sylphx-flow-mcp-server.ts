@@ -243,15 +243,14 @@ Logger.success("✅ Memory storage initialized");
 server.registerTool(
   "memory_set",
   {
-    title: "Store Memory",
     description: "Store a value in persistent memory for agent coordination",
-    inputSchema: z.object({
+    inputSchema: {
       key: z.string().describe("Memory key (e.g., 'swarm/coder/status')"),
       value: z.string().describe("Value to store (will be JSON stringified)"),
       namespace: z.string().optional().describe("Optional namespace for organization")
-    }) as any
+    }
   },
-  async (args: any, extra: any) => {
+  async (args: any) => {
     try {
       const { key, value, namespace = 'default' } = args;
       const parsedValue = JSON.parse(value);
@@ -282,14 +281,13 @@ server.registerTool(
 server.registerTool(
   "memory_get",
   {
-    title: "Retrieve Memory",
     description: "Retrieve a value from persistent memory",
-    inputSchema: z.object({
+    inputSchema: {
       key: z.string().describe("Memory key to retrieve"),
       namespace: z.string().optional().describe("Optional namespace")
-    }) as any
+    }
   },
-  async (args: any, extra: any) => {
+  async (args: any) => {
     try {
       const { key, namespace = 'default' } = args;
       const memory = memoryStorage.get(key, namespace);
@@ -338,14 +336,13 @@ server.registerTool(
 server.registerTool(
   "memory_search",
   {
-    title: "Search Memory",
     description: "Search memory keys by pattern with optional namespace filtering",
-    inputSchema: z.object({
+    inputSchema: {
       pattern: z.string().describe("Search pattern (supports * wildcards)"),
       namespace: z.string().optional().describe("Optional namespace to limit search")
-    }) as any
+    }
   },
-  async (args: any, extra: any) => {
+  async (args: any) => {
     try {
       const { pattern, namespace } = args;
       const results = memoryStorage.search(pattern, namespace);
@@ -389,13 +386,12 @@ server.registerTool(
 server.registerTool(
   "memory_list",
   {
-    title: "List Memory",
     description: "List all memory keys, optionally filtered by namespace",
-    inputSchema: z.object({
+    inputSchema: {
       namespace: z.string().optional().describe("Optional namespace to filter")
-    }) as any
+    }
   },
-  async (args: any, extra: any) => {
+  async (args: any) => {
     try {
       const { namespace } = args;
       const entries = memoryStorage.list(namespace);
@@ -437,14 +433,13 @@ server.registerTool(
 server.registerTool(
   "memory_delete",
   {
-    title: "Delete Memory",
     description: "Delete a specific memory entry",
-    inputSchema: z.object({
+    inputSchema: {
       key: z.string().describe("Memory key to delete"),
       namespace: z.string().optional().describe("Optional namespace")
-    }) as any
+    }
   },
-  async (args: any, extra: any) => {
+  async (args: any) => {
     try {
       const { key, namespace = 'default' } = args;
       const deleted = memoryStorage.delete(key, namespace);
@@ -483,14 +478,13 @@ server.registerTool(
 server.registerTool(
   "memory_clear",
   {
-    title: "Clear Memory",
     description: "Clear all memory or specific namespace",
-    inputSchema: z.object({
+    inputSchema: {
       namespace: z.string().optional().describe("Optional namespace to clear"),
-      confirm: z.boolean().describe("Confirmation required for clearing all memory")
-    }) as any
+      confirm: z.boolean().optional().describe("Confirmation required for clearing all memory")
+    }
   },
-  async (args: any, extra: any) => {
+  async (args: any) => {
     try {
       const { namespace, confirm } = args;
       
@@ -540,11 +534,12 @@ server.registerTool(
 server.registerTool(
   "memory_stats",
   {
-    title: "Memory Statistics",
     description: "Get statistics about the memory storage",
-    inputSchema: z.object({}) as any
+    inputSchema: {
+      // No input parameters required
+    }
   },
-  async (args: any, extra: any) => {
+  async (args: any) => {
     try {
       const stats = memoryStorage.getStats();
       

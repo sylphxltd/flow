@@ -1342,7 +1342,7 @@ var installCommand = {
 
 // src/commands/mcp-command.ts
 var mcpHandler = async () => {
-  await import("./sylphx-flow-mcp-server-PEJV5RSJ.js");
+  await import("./sylphx-flow-mcp-server-G64S43IE.js");
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .memory/memory.json");
   console.log("\u{1F527} Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats");
