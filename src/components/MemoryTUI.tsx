@@ -21,13 +21,26 @@ interface TUIState {
   deleteConfirmEntry: MemoryEntry | null;
   newEntry: { namespace: string; key: string; value: string };
   editEntry: { namespace: string; key: string; value: string };
+  renderKey?: number;
 }
 
 // External state to work around React+Ink compatibility issue
-const externalState = {
-  entries: [] as MemoryEntry[],
+const externalState: TUIState = {
+  entries: [],
+  filteredEntries: [],
   loading: false,
   message: '',
+  viewMode: 'list',
+  selectedIndex: 0,
+  searchQuery: '',
+  sortBy: 'updated_at',
+  sortOrder: 'desc',
+  page: 0,
+  pageSize: 10,
+  selectedEntry: null,
+  deleteConfirmEntry: null,
+  newEntry: { namespace: 'default', key: '', value: '' },
+  editEntry: { namespace: '', key: '', value: '' },
   renderKey: 0,
 };
 
@@ -38,28 +51,15 @@ export const MemoryTUI: React.FC = () => {
 
   // Force re-render function
   const forceRender = useCallback(() => {
-    externalState.renderKey++;
+    externalState.renderKey = (externalState.renderKey || 0) + 1;
     forceUpdate({});
   }, []);
 
   // Get current state from external state
-  const getState = (): TUIState => ({
-    entries: externalState.entries,
-    filteredEntries: filterEntries(externalState.entries),
-    loading: externalState.loading,
-    message: externalState.message,
-    viewMode: 'list',
-    selectedIndex: 0,
-    searchQuery: '',
-    sortBy: 'updated_at',
-    sortOrder: 'desc',
-    page: 0,
-    pageSize: 10,
-    selectedEntry: null,
-    deleteConfirmEntry: null,
-    newEntry: { namespace: 'default', key: '', value: '' },
-    editEntry: { namespace: '', key: '', value: '' },
-  });
+  const getState = (): TUIState => {
+    externalState.filteredEntries = filterEntries(externalState.entries);
+    return externalState;
+  };
 
   const filterEntries = (entries: MemoryEntry[]): MemoryEntry[] => {
     // Simple filtering - can be enhanced with search query
@@ -74,6 +74,8 @@ export const MemoryTUI: React.FC = () => {
     console.log('MemoryTUI: Loading entries...');
     externalState.loading = true;
     externalState.message = 'Loading entries...';
+    externalState.selectedIndex = 0;
+    externalState.page = 0;
     forceRender();
 
     try {
@@ -96,6 +98,8 @@ export const MemoryTUI: React.FC = () => {
       try {
         await memory.delete(entry.key, entry.namespace);
         externalState.message = `Deleted entry: ${entry.namespace}:${entry.key}`;
+        externalState.viewMode = 'list';
+        externalState.deleteConfirmEntry = null;
         await loadEntries();
       } catch (error) {
         externalState.message = `Error deleting entry: ${error}`;
@@ -218,19 +222,22 @@ export const MemoryTUI: React.FC = () => {
           <Box flexDirection="column" flexGrow={1}>
             {state.filteredEntries
               .slice(state.page * state.pageSize, (state.page + 1) * state.pageSize)
-              .map((entry, index) => (
-                <Box key={`${entry.namespace}-${entry.key}-${entry.timestamp}`} marginBottom={1}>
-                  <Text color={index === state.selectedIndex ? 'green' : 'cyan'}>
-                    {index === state.selectedIndex ? '▶' : ' '}{' '}
-                    {state.page * state.pageSize + index + 1}. {entry.namespace}:{entry.key}
-                  </Text>
-                  <Text dimColor>
-                    {' '}
-                    = {JSON.stringify(entry.value).substring(0, 80)}
-                    {JSON.stringify(entry.value).length > 80 ? '...' : ''}
-                  </Text>
-                </Box>
-              ))}
+              .map((entry, index) => {
+                const globalIndex = state.page * state.pageSize + index;
+                return (
+                  <Box key={globalIndex} marginBottom={1}>
+                    <Text color={index === state.selectedIndex ? 'green' : 'cyan'}>
+                      {index === state.selectedIndex ? '▶' : ' '} {globalIndex + 1}.{' '}
+                      {entry.namespace}:{entry.key}
+                    </Text>
+                    <Text dimColor>
+                      {' '}
+                      = {JSON.stringify(entry.value).substring(0, 80)}
+                      {JSON.stringify(entry.value).length > 80 ? '...' : ''}
+                    </Text>
+                  </Box>
+                );
+              })}
           </Box>
         )}
       </Box>
