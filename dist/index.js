@@ -518,7 +518,9 @@ async function installAgents(options) {
   fs2.mkdirSync(agentsDir, { recursive: true });
   const agentFiles = await getAgentFiles();
   if (!options.quiet) {
-    console.log(`\u{1F4C1} Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + "/", "")}`);
+    console.log(
+      `\u{1F4C1} Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + "/", "")}`
+    );
     if (options.merge) {
       console.log("\u{1F517} Mode: Merge all agents into single file");
     }
