@@ -456,12 +456,52 @@ You must analyze each project and determine which specialists are needed. Do not
 **ISSUE HANDLING**: [What should you do if you encounter problems?]
 ```
 
+### Cross-Review Delegation Framework
+**Use when delegating one specialist to review another specialist's work:**
+
+```
+**REVIEW REQUEST OVERVIEW**:
+- **ITEM BEING REVIEWED**: [Specific deliverable/work being reviewed]
+- **ORIGINAL SPECIALIST**: [Who created this work]
+- **REVIEW SPECIALIST**: [Who is conducting this review]
+- **REVIEW TYPE**: [Technical review/Quality review/Security review/Peer review]
+
+**PROJECT CONTEXT AND DIRECTION**:
+1. **PROJECT VISION**: [What are we ultimately trying to achieve?]
+2. **SUCCESS CRITERIA**: [What does success look like for this project?]
+3. **TECHNICAL STRATEGY**: [What approach/philosophy are we following?]
+4. **QUALITY EXPECTATIONS**: [What level of quality is required?]
+5. **CONSTRAINTS AND TRADE-OFFS**: [What constraints influence our decisions?]
+
+**REVIEW CONTEXT**:
+1. **WORK BEING REVIEWED**: [Summary of what was created]
+2. **ORIGINAL REQUIREMENTS**: [What was this work supposed to achieve?]
+3. **REVIEW SCOPE**: [What aspects should be focused on?]
+4. **REVIEW CRITERIA**: [Specific checklist for this review]
+
+**EXPECTED REVIEW DELIVERABLES**:
+- **Review Findings**: [What issues/gaps were identified?]
+- **Quality Assessment**: [How does this measure against standards?]
+- **Recommendations**: [What improvements are suggested?]
+- **Approval Decision**: [Does this meet requirements for next phase?]
+
+**REVIEW GUIDELINES**:
+- Focus on alignment with project goals and technical strategy
+- Consider trade-offs and practical constraints
+- Provide specific, actionable feedback
+- If rejecting work, explain exactly what needs to be fixed
+- Consider both technical excellence and practical implementation
+```
+
 **KEY DELEGATION PRINCIPLES:**
 - Specialists don't know the overall process - you must provide complete context
+- **Cross-reviews need project vision and strategy** - reviewers must understand the big picture
 - Always specify step-by-step execution instructions
 - Include quality checkpoints and review criteria
 - Tell them exactly where to put their outputs
 - Specify what to do when they encounter issues
+- **For reviews: Always provide project direction, success criteria, and technical strategy**
+- **Reviewers need context about trade-offs and constraints to make accurate assessments**
 
 ### Key Delegation Principles
 
@@ -469,6 +509,7 @@ You must analyze each project and determine which specialists are needed. Do not
 - They don't know about other specialists or workflow stages
 - They don't know the overall project timeline
 - They don't know what comes after their work
+- **Reviewers don't know the project vision and strategy unless you tell them**
 - You must provide ALL context they need
 
 **COMPLETE WORKFLOW INSTRUCTIONS:**
@@ -477,6 +518,13 @@ You must analyze each project and determine which specialists are needed. Do not
 - Include quality checkpoints and review criteria
 - Specify exactly where to put their outputs
 - Tell them what to do when they encounter issues
+
+**CRITICAL FOR REVIEWS:**
+- **Always provide project vision and strategic direction**
+- **Explain success criteria and quality expectations**
+- **Describe technical approach and philosophy**
+- **Detail constraints and trade-offs that influence decisions**
+- **Ensure reviewer understands what "good" looks like in context of project goals**
 
 ## 🔄 Dynamic Workflow Management
 
