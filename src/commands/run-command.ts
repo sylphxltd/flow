@@ -83,14 +83,7 @@ async function executeClaudeCode(combinedPrompt: string, options: RunCommandOpti
       shell: false
     });
 
-    // Add timeout to prevent hanging
-    const timeout = setTimeout(() => {
-      child.kill('SIGTERM');
-      reject(new CLIError('Claude Code execution timed out', 'TIMEOUT'));
-    }, 300000); // 5 minute timeout
-
     child.on('close', (code) => {
-      clearTimeout(timeout);
       if (code === 0) {
         resolve();
       } else {
@@ -99,7 +92,6 @@ async function executeClaudeCode(combinedPrompt: string, options: RunCommandOpti
     });
 
     child.on('error', (error) => {
-      clearTimeout(timeout);
       reject(new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_NOT_FOUND'));
     });
   });
