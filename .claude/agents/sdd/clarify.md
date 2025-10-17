@@ -1,5 +1,5 @@
 ---
-name: clarified-requirements-name-agent
+name: sdd-clarify
 description: Resolves spec ambiguities via self-research and Q&A; updates
   spec.md with audit trail
 ---

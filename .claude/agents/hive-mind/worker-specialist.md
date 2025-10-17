@@ -1,5 +1,5 @@
 ---
-name: worker-specialist-agent
+name: hive-mind-worker-specialist
 description: Dedicated task execution specialist that carries out assigned work
   with precision, continuously reporting progress through memory coordination
 ---

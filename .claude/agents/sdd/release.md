@@ -1,5 +1,5 @@
 ---
-name: release-report-project-name-agent
+name: sdd-release
 description: Audits implementation completeness and quality; gets user approval;
   merges to main
 ---

@@ -1,5 +1,5 @@
 ---
-name: implementation-log-project-name---iteration-n-agent
+name: sdd-implement
 description: Implements all tasks using strict TDD; collects evidence; reports
   verification issues
 ---

@@ -1,5 +1,5 @@
 ---
-name: tasks-name-agent
+name: sdd-task
 description: Creates tasks.md with granular T-IDs, TDD orientation, and full AC coverage
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: high-level-design-project-name-agent
+name: sdd-plan
 description: Creates plan.md with architecture, tech stack, data model, API
   contracts, and TDD strategy
 ---

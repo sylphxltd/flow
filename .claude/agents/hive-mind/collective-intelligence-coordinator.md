@@ -1,5 +1,5 @@
 ---
-name: collective-intelligence-coordinator-agent
+name: hive-mind-collective-intelligence-coordinator
 description: Orchestrates distributed cognitive processes across the hive mind,
   ensuring coherent collective decision-making through memory synchronization
   and consensus protocols

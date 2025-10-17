@@ -1,5 +1,5 @@
 ---
-name: initial-specification-name-agent
+name: sdd-specify
 description: Creates spec.md with prioritized user stories, measurable ACs, and
   evidence trail
 ---

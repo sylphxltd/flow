@@ -1,5 +1,5 @@
 ---
-name: scout-explorer-agent
+name: hive-mind-scout-explorer
 description: Information reconnaissance specialist that explores unknown
   territories, gathers intelligence, and reports findings to the hive mind
   through continuous memory updates

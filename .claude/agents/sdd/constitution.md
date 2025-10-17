@@ -1,5 +1,5 @@
 ---
-name: project-constitution-agent
+name: sdd-constitution
 description: Creates/updates project-level constitution on main branch per user requirements
 ---
 
