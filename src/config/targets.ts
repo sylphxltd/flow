@@ -118,6 +118,29 @@ export const TARGET_REGISTRY: Record<string, TargetDefinition> = {
     category: 'cli',
     isImplemented: false, // Future implementation
   },
+
+  'claude-code': {
+    id: 'claude-code',
+    name: 'Claude Code',
+    description: 'Claude Code CLI with YAML front matter agents (.claude/agents/*.md)',
+    config: {
+      agentDir: '.claude/agents',
+      agentExtension: '.md',
+      agentFormat: 'yaml-frontmatter',
+      stripYaml: false,
+      flatten: false,
+      configFile: '.mcp.json',
+      configSchema: null,
+      mcpConfigPath: 'mcpServers',
+      installation: {
+        createAgentDir: true,
+        createConfigFile: true,
+        supportedMcpServers: true,
+      },
+    },
+    category: 'cli',
+    isImplemented: true,
+  },
 };
 
 /**

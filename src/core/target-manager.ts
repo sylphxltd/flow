@@ -51,6 +51,7 @@ export class TargetManager {
     try {
       // Import transformers dynamically to avoid circular dependencies
       const { OpenCodeTransformer } = await import('../transformers/opencode.js');
+      const { ClaudeCodeTransformer } = await import('../transformers/claude-code.js');
       const { CursorTransformer } = await import('../transformers/cursor.js');
       const { VSCodeTransformer } = await import('../transformers/vscode.js');
 
@@ -58,6 +59,11 @@ export class TargetManager {
       this.registerTransformer(
         'opencode',
         new OpenCodeTransformer(getTargetDefinition('opencode').config)
+      );
+
+      this.registerTransformer(
+        'claude-code',
+        new ClaudeCodeTransformer(getTargetDefinition('claude-code').config)
       );
 
       // Register future transformers (not implemented yet)
@@ -206,6 +212,22 @@ export class TargetManager {
         check: async () => {
           const configPath = path.join(cwd, 'sylphx.json');
           const agentDir = path.join(cwd, '.sylphx');
+          const configExists = await fs
+            .access(configPath)
+            .then(() => true)
+            .catch(() => false);
+          const agentDirExists = await fs
+            .access(agentDir)
+            .then(() => true)
+            .catch(() => false);
+          return configExists || agentDirExists;
+        },
+      },
+      {
+        target: 'claude-code',
+        check: async () => {
+          const configPath = path.join(cwd, '.mcp.json');
+          const agentDir = path.join(cwd, '.claude');
           const configExists = await fs
             .access(configPath)
             .then(() => true)

@@ -68,6 +68,17 @@ var MCP_SERVER_REGISTRY = {
     requiredEnvVars: ["GEMINI_API_KEY"],
     category: "ai",
     defaultInInit: true
+  },
+  grep: {
+    id: "grep",
+    name: "grep",
+    description: "GitHub grep MCP server for searching GitHub repositories",
+    config: {
+      type: "remote",
+      url: "https://mcp.grep.app"
+    },
+    category: "external",
+    defaultInInit: false
   }
 };
 function getAllServerIDs() {
@@ -83,6 +94,7 @@ function getServersRequiringAPIKeys() {
 // src/core/init.ts
 import fs3 from "fs";
 import path3 from "path";
+import { fileURLToPath } from "url";
 
 // src/shared.ts
 import fs from "fs";
@@ -306,6 +318,28 @@ var TARGET_REGISTRY = {
     category: "cli",
     isImplemented: false
     // Future implementation
+  },
+  "claude-code": {
+    id: "claude-code",
+    name: "Claude Code",
+    description: "Claude Code CLI with YAML front matter agents (.claude/agents/*.md)",
+    config: {
+      agentDir: ".claude/agents",
+      agentExtension: ".md",
+      agentFormat: "yaml-frontmatter",
+      stripYaml: false,
+      flatten: false,
+      configFile: ".mcp.json",
+      configSchema: null,
+      mcpConfigPath: "mcpServers",
+      installation: {
+        createAgentDir: true,
+        createConfigFile: true,
+        supportedMcpServers: true
+      }
+    },
+    category: "cli",
+    isImplemented: true
   }
 };
 function getAllTargetIDs() {
@@ -365,11 +399,16 @@ var TargetManager = class {
     if (this.initialized) return;
     try {
       const { OpenCodeTransformer } = await import("./opencode-RWJGU63G.js");
+      const { ClaudeCodeTransformer } = await import("./claude-code-IBPMYAVG.js");
       const { CursorTransformer } = await import("./cursor-5ZX6CTBY.js");
       const { VSCodeTransformer } = await import("./vscode-RKRXUQP6.js");
       this.registerTransformer(
         "opencode",
         new OpenCodeTransformer(getTargetDefinition("opencode").config)
+      );
+      this.registerTransformer(
+        "claude-code",
+        new ClaudeCodeTransformer(getTargetDefinition("claude-code").config)
       );
       this.initialized = true;
     } catch (error) {
@@ -484,6 +523,16 @@ var TargetManager = class {
           const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
           return configExists || agentDirExists;
         }
+      },
+      {
+        target: "claude-code",
+        check: async () => {
+          const configPath = path2.join(cwd, ".mcp.json");
+          const agentDir = path2.join(cwd, ".claude");
+          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          return configExists || agentDirExists;
+        }
       }
     ];
     for (const { target, check } of targetChecks) {
@@ -579,9 +628,9 @@ var targetManager = new TargetManager();
 
 // src/core/init.ts
 async function getAgentFiles() {
-  const scriptPath = path3.resolve(process.argv[1]);
-  const scriptDir = path3.dirname(scriptPath);
-  const agentsDir = path3.join(scriptDir, "..", "agents");
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path3.dirname(__filename);
+  const agentsDir = path3.join(__dirname, "..", "agents");
   if (!fs3.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
@@ -638,9 +687,9 @@ async function installAgents(options) {
     console.log("\u2705 Dry run completed - no files were modified");
     return;
   }
-  const scriptPath = path3.resolve(process.argv[1]);
-  const scriptDir = path3.dirname(scriptPath);
-  const agentsSourceDir = path3.join(scriptDir, "agents");
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path3.dirname(__filename);
+  const agentsSourceDir = path3.join(__dirname, "..", "agents");
   for (const agentFile of agentFiles) {
     const sourcePath = path3.join(agentsSourceDir, agentFile);
     const destPath = path3.join(agentsDir, agentFile);
