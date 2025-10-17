@@ -274,6 +274,46 @@ Phase 2 (Sequential):
 - [ ] Performance meets requirements
 - [ ] Ready for deployment
 
+## Iterative Improvement Principles
+
+### When to Loop Back
+
+**Simple Guidelines**:
+- **Research**: If you discover new questions or unknown areas → Do more targeted research
+- **Planning**: If the plan doesn't address all requirements → Refine the plan
+- **Implementation**: If testing finds issues → Fix the specific problems
+- **Testing**: If tests reveal deeper issues → Address the root cause
+- **Review**: If critical issues are found → Go back to appropriate phase
+
+### When to Jump Between Phases
+
+**Ask Yourself**: "What's the most efficient way to fix this?"
+
+**Jump Back to Research**:
+- Fundamental approach is wrong
+- Requirements are completely misunderstood
+- Technical solution is impossible
+- Major new constraints discovered
+
+**Jump Back to Planning**:
+- Architecture has major flaws
+- Design needs significant changes
+- Scope has changed dramatically
+
+**Fix in Current Phase**:
+- Simple bugs or code issues
+- Minor performance problems
+- Documentation gaps
+
+### Key Decision Principles
+
+**1. Be Practical**: Choose the most direct path to solution
+**2. Consider Cost**: Is it faster to fix or restart?
+**3. Learn from Loops**: Document why the loop was needed to avoid repetition
+**4. Keep Moving Forward**: Don't get stuck in perfectionism
+
+**Simple Rule**: If you're looping more than 2-3 times on the same thing, consider if the approach is fundamentally wrong.
+
 ## Error Handling
 
 ### Simple Problem Resolution
@@ -292,6 +332,8 @@ Phase 2 (Sequential):
 **Problem**: Requirements are unclear or contradictory
 **Solution**: Stop work, clarify requirements, provide options
 
+**Solution**: Use iterative loops with targeted fixes
+
 #### Recovery Process:
 1. **Identify the problem** - What exactly is blocking progress?
 2. **Document the issue** - Clear description of what's wrong
@@ -307,21 +349,32 @@ Phase 2 (Sequential):
 
 **Step 1: Research & Planning (1-2 days)**
 ```
-1. Researcher → Investigate requirements, create research-report.md
-2. Planner → Use research to create implementation-plan.md
+[Parallel in Single Message]:
+→ Researcher: "Investigate requirements and identify patterns"
+→ Planner: "Create implementation roadmap"
+→ Reviewer: "Identify security and compliance requirements"
+→ Tester: "Define test scenarios and edge cases"
+
+✅ Evaluate results: If gaps found → Loop back with targeted research
 ```
 
 **Step 2: Implementation (2-5 days)**
 ```
-- Check if tasks can be parallelized (different files, no dependencies)
-- If yes: Use up to 3 coders in parallel
-- If no: Use 1 coder sequentially
+[Parallel in Single Message]:
+→ Coder 1: "Implement core functionality"
+→ Coder 2: "Implement supporting features"
+→ Coder 3: "Create database schema"
+
+✅ Evaluate results: If issues found → Loop back with targeted fixes
 ```
 
 **Step 3: Testing & Review (1-2 days)**
 ```
-1. Tester → Test implementation, create test-report.md
-2. Reviewer → Review everything, create review-report.md
+[Parallel in Single Message]:
+→ Tester: "Execute comprehensive test suite"
+→ Reviewer: "Perform quality and security review"
+
+✅ Evaluate results: If critical issues → Loop back to implementation
 ```
 
 ### Bug Fix Workflow
@@ -330,17 +383,23 @@ Phase 2 (Sequential):
 
 **Step 1: Investigation (30min - 2h)**
 ```
-Researcher → Analyze bug, create bug-analysis.md
+Researcher → "Analyze bug root cause and identify fix approaches"
+
+✅ Evaluate: If root cause unclear → Loop back with deeper investigation
 ```
 
 **Step 2: Fix (1-4h)**
 ```
-Coder → Implement fix, test locally
+Coder → "Implement fix and verify locally"
+
+✅ Evaluate: If fix incomplete → Loop back with additional fixes
 ```
 
 **Step 3: Validation (30min - 1h)**
 ```
-Tester → Verify fix, create fix-validation.md
+Tester → "Verify fix and test related scenarios"
+
+✅ Evaluate: If new issues found → Loop back to implementation
 ```
 
 ### Research Project Workflow
