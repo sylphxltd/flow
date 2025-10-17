@@ -102,9 +102,25 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
   }
   /**
    * Transform MCP server configuration for Claude Code
-   * Claude Code expects MCP config under the 'mcpServers' key
+   * Convert OpenCode's local/remote to Claude Code's stdio/http
    */
   transformMCPConfig(config) {
+    if (config.type === "local") {
+      return {
+        type: "stdio",
+        command: config.command,
+        ...config.environment && { env: config.environment }
+      };
+    } else if (config.type === "remote") {
+      const httpConfig = {
+        type: "http",
+        url: config.url
+      };
+      if (config.headers) {
+        httpConfig.headers = config.headers;
+      }
+      return httpConfig;
+    }
     return config;
   }
   /**
@@ -172,6 +188,14 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
     help += `  {
 `;
     help += `    "mcpServers": {
+`;
+    help += `      "filesystem": {
+`;
+    help += `        "type": "stdio",
+`;
+    help += `        "command": ["npx", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+`;
+    help += `      },
 `;
     help += `      "api-server": {
 `;

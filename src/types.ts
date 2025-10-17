@@ -41,14 +41,15 @@ export interface CommandArgument {
 }
 
 export interface MCPServerConfig {
-  type: 'local';
+  type: 'local';  // For OpenCode (stdio equivalent)
   command: string[];
   environment?: Record<string, string>;
 }
 
 export interface MCPServerConfigHTTP {
-  type: 'remote';
+  type: 'remote';  // For OpenCode (http equivalent)
   url: string;
+  headers?: Record<string, string>;
 }
 
 export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP;

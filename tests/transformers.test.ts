@@ -349,4 +349,80 @@ Second content`;
       expect(result).toContain('Second content');
     });
   });
+
+  describe('MCP Configuration', () => {
+    it('should transform OpenCode local config to Claude Code stdio', async () => {
+      const localConfig = {
+        type: 'local' as const,
+        command: ['npx', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
+        environment: {
+          NODE_ENV: 'production'
+        }
+      };
+
+      const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(localConfig);
+
+      expect(result).toEqual({
+        type: 'stdio',
+        command: ['npx', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
+        env: {
+          NODE_ENV: 'production'
+        }
+      });
+    });
+
+    it('should transform OpenCode remote config to Claude Code http', async () => {
+      const remoteConfig = {
+        type: 'remote' as const,
+        url: 'https://api.example.com/mcp',
+        headers: {
+          'Authorization': 'Bearer token123'
+        }
+      };
+
+      const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(remoteConfig);
+
+      expect(result).toEqual({
+        type: 'http',
+        url: 'https://api.example.com/mcp',
+        headers: {
+          'Authorization': 'Bearer token123'
+        }
+      });
+    });
+
+    it('should handle OpenCode local config without environment variables', async () => {
+      const localConfig = {
+        type: 'local' as const,
+        command: ['npx', '@modelcontextprotocol/server-git', '.']
+      };
+
+      const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(localConfig);
+
+      expect(result).toEqual({
+        type: 'stdio',
+        command: ['npx', '@modelcontextprotocol/server-git', '.']
+      });
+      expect(result).not.toHaveProperty('env');
+    });
+
+    it('should handle OpenCode remote config without headers', async () => {
+      const remoteConfig = {
+        type: 'remote' as const,
+        url: 'https://mcp.example.com'
+      };
+
+      const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(remoteConfig);
+
+      expect(result).toEqual({
+        type: 'http',
+        url: 'https://mcp.example.com'
+      });
+      expect(result).not.toHaveProperty('headers');
+    });
+  });
 });
