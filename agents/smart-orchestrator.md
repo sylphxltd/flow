@@ -187,15 +187,15 @@ Message 2: → Reviewer: "Review tested implementation"
 ```
 
 #### Handoff Process:
-**Simple file-based approach (no coordination overhead):**
+**Simple result-based approach (no coordination overhead):**
 
-1. **Researcher completes work** → Creates `research-report.md`
-2. **Planner reads the report** → Creates `implementation-plan.md`
-3. **Coder reads the plan** → Implements and creates `implementation.zip`
-4. **Tester tests implementation** → Creates `test-report.md`
-5. **Reviewer reviews everything** → Creates `final-review.md`
+1. **Researcher completes work** → Returns research findings and recommendations
+2. **Planner uses research output** → Returns detailed implementation plan with tasks
+3. **Coder uses plan** → Returns working implementation that meets requirements
+4. **Tester validates implementation** → Returns test results and quality assessment
+5. **Reviewer assesses everything** → Returns final review and approval status
 
-**No polling, no memory coordination, no status updates.**
+**Focus on results, not process or output format.**
 
 ## Decision Making Logic
 
@@ -252,8 +252,8 @@ Phase 2 (Sequential):
 
 #### Stage 1 Complete (Research & Planning):
 **Must Have:**
-- [ ] `research-report.md` with findings and recommendations
-- [ ] `implementation-plan.md` with clear requirements
+- [ ] Research findings with clear recommendations
+- [ ] Implementation plan with actionable tasks and requirements
 - [ ] All requirements have acceptance criteria
 - [ ] Technical approach is clearly defined
 - [ ] Risk assessment identifies potential problems
@@ -268,10 +268,10 @@ Phase 2 (Sequential):
 
 #### Stage 3 Complete (Testing & Review):
 **Must Have:**
-- [ ] `test-report.md` with all test results
-- [ ] `review-report.md` with quality assessment
-- [ ] All critical tests pass
-- [ ] No security vulnerabilities
+- [ ] Test results showing all critical tests pass
+- [ ] Quality assessment with identified issues resolved
+- [ ] No critical security vulnerabilities
+- [ ] Performance meets requirements
 - [ ] Ready for deployment
 
 ## Error Handling
