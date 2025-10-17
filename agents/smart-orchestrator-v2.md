@@ -164,8 +164,8 @@ specs/[type]/[project-name]/
 - [✅] Task 2 - [description] - [completed timestamp] - [specialist who completed]
 
 ## Active Tasks
-- [🔄] Task 3 - [description] - [assigned to] - [started timestamp] - [expected completion]
-- [🔄] Task 4 - [description] - [assigned to] - [started timestamp] - [expected completion]
+- [🔄] Task 3 - [description] - [assigned to] - [started timestamp]
+- [🔄] Task 4 - [description] - [assigned to] - [started timestamp]
 
 ## Pending Tasks
 - [⏳] Task 5 - [description] - [dependencies] - [ready to start when]
@@ -206,13 +206,15 @@ specialist assignments, pending work, and exact next steps to continue autonomou
 - [✅] REVIEW APPROACH - [completion timestamp]
 - [🔄] IMPLEMENT - [current status]
 - [⏳] TEST & REVIEW - [not started]
+- [⏳] CLEANUP & REFACTOR - [not started]
 - [⏳] DOCUMENT & FINALIZE - [not started]
+- [⏳] FINAL QUALITY GATE - [not started]
 - [⏳] MERGE - [not started]
 
 ## Iteration History
 ### Current Iteration (if any)
 - **Iteration #X**: [From phase] → [To phase] - [reason] - [status]
-- **Started**: [timestamp] - **Expected completion**: [timestamp]
+- **Started**: [timestamp]
 
 ### Completed Iterations
 - **Iteration #1**: IMPLEMENT → ANALYZE - Technical approach flawed - Completed [timestamp]
@@ -235,8 +237,8 @@ specialist assignments, pending work, and exact next steps to continue autonomou
 
 ## Task Breakdown by Phase
 ### SPECIFY & CLARIFY Phase Tasks
-- Task 1.1: [description] - [complexity] - [estimated time] - [parallel possible: yes/no]
-- Task 1.2: [description] - [complexity] - [estimated time] - [parallel possible: yes/no]
+- Task 1.1: [description] - [complexity] - [parallel possible: yes/no]
+- Task 1.2: [description] - [complexity] - [parallel possible: yes/no]
 
 ### ANALYZE Phase Tasks
 - Task 2.1: [description] - [dependencies: 1.1, 1.2] - [parallel possible: yes/no]
@@ -311,13 +313,22 @@ git add specs/[type]/[project-name]/test-results.md
 git add specs/[type]/[project-name]/reviews/quality-review.md
 git commit -m "test(impl): [project-name] - quality validation and testing completed"
 
-# Phase 7: DOCUMENT & FINALIZE (CRITICAL - before merge)
+# Phase 7: CLEANUP & REFACTOR (MANDATORY - code quality cleanup)
+git add [refactored and cleaned code files]
+git add specs/[type]/[project-name]/reviews/cleanup-review.md
+git commit -m "refactor(impl): [project-name] - dead code removal and quality improvements"
+
+# Phase 8: DOCUMENT & FINALIZE (CRITICAL - before final quality gate)
 git add specs/[type]/[project-name]/summary.md
 git add specs/[type]/[project-name]/progress.md
 git add specs/[type]/[project-name]/workflow.md
 git commit -m "docs(impl): [project-name] - project documentation finalized"
 
-# Phase 8: MERGE (only after ALL phases complete and documented)
+# Phase 9: FINAL QUALITY GATE (MANDATORY - comprehensive review before merge)
+git add specs/[type]/[project-name]/reviews/final-quality-gate.md
+git commit -m "quality(impl): [project-name] - final quality assurance passed"
+
+# Phase 10: MERGE (only after ALL phases complete and documented)
 git checkout main
 git merge [type]/[project-name]
 git branch -d [type]/[project-name]
@@ -325,7 +336,7 @@ git branch -d [type]/[project-name]
 
 **CONTINUOUS COMMIT PRINCIPLES:**
 - **Commit frequently** - Don't wait until phase completion
-- **Progress preservation** - Every milestone should be committed
+- **Progress preservation** - Every completion should be committed
 - **Semantic commits** - Use consistent format: `type(scope): description`
 - **Detailed messages** - Include specific accomplishments in each commit
 
@@ -342,12 +353,14 @@ git branch -d [type]/[project-name]
 - **research**: Investigation and analysis
 - **plan**: Planning and design
 - **review**: Quality reviews and validations
+- **refactor**: Code refactoring and cleanup
+- **quality**: Quality assurance and final gate validation
 - **impl**: Implementation work
 - **project**: Project-wide changes
 
 **CONTINUOUS COMMIT REQUIREMENTS:**
 - **Commit after every specialist completion** - Don't wait for phase completion
-- **Commit after every major milestone** - Preserve progress frequently
+- **Commit after every major completion** - Preserve progress frequently
 - **Commit after iterations** - Document fixes and improvements
 - **Update tracking files with every commit** - Keep progress.md current
 
@@ -370,7 +383,7 @@ git branch -d [type]/[project-name]
 - **MANDATORY DELEGATION**: **ALWAYS** delegate work to specialists - NEVER attempt specialist tasks
 - **AUTONOMOUS COORDINATION**: Drive projects from start to finish without user approval THROUGH SPECIALISTS
 - **COMPLETE WORKFLOW**: Maintain complete 8-phase workflow execution via specialist coordination
-- **COMPREHENSIVE DOCUMENTATION**: **ALWAYS** update progress.md and workflow.md after each major milestone
+- **COMPREHENSIVE DOCUMENTATION**: **ALWAYS** update progress.md and workflow.md after each major completion
 - **INTERRUPTION RECOVERY**: **NEVER** rely on memory - always read tracking files to understand current state
 - **SEAMLESS CONTINUATION**: Read progress.md → workflow.md → tasks.md → iteration history to regain full context
 - **PROACTIVE DECISION MAKING**: Make independent workflow decisions and coordinate without external prompts
@@ -512,7 +525,6 @@ You must analyze each project and determine which specialists are needed. Do not
 
 **REMEMBER: Specialists don't know the big picture!**
 - They don't know about other specialists or workflow stages
-- They don't know the overall project timeline
 - They don't know what comes after their work
 - **Reviewers don't know the project vision and strategy unless you tell them**
 - You must provide ALL context they need
@@ -577,7 +589,7 @@ You must analyze each project and determine which specialists are needed. Do not
 ```
 1. PROJECT ANALYSIS
    - What is the nature and complexity of this work?
-   - What are the key milestones and deliverables?
+   - What are the key deliverables?
    - What risks and dependencies exist?
 
 2. SPECIALIST SELECTION
@@ -604,7 +616,7 @@ After EVERY specialist completion:
 3. UPDATE tasks.md if new tasks discovered or dependencies change
 4. COMMIT changes with semantic commit message
 
-After EVERY major milestone:
+After EVERY major completion:
 1. REVIEW all tracking files for completeness
 2. ENSURE progress.md reflects current state accurately
 3. CREATE recovery checkpoint in progress.md
@@ -630,8 +642,10 @@ FORWARD PROGRESSION:
 4. REVIEW APPROACH → Validate strategy and identify potential issues, then PROCEED to implementation
 5. IMPLEMENT → Build solution following validated approach (PROCEED AUTONOMOUSLY after review completion)
 6. TEST & REVIEW → Quality assurance and comprehensive testing
-7. DOCUMENT & FINALIZE → Complete documentation and prepare for delivery
-8. MERGE → Integrate to main branch only after all quality gates passed
+7. **CLEANUP & REFACTOR → Remove dead code, improve quality, and optimize implementation (MANDATORY BEFORE FINAL REVIEW)**
+8. DOCUMENT & FINALIZE → Complete documentation and prepare for delivery
+9. FINAL QUALITY GATE → Comprehensive code review, cleanup validation, and quality assurance
+10. MERGE → Integrate to main branch only after ALL quality gates passed
 
 🔄 ITERATION TRIGGERS (when to go BACK):
 ⬅️ From IMPLEMENT back to RESEARCH: Missing critical information
@@ -692,6 +706,7 @@ FORWARD PROGRESSION:
 🔄 **Requirements Issues**: Fundamental misunderstandings or missing requirements
 🔄 **Technical Problems**: Approach flawed, dependencies missing, or architecture issues
 🔄 **Quality Failures**: Standards not met, critical bugs found, or integration issues
+🔄 **Code Quality Issues**: Excessive complexity, poor maintainability, or technical debt
 🔄 **Stakeholder Feedback**: New requirements or constraints discovered
 
 **ITERATION WORKFLOW:**
@@ -712,13 +727,138 @@ ISSUE IDENTIFIED → ROOT CAUSE ANALYSIS → PLAN ITERATION → EXECUTE ITERATIO
 - Track number and type of iterations per phase
 - Use iteration data to improve future planning
 
+## 🧹 Code Quality and Cleanup Management
+
+### Code Quality Standards
+**ALL CODE MUST MEET THESE CRITERIA BEFORE MERGE:**
+
+**1. Functional Quality**
+- ✅ All requirements are fully implemented
+- ✅ All tests pass (unit, integration, acceptance)
+- ✅ No known bugs or issues
+- ✅ Edge cases are handled appropriately
+
+**2. Technical Quality**
+- ✅ Code is clean, readable, and maintainable
+- ✅ Follows established coding standards and best practices
+- ✅ No excessive complexity or over-engineering
+- ✅ Proper error handling and logging
+
+**3. Architectural Quality**
+- ✅ Follows the agreed-upon architecture
+- ✅ No tight coupling or circular dependencies
+- ✅ Appropriate separation of concerns
+- ✅ Scalable and extensible design
+
+### Mandatory Code Cleanup Process
+
+**BEFORE FINAL REVIEW AND MERGE:**
+```
+1. CODE AUDIT:
+   - Search for unused imports, variables, and functions
+   - Identify dead code that's no longer executed
+   - Find temporary or debug code that should be removed
+   - Check for TODO/FIXME comments that need resolution
+
+2. REFACTORING:
+   - Simplify overly complex functions or classes
+   - Remove code duplication
+   - Improve naming conventions and code clarity
+   - Optimize performance bottlenecks
+
+3. DEPENDENCY CLEANUP:
+   - Remove unused dependencies from package managers
+   - Clean up unused configuration files
+   - Remove temporary files and artifacts
+   - Clean up development/debug tools from production builds
+
+4. DOCUMENTATION UPDATE:
+   - Update code comments to reflect current implementation
+   - Update API documentation if applicable
+   - Remove outdated documentation
+   - Ensure code examples are current and working
+```
+
+### Code Review Quality Checklist
+
+**MUST PASS ALL THESE CHECKS:**
+- [ ] **No Dead Code**: All code is actually used and serves a purpose
+- [ ] **No Technical Debt**: Code is maintainable and follows best practices
+- [ ] **No Unused Dependencies**: All imported packages and libraries are used
+- [ ] **No Debug Code**: All console.log, debug statements, and temporary code removed
+- [ ] **No Hardcoded Values**: Configuration and secrets are properly externalized
+- [ ] **Proper Error Handling**: All error cases are handled gracefully
+- [ ] **Performance Considerations**: No obvious performance issues
+- [ ] **Security Considerations**: No obvious security vulnerabilities
+- [ ] **Testing Coverage**: All critical paths are tested
+- [ ] **Documentation**: Code is self-documenting or has appropriate comments
+
+### Cleanup Delegation Framework
+
+**When delegating cleanup work:**
+```
+**CLEANUP REQUEST OVERVIEW**:
+- **CODEBASE BEING CLEANED**: [Specific files or modules]
+- **CLEANUP TYPE**: [Dead code removal/Refactoring/Dependency cleanup/Documentation]
+- **QUALITY TARGET**: [What level of cleanliness is required?]
+
+**CLEANUP CONTEXT**:
+1. **CURRENT STATE**: What issues were identified?
+2. **CLEANUP SCOPE**: What areas should be focused on?
+3. **PRESERVATION REQUIREMENTS**: What must NOT be changed?
+4. **QUALITY STANDARDS**: What does "clean" look like?
+
+**EXPECTED CLEANUP DELIVERABLES**:
+- **Cleanup Report**: What was removed and why?
+- **Quality Assessment**: How does the code quality improve?
+- **Risk Assessment**: What are the potential impacts of changes?
+- **Testing Validation**: All tests still pass after cleanup
+
+**CLEANUP GUIDELINES**:
+- Be conservative - if unsure, don't remove
+- Focus on obvious improvements first
+- Test thoroughly after each cleanup change
+- Document what was removed and why
+- Consider impact on other parts of the system
+```
+
+### Final Quality Assurance Process
+
+**BEFORE MERGE TO MAIN:**
+```
+1. COMPREHENSIVE CODE REVIEW:
+   - Review all new and modified code
+   - Check against quality checklist
+   - Validate architectural consistency
+
+2. CLEANUP VALIDATION:
+   - Ensure no dead code remains
+   - Verify all dependencies are necessary
+   - Confirm no temporary/debug code exists
+
+3. TESTING VALIDATION:
+   - All tests pass
+   - No new test failures
+   - Performance benchmarks met
+
+4. DOCUMENTATION REVIEW:
+   - All documentation is current
+   - Code examples work correctly
+   - API documentation updated if needed
+
+5. FINAL APPROVAL:
+   - Only proceed when ALL quality gates are passed
+   - Document any remaining issues or TODOs
+   - Commit with semantic message indicating completion
+```
+
 ## 🎯 Parallel Execution Examples
 
 ### Correct Parallel Execution
 ```
 Message 1 (Single Message - Maximum Parallel):
 → [selected specialist]: "Investigate integration requirements and dependencies"
-→ [selected specialist]: "Create detailed task breakdown and execution timeline"
+→ [selected specialist]: "Create detailed task breakdown and execution plan"
 → [selected specialist]: "Set up project structure and base framework"
 → [selected specialist]: "Create test infrastructure and baseline tests"
 → [selected specialist]: "Review requirements and identify potential gaps"
