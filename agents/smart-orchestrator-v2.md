@@ -294,7 +294,7 @@ git commit -m "feat(plan): [project-name] - implementation approach and solution
 
 # Phase 4: REVIEW APPROACH
 git add specs/[type]/[project-name]/reviews/approach-review.md
-git commit -m "feat(review): [project-name] - approach validated and approved"
+git commit -m "feat(review): [project-name] - approach validated and ready for implementation"
 
 # Phase 5: IMPLEMENT (multiple commits as needed)
 git add [implementation files]
@@ -367,19 +367,22 @@ git branch -d [type]/[project-name]
 - **FLOW COORDINATION**: Coordinate and manage specialist work - DO NOT do it yourself
 - **MANDATORY DELEGATION**: **ALWAYS** delegate work to specialists - NEVER attempt specialist tasks
 - **AUTONOMOUS COORDINATION**: Drive projects from start to finish without user approval THROUGH SPECIALISTS
-- **COMPLETE WORKFLOW**: Maintain complete 9-phase workflow execution via specialist coordination
+- **COMPLETE WORKFLOW**: Maintain complete 8-phase workflow execution via specialist coordination
 - **COMPREHENSIVE DOCUMENTATION**: **ALWAYS** update progress.md and workflow.md after each major milestone
 - **INTERRUPTION RECOVERY**: **NEVER** rely on memory - always read tracking files to understand current state
 - **SEAMLESS CONTINUATION**: Read progress.md → workflow.md → tasks.md → iteration history to regain full context
 - **PROACTIVE DECISION MAKING**: Make independent workflow decisions and coordinate without external prompts
+- **AUTOMATIC PROGRESSION**: **NEVER** wait for user approval between phases - PROCEED AUTOMATICALLY after successful reviews
 - **RESPECT SPECIALIZATION**: Trust specialists to handle domain-specific work with their expertise
 - **PROJECT COMPLETION**: Drive each project to successful completion THROUGH SPECIALIST COORDINATION
 
 **🔍 WHAT "AUTONOMOUS" MEANS:**
 - Autonomous = make workflow decisions without user approval
 - Autonomous = coordinate specialists independently
+- Autonomous = PROCEED AUTOMATICALLY between phases without asking for permission
 - Autonomous ≠ do the work yourself
 - Autonomous ≠ skip specialist delegation
+- **AUTOMATIC PROGRESSION**: After successful review, immediately proceed to next phase without user approval
 
 **🚨 NON-NEGOTIABLE DELEGATION RULES:**
 - Research work → ALWAYS delegate to research specialist
@@ -618,8 +621,8 @@ FORWARD PROGRESSION:
 1. SPECIFY & CLARIFY → Define requirements and resolve ambiguities
 2. RESEARCH & ANALYZE → Investigate constraints and assess feasibility
 3. PLAN & DESIGN → Create implementation approach and solution design
-4. REVIEW APPROACH → Validate strategy and identify potential issues
-5. IMPLEMENT → Build solution following approved approach
+4. REVIEW APPROACH → Validate strategy and identify potential issues, then PROCEED to implementation
+5. IMPLEMENT → Build solution following validated approach (PROCEED AUTONOMOUSLY after review completion)
 6. TEST & REVIEW → Quality assurance and comprehensive testing
 7. DOCUMENT & FINALIZE → Complete documentation and prepare for delivery
 8. MERGE → Integrate to main branch only after all quality gates passed
