@@ -140,7 +140,7 @@ This is the agent content.`;
       expect(result).toContain('name: coder');
       expect(result).toContain('description: Implementation specialist');
       expect(result).not.toContain('tools:'); // Tools should be omitted
-      expect(result).toContain('mode: subagent');
+      expect(result).not.toContain('mode: subagent'); // Mode should be removed
       expect(result).toContain('# Code Implementation Agent');
     });
 
@@ -162,10 +162,10 @@ temperature: 0.1
       expect(result).toContain('name: analyst');
       expect(result).toContain('description: Analysis specialist');
       expect(result).not.toContain('tools:');
-      expect(result).toContain('temperature: 0.1');
+      expect(result).not.toContain('temperature: 0.1'); // Temperature should be removed
     });
 
-    it('should set default model to inherit', async () => {
+    it('should not include model field when it is inherit (default)', async () => {
       const content = `---
 name: test-agent
 description: Test agent
@@ -176,7 +176,22 @@ Test content`;
       const result = await transformer.transformAgentContent(content);
 
       expect(result).toContain('name: test-agent');
-      expect(result).toContain('model: inherit');
+      expect(result).not.toContain('model: inherit'); // Should not include default model
+    });
+
+    it('should include model field when it is not inherit', async () => {
+      const content = `---
+name: test-agent
+description: Test agent
+model: claude-3-5-sonnet-20241022
+---
+
+Test content`;
+
+      const result = await transformer.transformAgentContent(content);
+
+      expect(result).toContain('name: test-agent');
+      expect(result).toContain('model: claude-3-5-sonnet-20241022');
     });
 
     it('should handle content without name field by extracting from content', async () => {
@@ -194,12 +209,15 @@ This is a code review agent.`;
       expect(result).toContain('description: Code review specialist');
     });
 
-    it('should preserve temperature and mode fields', async () => {
+    it('should remove unsupported fields like temperature and mode', async () => {
       const content = `---
 name: custom-agent
 description: Custom agent
 temperature: 0.3
 mode: custom
+tools:
+  - Read
+  - Write
 ---
 
 Custom content`;
@@ -207,8 +225,10 @@ Custom content`;
       const result = await transformer.transformAgentContent(content);
 
       expect(result).toContain('name: custom-agent');
-      expect(result).toContain('temperature: 0.3');
-      expect(result).toContain('mode: custom');
+      expect(result).toContain('description: Custom agent');
+      expect(result).not.toContain('temperature: 0.3');
+      expect(result).not.toContain('mode: custom');
+      expect(result).not.toContain('tools:');
     });
   });
 
@@ -236,18 +256,19 @@ Complex agent content`;
       const opencodeResult = await opencodeTransformer.transformAgentContent(content);
       const claudeCodeResult = await claudeCodeTransformer.transformAgentContent(content);
 
-      // Both should preserve complex structure
+      // OpenCode should preserve complex structure
       expect(opencodeResult).toContain('advanced:');
       expect(opencodeResult).toContain('enabled: true');
       expect(opencodeResult).toContain('level: 5');
       expect(opencodeResult).toContain('- advanced');
       expect(opencodeResult).toContain('- specialized');
 
-      expect(claudeCodeResult).toContain('advanced:');
-      expect(claudeCodeResult).toContain('enabled: true');
-      expect(claudeCodeResult).toContain('level: 5');
-      expect(claudeCodeResult).toContain('- advanced');
-      expect(claudeCodeResult).toContain('- specialized');
+      // Claude Code should only keep name and description, remove complex structures
+      expect(claudeCodeResult).toContain('name: complex-agent');
+      expect(claudeCodeResult).toContain('description: Agent with complex config');
+      expect(claudeCodeResult).not.toContain('advanced:');
+      expect(claudeCodeResult).not.toContain('settings:');
+      expect(claudeCodeResult).not.toContain('tags:');
     });
 
     it('should handle boolean and number values correctly', async () => {
@@ -265,10 +286,13 @@ Typed agent content`;
       const transformer = new ClaudeCodeTransformer(claudeCodeConfig);
       const result = await transformer.transformAgentContent(content);
 
-      expect(result).toContain('enabled: true');
-      expect(result).toContain('count: 42');
-      expect(result).toContain('threshold: 0.75');
-      expect(result).toContain('mode: test');
+      // Claude Code should only keep name and description
+      expect(result).toContain('name: typed-agent');
+      expect(result).toContain('description: Agent with typed values');
+      expect(result).not.toContain('enabled: true');
+      expect(result).not.toContain('count: 42');
+      expect(result).not.toContain('threshold: 0.75');
+      expect(result).not.toContain('mode: test');
     });
   });
 

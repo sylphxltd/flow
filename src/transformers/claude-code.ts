@@ -40,16 +40,22 @@ export class ClaudeCodeTransformer extends BaseTransformer {
     // Extract description from metadata or content
     const description = openCodeMetadata.description || this.extractDescription(content);
 
-    // Start with all metadata, then override specific fields
-    const result: any = { ...openCodeMetadata };
+    // Only keep supported fields for Claude Code
+    const result: any = {
+      name: agentName,
+      description: description,
+    };
 
-    // Set required fields
-    result.name = agentName;
-    result.description = description;
-    result.model = result.model || 'inherit';
+    // Only add model if it exists and is not 'inherit' (default)
+    if (openCodeMetadata.model && openCodeMetadata.model !== 'inherit') {
+      result.model = openCodeMetadata.model;
+    }
 
-    // Remove tools field to allow all tools by default
-    delete result.tools;
+    // Remove unsupported fields that might cause issues
+    // - tools: removed to allow all tools by default
+    // - mode: not supported by Claude Code
+    // - temperature: not supported by Claude Code
+    // - Other custom fields should also be removed for compatibility
 
     return result;
   }
@@ -156,11 +162,11 @@ export class ClaudeCodeTransformer extends BaseTransformer {
     help += `  ---\n`;
     help += `  name: "code-reviewer"\n`;
     help += `  description: "Expert code review specialist"\n`;
-    help += `  model: "inherit"\n`;
     help += `  ---\n\n`;
     help += `  Agent content here...\n\n`;
-    help += `Note: Tools field intentionally omitted to allow all tools by default.\n`;
-    help += `This is necessary because Claude Code uses whitelist model but doesn't support disallowed_tools yet.\n\n`;
+    help += `Note: Only 'name' and 'description' fields are supported.\n`;
+    help += `Tools field omitted to allow all tools by default (whitelist model limitation).\n`;
+    help += `Unsupported fields (mode, temperature, etc.) are automatically removed.\n\n`;
 
     help += `Example MCP Configuration:\n`;
     help += `  {\n`;

@@ -25,11 +25,13 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
   convertToClaudeCodeFormat(openCodeMetadata, content) {
     const agentName = openCodeMetadata.name || this.extractAgentName(content, openCodeMetadata);
     const description = openCodeMetadata.description || this.extractDescription(content);
-    const result = { ...openCodeMetadata };
-    result.name = agentName;
-    result.description = description;
-    result.model = result.model || "inherit";
-    delete result.tools;
+    const result = {
+      name: agentName,
+      description
+    };
+    if (openCodeMetadata.model && openCodeMetadata.model !== "inherit") {
+      result.model = openCodeMetadata.model;
+    }
     return result;
   }
   /**
@@ -117,17 +119,17 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
 `;
     help += `  description: "Expert code review specialist"
 `;
-    help += `  model: "inherit"
-`;
     help += `  ---
 
 `;
     help += `  Agent content here...
 
 `;
-    help += `Note: Tools field intentionally omitted to allow all tools by default.
+    help += `Note: Only 'name' and 'description' fields are supported.
 `;
-    help += `This is necessary because Claude Code uses whitelist model but doesn't support disallowed_tools yet.
+    help += `Tools field omitted to allow all tools by default (whitelist model limitation).
+`;
+    help += `Unsupported fields (mode, temperature, etc.) are automatically removed.
 
 `;
     help += `Example MCP Configuration:
