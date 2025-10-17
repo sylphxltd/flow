@@ -634,8 +634,10 @@ async function getAgentFiles() {
   if (!fs3.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
-  const subdirs = fs3.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   const allFiles = [];
+  const rootFiles = fs3.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md")).map((dirent) => dirent.name);
+  allFiles.push(...rootFiles);
+  const subdirs = fs3.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   for (const subdir of subdirs) {
     const subdirPath = path3.join(agentsDir, subdir);
     const files = collectFiles(subdirPath, [".md"]);

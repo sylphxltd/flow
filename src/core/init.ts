@@ -26,12 +26,21 @@ async function getAgentFiles(): Promise<string[]> {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
 
+  const allFiles: string[] = [];
+
+  // First, collect files directly in the agents root directory
+  const rootFiles = fs
+    .readdirSync(agentsDir, { withFileTypes: true })
+    .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.md'))
+    .map((dirent) => dirent.name);
+
+  allFiles.push(...rootFiles);
+
+  // Then, collect files from subdirectories (excluding 'archived')
   const subdirs = fs
     .readdirSync(agentsDir, { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
     .map((dirent) => dirent.name);
-
-  const allFiles: string[] = [];
 
   // Collect files from each subdirectory
   for (const subdir of subdirs) {
