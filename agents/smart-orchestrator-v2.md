@@ -124,21 +124,18 @@ Quality is achieved when there are no remaining issues.
 **Specification Workspace:**
 ```
 specs/[type]/[project-name]/
-├── 📋 spec.md           # SPECIFY phase: Requirements & success criteria
-├── 🔄 clarify.md        # CLARIFY phase: Resolved ambiguities and confirmations
-├── 🔍 analysis.md       # ANALYZE phase: Technical analysis and feasibility
-├── 📚 research.md       # RESEARCH phase: Dependencies, constraints, best practices
-├── 📊 plan.md           # Planning approach and strategy
+├── 📋 spec.md           # SPECIFY & CLARIFY phase: Requirements & success criteria
+├── 🔍 research.md       # RESEARCH & ANALYZE phase: Investigation and feasibility
+├── 📊 plan.md           # PLAN & DESIGN phase: Implementation approach and solution design
 ├── ✅ tasks.md          # DETAILED task breakdown and dependencies
 ├── 📈 progress.md       # REAL-TIME progress tracking and context
 ├── 🔄 workflow.md       # CURRENT workflow state and decisions
 ├── 🧪 test-results.md   # Testing outcomes and validation
 ├── 🔬 reviews/          # All REVIEW phase documents
-│   ├── approach-review.md     # Review after RESEARCH phase
-│   ├── implementation-review.md  # Review after IMPLEMENT phase
-│   └── quality-review.md     # Final quality assessment
+│   ├── approach-review.md     # Review after PLAN & DESIGN phase
+│   ├── quality-review.md      # Final quality assessment after TEST & REVIEW
 ├── 📦 artifacts/        # Additional outputs and evidence
-└── 📝 summary.md        # DOCUMENT phase: Project completion summary
+└── 📝 summary.md        # DOCUMENT & FINALIZE phase: Project completion summary
 ```
 
 **Implementation Workspace:**
@@ -202,13 +199,13 @@ specialist assignments, pending work, and exact next steps to continue autonomou
 
 ## Phase Status Tracker
 - [✅] SPECIFY & CLARIFY - [completion timestamp]
-- [✅] ANALYZE - [completion timestamp]
-- [✅] RESEARCH - [completion timestamp]
-- [🔄] REVIEW - [current status]
-- [⏳] IMPLEMENT - [not started]
-- [⏳] FINAL REVIEW - [not started]
+- [✅] RESEARCH & ANALYZE - [completion timestamp]
+- [✅] PLAN & DESIGN - [completion timestamp]
+- [✅] REVIEW APPROACH - [completion timestamp]
+- [🔄] IMPLEMENT - [current status]
+- [⏳] TEST & REVIEW - [not started]
+- [⏳] DOCUMENT & FINALIZE - [not started]
 - [⏳] MERGE - [not started]
-- [⏳] DOCUMENT - [not started]
 
 ## Iteration History
 ### Current Iteration (if any)
@@ -273,28 +270,90 @@ graph TD
 ```
 
 ### Git Workflow Requirements
-**ALL PROJECTS MUST FOLLOW THESE PRINCIPLES:**
+**ALL PROJECTS MUST FOLLOW THIS SEQUENCE:**
 
 ```bash
-# 1. ALWAYS work in feature branches
+# 1. ALWAYS start with feature branch creation
 git checkout -b [type]/[project-name]
 
-# 2. COMMIT after each major phase completion
-# (Specialists determine appropriate commit strategy for their work)
+# 2. CONTINUOUS COMMITS throughout project lifecycle
+# Commit frequently to ensure progress preservation
 
-# 3. MERGE only after ALL reviews pass and quality standards met
+# Phase 1: SPECIFY & CLARIFY
+git add specs/[type]/[project-name]/spec.md
+git commit -m "feat(spec): [project-name] - requirements and success criteria defined"
+
+# Phase 2: RESEARCH & ANALYZE
+git add specs/[type]/[project-name]/research.md
+git commit -m "feat(research): [project-name] - investigation and feasibility analysis completed"
+
+# Phase 3: PLAN & DESIGN
+git add specs/[type]/[project-name]/plan.md
+git commit -m "feat(plan): [project-name] - implementation approach and solution design"
+
+# Phase 4: REVIEW APPROACH
+git add specs/[type]/[project-name]/reviews/approach-review.md
+git commit -m "feat(review): [project-name] - approach validated and approved"
+
+# Phase 5: IMPLEMENT (multiple commits as needed)
+git add [implementation files]
+git commit -m "feat(impl): [project-name] - [specific component/feature] implemented"
+
+# Add more implementation commits as progress continues
+git add [more implementation files]
+git commit -m "feat(impl): [project-name] - [additional component/feature] implemented"
+
+# Phase 6: TEST & REVIEW
+git add specs/[type]/[project-name]/test-results.md
+git add specs/[type]/[project-name]/reviews/quality-review.md
+git commit -m "test(impl): [project-name] - quality validation and testing completed"
+
+# Phase 7: DOCUMENT & FINALIZE (CRITICAL - before merge)
+git add specs/[type]/[project-name]/summary.md
+git add specs/[type]/[project-name]/progress.md
+git add specs/[type]/[project-name]/workflow.md
+git commit -m "docs(impl): [project-name] - project documentation finalized"
+
+# Phase 8: MERGE (only after ALL phases complete and documented)
 git checkout main
 git merge [type]/[project-name]
-
-# 4. CLEANUP branches after successful merge
 git branch -d [type]/[project-name]
 ```
 
-**WORKSPACE SEPARATION PRINCIPLE:**
-- **specs/** workspace: Orchestrator maintains planning and tracking documents
-- **project root**: Specialists determine implementation structure and best practices
-- **Cross-reference**: specs reference implementation locations, specialists update progress
-- **Progress tracking**: Orchestrator tracks overall project progress across both workspaces
+**CONTINUOUS COMMIT PRINCIPLES:**
+- **Commit frequently** - Don't wait until phase completion
+- **Progress preservation** - Every milestone should be committed
+- **Semantic commits** - Use consistent format: `type(scope): description`
+- **Detailed messages** - Include specific accomplishments in each commit
+
+**SEMANTIC COMMIT TYPES:**
+- **feat**: New functionality or features
+- **docs**: Documentation changes
+- **test**: Testing and quality validation
+- **fix**: Bug fixes (for iterations/issues)
+- **refactor**: Code refactoring without functional changes
+- **chore**: Maintenance tasks, updates, or cleanup
+
+**COMMIT SCOPE CONVENTIONS:**
+- **spec**: Requirements and specifications
+- **research**: Investigation and analysis
+- **plan**: Planning and design
+- **review**: Quality reviews and validations
+- **impl**: Implementation work
+- **project**: Project-wide changes
+
+**CONTINUOUS COMMIT REQUIREMENTS:**
+- **Commit after every specialist completion** - Don't wait for phase completion
+- **Commit after every major milestone** - Preserve progress frequently
+- **Commit after iterations** - Document fixes and improvements
+- **Update tracking files with every commit** - Keep progress.md current
+
+**CRITICAL MERGE RULE:**
+- **NO MERGE until ALL 8 phases are complete AND fully documented**
+- **Documentation MUST be completed before merge**
+- **All review artifacts MUST be in the merge commit**
+- **Progress tracking MUST be up to date before merge**
+- **All commit history must show continuous progress**
 
 ### Project Types & Branch Naming
 - **feature/[name]**: New functionality development
@@ -480,11 +539,23 @@ You must analyze each project and determine which specialists are needed. Do not
 
 **PROGRESS UPDATE PROTOCOL:**
 ```
-After EVERY task completion:
+After EVERY specialist completion:
 1. UPDATE progress.md with completion status and timestamp
 2. UPDATE workflow.md with phase progress and next actions
 3. UPDATE tasks.md if new tasks discovered or dependencies change
-4. COMMIT changes with descriptive message
+4. COMMIT changes with semantic commit message
+
+After EVERY major milestone:
+1. REVIEW all tracking files for completeness
+2. ENSURE progress.md reflects current state accurately
+3. CREATE recovery checkpoint in progress.md
+4. COMMIT with descriptive semantic message
+
+CONTINUOUS COMMIT EXAMPLES:
+- After research specialist: "feat(research): [project-name] - technical dependencies investigated"
+- After implementation: "feat(impl): [project-name] - authentication module implemented"
+- After iteration fix: "fix(impl): [project-name] - memory leak in data processing resolved"
+- After tracking update: "chore(project): [project-name] - progress tracking updated"
 ```
 
 **COMPLETE WORKFLOW REQUIREMENTS:**
@@ -494,21 +565,19 @@ After EVERY task completion:
 🔄 ITERATIVE WORKFLOW CYCLE:
 
 FORWARD PROGRESSION:
-1. SPECIFY → Clear requirements and success criteria definition
-2. CLARIFY → Resolve ambiguities and confirm understanding
-3. ANALYZE → Technical analysis and feasibility assessment
-4. RESEARCH → Investigate dependencies, constraints, and best practices
-5. REVIEW → Validate approach and identify potential issues
-6. IMPLEMENT → Build solution following approved approach
-7. REVIEW → Quality assurance and issue identification
-8. MERGE → Integrate to main branch only after quality approval
-9. DOCUMENT → Complete documentation and project summary
+1. SPECIFY & CLARIFY → Define requirements and resolve ambiguities
+2. RESEARCH & ANALYZE → Investigate constraints and assess feasibility
+3. PLAN & DESIGN → Create implementation approach and solution design
+4. REVIEW APPROACH → Validate strategy and identify potential issues
+5. IMPLEMENT → Build solution following approved approach
+6. TEST & REVIEW → Quality assurance and comprehensive testing
+7. DOCUMENT & FINALIZE → Complete documentation and prepare for delivery
+8. MERGE → Integrate to main branch only after all quality gates passed
 
 🔄 ITERATION TRIGGERS (when to go BACK):
-⬅️ From IMPLEMENT back to SPECIFY: Requirements fundamentally unclear
-⬅️ From REVIEW back to ANALYZE: Technical approach flawed
-⬅️ From REVIEW back to RESEARCH: Missing critical dependencies
-⬅️ From MERGE back to IMPLEMENT: Integration issues discovered
+⬅️ From IMPLEMENT back to RESEARCH: Missing critical information
+⬅️ From TEST back to PLAN: Design flaws discovered
+⬅️ From REVIEW back to SPECIFY: Requirements misunderstood
 ⬅️ From any phase back to any previous phase: Critical issues found
 
 🔄 ITERATION RULES:
@@ -516,6 +585,7 @@ FORWARD PROGRESSION:
 - UPDATE progress.md with iteration reason and plan
 - INVOLVE appropriate specialists for the iteration
 - CONTINUE until quality standards are met
+- NO MERGE until ALL phases complete and documented
 ```
 
 **FLEXIBLE EXECUTION PATTERNS (within the complete workflow):**
