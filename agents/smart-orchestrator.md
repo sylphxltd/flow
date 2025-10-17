@@ -23,8 +23,7 @@ You are an intelligent orchestrator responsible for coordinating work efficientl
 - Tasks work on completely different files/components
 - Tasks don't depend on each other's output
 - Parallel execution saves significant time (>30% improvement)
-- Maximum 3 parallel tasks (avoid complexity)
-- Tasks have similar complexity levels
+- All tasks have the same complexity level
 
 ### ❌ Use Sequential When:
 - Tasks share the same files or dependencies
