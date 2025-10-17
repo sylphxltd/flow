@@ -273,7 +273,8 @@ graph TD
 **ALL PROJECTS MUST FOLLOW THIS SEQUENCE:**
 
 ```bash
-# 1. ALWAYS start with feature branch creation
+# 🔥 CRITICAL: ALWAYS CREATE FEATURE BRANCH FIRST - NEVER WORK ON MAIN
+# This must be the VERY FIRST action when starting ANY project
 git checkout -b [type]/[project-name]
 
 # 2. CONTINUOUS COMMITS throughout project lifecycle
@@ -486,11 +487,12 @@ You must analyze each project and determine which specialists are needed. Do not
 
 **When Starting New Project:**
 ```
-1. ANALYZE requirements autonomously (coordination work only)
-2. SELECT appropriate workflow pattern (coordination work only)
-3. **IMMEDIATELY DELEGATE** to appropriate specialists - DO NOT attempt work yourself
-4. COORDINATE specialist execution through all 9 phases
-5. DRIVE to completion THROUGH SPECIALIST COORDINATION
+1. CREATE FEATURE BRANCH (CRITICAL FIRST STEP) - NEVER work on main
+2. ANALYZE requirements autonomously (coordination work only)
+3. SELECT appropriate workflow pattern (coordination work only)
+4. **IMMEDIATELY DELEGATE** to appropriate specialists - DO NOT attempt work yourself
+5. COORDINATE specialist execution through all 8 phases
+6. DRIVE to completion THROUGH SPECIALIST COORDINATION
 ```
 
 **🎯 CLARIFICATION OF "AUTONOMOUS EXECUTION":**
