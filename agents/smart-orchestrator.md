@@ -155,54 +155,6 @@ git branch -d feature/<project-name>
    - Confirm understanding before proceeding"
 ```
 
-## Self-Review Execution Pattern
-
-### Planning Phase Self-Review:
-```
-1. [Create initial plan in specs/<type>/<project>/ workspace]
-2. [Single Message]:
-→ Reviewer: "Review this implementation plan:
-   - Are all requirements addressed?
-   - Are dependencies correctly identified?
-   - Are success criteria clear?
-   - What's missing or unclear?
-   - Is this plan feasible and complete?
-   - Document findings in specs/<type>/<project>/reviews/plan-review.md"
-3. [Wait for reviewer feedback]
-4. [Refine plan based on feedback]
-5. Update plan-review.md in same workspace
-6. Repeat until reviewer approves plan
-```
-
-### Implementation Phase Self-Review:
-```
-1. [Coder completes implementation in specs/<type>/<project>/code/]
-2. [Single Message]:
-→ Reviewer: "Review this implementation:
-   - Does it meet requirements?
-   - Are there any obvious bugs or issues?
-   - Is the code quality acceptable?
-   - What specific improvements are needed?
-   - Is it ready for testing?
-   - Document findings in specs/<type>/<project>/reviews/implementation-review.md"
-3. [Wait for reviewer feedback]
-4. [Address feedback by assigning fixes to coder]
-5. Update implementation-review.md in same workspace
-6. Repeat until reviewer approves implementation
-```
-
-### Quality Control Self-Review:
-```
-1. [Before declaring work complete]
-2. [Single Message]:
-→ Reviewer: "Final quality assessment:
-   - Are there any remaining issues?
-   - Is the output actually useful and valuable?
-   - Is there any garbage to clean up?
-   - Are all success criteria met?
-   - Is this truly complete?
-   - Document findings in specs/<type>/<project>/reviews/quality-review.md"
-```
 
 ## Goal-Oriented Delegation with Context Loading
 
@@ -380,23 +332,32 @@ When adding new specialist types, follow this pattern:
    REQUIRED OUTPUT: Updated tasks.md with testing strategy and acceptance criteria"
 ```
 
-**Step 3: Plan Review and Refinement**
+**Step 3: Plan Review and Refinement (Phase Loop Check)**
 ```
-→ reviewer: "Review the complete planning phase:
-   - Read specs/<type>/<project>/spec.md, analysis.md, plan.md, and tasks.md
-   - Cross-check that all requirements are addressed in the plan
-   - Validate dependencies and sequencing
-   - Assess feasibility and completeness
-   - Update specs/<type>/<project>/reviews/plan-review.md with your findings
-   - If plan needs changes, coordinate with planner for revisions"
+→ reviewer: "EXECUTE THIS WORKFLOW:
+   1. READ specs/<type>/<project>/spec.md, analysis.md, plan.md, and tasks.md
+   2. CROSS-CHECK that all requirements are addressed in the plan
+   3. VALIDATE dependencies and sequencing
+   4. ASSESS feasibility and completeness
+   5. UPDATE specs/<type>/<project>/reviews/plan-review.md with findings
+   6. DETERMINE if plan needs changes
+   7. IF plan needs changes: COORDINATE with planner for revisions and return to Step 2
+   8. IF plan is approved: MARK AS COMPLETE and proceed to Stage 2
+   REQUIRED OUTPUT: Updated plan-review.md and approval status"
 ```
 
-**Step 4: Planning Phase Commit**
+**Step 4: Planning Phase Commit (Only if Approved)**
 - Commit planning phase:
   ```bash
   git add specs/<type>/<project-name>/
   git commit -m "feat(planning): <project-name> - define requirements and approach"
   ```
+
+**Phase Loop Decision**:
+- **If plan needs major changes**: Go back to Step 2 (parallel research & planning)
+- **If plan needs minor revisions**: Update and approve in current step
+- **If plan is approved**: Proceed to Stage 2
+- **Maximum 3 cycles**: If more than 3 review cycles needed, reconsider approach
 
 ### Stage 2: Implementation (Code Only - No Design)
 
@@ -444,7 +405,7 @@ When adding new specialist types, follow this pattern:
    REQUIRED OUTPUT: Complete implementation-review.md with assessment and feedback"
 ```
 
-**Step 3: Implementation Review and Validation**
+**Step 3: Implementation Review and Validation (Phase Loop Check)**
 ```
 [Single Message]:
 → reviewer: "EXECUTE THIS WORKFLOW:
@@ -456,7 +417,10 @@ When adding new specialist types, follow this pattern:
    6. UPDATE specs/<type>/<project>/reviews/implementation-review.md with final assessment
    7. PROVIDE specific, actionable feedback for any issues found
    8. DETERMINE if implementation is ready for final testing
-   REQUIRED OUTPUT: Complete implementation-review.md with final assessment and feedback"
+   9. IF major issues found: COORDINATE with coder for fixes and return to Step 2
+   10. IF minor issues found: UPDATE fixes in current step and proceed
+   11. IF implementation approved: MARK AS COMPLETE and proceed to Step 4
+   REQUIRED OUTPUT: Complete implementation-review.md with assessment and go/no-go decision"
 
 → tester: "EXECUTE THIS WORKFLOW:
    1. RUN all unit tests and document results
@@ -467,7 +431,10 @@ When adding new specialist types, follow this pattern:
    6. IDENTIFY any remaining bugs or issues
    7. DOCUMENT comprehensive test results in specs/<type>/<project>/artifacts/
    8. PROVIDE detailed bug reports with reproduction steps
-   REQUIRED OUTPUT: Complete test results in artifacts/ directory"
+   9. ASSESS if implementation meets testing criteria
+   10. IF critical test failures: RETURN to Step 2 for implementation fixes
+   11. IF minor issues: DOCUMENT and proceed with current phase
+   REQUIRED OUTPUT: Complete test results in artifacts/ directory with testing assessment"
 ```
 
 **Step 4: Address Feedback and Commit**
@@ -478,6 +445,14 @@ When adding new specialist types, follow this pattern:
   git add specs/<type>/<project-name>/
   git commit -m "feat(impl): <project-name> - implement core functionality"
   ```
+
+**Phase Loop Decision**:
+- **If major implementation issues found**: Go back to Step 2 (parallel implementation)
+- **If minor issues**: Fix and approve in current step
+- **If implementation approved**: Proceed to Stage 3
+- **Maximum 3 cycles**: If more than 3 review cycles needed, reconsider approach
+- **Critical test failures**: Always return to implementation fixes
+- **Performance issues**: May require return to planning for architectural changes
 
 ### Stage 3: Testing & Final Review (with Workspace Finalization)
 
@@ -504,7 +479,7 @@ When adding new specialist types, follow this pattern:
    REQUIRED OUTPUT: Complete quality-review.md with final assessment"
 ```
 
-**Step 2: Quality Control Review (MANDATORY)**
+**Step 2: Quality Control Review (Phase Loop Check)**
 ```
 [Single Message]:
 → Reviewer: "EXECUTE THIS WORKFLOW:
@@ -515,7 +490,20 @@ When adding new specialist types, follow this pattern:
    5. CONFIRM project is ready for final delivery
    6. DOCUMENT final quality assessment in specs/<type>/<project>/reviews/quality-review.md
    7. PROVIDE go/no-go recommendation for delivery
-   REQUIRED OUTPUT: Final quality assessment and delivery recommendation"
+   8. IF critical quality issues found: RETURN to appropriate previous phase
+   9. IF minor cleanup needed: COMPLETE in current step and proceed
+   10. IF quality approved: MARK AS COMPLETE and proceed to finalization
+   REQUIRED OUTPUT: Final quality-review.md with go/no-go decision and phase loop recommendation"
+
+**Phase Loop Decision for Quality Control**:
+- **Critical security vulnerabilities**: Return to Stage 2 (implementation)
+- **Major functionality gaps**: Return to Stage 2 (implementation) or Stage 1 (planning) for architectural issues
+- **Performance failures**: Return to Stage 2 (implementation) or Stage 1 (planning) for redesign
+- **Test coverage issues**: Return to Stage 2 (implementation) for additional tests
+- **Documentation gaps**: Complete in current step if minor, return to earlier phases if major
+- **Workspace cleanup**: Complete in current step
+- **Minor quality issues**: Fix and approve in current step
+- **Maximum 3 total phase loops**: If more cycles needed, escalate for approach reassessment
 ```
 
 **Step 3: Finalization and Merge**
@@ -606,21 +594,60 @@ For any migration task (specs/migration/<project>/):
 - [ ] Summary documentation created
 - [ ] Final commit and merge to main
 
-## Iterative Improvement with Self-Review
+## Phase Loop Logic and Decision Making
 
-### When to Loop Back (with Review Validation):
-- **Research issues found** → Go back to research (after reviewer confirms)
-- **Planning gaps identified** → Go back to planning (after reviewer confirms)
-- **Implementation problems** → Fix in implementation (based on reviewer feedback)
-- **Testing reveals bugs** → Fix in implementation (based on reviewer feedback)
-- **Review finds major issues** → Go back to appropriate phase (reviewer guides this)
+### Comprehensive Phase Loop Framework
 
-### Review Cycle Limits:
-- Maximum 3 review cycles per phase
-- If more cycles needed, reconsider approach
-- Focus on "good enough" for non-critical items
-- Prioritize high-impact improvements
-- Document all review cycles in workspace
+#### **Stage 1 Phase Loops (Planning)**:
+- **Plan Review Rejection**: Return to Step 2 (parallel research & planning)
+- **Requirements Gaps**: Return to research for additional analysis
+- **Feasibility Issues**: Return to research for alternative approaches
+- **Dependency Problems**: Return to planning for better task breakdown
+
+#### **Stage 2 Phase Loops (Implementation)**:
+- **Major Implementation Issues**: Return to Step 2 (parallel implementation)
+- **Critical Test Failures**: Return to implementation for bug fixes
+- **Performance Issues**: May return to Stage 1 (planning) for architectural changes
+- **Code Quality Issues**: Fix in implementation, may need additional review cycles
+
+#### **Stage 3 Phase Loops (Quality Control)**:
+- **Critical Security Vulnerabilities**: Return to Stage 2 (implementation)
+- **Major Functionality Gaps**: Return to Stage 2 (implementation) or Stage 1 (planning)
+- **Performance Failures**: Return to Stage 2 (implementation) or Stage 1 (planning)
+- **Test Coverage Issues**: Return to Stage 2 (implementation) for additional tests
+- **Documentation Gaps**: Minor gaps fix in current step, major gaps return to earlier phases
+
+### Phase Loop Decision Triggers
+
+#### **Automatic Loop Triggers**:
+- **Security vulnerabilities**: Always loop back to implementation
+- **Critical functionality failures**: Always loop back to appropriate phase
+- **Performance requirement failures**: Assess if architectural (Stage 1) or implementation (Stage 2) issue
+- **Test coverage below 80%**: Return to implementation for additional testing
+
+#### **Conditional Loop Triggers**:
+- **Code quality issues**: Assessed severity determines loop back level
+- **Documentation gaps**: Impact on usability determines loop back necessity
+- **Review feedback severity**: Major vs minor issues determine loop back requirement
+
+### Phase Loop Governance
+
+#### **Loop Cycle Limits**:
+- **Maximum 3 total phase loops per project**: Prevents infinite loops
+- **Maximum 2 loops per phase**: Forces efficiency and quality focus
+- **Loop escalation**: If limits exceeded, require approach reassessment
+- **Loop documentation**: Every loop decision must be documented in relevant review files
+
+#### **Quality Gates for Loop Decisions**:
+- **Loop back to Stage 1**: Only for architectural, feasibility, or major requirement issues
+- **Loop back to Stage 2**: For implementation bugs, performance, security, or test coverage issues
+- **Fix in current phase**: For minor issues that don't affect project foundations
+
+#### **Loop Optimization**:
+- **Batch issue resolution**: Collect multiple issues for single loop back
+- **Parallel issue resolution**: Fix multiple independent issues in parallel when possible
+- **Prevention focus**: Use loop learnings to prevent similar issues in future phases
+- **Efficiency priority**: Balance quality with timely delivery
 
 ## Common Workflows with Self-Review and Workspace Management
 
