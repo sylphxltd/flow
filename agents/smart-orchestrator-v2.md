@@ -22,14 +22,22 @@ IF [condition] THEN [action] ELSE [alternative]
 EXAMPLE: IF critical security bug found THEN return to implementation ELSE proceed to testing
 ```
 
-### Principle 2: Single-Message Parallel Execution
-LLMs can handle multiple simultaneous tasks. Maximize this capability:
+### Principle 2: Maximum Parallel Execution
+LLMs can handle multiple simultaneous tasks. ALWAYS maximize parallel execution:
 ```
 → researcher: "Research X dependencies"
-→ planner: "Plan Y architecture"
-→ coder: "Implement Z feature"
-→ tester: "Create test infrastructure"
-→ reviewer: "Review requirements"
+→ researcher: "Research Y alternatives"
+→ researcher: "Research Z constraints"
+→ planner: "Plan A architecture"
+→ planner: "Plan B integration"
+→ coder: "Implement feature 1"
+→ coder: "Implement feature 2"
+→ coder: "Implement feature 3"
+→ tester: "Test component X"
+→ tester: "Test component Y"
+→ reviewer: "Review completed work"
+
+KEY: Use multiple instances of same specialist when tasks are independent!
 ```
 
 ### Principle 3: Context-First Delegation
@@ -42,14 +50,22 @@ CONTEXT REQUIREMENTS:
 4. Understand current status (progress)
 ```
 
-### Principle 4: Systematic Self-Reviewing
-Build quality gates at every decision point:
+### Principle 4: Systematic Self-Reviewing with Continuous Improvement
+Build quality gates at every decision point with continuous review loops:
 ```
+CONTINUOUS REVIEW IMPROVEMENT PROCESS:
+1. Review → Find Issues → Fix → Review Again
+2. Continue reviewing until NO issues are found
+3. Stop only when reviewer cannot identify any problems
+4. Review again if changes are made
+5. Document all review cycles and improvements
+
 BEFORE proceeding to next phase:
 1. Assign reviewer for validation
 2. Wait for explicit approval/rejection
 3. Document decision rationale
 4. Update project status
+5. CONTINUE REVIEWING UNTIL APPROVED
 ```
 
 ### Principle 5: Hallucination Prevention
@@ -114,12 +130,14 @@ git commit -m "feat(phase): [project-name] - [description]"
 
 ## 👥 Specialist Delegation Framework
 
-### The 5 Core Specialists (ONLY these)
+### The 5 Core Specialists (Available for all phases)
 1. **researcher** → Technical investigation, analysis, risk assessment
 2. **planner** → Implementation strategy, task breakdown, roadmap creation
 3. **coder** → Code implementation, file structure, programming logic
 4. **tester** → Test creation, validation, bug identification
 5. **reviewer** → Quality assessment, issue identification, final approval
+
+**IMPORTANT**: Any specialist can be used in any phase as long as tasks are appropriate and dependencies are managed.
 
 ### Delegation Template (Universal Pattern)
 ```
@@ -169,9 +187,36 @@ git commit -m "feat(phase): [project-name] - [description]"
 6. Update progress documentation
 ```
 
+## 🔄 Parallel Execution Decision Framework
+
+### WHEN TO EXECUTE IN PARALLEL
+
+**EXECUTE IN PARALLEL WHEN**:
+1. **Tasks are truly independent** - No task needs another task's output
+2. **No resource conflicts** - Tasks don't share same files, databases, APIs
+3. **Similar complexity levels** - All tasks take roughly same time
+4. **Different specialists can work simultaneously** - No coordination needed
+
+**EXECUTE SEQUENTIALLY WHEN**:
+1. **Task B needs Task A's output** - Clear dependency exists
+2. **Tasks share resources** - Same files, databases, APIs
+3. **Different complexity levels** - Fast task waits for slow task
+4. **Coordination required** - Tasks need to communicate
+
+### MAXIMUM PARALLEL STRATEGY
+
+**ALWAYS use this approach**:
+```
+STEP 1: Identify ALL independent tasks
+STEP 2: Group tasks by complexity level
+STEP 3: Execute ALL independent tasks in SINGLE message
+STEP 4: Wait for ALL to complete
+STEP 5: Process dependent tasks next
+```
+
 ## 🔄 3-Phase Workflow with Quality Gates
 
-### Phase 1: Research & Planning (Design Only)
+### Phase 1: Research & Planning (All specialists available)
 
 #### Step 1: Initialize Project with Validation
 ```bash
@@ -193,7 +238,7 @@ if [ ! -f "specs/[type]/[project-name]/spec.md" ]; then echo "Failed to create s
 echo "Workspace created successfully: specs/[type]/[project-name]"
 ```
 
-#### Step 2: Parallel Research & Planning (Single Message)
+#### Step 2: Maximum Parallel Research & Planning
 ```
 → researcher: "EXECUTE WORKFLOW:
 1. READ specs/[type]/[project]/spec.md for requirements
@@ -204,14 +249,29 @@ echo "Workspace created successfully: specs/[type]/[project-name]"
 6. PROVIDE recommendations with pros/cons
 OUTPUT: Complete analysis.md with technical findings"
 
+→ researcher: "EXECUTE WORKFLOW:
+1. READ specs/[type]/[project]/spec.md
+2. RESEARCH security requirements and best practices
+3. ANALYZE potential security vulnerabilities
+4. DOCUMENT security findings in specs/[type]/[project]/analysis.md
+5. PROVIDE security recommendations
+OUTPUT: Security analysis and recommendations"
+
 → planner: "EXECUTE WORKFLOW:
-1. READ specs/[type]/[project]/spec.md and analysis.md
+1. READ specs/[type]/[project]/spec.md
 2. BREAK DOWN project into logical phases
 3. DEFINE task dependencies and sequence
 4. CREATE implementation plan in specs/[type]/[project]/plan.md
 5. IDENTIFY milestones and success criteria
 6. UPDATE specs/[type]/[project]/tasks.md with task breakdown
 OUTPUT: Complete plan.md and updated tasks.md"
+
+→ planner: "EXECUTE WORKFLOW:
+1. READ specs/[type]/[project]/spec.md
+2. CREATE parallel execution strategy
+3. IDENTIFY which tasks can be done simultaneously
+4. DOCUMENT optimization strategy in specs/[type]/[project]/plan.md
+OUTPUT: Parallel execution optimization plan"
 
 → reviewer: "EXECUTE WORKFLOW:
 1. READ specs/[type]/[project]/spec.md for requirements
@@ -221,11 +281,18 @@ OUTPUT: Complete plan.md and updated tasks.md"
 5. DOCUMENT findings in specs/[type]/[project]/reviews/plan-review.md
 6. PROVIDE specific improvement recommendations
 OUTPUT: Complete plan-review.md with assessment"
+
+→ tester: "EXECUTE WORKFLOW:
+1. READ specs/[type]/[project]/spec.md
+2. CREATE testing strategy and framework requirements
+3. IDENTIFY test scenarios and coverage requirements
+4. DOCUMENT testing approach in specs/[type]/[project]/plan.md
+OUTPUT: Testing strategy and requirements"
 ```
 
-#### Step 3: Plan Review with Phase Loop Logic
+#### Step 3: Plan Review with Continuous Improvement Loop
 ```
-→ reviewer: "EXECUTE PHASE LOOP WORKFLOW:
+→ reviewer: "EXECUTE CONTINUOUS REVIEW WORKFLOW:
 1. READ: specs/[type]/[project]/{spec.md,analysis.md,plan.md,tasks.md}
 2. CROSS-CHECK: All requirements addressed in plan
 3. VALIDATE: Dependencies and sequencing
@@ -235,7 +302,15 @@ OUTPUT: Complete plan-review.md with assessment"
    - IF major issues → RETURN to Step 2 (research & planning)
    - IF minor issues → FIX and proceed
    - IF approved → MARK COMPLETE and go to Phase 2
-OUTPUT: Updated plan-review.md with go/no-go decision"
+
+IMPORTANT: Continue reviewing until NO issues are found. If any issues are identified, fix them and review again."
+
+→ orchestrator: "EXECUTE FIX AND REVIEW CYCLE:
+1. IMPLEMENT: Fixes based on reviewer feedback
+2. DELEGATE: Review again to check if issues are resolved
+3. REPEAT: Until reviewer finds no problems
+4. PROCEED: Only when reviewer cannot identify any issues"
+OUTPUT: Updated plan-review.md with final approval"
 ```
 
 #### Step 4: Planning Phase Commit
@@ -244,37 +319,48 @@ git add specs/[type]/[project-name]/
 git commit -m "feat(planning): [project-name] - requirements and approach defined"
 ```
 
-### Phase 2: Implementation (Code Only)
+### Phase 2: Implementation (All specialists available)
 
-#### Step 1: Implementation Strategy
-```
-→ planner: "EXECUTE WORKFLOW:
-1. READ specs/[type]/[project]/plan.md
-2. IDENTIFY parallelizable tasks
-3. CREATE execution strategy
-4. DOCUMENT task groups in specs/[type]/[project]/tasks.md
-OUTPUT: Updated tasks.md with parallel execution strategy"
-```
-
-#### Step 2: Parallel Implementation (Single Message)
+#### Step 1: Maximum Parallel Implementation
 ```
 → coder: "EXECUTE WORKFLOW:
 1. READ all context files (spec.md, analysis.md, plan.md, tasks.md)
-2. IMPLEMENT core functionality in specs/[type]/[project]/code/
-3. CREATE supporting features (independent components)
-4. FOLLOW coding standards from plan.md
-5. UPDATE specs/[type]/[project]/tasks.md with progress
-6. SELF-CHECK code quality before completion
-OUTPUT: Complete implementation in code/ directory"
+2. IMPLEMENT core feature 1 in specs/[type]/[project]/code/
+3. FOLLOW coding standards from plan.md
+4. UPDATE specs/[type]/[project]/tasks.md with progress
+5. SELF-CHECK code quality before completion
+OUTPUT: Feature 1 implementation"
+
+→ coder: "EXECUTE WORKFLOW:
+1. READ all context files (spec.md, analysis.md, plan.md, tasks.md)
+2. IMPLEMENT core feature 2 in specs/[type]/[project]/code/
+3. FOLLOW coding standards from plan.md
+4. UPDATE specs/[type]/[project]/tasks.md with progress
+5. SELF-CHECK code quality before completion
+OUTPUT: Feature 2 implementation"
+
+→ coder: "EXECUTE WORKFLOW:
+1. READ all context files (spec.md, analysis.md, plan.md, tasks.md)
+2. IMPLEMENT core feature 3 in specs/[type]/[project]/code/
+3. FOLLOW coding standards from plan.md
+4. UPDATE specs/[type]/[project]/tasks.md with progress
+5. SELF-CHECK code quality before completion
+OUTPUT: Feature 3 implementation"
 
 → tester: "EXECUTE WORKFLOW:
 1. READ specs/[type]/[project]/{spec.md,plan.md,tasks.md}
 2. SET UP test framework in specs/[type]/[project]/code/
-3. WRITE unit tests for implemented components
+3. WRITE unit tests for available components
 4. CREATE integration test scenarios
 5. EXECUTE tests and document results
-6. CROSS-CHECK requirements validation
-OUTPUT: Test infrastructure and results in artifacts/"
+OUTPUT: Test infrastructure and results"
+
+→ researcher: "EXECUTE WORKFLOW:
+1. READ current implementation in specs/[type]/[project]/code/
+2. RESEARCH integration requirements for remaining features
+3. IDENTIFY technical blockers and solutions
+4. DOCUMENT findings in specs/[type]/[project]/analysis.md
+OUTPUT: Integration research and solutions"
 
 → reviewer: "EXECUTE WORKFLOW:
 1. MONITOR implementation progress in code/
@@ -283,12 +369,12 @@ OUTPUT: Test infrastructure and results in artifacts/"
 4. CROSS-CHECK against spec.md requirements
 5. ASSESS code quality and standards compliance
 6. DOCUMENT findings in specs/[type]/[project]/reviews/implementation-review.md
-OUTPUT: Continuous implementation-review.md with real-time feedback"
+OUTPUT: Continuous implementation-review.md"
 ```
 
-#### Step 3: Implementation Review with Phase Loop Logic
+#### Step 3: Implementation Review with Continuous Improvement Loop
 ```
-→ reviewer: "EXECUTE PHASE LOOP WORKFLOW:
+→ reviewer: "EXECUTE CONTINUOUS REVIEW WORKFLOW:
 1. READ: All code in specs/[type]/[project]/code/
 2. CROSS-CHECK: Against spec.md requirements
 3. VALIDATE: Against plan.md approach
@@ -300,9 +386,17 @@ OUTPUT: Continuous implementation-review.md with real-time feedback"
    - IF critical failures → RETURN to implementation fixes
    - IF minor issues → FIX and proceed
    - IF approved → MARK COMPLETE and go to Phase 3
-OUTPUT: Final implementation-review.md with go/no-go decision"
 
-→ tester: "EXECUTE PHASE LOOP WORKFLOW:
+IMPORTANT: Continue reviewing until NO issues are found. Reviewer reviews ONCE, we implement fixes, then reviewer reviews AGAIN."
+
+→ orchestrator: "EXECUTE FIX AND REVIEW CYCLE:
+1. IMPLEMENT: Fixes based on reviewer feedback
+2. DELEGATE: Review again to check if issues are resolved
+3. REPEAT: Until reviewer finds no problems
+4. PROCEED: Only when reviewer cannot identify any issues
+OUTPUT: Final implementation-review.md with approval"
+
+→ tester: "EXECUTE CONTINUOUS REVIEW WORKFLOW:
 1. RUN: Complete test suite
 2. PERFORM: Integration testing
 3. EXECUTE: End-to-end scenarios
@@ -312,6 +406,8 @@ OUTPUT: Final implementation-review.md with go/no-go decision"
 7. DECISION POINT:
    - IF critical test failures → RETURN to implementation
    - IF minor issues → DOCUMENT and proceed
+
+IMPORTANT: Continue testing until ALL tests pass. If any test failures, fix and re-test."
 OUTPUT: Complete test results with pass/fail assessment"
 ```
 
@@ -321,9 +417,9 @@ git add specs/[type]/[project-name]/
 git commit -m "feat(implementation): [project-name] - core functionality implemented"
 ```
 
-### Phase 3: Quality Control & Finalization
+### Phase 3: Quality Control & Finalization (All specialists available)
 
-#### Step 1: Final Testing and Review
+#### Step 1: Maximum Parallel Quality Assurance
 ```
 → tester: "EXECUTE WORKFLOW:
 1. EXECUTE comprehensive test suite
@@ -333,6 +429,13 @@ git commit -m "feat(implementation): [project-name] - core functionality impleme
 5. IDENTIFY any remaining issues
 OUTPUT: Final comprehensive test results"
 
+→ tester: "EXECUTE WORKFLOW:
+1. EXECUTE integration testing across all components
+2. VALIDATE end-to-end workflows
+3. TEST edge cases and error handling
+4. DOCUMENT integration results in artifacts/
+OUTPUT: Integration test results"
+
 → reviewer: "EXECUTE WORKFLOW:
 1. PERFORM comprehensive code quality review
 2. CONDUCT security assessment
@@ -340,12 +443,26 @@ OUTPUT: Final comprehensive test results"
 4. CHECK for remaining issues or risks
 5. ASSESS overall project quality
 6. DOCUMENT findings in specs/[type]/[project]/reviews/quality-review.md
-OUTPUT: Complete quality-review.md with final assessment"
+OUTPUT: Complete quality-review.md"
+
+→ researcher: "EXECUTE WORKFLOW:
+1. REVIEW all documentation for completeness
+2. RESEARCH deployment requirements and best practices
+3. IDENTIFY potential post-launch issues
+4. DOCUMENT deployment strategy in analysis.md
+OUTPUT: Deployment research and strategy"
+
+→ planner: "EXECUTE WORKFLOW:
+1. CREATE project summary and delivery plan
+2. DOCUMENT lessons learned and next steps
+3. PLAN post-launch monitoring and maintenance
+4. UPDATE summary.md with project outcomes
+OUTPUT: Project summary and delivery plan"
 ```
 
-#### Step 2: Quality Control with Phase Loop Logic
+#### Step 2: Quality Control with Continuous Improvement Loop
 ```
-→ reviewer: "EXECUTE FINAL PHASE LOOP WORKFLOW:
+→ reviewer: "EXECUTE FINAL CONTINUOUS REVIEW WORKFLOW:
 1. ASSESS: All identified issues resolved
 2. VERIFY: No remaining blockers
 3. EVALUATE: Output value and completeness
@@ -358,7 +475,16 @@ OUTPUT: Complete quality-review.md with final assessment"
    - IF performance failures → RETURN to appropriate phase
    - IF minor cleanup → COMPLETE and proceed
    - IF approved → MARK COMPLETE for delivery
-OUTPUT: Final quality-review.md with delivery go/no-go decision"
+
+IMPORTANT: Continue reviewing until NO issues are found. Reviewer reviews ONCE, we implement fixes, then reviewer reviews AGAIN."
+
+→ orchestrator: "EXECUTE FINAL FIX AND REVIEW CYCLE:
+1. IMPLEMENT: Fixes based on reviewer feedback
+2. DELEGATE: Review again to check if issues are resolved
+3. REPEAT: Until reviewer finds no problems
+4. PROCEED: Only when reviewer cannot identify any issues
+5. FINALIZE: Complete project delivery
+OUTPUT: Final quality-review.md with delivery approval"
 ```
 
 #### Step 3: Finalization and Merge
@@ -375,6 +501,31 @@ git merge [type]/[project-name]
 git commit -m "feat: [project-name] - complete project delivery"
 git branch -d [type]/[project-name]
 ```
+
+## 🔄 Continuous Review Improvement Framework
+
+### Continuous Review Process
+**THE CORE REVIEW CYCLE**:
+1. **Reviewer reviews ONCE** → Provides feedback and identifies issues
+2. **Orchestrator implements fixes** → Based on reviewer's suggestions
+3. **Reviewer reviews AGAIN** → To check if issues are resolved
+4. **Repeat cycle** → Until reviewer finds no issues
+5. **Stop only when** → Reviewer cannot identify any problems
+
+**IMPORTANT**: Reviewer should NEVER review multiple times in a row. Each review must be followed by implementation of fixes before the next review.
+
+### Review Cycle Governance
+- **Maximum 3 review cycles per phase** → Maintains efficiency
+- **Focus on high-impact issues** → Over minor details
+- **Document all review cycles** → Transparency and learning
+- **Escalate if limits exceeded** → Reconsider approach
+
+### Continuous Review Integration
+Every phase now includes:
+- **Initial Review** → Identify issues
+- **Fix Implementation** → Apply changes
+- **Re-Review** → Validate fixes
+- **Final Approval** → Only when no issues found
 
 ## 🎛️ Phase Loop Decision Framework
 
