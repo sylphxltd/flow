@@ -184,6 +184,15 @@ specs/[type]/[project-name]/
 - [⏳] MERGE - [not started]
 - [⏳] DOCUMENT - [not started]
 
+## Iteration History
+### Current Iteration (if any)
+- **Iteration #X**: [From phase] → [To phase] - [reason] - [status]
+- **Started**: [timestamp] - **Expected completion**: [timestamp]
+
+### Completed Iterations
+- **Iteration #1**: IMPLEMENT → ANALYZE - Technical approach flawed - Completed [timestamp]
+- **Iteration #2**: REVIEW → SPECIFY - Requirements clarification needed - Completed [timestamp]
+
 ## Parallel Execution Tracking
 ### Current Parallel Batch
 - Task 1: [description] - [specialist] - [status]
@@ -411,8 +420,11 @@ After EVERY task completion:
 
 **COMPLETE WORKFLOW REQUIREMENTS:**
 
-**ALL PROJECTS MUST FOLLOW THIS COMPLETE SEQUENCE:**
+**ALL PROJECTS MUST FOLLOW THIS ITERATIVE SEQUENCE:**
 ```
+🔄 ITERATIVE WORKFLOW CYCLE:
+
+FORWARD PROGRESSION:
 1. SPECIFY → Clear requirements and success criteria definition
 2. CLARIFY → Resolve ambiguities and confirm understanding
 3. ANALYZE → Technical analysis and feasibility assessment
@@ -422,6 +434,19 @@ After EVERY task completion:
 7. REVIEW → Quality assurance and issue identification
 8. MERGE → Integrate to main branch only after quality approval
 9. DOCUMENT → Complete documentation and project summary
+
+🔄 ITERATION TRIGGERS (when to go BACK):
+⬅️ From IMPLEMENT back to SPECIFY: Requirements fundamentally unclear
+⬅️ From REVIEW back to ANALYZE: Technical approach flawed
+⬅️ From REVIEW back to RESEARCH: Missing critical dependencies
+⬅️ From MERGE back to IMPLEMENT: Integration issues discovered
+⬅️ From any phase back to any previous phase: Critical issues found
+
+🔄 ITERATION RULES:
+- ALWAYS document why iteration is needed
+- UPDATE progress.md with iteration reason and plan
+- INVOLVE appropriate specialists for the iteration
+- CONTINUE until quality standards are met
 ```
 
 **FLEXIBLE EXECUTION PATTERNS (within the complete workflow):**
@@ -456,7 +481,7 @@ After EVERY task completion:
 - What's the minimum viable process that ensures excellence?
 - How can I optimize execution while maintaining ALL 9 required phases?
 
-## 🔄 Quality Gates and Progress Management
+## 🔄 Quality Gates and Iteration Management
 
 ### Strategic Progress Decisions
 **Move forward when:**
@@ -465,20 +490,29 @@ After EVERY task completion:
 ✅ All identified issues are resolved
 ✅ Dependencies for next steps are ready
 
-**Return to previous work when:**
-❌ Critical gaps or issues are discovered
-❌ Requirements need significant revision
-❌ Architecture or design flaws emerge
-❌ Quality standards cannot be met with current approach
+**Iterate back when:**
+🔄 **Requirements Issues**: Fundamental misunderstandings or missing requirements
+🔄 **Technical Problems**: Approach flawed, dependencies missing, or architecture issues
+🔄 **Quality Failures**: Standards not met, critical bugs found, or integration issues
+🔄 **Stakeholder Feedback**: New requirements or constraints discovered
 
-**CONTINUOUS IMPROVEMENT CYCLE:**
+**ITERATION WORKFLOW:**
 ```
-REVIEW → IDENTIFY ISSUES → IMPLEMENT FIXES → RE-REVIEW → REPEAT UNTIL PERFECT
+ISSUE IDENTIFIED → ROOT CAUSE ANALYSIS → PLAN ITERATION → EXECUTE ITERATION → REVIEW RESULTS → DECIDE NEXT STEPS
 ```
 
-**QUALITY-FIRST PRINCIPLE:**
-Never proceed to the next step until current work meets quality standards.
-It's better to invest time getting it right than to proceed with imperfect work.
+**QUALITY-FIRST ITERATION PRINCIPLE:**
+- Never proceed to the next step until current work meets quality standards
+- Iteration is normal and expected - plan for it
+- Each iteration must have clear purpose and success criteria
+- Document all iterations and their outcomes
+- Continue iterating until quality standards are achieved
+
+**ITERATION TRACKING REQUIREMENTS:**
+- Always update progress.md with iteration details
+- Record iteration reason, plan, and outcome
+- Track number and type of iterations per phase
+- Use iteration data to improve future planning
 
 ## 🎯 Parallel Execution Examples
 
