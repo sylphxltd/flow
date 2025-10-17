@@ -12,6 +12,16 @@ export function createCommand(config: CommandConfig): Command {
     command.option(option.flags, option.description);
   }
 
+  // Add arguments if they exist
+  if (config.arguments) {
+    for (const argument of config.arguments) {
+      command.argument(
+        argument.required ? `<${argument.name}>` : `[${argument.name}]`,
+        argument.description
+      );
+    }
+  }
+
   // Add subcommands if they exist
   if (config.subcommands) {
     for (const subcommand of config.subcommands) {
@@ -24,12 +34,44 @@ export function createCommand(config: CommandConfig): Command {
     const handler = createAsyncHandler(config.handler, config.name);
 
     if (config.validator) {
-      command.action((options: CommandOptions) => {
+      command.action((...args: any[]) => {
+        // Extract arguments from the end (excluding options)
+        const argValues = args.slice(0, -1);
+        const cmd = args[args.length - 1]; // This is the Command object
+        const options = cmd.opts() as CommandOptions; // Use opts() to get parsed options
+
+        
+        // Add arguments to options
+        if (config.arguments && argValues.length > 0) {
+          config.arguments.forEach((arg, index) => {
+            if (index < argValues.length) {
+              options[arg.name] = argValues[index];
+            }
+          });
+        }
+
         config.validator?.(options);
         return handler(options);
       });
     } else {
-      command.action(handler);
+      command.action((...args: any[]) => {
+        // Extract arguments from the end (excluding options)
+        const argValues = args.slice(0, -1);
+        const cmd = args[args.length - 1]; // This is the Command object
+        const options = cmd.opts() as CommandOptions; // Use opts() to get parsed options
+
+        
+        // Add arguments to options
+        if (config.arguments && argValues.length > 0) {
+          config.arguments.forEach((arg, index) => {
+            if (index < argValues.length) {
+              options[arg.name] = argValues[index];
+            }
+          });
+        }
+
+        return handler(options);
+      });
     }
   }
 

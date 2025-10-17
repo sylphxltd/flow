@@ -3,6 +3,7 @@ import { initCommand } from './commands/init-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
 import { memoryCommand } from './commands/memory-command.js';
 import { handleMemoryTui } from './commands/memory-tui-command.js';
+import { runCommand } from './commands/run-command.js';
 
 import { createCommand } from './utils/command-builder.js';
 import { showDefaultHelp } from './utils/help.js';
@@ -15,7 +16,7 @@ export function createCLI(): Command {
     .description('Sylphx Flow - Type-safe development flow CLI')
     .version('1.0.0');
 
-  const commands = [initCommand, mcpCommand, memoryCommand];
+  const commands = [initCommand, mcpCommand, memoryCommand, runCommand];
 
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
