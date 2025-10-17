@@ -1,4 +1,5 @@
 ---
+name: analyze
 description: Validates planning artifacts; reports all issues to orchestrator for proper re-delegation
 mode: subagent
 temperature: 0.1

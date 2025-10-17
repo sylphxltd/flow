@@ -1,6 +1,6 @@
 import {
   BaseTransformer
-} from "./chunk-3BIGIZWG.js";
+} from "./chunk-B6EYWZ4T.js";
 
 // src/transformers/opencode.ts
 var OpenCodeTransformer = class extends BaseTransformer {
@@ -10,14 +10,17 @@ var OpenCodeTransformer = class extends BaseTransformer {
   /**
    * Transform agent content for OpenCode
    * OpenCode uses YAML front matter, so we preserve it
+   * Remove name field as OpenCode doesn't use it
    */
-  transformAgentContent(content, metadata) {
+  async transformAgentContent(content, metadata) {
+    const { metadata: existingMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
+    const { name, ...metadataWithoutName } = existingMetadata;
     if (metadata) {
-      const { metadata: existingMetadata, content: baseContent } = this.extractYamlFrontMatter(content);
-      const mergedMetadata = { ...existingMetadata, ...metadata };
+      const { name: additionalName, ...additionalMetadataWithoutName } = metadata;
+      const mergedMetadata = { ...metadataWithoutName, ...additionalMetadataWithoutName };
       return this.addYamlFrontMatter(baseContent, mergedMetadata);
     }
-    return content;
+    return this.addYamlFrontMatter(baseContent, metadataWithoutName);
   }
   /**
    * Transform MCP server configuration for OpenCode
@@ -86,8 +89,8 @@ var OpenCodeTransformer = class extends BaseTransformer {
   /**
    * Helper method to extract agent metadata from YAML front matter
    */
-  extractAgentMetadata(content) {
-    const { metadata } = this.extractYamlFrontMatter(content);
+  async extractAgentMetadata(content) {
+    const { metadata } = await this.extractYamlFrontMatter(content);
     if (typeof metadata === "string") {
       try {
         return JSON.parse(metadata);
@@ -100,8 +103,8 @@ var OpenCodeTransformer = class extends BaseTransformer {
   /**
    * Helper method to update agent metadata in YAML front matter
    */
-  updateAgentMetadata(content, updates) {
-    const { metadata: existingMetadata, content: baseContent } = this.extractYamlFrontMatter(content);
+  async updateAgentMetadata(content, updates) {
+    const { metadata: existingMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
     const updatedMetadata = { ...existingMetadata, ...updates };
     return this.addYamlFrontMatter(baseContent, updatedMetadata);
   }
@@ -115,7 +118,7 @@ var OpenCodeTransformer = class extends BaseTransformer {
   /**
    * Helper method to ensure content has YAML front matter
    */
-  ensureYamlFrontMatter(content, defaultMetadata = {}) {
+  async ensureYamlFrontMatter(content, defaultMetadata = {}) {
     if (this.hasValidYamlFrontMatter(content)) {
       return content;
     }

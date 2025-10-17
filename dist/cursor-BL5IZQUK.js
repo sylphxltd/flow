@@ -1,6 +1,6 @@
 import {
   BaseTransformer
-} from "./chunk-3BIGIZWG.js";
+} from "./chunk-B6EYWZ4T.js";
 
 // src/transformers/cursor.ts
 var CursorTransformer = class extends BaseTransformer {
@@ -11,8 +11,8 @@ var CursorTransformer = class extends BaseTransformer {
    * Transform agent content for Cursor
    * Cursor uses JSON format, so we need to convert from YAML front matter
    */
-  transformAgentContent(content, metadata) {
-    const { metadata: yamlMetadata, content: baseContent } = this.extractYamlFrontMatter(content);
+  async transformAgentContent(content, metadata) {
+    const { metadata: yamlMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
     const combinedMetadata = { ...yamlMetadata, ...metadata };
     const agentData = {
       name: combinedMetadata.name || "Unnamed Agent",

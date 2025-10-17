@@ -1,6 +1,6 @@
 import {
   BaseTransformer
-} from "./chunk-3BIGIZWG.js";
+} from "./chunk-B6EYWZ4T.js";
 
 // src/transformers/vscode.ts
 var VSCodeTransformer = class extends BaseTransformer {
@@ -11,8 +11,8 @@ var VSCodeTransformer = class extends BaseTransformer {
    * Transform agent content for VS Code
    * VS Code uses plain markdown without YAML front matter
    */
-  transformAgentContent(content, metadata) {
-    const { content: baseContent } = this.extractYamlFrontMatter(content);
+  async transformAgentContent(content, metadata) {
+    const { content: baseContent } = await this.extractYamlFrontMatter(content);
     let transformedContent = baseContent;
     if (metadata && Object.keys(metadata).length > 0) {
       const metadataComment = Object.entries(metadata).map(([key, value]) => `<!-- ${key}: ${value} -->`).join("\n");

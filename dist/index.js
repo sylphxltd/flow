@@ -398,10 +398,10 @@ var TargetManager = class {
   async initializeDefaultTransformers() {
     if (this.initialized) return;
     try {
-      const { OpenCodeTransformer } = await import("./opencode-RWJGU63G.js");
-      const { ClaudeCodeTransformer } = await import("./claude-code-IBPMYAVG.js");
-      const { CursorTransformer } = await import("./cursor-5ZX6CTBY.js");
-      const { VSCodeTransformer } = await import("./vscode-RKRXUQP6.js");
+      const { OpenCodeTransformer } = await import("./opencode-2OJZ2H2H.js");
+      const { ClaudeCodeTransformer } = await import("./claude-code-IJRLZPJY.js");
+      const { CursorTransformer } = await import("./cursor-BL5IZQUK.js");
+      const { VSCodeTransformer } = await import("./vscode-2H54W423.js");
       this.registerTransformer(
         "opencode",
         new OpenCodeTransformer(getTargetDefinition("opencode").config)
@@ -655,8 +655,8 @@ async function installAgents(options) {
   console.log(`\u{1F4DD} Using target: ${target.name}`);
   const config = target.config;
   const agentsDir = path3.join(cwd, config.agentDir);
-  const processContent = (content) => {
-    return transformer.transformAgentContent(content);
+  const processContent = async (content) => {
+    return await transformer.transformAgentContent(content);
   };
   if (options.clear && fs3.existsSync(agentsDir)) {
     let expectedFiles;
@@ -690,7 +690,7 @@ async function installAgents(options) {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path3.dirname(__filename);
   const agentsSourceDir = path3.join(__dirname, "..", "agents");
-  for (const agentFile of agentFiles) {
+  const processPromises = agentFiles.map(async (agentFile) => {
     const sourcePath = path3.join(agentsSourceDir, agentFile);
     const destPath = path3.join(agentsDir, agentFile);
     const destDir = path3.dirname(destPath);
@@ -700,8 +700,8 @@ async function installAgents(options) {
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
     let content = fs3.readFileSync(sourcePath, "utf8");
-    content = processContent(content);
-    const localProcessed = localInfo ? processContent(localInfo.content) : "";
+    content = await processContent(content);
+    const localProcessed = localInfo ? await processContent(localInfo.content) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
       fs3.writeFileSync(destPath, content, "utf8");
@@ -717,7 +717,8 @@ async function installAgents(options) {
         action: "Already current"
       });
     }
-  }
+  });
+  await Promise.all(processPromises);
   displayResults(results, agentsDir, target.name, "Install", options.verbose);
 }
 

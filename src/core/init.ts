@@ -70,8 +70,8 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const agentsDir = path.join(cwd, config.agentDir);
 
   // Use the transformer to process content
-  const processContent = (content: string) => {
-    return transformer.transformAgentContent(content);
+  const processContent = async (content: string) => {
+    return await transformer.transformAgentContent(content);
   };
 
   // Clear obsolete agents if requested
@@ -123,7 +123,8 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const __dirname = path.dirname(__filename);
   const agentsSourceDir = path.join(__dirname, '..', 'agents');
 
-  for (const agentFile of agentFiles) {
+  // Process files in parallel for better performance
+  const processPromises = agentFiles.map(async (agentFile) => {
     const sourcePath = path.join(agentsSourceDir, agentFile);
     const destPath = path.join(agentsDir, agentFile);
 
@@ -138,9 +139,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
     // Read content from source
     let content = fs.readFileSync(sourcePath, 'utf8');
-    content = processContent(content);
+    content = await processContent(content);
 
-    const localProcessed = localInfo ? processContent(localInfo.content) : '';
+    const localProcessed = localInfo ? await processContent(localInfo.content) : '';
     const contentChanged = !localInfo || localProcessed !== content;
 
     if (contentChanged) {
@@ -157,7 +158,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
         action: 'Already current',
       });
     }
-  }
+  });
+
+  await Promise.all(processPromises);
 
   displayResults(results, agentsDir, target.name, 'Install', options.verbose);
 }

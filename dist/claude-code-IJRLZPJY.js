@@ -1,6 +1,6 @@
 import {
   BaseTransformer
-} from "./chunk-3BIGIZWG.js";
+} from "./chunk-B6EYWZ4T.js";
 
 // src/transformers/claude-code.ts
 var ClaudeCodeTransformer = class extends BaseTransformer {
@@ -11,13 +11,57 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
    * Transform agent content for Claude Code
    * Claude Code uses YAML front matter with specific fields
    */
-  transformAgentContent(content, metadata) {
+  async transformAgentContent(content, metadata) {
+    const { metadata: existingMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
+    const claudeCodeMetadata = this.convertToClaudeCodeFormat(existingMetadata, baseContent);
     if (metadata) {
-      const { metadata: existingMetadata, content: baseContent } = this.extractYamlFrontMatter(content);
-      const mergedMetadata = { ...existingMetadata, ...metadata };
-      return this.addYamlFrontMatter(baseContent, mergedMetadata);
+      Object.assign(claudeCodeMetadata, metadata);
     }
-    return content;
+    return this.addYamlFrontMatter(baseContent, claudeCodeMetadata);
+  }
+  /**
+   * Convert OpenCode frontmatter to Claude Code format
+   */
+  convertToClaudeCodeFormat(openCodeMetadata, content) {
+    const agentName = openCodeMetadata.name || this.extractAgentName(content, openCodeMetadata);
+    const description = openCodeMetadata.description || this.extractDescription(content);
+    const result = { ...openCodeMetadata };
+    result.name = agentName;
+    result.description = description;
+    result.model = result.model || "inherit";
+    delete result.tools;
+    return result;
+  }
+  /**
+   * Extract agent name from content or generate one
+   */
+  extractAgentName(content, metadata) {
+    const titleMatch = content.match(/^#\s+(.+?)(?:\s+Agent)?$/m);
+    if (titleMatch) {
+      const title = titleMatch[1].trim().toLowerCase();
+      return title.replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + (title.includes("agent") ? "" : "-agent");
+    }
+    if (metadata.description) {
+      const desc = metadata.description.toLowerCase();
+      if (desc.includes("coder")) return "code-implementation-agent";
+      if (desc.includes("reviewer")) return "code-reviewer";
+      if (desc.includes("planner")) return "development-planner";
+      if (desc.includes("researcher")) return "research-specialist";
+      if (desc.includes("tester")) return "quality-tester";
+      if (desc.includes("analyze")) return "analysis-specialist";
+      if (desc.includes("orchestrator")) return "development-orchestrator";
+    }
+    return "development-agent";
+  }
+  /**
+   * Extract description from metadata or content
+   */
+  extractDescription(content) {
+    const firstParagraph = content.match(/^#\s+.+?\n\n(.+?)(?:\n\n|\n#|$)/s);
+    if (firstParagraph) {
+      return firstParagraph[1].trim().replace(/\n+/g, " ");
+    }
+    return "Development agent for specialized tasks";
   }
   /**
    * Transform MCP server configuration for Claude Code
@@ -73,14 +117,17 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
 `;
     help += `  description: "Expert code review specialist"
 `;
-    help += `  tools: ["Read", "Grep", "Glob", "Bash"]
-`;
     help += `  model: "inherit"
 `;
     help += `  ---
 
 `;
     help += `  Agent content here...
+
+`;
+    help += `Note: Tools field intentionally omitted to allow all tools by default.
+`;
+    help += `This is necessary because Claude Code uses whitelist model but doesn't support disallowed_tools yet.
 
 `;
     help += `Example MCP Configuration:
@@ -113,8 +160,8 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
   /**
    * Helper method to extract agent metadata from YAML front matter
    */
-  extractAgentMetadata(content) {
-    const { metadata } = this.extractYamlFrontMatter(content);
+  async extractAgentMetadata(content) {
+    const { metadata } = await this.extractYamlFrontMatter(content);
     if (typeof metadata === "string") {
       try {
         return JSON.parse(metadata);
@@ -127,8 +174,8 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
   /**
    * Helper method to update agent metadata in YAML front matter
    */
-  updateAgentMetadata(content, updates) {
-    const { metadata: existingMetadata, content: baseContent } = this.extractYamlFrontMatter(content);
+  async updateAgentMetadata(content, updates) {
+    const { metadata: existingMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
     const updatedMetadata = { ...existingMetadata, ...updates };
     return this.addYamlFrontMatter(baseContent, updatedMetadata);
   }
@@ -142,7 +189,7 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
   /**
    * Helper method to ensure content has YAML front matter
    */
-  ensureYamlFrontMatter(content, defaultMetadata = {}) {
+  async ensureYamlFrontMatter(content, defaultMetadata = {}) {
     if (this.hasValidYamlFrontMatter(content)) {
       return content;
     }

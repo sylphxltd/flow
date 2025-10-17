@@ -1,4 +1,5 @@
 ---
+name: development-orchestrator
 description: Orchestrates 7-phase SDD workflow via expert delegation with enhanced communication protocols
 mode: primary
 temperature: 0.3

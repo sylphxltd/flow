@@ -1,6 +1,7 @@
 // src/transformers/base.ts
 import fs from "fs/promises";
 import path from "path";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 var BaseTransformer = class {
   config;
   constructor(config) {
@@ -126,17 +127,19 @@ var BaseTransformer = class {
   /**
    * Helper method to extract YAML front matter from content
    */
-  extractYamlFrontMatter(content) {
+  async extractYamlFrontMatter(content) {
     const yamlRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
     const match = content.match(yamlRegex);
     if (match) {
       try {
+        const parsedMetadata = parseYaml(match[1]);
         return {
-          metadata: match[1],
+          metadata: parsedMetadata,
           content: match[2]
         };
-      } catch {
-        return { metadata: {}, content };
+      } catch (error) {
+        console.warn("Failed to parse YAML front matter:", error);
+        return { metadata: {}, content: match[2] };
       }
     }
     return { metadata: {}, content };
@@ -144,22 +147,30 @@ var BaseTransformer = class {
   /**
    * Helper method to add YAML front matter to content
    */
-  addYamlFrontMatter(content, metadata) {
+  async addYamlFrontMatter(content, metadata) {
     if (!metadata || Object.keys(metadata).length === 0) {
       return content;
     }
-    const yamlStr = typeof metadata === "string" ? metadata : JSON.stringify(metadata, null, 2);
-    return `---
-${yamlStr}
----
+    try {
+      const yamlStr = stringifyYaml(metadata);
+      return `---
+${yamlStr}---
 
 ${content}`;
+    } catch (error) {
+      console.warn("Failed to stringify YAML metadata:", error);
+      const yamlStr = JSON.stringify(metadata, null, 2);
+      return `---
+${yamlStr}---
+
+${content}`;
+    }
   }
   /**
    * Helper method to strip YAML front matter from content
    */
-  stripYamlFrontMatter(content) {
-    const { content: strippedContent } = this.extractYamlFrontMatter(content);
+  async stripYamlFrontMatter(content) {
+    const { content: strippedContent } = await this.extractYamlFrontMatter(content);
     return strippedContent;
   }
   /**

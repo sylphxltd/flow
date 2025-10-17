@@ -15,20 +15,87 @@ export class ClaudeCodeTransformer extends BaseTransformer {
    * Transform agent content for Claude Code
    * Claude Code uses YAML front matter with specific fields
    */
-  transformAgentContent(content: string, metadata?: any): string {
-    // For Claude Code, we preserve YAML front matter
-    // If metadata is provided, we merge it with existing front matter
+  async transformAgentContent(content: string, metadata?: any): Promise<string> {
+    const { metadata: existingMetadata, content: baseContent } =
+      await this.extractYamlFrontMatter(content);
+
+    // Convert OpenCode format to Claude Code format
+    const claudeCodeMetadata = this.convertToClaudeCodeFormat(existingMetadata, baseContent);
+
+    // If additional metadata is provided, merge it
     if (metadata) {
-      const { metadata: existingMetadata, content: baseContent } =
-        this.extractYamlFrontMatter(content);
-      const mergedMetadata = { ...existingMetadata, ...metadata };
-      return this.addYamlFrontMatter(baseContent, mergedMetadata);
+      Object.assign(claudeCodeMetadata, metadata);
     }
 
-    // If no metadata provided, return content as-is (preserving existing YAML)
-    return content;
+    return this.addYamlFrontMatter(baseContent, claudeCodeMetadata);
   }
 
+  /**
+   * Convert OpenCode frontmatter to Claude Code format
+   */
+  private convertToClaudeCodeFormat(openCodeMetadata: any, content: string): any {
+    // Use explicit name from metadata if available, otherwise extract from content
+    const agentName = openCodeMetadata.name || this.extractAgentName(content, openCodeMetadata);
+
+    // Extract description from metadata or content
+    const description = openCodeMetadata.description || this.extractDescription(content);
+
+    // Start with all metadata, then override specific fields
+    const result: any = { ...openCodeMetadata };
+
+    // Set required fields
+    result.name = agentName;
+    result.description = description;
+    result.model = result.model || 'inherit';
+
+    // Remove tools field to allow all tools by default
+    delete result.tools;
+
+    return result;
+  }
+
+  /**
+   * Extract agent name from content or generate one
+   */
+  private extractAgentName(content: string, metadata: any): string {
+    // Try to extract from content title
+    const titleMatch = content.match(/^#\s+(.+?)(?:\s+Agent)?$/m);
+    if (titleMatch) {
+      const title = titleMatch[1].trim().toLowerCase();
+      // Convert to kebab-case and add appropriate suffix
+      return title.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + (title.includes('agent') ? '' : '-agent');
+    }
+
+    // Try to extract from filename or description
+    if (metadata.description) {
+      const desc = metadata.description.toLowerCase();
+      if (desc.includes('coder')) return 'code-implementation-agent';
+      if (desc.includes('reviewer')) return 'code-reviewer';
+      if (desc.includes('planner')) return 'development-planner';
+      if (desc.includes('researcher')) return 'research-specialist';
+      if (desc.includes('tester')) return 'quality-tester';
+      if (desc.includes('analyze')) return 'analysis-specialist';
+      if (desc.includes('orchestrator')) return 'development-orchestrator';
+    }
+
+    // Default fallback
+    return 'development-agent';
+  }
+
+  /**
+   * Extract description from metadata or content
+   */
+  private extractDescription(content: string): string {
+    // Try to find the first paragraph after the title
+    const firstParagraph = content.match(/^#\s+.+?\n\n(.+?)(?:\n\n|\n#|$)/s);
+    if (firstParagraph) {
+      return firstParagraph[1].trim().replace(/\n+/g, ' ');
+    }
+
+    return 'Development agent for specialized tasks';
+  }
+
+  
   /**
    * Transform MCP server configuration for Claude Code
    * Claude Code expects MCP config under the 'mcpServers' key
@@ -89,10 +156,11 @@ export class ClaudeCodeTransformer extends BaseTransformer {
     help += `  ---\n`;
     help += `  name: "code-reviewer"\n`;
     help += `  description: "Expert code review specialist"\n`;
-    help += `  tools: ["Read", "Grep", "Glob", "Bash"]\n`;
     help += `  model: "inherit"\n`;
     help += `  ---\n\n`;
     help += `  Agent content here...\n\n`;
+    help += `Note: Tools field intentionally omitted to allow all tools by default.\n`;
+    help += `This is necessary because Claude Code uses whitelist model but doesn't support disallowed_tools yet.\n\n`;
 
     help += `Example MCP Configuration:\n`;
     help += `  {\n`;
@@ -113,8 +181,8 @@ export class ClaudeCodeTransformer extends BaseTransformer {
   /**
    * Helper method to extract agent metadata from YAML front matter
    */
-  extractAgentMetadata(content: string): any {
-    const { metadata } = this.extractYamlFrontMatter(content);
+  async extractAgentMetadata(content: string): Promise<any> {
+    const { metadata } = await this.extractYamlFrontMatter(content);
 
     if (typeof metadata === 'string') {
       try {
@@ -132,9 +200,9 @@ export class ClaudeCodeTransformer extends BaseTransformer {
   /**
    * Helper method to update agent metadata in YAML front matter
    */
-  updateAgentMetadata(content: string, updates: any): string {
+  async updateAgentMetadata(content: string, updates: any): Promise<string> {
     const { metadata: existingMetadata, content: baseContent } =
-      this.extractYamlFrontMatter(content);
+      await this.extractYamlFrontMatter(content);
     const updatedMetadata = { ...existingMetadata, ...updates };
     return this.addYamlFrontMatter(baseContent, updatedMetadata);
   }
@@ -150,7 +218,7 @@ export class ClaudeCodeTransformer extends BaseTransformer {
   /**
    * Helper method to ensure content has YAML front matter
    */
-  ensureYamlFrontMatter(content: string, defaultMetadata: any = {}): string {
+  async ensureYamlFrontMatter(content: string, defaultMetadata: any = {}): Promise<string> {
     if (this.hasValidYamlFrontMatter(content)) {
       return content;
     }

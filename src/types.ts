@@ -92,7 +92,7 @@ export interface TargetConfig {
 
 export interface TargetTransformer {
   /** Transform agent content for the target */
-  transformAgentContent(content: string, metadata?: any): string;
+  transformAgentContent(content: string, metadata?: any): Promise<string>;
   /** Transform MCP server configuration for the target */
   transformMCPConfig(config: MCPServerConfigUnion): any;
   /** Get the configuration file path for the target */

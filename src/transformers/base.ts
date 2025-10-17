@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import type { MCPServerConfigUnion, TargetConfig, TargetTransformer } from '../types.js';
 
 /**
@@ -157,20 +158,22 @@ export abstract class BaseTransformer implements TargetTransformer {
   /**
    * Helper method to extract YAML front matter from content
    */
-  protected extractYamlFrontMatter(content: string): { metadata: any; content: string } {
+  protected async extractYamlFrontMatter(content: string): Promise<{ metadata: any; content: string }> {
     const yamlRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
     const match = content.match(yamlRegex);
 
     if (match) {
       try {
-        // Note: You might want to add a proper YAML parser here
-        // For now, return the raw YAML string
+        // Parse YAML content using the proper YAML library
+        const parsedMetadata = parseYaml(match[1]);
+
         return {
-          metadata: match[1],
+          metadata: parsedMetadata,
           content: match[2],
         };
-      } catch {
-        return { metadata: {}, content };
+      } catch (error) {
+        console.warn('Failed to parse YAML front matter:', error);
+        return { metadata: {}, content: match[2] };
       }
     }
 
@@ -180,21 +183,28 @@ export abstract class BaseTransformer implements TargetTransformer {
   /**
    * Helper method to add YAML front matter to content
    */
-  protected addYamlFrontMatter(content: string, metadata: any): string {
+  protected async addYamlFrontMatter(content: string, metadata: any): Promise<string> {
     if (!metadata || Object.keys(metadata).length === 0) {
       return content;
     }
 
-    // Note: You might want to add a proper YAML stringifier here
-    const yamlStr = typeof metadata === 'string' ? metadata : JSON.stringify(metadata, null, 2);
-    return `---\n${yamlStr}\n---\n\n${content}`;
+    try {
+      // Use the YAML library to properly stringify the metadata
+      const yamlStr = stringifyYaml(metadata);
+      return `---\n${yamlStr}---\n\n${content}`;
+    } catch (error) {
+      console.warn('Failed to stringify YAML metadata:', error);
+      // Fallback to JSON format (valid YAML)
+      const yamlStr = JSON.stringify(metadata, null, 2);
+      return `---\n${yamlStr}---\n\n${content}`;
+    }
   }
 
   /**
    * Helper method to strip YAML front matter from content
    */
-  protected stripYamlFrontMatter(content: string): string {
-    const { content: strippedContent } = this.extractYamlFrontMatter(content);
+  protected async stripYamlFrontMatter(content: string): Promise<string> {
+    const { content: strippedContent } = await this.extractYamlFrontMatter(content);
     return strippedContent;
   }
 
