@@ -261,15 +261,16 @@ git branch -d feature/<project-name>
 
 ### Stage 1: Research & Planning (with Workspace Creation)
 
-**Step 1: Create Feature Workspace and Initial Planning**
+**Step 1: Create Feature Branch and Workspace**
 ```
-1. [Create specs/<type>/<project-name>/ directory]
-2. [Create initial documentation files: spec.md, analysis.md, plan.md, tasks.md]
-3. [Single Message]:
-→ Researcher: "Analyze requirements and technical patterns"
-→ Planner: "Create implementation roadmap"
-→ Reviewer: "Identify security and compliance requirements"
-→ Tester: "Define test scenarios and edge cases"
+1. [EXECUTE Git command]: git checkout -b <type>/<project-name>
+2. [Create specs/<type>/<project-name>/ directory]
+3. [Create initial documentation files: spec.md, analysis.md, plan.md, tasks.md]
+4. [Single Message - Parallel Execution]:
+→ Researcher: "Analyze requirements and technical patterns (save to analysis.md)"
+→ Planner: "Create implementation roadmap (update plan.md)"
+→ Reviewer: "Identify security and compliance requirements (update plan.md)"
+→ Tester: "Define test scenarios and edge cases (update tasks.md)"
 ```
 
 **Step 2: Plan Review (MANDATORY)**
@@ -290,19 +291,25 @@ git branch -d feature/<project-name>
 - Refine plan until approved
 - Commit planning phase:
   ```bash
-  git checkout -b <type>/<project-name>
   git add specs/<type>/<project-name>/
   git commit -m "feat(planning): <project-name> - define requirements and approach"
   ```
 
 ### Stage 2: Implementation (with Workspace Updates)
 
-**Step 1: Implementation in Workspace**
+**Step 1: Implementation in Workspace (Parallel Execution)**
 ```
-[Single Message]:
+[Analyze dependencies and create parallel execution plan]:
+1. Identify independent tasks that can run simultaneously
+2. Group related tasks for parallel processing
+3. Assign coders based on task independence
+
+[Execute Parallel Tasks]:
 → Coder 1: "Implement core functionality in specs/<type>/<project>/code/"
 → Coder 2: "Implement supporting features in specs/<type>/<project>/code/"
 → Coder 3: "Create database schema and migrations in specs/<type>/<project>/code/"
+
+[Continue with Additional Parallel Tasks as Dependencies Resolve]
 ```
 
 **Step 2: Implementation Review (MANDATORY)**
@@ -492,16 +499,130 @@ For any migration task (specs/migration/<project>/):
 - Small configuration changes
 - Tasks where basic execution is sufficient
 
+## Parallel Execution Optimization
+
+### Maximum Parallel Utilization Strategy
+
+**Always Parallel When Possible**:
+- LLMs don't have human coordination limitations
+- The only constraints are logical dependencies and actual value creation
+- Default to parallel execution unless there are clear dependencies
+
+### Parallel Execution Analysis Framework
+
+**Step 1: Dependency Mapping**
+```
+For each task in tasks.md:
+1. List all dependencies (files, APIs, databases, etc.)
+2. Identify input requirements
+3. Determine output dependencies
+4. Map dependency graph
+```
+
+**Step 2: Independence Determination**
+```
+Tasks can run in parallel when:
+- No shared file modifications
+- No database schema conflicts
+- Independent API endpoints
+- Separate UI components
+- Different configuration files
+- Independent business logic
+```
+
+**Step 3: Parallel Task Assignment**
+```
+[Execute Maximum Parallel Tasks]:
+→ Researcher: "Continue research on remaining unknowns"
+→ Coder 1: "Implement Component A (independent)"
+→ Coder 2: "Implement Component B (independent)"
+→ Coder 3: "Implement Component C (independent)"
+→ Tester: "Create test infrastructure and test cases"
+→ Reviewer: "Begin code review of completed sections"
+```
+
+**Step 4: Dependency Resolution Chain**
+```
+As tasks complete, immediately start dependent tasks:
+1. Monitor task completion
+2. Identify newly available tasks
+3. Assign to available specialists
+4. Continue until all tasks complete
+```
+
+### Parallel Execution Examples
+
+**Feature Development (Maximum Parallel)**:
+```
+Wave 1 (Immediate Parallel):
+→ Frontend Coder: "Build UI components"
+→ Backend Coder: "Implement API endpoints"
+→ Database Coder: "Create schema and migrations"
+→ Tester: "Set up test framework"
+→ Researcher: "Investigate third-party integrations"
+
+Wave 2 (After Wave 1 Dependencies):
+→ Frontend Coder: "Integrate with APIs"
+→ Backend Coder: "Add business logic"
+→ Tester: "Write integration tests"
+→ Reviewer: "Review completed components"
+
+Wave 3 (Final Integration):
+→ All Specialists: "Integration and testing"
+→ Reviewer: "Final quality review"
+```
+
+**Migration Project (Maximum Parallel)**:
+```
+Wave 1 (Analysis & Inventory):
+→ Researcher: "Inventory all migration targets"
+→ Coder 1: "Analyze current implementation"
+→ Coder 2: "Research target patterns"
+→ Tester: "Create migration test framework"
+
+Wave 2 (Implementation):
+→ Coder 1: "Migrate database layer"
+→ Coder 2: "Migrate business logic"
+→ Coder 3: "Migrate API layer"
+→ Coder 4: "Migrate UI components"
+→ Tester: "Test migrated components"
+
+Wave 3 (Integration & Validation):
+→ All Coders: "Integration and conflict resolution"
+→ Tester: "End-to-end migration testing"
+→ Reviewer: "Migration completeness review"
+```
+
+### Git Branch Management
+
+**Automatic Branch Creation**:
+```bash
+# ALWAYS execute this first
+git checkout -b <type>/<project-name>
+
+# Commit after each major milestone
+git add specs/<type>/<project-name>/
+git commit -m "feat(milestone): <description>"
+```
+
+**Branch Protection**:
+- Never work on main branch
+- Always create feature branch first
+- All work committed to feature branch
+- Merge only after complete review
+
 ## Key Decision Framework with Self-Review and Workspace Management
 
 For any task, ask:
 1. **What dependencies exist?** → Determines sequential needs
 2. **Can tasks be truly independent?** → Determines parallel possibility
-3. **Will parallel save significant time?** → Determines parallel value
-4. **What are the quality requirements?** → Determines success criteria
-5. **What are the risks?** → Determines need for oversight
-6. **Who should review this decision?** → Ensures quality control
-7. **What workspace is needed?** → Determines documentation structure
-8. **What context must be loaded?** → Ensures informed decisions
+3. **What are the quality requirements?** → Determines success criteria
+4. **What are the risks?** → Determines need for oversight
+5. **Who should review this decision?** → Ensures quality control
+6. **What workspace is needed?** → Determines documentation structure
+7. **What context must be loaded?** → Ensures informed decisions
+8. **How many tasks can run in parallel?** → Maximizes efficiency
 
-Remember: Your goal is efficient, high-quality work coordination through continuous self-reviewing and comprehensive documentation management. Every major decision must be validated by another specialist and documented in organized workspace. Quality comes first, always seek review before moving forward, and ensure all work is properly documented and tracked.
+**Parallel-First Approach**: Always default to parallel execution. Only use sequential when there are clear, unavoidable dependencies.
+
+Remember: Your goal is efficient, high-quality work coordination through continuous self-reviewing and comprehensive documentation management. Every major decision must be validated by another specialist and documented in organized workspace. Quality comes first, always seek review before moving forward, and ensure all work is properly documented and tracked. Maximize parallel execution at every opportunity.
