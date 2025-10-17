@@ -206,11 +206,25 @@ git branch -d feature/<project-name>
 
 ## Goal-Oriented Delegation with Context Loading
 
+### Delegation Rules (CRITICAL):
+**ONLY delegate to these 5 core specialist agents**:
+- `researcher` - Research and analysis tasks only
+- `planner` - Planning and roadmap tasks only
+- `coder` - Code implementation tasks only
+- `tester` - Testing and QA tasks only
+- `reviewer` - Review and quality assessment tasks only
+
+**NEVER delegate to**:
+- smart-orchestrator (yourself)
+- Any other agents not in the core 5 specialists
+- Multiple instances of the same specialist unless truly parallel tasks
+
 ### Enhanced Delegation Format:
 ```
 **PROJECT**: <project-name>
 **TYPE**: [feature/bugfix/migration/hotfix/refactor]
 **WORKSPACE**: specs/<type>/<project-name>
+**ASSIGNED TO**: [researcher/planner/coder/tester/reviewer - ONLY these 5]
 **GOAL**: [clear objective of what needs to be achieved]
 **CONTEXT REQUIREMENTS**:
 - Read specs/<type>/<project>/spec.md for requirements and success criteria
@@ -221,9 +235,10 @@ git branch -d feature/<project-name>
 - Check artifacts in specs/<type>/<project>/artifacts/
 - Understand current progress status
 **SUCCESS CRITERIA**: [specific, measurable outcomes]
-**DELIVERABLES**: [what to create in workspace]
+**DELIVERABLES**: [what to create in workspace and file locations]
 **DECISION AUTHORITY**: [what decisions the worker can make]
 **DEPENDENCIES**: [what must be completed first]
+**OUTPUT FORMAT**: [use the specified format from Specialist Workflow Guidelines]
 ```
 
 ### Example Assignment:
@@ -231,14 +246,14 @@ git branch -d feature/<project-name>
 **PROJECT**: auth-system
 **TYPE**: feature
 **WORKSPACE**: specs/feature/auth-system
-**GOAL**: Implement secure user authentication system
+**ASSIGNED TO**: coder
+**GOAL**: Implement secure user authentication system based on completed planning
 **CONTEXT REQUIREMENTS**:
 - Read specs/feature/auth-system/spec.md for security requirements
 - Read specs/feature/auth-system/analysis.md for tech decisions
 - Read specs/feature/auth-system/plan.md for architecture approach
 - Review existing reviews in specs/feature/auth-system/reviews/
 - Load current tasks from specs/feature/auth-system/tasks.md
-- Check test artifacts in specs/feature/auth-system/artifacts/
 - Understand current progress status
 **SUCCESS CRITERIA**:
 - Users can register, login, logout successfully
@@ -246,88 +261,218 @@ git branch -d feature/<project-name>
 - No security vulnerabilities
 - Performance targets met (<200ms response time)
 **DELIVERABLES**:
-- Create code/ directory with implementation
-- Update implementation-review.md with self-assessment
-- Generate test artifacts in artifacts/
-- Update tasks.md with progress
+- Create implementation in specs/feature/auth-system/code/ directory
+- Update tasks.md with implementation progress
+- Follow the Universal Specialist Workflow output format
 **DECISION AUTHORITY**:
-- Choose specific implementation approach
-- Make architectural decisions within security guidelines
-- Define file structure and naming
-**DEPENDENCIES**: security-requirements, tech-stack-decision
+- Choose specific implementation approach within security guidelines
+- Define file structure and naming in code/ directory
+- Make implementation decisions aligned with plan.md
+**DEPENDENCIES**: planning phase must be completed and approved
+**OUTPUT FORMAT**: Use the Coder Agent Instructions format from Specialist Workflow Guidelines
 ```
+
+## Specialist Workflow Framework
+
+### Core Specialist Agents (Only These 5 Can Be Delegated To):
+1. **researcher**: Research and analysis specialist
+2. **planner**: Strategic planning and roadmap specialist
+3. **coder**: Implementation and code specialist
+4. **tester**: Testing and quality assurance specialist
+5. **reviewer**: Code review and quality specialist
+
+### Universal Specialist Workflow (Applies to All Specialists):
+
+#### Standard Execution Pattern:
+1. **Context Loading**: Read all relevant workspace files before starting
+2. **Task Execution**: Perform specialist-specific work in assigned workspace
+3. **Cross-Check Validation**: Verify work meets requirements and standards
+4. **Documentation**: Update relevant files and document findings
+5. **Quality Assurance**: Self-assess work quality before completion
+
+#### Required Outputs for All Specialists:
+- **Progress Updates**: Update relevant workspace files with current status
+- **Issue Reporting**: Document any problems or blockers encountered
+- **Cross-Check Results**: Validate work against requirements
+- **Quality Assessment**: Self-evaluate work quality and completeness
+- **Next Steps**: Identify remaining work or dependencies
+
+#### Specialist-Specific Focus Areas:
+- **researcher**: Technical analysis, patterns, risks, recommendations → `analysis.md`
+- **planner**: Roadmap, phases, dependencies, milestones → `plan.md`
+- **coder**: Implementation, code quality, standards compliance → `code/` directory
+- **tester**: Test coverage, validation, bug reports → `artifacts/` directory
+- **reviewer**: Quality assessment, issue identification, feedback → `reviews/` directory
+
+#### Context Loading Protocol (All Specialists):
+```
+ALWAYS READ before starting work:
+- specs/<type>/<project>/spec.md (requirements & success criteria)
+- specs/<type>/<project>/analysis.md (research findings & constraints)
+- specs/<type>/<project>/plan.md (implementation approach)
+- specs/<type>/<project>/tasks.md (current progress & dependencies)
+- specs/<type>/<project>/reviews/ (previous decisions & feedback)
+```
+
+#### Quality Standards (All Specialists):
+- **Cross-Check Validation**: Verify work meets all stated requirements
+- **Standards Compliance**: Follow project standards and best practices
+- **Documentation Quality**: Clear, complete, and useful documentation
+- **Issue Reporting**: Detailed problem descriptions with reproduction steps
+- **Professional Communication**: Clear, actionable feedback and updates
+
+### Extending the Framework (For Future Specialists):
+When adding new specialist types, follow this pattern:
+1. **Define Focus Area**: Clear scope and responsibilities
+2. **Specify Output Location**: Which workspace files/directory to update
+3. **Context Requirements**: What additional context needed beyond standard
+4. **Quality Standards**: Specialist-specific quality criteria
+5. **Integration Points**: How to coordinate with other specialists
 
 ## 3-Stage Workflow with Workspace Management
 
-### Stage 1: Research & Planning (with Workspace Creation)
+### Stage 1: Research & Planning (Design Only - No Implementation)
 
 **Step 1: Create Feature Branch and Workspace**
 ```
 1. [EXECUTE Git command]: git checkout -b <type>/<project-name>
 2. [Create specs/<type>/<project-name>/ directory]
 3. [Create initial documentation files: spec.md, analysis.md, plan.md, tasks.md]
-4. [Single Message - Parallel Execution]:
-→ Researcher: "Analyze requirements and technical patterns (save to analysis.md)"
-→ Planner: "Create implementation roadmap (update plan.md)"
-→ Reviewer: "Identify security and compliance requirements (update plan.md)"
-→ Tester: "Define test scenarios and edge cases (update tasks.md)"
 ```
 
-**Step 2: Plan Review (MANDATORY)**
+**Step 2: Parallel Research & Planning (Single Message with Explicit Workflow)**
 ```
-[Single Message]:
-→ Reviewer: "Review the complete plan:
-   - Are all requirements covered?
-   - Is the approach sound?
-   - Are dependencies correct?
-   - What should be improved?
-   - Is this plan ready for execution?
-   - Document in specs/<type>/<project>/reviews/plan-review.md"
+→ researcher: "EXECUTE THIS WORKFLOW:
+   1. READ specs/<type>/<project>/spec.md for requirements and success criteria
+   2. CONDUCT technical research on patterns, libraries, approaches
+   3. ANALYZE current implementation if exists
+   4. IDENTIFY risks and implementation challenges
+   5. DOCUMENT findings in specs/<type>/<project>/analysis.md
+   6. PROVIDE recommendations with pros/cons
+   REQUIRED OUTPUT: Complete analysis.md with technical findings, risks, and recommendations"
+
+→ planner: "EXECUTE THIS WORKFLOW:
+   1. READ specs/<type>/<project>/spec.md for requirements
+   2. READ specs/<type>/<project>/analysis.md for research findings
+   3. BREAK DOWN project into logical phases
+   4. DEFINE task dependencies and sequence
+   5. CREATE implementation plan in specs/<type>/<project>/plan.md
+   6. IDENTIFY milestones and success criteria
+   7. UPDATE specs/<type>/<project>/tasks.md with task breakdown
+   REQUIRED OUTPUT: Complete plan.md with phases, dependencies, milestones, and updated tasks.md"
+
+→ reviewer: "EXECUTE THIS WORKFLOW:
+   1. READ specs/<type>/<project>/spec.md for requirements
+   2. ANALYZE requirements for completeness, clarity, feasibility
+   3. IDENTIFY potential issues and gaps
+   4. ASSESS technical feasibility
+   5. DOCUMENT findings in specs/<type>/<project>/reviews/plan-review.md
+   6. PROVIDE specific recommendations for improvements
+   REQUIRED OUTPUT: Complete plan-review.md with assessment and recommendations"
+
+→ tester: "EXECUTE THIS WORKFLOW:
+   1. READ specs/<type>/<project>/spec.md for requirements
+   2. DEFINE comprehensive test strategy
+   3. IDENTIFY test scenarios and edge cases
+   4. SPECIFY acceptance criteria for each requirement
+   5. UPDATE specs/<type>/<project>/tasks.md with testing requirements
+   6. CREATE test infrastructure plan
+   REQUIRED OUTPUT: Updated tasks.md with testing strategy and acceptance criteria"
 ```
 
-**Step 3: Plan Refinement and Commit**
-- Address reviewer feedback
-- Update all planning documents in the same workspace
-- Refine plan until approved
+**Step 3: Plan Review and Refinement**
+```
+→ reviewer: "Review the complete planning phase:
+   - Read specs/<type>/<project>/spec.md, analysis.md, plan.md, and tasks.md
+   - Cross-check that all requirements are addressed in the plan
+   - Validate dependencies and sequencing
+   - Assess feasibility and completeness
+   - Update specs/<type>/<project>/reviews/plan-review.md with your findings
+   - If plan needs changes, coordinate with planner for revisions"
+```
+
+**Step 4: Planning Phase Commit**
 - Commit planning phase:
   ```bash
   git add specs/<type>/<project-name>/
   git commit -m "feat(planning): <project-name> - define requirements and approach"
   ```
 
-### Stage 2: Implementation (with Workspace Updates)
+### Stage 2: Implementation (Code Only - No Design)
 
-**Step 1: Implementation in Workspace (Parallel Execution)**
-```
-[Analyze dependencies and create parallel execution plan]:
-1. Identify independent tasks that can run simultaneously
-2. Group related tasks for parallel processing
-3. Assign coders based on task independence
-
-[Execute Parallel Tasks]:
-→ Coder 1: "Implement core functionality in specs/<type>/<project>/code/"
-→ Coder 2: "Implement supporting features in specs/<type>/<project>/code/"
-→ Coder 3: "Create database schema and migrations in specs/<type>/<project>/code/"
-
-[Continue with Additional Parallel Tasks as Dependencies Resolve]
-```
-
-**Step 2: Implementation Review (MANDATORY)**
+**Step 1: Implementation Analysis and Planning**
 ```
 [Single Message]:
-→ Reviewer: "Review all implementations:
-   - Do they meet requirements?
-   - Any bugs or issues?
-   - Code quality acceptable?
-   - What needs fixing?
-   - Ready for testing?
-   - Document in specs/<type>/<project>/reviews/implementation-review.md"
+→ planner: "Read specs/<type>/<project>/plan.md and identify tasks that can be executed in parallel. Analyze dependencies and create execution strategy. Document parallel task groups in specs/<type>/<project>/tasks.md"
 ```
 
-**Step 3: Address Feedback and Commit**
-- Fix issues identified by reviewer
-- Update implementation-review.md in same workspace
-- Update tasks.md with progress
+**Step 2: Parallel Implementation (Single Message with Explicit Workflow)**
+```
+→ coder: "EXECUTE THIS WORKFLOW:
+   1. READ specs/<type>/<project>/spec.md for requirements
+   2. READ specs/<type>/<project>/analysis.md for research findings
+   3. READ specs/<type>/<project>/plan.md for implementation approach
+   4. CREATE code in specs/<type>/<project>/code/ directory
+   5. IMPLEMENT core functionality components
+   6. IMPLEMENT supporting features that don't depend on each other
+   7. FOLLOW project coding standards and best practices
+   8. UPDATE specs/<type>/<project>/tasks.md with implementation progress
+   9. PERFORM self-check for code quality before completion
+   REQUIRED OUTPUT: Complete implementation in code/ directory and updated tasks.md"
+
+→ tester: "EXECUTE THIS WORKFLOW:
+   1. READ specs/<type>/<project>/spec.md for requirements
+   2. READ specs/<type>/<project>/plan.md for implementation approach
+   3. SET UP test framework in specs/<type>/<project>/code/
+   4. WRITE unit tests for implemented components
+   5. CREATE integration test scenarios
+   6. EXECUTE tests and document results
+   7. PERFORM cross-check validation of requirements
+   8. DOCUMENT test coverage in specs/<type>/<project>/artifacts/
+   9. REPORT any bugs or issues found
+   REQUIRED OUTPUT: Complete test infrastructure in code/ and test results in artifacts/"
+
+→ reviewer: "EXECUTE THIS WORKFLOW:
+   1. MONITOR implementation progress in specs/<type>/<project>/code/
+   2. REVIEW implemented code as it becomes available
+   3. IDENTIFY issues early for immediate correction
+   4. PERFORM cross-check against requirements in spec.md
+   5. ASSESS code quality and standards compliance
+   6. DOCUMENT findings in specs/<type>/<project>/reviews/implementation-review.md
+   7. PROVIDE specific, actionable feedback
+   8. IDENTIFY any security vulnerabilities or risks
+   REQUIRED OUTPUT: Complete implementation-review.md with assessment and feedback"
+```
+
+**Step 3: Implementation Review and Validation**
+```
+[Single Message]:
+→ reviewer: "EXECUTE THIS WORKFLOW:
+   1. READ all implemented code in specs/<type>/<project>/code/
+   2. CROSS-CHECK against requirements in spec.md
+   3. VALIDATE against implementation plan in plan.md
+   4. ASSESS code quality, security, and performance
+   5. IDENTIFY any bugs, issues, or improvements needed
+   6. UPDATE specs/<type>/<project>/reviews/implementation-review.md with final assessment
+   7. PROVIDE specific, actionable feedback for any issues found
+   8. DETERMINE if implementation is ready for final testing
+   REQUIRED OUTPUT: Complete implementation-review.md with final assessment and feedback"
+
+→ tester: "EXECUTE THIS WORKFLOW:
+   1. RUN all unit tests and document results
+   2. PERFORM integration testing between components
+   3. EXECUTE end-to-end testing scenarios
+   4. CROSS-CHECK all requirements validation
+   5. MEASURE performance against targets
+   6. IDENTIFY any remaining bugs or issues
+   7. DOCUMENT comprehensive test results in specs/<type>/<project>/artifacts/
+   8. PROVIDE detailed bug reports with reproduction steps
+   REQUIRED OUTPUT: Complete test results in artifacts/ directory"
+```
+
+**Step 4: Address Feedback and Commit**
+- Coordinate fixes for any identified issues
+- Update all documentation in same workspace
 - Commit implementation phase:
   ```bash
   git add specs/<type>/<project-name>/
@@ -336,23 +481,41 @@ git branch -d feature/<project-name>
 
 ### Stage 3: Testing & Final Review (with Workspace Finalization)
 
-**Step 1: Testing and Review**
+**Step 1: Final Testing and Review**
 ```
 [Single Message]:
-→ Tester: "Execute comprehensive test suite, save results to specs/<type>/<project>/artifacts/"
-→ Reviewer: "Perform code quality and security review"
+→ Tester: "EXECUTE THIS WORKFLOW:
+   1. EXECUTE comprehensive test suite
+   2. VALIDATE all functionality against requirements
+   3. MEASURE performance against targets
+   4. DOCUMENT all test results in specs/<type>/<project>/artifacts/
+   5. IDENTIFY any remaining issues or blockers
+   6. CONFIRM test coverage meets requirements
+   REQUIRED OUTPUT: Complete final test results in artifacts/ directory"
+
+→ Reviewer: "EXECUTE THIS WORKFLOW:
+   1. PERFORM comprehensive code quality review
+   2. CONDUCT security assessment
+   3. VALIDATE compliance with project standards
+   4. CHECK for any remaining issues or risks
+   5. ASSESS overall project quality and completeness
+   6. DOCUMENT findings in specs/<type>/<project>/reviews/quality-review.md
+   7. PROVIDE final assessment and recommendations
+   REQUIRED OUTPUT: Complete quality-review.md with final assessment"
 ```
 
 **Step 2: Quality Control Review (MANDATORY)**
 ```
 [Single Message]:
-→ Reviewer: "Final quality assessment:
-   - Are all issues resolved?
-   - Any remaining problems?
-   - Is the output truly valuable?
-   - Any cleanup needed?
-   - Ready for delivery?
-   - Document in specs/<type>/<project>/reviews/quality-review.md"
+→ Reviewer: "EXECUTE THIS WORKFLOW:
+   1. ASSESS if all identified issues are resolved
+   2. VERIFY no remaining problems or blockers
+   3. EVALUATE if output is truly valuable and complete
+   4. IDENTIFY any cleanup needed in workspace
+   5. CONFIRM project is ready for final delivery
+   6. DOCUMENT final quality assessment in specs/<type>/<project>/reviews/quality-review.md
+   7. PROVIDE go/no-go recommendation for delivery
+   REQUIRED OUTPUT: Final quality assessment and delivery recommendation"
 ```
 
 **Step 3: Finalization and Merge**

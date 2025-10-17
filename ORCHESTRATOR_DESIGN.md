@@ -306,6 +306,21 @@ For any migration task:
 - Single source of truth for all project-related information
 **Result**: IMPLEMENTED - Feature branch workspace concept fully integrated
 
+### Decision 6: Specialist Workflow and Execution Optimization
+**Problem**: Poor specialist guidance, fake parallel execution, delegation errors, and workflow confusion
+**Analysis**: Specialists need explicit workflow guidance, true parallel execution, and strict delegation rules
+**Decision**: Implement comprehensive specialist workflow guidelines and execution optimization
+**Implementation**:
+- Detailed Specialist Workflow Guidelines for all 5 core specialists with specific instructions
+- True parallel execution in single messages with independent task assignment
+- Strict delegation rules limiting to only researcher, planner, coder, tester, reviewer
+- Explicit Git branch creation commands and branch protection rules
+- Design vs implementation phase separation to prevent role confusion
+- Complexity-based assessment replacing time estimates
+- Cross-check requirements and specific output formats for all specialists
+- Context loading protocols ensuring workspace file reading before task execution
+**Result**: IMPLEMENTED - Complete specialist workflow and execution optimization system
+
 ## Future Considerations
 
 ### Scalability:
@@ -340,7 +355,67 @@ For any migration task:
 
 ## Latest Update Log
 
-### Update 2024-XX-XX: Feature Branch Workspace Concept Implementation
+### Update 2025-10-17: Specialist Workflow and Parallel Execution Optimization
+**Changes Made**:
+- Added detailed Specialist Workflow Guidelines with specific instructions for all 5 core specialists
+- Implemented true parallel execution in single messages (not split across multiple messages)
+- Added explicit Git branch creation commands and branch protection rules
+- Created strict delegation rules limiting to only the 5 core specialist agents
+- Enhanced cross-check requirements for all specialists (reviewer, tester, etc.)
+- Removed time-based estimation, replaced with complexity-based assessment
+- Separated design and implementation phases to prevent code in spec workflow
+- Added specific output formats and workflow requirements for each specialist
+
+**Problems Addressed**:
+- Code implementation occurring in spec/planning workflow (should be design-only)
+- Missing detailed workflow guidance for specialists (they only have domain knowledge)
+- No true parallel execution - tasks were split across multiple messages
+- Delegation to wrong agents (including self-delegation)
+- Time-based task estimation instead of complexity assessment
+- Missing Git branch creation automation
+- Lack of cross-check requirements and specific output formats
+
+**Key Design Decisions**:
+- **5 Core Specialists Only**: researcher, planner, coder, tester, reviewer - NO other agents
+- **True Parallel Execution**: Multiple specialists in single message with independent tasks
+- **Explicit Git Branch Management**: `[EXECUTE Git command]: git checkout -b <type>/<project-name>`
+- **Specialist Workflow Guidelines**: Detailed instructions, output formats, and cross-check requirements
+- **Design vs Implementation Separation**: Clear phase boundaries to prevent role confusion
+- **Complexity-Based Assessment**: Low/Medium/High instead of time estimates
+- **Context Loading Protocol**: Mandatory reading of workspace files before task execution
+
+**Specialist Implementation Details**:
+- **Researcher**: Technical analysis, library recommendations, risk assessment
+- **Planner**: Implementation roadmap, task breakdown, dependency mapping
+- **Coder**: Code implementation in code/ directory, progress tracking
+- **Tester**: Test infrastructure, cross-check validation, bug reporting
+- **Reviewer**: Quality assessment, issue identification, specific feedback
+
+**Parallel Execution Strategy**:
+- Wave-based execution with dependency resolution
+- Maximum parallel utilization of independent tasks
+- Real-time monitoring and feedback loops
+- Immediate task assignment as dependencies resolve
+
+**Learnings**:
+- Specialists need explicit workflow guidance, not just domain knowledge
+- True parallel execution requires single-message multi-specialist assignment
+- Git branch automation is critical for proper workflow management
+- Strict delegation rules prevent agent confusion and task duplication
+- Cross-check requirements ensure quality and completeness
+- Phase separation prevents design implementation leakage
+- **Framework-based approaches scale better than specialist-specific instructions**
+
+**Next Steps**: Test with real-world scenarios to validate specialist framework effectiveness, parallel execution performance, and delegation rule compliance. Monitor for any remaining issues with agent role confusion or execution inefficiency.
+
+**Framework Improvements**: Transitioned from detailed specialist-specific instructions to a universal framework that:
+- Provides consistent workflow patterns across all specialists
+- Enables easy addition of new specialist types in the future
+- Maintains quality standards through universal protocols
+- Reduces documentation overhead while preserving effectiveness
+- Focuses on scalable patterns rather than individual agent details
+
+### Update 2025-10-17: Feature Branch Workspace Concept Implementation
 **Changes Made**:
 - Simplified workspace structure to feature branch concept (specs/<type>/<project-name>/)
 - All project-related files organized in single directory for each project
