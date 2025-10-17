@@ -37,10 +37,43 @@ export class OpenCodeTransformer extends BaseTransformer {
 
   /**
    * Transform MCP server configuration for OpenCode
-   * OpenCode expects MCP config under the 'mcp' key
+   * Convert from Claude Code's optimal format to OpenCode's format
    */
   transformMCPConfig(config: MCPServerConfigUnion): any {
-    // OpenCode uses the standard MCP config format
+    // Handle new Claude Code stdio format
+    if (config.type === 'stdio') {
+      // Convert Claude Code format to OpenCode format
+      const openCodeConfig: any = {
+        type: 'local',
+        command: [config.command]
+      };
+
+      if (config.args && config.args.length > 0) {
+        openCodeConfig.command.push(...config.args);
+      }
+
+      if (config.env) {
+        openCodeConfig.environment = config.env;
+      }
+
+      return openCodeConfig;
+    }
+
+    // Handle new Claude Code http format
+    if (config.type === 'http') {
+      // Claude Code http format is compatible with OpenCode remote format
+      return {
+        type: 'remote',
+        url: config.url,
+        ...(config.headers && { headers: config.headers })
+      };
+    }
+
+    // Handle legacy OpenCode formats (pass through)
+    if (config.type === 'local' || config.type === 'remote') {
+      return config;
+    }
+
     return config;
   }
 

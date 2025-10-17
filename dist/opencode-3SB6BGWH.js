@@ -24,9 +24,32 @@ var OpenCodeTransformer = class extends BaseTransformer {
   }
   /**
    * Transform MCP server configuration for OpenCode
-   * OpenCode expects MCP config under the 'mcp' key
+   * Convert from Claude Code's optimal format to OpenCode's format
    */
   transformMCPConfig(config) {
+    if (config.type === "stdio") {
+      const openCodeConfig = {
+        type: "local",
+        command: [config.command]
+      };
+      if (config.args && config.args.length > 0) {
+        openCodeConfig.command.push(...config.args);
+      }
+      if (config.env) {
+        openCodeConfig.environment = config.env;
+      }
+      return openCodeConfig;
+    }
+    if (config.type === "http") {
+      return {
+        type: "remote",
+        url: config.url,
+        ...config.headers && { headers: config.headers }
+      };
+    }
+    if (config.type === "local" || config.type === "remote") {
+      return config;
+    }
     return config;
   }
   /**
