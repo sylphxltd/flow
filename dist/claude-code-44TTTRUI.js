@@ -102,24 +102,39 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
   }
   /**
    * Transform MCP server configuration for Claude Code
-   * Convert OpenCode's local/remote to Claude Code's stdio/http
+   * Convert from various formats to Claude Code's optimal format
    */
   transformMCPConfig(config) {
     if (config.type === "local") {
+      const [command, ...args] = config.command;
+      return {
+        type: "stdio",
+        command,
+        ...args && args.length > 0 && { args },
+        ...config.environment && { env: config.environment }
+      };
+    }
+    if (config.type === "stdio") {
       return {
         type: "stdio",
         command: config.command,
-        ...config.environment && { env: config.environment }
+        ...config.args && config.args.length > 0 && { args: config.args },
+        ...config.env && { env: config.env }
       };
-    } else if (config.type === "remote") {
-      const httpConfig = {
+    }
+    if (config.type === "remote") {
+      return {
         type: "http",
-        url: config.url
+        url: config.url,
+        ...config.headers && { headers: config.headers }
       };
-      if (config.headers) {
-        httpConfig.headers = config.headers;
-      }
-      return httpConfig;
+    }
+    if (config.type === "http") {
+      return {
+        type: "http",
+        url: config.url,
+        ...config.headers && { headers: config.headers }
+      };
     }
     return config;
   }
@@ -193,7 +208,25 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
 `;
     help += `        "type": "stdio",
 `;
-    help += `        "command": ["npx", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+    help += `        "command": "npx",
+`;
+    help += `        "args": ["@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+`;
+    help += `      },
+`;
+    help += `      "git": {
+`;
+    help += `        "type": "stdio",
+`;
+    help += `        "command": "npx",
+`;
+    help += `        "args": ["@modelcontextprotocol/server-git", "."],
+`;
+    help += `        "env": {
+`;
+    help += `          "GIT_TRACE": "1"
+`;
+    help += `        }
 `;
     help += `      },
 `;
@@ -205,7 +238,7 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
 `;
     help += `        "headers": {
 `;
-    help += `          "Authorization": "Bearer YOUR_API_KEY"
+    help += `          "Authorization": "Bearer $API_KEY"
 `;
     help += `        }
 `;
@@ -214,6 +247,9 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
     help += `    }
 `;
     help += `  }
+
+`;
+    help += `Note: Environment variables can be expanded in command, args, env, url, and headers.
 
 `;
     return help;

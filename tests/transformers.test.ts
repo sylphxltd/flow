@@ -351,7 +351,7 @@ Second content`;
   });
 
   describe('MCP Configuration', () => {
-    it('should transform OpenCode local config to Claude Code stdio', async () => {
+    it('should transform OpenCode local config to Claude Code stdio format', async () => {
       const localConfig = {
         type: 'local' as const,
         command: ['npx', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
@@ -365,9 +365,33 @@ Second content`;
 
       expect(result).toEqual({
         type: 'stdio',
-        command: ['npx', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
+        command: 'npx',
+        args: ['@modelcontextprotocol/server-filesystem', '/path/to/dir'],
         env: {
           NODE_ENV: 'production'
+        }
+      });
+    });
+
+    it('should preserve new Claude Code stdio format', async () => {
+      const stdioConfig = {
+        type: 'stdio' as const,
+        command: 'npx',
+        args: ['@modelcontextprotocol/server-git', '.'],
+        env: {
+          GIT_TRACE: '1'
+        }
+      };
+
+      const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(stdioConfig);
+
+      expect(result).toEqual({
+        type: 'stdio',
+        command: 'npx',
+        args: ['@modelcontextprotocol/server-git', '.'],
+        env: {
+          GIT_TRACE: '1'
         }
       });
     });
@@ -393,10 +417,31 @@ Second content`;
       });
     });
 
+    it('should preserve new Claude Code http format', async () => {
+      const httpConfig = {
+        type: 'http' as const,
+        url: 'https://api.example.com/mcp',
+        headers: {
+          'Authorization': 'Bearer $API_KEY'
+        }
+      };
+
+      const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(httpConfig);
+
+      expect(result).toEqual({
+        type: 'http',
+        url: 'https://api.example.com/mcp',
+        headers: {
+          'Authorization': 'Bearer $API_KEY'
+        }
+      });
+    });
+
     it('should handle OpenCode local config without environment variables', async () => {
       const localConfig = {
         type: 'local' as const,
-        command: ['npx', '@modelcontextprotocol/server-git', '.']
+        command: ['node', 'server.js']
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -404,19 +449,36 @@ Second content`;
 
       expect(result).toEqual({
         type: 'stdio',
-        command: ['npx', '@modelcontextprotocol/server-git', '.']
+        command: 'node',
+        args: ['server.js']
       });
       expect(result).not.toHaveProperty('env');
     });
 
-    it('should handle OpenCode remote config without headers', async () => {
-      const remoteConfig = {
-        type: 'remote' as const,
+    it('should handle Claude Code stdio config with no args', async () => {
+      const stdioConfig = {
+        type: 'stdio' as const,
+        command: '/usr/local/bin/custom-server'
+      };
+
+      const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(stdioConfig);
+
+      expect(result).toEqual({
+        type: 'stdio',
+        command: '/usr/local/bin/custom-server'
+      });
+      expect(result).not.toHaveProperty('args');
+    });
+
+    it('should handle http config without headers', async () => {
+      const httpConfig = {
+        type: 'http' as const,
         url: 'https://mcp.example.com'
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
-      const result = claudeCodeTransformer.transformMCPConfig(remoteConfig);
+      const result = claudeCodeTransformer.transformMCPConfig(httpConfig);
 
       expect(result).toEqual({
         type: 'http',

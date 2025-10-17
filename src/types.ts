@@ -41,18 +41,33 @@ export interface CommandArgument {
 }
 
 export interface MCPServerConfig {
-  type: 'local';  // For OpenCode (stdio equivalent)
-  command: string[];
-  environment?: Record<string, string>;
+  // Common fields
+  type: 'stdio';
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
 }
 
 export interface MCPServerConfigHTTP {
-  type: 'remote';  // For OpenCode (http equivalent)
+  type: 'http';
   url: string;
   headers?: Record<string, string>;
 }
 
-export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP;
+// Legacy OpenCode types (for backward compatibility)
+export interface MCPServerConfigLegacy {
+  type: 'local';
+  command: string[];
+  environment?: Record<string, string>;
+}
+
+export interface MCPServerConfigHTTPLegacy {
+  type: 'remote';
+  url: string;
+  headers?: Record<string, string>;
+}
+
+export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP | MCPServerConfigLegacy | MCPServerConfigHTTPLegacy;
 
 export interface OpenCodeConfig {
   $schema?: string;

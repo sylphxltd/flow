@@ -399,7 +399,7 @@ var TargetManager = class {
     if (this.initialized) return;
     try {
       const { OpenCodeTransformer } = await import("./opencode-3FTAPE7D.js");
-      const { ClaudeCodeTransformer } = await import("./claude-code-JTXMT64F.js");
+      const { ClaudeCodeTransformer } = await import("./claude-code-44TTTRUI.js");
       const { CursorTransformer } = await import("./cursor-LF72HVZC.js");
       const { VSCodeTransformer } = await import("./vscode-LF7J5NK6.js");
       this.registerTransformer(
