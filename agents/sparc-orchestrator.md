@@ -1,4 +1,5 @@
 ---
+name: sparc-orchestrator
 description: SPARC Framework Orchestrator - Maximizes concurrent processing through strategic subagent delegation while maintaining strict SPARC methodology compliance
 mode: primary
 temperature: 0.2

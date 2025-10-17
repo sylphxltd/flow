@@ -11,7 +11,7 @@ var CursorTransformer = class extends BaseTransformer {
    * Transform agent content for Cursor
    * Cursor uses JSON format, so we need to convert from YAML front matter
    */
-  async transformAgentContent(content, metadata) {
+  async transformAgentContent(content, metadata, sourcePath) {
     const { metadata: yamlMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
     const combinedMetadata = { ...yamlMetadata, ...metadata };
     const agentData = {

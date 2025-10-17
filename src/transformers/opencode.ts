@@ -16,7 +16,7 @@ export class OpenCodeTransformer extends BaseTransformer {
    * OpenCode uses YAML front matter, so we preserve it
    * Remove name field as OpenCode doesn't use it
    */
-  async transformAgentContent(content: string, metadata?: any): Promise<string> {
+  async transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string> {
     // For OpenCode, we preserve YAML front matter but remove name field
     const { metadata: existingMetadata, content: baseContent } =
       await this.extractYamlFrontMatter(content);

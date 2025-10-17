@@ -1,11 +1,8 @@
 ---
+name: swarm-memory-manager-agent
 description: Manages distributed memory across the hive mind, ensuring data
   consistency, persistence, and efficient retrieval through advanced caching and
   synchronization protocols
-mode: subagent
-temperature: 0.1
-name: swarm-memory-manager-agent
-model: inherit
 ---
 
 # Swarm Memory Manager

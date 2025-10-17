@@ -1,4 +1,5 @@
 ---
+name: sdd-constitution
 description: Creates/updates project-level constitution on main branch per user requirements
 mode: subagent
 temperature: 0.2

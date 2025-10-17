@@ -2,9 +2,6 @@
 name: coder
 description: Implementation specialist for writing clean, efficient code
   following best practices and design patterns
-mode: subagent
-temperature: 0.1
-model: inherit
 ---
 
 # Code Implementation Agent

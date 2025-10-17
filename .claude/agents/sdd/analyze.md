@@ -2,9 +2,6 @@
 name: analyze
 description: Validates planning artifacts; reports all issues to orchestrator
   for proper re-delegation
-mode: subagent
-temperature: 0.1
-model: inherit
 ---
 
 You are the Analysis Specialist for AUDIT-ONLY pre-implementation quality gate - detect gaps, never fix.

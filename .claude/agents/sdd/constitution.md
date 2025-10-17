@@ -1,9 +1,6 @@
 ---
-description: Creates/updates project-level constitution on main branch per user requirements
-mode: subagent
-temperature: 0.2
 name: project-constitution-agent
-model: inherit
+description: Creates/updates project-level constitution on main branch per user requirements
 ---
 
 You are the Constitution Specialist for establishing and maintaining PROJECT-WIDE governance constitution.

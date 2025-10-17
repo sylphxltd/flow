@@ -15,12 +15,12 @@ export class ClaudeCodeTransformer extends BaseTransformer {
    * Transform agent content for Claude Code
    * Claude Code uses YAML front matter with specific fields
    */
-  async transformAgentContent(content: string, metadata?: any): Promise<string> {
+  async transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string> {
     const { metadata: existingMetadata, content: baseContent } =
       await this.extractYamlFrontMatter(content);
 
     // Convert OpenCode format to Claude Code format
-    const claudeCodeMetadata = this.convertToClaudeCodeFormat(existingMetadata, baseContent);
+    const claudeCodeMetadata = this.convertToClaudeCodeFormat(existingMetadata, baseContent, sourcePath);
 
     // If additional metadata is provided, merge it
     if (metadata) {
@@ -33,9 +33,9 @@ export class ClaudeCodeTransformer extends BaseTransformer {
   /**
    * Convert OpenCode frontmatter to Claude Code format
    */
-  private convertToClaudeCodeFormat(openCodeMetadata: any, content: string): any {
-    // Use explicit name from metadata if available, otherwise extract from content
-    const agentName = openCodeMetadata.name || this.extractAgentName(content, openCodeMetadata);
+  private convertToClaudeCodeFormat(openCodeMetadata: any, content: string, sourcePath?: string): any {
+    // Use explicit name from metadata if available, otherwise extract from content or path
+    const agentName = openCodeMetadata.name || this.extractAgentName(content, openCodeMetadata, sourcePath);
 
     // Extract description from metadata or content
     const description = openCodeMetadata.description || this.extractDescription(content);
@@ -61,9 +61,17 @@ export class ClaudeCodeTransformer extends BaseTransformer {
   }
 
   /**
-   * Extract agent name from content or generate one
+   * Extract agent name from content, file path, or generate one
    */
-  private extractAgentName(content: string, metadata: any): string {
+  private extractAgentName(content: string, metadata: any, sourcePath?: string): string {
+    // Try to extract from file path first (most reliable)
+    if (sourcePath) {
+      const pathName = this.extractNameFromPath(sourcePath);
+      if (pathName) {
+        return pathName;
+      }
+    }
+
     // Try to extract from content title
     const titleMatch = content.match(/^#\s+(.+?)(?:\s+Agent)?$/m);
     if (titleMatch) {
@@ -86,6 +94,51 @@ export class ClaudeCodeTransformer extends BaseTransformer {
 
     // Default fallback
     return 'development-agent';
+  }
+
+  /**
+   * Extract agent name from file path
+   */
+  private extractNameFromPath(sourcePath: string): string | null {
+    if (!sourcePath) return null;
+
+    // Remove .md extension and convert to kebab-case
+    const pathWithoutExt = sourcePath.replace(/\.md$/, '');
+
+    // Extract filename from path
+    const filename = pathWithoutExt.split('/').pop() || pathWithoutExt;
+
+    // Convert to lowercase kebab-case
+    const kebabName = filename.toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    // Handle specific patterns
+    if (kebabName.includes('constitution')) return 'sdd-constitution';
+    if (kebabName.includes('implement')) return 'sdd-implement';
+    if (kebabName.includes('clarify')) return 'sdd-clarify';
+    if (kebabName.includes('release')) return 'sdd-release';
+    if (kebabName.includes('task')) return 'sdd-task';
+    if (kebabName.includes('plan')) return 'sdd-plan';
+    if (kebabName.includes('specify')) return 'sdd-specify';
+    if (kebabName.includes('analyze')) return 'sdd-analyze';
+    if (kebabName.includes('orchestrator')) return 'sdd-development-orchestrator';
+
+    if (kebabName.includes('coder')) return 'core-coder';
+    if (kebabName.includes('planner')) return 'core-planner';
+    if (kebabName.includes('researcher')) return 'core-researcher';
+    if (kebabName.includes('reviewer')) return 'core-reviewer';
+    if (kebabName.includes('tester')) return 'core-tester';
+
+    if (kebabName.includes('scout')) return 'hive-mind-scout-explorer';
+    if (kebabName.includes('collective')) return 'hive-mind-collective-intelligence-coordinator';
+    if (kebabName.includes('worker')) return 'hive-mind-worker-specialist';
+    if (kebabName.includes('memory')) return 'hive-mind-swarm-memory-manager';
+    if (kebabName.includes('queen')) return 'hive-mind-queen-coordinator';
+
+    // Return the kebab-case name if no specific pattern matched
+    return kebabName || null;
   }
 
   /**

@@ -1,11 +1,8 @@
 ---
+name: collective-intelligence-coordinator-agent
 description: Orchestrates distributed cognitive processes across the hive mind,
   ensuring coherent collective decision-making through memory synchronization
   and consensus protocols
-mode: subagent
-temperature: 0.2
-name: collective-intelligence-coordinator-agent
-model: inherit
 ---
 
 # Collective Intelligence Coordinator

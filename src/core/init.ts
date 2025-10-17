@@ -70,8 +70,8 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const agentsDir = path.join(cwd, config.agentDir);
 
   // Use the transformer to process content
-  const processContent = async (content: string) => {
-    return await transformer.transformAgentContent(content);
+  const processContent = async (content: string, sourcePath?: string) => {
+    return await transformer.transformAgentContent(content, undefined, sourcePath);
   };
 
   // Clear obsolete agents if requested
@@ -139,9 +139,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
     // Read content from source
     let content = fs.readFileSync(sourcePath, 'utf8');
-    content = await processContent(content);
+    content = await processContent(content, agentFile);
 
-    const localProcessed = localInfo ? await processContent(localInfo.content) : '';
+    const localProcessed = localInfo ? await processContent(localInfo.content, agentFile) : '';
     const contentChanged = !localInfo || localProcessed !== content;
 
     if (contentChanged) {

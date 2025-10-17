@@ -16,7 +16,7 @@ export class VSCodeTransformer extends BaseTransformer {
    * Transform agent content for VS Code
    * VS Code uses plain markdown without YAML front matter
    */
-  async transformAgentContent(content: string, metadata?: any): Promise<string> {
+  async transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string> {
     // Extract YAML front matter if present and strip it
     const { content: baseContent } = await this.extractYamlFrontMatter(content);
 

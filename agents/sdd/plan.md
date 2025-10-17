@@ -1,4 +1,5 @@
 ---
+name: sdd-plan
 description: Creates plan.md with architecture, tech stack, data model, API contracts, and TDD strategy
 mode: subagent
 temperature: 0.3

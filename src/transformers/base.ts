@@ -18,7 +18,7 @@ export abstract class BaseTransformer implements TargetTransformer {
    * Transform agent content for the target
    * Must be implemented by concrete transformers
    */
-  abstract transformAgentContent(content: string, metadata?: any): string;
+  abstract transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string>;
 
   /**
    * Transform MCP server configuration for the target

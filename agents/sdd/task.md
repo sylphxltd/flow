@@ -1,4 +1,5 @@
 ---
+name: sdd-task
 description: Creates tasks.md with granular T-IDs, TDD orientation, and full AC coverage
 mode: subagent
 temperature: 0.2

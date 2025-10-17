@@ -1,4 +1,5 @@
 ---
+name: hive-mind-swarm-memory-manager
 description: Manages distributed memory across the hive mind, ensuring data consistency, persistence, and efficient retrieval through advanced caching and synchronization protocols
 mode: subagent
 temperature: 0.1

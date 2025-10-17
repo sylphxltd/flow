@@ -1,4 +1,5 @@
 ---
+name: sdd-implement
 description: Implements all tasks using strict TDD; collects evidence; reports verification issues
 mode: subagent
 temperature: 0.2

@@ -1,4 +1,5 @@
 ---
+name: sdd-specify
 description: Creates spec.md with prioritized user stories, measurable ACs, and evidence trail
 mode: subagent
 temperature: 0.3

@@ -11,9 +11,9 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
    * Transform agent content for Claude Code
    * Claude Code uses YAML front matter with specific fields
    */
-  async transformAgentContent(content, metadata) {
+  async transformAgentContent(content, metadata, sourcePath) {
     const { metadata: existingMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
-    const claudeCodeMetadata = this.convertToClaudeCodeFormat(existingMetadata, baseContent);
+    const claudeCodeMetadata = this.convertToClaudeCodeFormat(existingMetadata, baseContent, sourcePath);
     if (metadata) {
       Object.assign(claudeCodeMetadata, metadata);
     }
@@ -22,8 +22,8 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
   /**
    * Convert OpenCode frontmatter to Claude Code format
    */
-  convertToClaudeCodeFormat(openCodeMetadata, content) {
-    const agentName = openCodeMetadata.name || this.extractAgentName(content, openCodeMetadata);
+  convertToClaudeCodeFormat(openCodeMetadata, content, sourcePath) {
+    const agentName = openCodeMetadata.name || this.extractAgentName(content, openCodeMetadata, sourcePath);
     const description = openCodeMetadata.description || this.extractDescription(content);
     const result = {
       name: agentName,
@@ -35,9 +35,15 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
     return result;
   }
   /**
-   * Extract agent name from content or generate one
+   * Extract agent name from content, file path, or generate one
    */
-  extractAgentName(content, metadata) {
+  extractAgentName(content, metadata, sourcePath) {
+    if (sourcePath) {
+      const pathName = this.extractNameFromPath(sourcePath);
+      if (pathName) {
+        return pathName;
+      }
+    }
     const titleMatch = content.match(/^#\s+(.+?)(?:\s+Agent)?$/m);
     if (titleMatch) {
       const title = titleMatch[1].trim().toLowerCase();
@@ -54,6 +60,35 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
       if (desc.includes("orchestrator")) return "development-orchestrator";
     }
     return "development-agent";
+  }
+  /**
+   * Extract agent name from file path
+   */
+  extractNameFromPath(sourcePath) {
+    if (!sourcePath) return null;
+    const pathWithoutExt = sourcePath.replace(/\.md$/, "");
+    const filename = pathWithoutExt.split("/").pop() || pathWithoutExt;
+    const kebabName = filename.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    if (kebabName.includes("constitution")) return "sdd-constitution";
+    if (kebabName.includes("implement")) return "sdd-implement";
+    if (kebabName.includes("clarify")) return "sdd-clarify";
+    if (kebabName.includes("release")) return "sdd-release";
+    if (kebabName.includes("task")) return "sdd-task";
+    if (kebabName.includes("plan")) return "sdd-plan";
+    if (kebabName.includes("specify")) return "sdd-specify";
+    if (kebabName.includes("analyze")) return "sdd-analyze";
+    if (kebabName.includes("orchestrator")) return "sdd-development-orchestrator";
+    if (kebabName.includes("coder")) return "core-coder";
+    if (kebabName.includes("planner")) return "core-planner";
+    if (kebabName.includes("researcher")) return "core-researcher";
+    if (kebabName.includes("reviewer")) return "core-reviewer";
+    if (kebabName.includes("tester")) return "core-tester";
+    if (kebabName.includes("scout")) return "hive-mind-scout-explorer";
+    if (kebabName.includes("collective")) return "hive-mind-collective-intelligence-coordinator";
+    if (kebabName.includes("worker")) return "hive-mind-worker-specialist";
+    if (kebabName.includes("memory")) return "hive-mind-swarm-memory-manager";
+    if (kebabName.includes("queen")) return "hive-mind-queen-coordinator";
+    return kebabName || null;
   }
   /**
    * Extract description from metadata or content

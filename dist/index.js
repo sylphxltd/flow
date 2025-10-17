@@ -398,10 +398,10 @@ var TargetManager = class {
   async initializeDefaultTransformers() {
     if (this.initialized) return;
     try {
-      const { OpenCodeTransformer } = await import("./opencode-2OJZ2H2H.js");
-      const { ClaudeCodeTransformer } = await import("./claude-code-366OQWTH.js");
-      const { CursorTransformer } = await import("./cursor-BL5IZQUK.js");
-      const { VSCodeTransformer } = await import("./vscode-2H54W423.js");
+      const { OpenCodeTransformer } = await import("./opencode-3FTAPE7D.js");
+      const { ClaudeCodeTransformer } = await import("./claude-code-OLFPZ3NS.js");
+      const { CursorTransformer } = await import("./cursor-LF72HVZC.js");
+      const { VSCodeTransformer } = await import("./vscode-LF7J5NK6.js");
       this.registerTransformer(
         "opencode",
         new OpenCodeTransformer(getTargetDefinition("opencode").config)
@@ -655,8 +655,8 @@ async function installAgents(options) {
   console.log(`\u{1F4DD} Using target: ${target.name}`);
   const config = target.config;
   const agentsDir = path3.join(cwd, config.agentDir);
-  const processContent = async (content) => {
-    return await transformer.transformAgentContent(content);
+  const processContent = async (content, sourcePath) => {
+    return await transformer.transformAgentContent(content, void 0, sourcePath);
   };
   if (options.clear && fs3.existsSync(agentsDir)) {
     let expectedFiles;
@@ -700,8 +700,8 @@ async function installAgents(options) {
     const localInfo = getLocalFileInfo(destPath);
     const isNew = !localInfo;
     let content = fs3.readFileSync(sourcePath, "utf8");
-    content = await processContent(content);
-    const localProcessed = localInfo ? await processContent(localInfo.content) : "";
+    content = await processContent(content, agentFile);
+    const localProcessed = localInfo ? await processContent(localInfo.content, agentFile) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
       fs3.writeFileSync(destPath, content, "utf8");

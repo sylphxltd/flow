@@ -1,10 +1,7 @@
 ---
+name: worker-specialist-agent
 description: Dedicated task execution specialist that carries out assigned work
   with precision, continuously reporting progress through memory coordination
-mode: subagent
-temperature: 0.1
-name: worker-specialist-agent
-model: inherit
 ---
 
 # Worker Specialist
