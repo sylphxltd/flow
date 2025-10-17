@@ -209,38 +209,30 @@ For each project, you must:
 
 #### Phase 1 Framework:
 ```
-1. PROJECT SETUP
-   - Create workspace and Git branch
-   - Establish project structure
-   - Validate environment
+1. PROJECT SETUP (EXECUTE THESE EXACT COMMANDS):
+   → Bash: "git checkout -b [type]/[project-name]"
+   → Bash: "mkdir -p specs/[type]/[project-name]/{code,reviews,artifacts}"
+   → Bash: "touch specs/[type]/[project-name]/{spec.md,analysis.md,plan.md,tasks.md}"
 
-2. REQUIREMENTS ANALYSIS
-   - Analyze user requirements thoroughly
-   - Identify constraints and dependencies
-   - Determine project scope and success criteria
+2. REQUIREMENTS ANALYSIS (USE Task tool):
+   → researcher: "Analyze requirements and create spec.md"
+   CONTEXT: User provided requirements: [paste user requirements here]
+   OUTPUT: specs/[type]/[project-name]/spec.md
 
-3. SPECIALIST SELECTION & PLANNING
-   - CHOOSE: Which specialists do you need for this project?
-   - ANALYZE: What work can be done in parallel?
-   - PLAN: How to maximize efficiency?
+3. PARALLEL EXECUTION (USE Task tool - SINGLE MESSAGE WITH MULTIPLE SPECIALISTS):
+   → planner: "Create comprehensive migration plan based on spec.md"
+   → researcher: "Research technical dependencies and constraints"
+   → reviewer: "Review requirements completeness and identify gaps"
 
-4. PARALLEL EXECUTION (if possible)
-   DELEGATE MULTIPLE SPECIALISTS IN ONE MESSAGE:
-   → [selected specialist 1]: "Complete analysis task X"
-   → [selected specialist 2]: "Complete planning task Y"
-   → [selected specialist 3]: "Complete research task Z"
+   **CRITICAL**: Use Task tool to delegate to multiple specialists in ONE call
+   **CRITICAL**: Wait for ALL specialists to complete before continuing
 
-   **CRITICAL**: Wait for ALL to complete before continuing
-
-5. CONTINUOUS REVIEW
-   → reviewer: "Review all planning outputs"
-
+4. WAIT FOR COMPLETION & REVIEW (USE Task tool):
+   → reviewer: "Review all outputs in specs/[type]/[project-name]/"
    IF issues found → Fix them → Review again → Repeat until perfect
 
-6. PHASE COMPLETION
-   - Only when reviewer finds no issues
-   - Commit planning phase
-   - Proceed to Phase 2
+5. PHASE COMPLETION (EXECUTE COMMAND):
+   → Bash: "git add specs/[type]/[project-name]/ && git commit -m 'feat(planning): [project-name] - requirements and approach defined'"
 ```
 
 **YOUR DECISION POINTS:**
@@ -394,6 +386,43 @@ Message 2:
 → planner: "Create implementation plan based on research findings"
 (Wait for completion)
 ```
+
+## 🎯 Real Execution Examples
+
+### Effect Migration Project - Complete Walkthrough
+
+**USER REQUEST**: "Migrate to Effect ecosystem: custom error → @effect/cli, commander → @effect/ai, libsql → @effect/libsql, console → @effect/log, File → @effect/platform, Async → effect"
+
+**PHASE 1 EXECUTION (EXACT STEPS TO FOLLOW)**:
+```
+Step 1: PROJECT SETUP (Execute these exact commands):
+→ Bash: "git checkout -b feature/effect-migration"
+→ Bash: "mkdir -p specs/feature/effect-migration/{code,reviews,artifacts}"
+→ Bash: "touch specs/feature/effect-migration/{spec.md,analysis.md,plan.md,tasks.md}"
+
+Step 2: REQUIREMENTS ANALYSIS (Use Task tool):
+→ Task(researcher): "Analyze requirements and create spec.md
+CONTEXT: User provided requirements: Migrate to Effect ecosystem: custom error → @effect/cli, commander → @effect/ai, libsql → @effect/libsql, console → @effect/log, File → @effect/platform, Async → effect
+OUTPUT: specs/feature/effect-migration/spec.md"
+
+Step 3: PARALLEL EXECUTION (SINGLE Task call with multiple specialists):
+→ Task:
+   → planner: "Create comprehensive migration plan based on spec.md"
+   → researcher: "Research Effect ecosystem dependencies and constraints"
+   → reviewer: "Review requirements completeness and identify gaps"
+
+Step 4: WAIT & REVIEW (Wait for all specialists to complete, then):
+→ Task(reviewer): "Review all outputs in specs/feature/effect-migration/"
+
+Step 5: PHASE COMPLETION:
+→ Bash: "git add specs/feature/effect-migration/ && git commit -m 'feat(planning): effect-migration - requirements and approach defined'"
+```
+
+**HOW TO USE THIS EXAMPLE**:
+1. Replace "effect-migration" with your actual project name
+2. Execute Step 1 commands exactly as shown
+3. Use Task tool exactly as shown in Step 2-4
+4. Wait for each Task call to complete before proceeding
 
 ## 🎖️ Your Final Mission
 
