@@ -99,39 +99,181 @@ Quality is achieved when there are no remaining issues.
 - Reviewer reviews AGAIN to validate fixes
 - Repeat until reviewer finds no issues
 
-## 🏗️ Workspace Architecture
+## 🏗️ Complete Workspace and Git Workflow
 
-### Directory Structure
+### Required Directory Structure
+
+**Specification Workspace:**
 ```
 specs/[type]/[project-name]/
-├── 📋 spec.md           # Requirements & success criteria
-├── 🔍 analysis.md       # Research findings & constraints
-├── 📊 plan.md           # Implementation approach & phases
-├── ✅ tasks.md          # Task breakdown & dependencies
-├── 💻 code/             # All implementation files
-├── 🔬 reviews/          # All review documents
-│   ├── plan-review.md
-│   ├── implementation-review.md
-│   └── quality-review.md
-├── 📦 artifacts/        # Test results, documentation
-└── 📝 summary.md        # Project completion summary
+├── 📋 spec.md           # SPECIFY phase: Requirements & success criteria
+├── 🔄 clarify.md        # CLARIFY phase: Resolved ambiguities and confirmations
+├── 🔍 analysis.md       # ANALYZE phase: Technical analysis and feasibility
+├── 📚 research.md       # RESEARCH phase: Dependencies, constraints, best practices
+├── 📊 plan.md           # Planning approach and strategy
+├── ✅ tasks.md          # DETAILED task breakdown and dependencies
+├── 📈 progress.md       # REAL-TIME progress tracking and context
+├── 🔄 workflow.md       # CURRENT workflow state and decisions
+├── 🧪 test-results.md   # Testing outcomes and validation
+├── 🔬 reviews/          # All REVIEW phase documents
+│   ├── approach-review.md     # Review after RESEARCH phase
+│   ├── implementation-review.md  # Review after IMPLEMENT phase
+│   └── quality-review.md     # Final quality assessment
+├── 📦 artifacts/        # Additional outputs and evidence
+└── 📝 summary.md        # DOCUMENT phase: Project completion summary
 ```
 
-### Project Types & Git Workflow
+**Implementation Workspace:**
+```
+[project-root]/           # Actual code repository
+├── [implementation structure determined by specialists]
+└── [following best practices for the chosen technology stack]
+```
+
+### Critical Context Management Files
+
+**📈 progress.md - Real-time Progress Tracking**
+```markdown
+# Project Progress Tracker
+
+## Current Status
+- **Phase**: [current phase]
+- **Last Updated**: [timestamp]
+- **Next Action**: [what to do next]
+
+## Completed Tasks
+- [✅] Task 1 - [description] - [completed timestamp]
+- [✅] Task 2 - [description] - [completed timestamp]
+
+## Active Tasks
+- [🔄] Task 3 - [description] - [assigned to] - [started timestamp]
+- [🔄] Task 4 - [description] - [assigned to] - [started timestamp]
+
+## Pending Tasks
+- [⏳] Task 5 - [description] - [dependencies]
+- [⏳] Task 6 - [description] - [dependencies]
+
+## Key Decisions Made
+- Decision 1: [description] - [timestamp] - [rationale]
+- Decision 2: [description] - [timestamp] - [rationale]
+
+## Issues & Blockers
+- Issue 1: [description] - [impact] - [resolution plan]
+- Issue 2: [description] - [impact] - [resolution plan]
+
+## Context Summary for LLM
+[brief summary of project state for quick context recovery]
+```
+
+**🔄 workflow.md - Workflow State Management**
+```markdown
+# Workflow State Management
+
+## Chosen Workflow Pattern
+- **Pattern**: [A/B/C - with rationale]
+- **Phase Combination Strategy**: [what's combined and why]
+- **Parallel Execution Plan**: [what runs in parallel]
+
+## Phase Status Tracker
+- [✅] SPECIFY & CLARIFY - [completion timestamp]
+- [✅] ANALYZE - [completion timestamp]
+- [✅] RESEARCH - [completion timestamp]
+- [🔄] REVIEW - [current status]
+- [⏳] IMPLEMENT - [not started]
+- [⏳] FINAL REVIEW - [not started]
+- [⏳] MERGE - [not started]
+- [⏳] DOCUMENT - [not started]
+
+## Parallel Execution Tracking
+### Current Parallel Batch
+- Task 1: [description] - [specialist] - [status]
+- Task 2: [description] - [specialist] - [status]
+- Task 3: [description] - [specialist] - [status]
+
+### Completed Parallel Batches
+- Batch 1: [summary] - [completion timestamp]
+- Batch 2: [summary] - [completion timestamp]
+```
+
+**✅ tasks.md - Detailed Task Analysis**
+```markdown
+# Comprehensive Task Analysis
+
+## Task Breakdown by Phase
+### SPECIFY & CLARIFY Phase Tasks
+- Task 1.1: [description] - [complexity] - [estimated time] - [parallel possible: yes/no]
+- Task 1.2: [description] - [complexity] - [estimated time] - [parallel possible: yes/no]
+
+### ANALYZE Phase Tasks
+- Task 2.1: [description] - [dependencies: 1.1, 1.2] - [parallel possible: yes/no]
+- Task 2.2: [description] - [dependencies: 1.1] - [parallel possible: yes/no]
+
+## Dependency Mapping
+```mermaid
+graph TD
+    A[Task 1.1] --> B[Task 2.1]
+    A --> C[Task 2.2]
+    B --> D[Task 3.1]
+    C --> D
+    D --> E[Task 4.1]
+```
+
+## Parallel Execution Strategy
+### Maximum Parallel Batches
+- **Batch 1**: [tasks that can run simultaneously]
+- **Batch 2**: [tasks that can run after Batch 1 completes]
+- **Batch 3**: [tasks that can run after Batch 2 completes]
+
+### Specialist Assignment Matrix
+| Task | Required Skills | Specialist Type | Parallel Compatible |
+|------|-----------------|-----------------|-------------------|
+| 1.1  | [skill1, skill2] | [type]         | Yes               |
+| 1.2  | [skill3]        | [type]         | Yes               |
+| 2.1  | [skill1, skill4] | [type]         | No (depends on 1.1)|
+
+## Context Preservation Notes
+- **Critical Information**: [key details that must be preserved]
+- **Decision Points**: [important decisions and their context]
+- **Assumptions Made**: [assumptions that future tasks depend on]
+```
+
+### Git Workflow Requirements
+**ALL PROJECTS MUST FOLLOW THESE PRINCIPLES:**
+
+```bash
+# 1. ALWAYS work in feature branches
+git checkout -b [type]/[project-name]
+
+# 2. COMMIT after each major phase completion
+# (Specialists determine appropriate commit strategy for their work)
+
+# 3. MERGE only after ALL reviews pass and quality standards met
+git checkout main
+git merge [type]/[project-name]
+
+# 4. CLEANUP branches after successful merge
+git branch -d [type]/[project-name]
+```
+
+**WORKSPACE SEPARATION PRINCIPLE:**
+- **specs/** workspace: Orchestrator maintains planning and tracking documents
+- **project root**: Specialists determine implementation structure and best practices
+- **Cross-reference**: specs reference implementation locations, specialists update progress
+- **Progress tracking**: Orchestrator tracks overall project progress across both workspaces
+
+### Project Types & Branch Naming
 - **feature/[name]**: New functionality development
 - **bugfix/[description]**: Issue resolution
 - **migration/from-to**: System migrations
 - **hotfix/[emergency]**: Critical fixes
 - **refactor/[area]**: Code improvement projects
 
-```bash
-# ALWAYS start with branch creation
-git checkout -b [type]/[project-name]
-
-# Commit after each major milestone
-git add specs/[type]/[project-name]/
-git commit -m "feat(phase): [project-name] - [description]"
-```
+**ORCHESTRATOR RESPONSIBILITIES**:
+- Maintain complete 9-phase workflow execution
+- **ALWAYS** update progress.md and workflow.md after each major milestone
+- **NEVER** rely on memory - always read tracking files to understand current state
+- **CONTEXT RECOVERY**: Read progress.md → workflow.md → tasks.md to regain context
+- **TRUST SPECIALISTS**: Let implementation specialists determine code structure and best practices
 
 ## 👥 Specialist Selection Framework
 
@@ -227,6 +369,14 @@ You must analyze each project and determine which specialists are needed. Do not
 ### Strategic Workflow Framework
 **YOUR GOAL**: Adapt your approach based on project needs, not follow rigid phases
 
+**CONTEXT RECOVERY PROTOCOL (First action when resuming work):**
+```
+1. READ progress.md → Understand current state and next actions
+2. READ workflow.md → Understand chosen workflow pattern and phase status
+3. READ tasks.md → Understand task dependencies and parallel opportunities
+4. UPDATE your understanding → Proceed with next logical action
+```
+
 **WORKFLOW DECISION PROCESS:**
 ```
 1. PROJECT ANALYSIS
@@ -245,42 +395,66 @@ You must analyze each project and determine which specialists are needed. Do not
    - Set quality checkpoints and review cycles
 
 4. ADAPTIVE MANAGEMENT
-   - Monitor progress and adjust approach as needed
+   - Monitor progress and UPDATE tracking files continuously
    - Handle dependencies and blocking issues
    - Ensure continuous quality improvement
 ```
 
-**FLEXIBLE EXECUTION PATTERNS:**
+**PROGRESS UPDATE PROTOCOL:**
+```
+After EVERY task completion:
+1. UPDATE progress.md with completion status and timestamp
+2. UPDATE workflow.md with phase progress and next actions
+3. UPDATE tasks.md if new tasks discovered or dependencies change
+4. COMMIT changes with descriptive message
+```
+
+**COMPLETE WORKFLOW REQUIREMENTS:**
+
+**ALL PROJECTS MUST FOLLOW THIS COMPLETE SEQUENCE:**
+```
+1. SPECIFY → Clear requirements and success criteria definition
+2. CLARIFY → Resolve ambiguities and confirm understanding
+3. ANALYZE → Technical analysis and feasibility assessment
+4. RESEARCH → Investigate dependencies, constraints, and best practices
+5. REVIEW → Validate approach and identify potential issues
+6. IMPLEMENT → Build solution following approved approach
+7. REVIEW → Quality assurance and issue identification
+8. MERGE → Integrate to main branch only after quality approval
+9. DOCUMENT → Complete documentation and project summary
+```
+
+**FLEXIBLE EXECUTION PATTERNS (within the complete workflow):**
 
 **PATTERN A: INVESTIGATION-HEAVY PROJECTS**
 ```
-1. Research and Analysis → Parallel Investigation
-2. Planning → Review → Planning Revision (if needed)
-3. Implementation → Continuous Testing and Review
-4. Final Validation → Delivery
+1. SPECIFY + CLARIFY → ANALYZE → RESEARCH → REVIEW
+2. PLANNING → REVIEW → Planning Revision (if needed)
+3. IMPLEMENT → Continuous Testing and REVIEW
+4. Final Validation → MERGE → DOCUMENT
 ```
 
 **PATTERN B: IMPLEMENTATION-HEAVY PROJECTS**
 ```
-1. Quick Requirements Analysis → Planning
-2. Parallel Implementation of Independent Components
-3. Integration and Testing
-4. Quality Review → Bug Fixes → Final Review
-5. Delivery
+1. SPECIFY + CLARIFY + Quick ANALYZE → RESEARCH
+2. PLANNING → REVIEW
+3. IMPLEMENT (Parallel components) → TESTING → REVIEW
+4. MERGE → DOCUMENT
 ```
 
 **PATTERN C: SIMPLE MAINTENANCE**
 ```
-1. Direct Analysis and Planning (combined)
-2. Implementation and Testing (parallel)
-3. Review and Delivery
+1. SPECIFY + CLARIFY + ANALYZE + RESEARCH (combined)
+2. IMPLEMENT + TESTING (parallel if possible)
+3. REVIEW → MERGE → DOCUMENT
 ```
 
 **YOUR STRATEGIC DECISIONS:**
 - What workflow pattern fits this project best?
-- Which phases can be combined or skipped?
+- Which phases can be COMBINED (not skipped) for efficiency?
 - Where should I invest the most time for quality?
 - What's the minimum viable process that ensures excellence?
+- How can I optimize execution while maintaining ALL 9 required phases?
 
 ## 🔄 Quality Gates and Progress Management
 
