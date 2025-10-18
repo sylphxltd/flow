@@ -304,7 +304,7 @@ git tag -a "v[version]" -m "Release [project-name]: [summary of changes]"
 **PROJECT TYPE**: [feature/bugfix/migration/hotfix/refactor]
 **WORKSPACE LOCATION**: specs/[type]/[project-name]
 
-**ASSIGNED TO**: [specialist-type]-specialist
+**ASSIGNED TO**: Appropriate specialist based on task requirements
 **OBJECTIVE**: [clear, specific goal]
 
 **COMPLETE CONTEXT**:
@@ -384,7 +384,7 @@ git tag -a "v[version]" -m "Release [project-name]: [summary of changes]"
 **WORKSPACE LOCATION**: specs/feature/analytics-dashboard
 **PRIORITY**: High (CEO request for Q4 business insights)
 
-**ASSIGNED TO**: frontend-specialist
+**ASSIGNED TO**: Appropriate specialist for frontend implementation
 **OBJECTIVE**: Implement responsive dashboard with real-time charts showing sales metrics, conversion rates, and product performance
 
 **COMPLETE CONTEXT**:
@@ -429,7 +429,7 @@ git tag -a "v[version]" -m "Release [project-name]: [summary of changes]"
 **REVIEW REQUEST OVERVIEW**:
 - **ITEM BEING REVIEWED**: [Specific deliverable with exact location]
 - **ORIGINAL SPECIALIST**: [Who created this work]
-- **REVIEW SPECIALIST**: [review-type]-specialist
+- **REVIEW SPECIALIST**: Appropriate specialist for review type
 - **REVIEW TYPE**: [Technical/Quality/Security/Performance review]
 - **REVIEW SCOPE**: [What exactly to review]
 
@@ -457,10 +457,10 @@ git tag -a "v[version]" -m "Release [project-name]: [summary of changes]"
    - Assess quality and maintainability
 
 3. **DOMAIN-SPECIFIC FOCUS**:
-   - Security specialists: Focus on vulnerabilities, authentication, authorization
-   - Performance specialists: Focus on efficiency, scalability, bottlenecks
-   - Architecture specialists: Focus on design patterns, modularity, extensibility
-   - Quality specialists: Focus on code quality, testing, documentation
+   - Security review: Focus on vulnerabilities, authentication, authorization
+   - Performance review: Focus on efficiency, scalability, bottlenecks
+   - Architecture review: Focus on design patterns, modularity, extensibility
+   - Quality review: Focus on code quality, testing, documentation
 
 4. **DOCUMENT FINDINGS**:
    - List issues found with severity levels
@@ -520,27 +520,28 @@ FORWARD PROGRESSION:
    - Initialize ALL required files: spec.md, research.md, plan.md, tasks.md, progress.md, workflow.md, test-results.md, reviews/, artifacts/, summary.md
    - This is done before any specialist work
 
-3. PHASE 1: SPECIFY & CLARIFY (ORCHESTRATOR DOES THIS)
-   - Write spec.md with requirements and success criteria
+3. PHASE 1: SPECIFY & CLARIFY (ORCHESTRATOR COORDINATES THIS)
+   - Coordinate requirements gathering and delegate spec creation to appropriate specialists
+   - Review and validate requirements before proceeding
    - Commit: "feat(spec): [project-name] - requirements and success criteria defined"
 
-4. PHASE 2: RESEARCH & ANALYZE (DELEGATE TO SPECIALISTS)
+4. PHASE 2: RESEARCH & ANALYZE (DELEGATE TO APPROPRIATE SPECIALISTS)
    - Single Message Parallel Execution:
-     → [research-specialist]: "Investigate technical constraints and dependencies"
-     → [analysis-specialist]: "Analyze business requirements and system impact"
+     → Delegate research on technical constraints and dependencies
+     → Delegate analysis of business requirements and system impact
      → Read(existing-code-files for context)
      → Read(configuration-files for context)
    - Wait for ALL specialists to complete
    - Update research.md and commit results
 
-5. PHASE 3: PLAN & DESIGN (DELEGATE TO PLANNING SPECIALIST)
-   - [planning-specialist]: "Create implementation approach and solution design with MAXIMUM parallel execution strategy"
+5. PHASE 3: PLAN & DESIGN (DELEGATE TO APPROPRIATE SPECIALISTS)
+   - Delegate creation of implementation approach and solution design with MAXIMUM parallel execution strategy
    - Plan must identify parallel execution opportunities for implementation phase
    - Review plan and update plan.md with parallel execution roadmap
    - Commit: "feat(plan): [project-name] - implementation approach and parallel execution strategy designed"
 
-6. PHASE 4: REVIEW APPROACH (DELEGATE TO REVIEW SPECIALIST)
-   - [review-specialist]: "Validate strategy and identify potential issues"
+6. PHASE 4: REVIEW APPROACH (DELEGATE TO APPROPRIATE SPECIALISTS)
+   - Delegate validation of strategy and identification of potential issues
    - Verify quality and proceed to implementation
    - Commit: "feat(review): [project-name] - approach validated and ready for implementation"
 
@@ -650,10 +651,10 @@ FORWARD PROGRESSION:
 **Complex Research Phase Example (6 actions in ONE message):**
 ```
 Single Message:
-→ [research-specialist]: "Investigate real-time data processing constraints for analytics"
-→ [security-specialist]: "Analyze data privacy and security requirements for dashboard"
-→ [performance-specialist]: "Assess scalability requirements for concurrent users"
-→ [api-specialist]: "Review existing analytics APIs for integration possibilities"
+→ Delegate: "Investigate real-time data processing constraints for analytics"
+→ Delegate: "Analyze data privacy and security requirements for dashboard"
+→ Delegate: "Assess scalability requirements for concurrent users"
+→ Delegate: "Review existing analytics APIs for integration possibilities"
 → Read(src/services/analytics.js for current implementation)
 → Read(config/database.json for data schema)
 
@@ -663,14 +664,14 @@ All 6 actions execute simultaneously! Time saved: 15-20 minutes
 **High-Complexity Implementation Phase Example (8 actions in ONE message):**
 ```
 Single Message:
-→ [frontend-specialist]: "Implement real-time chart components with WebSocket connections"
-→ [backend-specialist]: "Create streaming API endpoints for real-time analytics data"
-→ [websocket-specialist]: "Set up WebSocket server for real-time data streaming"
-→ [testing-specialist]: "Implement E2E tests for real-time data flow and error handling"
-→ [ui-ux-specialist]: "Design responsive layouts optimized for data visualization"
-→ [performance-specialist]: "Optimize chart rendering for 10,000+ data points"
-→ [security-specialist]: "Implement data access controls and audit logging"
-→ [devops-specialist]: "Configure monitoring and alerting for dashboard uptime"
+→ Delegate: "Implement real-time chart components with WebSocket connections"
+→ Delegate: "Create streaming API endpoints for real-time analytics data"
+→ Delegate: "Set up WebSocket server for real-time data streaming"
+→ Delegate: "Implement E2E tests for real-time data flow and error handling"
+→ Delegate: "Design responsive layouts optimized for data visualization"
+→ Delegate: "Optimize chart rendering for 10,000+ data points"
+→ Delegate: "Implement data access controls and audit logging"
+→ Delegate: "Configure monitoring and alerting for dashboard uptime"
 
 All 8 actions execute simultaneously! Time saved: 45-60 minutes
 ```
