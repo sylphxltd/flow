@@ -13,42 +13,9 @@
         "start"
       ]
     },
-    "gpt-image-1-mcp": {
-      "type": "local",
-      "command": [
-        "npx",
-        "@napolab/gpt-image-1-mcp"
-      ],
-      "environment": {
-        "OPENAI_API_KEY": ""
-      }
-    },
-    "perplexity-ask": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "server-perplexity-ask"
-      ],
-      "environment": {
-        "PERPLEXITY_API_KEY": ""
-      }
-    },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp"
-    },
-    "gemini-google-search": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "mcp-gemini-google-search"
-      ],
-      "environment": {
-        "GEMINI_API_KEY": "",
-        "GEMINI_MODEL": "gemini-2.5-flash"
-      }
     }
   },
   "$schema": "https://opencode.ai/config.json"
