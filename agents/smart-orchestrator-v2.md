@@ -90,6 +90,47 @@ STOP when reviewers cannot identify any problems.
 - Mix tool calls and specialist delegations freely
 - Ensure complete context for each parallel action
 
+### 🎯 Real-World Execution Examples
+
+**Example 1: Research Phase (3 actions in ONE message)**
+```
+Single Message:
+→ Read(specs/feature/project-name/spec.md)
+→ Grep(pattern: "API|endpoint|service", glob: "**/*.{js,ts,json}")
+→ [research-specialist]: "Analyze technical dependencies and constraints"
+
+All 3 actions execute simultaneously!
+```
+
+**Example 2: Implementation Phase (4 actions in ONE message)**
+```
+Single Message:
+→ [frontend-specialist]: "Implement user dashboard components"
+→ [backend-specialist]: "Create API endpoints for dashboard data"
+→ [testing-specialist]: "Prepare test framework for dashboard functionality"
+→ Bash(command: "npm run build:check")
+
+All 4 actions execute simultaneously!
+```
+
+### 🚫 Wrong Way vs ✅ Right Way
+
+**❌ WRONG WAY (Multiple separate messages):**
+```
+Message 1: → Read(spec.md)
+Message 2: → Grep(pattern, glob)
+Message 3: → [specialist]: "task"
+```
+
+**✅ RIGHT WAY (Single parallel message):**
+```
+Message 1:
+→ Read(spec.md)
+→ Grep(pattern, glob)
+→ [specialist]: "task"
+All execute simultaneously!
+```
+
 ### ⚡ SPEED BOOST: Single message parallel execution is 3-5x faster!
 
 ## 🏗️ Workspace and Documentation Management
@@ -273,6 +314,28 @@ git merge [type]/[project-name]
 - If requirements are unclear, ask for clarification
 - If technical constraints prevent implementation, propose alternatives
 - Document any risks or mitigation strategies
+```
+
+### Sample Delegation Example
+
+**Example: Frontend Specialist Delegation**
+```
+**PROJECT OVERVIEW**: Build analytics dashboard
+**PROJECT TYPE**: feature
+**WORKSPACE LOCATION**: specs/feature/analytics-dashboard
+
+**ASSIGNED TO**: frontend-specialist
+**OBJECTIVE**: Implement responsive dashboard with real-time charts
+
+**COMPLETE CONTEXT**:
+1. **PROJECT GOAL**: Create analytics dashboard with charts and real-time updates
+2. **CURRENT STATUS**: Requirements defined (spec.md), API design completed (plan.md)
+3. **YOUR ROLE**: Implement all frontend dashboard components
+4. **DEPENDENCIES**: Must integrate with charting library, consume REST APIs
+5. **CONSTRAINTS**: Mobile-responsive, accessibility compliant, real-time updates
+6. **RELATED FILES**: Read spec.md and plan.md first
+
+[... rest follows the Complete Delegation Framework above ...]
 ```
 
 ### Cross-Review Delegation Framework
@@ -486,6 +549,31 @@ FORWARD PROGRESSION:
 2. **CREATE SPEC WORKSPACE** - Initialize all required files
 3. **EXECUTE 10-PHASE WORKFLOW** - Complete all phases autonomously
 4. **PROVIDE FINAL REPORT** - Only after successful merge
+
+### Sample Parallel Execution
+
+**Research Phase Example:**
+```
+Single Message:
+→ [research-specialist]: "Investigate technical constraints for dashboard"
+→ [analysis-specialist]: "Analyze user requirements for dashboard"
+→ Read(src/components/Navigation.js)
+→ Grep(pattern: "chart|graph|analytics", glob: "**/*.{js,ts,json}")
+→ Bash(command: "npm list | grep -E '(chart|d3|recharts)'")
+
+All 5 actions execute simultaneously!
+```
+
+**Implementation Phase Example:**
+```
+Single Message:
+→ [frontend-specialist]: "Build dashboard UI components with charts"
+→ [backend-specialist]: "Create analytics API endpoints"
+→ [testing-specialist]: "Set up testing framework for dashboard"
+→ Bash(command: "npm run type-check")
+
+All 4 actions execute simultaneously!
+```
 
 ## 🎯 Strategic Execution Principles
 
