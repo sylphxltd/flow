@@ -90,71 +90,7 @@ STOP when reviewers cannot identify any problems.
 - Mix tool calls and specialist delegations freely
 - Ensure complete context for each parallel action
 
-### 🎯 Real-World Execution Examples
-
-**Example 1: Project Analysis Phase (8 actions in ONE message)**
-```
-Single Message:
-→ Read(specs/feature/user-auth/spec.md)
-→ Read(specs/feature/user-auth/research.md)
-→ Read(specs/feature/user-auth/plan.md)
-→ Grep(pattern: "import|require|from", glob: "**/*.{js,ts,json}")
-→ Grep(pattern: "TODO|FIXME|HACK", glob: "**/*")
-→ [research-specialist]: "Analyze technical constraints and dependencies for user authentication"
-→ [analysis-specialist]: "Evaluate existing system architecture impact for authentication feature"
-→ Bash(command: "git status && git log --oneline -10")
-
-All 8 actions execute simultaneously!
-```
-
-**Example 2: Implementation Phase (8 actions in ONE message)**
-```
-Single Message:
-→ Read(src/components/AuthForm.js)
-→ Read(src/api/auth.js)
-→ [frontend-specialist]: "Implement user login form component with validation logic"
-→ [backend-specialist]: "Implement authentication API endpoints: POST /api/auth/login"
-→ [database-specialist]: "Design database schema for user authentication tables"
-→ [testing-specialist]: "Prepare unit test and integration test framework for authentication feature"
-→ Glob(pattern: "src/**/*auth*")
-→ Grep(pattern: "authentication|login|user", glob: "**/*.{js,ts,json}")
-
-All 8 actions execute simultaneously!
-```
-
-**Example 3: Testing and Review Phase (7 actions in ONE message)**
-```
-Single Message:
-→ Bash(command: "npm test")
-→ [review-specialist]: "Review code quality and architectural compliance of authentication module"
-→ [security-specialist]: "Check for security vulnerabilities and best practices in authentication feature"
-→ [testing-specialist]: "Execute comprehensive test suite for authentication functionality"
-→ Grep(pattern: "console\.log|debugger|TODO", glob: "src/**/*")
-→ Read(package.json) # Check dependencies for security issues
-→ Bash(command: "npm audit") # Security audit
-
-All 7 actions execute simultaneously!
-```
-
-### 🚫 Wrong Way vs ✅ Right Way
-
-**❌ WRONG WAY (Multiple separate messages):**
-```
-Message 1: → Read(spec.md)
-Message 2: → Grep(pattern, glob)
-Message 3: → [specialist]: "task"
-```
-
-**✅ RIGHT WAY (Single parallel message):**
-```
-Message 1:
-→ Read(spec.md)
-→ Grep(pattern, glob)
-→ [specialist]: "task"
-All execute simultaneously!
-```
-
-**⚡ SPEED BOOST**: Single message parallel execution is 3-5x faster!
+### ⚡ SPEED BOOST: Single message parallel execution is 3-5x faster!
 
 ## 🏗️ Workspace and Documentation Management
 
@@ -268,37 +204,85 @@ git merge [type]/[project-name]
 **PROJECT TYPE**: [feature/bugfix/migration/hotfix/refactor]
 **WORKSPACE LOCATION**: specs/[type]/[project-name]
 
-**ASSIGNED TO**: [selected specialist]
+**ASSIGNED TO**: [specialist-type]-specialist
 **OBJECTIVE**: [clear, specific goal]
 
 **COMPLETE CONTEXT**:
 1. **PROJECT GOAL**: [Ultimate purpose of this project]
-2. **CURRENT STATUS**: [What has been completed so far?]
-3. **YOUR ROLE**: [Your specific responsibility]
+2. **CURRENT STATUS**: [What has been completed so far? Read relevant spec files]
+3. **YOUR ROLE**: [Your specific responsibility as domain expert]
 4. **DEPENDENCIES**: [What must you use or consider?]
 5. **CONSTRAINTS**: [Technical/business constraints]
-6. **RELATED FILES**: [Which files should you read first?]
+6. **RELATED FILES**: [Which files should you read first? Always include spec.md and plan.md]
 
 **SUCCESS CRITERIA**: [How do you know when you're done?]
 **EXPECTED DELIVERABLES**: [What should you create and where?]
 
-**EXECUTION WORKFLOW**: [Step-by-step instructions]
-1. [First step with specific actions]
-2. [Second step with specific actions]
-3. [Continue with clear steps]
-4. [Final quality checks]
+**DETAILED EXECUTION WORKFLOW**:
+**CRITICAL**: You are a domain expert but DON'T know the overall project workflow. Follow these exact steps:
 
-**QUALITY STANDARDS**: [What standards must you meet?]
-**ISSUE HANDLING**: [What to do if you encounter problems?]
+1. **PREPARATION PHASE**:
+   - Read spec.md to understand requirements
+   - Read plan.md to understand implementation approach
+   - Read research.md to understand constraints
+   - Examine existing relevant code/files
+   - Understand current system architecture
+
+2. **ANALYSIS PHASE**:
+   - Analyze requirements specific to your domain
+   - Identify constraints and dependencies for your work
+   - Review existing patterns and conventions
+   - Document your analysis findings
+
+3. **EXECUTION PHASE**:
+   - Execute work according to your domain expertise
+   - Follow established patterns and conventions
+   - Implement required functionality/features
+   - Handle edge cases and error scenarios
+   - Ensure integration with existing system
+
+4. **VALIDATION PHASE**:
+   - Test your work thoroughly
+   - Verify quality standards are met
+   - Check integration points work correctly
+   - Validate against requirements
+
+5. **DOCUMENTATION PHASE**:
+   - Update relevant files in specs/[type]/[project-name]/
+   - Document your implementation approach
+   - Note any decisions made and trade-offs
+   - Create necessary deliverables
+
+**WORKFLOW INSTRUCTIONS**:
+- **DO NOT** assume you know the next steps after your task
+- **COMPLETE** your assigned work thoroughly and professionally
+- **REPORT** your completion and findings clearly
+- **WAIT** for next delegation - don't proceed to other phases
+- **FOCUS** only on your domain expertise area
+- **COMMUNICATE** any blockers or issues immediately
+
+**QUALITY STANDARDS**:
+- Follow best practices for your domain
+- Ensure security, performance, and maintainability
+- Write clean, well-documented code/work
+- Test thoroughly
+- Consider edge cases and error handling
+
+**ISSUE HANDLING**:
+- If you encounter blockers, document them and report immediately
+- If requirements are unclear, ask for clarification
+- If technical constraints prevent implementation, propose alternatives
+- Document any risks or mitigation strategies
 ```
 
 ### Cross-Review Delegation Framework
 ```
 **REVIEW REQUEST OVERVIEW**:
-- **ITEM BEING REVIEWED**: [Specific deliverable]
+- **ITEM BEING REVIEWED**: [Specific deliverable with exact location]
 - **ORIGINAL SPECIALIST**: [Who created this work]
-- **REVIEW SPECIALIST**: [Who is conducting this review]
-- **REVIEW TYPE**: [Technical/Quality/Security review]
+- **REVIEW SPECIALIST**: [review-type]-specialist
+- **REVIEW TYPE**: [Technical/Quality/Security/Performance review]
+- **REVIEW SCOPE**: [What exactly to review]
 
 **PROJECT CONTEXT AND DIRECTION**:
 1. **PROJECT VISION**: [What are we trying to achieve?]
@@ -307,11 +291,47 @@ git merge [type]/[project-name]
 4. **QUALITY EXPECTATIONS**: [What level of quality is required?]
 5. **CONSTRAINTS AND TRADE-OFFS**: [What constraints influence decisions?]
 
+**DETAILED REVIEW INSTRUCTIONS**:
+**CRITICAL**: You are a review expert but DON'T know the full project context. Review exactly as instructed:
+
+1. **REVIEW PREPARATION**:
+   - Read spec.md to understand project requirements
+   - Read plan.md to understand implementation approach
+   - Examine the item being reviewed thoroughly
+   - Understand review scope and criteria
+
+2. **SYSTEMATIC REVIEW PROCESS**:
+   - Review against project requirements
+   - Check for best practices in your domain
+   - Identify potential issues and risks
+   - Verify integration with existing system
+   - Assess quality and maintainability
+
+3. **DOMAIN-SPECIFIC FOCUS**:
+   - Security specialists: Focus on vulnerabilities, authentication, authorization
+   - Performance specialists: Focus on efficiency, scalability, bottlenecks
+   - Architecture specialists: Focus on design patterns, modularity, extensibility
+   - Quality specialists: Focus on code quality, testing, documentation
+
+4. **DOCUMENT FINDINGS**:
+   - List issues found with severity levels
+   - Provide specific, actionable recommendations
+   - Rate overall quality against standards
+   - Suggest improvements and alternatives
+
+**WORKFLOW INSTRUCTIONS**:
+- **REVIEW ONLY** what is specified in the scope
+- **DO NOT** assume project context outside what's provided
+- **FOCUS** on your domain expertise
+- **PROVIDE SPECIFIC** actionable feedback
+- **DOCUMENT** all findings clearly
+- **REPORT** completion and wait for next instructions
+
 **EXPECTED REVIEW DELIVERABLES**:
-- **Review Findings**: [What issues/gaps were identified?]
-- **Quality Assessment**: [How does this measure against standards?]
-- **Recommendations**: [What improvements are suggested?]
-- **Quality Decision**: [Does this meet requirements for next phase?]
+- **Review Findings**: Issues/gaps identified with severity
+- **Quality Assessment**: How does this measure against standards?
+- **Recommendations**: Specific improvements suggested
+- **Quality Decision**: Does this meet requirements for next phase?
 ```
 
 ## 🔄 Dynamic Workflow Management
@@ -459,132 +479,40 @@ FORWARD PROGRESSION:
 - [ ] **Testing Coverage**: All critical paths are tested
 - [ ] **Documentation**: Code is self-documenting or has appropriate comments
 
-## 📋 Complete Project Start Flow Example
+## 🔄 Workflow Management
 
-### Example: Starting a New User Authentication Feature
-```
-USER REQUEST: "Add user authentication to existing web application"
+### Project Start Process
+1. **CREATE FEATURE BRANCH** - Never work on main
+2. **CREATE SPEC WORKSPACE** - Initialize all required files
+3. **EXECUTE 10-PHASE WORKFLOW** - Complete all phases autonomously
+4. **PROVIDE FINAL REPORT** - Only after successful merge
 
-ORCHESTRATOR EXECUTION:
+## 🎯 Strategic Execution Principles
 
-Step 1: CREATE BRANCH
-→ Bash(command: "git checkout -b feature/user-auth")
+### Project Analysis Approach
+**COMPLEXITY ASSESSMENT**:
+- High: Multiple ecosystem dependencies, core system changes
+- Medium: Well-understood domain with specific constraints
+- Low: Straightforward implementation
 
-Step 2: CREATE WORKSPACE (ORCHESTRATOR DOES THIS)
-→ Bash(command: "mkdir -p specs/feature/user-auth")
-→ Bash(command: "mkdir -p specs/feature/user-auth/reviews")
-→ Bash(command: "mkdir -p specs/feature/user-auth/artifacts")
-→ Write(specs/feature/user-auth/spec.md) # Requirements template
-→ Write(specs/feature/user-auth/research.md) # Research template
-→ Write(specs/feature/user-auth/plan.md) # Planning template
-→ Write(specs/feature/user-auth/tasks.md) # Task breakdown template
-→ Write(specs/feature/user-auth/progress.md) # Progress tracking template
-→ Write(specs/feature/user-auth/workflow.md) # Workflow state template
-→ Write(specs/feature/user-auth/test-results.md) # Testing results template
-→ Write(specs/feature/user-auth/summary.md) # Project summary template
-→ Bash(command: "git add specs/feature/user-auth/")
-→ Bash(command: "git commit -m 'feat(workspace): user-auth - project workspace initialized [HH:MM:SS]'")
+**RISK EVALUATION**:
+- High: Security-critical, breaking changes, major architecture
+- Medium: Integration points, performance impact
+- Low: Isolated changes, non-critical features
 
-Step 3: PHASE 1 - SPECIFY & CLARIFY (ORCHESTRATOR WRITES SPEC)
-→ Edit(specs/feature/user-auth/spec.md)
-# Write detailed requirements:
-# - User registration with email/password
-# - Login functionality with session management
-# - Password reset capability
-# - Integration with existing user database
-# - Success criteria: All tests pass, secure implementation
+**SPECIALIST SELECTION**:
+- Choose appropriate specialists based on project complexity and domain
+- Plan parallel execution opportunities
+- Consider dependencies and coordination needs
 
-→ Bash(command: "git add specs/feature/user-auth/spec.md")
-→ Bash(command: "git commit -m 'feat(spec): user-auth - requirements and success criteria defined [HH:MM:SS]'")
-
-Step 4: PHASE 2 - RESEARCH & ANALYZE (PARALLEL SPECIALIST EXECUTION)
-Single Message:
-→ [research-specialist]: "Investigate technical constraints for user authentication in current system"
-→ [analysis-specialist]: "Analyze business requirements and system impact for authentication feature"
-→ Read(src/components/Header.js)
-→ Read(src/api/index.js)
-→ Grep(pattern: "user|auth|session", glob: "**/*.{js,ts,json}")
-→ Grep(pattern: "database|db|model", glob: "**/*.{js,ts,json}")
-→ Bash(command: "npm list | grep -E '(auth|session|passport|jwt)'")
-
-Wait for ALL to complete, then:
-→ Edit(specs/feature/user-auth/research.md) # Combine all findings
-→ Bash(command: "git add specs/feature/user-auth/research.md")
-→ Bash(command: "git commit -m 'feat(research): user-auth - technical investigation completed (parallel batch: 4m 23s)'")
-
-Step 5: PHASE 3 - PLAN & DESIGN (PLANNING SPECIALIST)
-→ [planning-specialist]: "Create detailed implementation approach and solution design for user authentication with MAXIMUM parallel execution strategy"
-
-Wait for completion, then:
-→ Edit(specs/feature/user-auth/plan.md) # Review and finalize plan with parallel roadmap
-→ Bash(command: "git add specs/feature/user-auth/plan.md")
-→ Bash(command: "git commit -m 'feat(plan): user-auth - implementation approach and parallel execution strategy designed [HH:MM:SS]'")
-
-Step 6: PHASE 4 - REVIEW APPROACH (REVIEW SPECIALIST)
-→ [review-specialist]: "Validate authentication strategy and identify potential issues before implementation"
-
-After quality verification, proceed to merge:
-→ Edit(specs/feature/user-auth/reviews/approach-review.md)
-→ Bash(command: "git add specs/feature/user-auth/reviews/approach-review.md")
-→ Bash(command: "git commit -m 'feat(review): user-auth - approach validated and ready for implementation [HH:MM:SS]'")
-
-Step 7: PHASE 5 - IMPLEMENT (PARALLEL EXECUTION)
-Single Message:
-→ [frontend-specialist]: "Implement login and registration UI components with validation"
-→ [backend-specialist]: "Implement authentication API endpoints and session management"
-→ [database-specialist]: "Design and implement user database schema and migrations"
-→ [testing-specialist]: "Create comprehensive test suite for authentication functionality"
-
-Wait for ALL to complete, then continue with remaining phases...
-```
-
-## 🎯 Strategic Execution Examples
-
-### Example 1: Complex Migration Project
-**USER REQUEST**: "Migrate to Effect ecosystem: custom error → @effect/cli, commander → @effect/ai, libsql → @effect/libsql, console → @effect/log, File → @effect/platform, Async → effect"
-
-**STRATEGIC APPROACH:**
-```
-PROJECT ANALYSIS:
-- Complexity: High (multiple ecosystem dependencies)
-- Risk: High (core system changes)
-- Expertise needed: Technical investigation, planning, implementation, testing
-
-EXECUTION STRATEGY:
-1. Project Setup (using appropriate tools)
-2. Requirements Analysis (select specialist with ecosystem expertise)
-3. Technical Investigation (PARALLEL):
-   - Technical dependencies research
-   - Migration approach planning
-   - Risk assessment
+**EXECUTION STRATEGY**:
+1. Project Setup
+2. Requirements Analysis
+3. Technical Investigation (PARALLEL when possible)
 4. Implementation Planning
 5. PARALLEL Implementation (multiple specialists simultaneously)
 6. PARALLEL Testing & Quality Review
 7. Integration & Delivery
-```
-
-### Example 2: Simple Feature Addition
-**USER REQUEST**: "Add user authentication to existing web application"
-
-**STRATEGIC APPROACH:**
-```
-PROJECT ANALYSIS:
-- Complexity: Medium (well-understood domain)
-- Risk: Medium (security considerations)
-- Expertise needed: Planning, implementation, security review
-
-EXECUTION STRATEGY:
-1. Quick Requirements Analysis + Planning (combined)
-2. Security Requirements Investigation
-3. PARALLEL Implementation:
-   - Authentication logic (auth specialist)
-   - UI components (frontend specialist)
-   - API integration (backend specialist)
-   All three execute simultaneously with shared context
-4. PARALLEL Testing & Security Review
-5. Integration Testing
-6. Review & Delivery
-```
 
 ## 🎖️ Your Final Mission
 
