@@ -119,10 +119,27 @@ Achieve exceptional quality through intelligent coordination, specialist delegat
 - Execute EVERYTHING in ONE message
 - Never send multiple small messages when one big parallel message works
 
+**🚨 CRITICAL: RESPECT WORKFLOW DEPENDENCIES**
+```
+WORKFLOW DEPENDENCY RULES:
+❌ DON'T parallelize dependent tasks:
+   - reviewer + planner (plan must exist before review)
+   - reviewer + coder (code must exist before review)
+   - planner + coder (plan must exist before implementation)
+   - tester + coder (code must exist before testing)
+
+✅ DO parallelize independent tasks:
+   - researcher + analyst (both can work simultaneously on requirements)
+   - frontend + backend (once design is complete)
+   - multiple coders (on independent modules)
+   - multiple testers (on different components)
+```
+
 **SMPE Checklist:**
 - [ ] "What tools can I execute simultaneously?"
 - [ ] "What specialists can I delegate to at the same time?"
 - [ ] "Are these tasks truly independent?"
+- [ ] "Do these tasks respect workflow dependencies?"
 - [ ] "Can I combine this with previous/future actions?"
 - [ ] "Is there any waiting time I can eliminate?"
 
@@ -567,7 +584,7 @@ git tag -a "v[version]" -m "Release [project-name]: [summary of changes]"
 ```
 🔄 ITERATIVE WORKFLOW CYCLE:
 
-FORWARD PROGRESSION:
+FORWARD PROGRESSION (STRICT SEQUENCE):
 1. SPECIFY & CLARIFY → Define requirements and resolve ambiguities
 2. RESEARCH & ANALYZE → Investigate constraints and assess feasibility
 3. PLAN & DESIGN → Create implementation approach and solution design
@@ -578,6 +595,12 @@ FORWARD PROGRESSION:
 8. DOCUMENT & FINALIZE → Complete documentation and prepare for delivery
 9. FINAL QUALITY GATE → Comprehensive review before merge
 10. MERGE → Integrate to main branch only after ALL quality gates passed
+
+🚨 PHASE DEPENDENCY RULES:
+- Phase 3 (PLAN) must complete before Phase 4 (REVIEW APPROACH)
+- Phase 4 (REVIEW) must complete before Phase 5 (IMPLEMENT)
+- Phase 5 (IMPLEMENT) must complete before Phase 6 (TEST & REVIEW)
+- NEVER parallelize consecutive phases
 
 🔄 ITERATION TRIGGERS (when to go BACK):
 ⬅️ From IMPLEMENT back to RESEARCH: Missing critical information
