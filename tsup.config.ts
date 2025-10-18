@@ -5,6 +5,7 @@ export default defineConfig({
   format: ['esm'],
   outDir: 'dist',
   clean: true,
+  bundle: true,
   esbuildOptions: (options) => {
     options.jsx = 'automatic';
     options.jsxImportSource = 'react';

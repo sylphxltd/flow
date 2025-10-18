@@ -63,21 +63,48 @@ export const initCommand: CommandConfig = {
         console.log('🔍 Dry run: Would install all MCP servers');
         console.log(`   • ${defaultServers.join(', ')}`);
       } else {
-        await addMCPServersToTarget(process.cwd(), targetId, defaultServers);
-
-        // Prompt for API keys for servers that need them
+        // First, identify servers that need API keys and configure them
         const serversNeedingKeys = getServersRequiringAPIKeys();
+        const serversWithKeys: string[] = [];
+        const serversWithoutKeys: string[] = [];
 
         if (serversNeedingKeys.length > 0) {
           console.log('\n🔑 Some MCP tools require API keys:');
 
-          // Update configs with API keys
+          // Configure API keys first, before installing
           for (const serverType of serversNeedingKeys) {
-            await configureMCPServerForTarget(process.cwd(), targetId, serverType);
+            const keysProvided = await configureMCPServerForTarget(
+              process.cwd(),
+              targetId,
+              serverType
+            );
+            if (keysProvided) {
+              serversWithKeys.push(serverType);
+            } else {
+              serversWithoutKeys.push(serverType);
+            }
           }
         }
 
-        console.log('✅ MCP tools configured');
+        // Get servers that don't need API keys
+        const serversNotNeedingKeys = defaultServers.filter(
+          (server) => !serversNeedingKeys.includes(server)
+        );
+
+        // Combine servers that don't need keys with servers that have keys
+        const serversToInstall = [...serversNotNeedingKeys, ...serversWithKeys];
+
+        if (serversToInstall.length > 0) {
+          await addMCPServersToTarget(process.cwd(), targetId, serversToInstall as any);
+          console.log(`✅ MCP tools installed: ${serversToInstall.join(', ')}`);
+        }
+
+        if (serversWithoutKeys.length > 0) {
+          console.log(
+            `⚠️  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+          );
+          console.log('   You can install them later with: sylphx-flow mcp install <server-name>');
+        }
       }
       console.log('');
     } else if (options.mcp !== false && !targetSupportsMCPServers(targetId)) {

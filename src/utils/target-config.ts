@@ -174,12 +174,13 @@ export async function listMCPServersForTarget(cwd: string, targetId: string): Pr
 
 /**
  * Configure API keys for a specific MCP server in a target
+ * @returns Promise<boolean> - true if API keys were provided, false otherwise
  */
 export async function configureMCPServerForTarget(
   cwd: string,
   targetId: string,
   serverType: MCPServerID
-): Promise<void> {
+): Promise<boolean> {
   const target = targetManager.getTargetDefinition(targetId as any);
   const transformer = await targetManager.getTransformer(targetId as any);
 
@@ -190,12 +191,12 @@ export async function configureMCPServerForTarget(
   const server = MCP_SERVER_REGISTRY[serverType];
   if (!server) {
     console.error(`❌ Unknown MCP server: ${serverType}`);
-    return;
+    return false;
   }
 
   if (!server.requiredEnvVars?.length) {
     console.log(`ℹ️  ${server.name} does not require any API keys`);
-    return;
+    return true; // No keys needed, so consider it successful
   }
 
   console.log(`🔧 Configuring ${server.description} for ${target.name}...`);
@@ -204,7 +205,7 @@ export async function configureMCPServerForTarget(
 
   if (Object.keys(apiKeys).length === 0) {
     console.log('❌ No API keys provided');
-    return;
+    return false;
   }
 
   // Read current config
@@ -250,6 +251,7 @@ export async function configureMCPServerForTarget(
   // Write updated configuration
   await transformer.writeConfig(cwd, config);
   console.log(`✅ Updated ${server.name} with API keys for ${target.name}`);
+  return true;
 }
 
 /**

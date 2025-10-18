@@ -629,8 +629,8 @@ var targetManager = new TargetManager();
 // src/core/init.ts
 async function getAgentFiles() {
   const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path3.dirname(__filename);
-  const agentsDir = path3.join(__dirname, "..", "agents");
+  const __dirname2 = path3.dirname(__filename);
+  const agentsDir = path3.join(__dirname2, "..", "agents");
   if (!fs3.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
@@ -690,8 +690,8 @@ async function installAgents(options) {
     return;
   }
   const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path3.dirname(__filename);
-  const agentsSourceDir = path3.join(__dirname, "..", "agents");
+  const __dirname2 = path3.dirname(__filename);
+  const agentsSourceDir = path3.join(__dirname2, "..", "agents");
   const processPromises = agentFiles.map(async (agentFile) => {
     const sourcePath = path3.join(agentsSourceDir, agentFile);
     const destPath = path3.join(agentsDir, agentFile);
@@ -825,17 +825,17 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
   const server = MCP_SERVER_REGISTRY[serverType];
   if (!server) {
     console.error(`\u274C Unknown MCP server: ${serverType}`);
-    return;
+    return false;
   }
   if (!server.requiredEnvVars?.length) {
     console.log(`\u2139\uFE0F  ${server.name} does not require any API keys`);
-    return;
+    return true;
   }
   console.log(`\u{1F527} Configuring ${server.description} for ${target.name}...`);
   const apiKeys = await promptForAPIKeys([serverType]);
   if (Object.keys(apiKeys).length === 0) {
     console.log("\u274C No API keys provided");
-    return;
+    return false;
   }
   const config = await transformer.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
@@ -868,6 +868,7 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
   setNestedProperty(config, mcpConfigPath, mcpSection);
   await transformer.writeConfig(cwd, config);
   console.log(`\u2705 Updated ${server.name} with API keys for ${target.name}`);
+  return true;
 }
 function validateTarget(targetId) {
   return targetManager.validateTarget(targetId);
@@ -875,11 +876,11 @@ function validateTarget(targetId) {
 function targetSupportsMCPServers(targetId) {
   return targetManager.supportsMCPServers(targetId);
 }
-function getNestedProperty(obj, path4) {
-  return path4.split(".").reduce((current, key) => current?.[key], obj);
+function getNestedProperty(obj, path5) {
+  return path5.split(".").reduce((current, key) => current?.[key], obj);
 }
-function setNestedProperty(obj, path4, value) {
-  const keys = path4.split(".");
+function setNestedProperty(obj, path5, value) {
+  const keys = path5.split(".");
   const lastKey = keys.pop();
   const target = keys.reduce((current, key) => {
     if (!current[key] || typeof current[key] !== "object") {
@@ -965,15 +966,38 @@ var initCommand = {
         console.log("\u{1F50D} Dry run: Would install all MCP servers");
         console.log(`   \u2022 ${defaultServers.join(", ")}`);
       } else {
-        await addMCPServersToTarget(process.cwd(), targetId, defaultServers);
         const serversNeedingKeys = getServersRequiringAPIKeys();
+        const serversWithKeys = [];
+        const serversWithoutKeys = [];
         if (serversNeedingKeys.length > 0) {
           console.log("\n\u{1F511} Some MCP tools require API keys:");
           for (const serverType of serversNeedingKeys) {
-            await configureMCPServerForTarget(process.cwd(), targetId, serverType);
+            const keysProvided = await configureMCPServerForTarget(
+              process.cwd(),
+              targetId,
+              serverType
+            );
+            if (keysProvided) {
+              serversWithKeys.push(serverType);
+            } else {
+              serversWithoutKeys.push(serverType);
+            }
           }
         }
-        console.log("\u2705 MCP tools configured");
+        const serversNotNeedingKeys = defaultServers.filter(
+          (server) => !serversNeedingKeys.includes(server)
+        );
+        const serversToInstall = [...serversNotNeedingKeys, ...serversWithKeys];
+        if (serversToInstall.length > 0) {
+          await addMCPServersToTarget(process.cwd(), targetId, serversToInstall);
+          console.log(`\u2705 MCP tools installed: ${serversToInstall.join(", ")}`);
+        }
+        if (serversWithoutKeys.length > 0) {
+          console.log(
+            `\u26A0\uFE0F  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`
+          );
+          console.log("   You can install them later with: sylphx-flow mcp install <server-name>");
+        }
       }
       console.log("");
     } else if (options.mcp !== false && !targetSupportsMCPServers(targetId)) {
@@ -1021,8 +1045,38 @@ var mcpInstallHandler = async (options) => {
     if (options.dryRun) {
       console.log(`\u{1F50D} Dry run: Would install all MCP tools: ${allServers.join(", ")}`);
     } else {
-      await addMCPServersToTarget(process.cwd(), targetId, allServers);
-      console.log("\u2705 All MCP tools installed");
+      const serversNeedingKeys = getServersRequiringAPIKeys();
+      const serversWithKeys = [];
+      const serversWithoutKeys = [];
+      if (serversNeedingKeys.length > 0) {
+        console.log("\n\u{1F511} Some MCP tools require API keys:");
+        for (const serverType of serversNeedingKeys) {
+          const keysProvided = await configureMCPServerForTarget(
+            process.cwd(),
+            targetId,
+            serverType
+          );
+          if (keysProvided) {
+            serversWithKeys.push(serverType);
+          } else {
+            serversWithoutKeys.push(serverType);
+          }
+        }
+      }
+      const serversNotNeedingKeys = allServers.filter(
+        (server) => !serversNeedingKeys.includes(server)
+      );
+      const serversToInstall = [...serversNotNeedingKeys, ...serversWithKeys];
+      if (serversToInstall.length > 0) {
+        await addMCPServersToTarget(process.cwd(), targetId, serversToInstall);
+        console.log(`\u2705 MCP tools installed: ${serversToInstall.join(", ")}`);
+      }
+      if (serversWithoutKeys.length > 0) {
+        console.log(
+          `\u26A0\uFE0F  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`
+        );
+        console.log("   You can install them later with: sylphx-flow mcp config <server-name>");
+      }
     }
     return;
   }
@@ -1050,8 +1104,38 @@ var mcpInstallHandler = async (options) => {
   if (options.dryRun) {
     console.log("\u{1F50D} Dry run: Would install MCP tools:", validServers.join(", "));
   } else {
-    await addMCPServersToTarget(process.cwd(), targetId, validServers);
-    console.log("\u2705 MCP tools installed");
+    const serversNeedingKeys = validServers.filter(
+      (server) => getServersRequiringAPIKeys().includes(server)
+    );
+    const serversWithKeys = [];
+    const serversWithoutKeys = [];
+    if (serversNeedingKeys.length > 0) {
+      console.log("\n\u{1F511} Some MCP tools require API keys:");
+      for (const serverType of serversNeedingKeys) {
+        const keysProvided = await configureMCPServerForTarget(
+          process.cwd(),
+          targetId,
+          serverType
+        );
+        if (keysProvided) {
+          serversWithKeys.push(serverType);
+        } else {
+          serversWithoutKeys.push(serverType);
+        }
+      }
+    }
+    const serversNotNeedingKeys = validServers.filter(
+      (server) => !serversNeedingKeys.includes(server)
+    );
+    const serversToInstall = [...serversNotNeedingKeys, ...serversWithKeys];
+    if (serversToInstall.length > 0) {
+      await addMCPServersToTarget(process.cwd(), targetId, serversToInstall);
+      console.log(`\u2705 MCP tools installed: ${serversToInstall.join(", ")}`);
+    }
+    if (serversWithoutKeys.length > 0) {
+      console.log(`\u26A0\uFE0F  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`);
+      console.log("   You can install them later with: sylphx-flow mcp config <server-name>");
+    }
   }
 };
 var mcpListHandler = async (options) => {
@@ -2000,6 +2084,120 @@ var memoryTuiCommand = {
   handler: handleMemoryTui
 };
 
+// src/commands/run-command.ts
+import { spawn } from "child_process";
+import fs4 from "fs/promises";
+import path4 from "path";
+async function validateRunOptions(options) {
+  if (!options.prompt || options.prompt.trim() === "") {
+    throw new CLIError("Prompt is required for run command", "MISSING_PROMPT");
+  }
+  options.target = "claude-code";
+  if (!options.agent) {
+    options.agent = "sparc-orchestrator";
+  }
+}
+async function loadAgentContent(agentName) {
+  try {
+    const agentPath = path4.join(process.cwd(), "agents", `${agentName}.md`);
+    try {
+      const content = await fs4.readFile(agentPath, "utf-8");
+      return content;
+    } catch (error) {
+      const packageAgentPath = path4.join(__dirname, "../../agents", `${agentName}.md`);
+      const content = await fs4.readFile(packageAgentPath, "utf-8");
+      return content;
+    }
+  } catch (error) {
+    throw new CLIError(`Agent '${agentName}' not found`, "AGENT_NOT_FOUND");
+  }
+}
+function extractAgentInstructions(agentContent) {
+  const yamlFrontMatterRegex = /^---\s*\n[\s\S]*?\n---\s*\n/;
+  const match = agentContent.match(yamlFrontMatterRegex);
+  if (match) {
+    return agentContent.substring(match[0].length).trim();
+  }
+  return agentContent.trim();
+}
+async function executeClaudeCode(combinedPrompt, options) {
+  if (options.dryRun) {
+    console.log("\u{1F50D} Dry run: Would execute Claude Code with combined prompt");
+    console.log("\u{1F4DD} Combined prompt length:", combinedPrompt.length, "characters");
+    console.log("\u{1F4DD} Combined prompt preview:");
+    console.log("---");
+    console.log(combinedPrompt.substring(0, 300) + (combinedPrompt.length > 300 ? "..." : ""));
+    console.log("---");
+    console.log("\u2705 Dry run completed successfully");
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    const args = [combinedPrompt, "--dangerously-skip-permissions"];
+    if (options.verbose) {
+      console.log(`\u{1F680} Executing: claude "${combinedPrompt.substring(0, 100)}..." --dangerously-skip-permissions`);
+      console.log(`\u{1F4DD} Prompt length: ${combinedPrompt.length} characters`);
+    }
+    const child = spawn("claude", args, {
+      stdio: "inherit",
+      shell: false
+    });
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new CLIError(`Claude Code exited with code ${code}`, "CLAUDE_ERROR"));
+      }
+    });
+    child.on("error", (error) => {
+      reject(new CLIError(`Failed to execute Claude Code: ${error.message}`, "CLAUDE_NOT_FOUND"));
+    });
+  });
+}
+var runCommand = {
+  name: "run",
+  description: "Run a prompt with a specific agent (default: sparc-orchestrator) using Claude Code",
+  options: [
+    {
+      flags: "--agent <name>",
+      description: "Agent to use (default: sparc-orchestrator)"
+    },
+    { flags: "--verbose", description: "Show detailed output" },
+    { flags: "--dry-run", description: "Show what would be done without executing Claude Code" }
+  ],
+  arguments: [
+    {
+      name: "prompt",
+      description: "The prompt to execute with the agent",
+      required: true
+    }
+  ],
+  handler: async (options) => {
+    await validateRunOptions(options);
+    const { prompt, agent, verbose } = options;
+    if (verbose) {
+      console.log("\u{1F680} Sylphx Flow Run");
+      console.log("====================");
+      console.log(`\u{1F916} Agent: ${agent}`);
+      console.log(`\u{1F4AC} Prompt: ${prompt}`);
+      console.log("");
+    }
+    const agentContent = await loadAgentContent(agent);
+    const agentInstructions = extractAgentInstructions(agentContent);
+    const combinedPrompt = `AGENT INSTRUCTIONS:
+${agentInstructions}
+
+USER PROMPT:
+${prompt}`;
+    if (verbose) {
+      console.log("\u{1F4DD} Combined Prompt:");
+      console.log("==================");
+      console.log(combinedPrompt.substring(0, 500) + (combinedPrompt.length > 500 ? "..." : ""));
+      console.log("");
+    }
+    await executeClaudeCode(combinedPrompt, options);
+  }
+};
+
 // src/utils/command-builder.ts
 import { Command } from "commander";
 function createCommand(config) {
@@ -2007,6 +2205,14 @@ function createCommand(config) {
   command.description(config.description);
   for (const option of config.options || []) {
     command.option(option.flags, option.description);
+  }
+  if (config.arguments) {
+    for (const argument of config.arguments) {
+      command.argument(
+        argument.required ? `<${argument.name}>` : `[${argument.name}]`,
+        argument.description
+      );
+    }
   }
   if (config.subcommands) {
     for (const subcommand of config.subcommands) {
@@ -2016,12 +2222,34 @@ function createCommand(config) {
   if (config.handler) {
     const handler = createAsyncHandler(config.handler, config.name);
     if (config.validator) {
-      command.action((options) => {
+      command.action((...args) => {
+        const argValues = args.slice(0, -1);
+        const cmd = args[args.length - 1];
+        const options = cmd.opts();
+        if (config.arguments && argValues.length > 0) {
+          config.arguments.forEach((arg, index) => {
+            if (index < argValues.length) {
+              options[arg.name] = argValues[index];
+            }
+          });
+        }
         config.validator?.(options);
         return handler(options);
       });
     } else {
-      command.action(handler);
+      command.action((...args) => {
+        const argValues = args.slice(0, -1);
+        const cmd = args[args.length - 1];
+        const options = cmd.opts();
+        if (config.arguments && argValues.length > 0) {
+          config.arguments.forEach((arg, index) => {
+            if (index < argValues.length) {
+              options[arg.name] = argValues[index];
+            }
+          });
+        }
+        return handler(options);
+      });
     }
   }
   return command;
@@ -2062,7 +2290,7 @@ function showDefaultHelp() {
 function createCLI() {
   const program = new Command2();
   program.name("sylphx-flow").description("Sylphx Flow - Type-safe development flow CLI").version("1.0.0");
-  const commands = [initCommand, mcpCommand, memoryCommand];
+  const commands = [initCommand, mcpCommand, memoryCommand, runCommand];
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
