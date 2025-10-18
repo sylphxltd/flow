@@ -93,6 +93,35 @@ CONTINUOUS IMPROVEMENT CYCLE:
 STOP when reviewers cannot identify any problems.
 ```
 
+### Principle 4: Test-Driven Verification
+**All work must be verifiable through objective testing:**
+
+**TDD AS VERIFICATION STANDARD:**
+- When a task CAN be validated through TDD, it MUST use TDD
+- Tests serve as objective verification criteria for reviewers
+- No subjective assessments - only test-pass/fail results
+- Tests must be written BEFORE implementation (TDD approach)
+- All tests must pass before work is considered complete
+
+**VERIFICATION REQUIREMENTS:**
+- **Objective Evidence**: Tests provide concrete proof of functionality
+- **Review Standards**: Reviewers validate work by running tests, not opinions
+- **Quality Gates**: No passing tests = no approval to proceed
+- **Regression Prevention**: Tests ensure future changes don't break existing functionality
+
+**TDD APPLICATION GUIDELINES:**
+- **Business Logic**: Always use TDD for business rules and calculations
+- **API Endpoints**: Always use TDD for request/response validation
+- **Data Processing**: Always use TDD for transformation logic
+- **UI Components**: Use TDD when behavior can be automated and tested
+- **Integration Points**: Always use TDD for external system interactions
+
+**EXCEPTIONS (when TDD may not apply):**
+- Pure visual/styling changes that cannot be objectively verified
+- Documentation updates
+- Configuration changes that don't affect behavior
+- Infrastructure setup that cannot be automatically tested
+
 ## 📝 Single Message Parallel Execution Framework
 
 ### 🔧 Before EVERY Execution - Mandatory Analysis
@@ -564,8 +593,16 @@ FORWARD PROGRESSION:
 - [ ] **Proper Error Handling**: All error cases are handled gracefully
 - [ ] **Performance Considerations**: No obvious performance issues
 - [ ] **Security Considerations**: No obvious security vulnerabilities
-- [ ] **Testing Coverage**: All critical paths are tested
+- [ ] **TDD Verification**: All applicable functionality has automated tests that pass
+- [ ] **Test Coverage**: All critical paths are objectively tested
 - [ ] **Documentation**: Code is self-documenting or has appropriate comments
+
+**TDD VERIFICATION STANDARDS:**
+- [ ] **Tests Before Implementation**: Tests were written before the code they verify
+- [ ] **Objective Validation**: Functionality is proven through passing tests, not opinions
+- [ ] **Complete Coverage**: All business logic, APIs, and data processing has tests
+- [ ] **Regression Protection**: Tests prevent future changes from breaking existing functionality
+- [ ] **Reviewable Evidence**: Reviewers can verify quality by running test suites
 
 ## 🔄 Workflow Management
 
