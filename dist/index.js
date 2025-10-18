@@ -53,6 +53,7 @@ var MCP_SERVER_REGISTRY = {
       type: "remote",
       url: "https://mcp.context7.com/mcp"
     },
+    optionalEnvVars: ["CONTEXT7_API_KEY"],
     category: "external",
     defaultInInit: true
   },
@@ -78,7 +79,7 @@ var MCP_SERVER_REGISTRY = {
       url: "https://mcp.grep.app"
     },
     category: "external",
-    defaultInInit: false
+    defaultInInit: true
   }
 };
 function getAllServerIDs() {
@@ -827,7 +828,7 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
     console.error(`\u274C Unknown MCP server: ${serverType}`);
     return false;
   }
-  if (!server.requiredEnvVars?.length) {
+  if (!server.requiredEnvVars?.length && !server.optionalEnvVars?.length) {
     console.log(`\u2139\uFE0F  ${server.name} does not require any API keys`);
     return true;
   }
@@ -843,6 +844,8 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
       const envValue = serverConfig.environment?.[envVar];
       return envValue && envValue.trim() !== "";
     });
+  } else if (isServerInstalled && !server.requiredEnvVars?.length) {
+    hasExistingValidKeys = true;
   }
   const apiKeys = await promptForAPIKeys([serverType]);
   if (Object.keys(apiKeys).length === 0) {
@@ -932,23 +935,25 @@ async function promptForAPIKeys(serverTypes) {
   const apiKeys = {};
   for (const serverType of serverTypes) {
     const server = MCP_SERVER_REGISTRY[serverType];
-    if (!server?.requiredEnvVars?.length) continue;
+    const allEnvVars = [...server.requiredEnvVars || [], ...server.optionalEnvVars || []];
+    if (!allEnvVars.length) continue;
     console.log(`
 \u{1F511} Configuring API keys for ${server.description}:`);
-    for (const envVar of server.requiredEnvVars) {
-      const question = `Enter ${envVar} (or press Enter to skip): `;
+    for (const envVar of allEnvVars) {
+      const isRequired = server.requiredEnvVars?.includes(envVar);
+      const promptText = isRequired ? `Enter ${envVar} (required): ` : `Enter ${envVar} (optional, press Enter to skip): `;
       const answer = await new Promise((resolve) => {
-        rl.question(question, (input) => {
+        rl.question(promptText, (input) => {
           resolve(input.trim());
         });
       });
       if (answer) {
         apiKeys[envVar] = answer;
         console.log(`\u2705 Set ${envVar}`);
+      } else if (isRequired) {
+        console.log(`\u26A0\uFE0F  Skipped required ${envVar} - server may not function properly`);
       } else {
-        console.log(
-          `\u26A0\uFE0F  Skipped ${envVar} - you can configure it later with 'mcp config ${serverType}'`
-        );
+        console.log(`\u2139\uFE0F  Skipped optional ${envVar}`);
       }
     }
   }

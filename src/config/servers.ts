@@ -15,6 +15,8 @@ export interface MCPServerDefinition {
   config: MCPServerConfigUnion;
   /** Required environment variables (if any) */
   requiredEnvVars?: string[];
+  /** Optional environment variables (if any) */
+  optionalEnvVars?: string[];
   /** Server category for grouping */
   category: 'core' | 'external' | 'ai';
   /** Whether this server is included by default in init */
@@ -74,6 +76,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       type: 'remote' as const,
       url: 'https://mcp.context7.com/mcp',
     },
+    optionalEnvVars: ['CONTEXT7_API_KEY'],
     category: 'external',
     defaultInInit: true,
   },
@@ -101,7 +104,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       url: 'https://mcp.grep.app',
     },
     category: 'external',
-    defaultInInit: false,
+    defaultInInit: true,
   },
 };
 
@@ -141,6 +144,28 @@ export function getDefaultServers(): MCPServerID[] {
 export function getServersRequiringAPIKeys(): MCPServerID[] {
   return Object.entries(MCP_SERVER_REGISTRY)
     .filter(([, server]) => server.requiredEnvVars && server.requiredEnvVars.length > 0)
+    .map(([id]) => id as MCPServerID);
+}
+
+/**
+ * Get servers that have optional API keys
+ */
+export function getServersWithOptionalAPIKeys(): MCPServerID[] {
+  return Object.entries(MCP_SERVER_REGISTRY)
+    .filter(([, server]) => server.optionalEnvVars && server.optionalEnvVars.length > 0)
+    .map(([id]) => id as MCPServerID);
+}
+
+/**
+ * Get all servers that have either required or optional API keys
+ */
+export function getServersWithAnyAPIKeys(): MCPServerID[] {
+  return Object.entries(MCP_SERVER_REGISTRY)
+    .filter(
+      ([, server]) =>
+        (server.requiredEnvVars && server.requiredEnvVars.length > 0) ||
+        (server.optionalEnvVars && server.optionalEnvVars.length > 0)
+    )
     .map(([id]) => id as MCPServerID);
 }
 
