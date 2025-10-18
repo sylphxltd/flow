@@ -832,17 +832,42 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
     return true;
   }
   console.log(`\u{1F527} Configuring ${server.description} for ${target.name}...`);
-  const apiKeys = await promptForAPIKeys([serverType]);
-  if (Object.keys(apiKeys).length === 0) {
-    console.log("\u274C No API keys provided");
-    return false;
-  }
   const config = await transformer.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
-  const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
-  const currentConfig = mcpSection[server.name];
+  const mcpSection = getNestedProperty(config, mcpConfigPath);
+  const isServerInstalled = !!(mcpSection && mcpSection[server.name]);
+  let hasExistingValidKeys = false;
+  if (isServerInstalled && server.requiredEnvVars?.length) {
+    const serverConfig = mcpSection[server.name];
+    hasExistingValidKeys = server.requiredEnvVars.every((envVar) => {
+      const envValue = serverConfig.environment?.[envVar];
+      return envValue && envValue.trim() !== "";
+    });
+  }
+  const apiKeys = await promptForAPIKeys([serverType]);
+  if (Object.keys(apiKeys).length === 0) {
+    if (isServerInstalled && !hasExistingValidKeys) {
+      console.log(`\u{1F5D1}\uFE0F  Removing ${server.name} (no API keys provided)`);
+      delete mcpSection[server.name];
+      if (Object.keys(mcpSection).length === 0) {
+        deleteNestedProperty(config, mcpConfigPath);
+      } else {
+        setNestedProperty(config, mcpConfigPath, mcpSection);
+      }
+      await transformer.writeConfig(cwd, config);
+      return false;
+    } else if (isServerInstalled && hasExistingValidKeys) {
+      console.log(`\u2705 Keeping ${server.name} (existing API keys are valid)`);
+      return true;
+    } else {
+      console.log(`\u26A0\uFE0F  Skipping ${server.name} (no API keys provided)`);
+      return false;
+    }
+  }
+  const mcpSectionForUpdate = mcpSection || {};
+  const currentConfig = mcpSectionForUpdate[server.name];
   if (currentConfig && currentConfig.type === "local") {
-    mcpSection[server.name] = {
+    mcpSectionForUpdate[server.name] = {
       ...currentConfig,
       environment: {
         ...currentConfig.environment || {},
@@ -853,7 +878,7 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
     const baseConfig = server.config;
     if (baseConfig.type === "local") {
       const transformedConfig = transformer.transformMCPConfig(baseConfig);
-      mcpSection[server.name] = {
+      mcpSectionForUpdate[server.name] = {
         ...transformedConfig,
         environment: {
           ...baseConfig.environment || {},
@@ -862,10 +887,10 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
       };
     } else {
       const transformedConfig = transformer.transformMCPConfig(baseConfig);
-      mcpSection[server.name] = transformedConfig;
+      mcpSectionForUpdate[server.name] = transformedConfig;
     }
   }
-  setNestedProperty(config, mcpConfigPath, mcpSection);
+  setNestedProperty(config, mcpConfigPath, mcpSectionForUpdate);
   await transformer.writeConfig(cwd, config);
   console.log(`\u2705 Updated ${server.name} with API keys for ${target.name}`);
   return true;
@@ -889,6 +914,14 @@ function setNestedProperty(obj, path5, value) {
     return current[key];
   }, obj);
   target[lastKey] = value;
+}
+function deleteNestedProperty(obj, path5) {
+  const keys = path5.split(".");
+  const lastKey = keys.pop();
+  const target = keys.reduce((current, key) => current?.[key], obj);
+  if (target) {
+    delete target[lastKey];
+  }
 }
 async function promptForAPIKeys(serverTypes) {
   const { createInterface } = await import("readline");
@@ -972,12 +1005,12 @@ var initCommand = {
         if (serversNeedingKeys.length > 0) {
           console.log("\n\u{1F511} Some MCP tools require API keys:");
           for (const serverType of serversNeedingKeys) {
-            const keysProvided = await configureMCPServerForTarget(
+            const shouldKeepOrInstall = await configureMCPServerForTarget(
               process.cwd(),
               targetId,
               serverType
             );
-            if (keysProvided) {
+            if (shouldKeepOrInstall) {
               serversWithKeys.push(serverType);
             } else {
               serversWithoutKeys.push(serverType);
@@ -994,7 +1027,7 @@ var initCommand = {
         }
         if (serversWithoutKeys.length > 0) {
           console.log(
-            `\u26A0\uFE0F  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`
+            `\u26A0\uFE0F  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`
           );
           console.log("   You can install them later with: sylphx-flow mcp install <server-name>");
         }
@@ -1051,12 +1084,12 @@ var mcpInstallHandler = async (options) => {
       if (serversNeedingKeys.length > 0) {
         console.log("\n\u{1F511} Some MCP tools require API keys:");
         for (const serverType of serversNeedingKeys) {
-          const keysProvided = await configureMCPServerForTarget(
+          const shouldKeepOrInstall = await configureMCPServerForTarget(
             process.cwd(),
             targetId,
             serverType
           );
-          if (keysProvided) {
+          if (shouldKeepOrInstall) {
             serversWithKeys.push(serverType);
           } else {
             serversWithoutKeys.push(serverType);
@@ -1073,7 +1106,7 @@ var mcpInstallHandler = async (options) => {
       }
       if (serversWithoutKeys.length > 0) {
         console.log(
-          `\u26A0\uFE0F  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`
+          `\u26A0\uFE0F  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`
         );
         console.log("   You can install them later with: sylphx-flow mcp config <server-name>");
       }
@@ -1112,12 +1145,12 @@ var mcpInstallHandler = async (options) => {
     if (serversNeedingKeys.length > 0) {
       console.log("\n\u{1F511} Some MCP tools require API keys:");
       for (const serverType of serversNeedingKeys) {
-        const keysProvided = await configureMCPServerForTarget(
+        const shouldKeepOrInstall = await configureMCPServerForTarget(
           process.cwd(),
           targetId,
           serverType
         );
-        if (keysProvided) {
+        if (shouldKeepOrInstall) {
           serversWithKeys.push(serverType);
         } else {
           serversWithoutKeys.push(serverType);
@@ -1133,7 +1166,9 @@ var mcpInstallHandler = async (options) => {
       console.log(`\u2705 MCP tools installed: ${serversToInstall.join(", ")}`);
     }
     if (serversWithoutKeys.length > 0) {
-      console.log(`\u26A0\uFE0F  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`);
+      console.log(
+        `\u26A0\uFE0F  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(", ")}`
+      );
       console.log("   You can install them later with: sylphx-flow mcp config <server-name>");
     }
   }

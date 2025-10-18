@@ -59,12 +59,12 @@ const mcpInstallHandler: CommandHandler = async (options: {
         console.log('\n🔑 Some MCP tools require API keys:');
 
         for (const serverType of serversNeedingKeys) {
-          const keysProvided = await configureMCPServerForTarget(
+          const shouldKeepOrInstall = await configureMCPServerForTarget(
             process.cwd(),
             targetId,
             serverType
           );
-          if (keysProvided) {
+          if (shouldKeepOrInstall) {
             serversWithKeys.push(serverType);
           } else {
             serversWithoutKeys.push(serverType);
@@ -87,7 +87,7 @@ const mcpInstallHandler: CommandHandler = async (options: {
 
       if (serversWithoutKeys.length > 0) {
         console.log(
-          `⚠️  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+          `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
         );
         console.log('   You can install them later with: sylphx-flow mcp config <server-name>');
       }
@@ -134,12 +134,12 @@ const mcpInstallHandler: CommandHandler = async (options: {
       console.log('\n🔑 Some MCP tools require API keys:');
 
       for (const serverType of serversNeedingKeys) {
-        const keysProvided = await configureMCPServerForTarget(
+        const shouldKeepOrInstall = await configureMCPServerForTarget(
           process.cwd(),
           targetId,
           serverType as any
         );
-        if (keysProvided) {
+        if (shouldKeepOrInstall) {
           serversWithKeys.push(serverType);
         } else {
           serversWithoutKeys.push(serverType);
@@ -161,7 +161,9 @@ const mcpInstallHandler: CommandHandler = async (options: {
     }
 
     if (serversWithoutKeys.length > 0) {
-      console.log(`⚠️  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`);
+      console.log(
+        `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+      );
       console.log('   You can install them later with: sylphx-flow mcp config <server-name>');
     }
   }

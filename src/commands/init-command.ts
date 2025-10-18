@@ -71,14 +71,14 @@ export const initCommand: CommandConfig = {
         if (serversNeedingKeys.length > 0) {
           console.log('\n🔑 Some MCP tools require API keys:');
 
-          // Configure API keys first, before installing
+          // Configure API keys first, before installing (handles all 4 cases)
           for (const serverType of serversNeedingKeys) {
-            const keysProvided = await configureMCPServerForTarget(
+            const shouldKeepOrInstall = await configureMCPServerForTarget(
               process.cwd(),
               targetId,
               serverType
             );
-            if (keysProvided) {
+            if (shouldKeepOrInstall) {
               serversWithKeys.push(serverType);
             } else {
               serversWithoutKeys.push(serverType);
@@ -101,7 +101,7 @@ export const initCommand: CommandConfig = {
 
         if (serversWithoutKeys.length > 0) {
           console.log(
-            `⚠️  Skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+            `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
           );
           console.log('   You can install them later with: sylphx-flow mcp install <server-name>');
         }

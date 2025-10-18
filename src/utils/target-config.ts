@@ -201,25 +201,59 @@ export async function configureMCPServerForTarget(
 
   console.log(`🔧 Configuring ${server.description} for ${target.name}...`);
 
+  // Check if server already exists
+  const config = await transformer.readConfig(cwd);
+  const mcpConfigPath = target.config.mcpConfigPath;
+  const mcpSection = getNestedProperty(config, mcpConfigPath);
+  const isServerInstalled = !!(mcpSection && mcpSection[server.name]);
+
+  // Check if existing server has valid keys
+  let hasExistingValidKeys = false;
+  if (isServerInstalled && server.requiredEnvVars?.length) {
+    const serverConfig = mcpSection[server.name];
+    hasExistingValidKeys = server.requiredEnvVars.every((envVar) => {
+      const envValue = serverConfig.environment?.[envVar];
+      return envValue && envValue.trim() !== '';
+    });
+  }
+
   const apiKeys = await promptForAPIKeys([serverType]);
 
   if (Object.keys(apiKeys).length === 0) {
-    console.log('❌ No API keys provided');
-    return false;
+    // User didn't provide new keys
+    if (isServerInstalled && !hasExistingValidKeys) {
+      // Case 1: Already installed + no keys + user doesn't provide → DELETE
+      console.log(`🗑️  Removing ${server.name} (no API keys provided)`);
+      delete mcpSection[server.name];
+
+      // Remove MCP section if it's empty
+      if (Object.keys(mcpSection).length === 0) {
+        deleteNestedProperty(config, mcpConfigPath);
+      } else {
+        setNestedProperty(config, mcpConfigPath, mcpSection);
+      }
+
+      await transformer.writeConfig(cwd, config);
+      return false;
+    } else if (isServerInstalled && hasExistingValidKeys) {
+      // Case 2: Already installed + has keys + user doesn't provide → KEEP
+      console.log(`✅ Keeping ${server.name} (existing API keys are valid)`);
+      return true;
+    } else {
+      // Case 4: Not installed + user doesn't provide → SKIP
+      console.log(`⚠️  Skipping ${server.name} (no API keys provided)`);
+      return false;
+    }
   }
 
-  // Read current config
-  const config = await transformer.readConfig(cwd);
-
-  // Get MCP section
-  const mcpConfigPath = target.config.mcpConfigPath;
-  const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
+  // Get MCP section for update (ensure it exists)
+  const mcpSectionForUpdate = mcpSection || {};
 
   // Update server config with API keys (only for local servers)
-  const currentConfig = mcpSection[server.name];
+  const currentConfig = mcpSectionForUpdate[server.name];
   if (currentConfig && currentConfig.type === 'local') {
     // Update existing local config
-    mcpSection[server.name] = {
+    mcpSectionForUpdate[server.name] = {
       ...currentConfig,
       environment: {
         ...(currentConfig.environment || {}),
@@ -231,7 +265,7 @@ export async function configureMCPServerForTarget(
     const baseConfig = server.config;
     if (baseConfig.type === 'local') {
       const transformedConfig = transformer.transformMCPConfig(baseConfig);
-      mcpSection[server.name] = {
+      mcpSectionForUpdate[server.name] = {
         ...transformedConfig,
         environment: {
           ...(baseConfig.environment || {}),
@@ -241,12 +275,12 @@ export async function configureMCPServerForTarget(
     } else {
       // HTTP server - just add the base config
       const transformedConfig = transformer.transformMCPConfig(baseConfig);
-      mcpSection[server.name] = transformedConfig;
+      mcpSectionForUpdate[server.name] = transformedConfig;
     }
   }
 
   // Update config with new MCP section
-  setNestedProperty(config, mcpConfigPath, mcpSection);
+  setNestedProperty(config, mcpConfigPath, mcpSectionForUpdate);
 
   // Write updated configuration
   await transformer.writeConfig(cwd, config);
