@@ -4,6 +4,15 @@ import type { MCPServerConfigUnion } from '../types.js';
  * Central MCP server registry for Sylphx Flow
  * This is the single source of truth for all available MCP servers
  */
+export interface EnvVarConfig {
+  /** Description of what this environment variable does */
+  description: string;
+  /** Whether this environment variable is required or optional */
+  required: boolean;
+  /** Default value (if any) */
+  default?: string;
+}
+
 export interface MCPServerDefinition {
   /** Internal identifier used in CLI commands */
   id: string;
@@ -13,10 +22,8 @@ export interface MCPServerDefinition {
   description: string;
   /** MCP server configuration */
   config: MCPServerConfigUnion;
-  /** Required environment variables (if any) */
-  requiredEnvVars?: string[];
-  /** Optional environment variables (if any) */
-  optionalEnvVars?: string[];
+  /** Environment variables configuration */
+  envVars?: Record<string, EnvVarConfig>;
   /** Server category for grouping */
   category: 'core' | 'external' | 'ai';
   /** Whether this server is included by default in init */
@@ -49,7 +56,12 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       command: ['npx', '@napolab/gpt-image-1-mcp'] as string[],
       environment: { OPENAI_API_KEY: '' },
     },
-    requiredEnvVars: ['OPENAI_API_KEY'],
+    envVars: {
+      OPENAI_API_KEY: {
+        description: 'OpenAI API key for image generation',
+        required: true,
+      },
+    },
     category: 'ai',
     defaultInInit: true,
   },
@@ -63,7 +75,12 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       command: ['npx', '-y', 'server-perplexity-ask'] as string[],
       environment: { PERPLEXITY_API_KEY: '' },
     },
-    requiredEnvVars: ['PERPLEXITY_API_KEY'],
+    envVars: {
+      PERPLEXITY_API_KEY: {
+        description: 'Perplexity API key for search and queries',
+        required: true,
+      },
+    },
     category: 'ai',
     defaultInInit: true,
   },
@@ -76,7 +93,12 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       type: 'remote' as const,
       url: 'https://mcp.context7.com/mcp',
     },
-    optionalEnvVars: ['CONTEXT7_API_KEY'],
+    envVars: {
+      CONTEXT7_API_KEY: {
+        description: 'Context7 API key for enhanced documentation access',
+        required: false,
+      },
+    },
     category: 'external',
     defaultInInit: true,
   },
@@ -90,7 +112,17 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       command: ['npx', '-y', 'mcp-gemini-google-search'] as string[],
       environment: { GEMINI_API_KEY: '', GEMINI_MODEL: 'gemini-2.5-flash' },
     },
-    requiredEnvVars: ['GEMINI_API_KEY'],
+    envVars: {
+      GEMINI_API_KEY: {
+        description: 'Google Gemini API key for search functionality',
+        required: true,
+      },
+      GEMINI_MODEL: {
+        description: 'Gemini model to use for search',
+        required: false,
+        default: 'gemini-2.5-flash',
+      },
+    },
     category: 'ai',
     defaultInInit: true,
   },
@@ -143,7 +175,10 @@ export function getDefaultServers(): MCPServerID[] {
  */
 export function getServersRequiringAPIKeys(): MCPServerID[] {
   return Object.entries(MCP_SERVER_REGISTRY)
-    .filter(([, server]) => server.requiredEnvVars && server.requiredEnvVars.length > 0)
+    .filter(
+      ([, server]) =>
+        server.envVars && Object.values(server.envVars).some((envVar) => envVar.required)
+    )
     .map(([id]) => id as MCPServerID);
 }
 
@@ -152,21 +187,54 @@ export function getServersRequiringAPIKeys(): MCPServerID[] {
  */
 export function getServersWithOptionalAPIKeys(): MCPServerID[] {
   return Object.entries(MCP_SERVER_REGISTRY)
-    .filter(([, server]) => server.optionalEnvVars && server.optionalEnvVars.length > 0)
+    .filter(
+      ([, server]) =>
+        server.envVars && Object.values(server.envVars).some((envVar) => !envVar.required)
+    )
     .map(([id]) => id as MCPServerID);
 }
 
 /**
- * Get all servers that have either required or optional API keys
+ * Get all servers that have any API keys (required or optional)
  */
 export function getServersWithAnyAPIKeys(): MCPServerID[] {
   return Object.entries(MCP_SERVER_REGISTRY)
-    .filter(
-      ([, server]) =>
-        (server.requiredEnvVars && server.requiredEnvVars.length > 0) ||
-        (server.optionalEnvVars && server.optionalEnvVars.length > 0)
-    )
+    .filter(([, server]) => server.envVars && Object.keys(server.envVars).length > 0)
     .map(([id]) => id as MCPServerID);
+}
+
+/**
+ * Get required environment variables for a server
+ */
+export function getRequiredEnvVars(serverId: MCPServerID): string[] {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) return [];
+
+  return Object.entries(server.envVars)
+    .filter(([, config]) => config.required)
+    .map(([name]) => name);
+}
+
+/**
+ * Get optional environment variables for a server
+ */
+export function getOptionalEnvVars(serverId: MCPServerID): string[] {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) return [];
+
+  return Object.entries(server.envVars)
+    .filter(([, config]) => !config.required)
+    .map(([name]) => name);
+}
+
+/**
+ * Get all environment variables for a server
+ */
+export function getAllEnvVars(serverId: MCPServerID): string[] {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) return [];
+
+  return Object.keys(server.envVars);
 }
 
 /**

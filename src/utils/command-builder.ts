@@ -15,10 +15,14 @@ export function createCommand(config: CommandConfig): Command {
   // Add arguments if they exist
   if (config.arguments) {
     for (const argument of config.arguments) {
-      command.argument(
-        argument.required ? `<${argument.name}>` : `[${argument.name}]`,
-        argument.description
-      );
+      // Handle variadic arguments for servers
+      const argName =
+        argument.name === 'servers'
+          ? `[${argument.name}...]`
+          : argument.required
+            ? `<${argument.name}>`
+            : `[${argument.name}]`;
+      command.argument(argName, argument.description);
     }
   }
 
@@ -40,7 +44,6 @@ export function createCommand(config: CommandConfig): Command {
         const cmd = args[args.length - 1]; // This is the Command object
         const options = cmd.opts() as CommandOptions; // Use opts() to get parsed options
 
-        
         // Add arguments to options
         if (config.arguments && argValues.length > 0) {
           config.arguments.forEach((arg, index) => {
@@ -60,7 +63,6 @@ export function createCommand(config: CommandConfig): Command {
         const cmd = args[args.length - 1]; // This is the Command object
         const options = cmd.opts() as CommandOptions; // Use opts() to get parsed options
 
-        
         // Add arguments to options
         if (config.arguments && argValues.length > 0) {
           config.arguments.forEach((arg, index) => {

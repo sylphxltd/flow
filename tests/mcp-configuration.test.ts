@@ -77,7 +77,7 @@ describe('MCP Configuration Tests', () => {
       expect(console.log).toHaveBeenCalledWith('ℹ️  grep does not require any API keys');
     });
 
-    it('should handle servers with only optional keys when no keys provided', async () => {
+    it('should install servers with only optional keys even when no keys provided', async () => {
       const { configureMCPServerForTarget } = await import('../src/utils/target-config.js');
 
       // Mock no existing server
@@ -99,8 +99,8 @@ describe('MCP Configuration Tests', () => {
         'context7' as any
       );
 
-      expect(result).toBe(false); // Should skip when no optional keys provided
-      expect(mockTransformer.writeConfig).not.toHaveBeenCalled();
+      expect(result).toBe(true); // Should install even when no optional keys provided
+      expect(mockTransformer.writeConfig).toHaveBeenCalled();
     });
   });
 });

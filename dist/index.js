@@ -28,7 +28,12 @@ var MCP_SERVER_REGISTRY = {
       command: ["npx", "@napolab/gpt-image-1-mcp"],
       environment: { OPENAI_API_KEY: "" }
     },
-    requiredEnvVars: ["OPENAI_API_KEY"],
+    envVars: {
+      OPENAI_API_KEY: {
+        description: "OpenAI API key for image generation",
+        required: true
+      }
+    },
     category: "ai",
     defaultInInit: true
   },
@@ -41,7 +46,12 @@ var MCP_SERVER_REGISTRY = {
       command: ["npx", "-y", "server-perplexity-ask"],
       environment: { PERPLEXITY_API_KEY: "" }
     },
-    requiredEnvVars: ["PERPLEXITY_API_KEY"],
+    envVars: {
+      PERPLEXITY_API_KEY: {
+        description: "Perplexity API key for search and queries",
+        required: true
+      }
+    },
     category: "ai",
     defaultInInit: true
   },
@@ -53,7 +63,12 @@ var MCP_SERVER_REGISTRY = {
       type: "remote",
       url: "https://mcp.context7.com/mcp"
     },
-    optionalEnvVars: ["CONTEXT7_API_KEY"],
+    envVars: {
+      CONTEXT7_API_KEY: {
+        description: "Context7 API key for enhanced documentation access",
+        required: false
+      }
+    },
     category: "external",
     defaultInInit: true
   },
@@ -66,7 +81,17 @@ var MCP_SERVER_REGISTRY = {
       command: ["npx", "-y", "mcp-gemini-google-search"],
       environment: { GEMINI_API_KEY: "", GEMINI_MODEL: "gemini-2.5-flash" }
     },
-    requiredEnvVars: ["GEMINI_API_KEY"],
+    envVars: {
+      GEMINI_API_KEY: {
+        description: "Google Gemini API key for search functionality",
+        required: true
+      },
+      GEMINI_MODEL: {
+        description: "Gemini model to use for search",
+        required: false,
+        default: "gemini-2.5-flash"
+      }
+    },
     category: "ai",
     defaultInInit: true
   },
@@ -89,7 +114,24 @@ function getDefaultServers() {
   return Object.entries(MCP_SERVER_REGISTRY).filter(([, server]) => server.defaultInInit).map(([id]) => id);
 }
 function getServersRequiringAPIKeys() {
-  return Object.entries(MCP_SERVER_REGISTRY).filter(([, server]) => server.requiredEnvVars && server.requiredEnvVars.length > 0).map(([id]) => id);
+  return Object.entries(MCP_SERVER_REGISTRY).filter(
+    ([, server]) => server.envVars && Object.values(server.envVars).some((envVar) => envVar.required)
+  ).map(([id]) => id);
+}
+function getRequiredEnvVars(serverId) {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) return [];
+  return Object.entries(server.envVars).filter(([, config]) => config.required).map(([name]) => name);
+}
+function getOptionalEnvVars(serverId) {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) return [];
+  return Object.entries(server.envVars).filter(([, config]) => !config.required).map(([name]) => name);
+}
+function getAllEnvVars(serverId) {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) return [];
+  return Object.keys(server.envVars);
 }
 
 // src/core/init.ts
@@ -828,7 +870,9 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
     console.error(`\u274C Unknown MCP server: ${serverType}`);
     return false;
   }
-  if (!server.requiredEnvVars?.length && !server.optionalEnvVars?.length) {
+  const requiredEnvVars = getRequiredEnvVars(serverType);
+  const optionalEnvVars = getOptionalEnvVars(serverType);
+  if (requiredEnvVars.length === 0 && optionalEnvVars.length === 0) {
     console.log(`\u2139\uFE0F  ${server.name} does not require any API keys`);
     return true;
   }
@@ -838,13 +882,13 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
   const mcpSection = getNestedProperty(config, mcpConfigPath);
   const isServerInstalled = !!(mcpSection && mcpSection[server.name]);
   let hasExistingValidKeys = false;
-  if (isServerInstalled && server.requiredEnvVars?.length) {
+  if (isServerInstalled && requiredEnvVars.length) {
     const serverConfig = mcpSection[server.name];
-    hasExistingValidKeys = server.requiredEnvVars.every((envVar) => {
+    hasExistingValidKeys = requiredEnvVars.every((envVar) => {
       const envValue = serverConfig.environment?.[envVar];
       return envValue && envValue.trim() !== "";
     });
-  } else if (isServerInstalled && !server.requiredEnvVars?.length) {
+  } else if (isServerInstalled && requiredEnvVars.length === 0) {
     hasExistingValidKeys = true;
   }
   const apiKeys = await promptForAPIKeys([serverType]);
@@ -862,6 +906,8 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
     } else if (isServerInstalled && hasExistingValidKeys) {
       console.log(`\u2705 Keeping ${server.name} (existing API keys are valid)`);
       return true;
+    } else if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
+      console.log(`\u2705 Installing ${server.name} (optional API keys skipped)`);
     } else {
       console.log(`\u26A0\uFE0F  Skipping ${server.name} (no API keys provided)`);
       return false;
@@ -935,13 +981,14 @@ async function promptForAPIKeys(serverTypes) {
   const apiKeys = {};
   for (const serverType of serverTypes) {
     const server = MCP_SERVER_REGISTRY[serverType];
-    const allEnvVars = [...server.requiredEnvVars || [], ...server.optionalEnvVars || []];
+    const allEnvVars = getAllEnvVars(serverType);
     if (!allEnvVars.length) continue;
     console.log(`
 \u{1F511} Configuring API keys for ${server.description}:`);
     for (const envVar of allEnvVars) {
-      const isRequired = server.requiredEnvVars?.includes(envVar);
-      const promptText = isRequired ? `Enter ${envVar} (required): ` : `Enter ${envVar} (optional, press Enter to skip): `;
+      const envConfig = server.envVars[envVar];
+      const isRequired = envConfig.required;
+      const promptText = isRequired ? `Enter ${envVar} (${envConfig.description}) (required): ` : `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
       const answer = await new Promise((resolve) => {
         rl.question(promptText, (input) => {
           resolve(input.trim());
@@ -1219,11 +1266,14 @@ var mcpCommand = {
     {
       name: "install",
       description: "Install MCP tools for the target platform",
-      options: [
+      arguments: [
         {
-          flags: "<servers...>",
-          description: `MCP tools to install (${getAllServerIDs().join(", ")})`
-        },
+          name: "servers",
+          description: `MCP tools to install (${getAllServerIDs().join(", ")})`,
+          required: false
+        }
+      ],
+      options: [
         { flags: "--all", description: "Install all available MCP tools" },
         { flags: "--dry-run", description: "Show what would be done without making changes" }
       ],
@@ -1238,12 +1288,14 @@ var mcpCommand = {
     {
       name: "config",
       description: "Configure API keys for MCP tools",
-      options: [
+      arguments: [
         {
-          flags: "<server>",
-          description: `MCP server to configure (${getServersRequiringAPIKeys().join(", ")})`
+          name: "server",
+          description: `MCP server to configure (${getServersRequiringAPIKeys().join(", ")})`,
+          required: true
         }
       ],
+      options: [],
       handler: mcpConfigHandler
     }
   ]
@@ -2248,10 +2300,8 @@ function createCommand(config) {
   }
   if (config.arguments) {
     for (const argument of config.arguments) {
-      command.argument(
-        argument.required ? `<${argument.name}>` : `[${argument.name}]`,
-        argument.description
-      );
+      const argName = argument.name === "servers" ? `[${argument.name}...]` : argument.required ? `<${argument.name}>` : `[${argument.name}]`;
+      command.argument(argName, argument.description);
     }
   }
   if (config.subcommands) {

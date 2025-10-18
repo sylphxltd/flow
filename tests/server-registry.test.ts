@@ -77,7 +77,7 @@ describe('Server Registry Tests', () => {
       expect(context7Def).toBeDefined();
       expect(context7Def?.id).toBe('context7');
       expect(context7Def?.name).toBe('context7');
-      expect(context7Def?.optionalEnvVars).toContain('CONTEXT7_API_KEY');
+      expect(context7Def?.envVars?.CONTEXT7_API_KEY?.required).toBe(false);
     });
 
     it('should throw for invalid IDs', () => {
@@ -130,8 +130,12 @@ describe('Server Registry Tests', () => {
       if (context7.config.type === 'remote') {
         expect(context7.config.url).toBe('https://mcp.context7.com/mcp');
       }
-      expect(context7.optionalEnvVars).toEqual(['CONTEXT7_API_KEY']);
-      expect(context7.requiredEnvVars).toBeUndefined();
+      expect(context7.envVars).toEqual({
+        CONTEXT7_API_KEY: {
+          description: 'Context7 API key for enhanced documentation access',
+          required: false,
+        },
+      });
       expect(context7.category).toBe('external');
       expect(context7.defaultInInit).toBe(true);
     });
@@ -143,10 +147,36 @@ describe('Server Registry Tests', () => {
       expect(gptImage.name).toBe('gpt-image-1-mcp');
       expect(gptImage.description).toBe('GPT Image generation MCP server');
       expect(gptImage.config.type).toBe('local');
-      expect(gptImage.requiredEnvVars).toEqual(['OPENAI_API_KEY']);
-      expect(gptImage.optionalEnvVars).toBeUndefined();
+      expect(gptImage.envVars).toEqual({
+        OPENAI_API_KEY: {
+          description: 'OpenAI API key for image generation',
+          required: true,
+        },
+      });
       expect(gptImage.category).toBe('ai');
       expect(gptImage.defaultInInit).toBe(true);
+    });
+
+    it('should validate gemini-search server configuration', () => {
+      const geminiSearch = MCP_SERVER_REGISTRY['gemini-search'];
+
+      expect(geminiSearch.id).toBe('gemini-search');
+      expect(geminiSearch.name).toBe('gemini-google-search');
+      expect(geminiSearch.description).toBe('Gemini Google Search MCP server');
+      expect(geminiSearch.config.type).toBe('local');
+      expect(geminiSearch.envVars).toEqual({
+        GEMINI_API_KEY: {
+          description: 'Google Gemini API key for search functionality',
+          required: true,
+        },
+        GEMINI_MODEL: {
+          description: 'Gemini model to use for search',
+          required: false,
+          default: 'gemini-2.5-flash',
+        },
+      });
+      expect(geminiSearch.category).toBe('ai');
+      expect(geminiSearch.defaultInInit).toBe(true);
     });
 
     it('should validate grep server configuration', () => {
@@ -156,8 +186,7 @@ describe('Server Registry Tests', () => {
       expect(grep.name).toBe('grep');
       expect(grep.description).toBe('GitHub grep MCP server for searching GitHub repositories');
       expect(grep.config.type).toBe('remote');
-      expect(grep.requiredEnvVars).toBeUndefined();
-      expect(grep.optionalEnvVars).toBeUndefined();
+      expect(grep.envVars).toBeUndefined();
       expect(grep.category).toBe('external');
       expect(grep.defaultInInit).toBe(true);
     });

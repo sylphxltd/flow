@@ -7,6 +7,9 @@ import {
   getServerDefinition,
   getServersRequiringAPIKeys,
   isValidServerID,
+  getRequiredEnvVars,
+  getOptionalEnvVars,
+  getAllEnvVars,
 } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import type { MCPServerConfigUnion } from '../types.js';
@@ -194,7 +197,10 @@ export async function configureMCPServerForTarget(
     return false;
   }
 
-  if (!server.requiredEnvVars?.length && !server.optionalEnvVars?.length) {
+  const requiredEnvVars = getRequiredEnvVars(serverType);
+  const optionalEnvVars = getOptionalEnvVars(serverType);
+
+  if (requiredEnvVars.length === 0 && optionalEnvVars.length === 0) {
     console.log(`ℹ️  ${server.name} does not require any API keys`);
     return true; // No keys needed, so consider it successful
   }
@@ -209,13 +215,13 @@ export async function configureMCPServerForTarget(
 
   // Check if existing server has valid keys (only required keys matter for validity)
   let hasExistingValidKeys = false;
-  if (isServerInstalled && server.requiredEnvVars?.length) {
+  if (isServerInstalled && requiredEnvVars.length) {
     const serverConfig = mcpSection[server.name];
-    hasExistingValidKeys = server.requiredEnvVars.every((envVar) => {
+    hasExistingValidKeys = requiredEnvVars.every((envVar) => {
       const envValue = serverConfig.environment?.[envVar];
       return envValue && envValue.trim() !== '';
     });
-  } else if (isServerInstalled && !server.requiredEnvVars?.length) {
+  } else if (isServerInstalled && requiredEnvVars.length === 0) {
     // Server has no required keys, so it's always valid
     hasExistingValidKeys = true;
   }
@@ -242,8 +248,12 @@ export async function configureMCPServerForTarget(
       // Case 2: Already installed + has keys + user doesn't provide → KEEP
       console.log(`✅ Keeping ${server.name} (existing API keys are valid)`);
       return true;
+    } else if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
+      // Case 4a: Not installed + only optional keys + user doesn't provide → INSTALL
+      console.log(`✅ Installing ${server.name} (optional API keys skipped)`);
+      // Continue to installation without any keys
     } else {
-      // Case 4: Not installed + user doesn't provide → SKIP
+      // Case 4b: Not installed + required keys + user doesn't provide → SKIP
       console.log(`⚠️  Skipping ${server.name} (no API keys provided)`);
       return false;
     }
@@ -379,17 +389,18 @@ async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<stri
 
   for (const serverType of serverTypes) {
     const server = MCP_SERVER_REGISTRY[serverType];
-    const allEnvVars = [...(server.requiredEnvVars || []), ...(server.optionalEnvVars || [])];
+    const allEnvVars = getAllEnvVars(serverType);
 
     if (!allEnvVars.length) continue;
 
     console.log(`\n🔑 Configuring API keys for ${server.description}:`);
 
     for (const envVar of allEnvVars) {
-      const isRequired = server.requiredEnvVars?.includes(envVar);
+      const envConfig = server.envVars![envVar];
+      const isRequired = envConfig.required;
       const promptText = isRequired
-        ? `Enter ${envVar} (required): `
-        : `Enter ${envVar} (optional, press Enter to skip): `;
+        ? `Enter ${envVar} (${envConfig.description}) (required): `
+        : `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
 
       const answer = await new Promise<string>((resolve) => {
         rl.question(promptText, (input) => {

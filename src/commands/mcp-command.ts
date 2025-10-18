@@ -221,11 +221,14 @@ export const mcpCommand: CommandConfig = {
     {
       name: 'install',
       description: 'Install MCP tools for the target platform',
-      options: [
+      arguments: [
         {
-          flags: '<servers...>',
+          name: 'servers',
           description: `MCP tools to install (${getAllServerIDs().join(', ')})`,
+          required: false,
         },
+      ],
+      options: [
         { flags: '--all', description: 'Install all available MCP tools' },
         { flags: '--dry-run', description: 'Show what would be done without making changes' },
       ],
@@ -240,12 +243,14 @@ export const mcpCommand: CommandConfig = {
     {
       name: 'config',
       description: 'Configure API keys for MCP tools',
-      options: [
+      arguments: [
         {
-          flags: '<server>',
+          name: 'server',
           description: `MCP server to configure (${getServersRequiringAPIKeys().join(', ')})`,
+          required: true,
         },
       ],
+      options: [],
       handler: mcpConfigHandler,
     },
   ],
