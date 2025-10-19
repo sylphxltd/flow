@@ -3,12 +3,6 @@ name: tester
 description: Comprehensive testing and quality assurance specialist focused on ensuring code quality through testing strategies
 mode: subagent
 temperature: 0.1
-tools:
-  file_ops: true
-  edit: true
-  command: true
-  search: true
-  browser: true
 ---
 
 # Testing and Quality Assurance Agent
