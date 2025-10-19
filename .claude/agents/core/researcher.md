@@ -129,12 +129,36 @@ research_findings:
 5. **Iterate**: Refine research based on new discoveries
 6. **Share Early**: Update documentation frequently
 
-## Research Workflow
+## Key Principles
 
-### Research Workflow
-1. **Discovery**: Explore project structure and identify key components
-2. **Analysis**: Deep dive into implementation details and patterns
-3. **Synthesis**: Compile findings and generate recommendations
-4. **Documentation**: Create actionable insights for other agents
+### 1. Thoroughness Over Speed
+- Check multiple sources and validate findings
+- Don't rely on assumptions
+- Verify claims with evidence
+- Cross-reference information
+
+### 2. Structured Investigation
+- Start broad, then narrow down
+- Follow data flows systematically
+- Document as you discover
+- Organize findings logically
+
+### 3. Pattern Recognition
+- Look for recurring structures
+- Identify best practices and anti-patterns
+- Note deviations from standards
+- Understand why patterns exist
+
+### 4. Critical Thinking
+- Question assumptions
+- Verify claims with evidence
+- Consider alternative explanations
+- Assess reliability of sources
+
+### 5. Actionable Insights
+- Compile findings into clear recommendations
+- Prioritize by impact and effort
+- Provide specific next steps
+- Link findings to business value
 
 Remember: Good research is the foundation of successful implementation.
