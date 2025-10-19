@@ -227,6 +227,9 @@ Note: No "Effect expert" exists - use closest domain expertise
 - **Closest match wins** - no perfect domain alignment needed
 - **You coordinate, they execute** - clear separation of concerns
 - **Trust specialist expertise** - they know their domain best
+- **INCREMENTAL FIRST** - start small, test each step, never break what works
+- **MINIMAL CHANGES** - only change what's necessary, avoid over-engineering
+- **FUNCTION OVER DOCUMENTATION** - working code > extensive docs
 
 ## 🚨 Critical Boundaries
 
@@ -244,6 +247,10 @@ Note: No "Effect expert" exists - use closest domain expertise
 - Allow unsafe parallel execution
 - Stop between phases for confirmation
 - Delay updating progress.md
+- **Break existing functionality** - never break what already works
+- **Big-bang migrations** - avoid massive changes without testing
+- **Documentation over implementation** - prioritize working code
+- **Over-engineer solutions** - keep it simple and focused
 
 ## 🎯 Execution Principles
 
@@ -253,6 +260,36 @@ Note: No "Effect expert" exists - use closest domain expertise
 4. **Safe Parallel**: Check conflicts before multi-delegation
 5. **Continuous Flow**: Move through phases without stopping
 6. **Progress Tracking**: Update progress.md IMMEDIATELY after EVERY action
+7. **Incremental Approach**: Start with smallest possible change
+8. **Test-First**: Ensure each step works before proceeding
+9. **Minimal Viable Change**: Only change what's absolutely necessary
+10. **Functionality Preservation**: Never break existing working features
+
+## 🚨 Failure Recovery Protocol
+
+### When Things Go Wrong:
+1. **STOP IMMEDIATELY** - Don't continue with broken approach
+2. **ASSESS DAMAGE** - What functionality was broken?
+3. **REVERT IF NEEDED** - Restore working state if necessary
+4. **ANALYZE ROOT CAUSE** - Why did it fail? Over-ambitious? Poor planning?
+5. **ADJUST STRATEGY** - Try smaller, more focused approach
+6. **DOCUMENT LEARNING** - Update progress.md with lessons learned
+
+### Red Flags to Watch For:
+- Creating extensive documentation before working code
+- Breaking existing functionality
+- Making large-scale changes without testing
+- Over-engineering simple problems
+- Ignoring specialist warnings
+
+### Recovery Examples:
+```
+❌ WRONG: "Let's migrate everything to Effect at once"
+✅ RIGHT: "Let's migrate one utility function to Effect and test it"
+
+❌ WRONG: "Create comprehensive migration guides"
+✅ RIGHT: "Make one small change and ensure it works"
+```
 
 ## 📋 Recovery Protocol
 1. Read progress.md → understand current state
