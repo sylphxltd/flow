@@ -19,9 +19,11 @@ const DEFAULT_CONFIG = {
 const Logger = {
   info: (message: string) => console.error(`[INFO] ${message}`),
   success: (message: string) => console.error(`[SUCCESS] ${message}`),
-  error: (message: string, error?: any) => {
+  error: (message: string, error?: unknown) => {
     console.error(`[ERROR] ${message}`);
-    if (error) console.error(error);
+    if (error) {
+      console.error(error);
+    }
   },
 };
 
@@ -39,6 +41,49 @@ const memoryStorage = new LibSQLMemoryStorage();
 Logger.success('✅ Memory storage initialized');
 
 // ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+interface MemorySetArgs {
+  key: string;
+  value: string;
+  namespace?: string;
+}
+
+interface MemoryGetArgs {
+  key: string;
+  namespace?: string;
+}
+
+interface MemorySearchArgs {
+  pattern: string;
+  namespace?: string;
+}
+
+interface MemoryListArgs {
+  namespace?: string;
+}
+
+interface MemoryDeleteArgs {
+  key: string;
+  namespace?: string;
+}
+
+interface MemoryClearArgs {
+  namespace?: string;
+}
+
+interface GetCurrentTimeArgs {
+  timezone: string;
+}
+
+interface ConvertTimeArgs {
+  source_timezone: string;
+  time: string;
+  target_timezone: string;
+}
+
+// ============================================================================
 // TOOL REGISTRATION
 // ============================================================================
 
@@ -53,7 +98,7 @@ server.registerTool(
       namespace: z.string().optional().describe('Optional namespace for organization'),
     },
   },
-  async (args: any) => {
+  async (args: MemorySetArgs) => {
     try {
       const { key, value, namespace = 'default' } = args;
       const parsedValue = JSON.parse(value);
@@ -69,13 +114,14 @@ server.registerTool(
           },
         ],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('Error storing memory', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error storing memory: ${error.message}`,
+            text: `❌ Error storing memory: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -94,7 +140,7 @@ server.registerTool(
       namespace: z.string().optional().describe('Optional namespace'),
     },
   },
-  async (args: any) => {
+  async (args: MemoryGetArgs) => {
     try {
       const { key, namespace = 'default' } = args;
       const memory = await memoryStorage.get(key, namespace);
@@ -134,13 +180,14 @@ server.registerTool(
           },
         ],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('Error retrieving memory', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error retrieving memory: ${error.message}`,
+            text: `❌ Error retrieving memory: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -159,7 +206,7 @@ server.registerTool(
       namespace: z.string().optional().describe('Optional namespace to limit search'),
     },
   },
-  async (args: any) => {
+  async (args: MemorySearchArgs) => {
     try {
       const { pattern, namespace } = args;
       const allEntries = await memoryStorage.getAll();
@@ -198,13 +245,14 @@ server.registerTool(
           },
         ],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('Error searching memory', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error searching memory: ${error.message}`,
+            text: `❌ Error searching memory: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -222,7 +270,7 @@ server.registerTool(
       namespace: z.string().optional().describe('Optional namespace to filter by'),
     },
   },
-  async (args: any) => {
+  async (args: MemoryListArgs) => {
     try {
       const { namespace } = args;
       const entries = await memoryStorage.getAll();
@@ -250,13 +298,14 @@ server.registerTool(
           },
         ],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('Error listing memory', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error listing memory: ${error.message}`,
+            text: `❌ Error listing memory: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -275,7 +324,7 @@ server.registerTool(
       namespace: z.string().optional().describe('Optional namespace'),
     },
   },
-  async (args: any) => {
+  async (args: MemoryDeleteArgs) => {
     try {
       const { key, namespace = 'default' } = args;
       const deleted = await memoryStorage.delete(key, namespace);
@@ -301,13 +350,14 @@ server.registerTool(
           },
         ],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('Error deleting memory', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error deleting memory: ${error.message}`,
+            text: `❌ Error deleting memory: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -325,7 +375,7 @@ server.registerTool(
       namespace: z.string().optional().describe('Optional namespace to clear (omits to clear all)'),
     },
   },
-  async (args: any) => {
+  async (args: MemoryClearArgs) => {
     try {
       const { namespace } = args;
       await memoryStorage.clear(namespace);
@@ -339,13 +389,14 @@ server.registerTool(
           },
         ],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('Error clearing memory', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error clearing memory: ${error.message}`,
+            text: `❌ Error clearing memory: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -384,13 +435,285 @@ server.registerTool(
           },
         ],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('Error getting memory stats', error);
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Error getting memory stats: ${error.message}`,
+            text: `❌ Error getting memory stats: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// ============================================================================
+// TIME TOOLS
+// ============================================================================
+
+// Helper function to validate IANA timezone
+function isValidTimezone(timezone: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Helper function to validate time format (HH:MM)
+function isValidTimeFormat(time: string): boolean {
+  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  return timeRegex.test(time);
+}
+
+// Get current time in a specific timezone
+server.registerTool(
+  'get_current_time',
+  {
+    description: 'Get current time in a specific timezone or system timezone',
+    inputSchema: {
+      timezone: z
+        .string()
+        .describe("IANA timezone name (e.g., 'America/New_York', 'Europe/London')"),
+    },
+  },
+  (args: GetCurrentTimeArgs) => {
+    try {
+      const { timezone } = args;
+
+      // Validate timezone
+      if (!isValidTimezone(timezone)) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ Invalid timezone: ${timezone}. Please use a valid IANA timezone name (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo').`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Get current time in specified timezone
+      const now = new Date();
+      const timeFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'long',
+        hour12: false,
+      });
+
+      const parts = timeFormatter.formatToParts(now);
+      const formatObject: Record<string, string> = {};
+      for (const part of parts) {
+        formatObject[part.type] = part.value;
+      }
+
+      const time24 = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(now);
+
+      const isoString = now.toLocaleString('sv-SE', { timeZone: timezone });
+
+      Logger.info(`Retrieved current time for timezone: ${timezone}`);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                timezone,
+                current_time: {
+                  date: `${formatObject.month} ${formatObject.day}, ${formatObject.year}`,
+                  time_24h: time24,
+                  time_with_seconds: timeFormatter.format(now),
+                  timezone_name: formatObject.timeZoneName,
+                  iso_format: `${isoString.replace(' ', 'T')}Z`,
+                  unix_timestamp: Math.floor(now.getTime() / 1000),
+                },
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      Logger.error('Error getting current time', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Error getting current time: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Convert time between timezones
+server.registerTool(
+  'convert_time',
+  {
+    description: 'Convert time between timezones',
+    inputSchema: {
+      source_timezone: z.string().describe('Source IANA timezone name'),
+      time: z.string().describe('Time in 24-hour format (HH:MM)'),
+      target_timezone: z.string().describe('Target IANA timezone name'),
+    },
+  },
+  (args: ConvertTimeArgs) => {
+    try {
+      const { source_timezone, time, target_timezone } = args;
+
+      // Validate timezones
+      if (!isValidTimezone(source_timezone)) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ Invalid source timezone: ${source_timezone}. Please use a valid IANA timezone name.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      if (!isValidTimezone(target_timezone)) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ Invalid target timezone: ${target_timezone}. Please use a valid IANA timezone name.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Validate time format
+      if (!isValidTimeFormat(time)) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ Invalid time format: ${time}. Please use 24-hour format (HH:MM).`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Parse the time and create a date object for today in source timezone
+      const [hours, minutes] = time.split(':').map(Number);
+      const now = new Date();
+
+      // Create a date object representing the time in source timezone
+      const sourceDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+
+      // Format the source time to get the correct representation
+      const sourceFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: source_timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+
+      const sourceParts = sourceFormatter.formatToParts(sourceDate);
+      const sourceFormatObject: Record<string, string> = {};
+      for (const part of sourceParts) {
+        sourceFormatObject[part.type] = part.value;
+      }
+
+      // Convert to target timezone
+      const targetFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: target_timezone,
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'long',
+        hour12: false,
+      });
+
+      const targetTime24 = new Intl.DateTimeFormat('en-US', {
+        timeZone: target_timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(sourceDate);
+
+      const targetParts = targetFormatter.formatToParts(sourceDate);
+      const targetFormatObject: Record<string, string> = {};
+      for (const part of targetParts) {
+        targetFormatObject[part.type] = part.value;
+      }
+
+      const targetDate = new Date(
+        sourceDate.toLocaleString('en-US', { timeZone: target_timezone })
+      );
+      const timeDiffMs = targetDate.getTime() - sourceDate.getTime();
+      const timeDiffHours = Math.round(timeDiffMs / (1000 * 60 * 60));
+
+      Logger.info(`Converted time from ${source_timezone} to ${target_timezone}`);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                conversion: {
+                  source: {
+                    timezone: source_timezone,
+                    time: time,
+                    formatted: sourceFormatter.format(sourceDate),
+                  },
+                  target: {
+                    timezone: target_timezone,
+                    time_24h: targetTime24,
+                    formatted: targetFormatter.format(sourceDate),
+                    date: `${targetFormatObject.month} ${targetFormatObject.day}, ${targetFormatObject.year}`,
+                    timezone_name: targetFormatObject.timeZoneName,
+                  },
+                  time_difference_hours: timeDiffHours,
+                },
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      Logger.error('Error converting time', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Error converting time: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -408,7 +731,7 @@ async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
     Logger.success('✅ MCP Server connected and ready');
-  } catch (error: any) {
+  } catch (error: unknown) {
     Logger.error('Failed to start MCP server', error);
     process.exit(1);
   }
