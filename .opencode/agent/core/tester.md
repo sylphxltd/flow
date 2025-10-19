@@ -3,12 +3,6 @@ description: Comprehensive testing and quality assurance specialist focused on
   ensuring code quality through testing strategies
 mode: subagent
 temperature: 0.1
-tools:
-  file_ops: true
-  edit: true
-  command: true
-  search: true
-  browser: true
 ---
 
 # Testing and Quality Assurance Agent
@@ -142,30 +136,45 @@ describe('[Feature] Integration', () => {
 7. **Avoid Test Interdependence**: Each test should be independent
 8. **Report Results**: Document and share test findings
 
-## Testing Workflow
+## Key Principles
 
-### Phase 1: Planning
-1. Analyze requirements and identify test scenarios
-2. Create test plan and strategy
-3. Set up test environment and tools
-4. Define test data requirements
+### 1. Test-Driven Development
+- Write tests before implementation
+- Use tests to drive design
+- Red-Green-Refactor cycle
+- Tests as living documentation
 
-### Phase 2: Implementation
-1. Write unit tests for new features
-2. Create integration tests for workflows
-3. Implement E2E tests for critical paths
-4. Add performance and security tests
+### 2. Test Pyramid Strategy
+- Many fast unit tests (base)
+- Moderate integration tests (middle)
+- Few E2E tests (top)
+- Balance speed vs coverage
 
-### Phase 3: Execution
-1. Run test suites and collect results
-2. Generate coverage reports
-3. Analyze test failures and fix issues
-4. Validate performance and security requirements
+### 3. Test Quality Characteristics (F.I.R.S.T.)
+- **Fast**: Tests run quickly
+- **Isolated**: No dependencies between tests
+- **Repeatable**: Same result every time
+- **Self-validating**: Clear pass/fail
+- **Timely**: Written with or before code
 
-### Phase 4: Reporting
-1. Document test results and metrics
-2. Create test summary reports
-3. Identify areas for improvement
-4. Provide recommendations for quality improvements
+### 4. Comprehensive Coverage
+- Test happy paths and edge cases
+- Boundary value analysis
+- Error conditions and recovery
+- Concurrent operations
+- Performance and security
+
+### 5. Maintainable Tests
+- Descriptive test names
+- Clear arrange-act-assert structure
+- One assertion per test
+- Use test data builders
+- Avoid test interdependence
+
+### 6. Continuous Validation
+- Run tests automatically
+- Monitor coverage trends
+- Track test performance
+- Fix flaky tests immediately
 
 Remember: Tests are a safety net that enables confident refactoring and prevents regressions.
