@@ -1,19 +1,20 @@
 import {
   BaseTransformer
-} from "./chunk-B6EYWZ4T.js";
+} from "./chunk-76EOT6BH.js";
 
 // src/transformers/claude-code.ts
 var ClaudeCodeTransformer = class extends BaseTransformer {
-  constructor(config) {
-    super(config);
-  }
   /**
    * Transform agent content for Claude Code
    * Claude Code uses YAML front matter with specific fields
    */
   async transformAgentContent(content, metadata, sourcePath) {
     const { metadata: existingMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
-    const claudeCodeMetadata = this.convertToClaudeCodeFormat(existingMetadata, baseContent, sourcePath);
+    const claudeCodeMetadata = this.convertToClaudeCodeFormat(
+      existingMetadata,
+      baseContent,
+      sourcePath
+    );
     if (metadata) {
       Object.assign(claudeCodeMetadata, metadata);
     }
@@ -51,13 +52,27 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
     }
     if (metadata.description) {
       const desc = metadata.description.toLowerCase();
-      if (desc.includes("coder")) return "code-implementation-agent";
-      if (desc.includes("reviewer")) return "code-reviewer";
-      if (desc.includes("planner")) return "development-planner";
-      if (desc.includes("researcher")) return "research-specialist";
-      if (desc.includes("tester")) return "quality-tester";
-      if (desc.includes("analyze")) return "analysis-specialist";
-      if (desc.includes("orchestrator")) return "development-orchestrator";
+      if (desc.includes("coder")) {
+        return "code-implementation-agent";
+      }
+      if (desc.includes("reviewer")) {
+        return "code-reviewer";
+      }
+      if (desc.includes("planner")) {
+        return "development-planner";
+      }
+      if (desc.includes("researcher")) {
+        return "research-specialist";
+      }
+      if (desc.includes("tester")) {
+        return "quality-tester";
+      }
+      if (desc.includes("analyze")) {
+        return "analysis-specialist";
+      }
+      if (desc.includes("orchestrator")) {
+        return "development-orchestrator";
+      }
     }
     return "development-agent";
   }
@@ -65,29 +80,69 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
    * Extract agent name from file path
    */
   extractNameFromPath(sourcePath) {
-    if (!sourcePath) return null;
+    if (!sourcePath) {
+      return null;
+    }
     const pathWithoutExt = sourcePath.replace(/\.md$/, "");
     const filename = pathWithoutExt.split("/").pop() || pathWithoutExt;
     const kebabName = filename.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-    if (kebabName.includes("constitution")) return "sdd-constitution";
-    if (kebabName.includes("implement")) return "sdd-implement";
-    if (kebabName.includes("clarify")) return "sdd-clarify";
-    if (kebabName.includes("release")) return "sdd-release";
-    if (kebabName.includes("task")) return "sdd-task";
-    if (kebabName.includes("plan")) return "sdd-plan";
-    if (kebabName.includes("specify")) return "sdd-specify";
-    if (kebabName.includes("analyze")) return "sdd-analyze";
-    if (kebabName.includes("orchestrator")) return "sdd-development-orchestrator";
-    if (kebabName.includes("coder")) return "core-coder";
-    if (kebabName.includes("planner")) return "core-planner";
-    if (kebabName.includes("researcher")) return "core-researcher";
-    if (kebabName.includes("reviewer")) return "core-reviewer";
-    if (kebabName.includes("tester")) return "core-tester";
-    if (kebabName.includes("scout")) return "hive-mind-scout-explorer";
-    if (kebabName.includes("collective")) return "hive-mind-collective-intelligence-coordinator";
-    if (kebabName.includes("worker")) return "hive-mind-worker-specialist";
-    if (kebabName.includes("memory")) return "hive-mind-swarm-memory-manager";
-    if (kebabName.includes("queen")) return "hive-mind-queen-coordinator";
+    if (kebabName.includes("constitution")) {
+      return "sdd-constitution";
+    }
+    if (kebabName.includes("implement")) {
+      return "sdd-implement";
+    }
+    if (kebabName.includes("clarify")) {
+      return "sdd-clarify";
+    }
+    if (kebabName.includes("release")) {
+      return "sdd-release";
+    }
+    if (kebabName.includes("task")) {
+      return "sdd-task";
+    }
+    if (kebabName.includes("plan")) {
+      return "sdd-plan";
+    }
+    if (kebabName.includes("specify")) {
+      return "sdd-specify";
+    }
+    if (kebabName.includes("analyze")) {
+      return "sdd-analyze";
+    }
+    if (kebabName.includes("orchestrator")) {
+      return "sdd-development-orchestrator";
+    }
+    if (kebabName.includes("coder")) {
+      return "core-coder";
+    }
+    if (kebabName.includes("planner")) {
+      return "core-planner";
+    }
+    if (kebabName.includes("researcher")) {
+      return "core-researcher";
+    }
+    if (kebabName.includes("reviewer")) {
+      return "core-reviewer";
+    }
+    if (kebabName.includes("tester")) {
+      return "core-tester";
+    }
+    if (kebabName.includes("scout")) {
+      return "hive-mind-scout-explorer";
+    }
+    if (kebabName.includes("collective")) {
+      return "hive-mind-collective-intelligence-coordinator";
+    }
+    if (kebabName.includes("worker")) {
+      return "hive-mind-worker-specialist";
+    }
+    if (kebabName.includes("memory")) {
+      return "hive-mind-swarm-memory-manager";
+    }
+    if (kebabName.includes("queen")) {
+      return "hive-mind-queen-coordinator";
+    }
     return kebabName || null;
   }
   /**
@@ -168,40 +223,24 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
    */
   getHelpText() {
     let help = super.getHelpText();
-    help += `Claude Code-Specific Information:
-`;
-    help += `  Configuration File: .mcp.json
-`;
-    help += `  Agent Format: Markdown with YAML front matter
-`;
-    help += `  MCP Integration: Full server support
-
-`;
-    help += `Example Agent Structure:
-`;
-    help += `  ---
-`;
+    help += "Claude Code-Specific Information:\n";
+    help += "  Configuration File: .mcp.json\n";
+    help += "  Agent Format: Markdown with YAML front matter\n";
+    help += "  MCP Integration: Full server support\n\n";
+    help += "Example Agent Structure:\n";
+    help += "  ---\n";
     help += `  name: "code-reviewer"
 `;
     help += `  description: "Expert code review specialist"
 `;
-    help += `  ---
-
-`;
-    help += `  Agent content here...
-
-`;
+    help += "  ---\n\n";
+    help += "  Agent content here...\n\n";
     help += `Note: Only 'name' and 'description' fields are supported.
 `;
-    help += `Tools field omitted to allow all tools by default (whitelist model limitation).
-`;
-    help += `Unsupported fields (mode, temperature, etc.) are automatically removed.
-
-`;
-    help += `Example MCP Configuration:
-`;
-    help += `  {
-`;
+    help += "Tools field omitted to allow all tools by default (whitelist model limitation).\n";
+    help += "Unsupported fields (mode, temperature, etc.) are automatically removed.\n\n";
+    help += "Example MCP Configuration:\n";
+    help += "  {\n";
     help += `    "mcpServers": {
 `;
     help += `      "filesystem": {
@@ -212,8 +251,7 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
 `;
     help += `        "args": ["@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
 `;
-    help += `      },
-`;
+    help += "      },\n";
     help += `      "git": {
 `;
     help += `        "type": "stdio",
@@ -226,10 +264,8 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
 `;
     help += `          "GIT_TRACE": "1"
 `;
-    help += `        }
-`;
-    help += `      },
-`;
+    help += "        }\n";
+    help += "      },\n";
     help += `      "api-server": {
 `;
     help += `        "type": "http",
@@ -240,18 +276,11 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
 `;
     help += `          "Authorization": "Bearer $API_KEY"
 `;
-    help += `        }
-`;
-    help += `      }
-`;
-    help += `    }
-`;
-    help += `  }
-
-`;
-    help += `Note: Environment variables can be expanded in command, args, env, url, and headers.
-
-`;
+    help += "        }\n";
+    help += "      }\n";
+    help += "    }\n";
+    help += "  }\n\n";
+    help += "Note: Environment variables can be expanded in command, args, env, url, and headers.\n\n";
     return help;
   }
   /**

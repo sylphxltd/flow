@@ -120,17 +120,23 @@ function getServersRequiringAPIKeys() {
 }
 function getRequiredEnvVars(serverId) {
   const server = MCP_SERVER_REGISTRY[serverId];
-  if (!server?.envVars) return [];
+  if (!server?.envVars) {
+    return [];
+  }
   return Object.entries(server.envVars).filter(([, config]) => config.required).map(([name]) => name);
 }
 function getOptionalEnvVars(serverId) {
   const server = MCP_SERVER_REGISTRY[serverId];
-  if (!server?.envVars) return [];
+  if (!server?.envVars) {
+    return [];
+  }
   return Object.entries(server.envVars).filter(([, config]) => !config.required).map(([name]) => name);
 }
 function getAllEnvVars(serverId) {
   const server = MCP_SERVER_REGISTRY[serverId];
-  if (!server?.envVars) return [];
+  if (!server?.envVars) {
+    return [];
+  }
   return Object.keys(server.envVars);
 }
 
@@ -439,12 +445,14 @@ var TargetManager = class {
    * Initialize default transformers for implemented targets
    */
   async initializeDefaultTransformers() {
-    if (this.initialized) return;
+    if (this.initialized) {
+      return;
+    }
     try {
-      const { OpenCodeTransformer } = await import("./opencode-3SB6BGWH.js");
-      const { ClaudeCodeTransformer } = await import("./claude-code-44TTTRUI.js");
-      const { CursorTransformer } = await import("./cursor-LF72HVZC.js");
-      const { VSCodeTransformer } = await import("./vscode-LF7J5NK6.js");
+      const { OpenCodeTransformer } = await import("./opencode-LZTJTSYU.js");
+      const { ClaudeCodeTransformer } = await import("./claude-code-XIJSJRRZ.js");
+      const { CursorTransformer } = await import("./cursor-2LRTP573.js");
+      const { VSCodeTransformer } = await import("./vscode-ZWJYUFVL.js");
       this.registerTransformer(
         "opencode",
         new OpenCodeTransformer(getTargetDefinition("opencode").config)
@@ -648,8 +656,7 @@ var TargetManager = class {
     help += `${target.description}
 
 `;
-    help += `Configuration:
-`;
+    help += "Configuration:\n";
     help += `  Agent Directory: ${target.config.agentDir}
 `;
     help += `  Agent Extension: ${target.config.agentExtension}
@@ -724,7 +731,7 @@ async function installAgents(options) {
   const agentFiles = await getAgentFiles();
   if (options.quiet !== true) {
     console.log(
-      `\u{1F4C1} Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + "/", "")}`
+      `\u{1F4C1} Installing ${agentFiles.length} agents to ${agentsDir.replace(`${process.cwd()}/`, "")}`
     );
     console.log("");
   }
@@ -743,7 +750,7 @@ async function installAgents(options) {
       fs3.mkdirSync(destDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo(destPath);
-    const isNew = !localInfo;
+    const _isNew = !localInfo;
     let content = fs3.readFileSync(sourcePath, "utf8");
     content = await processContent(content, agentFile);
     const localProcessed = localInfo ? await processContent(localInfo.content, agentFile) : "";
@@ -880,7 +887,7 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
   const config = await transformer.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
   const mcpSection = getNestedProperty(config, mcpConfigPath);
-  const isServerInstalled = !!(mcpSection && mcpSection[server.name]);
+  const isServerInstalled = !!mcpSection?.[server.name];
   let hasExistingValidKeys = false;
   if (isServerInstalled && requiredEnvVars.length) {
     const serverConfig = mcpSection[server.name];
@@ -903,10 +910,12 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
       }
       await transformer.writeConfig(cwd, config);
       return false;
-    } else if (isServerInstalled && hasExistingValidKeys) {
+    }
+    if (isServerInstalled && hasExistingValidKeys) {
       console.log(`\u2705 Keeping ${server.name} (existing API keys are valid)`);
       return true;
-    } else if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
+    }
+    if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
       console.log(`\u2705 Installing ${server.name} (optional API keys skipped)`);
     } else {
       console.log(`\u26A0\uFE0F  Skipping ${server.name} (no API keys provided)`);
@@ -982,11 +991,13 @@ async function promptForAPIKeys(serverTypes) {
   for (const serverType of serverTypes) {
     const server = MCP_SERVER_REGISTRY[serverType];
     const allEnvVars = getAllEnvVars(serverType);
-    if (!allEnvVars.length) continue;
+    if (!allEnvVars.length) {
+      continue;
+    }
     console.log(`
 \u{1F511} Configuring API keys for ${server.description}:`);
     for (const envVar of allEnvVars) {
-      const envConfig = server.envVars[envVar];
+      const envConfig = server.envVars?.[envVar];
       const isRequired = envConfig.required;
       const promptText = isRequired ? `Enter ${envVar} (${envConfig.description}) (required): ` : `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
       const answer = await new Promise((resolve) => {
@@ -1109,7 +1120,7 @@ var initCommand = {
 
 // src/commands/mcp-command.ts
 var mcpStartHandler = async () => {
-  await import("./sylphx-flow-mcp-server-34BL4OBX.js");
+  await import("./sylphx-flow-mcp-server-TJSKAXEL.js");
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
   console.log(
@@ -1318,7 +1329,7 @@ var memoryListHandler = async (options) => {
     const display = filtered.slice(0, limit);
     display.forEach((entry, index) => {
       const safeValue = entry.value || "";
-      const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : JSON.stringify(safeValue).substring(0, 50) + "...";
+      const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : `${JSON.stringify(safeValue).substring(0, 50)}...`;
       console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
       console.log(`   Value: ${value}`);
       console.log(`   Updated: ${entry.updated_at}`);
@@ -1336,7 +1347,7 @@ var memoryListHandler = async (options) => {
     const display = entries.slice(0, limit);
     display.forEach((entry, index) => {
       const safeValue = entry.value || "";
-      const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : JSON.stringify(safeValue).substring(0, 50) + "...";
+      const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : `${JSON.stringify(safeValue).substring(0, 50)}...`;
       console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
       console.log(`   Value: ${value}`);
       console.log(`   Updated: ${entry.updated_at}`);
@@ -1363,7 +1374,7 @@ var memorySearchHandler = async (options) => {
   }
   results.forEach((entry, index) => {
     const safeValue = entry.value || "";
-    const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : JSON.stringify(safeValue).substring(0, 50) + "...";
+    const value = typeof safeValue === "string" ? safeValue.substring(0, 50) + (safeValue.length > 50 ? "..." : "") : `${JSON.stringify(safeValue).substring(0, 50)}...`;
     console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
     console.log(`   Value: ${value}`);
     console.log(`   Updated: ${entry.updated_at}`);
@@ -1416,7 +1427,7 @@ var memoryStatsHandler = async () => {
   console.log(`Oldest Entry: ${stats.oldestEntry || "N/A"}`);
   console.log(`Newest Entry: ${stats.newestEntry || "N/A"}`);
   console.log("");
-  console.log(`\u{1F4CD} Database: .sylphx-flow/memory.db`);
+  console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
 };
 var memorySetHandler = async (options) => {
   const args = process.argv.slice(2);
@@ -1674,9 +1685,9 @@ var FullscreenMemoryTUI = () => {
           setState((prev) => ({
             ...prev,
             editForm: {
-              namespace: state.selectedEntry.namespace,
-              key: state.selectedEntry.key,
-              value: JSON.stringify(state.selectedEntry.value, null, 2),
+              namespace: state.selectedEntry?.namespace,
+              key: state.selectedEntry?.key,
+              value: JSON.stringify(state.selectedEntry?.value, null, 2),
               cursor: 0
             },
             viewMode: "edit"
@@ -1825,7 +1836,9 @@ var FullscreenMemoryTUI = () => {
     ] }) })
   ] });
   const renderView = () => {
-    if (!state.selectedEntry) return null;
+    if (!state.selectedEntry) {
+      return null;
+    }
     const valueStr = JSON.stringify(state.selectedEntry.value, null, 2);
     const lines = valueStr.split("\n");
     const visibleLines = lines.slice(state.viewScrollOffset, state.viewScrollOffset + 20);
@@ -2192,12 +2205,12 @@ async function loadAgentContent(agentName) {
     try {
       const content = await fs4.readFile(agentPath, "utf-8");
       return content;
-    } catch (error) {
+    } catch (_error) {
       const packageAgentPath = path4.join(__dirname, "../../agents", `${agentName}.md`);
       const content = await fs4.readFile(packageAgentPath, "utf-8");
       return content;
     }
-  } catch (error) {
+  } catch (_error) {
     throw new CLIError(`Agent '${agentName}' not found`, "AGENT_NOT_FOUND");
   }
 }
@@ -2396,7 +2409,7 @@ function createCLI() {
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));
   }
-  program.command("tui").description("Launch interactive Sylphx Flow TUI").option("--target <type>", `Target platform (opencode, default: auto-detect)`).action(handleMemoryTui);
+  program.command("tui").description("Launch interactive Sylphx Flow TUI").option("--target <type>", "Target platform (opencode, default: auto-detect)").action(handleMemoryTui);
   program.action(() => {
     showDefaultHelp();
   });

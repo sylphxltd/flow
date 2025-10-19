@@ -34,15 +34,16 @@ var BaseTransformer = class {
     if (this.config.configFile.endsWith(".jsonc")) {
       const { readJSONCFile } = await import("./jsonc-6K4NEAWM.js");
       return readJSONCFile(configPath);
-    } else if (this.config.configFile.endsWith(".json")) {
+    }
+    if (this.config.configFile.endsWith(".json")) {
       const content = await fs.readFile(configPath, "utf8");
       return JSON.parse(content);
-    } else if (this.config.configFile.endsWith(".yaml") || this.config.configFile.endsWith(".yml")) {
-      const content = await fs.readFile(configPath, "utf8");
-      throw new Error("YAML config files not yet supported");
-    } else {
-      throw new Error(`Unsupported config file format: ${this.config.configFile}`);
     }
+    if (this.config.configFile.endsWith(".yaml") || this.config.configFile.endsWith(".yml")) {
+      const _content = await fs.readFile(configPath, "utf8");
+      throw new Error("YAML config files not yet supported");
+    }
+    throw new Error(`Unsupported config file format: ${this.config.configFile}`);
   }
   /**
    * Write the target's configuration file
@@ -96,8 +97,7 @@ var BaseTransformer = class {
    */
   getHelpText() {
     let help = "";
-    help += `Agent Installation:
-`;
+    help += "Agent Installation:\n";
     help += `  Directory: ${this.config.agentDir}
 `;
     help += `  Extension: ${this.config.agentExtension}
@@ -110,17 +110,12 @@ var BaseTransformer = class {
 
 `;
     if (this.config.installation.supportedMcpServers) {
-      help += `MCP Server Support:
-`;
+      help += "MCP Server Support:\n";
       help += `  Config Path: ${this.config.mcpConfigPath}
 `;
-      help += `  Supported: Yes
-
-`;
+      help += "  Supported: Yes\n\n";
     } else {
-      help += `MCP Server Support: Not yet implemented
-
-`;
+      help += "MCP Server Support: Not yet implemented\n\n";
     }
     return help;
   }
@@ -188,9 +183,8 @@ ${content}`;
     if (this.config.flatten) {
       const flattenedName = this.flattenPath(sourcePath);
       return path.join(agentDir, `${flattenedName}${this.config.agentExtension}`);
-    } else {
-      return path.join(agentDir, sourcePath);
     }
+    return path.join(agentDir, sourcePath);
   }
 };
 

@@ -1,18 +1,15 @@
 import {
   BaseTransformer
-} from "./chunk-B6EYWZ4T.js";
+} from "./chunk-76EOT6BH.js";
 
 // src/transformers/opencode.ts
 var OpenCodeTransformer = class extends BaseTransformer {
-  constructor(config) {
-    super(config);
-  }
   /**
    * Transform agent content for OpenCode
    * OpenCode uses YAML front matter, so we preserve it
    * Remove name field as OpenCode doesn't use it
    */
-  async transformAgentContent(content, metadata, sourcePath) {
+  async transformAgentContent(content, metadata, _sourcePath) {
     const { metadata: existingMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
     const { name, ...metadataWithoutName } = existingMetadata;
     if (metadata) {
@@ -82,31 +79,19 @@ var OpenCodeTransformer = class extends BaseTransformer {
    */
   getHelpText() {
     let help = super.getHelpText();
-    help += `OpenCode-Specific Information:
-`;
-    help += `  Configuration File: opencode.jsonc
-`;
-    help += `  Schema: https://opencode.ai/config.json
-`;
-    help += `  Agent Format: Markdown with YAML front matter
-`;
-    help += `  MCP Integration: Automatic server discovery
-
-`;
-    help += `Example Agent Structure:
-`;
-    help += `  ---
-`;
+    help += "OpenCode-Specific Information:\n";
+    help += "  Configuration File: opencode.jsonc\n";
+    help += "  Schema: https://opencode.ai/config.json\n";
+    help += "  Agent Format: Markdown with YAML front matter\n";
+    help += "  MCP Integration: Automatic server discovery\n\n";
+    help += "Example Agent Structure:\n";
+    help += "  ---\n";
     help += `  name: "My Agent"
 `;
     help += `  description: "Agent description"
 `;
-    help += `  ---
-
-`;
-    help += `  Agent content here...
-
-`;
+    help += "  ---\n\n";
+    help += "  Agent content here...\n\n";
     return help;
   }
   /**

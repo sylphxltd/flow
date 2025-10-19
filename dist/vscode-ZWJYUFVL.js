@@ -1,17 +1,14 @@
 import {
   BaseTransformer
-} from "./chunk-B6EYWZ4T.js";
+} from "./chunk-76EOT6BH.js";
 
 // src/transformers/vscode.ts
 var VSCodeTransformer = class extends BaseTransformer {
-  constructor(config) {
-    super(config);
-  }
   /**
    * Transform agent content for VS Code
    * VS Code uses plain markdown without YAML front matter
    */
-  async transformAgentContent(content, metadata, sourcePath) {
+  async transformAgentContent(content, metadata, _sourcePath) {
     const { content: baseContent } = await this.extractYamlFrontMatter(content);
     let transformedContent = baseContent;
     if (metadata && Object.keys(metadata).length > 0) {
@@ -26,7 +23,7 @@ ${baseContent}`;
    * Transform MCP server configuration for VS Code
    * Note: MCP support for VS Code is not yet implemented
    */
-  transformMCPConfig(config) {
+  transformMCPConfig(_config) {
     throw new Error("MCP server support for VS Code is not yet implemented");
   }
   /**
@@ -53,25 +50,14 @@ ${baseContent}`;
    */
   getHelpText() {
     let help = super.getHelpText();
-    help += `VS Code-Specific Information:
-`;
-    help += `  Configuration File: .vscode/settings.json
-`;
-    help += `  Agent Format: Plain Markdown
-`;
-    help += `  MCP Integration: Not yet implemented
-
-`;
-    help += `Example Agent Structure:
-`;
-    help += `  <!-- name: My Agent -->
-`;
-    help += `  <!-- description: Agent description -->
-
-`;
-    help += `  Agent content here...
-
-`;
+    help += "VS Code-Specific Information:\n";
+    help += "  Configuration File: .vscode/settings.json\n";
+    help += "  Agent Format: Plain Markdown\n";
+    help += "  MCP Integration: Not yet implemented\n\n";
+    help += "Example Agent Structure:\n";
+    help += "  <!-- name: My Agent -->\n";
+    help += "  <!-- description: Agent description -->\n\n";
+    help += "  Agent content here...\n\n";
     return help;
   }
   /**

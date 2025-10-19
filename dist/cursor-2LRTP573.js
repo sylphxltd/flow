@@ -1,17 +1,14 @@
 import {
   BaseTransformer
-} from "./chunk-B6EYWZ4T.js";
+} from "./chunk-76EOT6BH.js";
 
 // src/transformers/cursor.ts
 var CursorTransformer = class extends BaseTransformer {
-  constructor(config) {
-    super(config);
-  }
   /**
    * Transform agent content for Cursor
    * Cursor uses JSON format, so we need to convert from YAML front matter
    */
-  async transformAgentContent(content, metadata, sourcePath) {
+  async transformAgentContent(content, metadata, _sourcePath) {
     const { metadata: yamlMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
     const combinedMetadata = { ...yamlMetadata, ...metadata };
     const agentData = {
@@ -27,7 +24,7 @@ var CursorTransformer = class extends BaseTransformer {
    * Transform MCP server configuration for Cursor
    * Note: MCP support for Cursor is not yet implemented
    */
-  transformMCPConfig(config) {
+  transformMCPConfig(_config) {
     throw new Error("MCP server support for Cursor is not yet implemented");
   }
   /**
@@ -60,28 +57,19 @@ var CursorTransformer = class extends BaseTransformer {
    */
   getHelpText() {
     let help = super.getHelpText();
-    help += `Cursor-Specific Information:
-`;
-    help += `  Configuration File: cursor.json
-`;
-    help += `  Agent Format: JSON
-`;
-    help += `  MCP Integration: Not yet implemented
-
-`;
-    help += `Example Agent Structure:
-`;
-    help += `  {
-`;
+    help += "Cursor-Specific Information:\n";
+    help += "  Configuration File: cursor.json\n";
+    help += "  Agent Format: JSON\n";
+    help += "  MCP Integration: Not yet implemented\n\n";
+    help += "Example Agent Structure:\n";
+    help += "  {\n";
     help += `    "name": "My Agent",
 `;
     help += `    "description": "Agent description",
 `;
     help += `    "content": "Agent content here..."
 `;
-    help += `  }
-
-`;
+    help += "  }\n\n";
     return help;
   }
   /**
