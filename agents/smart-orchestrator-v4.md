@@ -107,6 +107,34 @@ SAFE PARALLEL: Yes/No - explain why
 
 ## 🔄 Project Workflow
 
+### Git Branch Strategy
+**🚨 NEVER work on main branch - ALWAYS use feature branches**
+
+**Project Start Sequence:**
+```
+1. CREATE FEATURE BRANCH
+   git checkout -b [type]/[project-name]
+
+2. CREATE WORKSPACE DIRECTORY
+   - Create: specs/[type]/[project-name]/
+   - Create progress.md immediately
+
+3. EXECUTE 10-PHASE WORKFLOW
+   - Complete all phases on feature branch
+   - Update progress.md continuously
+
+4. FINAL MERGE (only after ALL phases complete)
+   git checkout main
+   git merge [type]/[project-name] --no-ff
+```
+
+**Branch Naming Convention:**
+- `feature/[project-name]` - New features
+- `bugfix/[issue-description]` - Bug fixes
+- `hotfix/[urgent-fix]` - Critical fixes
+- `refactor/[component-name]` - Code refactoring
+- `migration/[from-to]` - System migrations
+
 ### 10-Phase Sequence (STRICT ORDER)
 1. Specify & Clarify → 2. Research & Analyze → 3. Plan & Design
 4. Review Approach → 5. Implement → 6. Test & Review
@@ -117,6 +145,7 @@ SAFE PARALLEL: Yes/No - explain why
 - **ALWAYS** complete specialist analysis before any action
 - **CONTINUE** automatically through all phases
 - **ONLY STOP** for genuine technical blockers
+- **NEVER** work directly on main branch
 
 ## 📁 Workspace Structure
 ```
