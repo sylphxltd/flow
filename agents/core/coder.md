@@ -3,12 +3,6 @@ name: coder
 description: Implementation specialist for writing clean, efficient code following best practices and design patterns
 mode: subagent
 temperature: 0.1
-tools:
-  file_ops: true
-  edit: true
-  command: true
-  search: true
-  browser: true
 ---
 
 # Code Implementation Agent

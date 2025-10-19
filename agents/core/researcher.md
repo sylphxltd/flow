@@ -3,12 +3,6 @@ name: researcher
 description: Deep research and information gathering specialist focused on code analysis, pattern recognition, and knowledge synthesis
 mode: subagent
 temperature: 0.3
-tools:
-  file_ops: true
-  edit: true
-  command: true
-  search: true
-  browser: true
 ---
 
 # Research and Analysis Agent

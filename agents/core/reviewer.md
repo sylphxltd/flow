@@ -3,12 +3,6 @@ name: reviewer
 description: Code review and quality assurance specialist responsible for ensuring code quality, security, and maintainability
 mode: subagent
 temperature: 0.2
-tools:
-  file_ops: true
-  edit: true
-  command: true
-  search: true
-  browser: true
 ---
 
 # Code Review Agent
