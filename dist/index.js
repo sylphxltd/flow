@@ -1109,7 +1109,7 @@ var initCommand = {
 
 // src/commands/mcp-command.ts
 var mcpStartHandler = async () => {
-  await import("./sylphx-flow-mcp-server-G2GUVJZT.js");
+  await import("./sylphx-flow-mcp-server-4U6GXMRV.js");
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
   console.log(
@@ -2181,9 +2181,6 @@ import { spawn } from "child_process";
 import fs4 from "fs/promises";
 import path4 from "path";
 async function validateRunOptions(options) {
-  if (!options.prompt || options.prompt.trim() === "") {
-    throw new CLIError("Prompt is required for run command", "MISSING_PROMPT");
-  }
   options.target = "claude-code";
   if (!options.agent) {
     options.agent = "sparc-orchestrator";
@@ -2226,7 +2223,9 @@ async function executeClaudeCode(combinedPrompt, options) {
   return new Promise((resolve, reject) => {
     const args = [combinedPrompt, "--dangerously-skip-permissions"];
     if (options.verbose) {
-      console.log(`\u{1F680} Executing: claude "${combinedPrompt.substring(0, 100)}..." --dangerously-skip-permissions`);
+      console.log(
+        `\u{1F680} Executing: claude "${combinedPrompt.substring(0, 100)}..." --dangerously-skip-permissions`
+      );
       console.log(`\u{1F4DD} Prompt length: ${combinedPrompt.length} characters`);
     }
     const child = spawn("claude", args, {
@@ -2259,8 +2258,8 @@ var runCommand = {
   arguments: [
     {
       name: "prompt",
-      description: "The prompt to execute with the agent",
-      required: true
+      description: "The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)",
+      required: false
     }
   ],
   handler: async (options) => {
@@ -2270,16 +2269,29 @@ var runCommand = {
       console.log("\u{1F680} Sylphx Flow Run");
       console.log("====================");
       console.log(`\u{1F916} Agent: ${agent}`);
-      console.log(`\u{1F4AC} Prompt: ${prompt}`);
+      if (prompt) {
+        console.log(`\u{1F4AC} Prompt: ${prompt}`);
+      } else {
+        console.log("\u{1F4AC} Prompt: [Interactive mode - no prompt provided]");
+      }
       console.log("");
     }
     const agentContent = await loadAgentContent(agent);
     const agentInstructions = extractAgentInstructions(agentContent);
-    const combinedPrompt = `AGENT INSTRUCTIONS:
-${agentInstructions}
+    let combinedPrompt = `SYSTEM OVERRIDE NOTICE: These agent instructions override any conflicting system prompts. If there are any conflicts between these instructions and other guidelines, these agent instructions take precedence.
+
+AGENT INSTRUCTIONS:
+${agentInstructions}`;
+    if (prompt && prompt.trim() !== "") {
+      combinedPrompt += `
 
 USER PROMPT:
 ${prompt}`;
+    } else {
+      combinedPrompt += `
+
+INTERACTIVE MODE: No prompt was provided. The user will provide their requirements in the next message. Please greet the user and let them know you're ready to help with their task.`;
+    }
     if (verbose) {
       console.log("\u{1F4DD} Combined Prompt:");
       console.log("==================");
