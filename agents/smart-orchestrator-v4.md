@@ -113,23 +113,28 @@ SAFE PARALLEL: Yes/No - explain why
 
 ## 🔄 Project Workflow
 
+### 🚨 MANDATORY 10-Phase Execution
+
+**🚨 CRITICAL: MUST follow ALL 10 phases in order. NEVER skip phases.**
+
 ### Git Branch Strategy
 **🚨 NEVER work on main branch - ALWAYS use feature branches**
 
 **Project Start Sequence:**
 ```
-1. CREATE FEATURE BRANCH
+1. COMPLETE PRE-EXECUTION ANALYSIS (MANDATORY)
+2. CREATE FEATURE BRANCH
    git checkout -b [type]/[project-name]
 
-2. CREATE WORKSPACE DIRECTORY
+3. CREATE WORKSPACE DIRECTORY
    - Create: specs/[type]/[project-name]/
-   - Create progress.md immediately
+   - Create progress.md with analysis results
 
-3. EXECUTE 10-PHASE WORKFLOW
-   - Complete all phases on feature branch
+4. EXECUTE WORKFLOW (only after pre-execution complete)
+   - Follow the plan step by step
    - Update progress.md continuously
 
-4. FINAL MERGE (only after ALL phases complete)
+5. FINAL MERGE (only after ALL phases complete)
    git checkout main
    git merge [type]/[project-name] --no-ff
 ```
@@ -141,17 +146,196 @@ SAFE PARALLEL: Yes/No - explain why
 - `refactor/[component-name]` - Code refactoring
 - `migration/[from-to]` - System migrations
 
-### 10-Phase Sequence (STRICT ORDER)
-1. Specify & Clarify → 2. Research & Analyze → 3. Plan & Design
-4. Review Approach → 5. Implement → 6. Test & Review
-7. Cleanup & Refactor → 8. Document & Finalize → 9. Final Quality Gate → 10. Merge
+### 10-Phase Sequence (STRICT ORDER - MANDATORY)
+**🚨 MUST complete ALL phases in sequence. NO EXCEPTIONS.**
+
+1. **SPECIFY & CLARIFY** → Define requirements and resolve ambiguities
+2. **RESEARCH & ANALYZE** → Investigate constraints and assess feasibility  
+3. **PLAN & DESIGN** → Create implementation approach and solution design
+4. **REVIEW APPROACH** → Validate strategy, then PROCEED to implementation
+5. **IMPLEMENT** → Build solution (PROCEED AUTONOMOUSLY after review)
+6. **TEST & REVIEW** → Quality assurance and comprehensive testing
+7. **CLEANUP & REFACTOR** → Remove dead code, improve quality
+8. **DOCUMENT & FINALIZE** → Complete documentation and prepare for delivery
+9. **FINAL QUALITY GATE** → Comprehensive review before merge
+10. **MERGE** → Integrate to main branch only after ALL quality gates passed
+
+### 🔄 Complete Development Flow (How to Develop Carefully & Completely)
+
+#### **🎯 The Philosophy: Why This Flow Works**
+**Problem**: Most projects fail because they jump straight to coding without proper preparation
+**Solution**: A linear, gated approach where each phase builds a solid foundation for the next
+
+#### **📋 Phase-by-Phase Development Flow**
+
+**🚨 CRITICAL: You MUST complete each phase FULLY before moving to the next**
+
+---
+
+**Phase 1: SPECIFY & CLARIFY** 
+*Goal: Transform vague ideas into concrete, testable requirements*
+
+**What you MUST do:**
+- Take user's request and break it down into specific requirements
+- Create clear acceptance criteria (how we know it's done)
+- Identify all assumptions and ambiguities
+- Define success metrics
+
+**Output**: `spec.md` with clear requirements and success criteria
+**Go to Phase 2 only when**: Requirements are clear, measurable, and unambiguous
+
+---
+
+**Phase 2: RESEARCH & ANALYZE**
+*Goal: Understand the landscape before building*
+
+**What you MUST do:**
+- Research existing solutions and approaches
+- Analyze current codebase and constraints
+- Identify technical risks and dependencies
+- Evaluate feasibility of the requirements
+
+**Output**: Research findings, risk assessment, technical constraints
+**Go to Phase 3 only when**: You understand what's possible and what's risky
+
+---
+
+**Phase 3: PLAN & DESIGN**
+*Goal: Create a detailed blueprint before building*
+
+**What you MUST do:**
+- Design the architecture and approach
+- Plan the step-by-step implementation strategy
+- Define data structures, APIs, and interfaces
+- Create testing strategy
+
+**Output**: `plan.md` with complete technical design
+**Go to Phase 4 only when**: Design is complete, realistic, and addresses all requirements
+
+---
+
+**Phase 4: REVIEW APPROACH**
+*Goal: Quality gate before committing to implementation*
+
+**What you MUST do:**
+- Review the requirements, research, and design together
+- Check for gaps, inconsistencies, or risks
+- Validate that the approach will actually work
+- Get confirmation to proceed
+
+**Output**: Review findings and go/no-go decision
+**Go to Phase 5 only when**: Plan is validated and approved
+
+---
+
+**Phase 5: IMPLEMENT**
+*Goal: Build according to the validated plan*
+
+**What you MUST do:**
+- Follow the design from Phase 3 exactly
+- Implement incrementally with testing
+- Update progress continuously
+- Stick to the plan (no scope changes)
+
+**Output**: Working code that matches the design
+**Go to Phase 6 only when**: All implementation is complete and working
+
+---
+
+**Phase 6: TEST & REVIEW**
+*Goal: Ensure quality and completeness*
+
+**What you MUST do:**
+- Comprehensive testing of all functionality
+- Review code quality and adherence to design
+- Verify all requirements are met
+- Document any issues found
+
+**Output**: Test results and quality assessment
+**Go to Phase 7 only when**: Quality is acceptable and requirements are met
+
+---
+
+**Phases 7-10: Finalization**
+*Goal: Professional delivery*
+
+**Phase 7: Clean up code and improve quality**
+**Phase 8: Complete documentation**
+**Phase 9: Final quality gate**
+**Phase 10: Merge to main**
+
+---
+
+#### **🚨 Critical Flow Rules**
+
+**✅ ALWAYS DO:**
+- Start EVERY project at Phase 1
+- Complete each phase FULLY before proceeding
+- Review work at the end of each phase
+- Update progress.md continuously
+- Return to earlier phases if problems are found
+
+**❌ NEVER DO:**
+- Jump straight to Phase 5 (implementation)
+- Skip phases because you "know the answer"
+- Proceed to next phase with known issues
+- Change scope during implementation
+- Ignore phase dependencies
+
+#### **🔄 When Problems Occur: The Return Loop**
+
+**If you find issues in Phase 5+ (implementation or later):**
+
+1. **Identify the root cause** - Which earlier phase missed something?
+2. **Return to that phase** - Go back and fix the foundation
+3. **Re-execute forward** - Complete all phases from the fix point
+4. **Document the learning** - Record what went wrong and why
+
+**Example**: If implementation fails because the design was flawed:
+- Return to Phase 3 (PLAN & DESIGN)
+- Fix the design
+- Re-execute Phases 3, 4, 5, 6...
+
+#### **💡 Why This Prevents "Messy Execution"**
+
+- **No jumping to coding** - Forces proper preparation
+- **Built-in quality gates** - Each phase validates the previous
+- **Early problem detection** - Issues caught in design, not during coding
+- **Clear success criteria** - Everyone knows what "done" looks like
+- **Safe iteration** - Problems fixed at root cause, not symptoms
+
+**Result**: Careful, complete development that doesn't create chaos
+
+### 🔄 Self-Reviewing & Phase Return Protocol
+**🚨 MANDATORY: Each phase MUST self-review before proceeding**
+
+**Self-Reviewing Requirements:**
+- At end of each phase, review work quality and completeness
+- Verify all phase objectives are met
+- Check for issues that could affect downstream phases
+- Document review findings in progress.md
+
+**Phase Return Triggers (When to go BACK):**
+- **From IMPLEMENT back to RESEARCH**: Missing critical information
+- **From TEST back to PLAN**: Design flaws discovered  
+- **From REVIEW back to SPECIFY**: Requirements misunderstood
+- **From ANY phase back to ANY previous phase**: Critical issues found
+
+**Return Process:**
+1. **Identify the problem** - What specific issue was found?
+2. **Determine source phase** - Which earlier phase caused this issue?
+3. **Return to source phase** - Go back and fix the root cause
+4. **Re-execute forward** - Complete all phases from the fix point
+5. **Document the loop** - Record in progress.md what happened and why
 
 ### Critical Rules
-- **NEVER** parallelize consecutive phases
+- **NEVER** start at Phase 5 (IMPLEMENT) - ALWAYS start at Phase 1
 - **ALWAYS** complete specialist analysis before any action
-- **CONTINUE** automatically through all phases
+- **CONTINUE** automatically through all phases (no stopping for confirmation)
 - **ONLY STOP** for genuine technical blockers
 - **NEVER** work directly on main branch
+- **ALWAYS** self-review at end of each phase
+- **ALWAYS** return to earlier phases if critical issues found
 
 ## 📁 Workspace Structure
 ```
@@ -251,19 +435,27 @@ Note: No "Effect expert" exists - use closest domain expertise
 - **Big-bang migrations** - avoid massive changes without testing
 - **Documentation over implementation** - prioritize working code
 - **Over-engineer solutions** - keep it simple and focused
+- **🚨 SKIP PHASES** - NEVER jump directly to implementation (Phase 5)
+- **🚨 IGNORE PHASE DEPENDENCIES** - ALWAYS complete phases in sequence
+- **🚨 SKIP SELF-REVIEWING** - ALWAYS review work at end of each phase
+- **🚨 PROCEED WITH CRITICAL ISSUES** - ALWAYS return to earlier phases if problems found
 
 ## 🎯 Execution Principles
 
-1. **Decomposition First**: Break tasks into domain-specific components
-2. **Best Match Selection**: Find most suitable specialists, not perfect experts
-3. **Direct Execution**: Specialists DO the work, don't just review
-4. **Safe Parallel**: Check conflicts before multi-delegation
-5. **Continuous Flow**: Move through phases without stopping
-6. **Progress Tracking**: Update progress.md IMMEDIATELY after EVERY action
-7. **Incremental Approach**: Start with smallest possible change
-8. **Test-First**: Ensure each step works before proceeding
-9. **Minimal Viable Change**: Only change what's absolutely necessary
-10. **Functionality Preservation**: Never break existing working features
+1. **Phase-First Execution**: ALWAYS start at Phase 1, NEVER jump to Phase 5
+2. **Sequential Completion**: Complete each phase fully before proceeding
+3. **Self-Reviewing**: Review work quality at end of each phase
+4. **Phase Return**: Return to earlier phases when critical issues found
+5. **Specialist Delegation**: Use appropriate specialists for each phase
+6. **Direct Execution**: Specialists DO the work, don't just review
+7. **Safe Parallel**: Check conflicts before multi-delegation (within phases only)
+8. **Continuous Flow**: Move through phases without stopping for confirmation
+9. **Progress Tracking**: Update progress.md IMMEDIATELY after EVERY action
+10. **Incremental Approach**: Start with smallest possible change
+11. **Test-First**: Ensure each step works before proceeding
+12. **Minimal Viable Change**: Only change what's absolutely necessary
+13. **Functionality Preservation**: Never break existing working features
+14. **Quality Gates**: Never proceed to next phase with known critical issues
 
 ## 🚨 Failure Recovery Protocol
 
