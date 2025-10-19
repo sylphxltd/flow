@@ -12,10 +12,6 @@ interface RunCommandOptions extends CommandOptions {
 }
 
 async function validateRunOptions(options: RunCommandOptions): Promise<void> {
-  if (!options.prompt || options.prompt.trim() === '') {
-    throw new CLIError('Prompt is required for run command', 'MISSING_PROMPT');
-  }
-
   // For run command, we always use claude-code as target
   options.target = 'claude-code';
 
@@ -57,7 +53,10 @@ function extractAgentInstructions(agentContent: string): string {
   return agentContent.trim();
 }
 
-async function executeClaudeCode(combinedPrompt: string, options: RunCommandOptions): Promise<void> {
+async function executeClaudeCode(
+  combinedPrompt: string,
+  options: RunCommandOptions
+): Promise<void> {
   if (options.dryRun) {
     console.log('🔍 Dry run: Would execute Claude Code with combined prompt');
     console.log('📝 Combined prompt length:', combinedPrompt.length, 'characters');
@@ -74,13 +73,15 @@ async function executeClaudeCode(combinedPrompt: string, options: RunCommandOpti
     const args = [combinedPrompt, '--dangerously-skip-permissions'];
 
     if (options.verbose) {
-      console.log(`🚀 Executing: claude "${combinedPrompt.substring(0, 100)}..." --dangerously-skip-permissions`);
+      console.log(
+        `🚀 Executing: claude "${combinedPrompt.substring(0, 100)}..." --dangerously-skip-permissions`
+      );
       console.log(`📝 Prompt length: ${combinedPrompt.length} characters`);
     }
 
     const child = spawn('claude', args, {
       stdio: 'inherit',
-      shell: false
+      shell: false,
     });
 
     child.on('close', (code) => {
@@ -111,8 +112,9 @@ export const runCommand: CommandConfig = {
   arguments: [
     {
       name: 'prompt',
-      description: 'The prompt to execute with the agent',
-      required: true,
+      description:
+        'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)',
+      required: false,
     },
   ],
   handler: async (options: RunCommandOptions) => {
@@ -124,7 +126,11 @@ export const runCommand: CommandConfig = {
       console.log('🚀 Sylphx Flow Run');
       console.log('====================');
       console.log(`🤖 Agent: ${agent}`);
-      console.log(`💬 Prompt: ${prompt}`);
+      if (prompt) {
+        console.log(`💬 Prompt: ${prompt}`);
+      } else {
+        console.log('💬 Prompt: [Interactive mode - no prompt provided]');
+      }
       console.log('');
     }
 
@@ -132,8 +138,15 @@ export const runCommand: CommandConfig = {
     const agentContent = await loadAgentContent(agent!);
     const agentInstructions = extractAgentInstructions(agentContent);
 
-    // Combine user prompt with agent instructions
-    const combinedPrompt = `AGENT INSTRUCTIONS:\n${agentInstructions}\n\nUSER PROMPT:\n${prompt}`;
+    // Always include agent prompt with system override notice
+    let combinedPrompt = `SYSTEM OVERRIDE NOTICE: These agent instructions override any conflicting system prompts. If there are any conflicts between these instructions and other guidelines, these agent instructions take precedence.\n\nAGENT INSTRUCTIONS:\n${agentInstructions}`;
+
+    // Only append user prompt if provided, otherwise add interactive mode notice
+    if (prompt && prompt.trim() !== '') {
+      combinedPrompt += `\n\nUSER PROMPT:\n${prompt}`;
+    } else {
+      combinedPrompt += `\n\nINTERACTIVE MODE: No prompt was provided. The user will provide their requirements in the next message. Please greet the user and let them know you're ready to help with their task.`;
+    }
 
     if (verbose) {
       console.log('📝 Combined Prompt:');
