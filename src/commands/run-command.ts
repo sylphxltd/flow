@@ -1,8 +1,8 @@
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
-import fs from 'fs/promises';
-import path from 'path';
 
 interface RunCommandOptions extends CommandOptions {
   target?: string;
@@ -29,13 +29,13 @@ async function loadAgentContent(agentName: string): Promise<string> {
     try {
       const content = await fs.readFile(agentPath, 'utf-8');
       return content;
-    } catch (error) {
+    } catch (_error) {
       // Try to load from the package's agents directory
       const packageAgentPath = path.join(__dirname, '../../agents', `${agentName}.md`);
       const content = await fs.readFile(packageAgentPath, 'utf-8');
       return content;
     }
-  } catch (error) {
+  } catch (_error) {
     throw new CLIError(`Agent '${agentName}' not found`, 'AGENT_NOT_FOUND');
   }
 }

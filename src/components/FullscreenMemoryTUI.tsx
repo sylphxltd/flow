@@ -222,9 +222,9 @@ export const FullscreenMemoryTUI: React.FC = () => {
           setState((prev) => ({
             ...prev,
             editForm: {
-              namespace: state.selectedEntry!.namespace,
-              key: state.selectedEntry!.key,
-              value: JSON.stringify(state.selectedEntry!.value, null, 2),
+              namespace: state.selectedEntry?.namespace,
+              key: state.selectedEntry?.key,
+              value: JSON.stringify(state.selectedEntry?.value, null, 2),
               cursor: 0,
             },
             viewMode: 'edit',
@@ -409,7 +409,9 @@ export const FullscreenMemoryTUI: React.FC = () => {
   );
 
   const renderView = () => {
-    if (!state.selectedEntry) return null;
+    if (!state.selectedEntry) {
+      return null;
+    }
 
     const valueStr = JSON.stringify(state.selectedEntry.value, null, 2);
     const lines = valueStr.split('\n');

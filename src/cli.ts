@@ -26,7 +26,7 @@ export function createCLI(): Command {
   program
     .command('tui')
     .description('Launch interactive Sylphx Flow TUI')
-    .option('--target <type>', `Target platform (opencode, default: auto-detect)`)
+    .option('--target <type>', 'Target platform (opencode, default: auto-detect)')
     .action(handleMemoryTui);
 
   program.action(() => {

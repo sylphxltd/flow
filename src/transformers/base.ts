@@ -18,7 +18,11 @@ export abstract class BaseTransformer implements TargetTransformer {
    * Transform agent content for the target
    * Must be implemented by concrete transformers
    */
-  abstract transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string>;
+  abstract transformAgentContent(
+    content: string,
+    metadata?: any,
+    sourcePath?: string
+  ): Promise<string>;
 
   /**
    * Transform MCP server configuration for the target
@@ -52,19 +56,17 @@ export abstract class BaseTransformer implements TargetTransformer {
     if (this.config.configFile.endsWith('.jsonc')) {
       const { readJSONCFile } = await import('../utils/jsonc.js');
       return readJSONCFile(configPath);
-    } else if (this.config.configFile.endsWith('.json')) {
+    }
+    if (this.config.configFile.endsWith('.json')) {
       const content = await fs.readFile(configPath, 'utf8');
       return JSON.parse(content);
-    } else if (
-      this.config.configFile.endsWith('.yaml') ||
-      this.config.configFile.endsWith('.yml')
-    ) {
-      const content = await fs.readFile(configPath, 'utf8');
+    }
+    if (this.config.configFile.endsWith('.yaml') || this.config.configFile.endsWith('.yml')) {
+      const _content = await fs.readFile(configPath, 'utf8');
       // Note: You might want to add a YAML parser here
       throw new Error('YAML config files not yet supported');
-    } else {
-      throw new Error(`Unsupported config file format: ${this.config.configFile}`);
     }
+    throw new Error(`Unsupported config file format: ${this.config.configFile}`);
   }
 
   /**
@@ -137,7 +139,7 @@ export abstract class BaseTransformer implements TargetTransformer {
   getHelpText(): string {
     let help = '';
 
-    help += `Agent Installation:\n`;
+    help += 'Agent Installation:\n';
     help += `  Directory: ${this.config.agentDir}\n`;
     help += `  Extension: ${this.config.agentExtension}\n`;
     help += `  Format: ${this.config.agentFormat}\n`;
@@ -145,11 +147,11 @@ export abstract class BaseTransformer implements TargetTransformer {
     help += `  Flatten Structure: ${this.config.flatten ? 'Yes' : 'No'}\n\n`;
 
     if (this.config.installation.supportedMcpServers) {
-      help += `MCP Server Support:\n`;
+      help += 'MCP Server Support:\n';
       help += `  Config Path: ${this.config.mcpConfigPath}\n`;
-      help += `  Supported: Yes\n\n`;
+      help += '  Supported: Yes\n\n';
     } else {
-      help += `MCP Server Support: Not yet implemented\n\n`;
+      help += 'MCP Server Support: Not yet implemented\n\n';
     }
 
     return help;
@@ -158,7 +160,9 @@ export abstract class BaseTransformer implements TargetTransformer {
   /**
    * Helper method to extract YAML front matter from content
    */
-  protected async extractYamlFrontMatter(content: string): Promise<{ metadata: any; content: string }> {
+  protected async extractYamlFrontMatter(
+    content: string
+  ): Promise<{ metadata: any; content: string }> {
     const yamlRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
     const match = content.match(yamlRegex);
 
@@ -224,8 +228,7 @@ export abstract class BaseTransformer implements TargetTransformer {
     if (this.config.flatten) {
       const flattenedName = this.flattenPath(sourcePath);
       return path.join(agentDir, `${flattenedName}${this.config.agentExtension}`);
-    } else {
-      return path.join(agentDir, sourcePath);
     }
+    return path.join(agentDir, sourcePath);
   }
 }

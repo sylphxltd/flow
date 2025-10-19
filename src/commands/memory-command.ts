@@ -26,7 +26,7 @@ const memoryListHandler: CommandHandler = async (options) => {
       const value =
         typeof safeValue === 'string'
           ? safeValue.substring(0, 50) + (safeValue.length > 50 ? '...' : '')
-          : JSON.stringify(safeValue).substring(0, 50) + '...';
+          : `${JSON.stringify(safeValue).substring(0, 50)}...`;
 
       console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
       console.log(`   Value: ${value}`);
@@ -50,7 +50,7 @@ const memoryListHandler: CommandHandler = async (options) => {
       const value =
         typeof safeValue === 'string'
           ? safeValue.substring(0, 50) + (safeValue.length > 50 ? '...' : '')
-          : JSON.stringify(safeValue).substring(0, 50) + '...';
+          : `${JSON.stringify(safeValue).substring(0, 50)}...`;
 
       console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
       console.log(`   Value: ${value}`);
@@ -86,7 +86,7 @@ const memorySearchHandler: CommandHandler = async (options) => {
     const value =
       typeof safeValue === 'string'
         ? safeValue.substring(0, 50) + (safeValue.length > 50 ? '...' : '')
-        : JSON.stringify(safeValue).substring(0, 50) + '...';
+        : `${JSON.stringify(safeValue).substring(0, 50)}...`;
 
     console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
     console.log(`   Value: ${value}`);
@@ -153,7 +153,7 @@ const memoryStatsHandler: CommandHandler = async () => {
   console.log(`Oldest Entry: ${stats.oldestEntry || 'N/A'}`);
   console.log(`Newest Entry: ${stats.newestEntry || 'N/A'}`);
   console.log('');
-  console.log(`📍 Database: .sylphx-flow/memory.db`);
+  console.log('📍 Database: .sylphx-flow/memory.db');
 };
 
 // Memory set handler (for testing)

@@ -2,14 +2,14 @@ import path from 'node:path';
 import {
   type MCPServerID,
   MCP_SERVER_REGISTRY,
+  getAllEnvVars,
   getAllServerIDs,
   getDefaultServers,
+  getOptionalEnvVars,
+  getRequiredEnvVars,
   getServerDefinition,
   getServersRequiringAPIKeys,
   isValidServerID,
-  getRequiredEnvVars,
-  getOptionalEnvVars,
-  getAllEnvVars,
 } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import type { MCPServerConfigUnion } from '../types.js';
@@ -211,7 +211,7 @@ export async function configureMCPServerForTarget(
   const config = await transformer.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
   const mcpSection = getNestedProperty(config, mcpConfigPath);
-  const isServerInstalled = !!(mcpSection && mcpSection[server.name]);
+  const isServerInstalled = !!mcpSection?.[server.name];
 
   // Check if existing server has valid keys (only required keys matter for validity)
   let hasExistingValidKeys = false;
@@ -244,11 +244,13 @@ export async function configureMCPServerForTarget(
 
       await transformer.writeConfig(cwd, config);
       return false;
-    } else if (isServerInstalled && hasExistingValidKeys) {
+    }
+    if (isServerInstalled && hasExistingValidKeys) {
       // Case 2: Already installed + has keys + user doesn't provide → KEEP
       console.log(`✅ Keeping ${server.name} (existing API keys are valid)`);
       return true;
-    } else if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
+    }
+    if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
       // Case 4a: Not installed + only optional keys + user doesn't provide → INSTALL
       console.log(`✅ Installing ${server.name} (optional API keys skipped)`);
       // Continue to installation without any keys
@@ -391,12 +393,14 @@ async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<stri
     const server = MCP_SERVER_REGISTRY[serverType];
     const allEnvVars = getAllEnvVars(serverType);
 
-    if (!allEnvVars.length) continue;
+    if (!allEnvVars.length) {
+      continue;
+    }
 
     console.log(`\n🔑 Configuring API keys for ${server.description}:`);
 
     for (const envVar of allEnvVars) {
-      const envConfig = server.envVars![envVar];
+      const envConfig = server.envVars?.[envVar];
       const isRequired = envConfig.required;
       const promptText = isRequired
         ? `Enter ${envVar} (${envConfig.description}) (required): `

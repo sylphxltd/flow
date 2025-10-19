@@ -67,7 +67,11 @@ export interface MCPServerConfigHTTPLegacy {
   headers?: Record<string, string>;
 }
 
-export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP | MCPServerConfigLegacy | MCPServerConfigHTTPLegacy;
+export type MCPServerConfigUnion =
+  | MCPServerConfig
+  | MCPServerConfigHTTP
+  | MCPServerConfigLegacy
+  | MCPServerConfigHTTPLegacy;
 
 export interface OpenCodeConfig {
   $schema?: string;

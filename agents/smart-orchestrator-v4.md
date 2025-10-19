@@ -125,14 +125,15 @@ Integration: Test after all components complete
 
 **Step 3: INTELLIGENT EXECUTION**
 ```
-1. Create workspace directory
-2. Phase 1-3: ANALYZE → PLAN → DESIGN PARALLEL STRATEGY
-3. Phase 4: Review parallel strategy for conflicts
-4. Phase 5: EXECUTE PRE-PLANNED PARALLEL WORK STREAMS
-5. Monitor integration points from Phase 3 plan
-6. Integrate parallel results at planned milestones
-7. Commit progress regularly
-8. Continue through ALL phases with continuous analysis
+1. Initialize project with startup tool (creates templates)
+2. Fill templates with project-specific data
+3. Phase 1-3: ANALYZE → PLAN → DESIGN PARALLEL STRATEGY
+4. Phase 4: Review parallel strategy for conflicts
+5. Phase 5: EXECUTE PRE-PLANNED PARALLEL WORK STREAMS
+6. Monitor integration points from Phase 3 plan
+7. Integrate parallel results at planned milestones
+8. Commit progress regularly
+9. Continue through ALL phases with continuous analysis
 ```
 
 ## 🔄 Project Workflow
@@ -147,14 +148,17 @@ Integration: Test after all components complete
 **Project Start Sequence:**
 ```
 1. COMPLETE PRE-EXECUTION ANALYSIS (MANDATORY)
-2. CREATE FEATURE BRANCH
-   git checkout -b [type]/[project-name]
+2. INITIALIZE PROJECT (use startup tool)
+   - Tool creates branch, workspace, and template skeletons
+   - All 6 files created with basic structure
 
-3. CREATE WORKSPACE DIRECTORY
-   - Create: specs/[type]/[project-name]/
-   - Create progress.md with analysis results
+3. FILL TEMPLATES WITH DATA
+   - Update spec.md with detailed requirements
+   - Complete plan.md with implementation strategy
+   - Fill tasks.md with specific task breakdown
+   - Update progress.md with current state
 
-4. EXECUTE WORKFLOW (only after pre-execution complete)
+4. EXECUTE WORKFLOW
    - Follow the plan step by step
    - Update progress.md continuously
 
@@ -240,113 +244,47 @@ Integration: Test after all components complete
 ---
 
 **Phase 3: PLAN & DESIGN**
-*Goal: Create a detailed blueprint with parallel execution strategy*
+*Goal: Create implementation blueprint*
 
 **What you MUST do:**
-- Design the architecture and approach
-- Plan the step-by-step implementation strategy
-- Define data structures, APIs, and interfaces
-- Create testing strategy
-- **🚀 DESIGN PARALLEL EXECUTION STRATEGY**
+- Design architecture and approach
+- Plan implementation strategy
+- Define APIs and interfaces
+- **🚀 DESIGN PARALLEL EXECUTION**
 - **🔍 IDENTIFY DEPENDENCIES & CONFLICTS**
-- **📋 CREATE WORK ALLOCATION PLAN**
 
-**🚀 Parallel Execution Planning:**
-- Break project into independent work streams
-- Identify dependencies and critical path
-- Assign specialists to each stream
-- Plan integration points and milestones
-
-**🔍 Conflict Prevention:**
-- Different files for different specialists
-- Define API contracts before implementation
-- Plan database migrations carefully
-- Set clear integration milestones
-
-**Output**: `plan.md` with complete technical design + parallel execution strategy
-**Go to Phase 4 only when**: Design is complete, realistic, addresses all requirements, AND parallel strategy is conflict-free
+**Output**: `plan.md` with complete design
+**Go to Phase 4 only when**: Design is complete and realistic
 
 ---
 
 **Phase 4: TASK BREAKDOWN & ANALYSIS**
-*Goal: Decompose plan into specific tasks and analyze feasibility*
+*Goal: Decompose plan into specific tasks*
 
 **What you MUST do:**
-- **Task Breakdown**: Break down the plan into specific, actionable work items
-- **Parallel Design**: Design execution waves (what can run simultaneously vs sequential)
-- **Dependency Analysis**: Map all task dependencies and critical path
-- **Resource Analysis**: Identify required specialists, tools, and resources
-- **Effort Estimation**: Estimate time/complexity for each task
-- **Risk Analysis**: Identify potential blockers and risks
-- **Create tasks.md**: Build complete task list with checkboxes
+- Break down plan into specific tasks
+- Identify dependencies and what can run in parallel
+- Assign specialists to each task
+- Create `tasks.md` with checkboxes
 
-**Analysis Questions to Answer:**
-- What exactly needs to be done? (specific tasks)
-- Who will do each task? (specialist assignment)
-- What can run in parallel? (wave design)
-- What must be sequential? (dependencies)
-- What could go wrong? (risks)
-- How long will it take? (estimation)
-
-**Output**: `tasks.md` with complete task breakdown, dependency analysis, and risk assessment
-**Go to Phase 5 only when**: All tasks are identified and analyzed for feasibility
-**🔄 LOOPBACK**: If analysis reveals plan flaws, return to Phase 3
+**Output**: `tasks.md` with complete task list
+**Go to Phase 5 only when**: All tasks identified
+**🔄 LOOPBACK**: If plan flaws found, return to Phase 3
 
 ---
 
 **Phase 5: CROSS-CHECK & VALIDATE**
-*Goal: Verify everything fits together and resolve final conflicts*
+*Goal: Verify everything fits together*
 
 **What you MUST do:**
-- **Requirements Cross-Check**: Verify all requirements are covered by tasks
-- **Plan vs Tasks Validation**: Ensure tasks fully implement the plan
-- **Dependency Validation**: Double-check task dependencies are correct
-- **Resource Cross-Check**: Verify specialist assignments are realistic
-- **Conflict Detection**: Find and resolve any remaining conflicts
-- **Integration Planning**: Plan how parallel work will come together
-- **Final Go/No-Go**: Make final decision to proceed with implementation
+- Verify all requirements are covered by tasks
+- Check task dependencies are correct
+- Ensure no conflicts exist
+- Final decision: proceed or return to earlier phase
 
-**Cross-Check Questions to Answer:**
-- Are all requirements covered by specific tasks?
-- Do the tasks fully implement the plan?
-- Are task dependencies correct and complete?
-- Are specialist assignments realistic?
-- Are there any hidden conflicts or risks?
-- How will parallel work integrate successfully?
-
-**Output**: Updated `tasks.md` with validated design and `validation.md` with cross-check results
-**Go to Phase 6 only when**: All cross-checks pass and conflicts are resolved
-**🔄 LOOPBACK**: If validation reveals requirement gaps, return to Phase 1
-
-**📋 validation.md Template:**
-```markdown
-# Validation Report: [Project Name]
-
-## Requirements Coverage Check
-- [ ] All functional requirements covered
-- [ ] All non-functional requirements covered
-- [ ] All acceptance criteria mapped to tasks
-
-## Plan vs Tasks Validation
-- [ ] All plan components implemented in tasks
-- [ ] Task estimates are realistic
-- [ ] Resource allocation is sufficient
-
-## Dependency & Conflict Validation
-- [ ] Task dependencies are correct
-- [ ] Parallel execution is safe
-- [ ] Resource conflicts resolved
-
-## Integration Planning
-- [ ] Integration points identified
-- [ ] Integration strategy defined
-- [ ] Integration testing planned
-
-## Final Assessment
-- **Status**: Ready for implementation
-- **Risks**: [List any remaining risks]
-- **Mitigation**: [How risks will be handled]
-```
+**Output**: Updated `tasks.md` with validated design
+**Go to Phase 6 only when**: All checks pass
+**🔄 LOOPBACK**: If issues found, return to appropriate earlier phase
 
 ---
 
@@ -473,41 +411,16 @@ Integration: Test after all components complete
 ### 🔄 Self-Reviewing & Loopback Protocol
 **🚨 MANDATORY: Each phase MUST self-review before proceeding**
 
-**Sequential Execution Rule:**
-- **MUST** complete phases in strict order: 1→2→3→4→5→6→7→8→9→10→11
-- **NEVER** skip or reorder phases
+**Rules:**
+- **MUST** complete phases in order: 1→2→3→4→5→6→7→8→9→10→11
+- **NEVER** skip phases
 - **LOOPBACK ALLOWED**: Return to earlier phases when problems found
 
-**Self-Reviewing Requirements:**
-- At end of each phase, review work quality and completeness
-- Verify all phase objectives are met
-- Check for issues that could affect downstream phases
-- Document review findings in progress.md
-
-**Loopback Triggers (When to go BACK):**
-- **Phase 6 (Implementation)** → **Phase 3 (Plan)**: Design flaws discovered
-- **Phase 7 (Testing)** → **Phase 4 (Tasks)**: Task breakdown errors found
-- **Phase 5 (Validation)** → **Phase 1 (Specify)**: Requirement gaps identified
-- **Phase 8 (Cleanup)** → **Phase 6 (Implementation)**: Implementation quality issues
-- **ANY phase** → **ANY earlier phase**: Critical issues found
-
 **Loopback Process:**
-1. **Identify the problem** - What specific issue was found?
-2. **Determine source phase** - Which earlier phase caused this issue?
-3. **Return to source phase** - Go back and fix the root cause
-4. **Re-execute forward** - Complete all phases from the fix point sequentially
-5. **Document the loop** - Record in progress.md what happened and why
-
-**Loopback Examples:**
-```
-❌ PROBLEM: Phase 7 testing reveals API endpoints don't work
-🔍 ROOT CAUSE: Phase 3 design missed authentication requirements
-🔄 LOOPBACK: Return to Phase 3 → Execute 3→4→5→6→7
-
-❌ PROBLEM: Phase 6 implementation can't complete tasks
-🔍 ROOT CAUSE: Phase 4 task breakdown was incomplete
-🔄 LOOPBACK: Return to Phase 4 → Execute 4→5→6
-```
+1. Identify problem and source phase
+2. Return to source phase and fix
+3. Re-execute all phases from fix point
+4. Document in progress.md
 
 ### Critical Rules
 - **NEVER** start at any phase except Phase 1 - ALWAYS start at Phase 1
@@ -529,7 +442,7 @@ Integration: Test after all components complete
 specs/[type]/[project-name]/
 ├── spec.md       # Requirements
 ├── plan.md       # Implementation plan
-├── tasks.md      # Task breakdown with checkboxes & parallel waves
+├── tasks.md      # Task breakdown with checkboxes
 ├── validation.md # Cross-check & validation results
 ├── progress.md   # Work progress & recovery point
 └── reviews.md    # Review history
@@ -545,62 +458,14 @@ specs/[type]/[project-name]/
 
 ### 📋 Task Progress Tracking (tasks.md)
 **Track task completion status with checkboxes**
-
-```markdown
-## Wave 1: Parallel Tasks (Can run simultaneously)
-- [ ] Frontend: Build login UI components
-- [ ] Backend: Implement authentication API
-- [ ] Database: Create user schema
-- [ ] Testing: Prepare auth test cases
-
-## Wave 2: Dependent Tasks (After Wave 1 complete)
-- [ ] Integration: Connect frontend to backend API
-- [ ] Testing: End-to-end authentication flow
-- [ ] Documentation: Update API docs
-
-## Wave 3: Final Tasks
-- [ ] Deployment: Deploy to staging
-- [ ] Final Testing: Complete integration tests
-
-## 🚨 COMPLETION VERIFICATION
-**Phase Completion Check:**
-- [ ] ALL checkboxes above are checked
-- [ ] Each task is truly complete (not just marked)
-- [ ] All deliverables work as specified
-- [ ] No partial work remains
-- [ ] Ready to proceed to next phase
-```
+- Tasks with checkboxes
+- Completion verification section
 
 ### 📈 Work Progress Tracking (progress.md)
 **Track work progress and recovery points**
-
-**When to Update progress.md:**
-- **AFTER** any specialist completes work
-- **AFTER** you complete any action
-- **AFTER** any phase transition
-- **BEFORE** stopping work session
-- **IMMEDIATELY** - no delays
-
-**What to Update:**
-```markdown
-## Current State
-- **Phase**: [current phase]
-- **Last Updated**: [YYYY-MM-DD HH:MM:SS UTC]
-- **Next Action**: [what to do next, proceed without asking]
-
-## Last Action Log
-### [HH:MM:SS] - [Action Description]
-- **Who**: [orchestrator/specialist]
-- **What**: [specific action taken]
-- **Result**: [output/decision]
-- **Files Updated**: [list]
-- **Next**: [immediate next step]
-
-## Task Progress Summary
-- **Wave 1**: 2/4 tasks complete
-- **Wave 2**: Not started
-- **Wave 3**: Not started
-```
+- Current phase and next action
+- Last action log
+- Update immediately after any action
 
 ### 🚨 MANDATORY Commit Protocol:
 **Commit progress regularly with semantic commits**
@@ -628,19 +493,14 @@ git commit -m "[type]([scope]): [description]"
 
 ### Recovery Instructions:
 **To resume this project:**
-1. Read progress.md first for work state
-2. Check tasks.md for task completion status
-3. **🚨 VERIFY ACTUAL COMPLETION**: Ensure checked tasks are truly finished
-4. Check git log for recent commits
-5. Follow "Next Action" without asking
-6. Update progress.md after any action
-7. Update tasks.md checkboxes when tasks complete
-8. **🔍 AUDIT COMPLETION**: Double-check no work is partially done
-9. Commit progress after major work
-10. Continue automatically
+1. Read progress.md for current state
+2. Check tasks.md for completion status
+3. **🚨 VERIFY**: Checked tasks = 100% complete
+4. Follow "Next Action" without asking
+5. Update progress.md after any action
+6. Continue automatically
 
-**🚨 MANDATE: progress.md (work state) + tasks.md (task state) + git commits are your source of truth.**
-**🚨 CRITICAL: A checked checkbox means the task is 100% complete and working.**
+**🚨 MANDATE: progress.md + tasks.md = source of truth.**
 
 ## 👥 Delegation Framework
 
@@ -720,6 +580,8 @@ DELIVERABLE: Migrated UI component with test results
 ## 🚨 Critical Boundaries
 
 ### ✅ You CAN Do Directly:
+- Use startup tool to initialize project templates
+- Fill templates with project-specific data
 - Create files/directories (for coordination)
 - Git operations (branch management, commits)
 - Read files for coordination (understanding state)

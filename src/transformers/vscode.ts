@@ -8,15 +8,15 @@ import { BaseTransformer } from './base.js';
  * Note: This is a placeholder for future implementation
  */
 export class VSCodeTransformer extends BaseTransformer {
-  constructor(config: TargetConfig) {
-    super(config);
-  }
-
   /**
    * Transform agent content for VS Code
    * VS Code uses plain markdown without YAML front matter
    */
-  async transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string> {
+  async transformAgentContent(
+    content: string,
+    metadata?: any,
+    _sourcePath?: string
+  ): Promise<string> {
     // Extract YAML front matter if present and strip it
     const { content: baseContent } = await this.extractYamlFrontMatter(content);
 
@@ -40,7 +40,7 @@ export class VSCodeTransformer extends BaseTransformer {
    * Transform MCP server configuration for VS Code
    * Note: MCP support for VS Code is not yet implemented
    */
-  transformMCPConfig(config: MCPServerConfigUnion): any {
+  transformMCPConfig(_config: MCPServerConfigUnion): any {
     // VS Code MCP integration is not yet implemented
     throw new Error('MCP server support for VS Code is not yet implemented');
   }
@@ -79,15 +79,15 @@ export class VSCodeTransformer extends BaseTransformer {
   getHelpText(): string {
     let help = super.getHelpText();
 
-    help += `VS Code-Specific Information:\n`;
-    help += `  Configuration File: .vscode/settings.json\n`;
-    help += `  Agent Format: Plain Markdown\n`;
-    help += `  MCP Integration: Not yet implemented\n\n`;
+    help += 'VS Code-Specific Information:\n';
+    help += '  Configuration File: .vscode/settings.json\n';
+    help += '  Agent Format: Plain Markdown\n';
+    help += '  MCP Integration: Not yet implemented\n\n';
 
-    help += `Example Agent Structure:\n`;
-    help += `  <!-- name: My Agent -->\n`;
-    help += `  <!-- description: Agent description -->\n\n`;
-    help += `  Agent content here...\n\n`;
+    help += 'Example Agent Structure:\n';
+    help += '  <!-- name: My Agent -->\n';
+    help += '  <!-- description: Agent description -->\n\n';
+    help += '  Agent content here...\n\n';
 
     return help;
   }

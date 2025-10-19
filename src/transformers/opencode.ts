@@ -7,16 +7,16 @@ import { BaseTransformer } from './base.js';
  * Handles YAML front matter agents and opencode.jsonc configuration
  */
 export class OpenCodeTransformer extends BaseTransformer {
-  constructor(config: TargetConfig) {
-    super(config);
-  }
-
   /**
    * Transform agent content for OpenCode
    * OpenCode uses YAML front matter, so we preserve it
    * Remove name field as OpenCode doesn't use it
    */
-  async transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string> {
+  async transformAgentContent(
+    content: string,
+    metadata?: any,
+    _sourcePath?: string
+  ): Promise<string> {
     // For OpenCode, we preserve YAML front matter but remove name field
     const { metadata: existingMetadata, content: baseContent } =
       await this.extractYamlFrontMatter(content);
@@ -45,7 +45,7 @@ export class OpenCodeTransformer extends BaseTransformer {
       // Convert Claude Code format to OpenCode format
       const openCodeConfig: any = {
         type: 'local',
-        command: [config.command]
+        command: [config.command],
       };
 
       if (config.args && config.args.length > 0) {
@@ -65,7 +65,7 @@ export class OpenCodeTransformer extends BaseTransformer {
       return {
         type: 'remote',
         url: config.url,
-        ...(config.headers && { headers: config.headers })
+        ...(config.headers && { headers: config.headers }),
       };
     }
 
@@ -119,18 +119,18 @@ export class OpenCodeTransformer extends BaseTransformer {
   getHelpText(): string {
     let help = super.getHelpText();
 
-    help += `OpenCode-Specific Information:\n`;
-    help += `  Configuration File: opencode.jsonc\n`;
-    help += `  Schema: https://opencode.ai/config.json\n`;
-    help += `  Agent Format: Markdown with YAML front matter\n`;
-    help += `  MCP Integration: Automatic server discovery\n\n`;
+    help += 'OpenCode-Specific Information:\n';
+    help += '  Configuration File: opencode.jsonc\n';
+    help += '  Schema: https://opencode.ai/config.json\n';
+    help += '  Agent Format: Markdown with YAML front matter\n';
+    help += '  MCP Integration: Automatic server discovery\n\n';
 
-    help += `Example Agent Structure:\n`;
-    help += `  ---\n`;
+    help += 'Example Agent Structure:\n';
+    help += '  ---\n';
     help += `  name: "My Agent"\n`;
     help += `  description: "Agent description"\n`;
-    help += `  ---\n\n`;
-    help += `  Agent content here...\n\n`;
+    help += '  ---\n\n';
+    help += '  Agent content here...\n\n';
 
     return help;
   }

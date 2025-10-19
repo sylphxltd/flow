@@ -116,7 +116,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   // Show agent setup info
   if (options.quiet !== true) {
     console.log(
-      `📁 Installing ${agentFiles.length} agents to ${agentsDir.replace(process.cwd() + '/', '')}`
+      `📁 Installing ${agentFiles.length} agents to ${agentsDir.replace(`${process.cwd()}/`, '')}`
     );
     console.log('');
   }
@@ -144,7 +144,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     }
 
     const localInfo = getLocalFileInfo(destPath);
-    const isNew = !localInfo;
+    const _isNew = !localInfo;
 
     // Read content from source
     let content = fs.readFileSync(sourcePath, 'utf8');

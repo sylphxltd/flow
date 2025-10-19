@@ -218,7 +218,9 @@ export async function promptForAPIKeys(
 
   for (const serverType of serverTypes) {
     const server = MCP_SERVERS[serverType];
-    if (!server?.requiredEnvVars?.length) continue;
+    if (!server?.requiredEnvVars?.length) {
+      continue;
+    }
 
     console.log(`\n🔑 Configuring API keys for ${server.description}:`);
 

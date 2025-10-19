@@ -46,7 +46,9 @@ export class TargetManager {
    * Initialize default transformers for implemented targets
    */
   private async initializeDefaultTransformers(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {
+      return;
+    }
 
     try {
       // Import transformers dynamically to avoid circular dependencies
@@ -321,7 +323,7 @@ export class TargetManager {
     let help = `${target.name} (${targetId})\n`;
     help += `${target.description}\n\n`;
 
-    help += `Configuration:\n`;
+    help += 'Configuration:\n';
     help += `  Agent Directory: ${target.config.agentDir}\n`;
     help += `  Agent Extension: ${target.config.agentExtension}\n`;
     help += `  Agent Format: ${target.config.agentFormat}\n`;

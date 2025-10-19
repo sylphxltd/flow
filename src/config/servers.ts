@@ -208,7 +208,9 @@ export function getServersWithAnyAPIKeys(): MCPServerID[] {
  */
 export function getRequiredEnvVars(serverId: MCPServerID): string[] {
   const server = MCP_SERVER_REGISTRY[serverId];
-  if (!server?.envVars) return [];
+  if (!server?.envVars) {
+    return [];
+  }
 
   return Object.entries(server.envVars)
     .filter(([, config]) => config.required)
@@ -220,7 +222,9 @@ export function getRequiredEnvVars(serverId: MCPServerID): string[] {
  */
 export function getOptionalEnvVars(serverId: MCPServerID): string[] {
   const server = MCP_SERVER_REGISTRY[serverId];
-  if (!server?.envVars) return [];
+  if (!server?.envVars) {
+    return [];
+  }
 
   return Object.entries(server.envVars)
     .filter(([, config]) => !config.required)
@@ -232,7 +236,9 @@ export function getOptionalEnvVars(serverId: MCPServerID): string[] {
  */
 export function getAllEnvVars(serverId: MCPServerID): string[] {
   const server = MCP_SERVER_REGISTRY[serverId];
-  if (!server?.envVars) return [];
+  if (!server?.envVars) {
+    return [];
+  }
 
   return Object.keys(server.envVars);
 }

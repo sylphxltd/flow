@@ -8,17 +8,18 @@ import { BaseTransformer } from './base.js';
  * Note: This is a placeholder for future implementation
  */
 export class CursorTransformer extends BaseTransformer {
-  constructor(config: TargetConfig) {
-    super(config);
-  }
-
   /**
    * Transform agent content for Cursor
    * Cursor uses JSON format, so we need to convert from YAML front matter
    */
-  async transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string> {
+  async transformAgentContent(
+    content: string,
+    metadata?: any,
+    _sourcePath?: string
+  ): Promise<string> {
     // Extract YAML front matter if present
-    const { metadata: yamlMetadata, content: baseContent } = await this.extractYamlFrontMatter(content);
+    const { metadata: yamlMetadata, content: baseContent } =
+      await this.extractYamlFrontMatter(content);
 
     // Combine YAML metadata with provided metadata
     const combinedMetadata = { ...yamlMetadata, ...metadata };
@@ -38,7 +39,7 @@ export class CursorTransformer extends BaseTransformer {
    * Transform MCP server configuration for Cursor
    * Note: MCP support for Cursor is not yet implemented
    */
-  transformMCPConfig(config: MCPServerConfigUnion): any {
+  transformMCPConfig(_config: MCPServerConfigUnion): any {
     // Cursor MCP integration is not yet implemented
     throw new Error('MCP server support for Cursor is not yet implemented');
   }
@@ -85,17 +86,17 @@ export class CursorTransformer extends BaseTransformer {
   getHelpText(): string {
     let help = super.getHelpText();
 
-    help += `Cursor-Specific Information:\n`;
-    help += `  Configuration File: cursor.json\n`;
-    help += `  Agent Format: JSON\n`;
-    help += `  MCP Integration: Not yet implemented\n\n`;
+    help += 'Cursor-Specific Information:\n';
+    help += '  Configuration File: cursor.json\n';
+    help += '  Agent Format: JSON\n';
+    help += '  MCP Integration: Not yet implemented\n\n';
 
-    help += `Example Agent Structure:\n`;
-    help += `  {\n`;
+    help += 'Example Agent Structure:\n';
+    help += '  {\n';
     help += `    "name": "My Agent",\n`;
     help += `    "description": "Agent description",\n`;
     help += `    "content": "Agent content here..."\n`;
-    help += `  }\n\n`;
+    help += '  }\n\n';
 
     return help;
   }

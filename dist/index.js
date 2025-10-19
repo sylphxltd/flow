@@ -1109,7 +1109,7 @@ var initCommand = {
 
 // src/commands/mcp-command.ts
 var mcpStartHandler = async () => {
-  await import("./sylphx-flow-mcp-server-4U6GXMRV.js");
+  await import("./sylphx-flow-mcp-server-34BL4OBX.js");
   console.log("\u{1F680} Starting Sylphx Flow MCP Server...");
   console.log("\u{1F4CD} Database: .sylphx-flow/memory.db");
   console.log(
