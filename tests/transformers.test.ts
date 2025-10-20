@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { OpenCodeTransformer } from '../src/transformers/opencode.js';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { ClaudeCodeTransformer } from '../src/transformers/claude-code.js';
+import { OpenCodeTransformer } from '../src/transformers/opencode.js';
 import type { TargetConfig } from '../src/types.js';
 
 describe('Transformers', () => {
@@ -357,8 +357,8 @@ Second content`;
         command: 'npx',
         args: ['@modelcontextprotocol/server-filesystem', '/path/to/dir'],
         env: {
-          NODE_ENV: 'production'
-        }
+          NODE_ENV: 'production',
+        },
       };
 
       const openCodeTransformer = new OpenCodeTransformer(opencodeConfig);
@@ -368,8 +368,8 @@ Second content`;
         type: 'local',
         command: ['npx', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
         environment: {
-          NODE_ENV: 'production'
-        }
+          NODE_ENV: 'production',
+        },
       });
     });
 
@@ -378,8 +378,8 @@ Second content`;
         type: 'http' as const,
         url: 'https://api.example.com/mcp',
         headers: {
-          'Authorization': 'Bearer $API_KEY'
-        }
+          Authorization: 'Bearer $API_KEY',
+        },
       };
 
       const openCodeTransformer = new OpenCodeTransformer(opencodeConfig);
@@ -389,15 +389,15 @@ Second content`;
         type: 'remote',
         url: 'https://api.example.com/mcp',
         headers: {
-          'Authorization': 'Bearer $API_KEY'
-        }
+          Authorization: 'Bearer $API_KEY',
+        },
       });
     });
 
     it('should handle Claude Code stdio without args or env', async () => {
       const stdioConfig = {
         type: 'stdio' as const,
-        command: '/usr/local/bin/server'
+        command: '/usr/local/bin/server',
       };
 
       const openCodeTransformer = new OpenCodeTransformer(opencodeConfig);
@@ -405,7 +405,7 @@ Second content`;
 
       expect(result).toEqual({
         type: 'local',
-        command: ['/usr/local/bin/server']
+        command: ['/usr/local/bin/server'],
       });
       expect(result).not.toHaveProperty('environment');
     });
@@ -415,8 +415,8 @@ Second content`;
         type: 'local' as const,
         command: ['node', 'server.js'],
         environment: {
-          PORT: '3000'
-        }
+          PORT: '3000',
+        },
       };
 
       const openCodeTransformer = new OpenCodeTransformer(opencodeConfig);
@@ -426,15 +426,15 @@ Second content`;
         type: 'local',
         command: ['node', 'server.js'],
         environment: {
-          PORT: '3000'
-        }
+          PORT: '3000',
+        },
       });
     });
 
     it('should preserve OpenCode legacy remote format', async () => {
       const remoteConfig = {
         type: 'remote' as const,
-        url: 'https://example.com/mcp'
+        url: 'https://example.com/mcp',
       };
 
       const openCodeTransformer = new OpenCodeTransformer(opencodeConfig);
@@ -442,7 +442,7 @@ Second content`;
 
       expect(result).toEqual({
         type: 'remote',
-        url: 'https://example.com/mcp'
+        url: 'https://example.com/mcp',
       });
     });
   });
@@ -453,8 +453,8 @@ Second content`;
         type: 'local' as const,
         command: ['npx', '@modelcontextprotocol/server-filesystem', '/path/to/dir'],
         environment: {
-          NODE_ENV: 'production'
-        }
+          NODE_ENV: 'production',
+        },
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -465,8 +465,8 @@ Second content`;
         command: 'npx',
         args: ['@modelcontextprotocol/server-filesystem', '/path/to/dir'],
         env: {
-          NODE_ENV: 'production'
-        }
+          NODE_ENV: 'production',
+        },
       });
     });
 
@@ -476,8 +476,8 @@ Second content`;
         command: 'npx',
         args: ['@modelcontextprotocol/server-git', '.'],
         env: {
-          GIT_TRACE: '1'
-        }
+          GIT_TRACE: '1',
+        },
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -488,8 +488,8 @@ Second content`;
         command: 'npx',
         args: ['@modelcontextprotocol/server-git', '.'],
         env: {
-          GIT_TRACE: '1'
-        }
+          GIT_TRACE: '1',
+        },
       });
     });
 
@@ -498,8 +498,8 @@ Second content`;
         type: 'remote' as const,
         url: 'https://api.example.com/mcp',
         headers: {
-          'Authorization': 'Bearer token123'
-        }
+          Authorization: 'Bearer token123',
+        },
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -509,8 +509,8 @@ Second content`;
         type: 'http',
         url: 'https://api.example.com/mcp',
         headers: {
-          'Authorization': 'Bearer token123'
-        }
+          Authorization: 'Bearer token123',
+        },
       });
     });
 
@@ -519,8 +519,8 @@ Second content`;
         type: 'http' as const,
         url: 'https://api.example.com/mcp',
         headers: {
-          'Authorization': 'Bearer $API_KEY'
-        }
+          Authorization: 'Bearer $API_KEY',
+        },
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -530,15 +530,15 @@ Second content`;
         type: 'http',
         url: 'https://api.example.com/mcp',
         headers: {
-          'Authorization': 'Bearer $API_KEY'
-        }
+          Authorization: 'Bearer $API_KEY',
+        },
       });
     });
 
     it('should handle OpenCode local config without environment variables', async () => {
       const localConfig = {
         type: 'local' as const,
-        command: ['node', 'server.js']
+        command: ['node', 'server.js'],
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -547,7 +547,7 @@ Second content`;
       expect(result).toEqual({
         type: 'stdio',
         command: 'node',
-        args: ['server.js']
+        args: ['server.js'],
       });
       expect(result).not.toHaveProperty('env');
     });
@@ -555,7 +555,7 @@ Second content`;
     it('should handle Claude Code stdio config with no args', async () => {
       const stdioConfig = {
         type: 'stdio' as const,
-        command: '/usr/local/bin/custom-server'
+        command: '/usr/local/bin/custom-server',
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -563,7 +563,7 @@ Second content`;
 
       expect(result).toEqual({
         type: 'stdio',
-        command: '/usr/local/bin/custom-server'
+        command: '/usr/local/bin/custom-server',
       });
       expect(result).not.toHaveProperty('args');
     });
@@ -571,7 +571,7 @@ Second content`;
     it('should handle http config without headers', async () => {
       const httpConfig = {
         type: 'http' as const,
-        url: 'https://mcp.example.com'
+        url: 'https://mcp.example.com',
       };
 
       const claudeCodeTransformer = new ClaudeCodeTransformer(claudeCodeConfig);
@@ -579,7 +579,7 @@ Second content`;
 
       expect(result).toEqual({
         type: 'http',
-        url: 'https://mcp.example.com'
+        url: 'https://mcp.example.com',
       });
       expect(result).not.toHaveProperty('headers');
     });

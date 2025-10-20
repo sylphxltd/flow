@@ -12,7 +12,7 @@ vi.mock('../../src/utils/libsql-storage', () => {
       value: { data: 'test' },
       created_at: '2024-01-01T00:00:00.000Z',
       updated_at: '2024-01-01T00:00:00.000Z',
-    }
+    },
   ];
   return {
     LibSQLMemoryStorage: vi.fn(() => ({
@@ -31,7 +31,7 @@ vi.mock('ink', async () => {
     useApp: vi.fn(() => ({ exit: vi.fn() })),
     useInput: vi.fn(),
     Text: vi.fn(({ children }) => children),
-    Box: vi.fn(({ children }) => Array.isArray(children) ? children.flat() : children),
+    Box: vi.fn(({ children }) => (Array.isArray(children) ? children.flat() : children)),
     render: vi.fn(),
   };
 });

@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { Effect, describe, expect, it } from '@effect/vitest';
 import {
   MCP_SERVER_REGISTRY,
-  getDefaultServers,
-  getServersRequiringAPIKeys,
-  getServerDefinition,
-  isValidServerID,
   getAllServerIDs,
+  getDefaultServers,
+  getServerDefinition,
+  getServersRequiringAPIKeys,
+  isValidServerID,
 } from '../src/config/servers';
 
 describe('Server Registry Tests', () => {

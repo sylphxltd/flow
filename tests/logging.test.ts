@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as Log from '@effect/log';
 import * as Effect from 'effect/Effect';
-import * as Layer from 'effect/Layer';
-import * as Infra from '../../src/layers/infra.layer';
 import { pipe } from 'effect/Function';
+import * as Layer from 'effect/Layer';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as Infra from '../../src/layers/infra.layer';
 import { withLogSpan } from '../../src/layers/log.layer';
 
 describe('Logging Integration', () => {
@@ -21,14 +21,14 @@ describe('Logging Integration', () => {
 
     await Effect.runPromise(Effect.provide(program, Infra.infraLayer));
 
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('INFO Infra layer initialized'));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('INFO Infra layer initialized')
+    );
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Test log message'));
   });
 
   it('should use log span', async () => {
-    const spanned = withLogSpan('Test span')(
-      Log.log('Inside span')
-    );
+    const spanned = withLogSpan('Test span')(Log.log('Inside span'));
 
     await Effect.runPromise(Effect.provide(spanned, Infra.infraLayer));
 

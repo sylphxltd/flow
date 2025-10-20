@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import * as Errors from '../src/errors';
 import { Effect } from 'effect';
+import { describe, expect, it, vi } from 'vitest';
+import * as Errors from '../src/errors';
 
 describe('Error Handling', () => {
   it('should handle InfraError correctly', () => {
