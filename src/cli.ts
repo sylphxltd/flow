@@ -1,5 +1,5 @@
-import * as Cli from '@effect/cli/Cli';
-import * as Help from '@effect/cli/Help';
+import * as Cli from '@effect/cli';
+import * as Help from '@effect/cli';
 import * as Platform from '@effect/platform/NodePlatform';
 import * as Effect from 'effect/Effect';
 import * as Exit from 'effect/Exit';
