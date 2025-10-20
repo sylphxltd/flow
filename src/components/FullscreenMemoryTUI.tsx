@@ -1,6 +1,7 @@
 import { Box, Text, useApp, useInput } from 'ink';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as Effect from "effect/Effect";
 import { LibSQLMemoryStorage, type MemoryEntry } from '../utils/libsql-storage.js';
 
 type ViewMode = 'list' | 'view' | 'edit' | 'add' | 'search' | 'help' | 'confirm-delete';
@@ -50,65 +51,73 @@ export const FullscreenMemoryTUI: React.FC = () => {
   const loadEntries = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, message: 'Loading...' }));
 
-    try {
-      const allEntries = await memory.getAll();
-      const sortedEntries = allEntries.sort(
-        (a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
-      setState((prev) => ({
-        ...prev,
+    const loadProgram = Effect.tryPromise({
+      try: () => memory.getAll(),
+      catch: (error) => new Error(`Loading error: ${String(error)}`)
+    }).pipe(
+      Effect.map(allEntries => allEntries.sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      )),
+      Effect.map(sortedEntries => ({
         entries: sortedEntries,
         filteredEntries: sortedEntries,
         loading: false,
-        message: `Loaded ${allEntries.length} entries`,
-        selectedIndex: Math.min(prev.selectedIndex, Math.max(0, sortedEntries.length - 1)),
-      }));
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
+        message: `Loaded ${sortedEntries.length} entries`,
+        selectedIndex: 0,
+      })),
+      Effect.tap(update => Effect.sync(() => setState(prev => ({ ...prev, ...update })))),
+      Effect.catchAll((error) => Effect.succeed({
         loading: false,
-        message: `Error: ${error}`,
-      }));
-    }
+        message: `Error: ${error.message}`,
+      }).pipe(Effect.tap(update => Effect.sync(() => setState(prev => ({ ...prev, ...update })))))),
+      Effect.asVoid
+    );
+    Effect.runPromise(loadProgram);
   }, []);
 
   const saveEntry = useCallback(
     async (namespace: string, key: string, value: any) => {
-      try {
-        await memory.set(key, value, namespace);
-        setState((prev) => ({
+      const saveProgram = Effect.tryPromise({
+        try: () => memory.set(key, value, namespace),
+        catch: (error) => new Error(`Save error: ${String(error)}`)
+      }).pipe(
+        Effect.tap(() => Effect.sync(() => setState((prev) => ({
           ...prev,
           message: `Saved: ${namespace}:${key}`,
           viewMode: 'list',
-        }));
-        await loadEntries();
-      } catch (error) {
-        setState((prev) => ({
+        }))),
+        Effect.flatMap(() => Effect.promise(() => loadEntries())),
+        Effect.catchAll((error) => Effect.sync(() => setState((prev) => ({
           ...prev,
-          message: `Save error: ${error}`,
-        }));
-      }
+          message: `Save error: ${error.message}`,
+        })))),
+        Effect.asVoid
+      );
+      Effect.runPromise(saveProgram);
     },
     [loadEntries]
   );
 
   const deleteEntry = useCallback(
     async (entry: MemoryEntry) => {
-      try {
-        await memory.delete(entry.key, entry.namespace);
-        setState((prev) => ({
+      const deleteProgram = Effect.tryPromise({
+        try: () => memory.delete(entry.key, entry.namespace),
+        catch: (error) => new Error(`Delete error: ${String(error)}`)
+      }).pipe(
+        Effect.tap(() => Effect.sync(() => setState((prev) => ({
           ...prev,
           message: `Deleted: ${entry.namespace}:${entry.key}`,
           viewMode: 'list',
           deleteConfirmEntry: null,
-        }));
-        await loadEntries();
-      } catch (error) {
-        setState((prev) => ({
+        })))),
+        Effect.flatMap(() => Effect.promise(() => loadEntries())),
+        Effect.catchAll((error) => Effect.sync(() => setState((prev) => ({
           ...prev,
-          message: `Delete error: ${error}`,
-        }));
-      }
+          message: `Delete error: ${error.message}`,
+        }))) ),
+        Effect.asVoid
+      );
+      Effect.runPromise(deleteProgram);
     },
     [loadEntries]
   );

@@ -4,9 +4,16 @@ import React from 'react';
 import { FullscreenMemoryTUI } from '../components/FullscreenMemoryTUI.js';
 import type { CommandConfig } from '../types.js';
 
-export const handleMemoryTui = async () => {
+export const handleMemoryTui = async (options: any) => {
+  const { interactive } = options;
   // Clear terminal and set up fullscreen
   process.stdout.write('\x1b[2J\x1b[H'); // Clear screen and move cursor to top
+
+  if (interactive) {
+    // Integrate PromptService for initial prompt
+    // For example, ask if to launch TUI
+    console.log('Interactive mode enabled. Launching memory TUI...');
+  }
 
   const { waitUntilExit } = render(React.createElement(FullscreenMemoryTUI), {
     // Configure Ink for fullscreen experience
@@ -33,6 +40,10 @@ export const memoryTuiCommand: CommandConfig = {
     {
       flags: '--target <type>',
       description: `Target platform (${targetManager.getImplementedTargets().join(', ')}, default: auto-detect)`,
+    },
+    {
+      flags: '--interactive',
+      description: 'Enable interactive mode for conflict resolution',
     },
   ],
   handler: handleMemoryTui,
