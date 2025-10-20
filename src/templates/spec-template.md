@@ -2,7 +2,7 @@
 
 {{DESCRIPTION}}
 
-## Core Requirements
+## Requirements Analysis (Phase 1)
 ### Primary Objective
 {{OBJECTIVE}}
 
@@ -33,16 +33,30 @@
 - [ ] Code quality: Pass linting and formatting checks
 - [ ] Documentation: API and code documentation complete
 
-## Acceptance Criteria
-### Project Completion Checklist
-- [ ] All functional requirements implemented
-- [ ] All non-functional requirements met
-- [ ] Performance benchmarks achieved
-- [ ] Security requirements satisfied
-- [ ] Test coverage target met
-- [ ] Documentation complete
-- [ ] Code review passed
-- [ ] Integration tests passing
+## Clarification & Research (Phase 2)
+### Q&A and Clarifications
+#### Questions Asked
+{{#each QUESTIONS}}
+- **Q**: {{this.question}}
+  - **A**: {{this.answer}}
+  - **Impact**: {{this.impact}}
+{{/each}}
+
+### Research Findings
+#### Technical Approaches
+{{#each TECHNICAL_APPROACHES}}
+- [ ] {{this.approach}} - {{this.rationale}} - {{this.feasibility}}
+{{/each}}
+
+#### Existing Solutions
+{{#each EXISTING_SOLUTIONS}}
+- [ ] {{this.solution}} - {{this.analysis}} - {{this.relevance}}
+{{/each}}
+
+#### Risks and Constraints
+{{#each RISKS_CONSTRAINTS}}
+- [ ] {{this.item}} - {{this.type}} - {{this.mitigation}}
+{{/each}}
 
 ## Technical Constraints
 ### Technology Stack
@@ -62,15 +76,6 @@
 - [ ] {{this.component}} - {{this.description}}
 {{/each}}
 
-## Risk Assessment
-### High-Risk Areas
-- [ ] {{HIGH_RISK_1}} - Mitigation: {{RISK_1_MITIGATION}}
-- [ ] {{HIGH_RISK_2}} - Mitigation: {{RISK_2_MITIGATION}}
-
-### Technical Risks
-- [ ] {{TECH_RISK_1}} - Impact: {{TECH_RISK_1_IMPACT}}
-- [ ] {{TECH_RISK_2}} - Impact: {{TECH_RISK_2_IMPACT}}
-
 ## Integration Points
 ### External Integrations
 {{#each EXTERNAL_INTEGRATIONS}}
@@ -84,22 +89,14 @@
 
 ## Quality Gates
 ### Definition of Done
-- [ ] Code implemented and tested
-- [ ] Unit test coverage ≥ {{TEST_COVERAGE}}%
-- [ ] Integration tests pass
-- [ ] Code review completed
-- [ ] Documentation updated
-- [ ] Security scan passes
-- [ ] Performance tests meet requirements
-
-### Exit Criteria
-- [ ] All acceptance criteria met
-- [ ] No critical or high-severity issues
-- [ ] Performance benchmarks achieved
-- [ ] Security requirements satisfied
-- [ ] Stakeholder approval received
+- [ ] Requirements clear, measurable, and complete
+- [ ] All ambiguities resolved and documented
+- [ ] Research comprehensive and documented
+- [ ] Technical feasibility validated
+- [ ] Integration points identified
 
 ---
 
 **Last Updated**: {{LAST_UPDATED}}
-**Phase**: 1: SPECIFY & CLARIFY
+**Current Phase**: {{CURRENT_PHASE}}
+**Status**: {{STATUS}}
