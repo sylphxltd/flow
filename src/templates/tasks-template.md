@@ -2,12 +2,12 @@
 
 {{DESCRIPTION}}
 
-## 🚀 Parallel Execution Strategy
+## Task Dependencies & Execution Strategy
 
-### Dependency Analysis
+### Critical Path Analysis
 - **Critical Path**: {{CRITICAL_PATH}}
-- **Parallel Opportunities**: {{PARALLEL_OPPORTUNITIES}}
-- **Resource Conflicts**: {{RESOURCE_CONFLICTS}}
+- **Task Dependencies**: {{TASK_DEPENDENCIES}}
+- **Resource Allocation**: {{RESOURCE_ALLOCATION}}
 - **Integration Points**: {{INTEGRATION_POINTS}}
 
 ## Wave 1: Foundation Tasks (Can run simultaneously)
