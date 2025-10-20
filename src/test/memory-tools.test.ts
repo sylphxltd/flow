@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import * as Effect from '@effect/io/Effect';
-import { Layer } from '@effect/io/Layer';
+import type { Layer } from '@effect/io/Layer';
 import * as McpServer from '@modelcontextprotocol/sdk/server/mcp.js';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { registerMemoryTools } from '../tools/memory-tools.js';
 
 describe('MemoryTools', () => {

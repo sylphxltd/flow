@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import * as Effect from '@effect/io/Effect';
 import { pipe } from '@effect/data/Function';
-import { Layer } from '@effect/io/Layer';
+import * as Effect from '@effect/io/Effect';
+import type { Layer } from '@effect/io/Layer';
 import * as S from '@effect/schema/Schema';
 import * as Sql from '@effect/sql/Schema';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('DbService', () => {
   let program: Effect.Effect<never, never, never>;
@@ -32,9 +32,7 @@ describe('DbService', () => {
       Effect.gen(function* (_) {
         const db = yield* _(DbService);
         const tx = yield* _(db.transaction());
-        const insert = yield* _(
-          tx.execute('INSERT INTO temp_table (value) VALUES (?)', ['test'])
-        );
+        const insert = yield* _(tx.execute('INSERT INTO temp_table (value) VALUES (?)', ['test']));
         yield* _(tx.rollback());
         return insert.rowsAffected;
       }),

@@ -6,12 +6,7 @@
   "mcp": {
     "sylphx_flow": {
       "type": "local",
-      "command": [
-        "npx",
-        "github:sylphxltd/flow",
-        "mcp",
-        "start"
-      ]
+      "command": ["npx", "github:sylphxltd/flow", "mcp", "start"]
     },
     "context7": {
       "type": "remote",

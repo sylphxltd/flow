@@ -1,9 +1,9 @@
-import * as Log from "@effect/log";
-import * as Layer from "effect/Layer";
-import * as Context from "effect/Context";
+import * as Log from '@effect/log';
+import * as Context from 'effect/Context';
+import * as Layer from 'effect/Layer';
 
 // Define logger tag
-export class Logger extends Context.Tag("Logger")<Logger, Log.Logger>() {}
+export class Logger extends Context.Tag('Logger')<Logger, Log.Logger>() {}
 
 // Create logging layer
 export const logLayer = Layer.effect(Logger, Log.makeLayer(Log.ConsoleLogger)()).pipe(

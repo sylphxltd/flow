@@ -1,47 +1,67 @@
-import { Command } from 'commander';
-import { initCommand } from './commands/init-command.js';
-import { mcpCommand } from './commands/mcp-command.js';
-import { memoryCommand } from './commands/memory-command.js';
-import { handleMemoryTui } from './commands/memory-tui-command.js';
-import { runCommand } from './commands/run-command.js';
+import * as Cli from '@effect/cli/Cli';
+import * as Help from '@effect/cli/Help';
+import * as Platform from '@effect/platform/NodePlatform';
+import * as Effect from 'effect/Effect';
+import * as Exit from 'effect/Exit';
+import { pipe } from 'effect/Function';
 
-import { createCommand } from './utils/command-builder.js';
-import { showDefaultHelp } from './utils/help.js';
+// Placeholder for commands - will migrate in Task 8
+const initCommand = Cli.command('init')({}, () => Effect.succeed({ _tag: 'Init' }));
 
-export function createCLI(): Command {
-  const program = new Command();
+const runCommand = Cli.command('run')({}, () => Effect.succeed({ _tag: 'Run' }));
 
-  program
-    .name('sylphx-flow')
-    .description('Sylphx Flow - Type-safe development flow CLI')
-    .version('1.0.0');
+// Simple placeholder commands for now
+const commands = [initCommand, runCommand] as const;
 
-  const commands = [initCommand, mcpCommand, memoryCommand, runCommand];
+export const cliApp = pipe(
+  Cli.root(
+    Cli.program('sylphx-flow')({
+      version: '1.0.0',
+      description: 'Sylphx Flow - Type-safe development flow CLI',
+    }),
+    ({ help, _ }) => {
+      if (help) {
+        return Effect.succeed({
+          _tag: 'Help',
+          helpDoc: Help.makeCliDoc('sylphx-flow', commands, { showUnrecognized: false }),
+        });
+      }
+      return Effect.succeed({ _tag: 'NoCommand' });
+    }
+  ),
+  Cli.addCommands(commands)
+);
 
-  for (const commandConfig of commands) {
-    program.addCommand(createCommand(commandConfig));
-  }
-
-  // Add TUI command separately since it has special handler
-  program
-    .command('tui')
-    .description('Launch interactive Sylphx Flow TUI')
-    .option('--target <type>', 'Target platform (opencode, default: auto-detect)')
-    .action(handleMemoryTui);
-
-  program.action(() => {
-    showDefaultHelp();
-  });
-
-  return program;
-}
-
-export function runCLI(): void {
-  const program = createCLI();
-
-  if (process.argv.length === 2) {
-    program.help();
-  }
-
-  program.parse();
+export async function runCLI() {
+  const args = process.argv.slice(2);
+  const result = await Effect.runPromise(
+    pipe(
+      Cli.run(cliApp, { argv: args, singleCommand: false }),
+      Effect.flatMap((exit) => {
+        if (Exit.isSuccess(exit)) {
+          const value = exit.value;
+          if ('_tag' in value && value._tag === 'Help') {
+            console.log(Help.prettyPrint(value.helpDoc));
+            return Effect.succeed(0);
+          } else if ('_tag' in value && value._tag === 'Version') {
+            console.log('1.0.0');
+            return Effect.succeed(0);
+          } else if ('_tag' in value && value._tag === 'NoCommand') {
+            console.log(
+              Help.prettyPrint(
+                Help.makeCliDoc('sylphx-flow', commands, { showUnrecognized: false })
+              )
+            );
+            return Effect.succeed(0);
+          }
+          // For command execution, handle later
+          return Effect.succeed(0);
+        } else {
+          console.error('CLI error:', exit.cause);
+          return Effect.succeed(1);
+        }
+      })
+    )
+  );
+  process.exit(result);
 }

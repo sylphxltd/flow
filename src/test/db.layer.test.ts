@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as Effect from '@effect/io/Effect';
-import { pipe } from '@effect/data/Function';
-import { Layer } from '@effect/io/Layer';
-import { Scope } from '@effect/io/Scope';
 import * as Context from '@effect/data/Context';
-import { createClient } from '@libsql/client';
+import { pipe } from '@effect/data/Function';
+import * as Effect from '@effect/io/Effect';
+import type { Layer } from '@effect/io/Layer';
+import type { Scope } from '@effect/io/Scope';
 import * as SqlClient from '@effect/sql/SqlClient';
+import { createClient } from '@libsql/client';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('DbLayer', () => {
   let program: Effect.Effect<never, never, Scope.Scope>;
