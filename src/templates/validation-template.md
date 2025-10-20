@@ -1,63 +1,75 @@
-# Validation Template: {{PROJECT_NAME}}
+# Process Validation: {{PROJECT_NAME}}
 
-## Project Overview
+## Validation Overview
 - **Project**: {{PROJECT_NAME}}
-- **Type**: {{PROJECT_TYPE}}
-- **Status**: {{PROJECT_STATUS}}
-- **Last Updated**: {{LAST_UPDATED}}
+- **Validation Date**: {{VALIDATION_DATE}}
+- **Validator**: {{VALIDATOR}}
+- **Scope**: {{VALIDATION_SCOPE}}
 
-## Phase Validation Results
+## Phase 5: Cross-Check & Validation Results
 
-### Phase 1: Requirements Analysis Validation
-- **Requirements Clarity**: {{REQUIREMENTS_CLARITY}}
-- **Acceptance Criteria**: {{ACCEPTANCE_CRITERIA_STATUS}}
-- **Scope Definition**: {{SCOPE_DEFINITION_STATUS}}
-- **Project Setup**: {{PROJECT_SETUP_STATUS}}
-- **Phase 1 Validation**: {{PHASE_1_VALIDATION_RESULT}}
+### Requirements Coverage Validation
+- **All Requirements Addressed**: {{REQUIREMENTS_COVERAGE_STATUS}}
+- **Acceptance Criteria Mapped to Tasks**: {{ACCEPTANCE_CRITERIA_MAPPED}}
+- **Success Criteria Measurable**: {{SUCCESS_CRITERIA_MEASURABLE}}
+- **Scope Creep Prevention**: {{SCOPE_CREEP_PREVENTION}}
 
-### Phase 2: Clarify & Research Validation
-| Specialist | Research Task | Completeness | Quality | Q&A Documented |
-|------------|---------------|--------------|---------|----------------|
-| {{SPECIALIST_1}} | {{RESEARCH_TASK_1}} | {{RESEARCH_COMPLETE_1}} | {{RESEARCH_QUALITY_1}} | {{QA_DOCUMENTED_1}} |
-| {{SPECIALIST_2}} | {{RESEARCH_TASK_2}} | {{RESEARCH_COMPLETE_2}} | {{RESEARCH_QUALITY_2}} | {{QA_DOCUMENTED_2}} |
-| {{SPECIALIST_3}} | {{RESEARCH_TASK_3}} | {{RESEARCH_COMPLETE_3}} | {{RESEARCH_QUALITY_3}} | {{QA_DOCUMENTED_3}} |
-| {{SPECIALIST_4}} | {{RESEARCH_TASK_4}} | {{RESEARCH_COMPLETE_4}} | {{RESEARCH_QUALITY_4}} | {{QA_DOCUMENTED_4}} |
-| {{SPECIALIST_5}} | {{RESEARCH_TASK_5}} | {{RESEARCH_COMPLETE_5}} | {{RESEARCH_QUALITY_5}} | {{QA_DOCUMENTED_5}} |
+### Design Consistency Validation
+- **Architecture Alignment**: {{ARCHITECTURE_ALIGNMENT}}
+- **Integration Points Verified**: {{INTEGRATION_POINTS_VERIFIED}}
+- **Design Conflicts Resolved**: {{DESIGN_CONFLICTS_RESOLVED}}
+- **Technical Feasibility Confirmed**: {{TECHNICAL_FEASIBILITY}}
 
-**Phase 2 Validation**: {{PHASE_2_VALIDATION_RESULT}}
-**Issues Found**: {{PHASE_2_ISSUES_COUNT}}
-**Critical Issues**: {{PHASE_2_CRITICAL_ISSUES}}
-**All Q&A Resolved**: {{ALL_QA_RESOLVED}}
+### Task Planning Validation
+- **Task Completeness**: {{TASK_COMPLETENESS}}
+- **Dependency Mapping Accuracy**: {{DEPENDENCY_MAPPING_ACCURACY}}
+- **Resource Allocation Adequate**: {{RESOURCE_ALLOCATION_ADEQUATE}}
+- **Critical Path Identified**: {{CRITICAL_PATH_IDENTIFIED}}
+- **TDD Strategy Defined**: {{TDD_STRATEGY_DEFINED}}
 
-### Phase 3: Design Validation (Parallel)
-| Specialist | Design Task | Completeness | Quality | Integration |
-|------------|-------------|--------------|---------|-------------|
-| {{SPECIALIST_1}} | {{DESIGN_TASK_1}} | {{DESIGN_COMPLETE_1}} | {{DESIGN_QUALITY_1}} | {{DESIGN_INTEGRATION_1}} |
-| {{SPECIALIST_2}} | {{DESIGN_TASK_2}} | {{DESIGN_COMPLETE_2}} | {{DESIGN_QUALITY_2}} | {{DESIGN_INTEGRATION_2}} |
-| {{SPECIALIST_3}} | {{DESIGN_TASK_3}} | {{DESIGN_COMPLETE_3}} | {{DESIGN_QUALITY_3}} | {{DESIGN_INTEGRATION_3}} |
-| {{SPECIALIST_4}} | {{DESIGN_TASK_4}} | {{DESIGN_COMPLETE_4}} | {{DESIGN_QUALITY_4}} | {{DESIGN_INTEGRATION_4}} |
-| {{SPECIALIST_5}} | {{DESIGN_TASK_5}} | {{DESIGN_COMPLETE_5}} | {{DESIGN_QUALITY_5}} | {{DESIGN_INTEGRATION_5}} |
+### Risk Assessment Validation
+- **Risks Identified**: {{RISKS_IDENTIFIED}}
+- **Mitigation Strategies Planned**: {{MITIGATION_STRATEGIES_PLANNED}}
+- **Impact Assessment Complete**: {{IMPACT_ASSESSMENT_COMPLETE}}
+- **Contingency Plans Defined**: {{CONTINGENCY_PLANS_DEFINED}}
 
-**Phase 3 Validation**: {{PHASE_3_VALIDATION_RESULT}}
-**Design Conflicts Resolved**: {{DESIGN_CONFLICTS_RESOLVED}}
-**Integration Points Defined**: {{INTEGRATION_POINTS_DEFINED}}
+## Quality Gates Validation
 
-### Phase 4: Task Breakdown Validation (Parallel)
-| Task ID | Specialist | Status | Deliverable | Quality |
-|---------|------------|--------|-------------|---------|
-| {{TASK_1_ID}} | {{TASK_1_SPECIALIST}} | {{TASK_1_STATUS}} | {{TASK_1_DELIVERABLE}} | {{TASK_1_QUALITY}} |
-| {{TASK_2_ID}} | {{TASK_2_SPECIALIST}} | {{TASK_2_STATUS}} | {{TASK_2_DELIVERABLE}} | {{TASK_2_QUALITY}} |
-| {{TASK_3_ID}} | {{TASK_3_SPECIALIST}} | {{TASK_3_STATUS}} | {{TASK_3_DELIVERABLE}} | {{TASK_3_QUALITY}} |
+### Process Quality Gates
+| Gate | Status | Criteria Met | Notes |
+|------|--------|--------------|-------|
+| Requirements Clarity | {{REQUIREMENTS_GATE_STATUS}} | {{REQUIREMENTS_CRITERIA_MET}} | {{REQUIREMENTS_GATE_NOTES}} |
+| Design Completeness | {{DESIGN_GATE_STATUS}} | {{DESIGN_CRITERIA_MET}} | {{DESIGN_GATE_NOTES}} |
+| Task Planning | {{TASK_PLANNING_GATE_STATUS}} | {{TASK_PLANNING_CRITERIA_MET}} | {{TASK_PLANNING_GATE_NOTES}} |
+| Risk Management | {{RISK_MANAGEMENT_GATE_STATUS}} | {{RISK_MANAGEMENT_CRITERIA_MET}} | {{RISK_MANAGEMENT_GATE_NOTES}} |
 
-**Phase 4 Validation**: {{PHASE_4_VALIDATION_RESULT}}
-**Dependencies Mapped**: {{DEPENDENCIES_MAPPED}}
-**Critical Path Identified**: {{CRITICAL_PATH_IDENTIFIED}}
+### Technical Quality Gates
+| Gate | Status | Criteria Met | Notes |
+|------|--------|--------------|-------|
+| Architecture Soundness | {{ARCHITECTURE_GATE_STATUS}} | {{ARCHITECTURE_CRITERIA_MET}} | {{ARCHITECTURE_GATE_NOTES}} |
+| Integration Feasibility | {{INTEGRATION_GATE_STATUS}} | {{INTEGRATION_CRITERIA_MET}} | {{INTEGRATION_GATE_NOTES}} |
+| Performance Planning | {{PERFORMANCE_GATE_STATUS}} | {{PERFORMANCE_CRITERIA_MET}} | {{PERFORMANCE_GATE_NOTES}} |
+| Security Planning | {{SECURITY_GATE_STATUS}} | {{SECURITY_CRITERIA_MET}} | {{SECURITY_GATE_NOTES}} |
 
-### Phase 5: Cross-Check & Validation
-- **Requirements Coverage**: {{REQUIREMENTS_COVERAGE}}
-- **Conflict Resolution**: {{CONFLICT_RESOLUTION_STATUS}}
-- **Risk Assessment**: {{RISK_ASSESSMENT_STATUS}}
-- **Phase 5 Validation**: {{PHASE_5_VALIDATION_RESULT}}
+## Execution Readiness Assessment
+
+### Resource Readiness
+- **Team Availability**: {{TEAM_AVAILABILITY}}
+- **Skill Set Coverage**: {{SKILL_SET_COVERAGE}}
+- **Tool Access**: {{TOOL_ACCESS}}
+- **Environment Setup**: {{ENVIRONMENT_SETUP}}
+
+### Dependency Readiness
+- **External Dependencies**: {{EXTERNAL_DEPENDENCIES_READY}}
+- **Internal Dependencies**: {{INTERNAL_DEPENDENCIES_READY}}
+- **Blockers Cleared**: {{BLOCKERS_CLEARED}}
+- **Assumptions Validated**: {{ASSUMPTIONS_VALIDATED}}
+
+### Timeline Validation
+- **Effort Estimation**: {{EFFORT_ESTIMATION_VALID}}
+- **Milestone Planning**: {{MILESTONE_PLANNING_VALID}}
+- **Buffer Time Allocated**: {{BUFFER_TIME_ALLOCATED}}
+- **Deadline Feasibility**: {{DEADLINE_FEASIBILITY}}
 
 ## Quality Metrics
 
@@ -81,60 +93,56 @@
 | {{INTEGRATION_1}} | {{INTEGRATION_1_COMPONENTS}} | {{INTEGRATION_1_STATUS}} | {{INTEGRATION_1_ISSUES}} | {{INTEGRATION_1_RESOLUTION}} |
 | {{INTEGRATION_2}} | {{INTEGRATION_2_COMPONENTS}} | {{INTEGRATION_2_STATUS}} | {{INTEGRATION_2_ISSUES}} | {{INTEGRATION_2_RESOLUTION}} |
 
-### Phase 6: Implementation Validation
-- **Implementation Quality**: {{IMPLEMENTATION_QUALITY}}
-- **Code Standards Compliance**: {{CODE_STANDARDS_COMPLIANCE}}
-- **Integration Success**: {{INTEGRATION_SUCCESS}}
-- **Phase 6 Validation**: {{PHASE_6_VALIDATION_RESULT}}
+## Validation Issues & Actions
 
-### Phase 7: Testing Validation
-- **Test Coverage**: {{TEST_COVERAGE}}
-- **Quality Assurance**: {{QUALITY_ASSURANCE}}
-- **Bug Resolution**: {{BUG_RESOLUTION}}
-- **Phase 7 Validation**: {{PHASE_7_VALIDATION_RESULT}}
+### Critical Validation Issues
+| Issue | Impact | Phase Affected | Required Action | Owner |
+|-------|--------|----------------|-----------------|-------|
+| {{CRITICAL_VALIDATION_ISSUE_1}} | {{CRITICAL_ISSUE_1_IMPACT}} | {{CRITICAL_ISSUE_1_PHASE}} | {{CRITICAL_ISSUE_1_ACTION}} | {{CRITICAL_ISSUE_1_OWNER}} |
 
-### Phase 8: Refactoring Validation
-- **Code Quality**: {{CODE_QUALITY}}
-- **Performance Optimization**: {{PERFORMANCE_OPTIMIZATION}}
-- **Security Improvements**: {{SECURITY_IMPROVEMENTS}}
-- **Phase 8 Validation**: {{PHASE_8_VALIDATION_RESULT}}
+### Validation Warnings
+| Warning | Impact | Recommendation | Priority |
+|---------|--------|----------------|----------|
+| {{VALIDATION_WARNING_1}} | {{WARNING_1_IMPACT}} | {{WARNING_1_RECOMMENDATION}} | {{WARNING_1_PRIORITY}} |
 
-### Phase 9: Merge Validation
-- **Final Quality Gate**: {{FINAL_QUALITY_GATE}}
-- **Merge Readiness**: {{MERGE_READINESS}}
-- **Documentation Complete**: {{DOCUMENTATION_COMPLETE}}
-- **Phase 9 Validation**: {{PHASE_9_VALIDATION_RESULT}}
+## Go/No-Go Decision
 
-## Final Validation Summary
+### Execution Readiness Score
+- **Process Validation**: {{PROCESS_VALIDATION_SCORE}}/100
+- **Technical Validation**: {{TECHNICAL_VALIDATION_SCORE}}/100
+- **Resource Validation**: {{RESOURCE_VALIDATION_SCORE}}/100
+- **Overall Score**: {{OVERALL_VALIDATION_SCORE}}/100
 
-### Overall Status
-- **Project Ready**: {{PROJECT_READY_STATUS}}
-- **Total Issues**: {{TOTAL_ISSUES}}
-- **Critical Issues**: {{CRITICAL_ISSUES_COUNT}}
-- **Blocking Issues**: {{BLOCKING_ISSUES_COUNT}}
+### Decision Criteria
+- **Minimum Score Required**: 80/100
+- **Current Score**: {{OVERALL_VALIDATION_SCORE}}/100
+- **Decision**: {{GO_NO_GO_DECISION}}
 
-### Quality Gates
-| Gate | Status | Score | Notes |
-|------|--------|-------|-------|
-| Requirements | {{REQUIREMENTS_GATE_STATUS}} | {{REQUIREMENTS_SCORE}}/100 | {{REQUIREMENTS_GATE_NOTES}} |
-| Design | {{DESIGN_GATE_STATUS}} | {{DESIGN_SCORE}}/100 | {{DESIGN_GATE_NOTES}} |
-| Implementation | {{IMPLEMENTATION_GATE_STATUS}} | {{IMPLEMENTATION_SCORE}}/100 | {{IMPLEMENTATION_GATE_NOTES}} |
-| Testing | {{TESTING_GATE_STATUS}} | {{TESTING_SCORE}}/100 | {{TESTING_GATE_NOTES}} |
-| Security | {{SECURITY_GATE_STATUS}} | {{SECURITY_SCORE}}/100 | {{SECURITY_GATE_NOTES}} |
-| Performance | {{PERFORMANCE_GATE_STATUS}} | {{PERFORMANCE_SCORE}}/100 | {{PERFORMANCE_GATE_NOTES}} |
+### Conditional Approval (If applicable)
+- **Conditions**: {{CONDITIONAL_APPROVAL_CONDITIONS}}
+- **Timeline**: {{CONDITIONAL_APPROVAL_TIMELINE}}
+- **Monitoring Required**: {{CONDITIONAL_APPROVAL_MONITORING}}
 
-## Approval Status
+## Validation Summary
 
-### Validation Complete
-- **Validated By**: {{VALIDATED_BY}}
+### What Passed Validation
+- {{PASSED_VALIDATION_1}}
+- {{PASSED_VALIDATION_2}}
+- {{PASSED_VALIDATION_3}}
+
+### What Needs Attention
+- {{NEEDS_ATTENTION_1}}
+- {{NEEDS_ATTENTION_2}}
+- {{NEEDS_ATTENTION_3}}
+
+### Recommendations for Execution
+1. {{EXECUTION_RECOMMENDATION_1}}
+2. {{EXECUTION_RECOMMENDATION_2}}
+3. {{EXECUTION_RECOMMENDATION_3}}
+
+## Sign-off
+- **Validator**: {{VALIDATOR_NAME}}
 - **Validation Date**: {{VALIDATION_DATE}}
-- **Approved for Next Phase**: {{APPROVED_FOR_NEXT_PHASE}}
-- **Final Go/No-Go**: {{FINAL_GO_NO_GO}}
-
-### Next Steps
-1. {{NEXT_STEP_1}}
-2. {{NEXT_STEP_2}}
-3. {{NEXT_STEP_3}}
-
-## Notes & Observations
-{{VALIDATION_NOTES}}
+- **Go/No-Go**: {{FINAL_GO_NO_GO}}
+- **Confidence Level**: {{CONFIDENCE_LEVEL}}%
+- **Next Phase**: {{NEXT_PHASE}}

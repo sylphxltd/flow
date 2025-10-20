@@ -96,16 +96,24 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 
 #### Phase 7: Testing (Parallel)
 - **Input:** Code implementation + `spec.md` + `tasks.md`
-- **MANDATORY TDD VERIFICATION:**
-  - Verify TDD approach was followed for all implementations
-  - Confirm test coverage meets requirements defined in tasks.md
+- **MANDATORY COMPREHENSIVE REVIEW:**
+  - Verify tasks.md completion and task deliverables
+  - Analyze git repository for code quality:
+    - Use `git log --oneline --since="start_date" --until="end_date"` for commit analysis
+    - Use `git diff --stat base_branch..feature_branch` for code changes
+    - Use `git blame file` for code ownership analysis
+  - Assess code refactoring quality and technical debt
+  - Verify code cleanup and removal of waste:
+    - Use `find . -name "*.js" | xargs grep -l "TODO\|FIXME"` for TODO detection
+    - Use `find . -name "*.js" | xargs grep -l "console\.log\|debugger"` for debug code
+    - Check for unused imports and dead code
+  - Validate TDD compliance and test quality
 - Test implementation against requirements
 - Perform quality assurance and bug verification
-
 - Each specialist reports test results to coordinator
-- **Output:** `reviews.md`
-- **Completion Criteria:** All tests pass, requirements validated, TDD compliance verified
-- **Failure Routing:** Return to Phase 6 (implementation bugs or TDD not followed) or Phase 4 (task design issues) or Phase 7 (re-test)
+- **Output:** `reviews.md` with comprehensive code quality assessment
+- **Completion Criteria:** All tests pass, requirements validated, comprehensive review completed
+- **Failure Routing:** Return to Phase 6 (implementation bugs or quality issues) or Phase 4 (task design issues) or Phase 7 (re-test/review)
 
 #### Phase 8: Refactoring (Parallel)
 - **Input:** Tested code + `reviews.md`
