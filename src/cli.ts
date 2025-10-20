@@ -1,4 +1,5 @@
 import * as Cli from '@effect/cli';
+import * as Command from '@effect/cli/Command';
 import * as Help from '@effect/cli';
 import * as Platform from '@effect/platform/NodePlatform';
 import * as Effect from 'effect/Effect';
@@ -6,9 +7,9 @@ import * as Exit from 'effect/Exit';
 import { pipe } from 'effect/Function';
 
 // Placeholder for commands - will migrate in Task 8
-const initCommand = Cli.command('init')({}, () => Effect.succeed({ _tag: 'Init' }));
+const initCommand = Command.command('init')({}, () => Effect.succeed({ _tag: 'Init' }));
 
-const runCommand = Cli.command('run')({}, () => Effect.succeed({ _tag: 'Run' }));
+const runCommand = Command.command('run')({}, () => Effect.succeed({ _tag: 'Run' }));
 
 // Simple placeholder commands for now
 const commands = [initCommand, runCommand] as const;
