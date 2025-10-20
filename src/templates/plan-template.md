@@ -34,17 +34,17 @@ graph TB
 ### Phase 2: Parallel Research & Analysis
 **Simultaneous Research Streams:**
 ```
-→ {SPECIALIST_1}: {RESEARCH_DOMAIN_1}
-→ {SPECIALIST_2}: {RESEARCH_DOMAIN_2}
-→ {SPECIALIST_3}: {RESEARCH_DOMAIN_3}
-→ {SPECIALIST_4}: {RESEARCH_DOMAIN_4}
-→ {SPECIALIST_5}: {RESEARCH_DOMAIN_5}
-→ {SPECIALIST_6}: {RESEARCH_DOMAIN_6}
+-> {SPECIALIST_1}: {RESEARCH_DOMAIN_1}
+-> {SPECIALIST_2}: {RESEARCH_DOMAIN_2}
+-> {SPECIALIST_3}: {RESEARCH_DOMAIN_3}
+-> {SPECIALIST_4}: {RESEARCH_DOMAIN_4}
+-> {SPECIALIST_5}: {RESEARCH_DOMAIN_5}
+-> {SPECIALIST_6}: {RESEARCH_DOMAIN_6}
 
 Note: Same specialist can handle multiple domains:
-→ analyst: Security requirements analysis
-→ analyst: Performance bottleneck analysis
-→ architect: System design validation
+-> analyst: Security requirements analysis
+-> analyst: Performance bottleneck analysis
+-> architect: System design validation
 ```
 
 **Synchronization Points:**
@@ -55,17 +55,17 @@ Note: Same specialist can handle multiple domains:
 ### Phase 3: Parallel Design & Planning
 **Simultaneous Design Streams:**
 ```
-→ {SPECIALIST_1}: {DESIGN_DOMAIN_1}
-→ {SPECIALIST_2}: {DESIGN_DOMAIN_2}
-→ {SPECIALIST_3}: {DESIGN_DOMAIN_3}
-→ {SPECIALIST_4}: {DESIGN_DOMAIN_4}
-→ {SPECIALIST_5}: {DESIGN_DOMAIN_5}
-→ {SPECIALIST_6}: {DESIGN_DOMAIN_6}
+-> {SPECIALIST_1}: {DESIGN_DOMAIN_1}
+-> {SPECIALIST_2}: {DESIGN_DOMAIN_2}
+-> {SPECIALIST_3}: {DESIGN_DOMAIN_3}
+-> {SPECIALIST_4}: {DESIGN_DOMAIN_4}
+-> {SPECIALIST_5}: {DESIGN_DOMAIN_5}
+-> {SPECIALIST_6}: {DESIGN_DOMAIN_6}
 
 Note: Same specialist can handle multiple design areas:
-→ architect: System architecture design
-→ architect: Technology stack validation
-→ security: Security architecture design
+-> architect: System architecture design
+-> architect: Technology stack validation
+-> security: Security architecture design
 ```
 
 **Integration Coordination:**
@@ -76,13 +76,13 @@ Note: Same specialist can handle multiple design areas:
 ### Phase 4: Parallel Task Breakdown
 **Domain-Specific Task Breakdown:**
 ```
-→ {SPECIALIST_1}: {TASK_BREAKDOWN_DOMAIN_1}
-→ {SPECIALIST_2}: {TASK_BREAKDOWN_DOMAIN_2}
-→ {SPECIALIST_3}: {TASK_BREAKDOWN_DOMAIN_3}
+-> {SPECIALIST_1}: {TASK_BREAKDOWN_DOMAIN_1}
+-> {SPECIALIST_2}: {TASK_BREAKDOWN_DOMAIN_2}
+-> {SPECIALIST_3}: {TASK_BREAKDOWN_DOMAIN_3}
 
 Note: Same specialist can handle multiple breakdown areas:
-→ planner: Dependency mapping
-→ planner: Critical path analysis
+-> planner: Dependency mapping
+-> planner: Critical path analysis
 ```
 
 ## Implementation Phases
@@ -96,8 +96,8 @@ Note: Same specialist can handle multiple breakdown areas:
 - **Testing Framework**: {SPECIALIST_TESTING}
 
 Note: Same specialist can handle multiple foundation tasks:
-→ devops: Infrastructure setup
-→ devops: Testing framework configuration
+-> devops: Infrastructure setup
+-> devops: Testing framework configuration
 ```
 
 #### Wave 2: Core Features (Parallel)
@@ -111,39 +111,39 @@ Note: Same specialist can handle multiple foundation tasks:
 - **Security Testing**: {SPECIALIST_SECURITY_TEST}
 
 Note: Same specialist can handle multiple test types:
-→ tester: Integration testing
-→ tester: Security testing
+-> tester: Integration testing
+-> tester: Security testing
 ```
 - **Documentation**: All specialists
 
 ### Phase 7: Parallel Testing & Review
 **Simultaneous Testing Streams:**
 ```
-→ {SPECIALIST_1}: {TESTING_DOMAIN_1}
-→ {SPECIALIST_2}: {TESTING_DOMAIN_2}
-→ {SPECIALIST_3}: {TESTING_DOMAIN_3}
-→ {SPECIALIST_4}: {TESTING_DOMAIN_4}
-→ {SPECIALIST_5}: {TESTING_DOMAIN_5}
-→ {SPECIALIST_6}: {TESTING_DOMAIN_6}
+-> {SPECIALIST_1}: {TESTING_DOMAIN_1}
+-> {SPECIALIST_2}: {TESTING_DOMAIN_2}
+-> {SPECIALIST_3}: {TESTING_DOMAIN_3}
+-> {SPECIALIST_4}: {TESTING_DOMAIN_4}
+-> {SPECIALIST_5}: {TESTING_DOMAIN_5}
+-> {SPECIALIST_6}: {TESTING_DOMAIN_6}
 
 Note: Same specialist can handle multiple testing domains:
-→ tester: Functional testing
-→ tester: Integration testing
-→ security: Security vulnerability scanning
+-> tester: Functional testing
+-> tester: Integration testing
+-> security: Security vulnerability scanning
 ```
 
 ### Phase 8: Parallel Cleanup & Refactor
 **Simultaneous Cleanup Streams:**
 ```
-→ {SPECIALIST_1}: {CLEANUP_DOMAIN_1}
-→ {SPECIALIST_2}: {CLEANUP_DOMAIN_2}
-→ {SPECIALIST_3}: {CLEANUP_DOMAIN_3}
-→ {SPECIALIST_4}: {CLEANUP_DOMAIN_4}
+-> {SPECIALIST_1}: {CLEANUP_DOMAIN_1}
+-> {SPECIALIST_2}: {CLEANUP_DOMAIN_2}
+-> {SPECIALIST_3}: {CLEANUP_DOMAIN_3}
+-> {SPECIALIST_4}: {CLEANUP_DOMAIN_4}
 
 Note: Same specialist can handle multiple cleanup areas:
-→ coder: Code cleanup
-→ coder: Performance optimization
-→ architect: Architecture validation
+-> coder: Code cleanup
+-> coder: Performance optimization
+-> architect: Architecture validation
 ```
 
 ## Conflict Detection & Management
@@ -203,7 +203,7 @@ Note: Same specialist can handle multiple cleanup areas:
 - **Environment**: {{E2E_TEST_ENV}}
 
 ### Quality Gates
-- **Code Coverage**: ≥ {{TEST_COVERAGE_TARGET}}%
+- **Code Coverage**: >= {{TEST_COVERAGE_TARGET}}%
 - **Performance**: < {{PERF_TARGET}}ms response time
 - **Security**: No critical vulnerabilities
 - **Documentation**: 100% API coverage
