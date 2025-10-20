@@ -66,8 +66,8 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 ```
 - **REGULAR SYNCHRONIZATION** to ensure design alignment
 - **IDENTIFY INTEGRATION POINTS** between domains
-- **PLAN PARALLEL EXECUTION STRATEGY** for Phase 6
-- **IDENTIFY CONFLICTS** (files, DB, API, timing)
+- **IDENTIFY TECHNICAL CONSTRAINTS** and dependencies
+- **IDENTIFY DESIGN CONFLICTS** (architecture, interfaces, data flow)
 - **EACH SPECIALIST CREATES** `design-work-{NAME}.md` with their designs
 - **COORDINATOR CONSOLIDATES** all designs into unified `plan.md`
 
@@ -100,8 +100,8 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 ### Phase 5: Cross-Check & Validate (Sequential)
 - Verify all requirements covered by tasks
 - Check for conflicts and dependencies
-- Final validation before execution
-- **APPROVE PARALLEL EXECUTION PLAN**
+- Validate technical feasibility and resource availability
+- **CONFIRM READINESS FOR EXECUTION**
 - Output: Updated `validation.md`
 
 ### Phase 6: Implement (Maximum Parallel Execution)
