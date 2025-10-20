@@ -114,7 +114,7 @@ export const FullscreenMemoryTUI: React.FC = () => {
         Effect.catchAll((error) => Effect.sync(() => setState((prev) => ({
           ...prev,
           message: `Delete error: ${error.message}`,
-        }))) ),
+        }))
         Effect.asVoid
       );
       Effect.runPromise(deleteProgram);

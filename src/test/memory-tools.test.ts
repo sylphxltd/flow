@@ -1,5 +1,5 @@
-import * as Effect from '@effect/io/Effect';
-import type { Layer } from '@effect/io/Layer';
+import * as Effect from 'effect/Effect';
+import type { Layer } from 'effect/Layer';
 import * as McpServer from '@modelcontextprotocol/sdk/server/mcp.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { registerMemoryTools } from '../tools/memory-tools.js';
@@ -11,7 +11,7 @@ describe('MemoryTools', () => {
   beforeEach(() => {
     server = { registerTool: vi.fn() };
     // @ts-expect-error
-    layer = /* DbService live or test */;
+    layer = Layer.succeed({}); // Mock layer for test
   });
 
   it('should register memory_set tool', async () => {

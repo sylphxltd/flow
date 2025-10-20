@@ -7,7 +7,13 @@
   "bin": {
     "sylphx-flow": "dist/index.js"
   },
-  "files": ["dist", "docs", "agents", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "docs",
+    "agents",
+    "README.md",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/sylphxltd/flow.git"
@@ -51,6 +57,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@effect/ai": "^0.31.1",
     "@effect/cli": "^0.71.0",
     "@libsql/client": "^0.15.15",
     "@modelcontextprotocol/sdk": "^1.18.1",
@@ -81,6 +88,7 @@
     "@testing-library/react": "^16.3.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
+    "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "esbuild": "^0.25.10",
     "libsql": "link:@effect/sql/libsql",

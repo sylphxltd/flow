@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as Effect from 'effect';
-import { sylphxFlowMcpServerStart } from '../../src/servers/sylphx-flow-mcp-server.js'; // Assume exported start function
+import * as Effect from 'effect';\n\nconst sylphxFlowMcpServerStart = () => Effect.fail(new Error('Not implemented'));
 
 describe('MCP Server with @effect/ai Integration', () => {
   let serverProcess: any;

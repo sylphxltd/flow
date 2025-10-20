@@ -1,6 +1,6 @@
 import * as S from '@effect/schema/Schema';
 import * as Effect from 'effect/Effect';
-import * as Error from 'effect/Error';
+import * as Error from '@effect/Error';
 import { pipe } from 'effect/Function';
 
 export class InfraError extends Error.TaggedError('InfraError')<{

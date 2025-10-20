@@ -1,20 +1,9 @@
-import * as Sql from '@effect/sql/sql';
-import { Client } from '@libsql/client';
 import * as Layer from 'effect/Layer';
-import { Logger, logLayer } from './log.layer';
+import { logLayer } from './log.layer';
+import { DbLayer } from './db.layer';
+import { FileSystem } from '@effect/platform/FileSystem';
 
-// Placeholder for DB layer
-const dbLayer = Layer.succeed(
-  Sql.Sql,
-  /* DB config */ Layer.succeed(Client, {
-    /* client config */
-  })
-);
+export const fileSystemLayer = FileSystem.layer;
 
-export const infraLayer = logLayer.pipe(Layer.provide(dbLayer));
+export const infraLayer = Layer.mergeAll(fileSystemLayer, logLayer, DbLayer);
 
-export const program = Effect.gen(function* (_) {
-  // Simple program that logs
-  yield* _(Log.info('Infra layer initialized'));
-  return 'Infra ready';
-});

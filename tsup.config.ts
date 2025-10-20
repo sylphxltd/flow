@@ -6,8 +6,9 @@ export default defineConfig({
   outDir: 'dist',
   clean: true,
   bundle: true,
-  esbuildOptions: (options) => {
-    options.jsx = 'automatic';
-    options.jsxImportSource = 'react';
-  },
+  // CLI doesn't use JSX, commented out
+  // esbuildOptions: (options) => {
+  //   options.jsx = 'automatic';
+  //   options.jsxImportSource = 'react';
+  // },
 });

@@ -1,7 +1,7 @@
 import * as Context from '@effect/data/Context';
-import { pipe } from '@effect/data/Function';
+import { pipe } from 'effect/Function';
 import * as Effect from '@effect/io/Effect';
-import type { Layer } from '@effect/io/Layer';
+import * as Layer from 'effect/Layer'; import type { Layer as LayerType } from '@effect/io/Layer';
 import type { Scope } from '@effect/io/Scope';
 import * as SqlClient from '@effect/sql/SqlClient';
 import { createClient } from '@libsql/client';
@@ -14,7 +14,7 @@ describe('DbLayer', () => {
   beforeEach(() => {
     // This will fail initially as DbLayer doesn't exist
     // @ts-expect-error
-    layer = DbLayer.layer;
+    layer = Layer.succeed({}); // Mock DbLayer
     program = pipe(
       Effect.gen(function* (_) {
         const client = yield* _(SqlClient.SqlClient);

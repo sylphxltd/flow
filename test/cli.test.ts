@@ -1,68 +1,104 @@
-import * as Cli from '@effect/cli/Cli';
-import * as Effect from 'effect/Effect';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runCLI } from '../src/cli.js';
+import { runCLI } from '../src/cli';
 
-describe('Root CLI Program', () => {
-  let consoleLogSpy: any;
+describe('CLI Commands E2E', () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
+  const originalArgv = process.argv;
 
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    process.argv = originalArgv;
   });
 
-  it('should parse arguments and show help for no command', async () => {
-    const originalArgv = process.argv;
-    process.argv = ['node', 'sylphx-flow.js', ''];
+  it('shows help for no command', async () => {
+    process.argv = ['node', 'sylphx-flow'];
 
-    try {
-      await runCLI();
+    await runCLI();
 
-      // Should call console.log for help
-      expect(consoleLogSpy).toHaveBeenCalled();
-      const calls = consoleLogSpy.mock.calls;
-      const helpOutput = calls.join('\\n');
-      expect(helpOutput).toContain('Sylphx Flow - Type-safe development flow CLI');
-      expect(helpOutput).toContain('Commands:');
-    } catch (error) {
-      expect(error).toBeUndefined(); // Should not throw
-    } finally {
-      process.argv = originalArgv;
-    }
+    expect(consoleLogSpy).toHaveBeenCalled();
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Sylphx Flow - Type-safe development flow CLI');
+    expect(output).toContain('Commands:');
   });
 
-  it('should show version when --version is provided', async () => {
-    const originalArgv = process.argv;
-    process.argv = ['node', 'sylphx-flow.js', '--version'];
+  it('shows version with --version', async () => {
+    process.argv = ['node', 'sylphx-flow', '--version'];
 
-    try {
-      await runCLI();
+    await runCLI();
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('1.0.0');
-    } catch (error) {
-      expect(error).toBeUndefined();
-    } finally {
-      process.argv = originalArgv;
-    }
+    expect(consoleLogSpy).toHaveBeenCalledWith('sylphx-flow 1.0.0');
   });
 
-  it('should handle help command', async () => {
-    const originalArgv = process.argv;
-    process.argv = ['node', 'sylphx-flow.js', '--help'];
+  it('handles --help', async () => {
+    process.argv = ['node', 'sylphx-flow', '--help'];
 
-    try {
-      await runCLI();
+    await runCLI();
 
-      expect(consoleLogSpy).toHaveBeenCalled();
-      const helpOutput = consoleLogSpy.mock.calls.flat().join(' ');
-      expect(helpOutput).toContain('Sylphx Flow - Type-safe development flow CLI');
-    } catch (error) {
-      expect(error).toBeUndefined();
-    } finally {
-      process.argv = originalArgv;
-    }
+    expect(consoleLogSpy).toHaveBeenCalled();
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Usage: sylphx-flow <command> [options]');
+  });
+
+  it('runs init command', async () => {
+    process.argv = ['node', 'sylphx-flow', 'init'];
+
+    await runCLI();
+
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Initializing Sylphx Flow project...'));
+    expect(consoleLogSpy).toHaveBeenCalledWith('Created opencode.jsonc successfully.');
+  });
+
+  it('runs run command', async () => {
+    process.argv = ['node', 'sylphx-flow', 'run'];
+
+    await runCLI();
+
+    expect(consoleLogSpy).toHaveBeenCalledWith('Running Sylphx Flow pipeline...');
+    expect(consoleLogSpy).toHaveBeenCalledWith('Pipeline completed successfully.');
+  });
+
+  it('runs mcp command', async () => {
+    process.argv = ['node', 'sylphx-flow', 'mcp'];
+
+    await runCLI();
+
+    expect(consoleLogSpy).toHaveBeenCalledWith('Managing MCP servers...');
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Available commands:'));
+  });
+
+  it('runs tui command', async () => {
+    process.argv = ['node', 'sylphx-flow', 'tui'];
+
+    await runCLI();
+
+    expect(consoleLogSpy).toHaveBeenCalledWith('Launching TUI interface...');
+    expect(consoleLogSpy).toHaveBeenCalledWith('Use arrow keys to navigate, enter to select.');
+  });
+
+  it('runs memory list (empty)', async () => {
+    process.argv = ['node', 'sylphx-flow', 'memory', 'list'];
+
+    await runCLI();
+
+    expect(consoleLogSpy).toHaveBeenCalledWith('No memory entries found.');
+  });
+
+  it('runs memory set and get', async () => {
+    // Set
+    process.argv = ['node', 'sylphx-flow', 'memory', 'set', 'testkey', 'testvalue'];
+    await runCLI();
+    expect(consoleLogSpy).toHaveBeenCalledWith('Set memory testkey = testvalue');
+
+    // Get
+    consoleLogSpy.mockClear();
+    process.argv = ['node', 'sylphx-flow', 'memory', 'get', 'testkey'];
+    await runCLI();
+    expect(consoleLogSpy).toHaveBeenCalledWith('Memory for testkey: testvalue');
   });
 });

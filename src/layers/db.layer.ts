@@ -1,10 +1,12 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { pipe } from '@effect/data/Function';
-import * as Effect from '@effect/io/Effect';
-import { Layer } from '@effect/io/Layer';
+import * as Effect from 'effect/Effect';
+import { Layer } from 'effect/Layer';
+import { Context } from 'effect/Context';
 import * as SqlClient from '@effect/sql/SqlClient';
 import { createClient } from '@libsql/client';
+import { Sql } from '@effect/sql/Sql';
+import { FileSystem } from '@effect/platform/FileSystem';
+import { Path } from '@effect/platform/Path';
+import * as Sqlite from '@effect/sql/Sqlite'; // If needed for types
 
 // Tag for SqlClient
 export interface DbTag {
@@ -13,52 +15,51 @@ export interface DbTag {
 export const DbTag = Context.GenericTag<DbTag, SqlClient.SqlClient>('@services/DbTag');
 export type DbTag = Context.Tag.Service<DbTag['_'], SqlClient.SqlClient>;
 
-// Function to create libsql client
-const makeLibsqlClient = () => {
-  const memoryDir = path.join(process.cwd(), '.sylphx-flow');
-  if (!fs.existsSync(memoryDir)) {
-    fs.mkdirSync(memoryDir, { recursive: true });
+// Effect to create libsql client with FS directory management
+const makeLibsqlClient = Effect.gen(function* (_) {
+  const fs = yield* _(FileSystem);
+  const cwd = Path.cwd();
+  const memoryDir = Path.join(cwd, Path.make('.sylphx-flow'));
+  const exists = yield* _(fs.exists(memoryDir));
+  if (!exists) {
+    yield* _(fs.makeDirectory(memoryDir, { recursive: true }));
   }
-  const dbPath = path.join(memoryDir, 'memory.db');
-  const client = createClient({
-    url: `file:${dbPath}`,
-  });
+  const dbPath = Path.join(memoryDir, Path.make('memory.db'));
+  const url = `file:${dbPath.toString()}`;
+  const client = createClient({ url });
   return { client, dbPath };
-};
+});
 
-// Acquire release for the client (libsql client doesn't require close for file db, but we can noop it)
+// Acquire release for the client
 const acquireLibsql = Effect.acquireRelease(
-  Effect.sync(() => makeLibsqlClient().client),
-  (client) =>
-    Effect.sync(() => {
-      client.close?.();
-    })
+  makeLibsqlClient,
+  ({ client }) => Effect.sync(() => client.close?.())
 );
 
-// Initialize tables in the layer
+// Initialize tables
 const initializeDb = (client: any) =>
   Effect.promise(() =>
     Promise.all([
       client.execute(`
-      CREATE TABLE IF NOT EXISTS memory (
-        key TEXT NOT NULL,
-        namespace TEXT NOT NULL DEFAULT 'default',
-        value TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY (key, namespace)
-      )
-    `),
+        CREATE TABLE IF NOT EXISTS memory (
+          key TEXT NOT NULL,
+          namespace TEXT NOT NULL DEFAULT 'default',
+          value TEXT NOT NULL,
+          timestamp INTEGER NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          PRIMARY KEY (key, namespace)
+        )
+      `),
       client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_namespace ON memory(namespace)
-    `),
+        CREATE INDEX IF NOT EXISTS idx_memory_namespace ON memory(namespace)
+      `),
       client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_timestamp ON memory(timestamp)
-    `),
+        CREATE INDEX IF NOT EXISTS idx_memory_timestamp ON memory(timestamp)
+      `),
       client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_memory_key ON memory(key)
-    `),
+        CREATE INDEX IF NOT EXISTS idx_memory_key ON memory(key)
+      `),
     ])
   );
 
@@ -67,14 +68,16 @@ export const DbLayer = Layer.scoped(
   DbTag,
   pipe(
     acquireLibsql,
-    Effect.tap((client) => initializeDb(client)),
-    Effect.flatMap((client) => SqlClient.libsqlSqlClient(client)),
-    Effect.mapError((e) => new Error(`Db layer failed: ${e}`))
+    Effect.flatMap((_) => Effect.promise(() => _.client)),
+    Effect.flatMap((client) => initializeDb(client)),
+    Effect.flatMap((_) => SqlClient.libsqlSqlClient(_.client)),
+    Effect.mapError((e) => new Error(`Db layer failed: ${String(e)}`))
   )
 );
 
-// For testing
+// For testing - mock SqlClient
 export const TestDbLayer = Layer.test(DbTag, {
-  execute: (statement) => Effect.succeed({ rows: [{ test: 1 }], rowsAffected: 0 }),
-  // Add more stubs as needed
+  execute: (_: Sql.Sql) => Effect.succeed({ rows: [], rowsAffected: 0 }),
+  transaction: () => Effect.succeed({} as any),
 } satisfies SqlClient.SqlClient);
+

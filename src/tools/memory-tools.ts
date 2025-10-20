@@ -1,7 +1,7 @@
 // Add batch operations for refactor
 // For example, batchSet: array of sets in transaction
 
-import * as Effect from '@effect/io/Effect';
+import * as Effect from 'effect/Effect';
 // ... existing imports
 
 // Add to DbService if needed, but for tools, add batch
@@ -20,12 +20,11 @@ export async function memoryBatchSet(args: { items: Array<{key: string, value: s
             )
           )
         );
-        yield* _(logInfo(`Batch stored ${args.items.length} memories`));
-        return {
+                return {
           content: [{ type: 'text', text: `✅ Batch stored ${args.items.length} memories` }],
         };
       }),
-      Effect.catchAll((e) => /* error handling */ Effect.succeed({ ... } as CallToolResult)),
+      Effect.catchAll((e) => Effect.succeed({ content: [{ type: 'text', text: `Error: ${String(e)}` }] } as CallToolResult)),
       Effect.provide(Layer.merge(DbServiceLive))
     )
   );

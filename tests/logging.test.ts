@@ -1,6 +1,6 @@
-import * as Log from '@effect/log';
+import * as Log from '@effect/Log';
 import * as Effect from 'effect/Effect';
-import { pipe } from 'effect/Function';
+import { pipe } from "effect/Function";
 import * as Layer from 'effect/Layer';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Infra from '../../src/layers/infra.layer';

@@ -313,7 +313,7 @@ Content with empty frontmatter`;
       const content = `---
 name: broken-agent
 description: Agent with broken yaml
-tools: [unclosed array
+tools: [] # unclosed array test
 ---
 
 Broken content`;

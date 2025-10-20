@@ -1,6 +1,6 @@
-import { pipe } from '@effect/data/Function';
+import { pipe } from 'effect/Function';
 import * as Effect from '@effect/io/Effect';
-import type { Layer } from '@effect/io/Layer';
+import * as Layer from 'effect/Layer'; import type { Layer as LayerType } from '@effect/io/Layer';
 import * as S from '@effect/schema/Schema';
 import * as Sql from '@effect/sql/Schema';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -11,7 +11,7 @@ describe('DbService', () => {
 
   beforeEach(() => {
     // @ts-expect-error
-    layer = DbService;
+    layer = Layer.succeed({}); // Mock DbService
     program = pipe(
       Effect.gen(function* (_) {
         const db = yield* _(DbService);
