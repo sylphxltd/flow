@@ -1,17 +1,16 @@
 # Progress Tracking: {{PROJECT_NAME}}
 
-## 🚨 RECOVERY INSTRUCTIONS (READ FIRST!)
+## 🚨 RECOVERY INSTRUCTIONS
 **If resuming this project:**
-1. **STOP** - Read this entire section first
-2. **Current Phase**: {{CURRENT_PHASE}}
-3. **Last Action**: {{LAST_ACTION_TITLE}} ({{LAST_ACTION_TIME}})
-4. **Immediate Next**: {{NEXT_ACTION}}
-5. **Execute these steps**:
+1. **Current Phase**: {{CURRENT_PHASE}}
+2. **Last Action**: {{LAST_ACTION_TITLE}} ({{LAST_ACTION_TIME}})
+3. **Immediate Next**: {{NEXT_ACTION}}
+4. **Execute these steps**:
    - [ ] Review tasks.md completion status
    - [ ] Check current blockers
-   - [ ] Execute "Next Action" without asking
+   - [ ] Execute "Next Action"
    - [ ] Update this file after any action
-   - [ ] Continue automatically through phases
+   - [ ] Continue to next phase
 
 ## Current State
 - **Phase**: {{CURRENT_PHASE}}
