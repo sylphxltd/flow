@@ -37,19 +37,16 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 → {SPECIALIST_4}: {RESEARCH_DOMAIN_4}
 → {SPECIALIST_5}: {RESEARCH_DOMAIN_5}
 → {SPECIALIST_6}: {RESEARCH_DOMAIN_6}
-
-
 ```
 - Identify technical risks and dependencies
 - Research existing approaches and constraints
-- **EACH SPECIALIST CREATES** `specialist-work-{NAME}.md` with findings
-- **COORDINATOR CONSOLIDATES** all findings into comprehensive analysis
+- **EACH SPECIALIST REPORTS** findings directly to coordinator
+- **COORDINATOR SYNTHESIZES** all findings into comprehensive analysis
 
 ### Phase 2.5: Research Consolidation (Sequential)
-- **REVIEW ALL SPECIALIST WORK FILES**
-- **CONSOLIDATE FINDINGS** into unified `spec.md`
-- **RESOLVE CONFLICTS** between different specialist findings
-- **IDENTIFY GAPS** requiring additional research
+- **SYNTHESIZE ALL SPECIALIST REPORTS** into unified `spec.md`
+- **RESOLVE CONFLICTS** between different research findings
+- **VALIDATE RESEARCH COMPLETENESS** and coverage
 - **UPDATE PROGRESS.MD** with consolidation status
 
 ### Phase 3: Plan & Design (Parallel with Coordination)
@@ -61,19 +58,16 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 → {SPECIALIST_4}: {DESIGN_DOMAIN_4}
 → {SPECIALIST_5}: {DESIGN_DOMAIN_5}
 → {SPECIALIST_6}: {DESIGN_DOMAIN_6}
-
-
 ```
 - **REGULAR SYNCHRONIZATION** to ensure design alignment
 - **IDENTIFY INTEGRATION POINTS** between domains
 - **IDENTIFY TECHNICAL CONSTRAINTS** and dependencies
 - **IDENTIFY DESIGN CONFLICTS** (architecture, interfaces, data flow)
-- **EACH SPECIALIST CREATES** `design-work-{NAME}.md` with their designs
-- **COORDINATOR CONSOLIDATES** all designs into unified `plan.md`
+- **EACH SPECIALIST REPORTS** designs directly to coordinator
+- **COORDINATOR SYNTHESIZES** all designs into unified `plan.md`
 
 ### Phase 3.5: Design Consolidation (Sequential)
-- **REVIEW ALL DESIGN WORK FILES**
-- **CONSOLIDATE DESIGNS** into unified `plan.md`
+- **SYNTHESIZE ALL SPECIALIST REPORTS** into unified `plan.md`
 - **RESOLVE DESIGN CONFLICTS** between different specialists
 - **VALIDATE INTEGRATION POINTS** and dependencies
 - **UPDATE PROGRESS.MD** with consolidation status
@@ -85,14 +79,13 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 → Planner: Map task dependencies and identify critical path
 → Architect: Ensure architectural consistency across tasks
 ```
-- **EACH SPECIALIST CREATES** `task-list-{NAME}.md` with their domain tasks
-- **COORDINATOR FINAL INTEGRATION** of all task lists
+- **EACH SPECIALIST REPORTS** task breakdowns directly to coordinator
+- **COORDINATOR FINAL INTEGRATION** of all task breakdowns
 - Create comprehensive task checklist in `tasks.md`
 - **VALIDATE PARALLEL FEASIBILITY** and dependency management
 
 ### Phase 4.5: Task Consolidation (Sequential)
-- **REVIEW ALL TASK LIST FILES**
-- **CONSOLIDATE TASKS** into unified `tasks.md`
+- **SYNTHESIZE ALL SPECIALIST REPORTS** into unified `tasks.md`
 - **RESOLVE TASK DEPENDENCIES** and conflicts
 - **VALIDATE CRITICAL PATH** and parallel execution plan
 - **UPDATE PROGRESS.MD** with consolidation status
@@ -127,17 +120,14 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 → {SPECIALIST_4}: {TESTING_DOMAIN_4}
 → {SPECIALIST_5}: {TESTING_DOMAIN_5}
 → {SPECIALIST_6}: {TESTING_DOMAIN_6}
-
-
 ```
-- **EACH SPECIALIST CREATES** `test-report-{NAME}.md` with their findings
-- **COORDINATOR CONSOLIDATES** all test results into `reviews.md`
+- **EACH SPECIALIST REPORTS** test results directly to coordinator
+- **COORDINATOR SYNTHESIZES** all test results into `reviews.md`
 - **VERIFY ALL TASKS COMPLETED** via tasks.md checkboxes
 - **VALIDATE REQUIREMENTS MET** via spec.md criteria
 
 ### Phase 7.5: Test Consolidation (Sequential)
-- **REVIEW ALL TEST REPORT FILES**
-- **CONSOLIDATE RESULTS** into unified `reviews.md`
+- **SYNTHESIZE ALL SPECIALIST REPORTS** into unified `reviews.md`
 - **IDENTIFY FAILURES** requiring rework
 - **UPDATE PROGRESS.MD** with test consolidation status
 
@@ -148,18 +138,15 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 → {SPECIALIST_2}: {REFACTOR_DOMAIN_2}
 → {SPECIALIST_3}: {REFACTOR_DOMAIN_3}
 → {SPECIALIST_4}: {REFACTOR_DOMAIN_4}
-
-
 ```
-- **EACH SPECIALIST CREATES** `refactor-report-{NAME}.md` with their improvements
-- **COORDINATOR CONSOLIDATES** all refactor results
+- **EACH SPECIALIST REPORTS** refactor improvements directly to coordinator
+- **COORDINATOR SYNTHESIZES** all refactor results
 - Remove dead code and unused imports
 - Improve code quality and structure
 - **PARALLEL CODE REVIEWS** and optimizations
 
 ### Phase 8.5: Refactor Consolidation (Sequential)
-- **REVIEW ALL REFACTOR REPORT FILES**
-- **CONSOLIDATE IMPROVEMENTS** into final code state
+- **SYNTHESIZE ALL SPECIALIST REPORTS** into final code state
 - **VALIDATE CODE QUALITY** across all domains
 - **UPDATE PROGRESS.MD** with refactor consolidation status
 
