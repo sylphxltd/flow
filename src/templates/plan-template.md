@@ -68,13 +68,12 @@ graph TB
 #### Task Categories
 {{#each TASK_CATEGORIES}}
 - **{{this.category}}**: {{this.description}}
-  - **Estimated Effort**: {{this.effort}}
   - **Dependencies**: {{this.dependencies}}
 {{/each}}
 
 #### Critical Path
 {{#each CRITICAL_PATH}}
-- [ ] **{{this.task}}** ({{this.duration}})
+- [ ] **{{this.task}}**
   - **Dependencies**: {{this.prerequisites}}
   - **Risks**: {{this.risks}}
 {{/each}}
