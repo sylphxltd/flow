@@ -435,6 +435,91 @@ var Logger2 = {
     }
   }
 };
+function generateProjectDetails(projectType, projectName) {
+  const descriptions = {
+    feature: `New feature implementation for ${projectName}`,
+    bugfix: `Bug fix for ${projectName} issue`,
+    hotfix: `Critical hotfix for ${projectName}`,
+    refactor: `Code refactoring for ${projectName}`,
+    migration: `Migration project for ${projectName}`
+  };
+  const requirements = {
+    feature: [
+      "Define feature specifications",
+      "Implement core functionality",
+      "Write comprehensive tests",
+      "Update documentation",
+      "Code review and validation"
+    ],
+    bugfix: [
+      "Identify root cause",
+      "Implement fix",
+      "Add regression tests",
+      "Verify fix resolves issue",
+      "Update documentation if needed"
+    ],
+    hotfix: [
+      "Implement immediate fix",
+      "Test critical path",
+      "Deploy hotfix",
+      "Schedule proper fix follow-up"
+    ],
+    refactor: [
+      "Analyze current code structure",
+      "Plan refactoring approach",
+      "Implement refactored code",
+      "Ensure all tests pass",
+      "Update documentation"
+    ],
+    migration: [
+      "Analyze current system",
+      "Plan migration strategy",
+      "Implement migration code",
+      "Test migration process",
+      "Deploy and verify"
+    ]
+  };
+  const objectives = {
+    feature: `Successfully implement the ${projectName} feature with full functionality and testing`,
+    bugfix: `Resolve the ${projectName} issue completely and prevent recurrence`,
+    hotfix: `Quickly address critical ${projectName} issue to restore system stability`,
+    refactor: `Improve code quality and maintainability for ${projectName}`,
+    migration: `Successfully migrate ${projectName} to new system with minimal disruption`
+  };
+  const scopes = {
+    feature: "Implementation of new feature including frontend, backend, tests, and documentation",
+    bugfix: "Fix for specific issue including root cause analysis and prevention measures",
+    hotfix: "Minimal change to address critical issue with immediate deployment",
+    refactor: "Code structure improvements without changing external behavior",
+    migration: "Complete migration of existing functionality to new system or platform"
+  };
+  const timelines = {
+    feature: "2-4 weeks depending on complexity",
+    bugfix: "1-3 days for critical issues, 1 week for standard fixes",
+    hotfix: "Same day deployment",
+    refactor: "1-2 weeks depending on codebase size",
+    migration: "2-6 weeks depending on system complexity"
+  };
+  const budgets = {
+    feature: "Medium - requires development, testing, and review resources",
+    bugfix: "Low to Medium - depends on issue complexity",
+    hotfix: "Low - minimal changes required",
+    refactor: "Medium - development time with testing",
+    migration: "High - significant planning and execution resources"
+  };
+  return {
+    description: descriptions[projectType] || `Project for ${projectName}`,
+    requirements: requirements[projectType] || [
+      "Define requirements",
+      "Implement solution",
+      "Test and validate"
+    ],
+    objective: objectives[projectType] || `Complete ${projectName} project successfully`,
+    scope: scopes[projectType] || "Project scope to be defined",
+    timeline: timelines[projectType] || "To be determined",
+    budget: budgets[projectType] || "To be determined"
+  };
+}
 function runGitCommand(command) {
   try {
     const output = execSync(command, { encoding: "utf8", cwd: process.cwd() });
@@ -462,13 +547,7 @@ function registerProjectStartupTool(server2) {
       inputSchema: {
         project_type: z2.enum(["feature", "bugfix", "hotfix", "refactor", "migration"]).describe("Type of project"),
         project_name: z2.string().describe("Name of the project (use letters, numbers, hyphens, underscores only)"),
-        description: z2.string().optional().describe("Project description"),
-        requirements: z2.array(z2.string()).optional().describe("List of project requirements"),
-        create_branch: z2.boolean().optional().describe("Whether to create a git branch (default: true)"),
-        objective: z2.string().optional().describe("Project objective"),
-        scope: z2.string().optional().describe("Project scope"),
-        timeline: z2.string().optional().describe("Project timeline"),
-        budget: z2.string().optional().describe("Project budget")
+        create_branch: z2.boolean().optional().describe("Whether to create a git branch (default: true)")
       }
     },
     projectStartupTool
@@ -476,17 +555,9 @@ function registerProjectStartupTool(server2) {
 }
 function projectStartupTool(args) {
   try {
-    const {
-      project_type,
-      project_name,
-      description = "",
-      requirements = [],
-      create_branch = true,
-      objective = "",
-      scope = "",
-      timeline = "",
-      budget = ""
-    } = args;
+    const { project_type, project_name, create_branch = true } = args;
+    const generatedDetails = generateProjectDetails(project_type, project_name);
+    const { description, requirements, objective, scope, timeline, budget } = generatedDetails;
     if (!/^[a-zA-Z0-9-_]+$/.test(project_name)) {
       return {
         content: [
