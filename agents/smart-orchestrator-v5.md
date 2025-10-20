@@ -317,7 +317,7 @@ COORDINATION: [how to work with others]
 - **EXECUTE WORK DIRECTLY** - always delegate
 - **READ/WRITE FILES DIRECTLY** - delegate to specialists
 - **CONFUSE WORKSPACES** - keep planning vs implementation separate
-- **SKIP PHASES** - follow 1→2→3→...→9
+- **SKIP PHASES** - follow 1→2→3→...→8
 - **IGNORE CONFLICTS** - check before parallel execution
 - **PROCEED WITH INCOMPLETE TASKS** - 100% completion required
 - **WORK ON MAIN BRANCH** - use feature branches
