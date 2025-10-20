@@ -1,132 +1,102 @@
-# Implementation Tasks: effect-ecosystem-migration
+# Effect Ecosystem Migration: Implementation Tasks with TDD Strategy
 
-Code refactoring for effect-ecosystem-migration
+## Overview
+This document consolidates the Phase 4 reports from the planner, tester, and coder for refactoring the rules project to the Effect ecosystem. It integrates task decomposition, TDD strategies, and granular implementation details. The focus is on migrating CLI, MCP, and TUI components while ensuring high code quality, test coverage ≥95%, and clean architecture.
 
-## Phase 6: Implementation Tasks (Parallel Execution)
+## TDD Overall Strategy
+- **Approach**: Per-component waves using Red-Green-Refactor cycle.
+- **Tools**: Vitest with @effect/vitest for Effect-specific testing (e.g., testing layers, services, and effects).
+- **Coverage**: Achieve ≥95% coverage for new and refactored code. Use task-0 in each phase for test setup (e.g., integrating Effect's testing utilities, mocking layers).
+- **Integration**: Each task includes TDD steps: Red (write failing test), Green (minimal implementation), Refactor (clean code, integrate with Effect patterns like Dependency Injection via Layers).
+- **Commit Policy**: Commit after each task completion, with messages following semantic standards (e.g., `feat(CLI): add error handling layer`).
 
-### Parallel Execution Strategy
-- **Execution Waves**: {{EXECUTION_WAVES}}
-- **Wave 1 (Parallel)**: {{WAVE_1_TASKS}} - No dependencies, can start immediately
-- **Wave 2 (Parallel)**: {{WAVE_2_TASKS}} - Depends on Wave 1 completion
-- **Wave 3 (Parallel)**: {{WAVE_3_TASKS}} - Depends on Wave 2 completion
-- **Critical Path**: To be defined during task breakdown
-- **Max Parallel Tasks**: {{MAX_PARALLEL_TASKS}}
+## Top-Level Phases
+1. **Setup Phase**: Environment and dependency migration.
+2. **CLI Phase**: Core CLI commands and error handling (highest priority).
+3. **MCP Phase**: Multi-Command Protocol integration (second priority).
+4. **Validation Phase**: Testing and validation of integrations.
+5. **TUI Phase**: Terminal User Interface enhancements (lowest priority).
 
-## Implementation Tasks by Wave
+## Critical Path
+Setup → CLI → MCP → Validation (TUI is parallel but dependent on MCP stability). Dependencies ensure errors/services are handled before higher-level integrations.
 
-### Wave 1: Parallel Execution (No Dependencies)
-**Can execute simultaneously in single message**
-- [ ] **TASK_1**: {{TASK_1_DESCRIPTION}}
-  - **Priority**: {{TASK_1_PRIORITY}}
-  - **Dependencies**: {{TASK_1_DEPENDENCIES}}
-  - **Deliverable**: To be defined
-  - **Cleanup Required**: 
-    - [ ] Remove TODOs, console logs, debug code
-    - [ ] Eliminate code duplication
-    - [ ] Refactor for maintainability
-    - [ ] Verify code standards compliance
+## Risks and Mitigation
+- **Risk**: Effect layer complexity – Mitigation: Start with simple layers in CLI, use TDD to validate.
+- **Risk**: Test flakiness with async effects – Mitigation: Use @effect/vitest for reliable effect testing.
+- **Risk**: Breaking changes in dependencies – Mitigation: Pin versions, incremental commits.
 
-- [ ] **TASK_2**: {{TASK_2_DESCRIPTION}}
-  - **Priority**: {{TASK_2_PRIORITY}}
-  - **Dependencies**: {{TASK_2_DEPENDENCIES}}
-  - **Deliverable**: To be defined
-  - **Cleanup Required**: 
-    - [ ] Remove TODOs, console logs, debug code
-    - [ ] Eliminate code duplication
-    - [ ] Refactor for maintainability
-    - [ ] Verify code standards compliance
+## Success Criteria
+- All tasks completed with ≥95% test coverage.
+- CLI and MCP functional with Effect patterns (e.g., no imperative code, full effectful handling).
+- Clean code: SOLID principles, Effect's Do notation for sequencing, minimal mutations.
+- Documentation updated for each phase.
 
-- [ ] **TASK_3**: {{TASK_3_DESCRIPTION}}
-  - **Priority**: {{TASK_3_PRIORITY}}
-  - **Dependencies**: {{TASK_3_DEPENDENCIES}}
-  - **Deliverable**: To be defined
-  - **Cleanup Required**: 
-    - [ ] Remove TODOs, console logs, debug code
-    - [ ] Eliminate code duplication
-    - [ ] Refactor for maintainability
-    - [ ] Verify code standards compliance
+## Tasks by Phase
 
-### Wave 2: Parallel Execution (Wave 1 Dependencies)
-**Can execute simultaneously after Wave 1 complete**
-- [ ] **TASK_4**: {{TASK_4_DESCRIPTION}}
-  - **Priority**: {{TASK_4_PRIORITY}}
-  - **Dependencies**: {{TASK_4_DEPENDENCIES}}
-  - **Deliverable**: {{TASK_4_DELIVERABLE}}
-  - **Cleanup Required**: 
-    - [ ] Remove TODOs, console logs, debug code
-    - [ ] Eliminate code duplication
-    - [ ] Refactor for maintainability
-    - [ ] Verify code standards compliance
+### Phase 1: Setup Phase
+- **ID: setup-deps** (Task 1.1)
+  - Description: Update package.json with @effect/* packages, remove legacy deps.
+  - Dependencies: None.
+  - TDD Steps: 1. Red: Write test for import resolution. 2. Green: Basic install. 3. Refactor: Configure tsconfig for Effect.
+  - Agent: Coder.
+  - Estimate: 2h.
+  - Priority: High.
+  - File Impacts: package.json, tsconfig.json.
+  - Size: Small.
+  - Clean Code Focus: Ensure type safety with Effect generics.
+  - Commit: `chore(deps): migrate to effect ecosystem`.
 
-- [ ] **TASK_5**: {{TASK_5_DESCRIPTION}}
-  - **Priority**: {{TASK_5_PRIORITY}}
-  - **Dependencies**: {{TASK_5_DEPENDENCIES}}
-  - **Deliverable**: {{TASK_5_DELIVERABLE}}
-  - **Cleanup Required**: 
-    - [ ] Remove TODOs, console logs, debug code
-    - [ ] Eliminate code duplication
-    - [ ] Refactor for maintainability
-    - [ ] Verify code standards compliance
+- **ID: setup-tests** (Task 1.2)
+  - Description: Configure Vitest for Effect testing, add global mocks.
+  - Dependencies: setup-deps.
+  - TDD Steps: Red-Green-Refactor for test runner setup.
+  - Agent: Tester.
+  - Estimate: 1h.
+  - Priority: High.
+  - File Impacts: vitest.config.ts, test/setup.ts.
+  - Size: Small.
+  - Clean Code Focus: Modular test utilities.
+  - Commit: `test(setup): integrate @effect/vitest`.
 
-### Wave 3: Parallel Execution (Wave 2 Dependencies)
-**Can execute simultaneously after Wave 2 complete**
-- [ ] **TASK_6**: {{TASK_6_DESCRIPTION}}
-  - **Priority**: {{TASK_6_PRIORITY}}
-  - **Dependencies**: {{TASK_6_DEPENDENCIES}}
-  - **Deliverable**: {{TASK_6_DELIVERABLE}}
-  - **Cleanup Required**: 
-    - [ ] Remove TODOs, console logs, debug code
-    - [ ] Eliminate code duplication
-    - [ ] Refactor for maintainability
-    - [ ] Verify code standards compliance
+### Phase 2: CLI Phase
+- **ID: cli-errors** (Task 2.1)
+  - Description: Replace try-catch with Effect's tryCatch or custom error unions.
+  - Dependencies: Phase 1 complete.
+  - TDD Steps: 1. Red: Failing test for error propagation. 2. Green: Basic Effect error pipe. 3. Refactor: Layer for error service.
+  - Agent: Coder.
+  - Estimate: 3h.
+  - Priority: Critical.
+  - File Impacts: src/cli/errors.ts, src/services/errorService.ts.
+  - Size: Medium.
+  - Clean Code Focus: Error tagging and recovery patterns.
+  - Commit: `feat(CLI): implement error layer with effect`.
 
-- [ ] **TASK_7**: {{TASK_7_DESCRIPTION}}
-  - **Priority**: {{TASK_7_PRIORITY}}
-  - **Dependencies**: {{TASK_7_DEPENDENCIES}}
-  - **Deliverable**: {{TASK_7_DELIVERABLE}}
-  - **Cleanup Required**: 
-    - [ ] Remove TODOs, console logs, debug code
-    - [ ] Eliminate code duplication
-    - [ ] Refactor for maintainability
-    - [ ] Verify code standards compliance
+- (Additional CLI tasks: e.g., command parsing, service integration, following similar structure with continuous commits.)
 
-## Task Status Tracker
-| Task | Status | Completion |
-|------|--------|------------|
-| TASK-001 | Not Started | {{TASK_1_COMPLETE}}% |
-| TASK-002 | Not Started | {{TASK_2_COMPLETE}}% |
-| TASK-003 | Not Started | {{TASK_3_COMPLETE}}% |
-| {{TASK_4_ID}} | {{TASK_4_STATUS}} | {{TASK_4_COMPLETE}}% |
-| {{TASK_5_ID}} | {{TASK_5_STATUS}} | {{TASK_5_COMPLETE}}% |
-| {{TASK_6_ID}} | {{TASK_6_STATUS}} | {{TASK_6_COMPLETE}}% |
-| {{TASK_7_ID}} | {{TASK_7_STATUS}} | {{TASK_7_COMPLETE}}% |
+### Phase 3: MCP Phase
+- **Sample Task ID: mcp-service-di** (Task 3.2)
+  - Description: Create MCP Layer providing services, inject into CLI handlers.
+  - Dependencies: cli-handlers (from Phase 2).
+  - TDD Steps: 1. Red: Test for unresolved dependency. 2. Green: Provide mock layer. 3. Refactor: Real implementation with Do notation.
+  - Agent: Coder/Tester.
+  - Estimate: 4h.
+  - Priority: High.
+  - File Impacts: src/mcp/McpLayer.ts, src/services/McpService.ts, tests/mcp.test.ts.
+  - Size: Medium.
+  - Clean Code Focus: Use Effect's Context for tags, avoid global state.
+  - Commit: `feat(MCP): add dependency injection layer`.
 
-## Wave Execution Plan
-```
-Wave 1 (Parallel): {{WAVE_1_TASK_LIST}}
-Wave 2 (Parallel): {{WAVE_2_TASK_LIST}}  
-Wave 3 (Parallel): {{WAVE_3_TASK_LIST}}
+- (MCP tasks build on CLI, ensure validation, with TDD integration.)
 
-Dependencies:
-{{DEPENDENCY_MAP}}
-```
+### Phase 4: Validation Phase
+- (Tasks for integration tests, coverage checks, e.g., ID: validate-coverage – Description: Run coverage reports, fix gaps ≥95%.)
 
-## Completion Criteria by Wave
-**Wave 1 Complete:** All Wave 1 tasks finished
-**Wave 2 Complete:** All Wave 2 tasks finished  
-**Wave 3 Complete:** All Wave 3 tasks finished
+### Phase 5: TUI Phase
+- (Deferred tasks for UI enhancements, e.g., ID: tui-render – Description: Refactor TUI rendering with Effect streams, dependent on MCP.)
 
-**Phase 6 (Implementation) Complete:**
-- [ ] All waves completed sequentially
-- [ ] All cleanup requirements fulfilled for each task
-- [ ] Core functionality implemented
-- [ ] Integration points established
+## Granular Task Refinements
+- Merged planner's phases with coder's tasks: e.g., CLI broken into error-service-command waves.
+- Added sizes (small/medium/large) and file impacts for planning.
+- Clean code: Emphasize Effect idioms (pipes, flatMap, etc.) in refactors.
 
-## Risk Assessment
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| {{RISK_1}} | {{RISK_1_IMPACT}} | {{RISK_1_PROBABILITY}} | {{RISK_1_MITIGATION}} |
-| {{RISK_2}} | {{RISK_2_IMPACT}} | {{RISK_2_PROBABILITY}} | {{RISK_2_MITIGATION}} |
-
-## Notes & Adjustments
-{{NOTES_AND_ADJUSTMENTS}}
+Total Estimated Time: 40h across 25 tasks.
