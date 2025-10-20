@@ -33,8 +33,6 @@ function generateProjectDetails(
   requirements: string[];
   objective: string;
   scope: string;
-  timeline: string;
-  budget: string;
 } {
   // Generate intelligent defaults based on project type and name
   const descriptions = {
@@ -98,22 +96,6 @@ function generateProjectDetails(
     migration: 'Complete migration of existing functionality to new system or platform',
   };
 
-  const timelines = {
-    feature: '2-4 weeks depending on complexity',
-    bugfix: '1-3 days for critical issues, 1 week for standard fixes',
-    hotfix: 'Same day deployment',
-    refactor: '1-2 weeks depending on codebase size',
-    migration: '2-6 weeks depending on system complexity',
-  };
-
-  const budgets = {
-    feature: 'Medium - requires development, testing, and review resources',
-    bugfix: 'Low to Medium - depends on issue complexity',
-    hotfix: 'Low - minimal changes required',
-    refactor: 'Medium - development time with testing',
-    migration: 'High - significant planning and execution resources',
-  };
-
   return {
     description:
       descriptions[projectType as keyof typeof descriptions] || `Project for ${projectName}`,
@@ -126,8 +108,6 @@ function generateProjectDetails(
       objectives[projectType as keyof typeof objectives] ||
       `Complete ${projectName} project successfully`,
     scope: scopes[projectType as keyof typeof scopes] || 'Project scope to be defined',
-    timeline: timelines[projectType as keyof typeof timelines] || 'To be determined',
-    budget: budgets[projectType as keyof typeof budgets] || 'To be determined',
   };
 }
 
@@ -191,7 +171,7 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
 
     // Generate project details automatically
     const generatedDetails = generateProjectDetails(project_type, project_name);
-    const { description, requirements, objective, scope, timeline, budget } = generatedDetails;
+    const { description, requirements, objective, scope } = generatedDetails;
 
     // Validate project name
     if (!/^[a-zA-Z0-9-_]+$/.test(project_name)) {
@@ -266,8 +246,6 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
       // Plan specific
       OBJECTIVE: objective || `Implement ${project_name}`,
       SCOPE: scope || 'To be defined',
-      TIMELINE: timeline || 'To be defined',
-      BUDGET: budget || 'To be defined',
 
       // Tasks specific
       CRITICAL_PATH: 'To be defined during task breakdown',
@@ -330,8 +308,6 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
                 requirements,
                 objective,
                 scope,
-                timeline,
-                budget,
               },
               setup: {
                 branch_created: create_branch && branchResult.success,

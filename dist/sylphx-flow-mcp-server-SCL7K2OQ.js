@@ -493,20 +493,6 @@ function generateProjectDetails(projectType, projectName) {
     refactor: "Code structure improvements without changing external behavior",
     migration: "Complete migration of existing functionality to new system or platform"
   };
-  const timelines = {
-    feature: "2-4 weeks depending on complexity",
-    bugfix: "1-3 days for critical issues, 1 week for standard fixes",
-    hotfix: "Same day deployment",
-    refactor: "1-2 weeks depending on codebase size",
-    migration: "2-6 weeks depending on system complexity"
-  };
-  const budgets = {
-    feature: "Medium - requires development, testing, and review resources",
-    bugfix: "Low to Medium - depends on issue complexity",
-    hotfix: "Low - minimal changes required",
-    refactor: "Medium - development time with testing",
-    migration: "High - significant planning and execution resources"
-  };
   return {
     description: descriptions[projectType] || `Project for ${projectName}`,
     requirements: requirements[projectType] || [
@@ -515,9 +501,7 @@ function generateProjectDetails(projectType, projectName) {
       "Test and validate"
     ],
     objective: objectives[projectType] || `Complete ${projectName} project successfully`,
-    scope: scopes[projectType] || "Project scope to be defined",
-    timeline: timelines[projectType] || "To be determined",
-    budget: budgets[projectType] || "To be determined"
+    scope: scopes[projectType] || "Project scope to be defined"
   };
 }
 function runGitCommand(command) {
@@ -557,7 +541,7 @@ function projectStartupTool(args) {
   try {
     const { project_type, project_name, create_branch = true } = args;
     const generatedDetails = generateProjectDetails(project_type, project_name);
-    const { description, requirements, objective, scope, timeline, budget } = generatedDetails;
+    const { description, requirements, objective, scope } = generatedDetails;
     if (!/^[a-zA-Z0-9-_]+$/.test(project_name)) {
       return {
         content: [
@@ -617,8 +601,6 @@ function projectStartupTool(args) {
       // Plan specific
       OBJECTIVE: objective || `Implement ${project_name}`,
       SCOPE: scope || "To be defined",
-      TIMELINE: timeline || "To be defined",
-      BUDGET: budget || "To be defined",
       // Tasks specific
       CRITICAL_PATH: "To be defined during task breakdown",
       PARALLEL_OPPORTUNITIES: "To be identified during planning",
@@ -668,9 +650,7 @@ function projectStartupTool(args) {
                 description,
                 requirements,
                 objective,
-                scope,
-                timeline,
-                budget
+                scope
               },
               setup: {
                 branch_created: create_branch && branchResult.success,

@@ -18,21 +18,18 @@
   - **Priority**: {{TASK_1_PRIORITY}}
   - **Dependencies**: {{TASK_1_DEPENDENCIES}}
   - **Deliverable**: {{TASK_1_DELIVERABLE}}
-  - **Estimated**: {{TASK_1_ESTIMATE}} hours
 
 - [ ] **TASK_2**: {{TASK_2_DESCRIPTION}}
   - **Owner**: {{TASK_2_OWNER}}
   - **Priority**: {{TASK_2_PRIORITY}}
   - **Dependencies**: {{TASK_2_DEPENDENCIES}}
   - **Deliverable**: {{TASK_2_DELIVERABLE}}
-  - **Estimated**: {{TASK_2_ESTIMATE}} hours
 
 - [ ] **TASK_3**: {{TASK_3_DESCRIPTION}}
   - **Owner**: {{TASK_3_OWNER}}
   - **Priority**: {{TASK_3_PRIORITY}}
   - **Dependencies**: {{TASK_3_DEPENDENCIES}}
   - **Deliverable**: {{TASK_3_DELIVERABLE}}
-  - **Estimated**: {{TASK_3_ESTIMATE}} hours
 
 ## Wave 2: Core Development (Can run simultaneously)
 
@@ -42,14 +39,12 @@
   - **Priority**: {{TASK_4_PRIORITY}}
   - **Dependencies**: {{TASK_4_DEPENDENCIES}}
   - **Deliverable**: {{TASK_4_DELIVERABLE}}
-  - **Estimated**: {{TASK_4_ESTIMATE}} hours
 
 - [ ] **TASK_5**: {{TASK_5_DESCRIPTION}}
   - **Owner**: {{TASK_5_OWNER}}
   - **Priority**: {{TASK_5_PRIORITY}}
   - **Dependencies**: {{TASK_5_DEPENDENCIES}}
   - **Deliverable**: {{TASK_5_DELIVERABLE}}
-  - **Estimated**: {{TASK_5_ESTIMATE}} hours
 
 ### Frontend Development
 - [ ] **TASK_6**: {{TASK_6_DESCRIPTION}}
@@ -57,14 +52,12 @@
   - **Priority**: {{TASK_6_PRIORITY}}
   - **Dependencies**: {{TASK_6_DEPENDENCIES}}
   - **Deliverable**: {{TASK_6_DELIVERABLE}}
-  - **Estimated**: {{TASK_6_ESTIMATE}} hours
 
 - [ ] **TASK_7**: {{TASK_7_DESCRIPTION}}
   - **Owner**: {{TASK_7_OWNER}}
   - **Priority**: {{TASK_7_PRIORITY}}
   - **Dependencies**: {{TASK_7_DEPENDENCIES}}
   - **Deliverable**: {{TASK_7_DELIVERABLE}}
-  - **Estimated**: {{TASK_7_ESTIMATE}} hours
 
 ## Wave 3: Integration & Features (Dependencies on Wave 2)
 
@@ -74,14 +67,12 @@
   - **Priority**: {{TASK_8_PRIORITY}}
   - **Dependencies**: {{TASK_8_DEPENDENCIES}}
   - **Deliverable**: {{TASK_8_DELIVERABLE}}
-  - **Estimated**: {{TASK_8_ESTIMATE}} hours
 
 - [ ] **TASK_9**: {{TASK_9_DESCRIPTION}}
   - **Owner**: {{TASK_9_OWNER}}
   - **Priority**: {{TASK_9_PRIORITY}}
   - **Dependencies**: {{TASK_9_DEPENDENCIES}}
   - **Deliverable**: {{TASK_9_DELIVERABLE}}
-  - **Estimated**: {{TASK_9_ESTIMATE}} hours
 
 ### Feature Implementation
 - [ ] **TASK_10**: {{TASK_10_DESCRIPTION}}
@@ -89,7 +80,6 @@
   - **Priority**: {{TASK_10_PRIORITY}}
   - **Dependencies**: {{TASK_10_DEPENDENCIES}}
   - **Deliverable**: {{TASK_10_DELIVERABLE}}
-  - **Estimated**: {{TASK_10_ESTIMATE}} hours
 
 ## Wave 4: Quality & Deployment (Final wave)
 
@@ -99,14 +89,12 @@
   - **Priority**: {{TASK_11_PRIORITY}}
   - **Dependencies**: {{TASK_11_DEPENDENCIES}}
   - **Deliverable**: {{TASK_11_DELIVERABLE}}
-  - **Estimated**: {{TASK_11_ESTIMATE}} hours
 
 - [ ] **TASK_12**: {{TASK_12_DESCRIPTION}}
   - **Owner**: {{TASK_12_OWNER}}
   - **Priority**: {{TASK_12_PRIORITY}}
   - **Dependencies**: {{TASK_12_DEPENDENCIES}}
   - **Deliverable**: {{TASK_12_DELIVERABLE}}
-  - **Estimated**: {{TASK_12_ESTIMATE}} hours
 
 ### Deployment & Documentation
 - [ ] **TASK_13**: {{TASK_13_DESCRIPTION}}
@@ -114,14 +102,12 @@
   - **Priority**: {{TASK_13_PRIORITY}}
   - **Dependencies**: {{TASK_13_DEPENDENCIES}}
   - **Deliverable**: {{TASK_13_DELIVERABLE}}
-  - **Estimated**: {{TASK_13_ESTIMATE}} hours
 
 - [ ] **TASK_14**: {{TASK_14_DESCRIPTION}}
   - **Owner**: {{TASK_14_OWNER}}
   - **Priority**: {{TASK_14_PRIORITY}}
   - **Dependencies**: {{TASK_14_DEPENDENCIES}}
   - **Deliverable**: {{TASK_14_DELIVERABLE}}
-  - **Estimated**: {{TASK_14_ESTIMATE}} hours
 
 ## Dependency Graph
 ```
@@ -152,11 +138,11 @@ Wave 4 (Final):
 ```
 
 ## Task Assignment Matrix
-| Task | Specialist | Status | Start Date | End Date | Completion |
-|------|------------|--------|------------|----------|------------|
-| {{TASK_1_ID}} | {{TASK_1_OWNER}} | {{TASK_1_STATUS}} | {{TASK_1_START}} | {{TASK_1_END}} | {{TASK_1_COMPLETE}}% |
-| {{TASK_2_ID}} | {{TASK_2_OWNER}} | {{TASK_2_STATUS}} | {{TASK_2_START}} | {{TASK_2_END}} | {{TASK_2_COMPLETE}}% |
-| {{TASK_3_ID}} | {{TASK_3_OWNER}} | {{TASK_3_STATUS}} | {{TASK_3_START}} | {{TASK_3_END}} | {{TASK_3_COMPLETE}}% |
+| Task | Specialist | Status | Completion |
+|------|------------|--------|------------|
+| {{TASK_1_ID}} | {{TASK_1_OWNER}} | {{TASK_1_STATUS}} | {{TASK_1_COMPLETE}}% |
+| {{TASK_2_ID}} | {{TASK_2_OWNER}} | {{TASK_2_STATUS}} | {{TASK_2_COMPLETE}}% |
+| {{TASK_3_ID}} | {{TASK_3_OWNER}} | {{TASK_3_STATUS}} | {{TASK_3_COMPLETE}}% |
 
 ## Risk Assessment
 | Risk | Impact | Probability | Mitigation | Owner |

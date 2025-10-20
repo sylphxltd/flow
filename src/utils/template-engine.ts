@@ -92,8 +92,6 @@ export interface ProjectData extends TemplateData {
   // Plan specific
   OBJECTIVE: string;
   SCOPE: string;
-  TIMELINE: string;
-  BUDGET: string;
 
   // Tasks specific
   CRITICAL_PATH: string;
