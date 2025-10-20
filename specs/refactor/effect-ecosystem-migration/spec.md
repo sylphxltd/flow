@@ -67,34 +67,34 @@ The codebase is organized into:
 ## Transformed Requirements
 - Migrate custom error handling to Effect's typed errors (e.g., Effect.fail with branded errors, error layers: infra -> domain -> app).
 - Replace CLI (Commander) with @effect/cli for option parsing and command composition.
-- Replace MCP with @effect/ai for AI operations, ensuring Effect integration.
-- Integrate @effect/libsql for typed database effects, replacing direct libsql.
-- Update logging from console to @effect/log with spans and scopes.
+- Replace MCP (Model Context Protocol SDK) with @effect/ai for AI operations, ensuring full Effect wrapping for server/tools; no custom extensions beyond SDK.
+- Integrate @effect/libsql for typed database effects, replacing direct libsql; local-only SQLite, aim for full async/Effect coverage with low query volume.
+- Update logging from console to @effect/log with spans and scopes; preserve console output where possible, allow adaptations for structured output.
 - Refactor file system ops to @effect/platform FileSystem.
 - Convert async ops to Effect (Effect.promise, Effect.tryPromise, concurrency via Scope).
 
 No backward compatibility required.
 
 ## Acceptance Criteria
-- All components migrated: Errors use typed Effect fails with layers; CLI uses @effect/cli; MCP to @effect/ai; DB to @effect/libsql; logging to @effect/log; FS to @effect/platform; async to Effect types.
+- All components migrated in priority order: CLI commands first, then MCP server, TUI last. Errors use typed Effect fails with layers; CLI uses @effect/cli; MCP (SDK) to @effect/ai with full wrapping; DB to @effect/libsql; logging to @effect/log; FS to @effect/platform; async to Effect types.
+- Preserve console output where possible, with Effect logging adaptations for structured output.
 - No legacy imports or patterns (scan for Commander, fs/promises, console.log, etc.).
 - Code functional with Effect patterns (pipes, Layers, services).
 - Existing tests pass, adapted minimally for Effect (e.g., using Effect.test).
 - package.json updated: Add Effect libs, remove/replace old ones (e.g., commander, libsql if direct).
 
 ## Success Metrics
-- 100% Effect coverage: All async/file/DB/AI/CLI/logging use Effect patterns.
+- 100% Effect coverage: All async/file/DB/AI/CLI/logging use Effect patterns, including full async coverage for libSQL with low query volume.
 - Tests pass with Effect integrations (coverage >=95%, no Effect-specific failures).
 - Runtime: No errors, performance stable or improved (concurrency benefits).
 - Codebase scan: Zero legacy library usages.
 
-## Ambiguities (Pending Q&A)
-1. MCP module: Unclear if custom or specific package. Pending Q: What is MCP exactly (implementation details, dependencies)?
-2. CLI command scope: Which subcommands need full migration? Pending Q: List all CLI commands and their argument structures.
-3. Error layering: How to structure multi-layer errors (e.g., DB error bubbling to app)? Pending Q: Provide examples of domain-specific error hierarchies in Effect.
+## Clarifications (Post-Q&A)
+1. MCP: Model Context Protocol SDK for AI tools; full Effect wrapping for server/tools; no custom extensions beyond SDK.
+2. libSQL: Local-only SQLite for now; no remote plans; allow temporary sync if needed, but aim for full async/Effect; low query volume.
+3. CLI Priorities: Migrate CLI commands first, then MCP server, TUI last; preserve console output where possible, but allow Effect logging adaptations for structured output.
+4. Error Layering: Structure multi-layer errors as layered Effect fails (infra -> domain -> app), with examples in Effect documentation for domain-specific hierarchies.
 
-## Preliminary Research Findings and Clarifications
-None yet, pending Q&A responses.
 
 ## Project Scope
 - Full codebase refactor, configs, utils.
