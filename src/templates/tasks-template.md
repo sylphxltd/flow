@@ -33,7 +33,7 @@
 
 ## Wave 2: Core Development (Can run simultaneously)
 
-### Backend Development
+### Domain 2 Development
 - [ ] **TASK_4**: {{TASK_4_DESCRIPTION}}
   - **Owner**: {{TASK_4_OWNER}}
   - **Priority**: {{TASK_4_PRIORITY}}
@@ -46,7 +46,7 @@
   - **Dependencies**: {{TASK_5_DEPENDENCIES}}
   - **Deliverable**: {{TASK_5_DELIVERABLE}}
 
-### Frontend Development
+### Domain 3 Development
 - [ ] **TASK_6**: {{TASK_6_DESCRIPTION}}
   - **Owner**: {{TASK_6_OWNER}}
   - **Priority**: {{TASK_6_PRIORITY}}

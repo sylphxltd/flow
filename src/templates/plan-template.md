@@ -34,12 +34,17 @@ graph TB
 ### Phase 2: Parallel Research & Analysis
 **Simultaneous Research Streams:**
 ```
-→ Backend Specialist: Server architecture, APIs, data flow analysis
-→ Frontend Specialist: UI components, state management, user flows
-→ Database Specialist: Schema design, query optimization, data relationships
-→ Security Specialist: Security requirements, vulnerability assessment
-→ Performance Specialist: Performance bottlenecks, optimization opportunities
-→ Architect: Overall system design, technology validation
+→ {SPECIALIST_1}: {RESEARCH_DOMAIN_1}
+→ {SPECIALIST_2}: {RESEARCH_DOMAIN_2}
+→ {SPECIALIST_3}: {RESEARCH_DOMAIN_3}
+→ {SPECIALIST_4}: {RESEARCH_DOMAIN_4}
+→ {SPECIALIST_5}: {RESEARCH_DOMAIN_5}
+→ {SPECIALIST_6}: {RESEARCH_DOMAIN_6}
+
+Note: Same specialist can handle multiple domains:
+→ analyst: Security requirements analysis
+→ analyst: Performance bottleneck analysis
+→ architect: System design validation
 ```
 
 **Synchronization Points:**
@@ -50,12 +55,17 @@ graph TB
 ### Phase 3: Parallel Design & Planning
 **Simultaneous Design Streams:**
 ```
-→ Architect: System architecture, technology stack, integration patterns
-→ Frontend Engineer: Component architecture, UI/UX design, state management
-→ Backend Engineer: API design, service architecture, data flow
-→ Database Specialist: Data modeling, schema design, migration strategy
-→ Security Specialist: Security architecture, authentication/authorization
-→ Performance Specialist: Performance architecture, caching strategy
+→ {SPECIALIST_1}: {DESIGN_DOMAIN_1}
+→ {SPECIALIST_2}: {DESIGN_DOMAIN_2}
+→ {SPECIALIST_3}: {DESIGN_DOMAIN_3}
+→ {SPECIALIST_4}: {DESIGN_DOMAIN_4}
+→ {SPECIALIST_5}: {DESIGN_DOMAIN_5}
+→ {SPECIALIST_6}: {DESIGN_DOMAIN_6}
+
+Note: Same specialist can handle multiple design areas:
+→ architect: System architecture design
+→ architect: Technology stack validation
+→ security: Security architecture design
 ```
 
 **Integration Coordination:**
@@ -66,20 +76,29 @@ graph TB
 ### Phase 4: Parallel Task Breakdown
 **Domain-Specific Task Breakdown:**
 ```
-→ Each Specialist: Break down their domain tasks
-→ Planner: Map dependencies, identify critical path
-→ Architect: Ensure architectural consistency
+→ {SPECIALIST_1}: {TASK_BREAKDOWN_DOMAIN_1}
+→ {SPECIALIST_2}: {TASK_BREAKDOWN_DOMAIN_2}
+→ {SPECIALIST_3}: {TASK_BREAKDOWN_DOMAIN_3}
+
+Note: Same specialist can handle multiple breakdown areas:
+→ planner: Dependency mapping
+→ planner: Critical path analysis
 ```
 
 ## Implementation Phases
 
 ### Phase 6: Parallel Implementation
 #### Wave 1: Foundation (Parallel)
-- **Infrastructure Setup**: DevOps specialist
-- **Database Schema**: Database specialist
-- **API Framework**: Backend specialist
-- **UI Components**: Frontend specialist
-- **Testing Framework**: Tester specialist
+- **Infrastructure Setup**: {SPECIALIST_INFRASTRUCTURE}
+- **Database Schema**: {SPECIALIST_DATABASE}
+- **API Framework**: {SPECIALIST_API}
+- **UI Components**: {SPECIALIST_UI}
+- **Testing Framework**: {SPECIALIST_TESTING}
+
+Note: Same specialist can handle multiple foundation tasks:
+→ devops: Infrastructure setup
+→ devops: Testing framework configuration
+```
 
 #### Wave 2: Core Features (Parallel)
 - **Feature Implementation**: Multiple specialists by domain
@@ -87,29 +106,44 @@ graph TB
 - **Test Development**: Parallel test creation
 
 #### Wave 3: Integration & Quality (Parallel)
-- **Integration Testing**: Tester specialist
-- **Performance Testing**: Performance specialist
-- **Security Testing**: Security specialist
+- **Integration Testing**: {SPECIALIST_INTEGRATION_TEST}
+- **Performance Testing**: {SPECIALIST_PERFORMANCE_TEST}
+- **Security Testing**: {SPECIALIST_SECURITY_TEST}
+
+Note: Same specialist can handle multiple test types:
+→ tester: Integration testing
+→ tester: Security testing
+```
 - **Documentation**: All specialists
 
 ### Phase 7: Parallel Testing & Review
 **Simultaneous Testing Streams:**
 ```
-→ Tester: Functional testing, integration testing, test coverage
-→ Security Specialist: Security testing, vulnerability scanning
-→ Performance Specialist: Performance testing, load testing
-→ Frontend Engineer: UI/UX testing, accessibility testing
-→ Backend Engineer: API testing, endpoint validation
-→ Architect: Architecture validation, design review
+→ {SPECIALIST_1}: {TESTING_DOMAIN_1}
+→ {SPECIALIST_2}: {TESTING_DOMAIN_2}
+→ {SPECIALIST_3}: {TESTING_DOMAIN_3}
+→ {SPECIALIST_4}: {TESTING_DOMAIN_4}
+→ {SPECIALIST_5}: {TESTING_DOMAIN_5}
+→ {SPECIALIST_6}: {TESTING_DOMAIN_6}
+
+Note: Same specialist can handle multiple testing domains:
+→ tester: Functional testing
+→ tester: Integration testing
+→ security: Security vulnerability scanning
 ```
 
 ### Phase 8: Parallel Cleanup & Refactor
 **Simultaneous Cleanup Streams:**
 ```
-→ Each Specialist: Code cleanup and refactoring in their domain
-→ Performance Specialist: Performance optimization
-→ Security Specialist: Security improvements
-→ Architect: Architectural consistency validation
+→ {SPECIALIST_1}: {CLEANUP_DOMAIN_1}
+→ {SPECIALIST_2}: {CLEANUP_DOMAIN_2}
+→ {SPECIALIST_3}: {CLEANUP_DOMAIN_3}
+→ {SPECIALIST_4}: {CLEANUP_DOMAIN_4}
+
+Note: Same specialist can handle multiple cleanup areas:
+→ coder: Code cleanup
+→ coder: Performance optimization
+→ architect: Architecture validation
 ```
 
 ## Conflict Detection & Management
