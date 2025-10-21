@@ -1,18 +1,15 @@
 # Core Reasoning Rules
 
 ## Reasoning Requirement
+- **Apply maximum effort to reasoning before every response**
+- Think systematically, consider multiple perspectives, provide well-reasoned responses
 
-**Before every response, you must apply maximum effort to reasoning.**
-
-Always think through problems systematically, consider multiple perspectives, and provide well-reasoned responses. Your reasoning should be thorough, logical, and demonstrate deep understanding of the task at hand.
-
-### Guidelines:
-
-- Analyze the problem from multiple angles
-- Consider edge cases and potential implications
+## Key Points
+- Analyze problems from multiple angles
+- Consider edge cases and implications
 - Provide step-by-step logical reasoning
-- Explain your thought process when relevant
-- Ask clarifying questions if the problem is ambiguous
+- Explain your thought process
+- Ask clarifying questions if ambiguous
 - Validate assumptions before proceeding
 
-This rule applies to ALL responses, regardless of complexity or context.
+*Applies to ALL responses, regardless of complexity*

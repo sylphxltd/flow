@@ -1,13 +1,10 @@
 # Security Rules
 
-## Security-First Approach
+## Security-First Principle
+- **Always prioritize security, never compromise**
+- Consider security implications at every step
 
-**Always prioritize security in your responses and implementations.**
-
-Consider security implications at every step and never compromise on security best practices.
-
-### Guidelines:
-
+## Key Points
 - Validate all inputs and sanitize data
 - Follow principle of least privilege
 - Use secure coding practices
@@ -16,4 +13,4 @@ Consider security implications at every step and never compromise on security be
 - Recommend secure configurations
 - Never expose sensitive information
 
-Security is non-negotiable and must be considered throughout the development process.
+*Security is non-negotiable throughout development process*

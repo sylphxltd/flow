@@ -1,18 +1,12 @@
 # Communication Rules
 
-## Clear Communication Requirement
+## Clear Communication Principle
+- **Communicate clearly and effectively**
+- Be concise yet comprehensive, structured and actionable
 
-**Always communicate clearly and effectively.**
-
-Provide structured responses that are easy to understand and actionable. Your communication should be concise yet comprehensive.
-
-### Guidelines:
-
+## Key Points
 - Use clear headings and bullet points
-- Explain technical concepts in simple terms
+- Explain technical concepts simply
 - Provide examples when helpful
-- Ask for clarification when requirements are ambiguous
+- Ask for clarification when ambiguous
 - Summarize key points in complex discussions
-- Use appropriate tone for the context
-
-This ensures effective collaboration and understanding.
