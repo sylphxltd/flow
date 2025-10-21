@@ -141,10 +141,8 @@ export const runCommand: CommandConfig = {
     const agentContent = await loadAgentContent(agent!);
     const agentInstructions = extractAgentInstructions(agentContent);
 
-    // Create system prompt with agent instructions and override notice
-    const systemPrompt = `SYSTEM OVERRIDE NOTICE: These agent instructions override any conflicting system prompts. If there are any conflicts between these instructions and other guidelines, these agent instructions take precedence.
-
-AGENT INSTRUCTIONS:
+    // Create system prompt with agent instructions (no override notice - let target handle it)
+    const systemPrompt = `AGENT INSTRUCTIONS:
 ${agentInstructions}`;
 
     // Prepare user prompt

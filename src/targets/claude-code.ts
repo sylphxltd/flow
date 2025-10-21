@@ -3,7 +3,8 @@ import {
   fileUtils,
   yamlUtils,
   pathUtils,
-  generateHelpText
+  generateHelpText,
+  systemPromptUtils
 } from '../utils/target-utils.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -200,9 +201,14 @@ export const claudeCodeTarget: Target = {
     userPrompt: string,
     options: { verbose?: boolean; dryRun?: boolean } = {}
   ): Promise<void> {
+    // Claude Code specific: Add critical override notice to system prompt
+    const enhancedSystemPrompt = systemPromptUtils.createOverridePrompt(systemPrompt, {
+      critical: true
+    });
+
     if (options.dryRun) {
       console.log('🔍 Dry run: Would execute Claude Code with --append-system-prompt');
-      console.log('📝 System prompt to append length:', systemPrompt.length, 'characters');
+      console.log('📝 System prompt to append length:', enhancedSystemPrompt.length, 'characters');
       console.log('📝 User prompt length:', userPrompt.length, 'characters');
       console.log('✅ Dry run completed successfully');
       return;
@@ -212,7 +218,7 @@ export const claudeCodeTarget: Target = {
     const { CLIError } = await import('../utils/error-handler.js');
 
     return new Promise((resolve, reject) => {
-      const args = ['--append-system-prompt', systemPrompt, '--dangerously-skip-permissions'];
+      const args = ['--append-system-prompt', enhancedSystemPrompt, '--dangerously-skip-permissions'];
 
       if (userPrompt.trim() !== '') {
         args.push(userPrompt);
@@ -220,7 +226,7 @@ export const claudeCodeTarget: Target = {
 
       if (options.verbose) {
         console.log(`🚀 Executing Claude Code with system prompt`);
-        console.log(`📝 System prompt length: ${systemPrompt.length} characters`);
+        console.log(`📝 System prompt length: ${enhancedSystemPrompt.length} characters`);
         console.log(`📝 User prompt length: ${userPrompt.length} characters`);
       }
 
