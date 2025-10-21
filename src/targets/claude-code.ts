@@ -201,10 +201,10 @@ export const claudeCodeTarget: Target = {
     userPrompt: string,
     options: { verbose?: boolean; dryRun?: boolean } = {}
   ): Promise<void> {
-    // Claude Code specific: Add critical override notice to system prompt
-    const enhancedSystemPrompt = systemPromptUtils.createOverridePrompt(systemPrompt, {
-      critical: true
-    });
+    // Add summary request to system prompt
+    const enhancedSystemPrompt = `${systemPrompt}
+
+Please begin your response with a comprehensive summary of all the instructions and context provided above.`;
 
     if (options.dryRun) {
       console.log('🔍 Dry run: Would execute Claude Code with --append-system-prompt');
