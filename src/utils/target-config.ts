@@ -26,11 +26,10 @@ export async function addMCPServersToTarget(
   targetId: string,
   serverTypes: MCPServerID[]
 ): Promise<void> {
-  const target = targetManager.getTargetDefinition(targetId as any);
-  const transformer = await targetManager.getTransformer(targetId as any);
+  const target = targetManager.getTarget(targetId);
 
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
 
   if (!target.config.installation.supportedMcpServers) {
@@ -38,7 +37,7 @@ export async function addMCPServersToTarget(
   }
 
   // Read current configuration
-  const config = await transformer.readConfig(cwd);
+  const config = await target.readConfig(cwd);
 
   // Initialize MCP section if it doesn't exist
   const mcpConfigPath = target.config.mcpConfigPath;
@@ -58,7 +57,7 @@ export async function addMCPServersToTarget(
     if (mcpSection[server.name]) {
       console.log(`ℹ️  MCP server already exists: ${server.name}`);
     } else {
-      const transformedConfig = transformer.transformMCPConfig(server.config);
+      const transformedConfig = target.transformMCPConfig(server.config);
       mcpSection[server.name] = transformedConfig;
       console.log(`📦 Added MCP server: ${server.name} (${server.description})`);
       addedCount++;
@@ -66,7 +65,7 @@ export async function addMCPServersToTarget(
   }
 
   // Write the updated configuration
-  await transformer.writeConfig(cwd, config);
+  await target.writeConfig(cwd, config);
   console.log(`✅ Updated ${target.config.configFile} with ${addedCount} new MCP server(s)`);
 }
 
@@ -78,15 +77,14 @@ export async function removeMCPServersFromTarget(
   targetId: string,
   serverTypes: MCPServerID[]
 ): Promise<void> {
-  const target = targetManager.getTargetDefinition(targetId as any);
-  const transformer = await targetManager.getTransformer(targetId as any);
+  const target = targetManager.getTarget(targetId);
 
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
 
   // Read current configuration
-  const config = await transformer.readConfig(cwd);
+  const config = await target.readConfig(cwd);
 
   // Get MCP section
   const mcpConfigPath = target.config.mcpConfigPath;
@@ -124,7 +122,7 @@ export async function removeMCPServersFromTarget(
   }
 
   // Write the updated configuration
-  await transformer.writeConfig(cwd, config);
+  await target.writeConfig(cwd, config);
   console.log(`✅ Updated ${target.config.configFile} (removed ${removedCount} MCP server(s))`);
 }
 
@@ -132,15 +130,14 @@ export async function removeMCPServersFromTarget(
  * List currently configured MCP servers for a target
  */
 export async function listMCPServersForTarget(cwd: string, targetId: string): Promise<void> {
-  const target = targetManager.getTargetDefinition(targetId as any);
-  const transformer = await targetManager.getTransformer(targetId as any);
+  const target = targetManager.getTarget(targetId);
 
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
 
   // Read current configuration
-  const config = await transformer.readConfig(cwd);
+  const config = await target.readConfig(cwd);
 
   // Get MCP section
   const mcpConfigPath = target.config.mcpConfigPath;
@@ -184,11 +181,10 @@ export async function configureMCPServerForTarget(
   targetId: string,
   serverType: MCPServerID
 ): Promise<boolean> {
-  const target = targetManager.getTargetDefinition(targetId as any);
-  const transformer = await targetManager.getTransformer(targetId as any);
+  const target = targetManager.getTarget(targetId);
 
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
 
   const server = MCP_SERVER_REGISTRY[serverType];
@@ -208,7 +204,7 @@ export async function configureMCPServerForTarget(
   console.log(`🔧 Configuring ${server.description} for ${target.name}...`);
 
   // Check if server already exists
-  const config = await transformer.readConfig(cwd);
+  const config = await target.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
   const mcpSection = getNestedProperty(config, mcpConfigPath);
   const isServerInstalled = !!mcpSection?.[server.name];
@@ -242,7 +238,7 @@ export async function configureMCPServerForTarget(
         setNestedProperty(config, mcpConfigPath, mcpSection);
       }
 
-      await transformer.writeConfig(cwd, config);
+      await target.writeConfig(cwd, config);
       return false;
     }
     if (isServerInstalled && hasExistingValidKeys) {
@@ -279,7 +275,7 @@ export async function configureMCPServerForTarget(
     // Create new config with API keys
     const baseConfig = server.config;
     if (baseConfig.type === 'local') {
-      const transformedConfig = transformer.transformMCPConfig(baseConfig);
+      const transformedConfig = target.transformMCPConfig(baseConfig);
       mcpSectionForUpdate[server.name] = {
         ...transformedConfig,
         environment: {
@@ -289,7 +285,7 @@ export async function configureMCPServerForTarget(
       };
     } else {
       // HTTP server - just add the base config
-      const transformedConfig = transformer.transformMCPConfig(baseConfig);
+      const transformedConfig = target.transformMCPConfig(baseConfig);
       mcpSectionForUpdate[server.name] = transformedConfig;
     }
   }
@@ -298,7 +294,7 @@ export async function configureMCPServerForTarget(
   setNestedProperty(config, mcpConfigPath, mcpSectionForUpdate);
 
   // Write updated configuration
-  await transformer.writeConfig(cwd, config);
+  await target.writeConfig(cwd, config);
   console.log(`✅ Updated ${server.name} with API keys for ${target.name}`);
   return true;
 }
@@ -306,29 +302,39 @@ export async function configureMCPServerForTarget(
 /**
  * Get target-specific help text
  */
-export async function getTargetHelpText(targetId: string): Promise<string> {
-  return await targetManager.getTargetHelpText(targetId as any);
+export function getTargetHelpText(targetId: string): string {
+  const target = targetManager.getTarget(targetId);
+  return target ? target.getHelpText() : '';
 }
 
 /**
  * Get all available targets help text
  */
 export function getAllTargetsHelpText(): string {
-  return targetManager.getTargetsHelpText();
+  const targets = targetManager.getImplementedTargets();
+  return targets.map(target => target.getHelpText()).join('\n\n');
 }
 
 /**
  * Validate target and return target ID
  */
 export function validateTarget(targetId: string): string {
-  return targetManager.validateTarget(targetId);
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`);
+  }
+  if (!target.isImplemented) {
+    throw new Error(`Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`);
+  }
+  return targetId;
 }
 
 /**
  * Check if target supports MCP servers
  */
 export function targetSupportsMCPServers(targetId: string): boolean {
-  return targetManager.supportsMCPServers(targetId as any);
+  const target = targetManager.getTarget(targetId);
+  return target?.config.installation.supportedMcpServers ?? false;
 }
 
 /**

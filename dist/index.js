@@ -1106,16 +1106,15 @@ async function installAgents(options) {
   const cwd = process.cwd();
   const results = [];
   const targetId = await targetManager.resolveTarget({ target: options.target });
-  const target = targetManager.getTargetDefinition(targetId);
-  const transformer = await targetManager.getTransformer(targetId);
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
   console.log(`\u{1F4DD} Using target: ${target.name}`);
   const config = target.config;
   const agentsDir = path6.join(cwd, config.agentDir);
   const processContent = async (content, sourcePath) => {
-    return await transformer.transformAgentContent(content, void 0, sourcePath);
+    return await target.transformAgentContent(content, void 0, sourcePath);
   };
   if (options.clear && fs6.existsSync(agentsDir)) {
     let expectedFiles;
@@ -1183,7 +1182,10 @@ async function installAgents(options) {
 async function installRules(options) {
   const cwd = process.cwd();
   const targetId = await targetManager.resolveTarget({ target: options.target });
-  const target = targetManager.getTargetDefinition(targetId);
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
+  }
   if (!target.config.rulesFile) {
     return;
   }
@@ -1233,15 +1235,14 @@ ${ruleMainContent}
 
 // src/utils/target-config.ts
 async function addMCPServersToTarget(cwd, targetId, serverTypes) {
-  const target = targetManager.getTargetDefinition(targetId);
-  const transformer = await targetManager.getTransformer(targetId);
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
   if (!target.config.installation.supportedMcpServers) {
     throw new Error(`Target ${targetId} does not support MCP servers`);
   }
-  const config = await transformer.readConfig(cwd);
+  const config = await target.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
   const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
   setNestedProperty(config, mcpConfigPath, mcpSection);
@@ -1255,22 +1256,21 @@ async function addMCPServersToTarget(cwd, targetId, serverTypes) {
     if (mcpSection[server.name]) {
       console.log(`\u2139\uFE0F  MCP server already exists: ${server.name}`);
     } else {
-      const transformedConfig = transformer.transformMCPConfig(server.config);
+      const transformedConfig = target.transformMCPConfig(server.config);
       mcpSection[server.name] = transformedConfig;
       console.log(`\u{1F4E6} Added MCP server: ${server.name} (${server.description})`);
       addedCount++;
     }
   }
-  await transformer.writeConfig(cwd, config);
+  await target.writeConfig(cwd, config);
   console.log(`\u2705 Updated ${target.config.configFile} with ${addedCount} new MCP server(s)`);
 }
 async function listMCPServersForTarget(cwd, targetId) {
-  const target = targetManager.getTargetDefinition(targetId);
-  const transformer = await targetManager.getTransformer(targetId);
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
-  const config = await transformer.readConfig(cwd);
+  const config = await target.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
   const mcpSection = getNestedProperty(config, mcpConfigPath);
   if (!mcpSection || Object.keys(mcpSection).length === 0) {
@@ -1297,10 +1297,9 @@ async function listMCPServersForTarget(cwd, targetId) {
   }
 }
 async function configureMCPServerForTarget(cwd, targetId, serverType) {
-  const target = targetManager.getTargetDefinition(targetId);
-  const transformer = await targetManager.getTransformer(targetId);
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
   const server = MCP_SERVER_REGISTRY[serverType];
   if (!server) {
@@ -1314,7 +1313,7 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
     return true;
   }
   console.log(`\u{1F527} Configuring ${server.description} for ${target.name}...`);
-  const config = await transformer.readConfig(cwd);
+  const config = await target.readConfig(cwd);
   const mcpConfigPath = target.config.mcpConfigPath;
   const mcpSection = getNestedProperty(config, mcpConfigPath);
   const isServerInstalled = !!mcpSection?.[server.name];
@@ -1338,7 +1337,7 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
       } else {
         setNestedProperty(config, mcpConfigPath, mcpSection);
       }
-      await transformer.writeConfig(cwd, config);
+      await target.writeConfig(cwd, config);
       return false;
     }
     if (isServerInstalled && hasExistingValidKeys) {
@@ -1365,7 +1364,7 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
   } else {
     const baseConfig = server.config;
     if (baseConfig.type === "local") {
-      const transformedConfig = transformer.transformMCPConfig(baseConfig);
+      const transformedConfig = target.transformMCPConfig(baseConfig);
       mcpSectionForUpdate[server.name] = {
         ...transformedConfig,
         environment: {
@@ -1374,20 +1373,28 @@ async function configureMCPServerForTarget(cwd, targetId, serverType) {
         }
       };
     } else {
-      const transformedConfig = transformer.transformMCPConfig(baseConfig);
+      const transformedConfig = target.transformMCPConfig(baseConfig);
       mcpSectionForUpdate[server.name] = transformedConfig;
     }
   }
   setNestedProperty(config, mcpConfigPath, mcpSectionForUpdate);
-  await transformer.writeConfig(cwd, config);
+  await target.writeConfig(cwd, config);
   console.log(`\u2705 Updated ${server.name} with API keys for ${target.name}`);
   return true;
 }
 function validateTarget(targetId) {
-  return targetManager.validateTarget(targetId);
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(", ")}`);
+  }
+  if (!target.isImplemented) {
+    throw new Error(`Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(", ")}`);
+  }
+  return targetId;
 }
 function targetSupportsMCPServers(targetId) {
-  return targetManager.supportsMCPServers(targetId);
+  const target = targetManager.getTarget(targetId);
+  return target?.config.installation.supportedMcpServers ?? false;
 }
 function getNestedProperty(obj, path8) {
   return path8.split(".").reduce((current, key) => current?.[key], obj);
@@ -1471,7 +1478,7 @@ var initCommand = {
   options: [
     {
       flags: "--target <type>",
-      description: `Force specific target (${targetManager.getImplementedTargets().join(", ")}, default: opencode)`
+      description: `Force specific target (${targetManager.getImplementedTargetIDs().join(", ")}, default: opencode)`
     },
     { flags: "--verbose", description: "Show detailed output" },
     { flags: "--dry-run", description: "Show what would be done without making changes" },
@@ -1536,14 +1543,14 @@ var initCommand = {
     console.log("\u{1F389} Setup complete!");
     console.log("");
     console.log("\u{1F4CB} Next steps:");
-    const target = targetManager.getTargetDefinition(targetId);
+    const target = targetManager.getTarget(targetId);
     if (targetId === "opencode") {
       console.log("   \u2022 Open OpenCode and start using your agents!");
       if (options.mcp !== false) {
         console.log("   \u2022 MCP tools will be automatically loaded by OpenCode");
       }
     } else {
-      console.log(`   \u2022 Start using your agents with ${target.name}!`);
+      console.log(`   \u2022 Start using your agents with ${target?.name || targetId}!`);
       console.log(`   \u2022 Run 'sylphx-flow init --help' for target-specific information`);
     }
   }

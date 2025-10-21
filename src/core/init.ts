@@ -67,11 +67,10 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
   // Resolve target using the target manager
   const targetId = await targetManager.resolveTarget({ target: options.target });
-  const target = targetManager.getTargetDefinition(targetId);
-  const transformer = await targetManager.getTransformer(targetId);
+  const target = targetManager.getTarget(targetId);
 
-  if (!transformer) {
-    throw new Error(`No transformer available for target: ${targetId}`);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
 
   console.log(`📝 Using target: ${target.name}`);
@@ -79,9 +78,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   const config = target.config;
   const agentsDir = path.join(cwd, config.agentDir);
 
-  // Use the transformer to process content
+  // Use the target to process content
   const processContent = async (content: string, sourcePath?: string) => {
-    return await transformer.transformAgentContent(content, undefined, sourcePath);
+    return await target.transformAgentContent(content, undefined, sourcePath);
   };
 
   // Clear obsolete agents if requested
@@ -184,7 +183,11 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
   // Resolve target using the target manager
   const targetId = await targetManager.resolveTarget({ target: options.target });
-  const target = targetManager.getTargetDefinition(targetId);
+  const target = targetManager.getTarget(targetId);
+
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
+  }
 
   // Only install rules if the target has a rulesFile configured
   if (!target.config.rulesFile) {

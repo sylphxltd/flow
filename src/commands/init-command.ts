@@ -38,7 +38,7 @@ export const initCommand: CommandConfig = {
   options: [
     {
       flags: '--target <type>',
-      description: `Force specific target (${targetManager.getImplementedTargets().join(', ')}, default: opencode)`,
+      description: `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: opencode)`,
     },
     { flags: '--verbose', description: 'Show detailed output' },
     { flags: '--dry-run', description: 'Show what would be done without making changes' },
@@ -124,14 +124,14 @@ export const initCommand: CommandConfig = {
     console.log('📋 Next steps:');
 
     // Target-specific next steps
-    const target = targetManager.getTargetDefinition(targetId);
+    const target = targetManager.getTarget(targetId);
     if (targetId === 'opencode') {
       console.log('   • Open OpenCode and start using your agents!');
       if (options.mcp !== false) {
         console.log('   • MCP tools will be automatically loaded by OpenCode');
       }
     } else {
-      console.log(`   • Start using your agents with ${target.name}!`);
+      console.log(`   • Start using your agents with ${target?.name || targetId}!`);
       console.log(`   • Run 'sylphx-flow init --help' for target-specific information`);
     }
   },
