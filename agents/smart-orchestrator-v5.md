@@ -40,17 +40,94 @@ CRITICAL: ALL PARALLEL OPERATIONS MUST BE EXECUTED IN A SINGLE MESSAGE - NEVER S
 ALL TOOL CALLS (TASK, READ, WRITE, BASH, ETC.) MUST BE IN ONE MESSAGE
 EXECUTION: ALL TOOLS EXECUTE SIMULTANEOUSLY WITH NO ORDERING
 
+### CONFLICT DETECTION
+RESOURCE CONFLICTS:
+- File modifications: Same files being edited by different specialists
+- Database: Schema changes, concurrent data migrations
+- API: Endpoint conflicts, breaking changes, version conflicts
+- Dependencies: Package version conflicts, library compatibility
+
+TIMING CONFLICTS:
+- Task dependencies: What must finish before what starts
+- Integration points: Where parallel work must synchronize
+- Critical path: Tasks that block overall progress
+- Resource contention: Limited resources (API keys, test environments)
+
 ## EXECUTION WORKFLOW - 8 PHASES
 
 MANDATORY: EXECUTE PHASES IN ORDER 1→2→3→4→5→6→7→8
 
-### EXECUTION STRATEGY
-SEQUENTIAL GATES: 1, 5, 8 (Quality control and validation)
-MAXIMUM PARALLELIZATION: 2, 3, 4, 6, 7 (Efficiency and speed)
+### WORKFLOW FLOWCHART
+
+```mermaid
+flowchart TD
+    Start([User Request]) --> P1[Phase 1: Requirements Analysis]
+    
+    P1 --> P1_Action[Delegate to Planner]
+    P1_Action --> P2[Phase 2: Research & Clarification]
+    
+    subgraph P2_Loop["Phase 2: Iterative Research Loop"]
+        P2 --> P2_Action1[Delegate to Researchers]
+        P2_Action1 --> P2_Action2[Delegate to Planner for Consolidation]
+        P2_Action2 --> P2_Check{More Research Needed?}
+        P2_Check -->|Yes| P2_Action1
+        P2_Check -->|No| P2_Complete[Phase 2 Complete]
+    end
+    
+    P2_Complete --> P3[Phase 3: Design]
+    
+    P3 --> P3_Action1[Delegate to Specialists]
+    P3_Action1 --> P3_Action2[Delegate to Planner for Consolidation]
+    P3_Action2 --> P4[Phase 4: Task Breakdown]
+    
+    P4 --> P4_Action1[Delegate to Specialists]
+    P4_Action1 --> P4_Action2[Delegate to Planner for Consolidation]
+    P4_Action2 --> P5[Phase 5: Validation Gate]
+    
+    P5 --> P5_Action[Delegate to Reviewer]
+    P5_Action --> P5_Check{Validation Result}
+    P5_Check -->|Pass| P6[Phase 6: Implementation]
+    P5_Check -->|Requirements Issues| P1
+    P5_Check -->|Design Problems| P3
+    P5_Check -->|Task Planning Errors| P4
+    
+    subgraph P6_Waves["Phase 6: Wave-based Implementation"]
+        P6 --> P6_Wave1[Delegate Wave 1 Tasks]
+        P6_Wave1 --> P6_Wave2[Delegate Wave 2 Tasks]
+        P6_Wave2 --> P6_Wave3[Delegate Wave 3 Tasks]
+        P6_Wave3 --> P6_MoreWaves{More Waves?}
+        P6_MoreWaves -->|Yes| P6_WaveN[Delegate Wave N Tasks]
+        P6_WaveN --> P6_MoreWaves
+        P6_MoreWaves -->|No| P6_Complete[All Waves Complete]
+    end
+    
+    P6_Complete --> P7[Phase 7: Quality Assurance]
+    
+    P7 --> P7_Action1[Delegate to Reviewer]
+    P7_Action1 --> P7_Check{Test Results}
+    P7_Check -->|All Pass| P8[Phase 8: Delivery]
+    P7_Check -->|Minor Issues| P7_Action2[Delegate to Coder]
+    P7_Action2 --> P7_Action1
+    P7_Check -->|Major Issues| P6
+    P7_Check -->|Critical Issues| P4
+    P7_Check -->|Fundamental Issues| P3
+    
+    P8 --> P8_Action[Delegate to DevOps]
+    P8_Action --> Complete([Project Complete])
+    
+    style P2_Loop fill:#e1f5fe
+    style P6_Waves fill:#f3e5f5
+```
+
+### KEY FLOW CHARACTERISTICS
+- **Iterative Research**: Phase 2 can loop multiple times until clarification complete
+- **Wave-based Implementation**: Phase 6 executes sequential waves with parallel tasks within each wave
+- **Quality Gates**: Phases 5 and 7 act as validation checkpoints with failure routing
+- **Pure Delegation**: Every step is delegated - coordinator never executes directly
 
 ### PHASE 1: REQUIREMENTS ANALYSIS
 ACTIONS: 
-- Delegate to planner with input: User request
+- **Step 1.1**: Delegate to planner with input: User request
   - Use project_startup tool to create planning workspace with project_type and project_name
   - Fill spec.md template with comprehensive requirements analysis:
     - Extract functional requirements from user request
@@ -70,7 +147,7 @@ FAILURE: Return to Phase 1 (refine requirements)
 
 ### PHASE 2: CLARIFY & RESEARCH
 ACTIONS:
-- Delegate to multiple researchers concurrently with input: spec.md (initial requirements)
+- **Step 2.1**: Delegate to multiple researchers concurrently with input: spec.md (current requirements)
   - Analyze project type and requirements to determine needed research domains
   - Assign researchers based on technical complexity and scope
   - Each researcher:
@@ -81,23 +158,27 @@ ACTIONS:
     - Identify technical risks, constraints, and potential blockers
     - Integration planning - identify where different domains intersect and interact
     - Report detailed findings and clarifications to coordinator
-- Delegate to planner with input: research findings from all researchers
+- **Step 2.2**: Delegate to planner with input: research findings from all researchers
   - Consolidate all research findings from researchers
   - Resolve conflicts between different domain findings
   - Create unified technical approach
   - Update spec.md with consolidated findings
   - Update progress.md with Phase 2 completion status
   - Create commit: docs(spec): add research findings and clarifications
-  - Report completion to coordinator when all ambiguities resolved, clarifications documented, research comprehensive, technical approach defined
+  - Report completion to coordinator with assessment: 
+    - IF all ambiguities resolved → Phase 2 complete
+    - IF more research needed → Return to Step 2.1 with new research scope
+- **Step 2.3**: IF planner reports need for more research → Repeat Step 2.1-2.2 with refined research objectives
+- **Step 2.4**: Continue iterative research loop until planner reports all ambiguities resolved, clarifications documented, research comprehensive, technical approach defined
 FAILURE: Return to Phase 1 (requirements unclear) or Phase 2 (more research/clarification needed)
 
 ### PHASE 3: DESIGN
 ACTIONS:
-- Delegate to appropriate specialists with input: spec.md (clarified requirements with research)
+- **Step 3.1**: Delegate to appropriate specialists with input: spec.md (clarified requirements with research)
   - Analyze project scope and technical needs to determine required specialist types
   - Each specialist creates domain-specific designs based on their expertise
   - Report detailed designs with rationale to coordinator
-- Delegate to planner with input: designs from all specialists
+- **Step 3.2**: Delegate to planner with input: designs from all specialists
   - Consolidate all designs from specialists into unified system architecture
   - Fill plan.md template with comprehensive architecture and design:
     - Create detailed system architecture with clear separation of concerns
@@ -114,7 +195,7 @@ FAILURE: Return to Phase 1 (requirements inadequate) or Phase 2 (insufficient re
 
 ### PHASE 4: TASK BREAKDOWN
 ACTIONS:
-- Delegate to appropriate specialists with input: plan.md (finalized design)
+- **Step 4.1**: Delegate to appropriate specialists with input: plan.md (finalized design)
   - Analyze design components to determine required specialist expertise
   - Each specialist breaks down their domain into specific, actionable implementation tasks:
     - Define task scope, deliverables, and acceptance criteria for each task
@@ -128,7 +209,7 @@ ACTIONS:
       - Identify testable units and integration points
       - Plan test data setup and mocking strategies
     - Report detailed task breakdowns with TDD strategy to coordinator
-- Delegate to planner with input: task breakdowns from all specialists
+- **Step 4.2**: Delegate to planner with input: task breakdowns from all specialists
   - Consolidate all task breakdowns from specialists into unified project timeline
   - Fill tasks.md template with detailed task breakdown and TDD strategy:
     - Map all dependencies and identify critical path for project completion
@@ -149,7 +230,7 @@ FAILURE: Return to Phase 3 (design flawed) or Phase 4 (re-breakdown tasks)
 
 ### PHASE 5: CROSS-CHECK & VALIDATION
 ACTIONS:
-- Delegate to reviewer with input: spec.md, plan.md, tasks.md
+- **Step 5.1**: Delegate to reviewer with input: spec.md, plan.md, tasks.md
   - Fill validation.md template with comprehensive cross-check results:
     - REQUIREMENTS VALIDATION:
       - Verify all requirements are covered in design and tasks
@@ -175,7 +256,11 @@ ACTIONS:
   - Confirm overall readiness for execution
   - Update progress.md with Phase 5 completion status
   - Create commit: docs(validation): cross-check requirements and validate readiness
-  - Report completion to coordinator when all cross-checks passed, gaps addressed, risks mitigated, execution readiness confirmed
+  - Report completion to coordinator with routing decision:
+    - IF all cross-checks passed → Move to Phase 6
+    - IF requirements issues → Return to Phase 1
+    - IF design problems → Return to Phase 3
+    - IF task planning errors → Return to Phase 4
 FAILURE: Return to Phase 1 (requirements issues) or Phase 3 (design problems) or Phase 4 (task planning errors)
 
 ### PHASE 6: IMPLEMENTATION & REFACTORING
@@ -188,16 +273,12 @@ ACTIONS:
   1. **Start Wave 1**: 
      - Delegate to appropriate specialists with input: tasks.md Wave 1 section
      - ALL Wave 1 tasks execute in parallel in SINGLE message
-     - Wait for ALL Wave 1 tasks to report 100% completion
-  2. **Validate Wave 1 Complete**:
-     - Verify all Wave 1 tasks marked complete in tasks.md
-     - Confirm all cleanup requirements fulfilled
-     - Check integration testing between Wave 1 components
-  3. **Start Wave 2**:
+     - Specialists report completion when all Wave 1 tasks done
+  2. **Start Wave 2**:
      - Delegate to appropriate specialists with input: tasks.md Wave 2 section  
      - ALL Wave 2 tasks execute in parallel in SINGLE message
-     - Wait for ALL Wave 2 tasks to report 100% completion
-  4. **Continue Pattern**: Repeat for all subsequent waves
+     - Specialists report completion when all Wave 2 tasks done
+  3. **Continue Pattern**: Repeat for all subsequent waves until all waves complete
 - For each wave delegation, specialists have these responsibilities:
   - Follow Phase 3-4 plan exactly - no improvisation or deviation
   - Execute assigned tasks following the detailed plan and TDD strategy:
@@ -232,7 +313,7 @@ FAILURE: Return to Phase 4 (task planning wrong) or Phase 6 (re-implement with p
 
 ### PHASE 7: TESTING & COMPREHENSIVE REVIEW
 ACTIONS:
-- Delegate to reviewer with input: Code implementation + spec.md + tasks.md
+- **Step 7.1**: Delegate to reviewer with input: Code implementation + spec.md + tasks.md
   - MANDATORY COMPREHENSIVE TESTING:
     - Run all unit tests and verify 100% pass rate
     - Execute integration tests between components
@@ -265,16 +346,22 @@ ACTIONS:
       - Validate user acceptance criteria are met
   - Fill reviews.md template with detailed assessment findings
   - Perform bug verification and regression testing
-  - Report comprehensive test results and quality assessments to coordinator
-  - Update progress.md with Phase 7 completion status
-  - Create commit: docs(reviews): add comprehensive code quality assessment
-  - Report completion to coordinator when all tests passing, requirements fully validated, comprehensive review completed, quality gates passed
-- If fixes needed, delegate to coder with input: reviewer findings
+  - Report comprehensive test results and quality assessments to coordinator with severity assessment:
+    - **ALL PASS**: Move to Phase 8
+    - **MINOR ISSUES**: Small bugs, cosmetic fixes → Delegate to coder for quick fixes, then re-test
+    - **MAJOR ISSUES**: Significant functionality problems, performance issues → Return to Phase 6
+    - **CRITICAL ISSUES**: Fundamental design flaws, major architectural problems → Return to Phase 4
+    - **FUNDAMENTAL ISSUES**: Core requirements misunderstood, major scope issues → Return to Phase 3
+  - Update progress.md with Phase 7 completion status (only when all tests pass)
+  - Create commit: docs(reviews): add comprehensive code quality assessment (only when all tests pass)
+- **Step 7.2**: IF reviewer reports MINOR ISSUES
+  - Delegate to coder with input: reviewer findings
   - Implement fixes based on reviewer findings
   - Follow TDD process for all fixes
   - Update relevant documentation
   - Create commits: fix(scope): resolve [issue_description]
   - Report completion to coordinator when all fixes implemented and tested
+  - Coordinator returns to Step 7.1 for re-testing
 FAILURE: Return to Phase 6 (implementation bugs or quality issues) or Phase 4 (task design issues) or Phase 7 (re-test/review)
 
 ### PHASE 8: MERGE
@@ -307,20 +394,7 @@ ACTIONS:
   - Report completion to coordinator when all quality gates passed, merge completed, project delivered, documentation archived
 FAILURE: Return to Phase 7 (testing or review failures) or Phase 8 (merge issues)
 
-## PARALLEL EXECUTION MANAGEMENT
 
-### CONFLICT DETECTION
-RESOURCE CONFLICTS:
-- File modifications: Same files being edited by different specialists
-- Database: Schema changes, concurrent data migrations
-- API: Endpoint conflicts, breaking changes, version conflicts
-- Dependencies: Package version conflicts, library compatibility
-
-TIMING CONFLICTS:
-- Task dependencies: What must finish before what starts
-- Integration points: Where parallel work must synchronize
-- Critical path: Tasks that block overall progress
-- Resource contention: Limited resources (API keys, test environments)
 
 
 
@@ -337,14 +411,7 @@ LLM automatically determines optimal assignment strategy:
 - Dynamic allocation based on task complexity and dependencies
 - Support any combination and quantity of available specialists
 
-### EXECUTION STRATEGY DETERMINATION
-IF (multiple specialists OR single specialist with multiple tasks):
-  - Use result responses → consolidation flow
-  - Apply parallel coordination mechanisms
-ELSE (single specialist, single task):
-  - Direct execution by specialist
-  - No consolidation needed
-  - Specialist directly updates target files
+
 
 ### DELEGATION TEMPLATE
 PROJECT: [description]
@@ -399,11 +466,7 @@ LOCATION: User's repository
 PURPOSE: All coding, file creation, implementation
 STRUCTURE: Each specialist works in separate directories to avoid conflicts
 
-### FILE UPDATE PROTOCOLS
-SEQUENTIAL PHASES (1, 5, 8): Direct file updates by assigned specialist
-PARALLEL PHASES (2, 3, 4, 6, 7): Specialists report → coordinator consolidates
-progress.md: Always updated by coordinator with routing decisions
-NOTE: Each phase includes PROGRESS field for progress.md updates
+
 
 ### RECOVERY PROTOCOL
 If workflow interrupted: Read progress.md → Resume at current phase → Continue to completion
