@@ -54,36 +54,46 @@ function extractAgentInstructions(agentContent: string): string {
   return agentContent.trim();
 }
 
-async function executeTargetCommand(
+function executeTargetCommand(
   targetId: string,
   systemPrompt: string,
   userPrompt: string,
   options: RunCommandOptions
 ): Promise<void> {
-  // Get the transformer for the target
-  const transformer = await targetManager.getTransformer(targetId);
-  if (!transformer) {
-    throw new CLIError(`No transformer found for target: ${targetId}`, 'NO_TRANSFORMER');
+  // Get the target object
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
   }
 
-  // Check if the transformer supports command execution
-  if (!transformer.executeCommand) {
+  // Check if the target is implemented
+  if (!target.isImplemented) {
+    throw new CLIError(
+      `Target '${targetId}' is not implemented. Supported targets: ${getExecutableTargets().join(', ')}`,
+      'TARGET_NOT_IMPLEMENTED'
+    );
+  }
+
+  // Check if the target supports command execution
+  if (!target.executeCommand) {
     throw new CLIError(
       `Target '${targetId}' does not support command execution. Supported targets: ${getExecutableTargets().join(', ')}`,
       'EXECUTION_NOT_SUPPORTED'
     );
   }
 
-  // Use the transformer's executeCommand method
-  return transformer.executeCommand(systemPrompt, userPrompt, options);
+  // Use the target's executeCommand method
+  return target.executeCommand(systemPrompt, userPrompt, options);
 }
 
 /**
  * Get list of targets that support command execution
  */
 function getExecutableTargets(): string[] {
-  // For now, we'll hardcode this, but in the future this could be dynamic
-  return ['claude-code'];
+  return targetManager.getImplementedTargetIDs().filter(targetId => {
+    const target = targetManager.getTarget(targetId);
+    return target?.executeCommand !== undefined;
+  });
 }
 
 export const runCommand: CommandConfig = {
@@ -92,7 +102,7 @@ export const runCommand: CommandConfig = {
   options: [
     {
       flags: '--target <name>',
-      description: `Target platform (${targetManager.getImplementedTargets().join(', ')}, default: auto-detect)`,
+      description: `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`,
     },
     {
       flags: '--agent <name>',

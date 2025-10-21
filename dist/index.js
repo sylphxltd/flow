@@ -2,7 +2,7 @@
 import {
   CLIError,
   createAsyncHandler
-} from "./chunk-G3QAKGBG.js";
+} from "./chunk-ZU23WWFA.js";
 import {
   LibSQLMemoryStorage
 } from "./chunk-YAGG6WK2.js";
@@ -145,8 +145,8 @@ function getAllEnvVars(serverId) {
 }
 
 // src/core/init.ts
-import fs4 from "fs";
-import path4 from "path";
+import fs6 from "fs";
+import path6 from "path";
 import { fileURLToPath as fileURLToPath2 } from "url";
 
 // src/shared.ts
@@ -292,232 +292,775 @@ function ruleFileExists(ruleType) {
   return fs2.existsSync(rulePath);
 }
 
-// src/core/target-manager.ts
+// src/utils/target-utils.ts
 import fs3 from "fs/promises";
 import path3 from "path";
-
-// src/config/targets.ts
-var TARGET_REGISTRY = {
-  opencode: {
-    id: "opencode",
-    name: "OpenCode",
-    description: "OpenCode IDE with YAML front matter agents (.opencode/agent/*.md)",
-    config: {
-      agentDir: ".opencode/agent",
-      agentExtension: ".md",
-      agentFormat: "yaml-frontmatter",
-      stripYaml: false,
-      flatten: false,
-      configFile: "opencode.jsonc",
-      configSchema: "https://opencode.ai/config.json",
-      mcpConfigPath: "mcp",
-      rulesFile: "AGENTS.md",
-      installation: {
-        createAgentDir: true,
-        createConfigFile: true,
-        supportedMcpServers: true
-      }
-    },
-    category: "ide",
-    isDefault: true,
-    isImplemented: true
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+var fileUtils = {
+  getConfigPath(config, cwd) {
+    return path3.join(cwd, config.configFile);
   },
-  cursor: {
-    id: "cursor",
-    name: "Cursor",
-    description: "Cursor AI editor with JSON agents (.cursor/rules/*.json)",
-    config: {
-      agentDir: ".cursor/rules",
-      agentExtension: ".json",
-      agentFormat: "json",
-      stripYaml: true,
-      flatten: true,
-      configFile: "cursor.json",
-      configSchema: null,
-      mcpConfigPath: "mcpServers",
-      installation: {
-        createAgentDir: true,
-        createConfigFile: true,
-        supportedMcpServers: false
-        // Not yet implemented
-      }
-    },
-    category: "ide",
-    isImplemented: false
-    // Future implementation
+  async readConfig(config, cwd) {
+    const configPath = fileUtils.getConfigPath(config, cwd);
+    try {
+      await fs3.access(configPath);
+    } catch {
+      return {};
+    }
+    if (config.configFile.endsWith(".jsonc")) {
+      const { readJSONCFile } = await import("./jsonc-6K4NEAWM.js");
+      return readJSONCFile(configPath);
+    }
+    if (config.configFile.endsWith(".json")) {
+      const content = await fs3.readFile(configPath, "utf8");
+      return JSON.parse(content);
+    }
+    if (config.configFile.endsWith(".yaml") || config.configFile.endsWith(".yml")) {
+      const content = await fs3.readFile(configPath, "utf8");
+      return parseYaml(content);
+    }
+    throw new Error(`Unsupported config file format: ${config.configFile}`);
   },
-  vscode: {
-    id: "vscode",
-    name: "VS Code",
-    description: "Visual Studio Code with workspace agents (.vscode/agents/*.md)",
-    config: {
-      agentDir: ".vscode/agents",
-      agentExtension: ".md",
-      agentFormat: "markdown",
-      stripYaml: true,
-      flatten: false,
-      configFile: "settings.json",
-      configSchema: null,
-      mcpConfigPath: "mcp.servers",
-      installation: {
-        createAgentDir: true,
-        createConfigFile: false,
-        // Uses existing settings.json
-        supportedMcpServers: false
-        // Not yet implemented
-      }
-    },
-    category: "ide",
-    isImplemented: false
-    // Future implementation
+  async writeConfig(config, cwd, data) {
+    const configPath = fileUtils.getConfigPath(config, cwd);
+    await fs3.mkdir(path3.dirname(configPath), { recursive: true });
+    if (config.configFile.endsWith(".jsonc")) {
+      const { writeJSONCFile } = await import("./jsonc-6K4NEAWM.js");
+      await writeJSONCFile(configPath, data, config.configSchema || void 0);
+    } else if (config.configFile.endsWith(".json")) {
+      const content = JSON.stringify(data, null, 2);
+      await fs3.writeFile(configPath, content, "utf8");
+    } else if (config.configFile.endsWith(".yaml") || config.configFile.endsWith(".yml")) {
+      const content = stringifyYaml(data);
+      await fs3.writeFile(configPath, content, "utf8");
+    } else {
+      throw new Error(`Unsupported config file format: ${config.configFile}`);
+    }
   },
-  cli: {
-    id: "cli",
-    name: "CLI",
-    description: "Command-line interface with YAML agents (.sylphx/agents/*.yaml)",
-    config: {
-      agentDir: ".sylphx/agents",
-      agentExtension: ".yaml",
-      agentFormat: "yaml",
-      stripYaml: false,
-      flatten: false,
-      configFile: "sylphx.json",
-      configSchema: null,
-      mcpConfigPath: "mcp",
-      installation: {
-        createAgentDir: true,
-        createConfigFile: true,
-        supportedMcpServers: true
+  async validateRequirements(config, cwd) {
+    const agentDir = path3.join(cwd, config.agentDir);
+    try {
+      await fs3.mkdir(agentDir, { recursive: true });
+      const testFile = path3.join(agentDir, ".sylphx-test");
+      await fs3.writeFile(testFile, "test", "utf8");
+      await fs3.unlink(testFile);
+    } catch (error) {
+      throw new Error(`Cannot write to agent directory ${agentDir}: ${error}`);
+    }
+    if (config.installation.createConfigFile) {
+      const configPath = await fileUtils.getConfigPath(config, cwd);
+      try {
+        const configDir = path3.dirname(configPath);
+        await fs3.mkdir(configDir, { recursive: true });
+        const testFile = path3.join(configDir, ".sylphx-test");
+        await fs3.writeFile(testFile, "test", "utf8");
+        await fs3.unlink(testFile);
+      } catch (error) {
+        throw new Error(`Cannot write to config file location ${configPath}: ${error}`);
       }
-    },
-    category: "cli",
-    isImplemented: false
-    // Future implementation
-  },
-  "claude-code": {
-    id: "claude-code",
-    name: "Claude Code",
-    description: "Claude Code CLI with YAML front matter agents (.claude/agents/*.md)",
-    config: {
-      agentDir: ".claude/agents",
-      agentExtension: ".md",
-      agentFormat: "yaml-frontmatter",
-      stripYaml: false,
-      flatten: false,
-      configFile: ".mcp.json",
-      configSchema: null,
-      mcpConfigPath: "mcpServers",
-      rulesFile: "CLAUDE.md",
-      installation: {
-        createAgentDir: true,
-        createConfigFile: true,
-        supportedMcpServers: true
-      }
-    },
-    category: "cli",
-    isImplemented: true
+    }
   }
 };
-function getAllTargetIDs() {
-  return Object.keys(TARGET_REGISTRY);
-}
-function getImplementedTargetIDs() {
-  return Object.entries(TARGET_REGISTRY).filter(([, target]) => target.isImplemented).map(([id]) => id);
-}
-function getDefaultTarget() {
-  const defaultTarget = Object.entries(TARGET_REGISTRY).find(([, target]) => target.isDefault);
-  if (!defaultTarget) {
-    throw new Error("No default target configured");
-  }
-  return defaultTarget[0];
-}
-function isValidTargetID(id) {
-  return id in TARGET_REGISTRY;
-}
-function getTargetDefinition(id) {
-  const target = TARGET_REGISTRY[id];
-  if (!target) {
-    throw new Error(`Unknown target: ${id}`);
-  }
-  return target;
-}
-function isTargetImplemented(id) {
-  return TARGET_REGISTRY[id]?.isImplemented ?? false;
-}
-function getTargetsWithMCPSupport() {
-  return Object.entries(TARGET_REGISTRY).filter(([, target]) => target.config.installation.supportedMcpServers).map(([id]) => id);
-}
-
-// src/core/target-manager.ts
-var TargetManager = class {
-  transformers = /* @__PURE__ */ new Map();
-  initialized = false;
-  constructor() {
-    this.initializeDefaultTransformers().catch((error) => {
-      console.error("Failed to initialize transformers:", error);
-    });
-  }
-  /**
-   * Ensure transformers are initialized before use
-   */
-  async ensureInitialized() {
-    if (!this.initialized) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      if (!this.initialized) {
-        await this.initializeDefaultTransformers();
+var yamlUtils = {
+  async extractFrontMatter(content) {
+    const yamlRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+    const match = content.match(yamlRegex);
+    if (match) {
+      try {
+        const parsedMetadata = parseYaml(match[1]);
+        return {
+          metadata: parsedMetadata,
+          content: match[2]
+        };
+      } catch (error) {
+        console.warn("Failed to parse YAML front matter:", error);
+        return { metadata: {}, content: match[2] };
       }
     }
-  }
-  /**
-   * Initialize default transformers for implemented targets
-   */
-  async initializeDefaultTransformers() {
-    if (this.initialized) {
-      return;
+    return { metadata: {}, content };
+  },
+  async addFrontMatter(content, metadata) {
+    if (!metadata || Object.keys(metadata).length === 0) {
+      return content;
     }
     try {
-      const { OpenCodeTransformer } = await import("./opencode-LZTJTSYU.js");
-      const { ClaudeCodeTransformer } = await import("./claude-code-Q2DX23NH.js");
-      const { CursorTransformer } = await import("./cursor-2LRTP573.js");
-      const { VSCodeTransformer } = await import("./vscode-ZWJYUFVL.js");
-      this.registerTransformer(
-        "opencode",
-        new OpenCodeTransformer(getTargetDefinition("opencode").config)
-      );
-      this.registerTransformer(
-        "claude-code",
-        new ClaudeCodeTransformer(getTargetDefinition("claude-code").config)
-      );
-      this.initialized = true;
+      const yamlStr = stringifyYaml(metadata);
+      return `---
+${yamlStr}---
+
+${content}`;
     } catch (error) {
-      console.error("Failed to initialize transformers:", error);
-      throw error;
+      console.warn("Failed to stringify YAML metadata:", error);
+      const yamlStr = JSON.stringify(metadata, null, 2);
+      return `---
+${yamlStr}---
+
+${content}`;
+    }
+  },
+  async stripFrontMatter(content) {
+    const { content: strippedContent } = await yamlUtils.extractFrontMatter(content);
+    return strippedContent;
+  },
+  hasValidFrontMatter(content) {
+    const yamlRegex = /^---\s*\n[\s\S]*?\n---\s*\n/;
+    return yamlRegex.test(content);
+  },
+  async ensureFrontMatter(content, defaultMetadata = {}) {
+    if (yamlUtils.hasValidFrontMatter(content)) {
+      return content;
+    }
+    return yamlUtils.addFrontMatter(content, defaultMetadata);
+  },
+  async extractAgentMetadata(content) {
+    const { metadata } = await yamlUtils.extractFrontMatter(content);
+    if (typeof metadata === "string") {
+      try {
+        return JSON.parse(metadata);
+      } catch {
+        return { raw: metadata };
+      }
+    }
+    return metadata || {};
+  },
+  async updateAgentMetadata(content, updates) {
+    const { metadata: existingMetadata, content: baseContent } = await yamlUtils.extractFrontMatter(content);
+    const updatedMetadata = { ...existingMetadata, ...updates };
+    return yamlUtils.addFrontMatter(baseContent, updatedMetadata);
+  },
+  validateClaudeCodeFrontMatter(metadata) {
+    if (typeof metadata !== "object" || metadata === null) {
+      return false;
+    }
+    const requiredFields = ["name", "description"];
+    for (const field of requiredFields) {
+      if (!metadata[field]) {
+        return false;
+      }
+    }
+    if (metadata.tools && !Array.isArray(metadata.tools)) {
+      return false;
+    }
+    return true;
+  },
+  normalizeClaudeCodeFrontMatter(metadata) {
+    const normalized = { ...metadata };
+    if (normalized.tools && typeof normalized.tools === "string") {
+      normalized.tools = [normalized.tools];
+    }
+    if (!normalized.model) {
+      normalized.model = "inherit";
+    }
+    return normalized;
+  }
+};
+var pathUtils = {
+  flattenPath(filePath) {
+    const parsed = path3.parse(filePath);
+    const dir = parsed.dir.replace(/[\/\\]/g, "-");
+    return dir ? `${dir}-${parsed.name}` : parsed.name;
+  },
+  getAgentFilePath(sourcePath, config, agentDir) {
+    if (config.flatten) {
+      const flattenedName = pathUtils.flattenPath(sourcePath);
+      return path3.join(agentDir, `${flattenedName}${config.agentExtension}`);
+    }
+    return path3.join(agentDir, sourcePath);
+  },
+  extractNameFromPath(sourcePath) {
+    if (!sourcePath) return null;
+    const pathWithoutExt = sourcePath.replace(/\.md$/, "");
+    const filename = pathWithoutExt.split("/").pop() || pathWithoutExt;
+    const kebabName = filename.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const patterns = {
+      "constitution": "sdd-constitution",
+      "implement": "sdd-implement",
+      "clarify": "sdd-clarify",
+      "release": "sdd-release",
+      "task": "sdd-task",
+      "plan": "sdd-plan",
+      "specify": "sdd-specify",
+      "analyze": "sdd-analyze",
+      "orchestrator": "sdd-development-orchestrator",
+      "coder": "core-coder",
+      "planner": "core-planner",
+      "researcher": "core-researcher",
+      "reviewer": "core-reviewer",
+      "tester": "core-tester",
+      "scout": "hive-mind-scout-explorer",
+      "collective": "hive-mind-collective-intelligence-coordinator",
+      "worker": "hive-mind-worker-specialist",
+      "memory": "hive-mind-swarm-memory-manager",
+      "queen": "hive-mind-queen-coordinator"
+    };
+    for (const [pattern, result] of Object.entries(patterns)) {
+      if (kebabName.includes(pattern)) return result;
+    }
+    return kebabName || null;
+  },
+  extractAgentName(content, metadata, sourcePath) {
+    if (sourcePath) {
+      const pathName = pathUtils.extractNameFromPath(sourcePath);
+      if (pathName) return pathName;
+    }
+    const titleMatch = content.match(/^#\s+(.+?)(?:\s+Agent)?$/m);
+    if (titleMatch) {
+      const title = titleMatch[1].trim().toLowerCase();
+      const kebabTitle = title.replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      return kebabTitle + (kebabTitle.includes("agent") ? "" : "-agent");
+    }
+    if (metadata.description) {
+      const desc = metadata.description.toLowerCase();
+      const descPatterns = {
+        "coder": "code-implementation-agent",
+        "reviewer": "code-reviewer",
+        "planner": "development-planner",
+        "researcher": "research-specialist",
+        "tester": "quality-tester",
+        "analyze": "analysis-specialist",
+        "orchestrator": "development-orchestrator"
+      };
+      for (const [pattern, result] of Object.entries(descPatterns)) {
+        if (desc.includes(pattern)) return result;
+      }
+    }
+    return "development-agent";
+  },
+  extractDescription(content) {
+    const firstParagraph = content.match(/^#\s+.+?\n\n(.+?)(?:\n\n|\n#|$)/s);
+    if (firstParagraph) {
+      return firstParagraph[1].trim().replace(/\n+/g, " ");
+    }
+    return "Development agent for specialized tasks";
+  }
+};
+function generateHelpText(config) {
+  let help = "";
+  help += "Agent Installation:\n";
+  help += `  Directory: ${config.agentDir}
+`;
+  help += `  Extension: ${config.agentExtension}
+`;
+  help += `  Format: ${config.agentFormat}
+`;
+  help += `  Strip YAML: ${config.stripYaml ? "Yes" : "No"}
+`;
+  help += `  Flatten Structure: ${config.flatten ? "Yes" : "No"}
+
+`;
+  if (config.installation.supportedMcpServers) {
+    help += "MCP Server Support:\n";
+    help += `  Config Path: ${config.mcpConfigPath}
+`;
+    help += "  Supported: Yes\n\n";
+  } else {
+    help += "MCP Server Support: Not yet implemented\n\n";
+  }
+  return help;
+}
+
+// src/targets/opencode.ts
+import fs4 from "fs";
+import path4 from "path";
+var opencodeTarget = {
+  id: "opencode",
+  name: "OpenCode",
+  description: "OpenCode IDE with YAML front matter agents (.opencode/agent/*.md)",
+  category: "ide",
+  isImplemented: true,
+  isDefault: true,
+  config: {
+    agentDir: ".opencode/agent",
+    agentExtension: ".md",
+    agentFormat: "yaml-frontmatter",
+    stripYaml: false,
+    flatten: false,
+    configFile: "opencode.jsonc",
+    configSchema: "https://opencode.ai/config.json",
+    mcpConfigPath: "mcp",
+    rulesFile: "AGENTS.md",
+    installation: {
+      createAgentDir: true,
+      createConfigFile: true,
+      supportedMcpServers: true
+    }
+  },
+  /**
+   * Transform agent content for OpenCode
+   * OpenCode uses YAML front matter, but removes name field as it doesn't use it
+   */
+  async transformAgentContent(content, metadata, _sourcePath) {
+    const { metadata: existingMetadata, content: baseContent } = await yamlUtils.extractFrontMatter(content);
+    const { name, ...metadataWithoutName } = existingMetadata;
+    if (metadata) {
+      const { name: additionalName, ...additionalMetadataWithoutName } = metadata;
+      const mergedMetadata = { ...metadataWithoutName, ...additionalMetadataWithoutName };
+      return yamlUtils.addFrontMatter(baseContent, mergedMetadata);
+    }
+    return yamlUtils.addFrontMatter(baseContent, metadataWithoutName);
+  },
+  /**
+   * Transform MCP server configuration for OpenCode
+   * Convert from Claude Code's optimal format to OpenCode's format
+   */
+  transformMCPConfig(config) {
+    if (config.type === "stdio") {
+      const openCodeConfig = {
+        type: "local",
+        command: [config.command]
+      };
+      if (config.args && config.args.length > 0) {
+        openCodeConfig.command.push(...config.args);
+      }
+      if (config.env) {
+        openCodeConfig.environment = config.env;
+      }
+      return openCodeConfig;
+    }
+    if (config.type === "http") {
+      return {
+        type: "remote",
+        url: config.url,
+        ...config.headers && { headers: config.headers }
+      };
+    }
+    if (config.type === "local" || config.type === "remote") {
+      return config;
+    }
+    return config;
+  },
+  getConfigPath: (cwd) => Promise.resolve(fileUtils.getConfigPath(opencodeTarget.config, cwd)),
+  /**
+   * Read OpenCode configuration with structure normalization
+   */
+  async readConfig(cwd) {
+    const config = await fileUtils.readConfig(opencodeTarget.config, cwd);
+    if (!config.mcp) {
+      config.mcp = {};
+    }
+    return config;
+  },
+  /**
+   * Write OpenCode configuration with structure normalization
+   */
+  async writeConfig(cwd, config) {
+    if (!config.mcp) {
+      config.mcp = {};
+    }
+    await fileUtils.writeConfig(opencodeTarget.config, cwd, config);
+  },
+  validateRequirements: (cwd) => fileUtils.validateRequirements(opencodeTarget.config, cwd),
+  /**
+   * Get detailed OpenCode-specific help text
+   */
+  getHelpText() {
+    let help = generateHelpText(opencodeTarget.config);
+    help += "OpenCode-Specific Information:\n";
+    help += "  Configuration File: opencode.jsonc\n";
+    help += "  Schema: https://opencode.ai/config.json\n";
+    help += "  Agent Format: Markdown with YAML front matter\n";
+    help += "  MCP Integration: Automatic server discovery\n\n";
+    help += "Example Agent Structure:\n";
+    help += "  ---\n";
+    help += `  name: "My Agent"
+`;
+    help += `  description: "Agent description"
+`;
+    help += "  ---\n\n";
+    help += "  Agent content here...\n\n";
+    return help;
+  },
+  /**
+   * Detect if this target is being used in the current environment
+   */
+  detectFromEnvironment() {
+    try {
+      const cwd = process.cwd();
+      return fs4.existsSync(path4.join(cwd, "opencode.jsonc"));
+    } catch {
+      return false;
     }
   }
+};
+
+// src/targets/claude-code.ts
+import fs5 from "fs";
+import path5 from "path";
+var claudeCodeTarget = {
+  id: "claude-code",
+  name: "Claude Code",
+  description: "Claude Code CLI with YAML front matter agents (.claude/agents/*.md)",
+  category: "cli",
+  isImplemented: true,
+  isDefault: false,
+  config: {
+    agentDir: ".claude/agents",
+    agentExtension: ".md",
+    agentFormat: "yaml-frontmatter",
+    stripYaml: false,
+    flatten: false,
+    configFile: ".mcp.json",
+    configSchema: null,
+    mcpConfigPath: "mcpServers",
+    rulesFile: "CLAUDE.md",
+    installation: {
+      createAgentDir: true,
+      createConfigFile: true,
+      supportedMcpServers: true
+    }
+  },
   /**
-   * Register a transformer for a target
+   * Transform agent content for Claude Code
+   * Convert OpenCode format to Claude Code format with proper name/description extraction
    */
-  registerTransformer(targetId, transformer) {
-    this.transformers.set(targetId, transformer);
+  async transformAgentContent(content, metadata, sourcePath) {
+    const { metadata: existingMetadata, content: baseContent } = await yamlUtils.extractFrontMatter(content);
+    const claudeCodeMetadata = convertToClaudeCodeFormat(
+      existingMetadata,
+      baseContent,
+      sourcePath
+    );
+    if (metadata) {
+      Object.assign(claudeCodeMetadata, metadata);
+    }
+    return yamlUtils.addFrontMatter(baseContent, claudeCodeMetadata);
+  },
+  /**
+   * Transform MCP server configuration for Claude Code
+   * Convert from various formats to Claude Code's optimal format
+   */
+  transformMCPConfig(config) {
+    if (config.type === "local") {
+      const [command, ...args] = config.command;
+      return {
+        type: "stdio",
+        command,
+        ...args && args.length > 0 && { args },
+        ...config.environment && { env: config.environment }
+      };
+    }
+    if (config.type === "stdio") {
+      return {
+        type: "stdio",
+        command: config.command,
+        ...config.args && config.args.length > 0 && { args: config.args },
+        ...config.env && { env: config.env }
+      };
+    }
+    if (config.type === "remote") {
+      return {
+        type: "http",
+        url: config.url,
+        ...config.headers && { headers: config.headers }
+      };
+    }
+    if (config.type === "http") {
+      return {
+        type: "http",
+        url: config.url,
+        ...config.headers && { headers: config.headers }
+      };
+    }
+    return config;
+  },
+  getConfigPath: (cwd) => Promise.resolve(fileUtils.getConfigPath(claudeCodeTarget.config, cwd)),
+  /**
+   * Read Claude Code configuration with structure normalization
+   */
+  async readConfig(cwd) {
+    const config = await fileUtils.readConfig(claudeCodeTarget.config, cwd);
+    if (!config.mcpServers) {
+      config.mcpServers = {};
+    }
+    return config;
+  },
+  /**
+   * Write Claude Code configuration with structure normalization
+   */
+  async writeConfig(cwd, config) {
+    if (!config.mcpServers) {
+      config.mcpServers = {};
+    }
+    await fileUtils.writeConfig(claudeCodeTarget.config, cwd, config);
+  },
+  validateRequirements: (cwd) => fileUtils.validateRequirements(claudeCodeTarget.config, cwd),
+  /**
+   * Get detailed Claude Code-specific help text
+   */
+  getHelpText() {
+    let help = generateHelpText(claudeCodeTarget.config);
+    help += "Claude Code-Specific Information:\n";
+    help += "  Configuration File: .mcp.json\n";
+    help += "  Agent Format: Markdown with YAML front matter\n";
+    help += "  MCP Integration: Full server support\n\n";
+    help += "Example Agent Structure:\n";
+    help += "  ---\n";
+    help += `  name: "code-reviewer"
+`;
+    help += `  description: "Expert code review specialist"
+`;
+    help += "  ---\n\n";
+    help += "  Agent content here...\n\n";
+    help += `Note: Only 'name' and 'description' fields are supported.
+`;
+    help += "Tools field omitted to allow all tools by default (whitelist model limitation).\n";
+    help += "Unsupported fields (mode, temperature, etc.) are automatically removed.\n\n";
+    help += "Example MCP Configuration:\n";
+    help += "  {\n";
+    help += `    "mcpServers": {
+`;
+    help += `      "filesystem": {
+`;
+    help += `        "type": "stdio",
+`;
+    help += `        "command": "npx",
+`;
+    help += `        "args": ["@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+`;
+    help += "      },\n";
+    help += `      "git": {
+`;
+    help += `        "type": "stdio",
+`;
+    help += `        "command": "npx",
+`;
+    help += `        "args": ["@modelcontextprotocol/server-git", "."],
+`;
+    help += `        "env": {
+`;
+    help += `          "GIT_TRACE": "1"
+`;
+    help += "        }\n";
+    help += "      },\n";
+    help += `      "api-server": {
+`;
+    help += `        "type": "http",
+`;
+    help += `        "url": "https://api.example.com/mcp",
+`;
+    help += `        "headers": {
+`;
+    help += `          "Authorization": "Bearer $API_KEY"
+`;
+    help += "        }\n";
+    help += "      }\n";
+    help += "    }\n";
+    help += "  }\n\n";
+    help += "Note: Environment variables can be expanded in command, args, env, url, and headers.\n\n";
+    return help;
+  },
+  /**
+   * Execute command using Claude Code with system prompt and user prompt
+   */
+  async executeCommand(systemPrompt, userPrompt, options = {}) {
+    if (options.dryRun) {
+      console.log("\u{1F50D} Dry run: Would execute Claude Code with --append-system-prompt");
+      console.log("\u{1F4DD} System prompt to append length:", systemPrompt.length, "characters");
+      console.log("\u{1F4DD} User prompt length:", userPrompt.length, "characters");
+      console.log("\u2705 Dry run completed successfully");
+      return;
+    }
+    const { spawn } = await import("child_process");
+    const { CLIError: CLIError2 } = await import("./error-handler-4SKBQW3N.js");
+    return new Promise((resolve, reject) => {
+      const args = ["--append-system-prompt", systemPrompt, "--dangerously-skip-permissions"];
+      if (userPrompt.trim() !== "") {
+        args.push(userPrompt);
+      }
+      if (options.verbose) {
+        console.log(`\u{1F680} Executing Claude Code with system prompt`);
+        console.log(`\u{1F4DD} System prompt length: ${systemPrompt.length} characters`);
+        console.log(`\u{1F4DD} User prompt length: ${userPrompt.length} characters`);
+      }
+      const child = spawn("claude", args, {
+        stdio: "inherit",
+        shell: false
+      });
+      child.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new CLIError2(`Claude Code exited with code ${code}`, "CLAUDE_ERROR"));
+        }
+      });
+      child.on("error", (error) => {
+        reject(new CLIError2(`Failed to execute Claude Code: ${error.message}`, "CLAUDE_NOT_FOUND"));
+      });
+    });
+  },
+  /**
+   * Detect if this target is being used in the current environment
+   */
+  detectFromEnvironment() {
+    try {
+      const cwd = process.cwd();
+      return fs5.existsSync(path5.join(cwd, ".mcp.json"));
+    } catch {
+      return false;
+    }
+  }
+};
+function convertToClaudeCodeFormat(openCodeMetadata, content, sourcePath) {
+  const agentName = openCodeMetadata.name || pathUtils.extractAgentName(content, openCodeMetadata, sourcePath);
+  const description = openCodeMetadata.description || pathUtils.extractDescription(content);
+  const result = {
+    name: agentName,
+    description
+  };
+  if (openCodeMetadata.model && openCodeMetadata.model !== "inherit") {
+    result.model = openCodeMetadata.model;
+  }
+  return result;
+}
+
+// src/config/targets.ts
+var TargetRegistry = class {
+  targets = [];
+  /**
+   * Register a target
+   */
+  register(target) {
+    this.targets.push(target);
   }
   /**
-   * Get transformer for a target
+   * Get all targets
    */
-  async getTransformer(targetId) {
-    await this.ensureInitialized();
-    return this.transformers.get(targetId);
-  }
-  /**
-   * Get all available targets
-   */
-  getAvailableTargets() {
-    return getAllTargetIDs();
+  getAllTargets() {
+    return [...this.targets];
   }
   /**
    * Get implemented targets only
    */
   getImplementedTargets() {
-    return getImplementedTargetIDs();
+    return this.targets.filter((target) => target.isImplemented);
+  }
+  /**
+   * Get all target IDs
+   */
+  getAllTargetIDs() {
+    return this.targets.map((target) => target.id);
+  }
+  /**
+   * Get implemented target IDs
+   */
+  getImplementedTargetIDs() {
+    return this.getImplementedTargets().map((target) => target.id);
+  }
+  /**
+   * Get target by ID
+   */
+  getTarget(id) {
+    return this.targets.find((target) => target.id === id);
+  }
+  /**
+   * Get default target
+   */
+  getDefaultTarget() {
+    const defaultTarget = this.targets.find((target) => target.isDefault);
+    if (!defaultTarget) {
+      throw new Error("No default target configured");
+    }
+    return defaultTarget;
+  }
+  /**
+   * Get targets that support MCP servers
+   */
+  getTargetsWithMCPSupport() {
+    return this.getImplementedTargets().filter((target) => target.config.installation.supportedMcpServers);
+  }
+  /**
+   * Check if target is implemented
+   */
+  isTargetImplemented(id) {
+    const target = this.getTarget(id);
+    return target?.isImplemented ?? false;
+  }
+  /**
+   * Initialize targets - register all available targets
+   */
+  initialize() {
+    if (this.targets.length > 0) {
+      return;
+    }
+    this.register(opencodeTarget);
+    this.register(claudeCodeTarget);
+  }
+};
+var targetRegistry = new TargetRegistry();
+targetRegistry.initialize();
+var getAllTargetIDs = () => targetRegistry.getAllTargetIDs();
+var getImplementedTargetIDs = () => targetRegistry.getImplementedTargetIDs();
+var getDefaultTarget = () => targetRegistry.getDefaultTarget().id;
+var getTarget = (id) => targetRegistry.getTarget(id);
+var getTargetsWithMCPSupport = () => targetRegistry.getTargetsWithMCPSupport().map((target) => target.id);
+
+// src/core/target-manager.ts
+var TargetManager = class {
+  /**
+   * Get all available targets
+   */
+  getAllTargets() {
+    return targetRegistry.getAllTargets();
+  }
+  /**
+   * Get implemented targets only
+   */
+  getImplementedTargets() {
+    return targetRegistry.getImplementedTargets();
+  }
+  /**
+   * Get target by ID
+   */
+  getTarget(id) {
+    return targetRegistry.getTarget(id);
+  }
+  /**
+   * Resolve target with fallback to default and detection
+   */
+  async resolveTarget(options) {
+    if (options.target) {
+      if (!getTarget(options.target)) {
+        throw new Error(`Unknown target: ${options.target}. Available targets: ${getAllTargetIDs().join(", ")}`);
+      }
+      return options.target;
+    }
+    const detectedTarget = this.detectTargetFromEnvironment();
+    if (detectedTarget) {
+      return detectedTarget;
+    }
+    const defaultTarget = getDefaultTarget();
+    return defaultTarget;
+  }
+  /**
+   * Detect target from current environment
+   */
+  detectTargetFromEnvironment() {
+    try {
+      const implementedTargets = this.getImplementedTargets();
+      const nonDefaultTargets = implementedTargets.filter((target) => !target.isDefault);
+      const defaultTargets = implementedTargets.filter((target) => target.isDefault);
+      for (const target of nonDefaultTargets) {
+        const detected = target.detectFromEnvironment && target.detectFromEnvironment();
+        if (detected) {
+          return target.id;
+        }
+      }
+      for (const target of defaultTargets) {
+        const detected = target.detectFromEnvironment && target.detectFromEnvironment();
+        if (detected) {
+          return target.id;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  /**
+   * Check if target is implemented
+   */
+  isTargetImplemented(targetId) {
+    return getTarget(targetId)?.isImplemented ?? false;
   }
   /**
    * Get targets that support MCP servers
@@ -526,179 +1069,16 @@ var TargetManager = class {
     return getTargetsWithMCPSupport();
   }
   /**
-   * Get default target
+   * Get implemented target IDs
    */
-  getDefaultTarget() {
-    return getDefaultTarget();
+  getImplementedTargetIDs() {
+    return getImplementedTargetIDs();
   }
   /**
-   * Validate target ID
+   * Get all target IDs
    */
-  validateTarget(targetId) {
-    if (!isValidTargetID(targetId)) {
-      const available = this.getAvailableTargets();
-      throw new Error(`Invalid target '${targetId}'. Available targets: ${available.join(", ")}`);
-    }
-    if (!isTargetImplemented(targetId)) {
-      throw new Error(
-        `Target '${targetId}' is not yet implemented. Available targets: ${this.getImplementedTargets().join(", ")}`
-      );
-    }
-    return targetId;
-  }
-  /**
-   * Resolve target from options or detection
-   */
-  async resolveTarget(options) {
-    if (options.target) {
-      return this.validateTarget(options.target);
-    }
-    const detectedTarget = await this.detectTarget();
-    if (detectedTarget) {
-      return detectedTarget;
-    }
-    return this.getDefaultTarget();
-  }
-  /**
-   * Detect target from current directory structure
-   */
-  async detectTarget() {
-    const cwd = process.cwd();
-    const targetChecks = [
-      {
-        target: "opencode",
-        check: async () => {
-          const configPath = path3.join(cwd, "opencode.jsonc");
-          const agentDir = path3.join(cwd, ".opencode");
-          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
-          return configExists || agentDirExists;
-        }
-      },
-      {
-        target: "cursor",
-        check: async () => {
-          const configPath = path3.join(cwd, "cursor.json");
-          const agentDir = path3.join(cwd, ".cursor");
-          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
-          return configExists || agentDirExists;
-        }
-      },
-      {
-        target: "vscode",
-        check: async () => {
-          const configPath = path3.join(cwd, ".vscode", "settings.json");
-          return fs3.access(configPath).then(() => true).catch(() => false);
-        }
-      },
-      {
-        target: "cli",
-        check: async () => {
-          const configPath = path3.join(cwd, "sylphx.json");
-          const agentDir = path3.join(cwd, ".sylphx");
-          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
-          return configExists || agentDirExists;
-        }
-      },
-      {
-        target: "claude-code",
-        check: async () => {
-          const configPath = path3.join(cwd, ".mcp.json");
-          const agentDir = path3.join(cwd, ".claude");
-          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
-          return configExists || agentDirExists;
-        }
-      }
-    ];
-    for (const { target, check } of targetChecks) {
-      if (isTargetImplemented(target) && await check()) {
-        return target;
-      }
-    }
-    return null;
-  }
-  /**
-   * Get target configuration
-   */
-  getTargetConfig(targetId) {
-    const target = getTargetDefinition(targetId);
-    return target.config;
-  }
-  /**
-   * Get target definition
-   */
-  getTargetDefinition(targetId) {
-    return getTargetDefinition(targetId);
-  }
-  /**
-   * Check if target supports MCP servers
-   */
-  supportsMCPServers(targetId) {
-    const config = this.getTargetConfig(targetId);
-    return config.installation.supportedMcpServers;
-  }
-  /**
-   * Get agent directory path for target
-   */
-  getAgentDirectory(targetId, cwd = process.cwd()) {
-    const config = this.getTargetConfig(targetId);
-    return path3.join(cwd, config.agentDir);
-  }
-  /**
-   * Get configuration file path for target
-   */
-  getConfigFilePath(targetId, cwd = process.cwd()) {
-    const config = this.getTargetConfig(targetId);
-    return path3.join(cwd, config.configFile);
-  }
-  /**
-   * Get help text for all targets
-   */
-  getTargetsHelpText() {
-    const implemented = this.getImplementedTargets();
-    if (implemented.length === 0) {
-      return "No targets are currently implemented.";
-    }
-    let help = "Available targets:\n";
-    for (const targetId of implemented) {
-      const target = getTargetDefinition(targetId);
-      const isDefault = targetId === this.getDefaultTarget();
-      const defaultMarker = isDefault ? " (default)" : "";
-      help += `  ${targetId}${defaultMarker} - ${target.description}
-`;
-    }
-    return help;
-  }
-  /**
-   * Get help text for a specific target
-   */
-  async getTargetHelpText(targetId) {
-    const target = getTargetDefinition(targetId);
-    const transformer = await this.getTransformer(targetId);
-    let help = `${target.name} (${targetId})
-`;
-    help += `${target.description}
-
-`;
-    help += "Configuration:\n";
-    help += `  Agent Directory: ${target.config.agentDir}
-`;
-    help += `  Agent Extension: ${target.config.agentExtension}
-`;
-    help += `  Agent Format: ${target.config.agentFormat}
-`;
-    help += `  Config File: ${target.config.configFile}
-`;
-    help += `  MCP Support: ${target.config.installation.supportedMcpServers ? "Yes" : "No"}
-
-`;
-    if (transformer) {
-      help += transformer.getHelpText();
-    }
-    return help;
+  getAllTargetIDs() {
+    return getAllTargetIDs();
   }
 };
 var targetManager = new TargetManager();
@@ -706,19 +1086,19 @@ var targetManager = new TargetManager();
 // src/core/init.ts
 async function getAgentFiles() {
   const __filename = fileURLToPath2(import.meta.url);
-  const __dirname2 = path4.dirname(__filename);
-  const agentsDir = path4.join(__dirname2, "..", "agents");
-  if (!fs4.existsSync(agentsDir)) {
+  const __dirname2 = path6.dirname(__filename);
+  const agentsDir = path6.join(__dirname2, "..", "agents");
+  if (!fs6.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
   const allFiles = [];
-  const rootFiles = fs4.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md")).map((dirent) => dirent.name);
+  const rootFiles = fs6.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md")).map((dirent) => dirent.name);
   allFiles.push(...rootFiles);
-  const subdirs = fs4.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
+  const subdirs = fs6.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   for (const subdir of subdirs) {
-    const subdirPath = path4.join(agentsDir, subdir);
+    const subdirPath = path6.join(agentsDir, subdir);
     const files = collectFiles(subdirPath, [".md"]);
-    allFiles.push(...files.map((file) => path4.join(subdir, file)));
+    allFiles.push(...files.map((file) => path6.join(subdir, file)));
   }
   return allFiles;
 }
@@ -733,16 +1113,16 @@ async function installAgents(options) {
   }
   console.log(`\u{1F4DD} Using target: ${target.name}`);
   const config = target.config;
-  const agentsDir = path4.join(cwd, config.agentDir);
+  const agentsDir = path6.join(cwd, config.agentDir);
   const processContent = async (content, sourcePath) => {
     return await transformer.transformAgentContent(content, void 0, sourcePath);
   };
-  if (options.clear && fs4.existsSync(agentsDir)) {
+  if (options.clear && fs6.existsSync(agentsDir)) {
     let expectedFiles;
     const agentFiles2 = await getAgentFiles();
     expectedFiles = new Set(
       agentFiles2.map((filePath) => {
-        const parsedPath = path4.parse(filePath);
+        const parsedPath = path6.parse(filePath);
         const baseName = parsedPath.name;
         const dir = parsedPath.dir;
         if (config.flatten) {
@@ -754,7 +1134,7 @@ async function installAgents(options) {
     );
     clearObsoleteFiles(agentsDir, expectedFiles, [config.agentExtension], results);
   }
-  fs4.mkdirSync(agentsDir, { recursive: true });
+  fs6.mkdirSync(agentsDir, { recursive: true });
   const agentFiles = await getAgentFiles();
   if (options.quiet !== true) {
     console.log(
@@ -767,23 +1147,23 @@ async function installAgents(options) {
     return;
   }
   const __filename = fileURLToPath2(import.meta.url);
-  const __dirname2 = path4.dirname(__filename);
-  const agentsSourceDir = path4.join(__dirname2, "..", "agents");
+  const __dirname2 = path6.dirname(__filename);
+  const agentsSourceDir = path6.join(__dirname2, "..", "agents");
   const processPromises = agentFiles.map(async (agentFile) => {
-    const sourcePath = path4.join(agentsSourceDir, agentFile);
-    const destPath = path4.join(agentsDir, agentFile);
-    const destDir = path4.dirname(destPath);
-    if (!fs4.existsSync(destDir)) {
-      fs4.mkdirSync(destDir, { recursive: true });
+    const sourcePath = path6.join(agentsSourceDir, agentFile);
+    const destPath = path6.join(agentsDir, agentFile);
+    const destDir = path6.dirname(destPath);
+    if (!fs6.existsSync(destDir)) {
+      fs6.mkdirSync(destDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo(destPath);
     const _isNew = !localInfo;
-    let content = fs4.readFileSync(sourcePath, "utf8");
+    let content = fs6.readFileSync(sourcePath, "utf8");
     content = await processContent(content, agentFile);
     const localProcessed = localInfo ? await processContent(localInfo.content, agentFile) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs4.writeFileSync(destPath, content, "utf8");
+      fs6.writeFileSync(destPath, content, "utf8");
       results.push({
         file: agentFile,
         status: localInfo ? "updated" : "added",
@@ -818,7 +1198,7 @@ async function installRules(options) {
 `;
   for (const ruleType of existingRuleFiles) {
     const rulePath = getRulesPath(ruleType);
-    const ruleContent = fs4.readFileSync(rulePath, "utf8");
+    const ruleContent = fs6.readFileSync(rulePath, "utf8");
     const lines = ruleContent.split("\n");
     const contentStartIndex = lines.findIndex((line) => line.startsWith("# ")) + 1;
     const ruleMainContent = lines.slice(contentStartIndex).join("\n").trim();
@@ -829,7 +1209,7 @@ ${ruleMainContent}
 `;
   }
   mergedContent = mergedContent.replace(/\n\n---\n\n$/, "");
-  const rulesDestPath = path4.join(cwd, target.config.rulesFile);
+  const rulesDestPath = path6.join(cwd, target.config.rulesFile);
   const localInfo = getLocalFileInfo(rulesDestPath);
   const templateContent = mergedContent;
   if (options.dryRun) {
@@ -842,7 +1222,7 @@ ${ruleMainContent}
     }
     return;
   }
-  fs4.writeFileSync(rulesDestPath, templateContent, "utf8");
+  fs6.writeFileSync(rulesDestPath, templateContent, "utf8");
   if (options.quiet !== true) {
     const action = localInfo ? "Updated" : "Created";
     const ruleCount = existingRuleFiles.length;
@@ -1009,11 +1389,11 @@ function validateTarget(targetId) {
 function targetSupportsMCPServers(targetId) {
   return targetManager.supportsMCPServers(targetId);
 }
-function getNestedProperty(obj, path6) {
-  return path6.split(".").reduce((current, key) => current?.[key], obj);
+function getNestedProperty(obj, path8) {
+  return path8.split(".").reduce((current, key) => current?.[key], obj);
 }
-function setNestedProperty(obj, path6, value) {
-  const keys = path6.split(".");
+function setNestedProperty(obj, path8, value) {
+  const keys = path8.split(".");
   const lastKey = keys.pop();
   const target = keys.reduce((current, key) => {
     if (!current[key] || typeof current[key] !== "object") {
@@ -1023,8 +1403,8 @@ function setNestedProperty(obj, path6, value) {
   }, obj);
   target[lastKey] = value;
 }
-function deleteNestedProperty(obj, path6) {
-  const keys = path6.split(".");
+function deleteNestedProperty(obj, path8) {
+  const keys = path8.split(".");
   const lastKey = keys.pop();
   const target = keys.reduce((current, key) => current?.[key], obj);
   if (target) {
@@ -2241,8 +2621,8 @@ var memoryTuiCommand = {
 };
 
 // src/commands/run-command.ts
-import fs5 from "fs/promises";
-import path5 from "path";
+import fs7 from "fs/promises";
+import path7 from "path";
 async function validateRunOptions(options) {
   options.target = await targetManager.resolveTarget({ target: options.target });
   if (!options.agent) {
@@ -2251,13 +2631,13 @@ async function validateRunOptions(options) {
 }
 async function loadAgentContent(agentName) {
   try {
-    const agentPath = path5.join(process.cwd(), "agents", `${agentName}.md`);
+    const agentPath = path7.join(process.cwd(), "agents", `${agentName}.md`);
     try {
-      const content = await fs5.readFile(agentPath, "utf-8");
+      const content = await fs7.readFile(agentPath, "utf-8");
       return content;
     } catch (_error) {
-      const packageAgentPath = path5.join(__dirname, "../../agents", `${agentName}.md`);
-      const content = await fs5.readFile(packageAgentPath, "utf-8");
+      const packageAgentPath = path7.join(__dirname, "../../agents", `${agentName}.md`);
+      const content = await fs7.readFile(packageAgentPath, "utf-8");
       return content;
     }
   } catch (_error) {
@@ -2272,21 +2652,30 @@ function extractAgentInstructions(agentContent) {
   }
   return agentContent.trim();
 }
-async function executeTargetCommand(targetId, systemPrompt, userPrompt, options) {
-  const transformer = await targetManager.getTransformer(targetId);
-  if (!transformer) {
-    throw new CLIError(`No transformer found for target: ${targetId}`, "NO_TRANSFORMER");
+function executeTargetCommand(targetId, systemPrompt, userPrompt, options) {
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new CLIError(`Target not found: ${targetId}`, "TARGET_NOT_FOUND");
   }
-  if (!transformer.executeCommand) {
+  if (!target.isImplemented) {
+    throw new CLIError(
+      `Target '${targetId}' is not implemented. Supported targets: ${getExecutableTargets().join(", ")}`,
+      "TARGET_NOT_IMPLEMENTED"
+    );
+  }
+  if (!target.executeCommand) {
     throw new CLIError(
       `Target '${targetId}' does not support command execution. Supported targets: ${getExecutableTargets().join(", ")}`,
       "EXECUTION_NOT_SUPPORTED"
     );
   }
-  return transformer.executeCommand(systemPrompt, userPrompt, options);
+  return target.executeCommand(systemPrompt, userPrompt, options);
 }
 function getExecutableTargets() {
-  return ["claude-code"];
+  return targetManager.getImplementedTargetIDs().filter((targetId) => {
+    const target = targetManager.getTarget(targetId);
+    return target?.executeCommand !== void 0;
+  });
 }
 var runCommand = {
   name: "run",
@@ -2294,7 +2683,7 @@ var runCommand = {
   options: [
     {
       flags: "--target <name>",
-      description: `Target platform (${targetManager.getImplementedTargets().join(", ")}, default: auto-detect)`
+      description: `Target platform (${targetManager.getImplementedTargetIDs().join(", ")}, default: auto-detect)`
     },
     {
       flags: "--agent <name>",

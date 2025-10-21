@@ -27,5 +27,6 @@ function createAsyncHandler(handler, context) {
 
 export {
   CLIError,
+  handleError,
   createAsyncHandler
 };

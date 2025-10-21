@@ -1,16 +1,44 @@
-import type { MCPServerConfigUnion } from '../types.js';
-import type { TargetConfig } from '../types.js';
-import { BaseTransformer } from './base.js';
+import { Target } from '../types.js';
+import {
+  fileUtils,
+  yamlUtils,
+  pathUtils,
+  generateHelpText
+} from '../utils/target-utils.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
- * OpenCode transformer implementation
- * Handles YAML front matter agents and opencode.jsonc configuration
+ * OpenCode target - composition approach with all original functionality
  */
-export class OpenCodeTransformer extends BaseTransformer {
+export const opencodeTarget: Target = {
+  id: 'opencode',
+  name: 'OpenCode',
+  description: 'OpenCode IDE with YAML front matter agents (.opencode/agent/*.md)',
+  category: 'ide',
+  isImplemented: true,
+  isDefault: true,
+
+  config: {
+    agentDir: '.opencode/agent',
+    agentExtension: '.md',
+    agentFormat: 'yaml-frontmatter',
+    stripYaml: false,
+    flatten: false,
+    configFile: 'opencode.jsonc',
+    configSchema: 'https://opencode.ai/config.json',
+    mcpConfigPath: 'mcp',
+    rulesFile: 'AGENTS.md',
+    installation: {
+      createAgentDir: true,
+      createConfigFile: true,
+      supportedMcpServers: true,
+    },
+  },
+
   /**
    * Transform agent content for OpenCode
-   * OpenCode uses YAML front matter, so we preserve it
-   * Remove name field as OpenCode doesn't use it
+   * OpenCode uses YAML front matter, but removes name field as it doesn't use it
    */
   async transformAgentContent(
     content: string,
@@ -19,7 +47,7 @@ export class OpenCodeTransformer extends BaseTransformer {
   ): Promise<string> {
     // For OpenCode, we preserve YAML front matter but remove name field
     const { metadata: existingMetadata, content: baseContent } =
-      await this.extractYamlFrontMatter(content);
+      await yamlUtils.extractFrontMatter(content);
 
     // Remove name field from metadata
     const { name, ...metadataWithoutName } = existingMetadata;
@@ -28,18 +56,18 @@ export class OpenCodeTransformer extends BaseTransformer {
     if (metadata) {
       const { name: additionalName, ...additionalMetadataWithoutName } = metadata;
       const mergedMetadata = { ...metadataWithoutName, ...additionalMetadataWithoutName };
-      return this.addYamlFrontMatter(baseContent, mergedMetadata);
+      return yamlUtils.addFrontMatter(baseContent, mergedMetadata);
     }
 
     // If no metadata provided, return content without name field
-    return this.addYamlFrontMatter(baseContent, metadataWithoutName);
-  }
+    return yamlUtils.addFrontMatter(baseContent, metadataWithoutName);
+  },
 
   /**
    * Transform MCP server configuration for OpenCode
    * Convert from Claude Code's optimal format to OpenCode's format
    */
-  transformMCPConfig(config: MCPServerConfigUnion): any {
+  transformMCPConfig(config: any): any {
     // Handle new Claude Code stdio format
     if (config.type === 'stdio') {
       // Convert Claude Code format to OpenCode format
@@ -75,13 +103,15 @@ export class OpenCodeTransformer extends BaseTransformer {
     }
 
     return config;
-  }
+  },
+
+  getConfigPath: (cwd: string) => Promise.resolve(fileUtils.getConfigPath(opencodeTarget.config, cwd)),
 
   /**
-   * Read OpenCode configuration
+   * Read OpenCode configuration with structure normalization
    */
   async readConfig(cwd: string): Promise<any> {
-    const config = await super.readConfig(cwd);
+    const config = await fileUtils.readConfig(opencodeTarget.config, cwd);
 
     // Ensure the config has the expected structure
     if (!config.mcp) {
@@ -89,10 +119,10 @@ export class OpenCodeTransformer extends BaseTransformer {
     }
 
     return config;
-  }
+  },
 
   /**
-   * Write OpenCode configuration
+   * Write OpenCode configuration with structure normalization
    */
   async writeConfig(cwd: string, config: any): Promise<void> {
     // Ensure the config has the expected structure for OpenCode
@@ -100,24 +130,16 @@ export class OpenCodeTransformer extends BaseTransformer {
       config.mcp = {};
     }
 
-    await super.writeConfig(cwd, config);
-  }
+    await fileUtils.writeConfig(opencodeTarget.config, cwd, config);
+  },
+
+  validateRequirements: (cwd: string) => fileUtils.validateRequirements(opencodeTarget.config, cwd),
 
   /**
-   * Validate OpenCode-specific requirements
-   */
-  async validateRequirements(cwd: string): Promise<void> {
-    await super.validateRequirements(cwd);
-
-    // OpenCode-specific validations could go here
-    // For now, we just use the base validation
-  }
-
-  /**
-   * Get OpenCode-specific help text
+   * Get detailed OpenCode-specific help text
    */
   getHelpText(): string {
-    let help = super.getHelpText();
+    let help = generateHelpText(opencodeTarget.config);
 
     help += 'OpenCode-Specific Information:\n';
     help += '  Configuration File: opencode.jsonc\n';
@@ -133,53 +155,17 @@ export class OpenCodeTransformer extends BaseTransformer {
     help += '  Agent content here...\n\n';
 
     return help;
-  }
+  },
 
   /**
-   * Helper method to extract agent metadata from YAML front matter
+   * Detect if this target is being used in the current environment
    */
-  async extractAgentMetadata(content: string): Promise<any> {
-    const { metadata } = await this.extractYamlFrontMatter(content);
-
-    if (typeof metadata === 'string') {
-      try {
-        // Try to parse as JSON first
-        return JSON.parse(metadata);
-      } catch {
-        // If not JSON, return as string
-        return { raw: metadata };
-      }
+  detectFromEnvironment(): boolean {
+    try {
+      const cwd = process.cwd();
+      return fs.existsSync(path.join(cwd, 'opencode.jsonc'));
+    } catch {
+      return false;
     }
-
-    return metadata || {};
   }
-
-  /**
-   * Helper method to update agent metadata in YAML front matter
-   */
-  async updateAgentMetadata(content: string, updates: any): Promise<string> {
-    const { metadata: existingMetadata, content: baseContent } =
-      await this.extractYamlFrontMatter(content);
-    const updatedMetadata = { ...existingMetadata, ...updates };
-    return this.addYamlFrontMatter(baseContent, updatedMetadata);
-  }
-
-  /**
-   * Helper method to check if content has valid YAML front matter
-   */
-  hasValidYamlFrontMatter(content: string): boolean {
-    const yamlRegex = /^---\s*\n[\s\S]*?\n---\s*\n/;
-    return yamlRegex.test(content);
-  }
-
-  /**
-   * Helper method to ensure content has YAML front matter
-   */
-  async ensureYamlFrontMatter(content: string, defaultMetadata: any = {}): Promise<string> {
-    if (this.hasValidYamlFrontMatter(content)) {
-      return content;
-    }
-
-    return this.addYamlFrontMatter(content, defaultMetadata);
-  }
-}
+};

@@ -112,23 +112,58 @@ export interface TargetConfig {
   };
 }
 
-export interface TargetTransformer {
+export abstract class Target {
+  /** Internal identifier used in CLI commands */
+  public readonly id: string;
+  /** Display name for the target */
+  public readonly name: string;
+  /** Human-readable description */
+  public readonly description: string;
+  /** Target-specific configuration */
+  public readonly config: TargetConfig;
+  /** Target category for grouping */
+  public readonly category: 'ide' | 'editor' | 'cli';
+  /** Whether this target is the default when no target is specified */
+  public readonly isDefault?: boolean;
+  /** Whether this target is fully implemented */
+  public readonly isImplemented: boolean;
+
+  constructor(id: string, name: string, description: string, config: TargetConfig, category: 'ide' | 'editor' | 'cli', isDefault?: boolean, isImplemented = true) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.config = config;
+    this.category = category;
+    this.isDefault = isDefault;
+    this.isImplemented = isImplemented;
+  }
+
   /** Transform agent content for the target */
-  transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string>;
+  abstract transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string>;
+
   /** Transform MCP server configuration for the target */
-  transformMCPConfig(config: MCPServerConfigUnion): any;
+  abstract transformMCPConfig(config: MCPServerConfigUnion): any;
+
   /** Get the configuration file path for the target */
-  getConfigPath(cwd: string): string;
+  abstract getConfigPath(cwd: string): Promise<string>;
+
   /** Read the target's configuration file */
-  readConfig(cwd: string): Promise<any>;
+  abstract readConfig(cwd: string): Promise<any>;
+
   /** Write the target's configuration file */
-  writeConfig(cwd: string, config: any): Promise<void>;
+  abstract writeConfig(cwd: string, config: any): Promise<void>;
+
   /** Validate target-specific requirements */
-  validateRequirements(cwd: string): Promise<void>;
+  abstract validateRequirements(cwd: string): Promise<void>;
+
   /** Get target-specific help text */
-  getHelpText(): string;
+  abstract getHelpText(): string;
+
   /** Execute command with the target (optional - not all targets need to support execution) */
-  executeCommand?(systemPrompt: string, userPrompt: string, options: any): Promise<void>;
+  async executeCommand?(systemPrompt: string, userPrompt: string, options: any): Promise<void>;
+
+  /** Detect if this target is being used in the current environment (optional) */
+  detectFromEnvironment?(): boolean;
 }
 
 export interface CommonOptions {
