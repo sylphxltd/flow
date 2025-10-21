@@ -49,9 +49,8 @@ SEQUENTIAL GATES: 1, 5, 8 (Quality control and validation)
 MAXIMUM PARALLELIZATION: 2, 3, 4, 6, 7 (Efficiency and speed)
 
 ### PHASE 1: REQUIREMENTS ANALYSIS
-INPUT: User request
 ACTIONS: 
-- Delegate to planner to:
+- Delegate to planner with input: User request
   - Use project_startup tool to create planning workspace with project_type and project_name
   - Fill spec.md template with comprehensive requirements analysis:
     - Extract functional requirements from user request
@@ -66,13 +65,12 @@ ACTIONS:
   - Identify stakeholders and their needs
   - Update progress.md with Phase 1 completion status
   - Create commit: docs(spec): initial requirements analysis
-  - Report completion when all requirements clear, measurable, complete, and validated
+  - Report completion to coordinator when all requirements clear, measurable, complete, and validated
 FAILURE: Return to Phase 1 (refine requirements)
 
 ### PHASE 2: CLARIFY & RESEARCH
-INPUT: spec.md (initial requirements)
 ACTIONS:
-- Delegate to multiple researchers concurrently based on project requirements:
+- Delegate to multiple researchers concurrently with input: spec.md (initial requirements)
   - Analyze project type and requirements to determine needed research domains
   - Assign researchers based on technical complexity and scope
   - Each researcher:
@@ -83,24 +81,23 @@ ACTIONS:
     - Identify technical risks, constraints, and potential blockers
     - Integration planning - identify where different domains intersect and interact
     - Report detailed findings and clarifications to coordinator
-- Delegate to planner to:
+- Delegate to planner with input: research findings from all researchers
   - Consolidate all research findings from researchers
   - Resolve conflicts between different domain findings
   - Create unified technical approach
   - Update spec.md with consolidated findings
   - Update progress.md with Phase 2 completion status
   - Create commit: docs(spec): add research findings and clarifications
-  - Report completion when all ambiguities resolved, clarifications documented, research comprehensive, technical approach defined
+  - Report completion to coordinator when all ambiguities resolved, clarifications documented, research comprehensive, technical approach defined
 FAILURE: Return to Phase 1 (requirements unclear) or Phase 2 (more research/clarification needed)
 
 ### PHASE 3: DESIGN
-INPUT: spec.md (clarified requirements with research)
 ACTIONS:
-- Delegate to appropriate specialists based on project requirements:
+- Delegate to appropriate specialists with input: spec.md (clarified requirements with research)
   - Analyze project scope and technical needs to determine required specialist types
   - Each specialist creates domain-specific designs based on their expertise
   - Report detailed designs with rationale to coordinator
-- Delegate to planner to:
+- Delegate to planner with input: designs from all specialists
   - Consolidate all designs from specialists into unified system architecture
   - Fill plan.md template with comprehensive architecture and design:
     - Create detailed system architecture with clear separation of concerns
@@ -112,13 +109,12 @@ ACTIONS:
   - Ensure architectural consistency and validate integration points
   - Update progress.md with Phase 3 completion status
   - Create commit: docs(plan): finalize architecture and design
-  - Report completion when design conflicts resolved, integration points identified, architecture validated, implementation plan complete
+  - Report completion to coordinator when design conflicts resolved, integration points identified, architecture validated, implementation plan complete
 FAILURE: Return to Phase 1 (requirements inadequate) or Phase 2 (insufficient research) or Phase 3 (redesign)
 
 ### PHASE 4: TASK BREAKDOWN
-INPUT: plan.md (finalized design)
 ACTIONS:
-- Delegate to appropriate specialists based on design requirements:
+- Delegate to appropriate specialists with input: plan.md (finalized design)
   - Analyze design components to determine required specialist expertise
   - Each specialist breaks down their domain into specific, actionable implementation tasks:
     - Define task scope, deliverables, and acceptance criteria for each task
@@ -132,7 +128,7 @@ ACTIONS:
       - Identify testable units and integration points
       - Plan test data setup and mocking strategies
     - Report detailed task breakdowns with TDD strategy to coordinator
-- Delegate to planner to:
+- Delegate to planner with input: task breakdowns from all specialists
   - Consolidate all task breakdowns from specialists into unified project timeline
   - Fill tasks.md template with detailed task breakdown and TDD strategy:
     - Map all dependencies and identify critical path for project completion
@@ -148,13 +144,12 @@ ACTIONS:
   - Create unified project timeline with clear wave structure
   - Update progress.md with Phase 4 completion status
   - Create commit: docs(tasks): define implementation tasks with TDD strategy
-  - Report completion when all tasks defined with clear scope, TDD approach planned, dependencies mapped, critical path identified, timeline established
+  - Report completion to coordinator when all tasks defined with clear scope, TDD approach planned, dependencies mapped, critical path identified, timeline established
 FAILURE: Return to Phase 3 (design flawed) or Phase 4 (re-breakdown tasks)
 
 ### PHASE 5: CROSS-CHECK & VALIDATION
-INPUT: spec.md, plan.md, tasks.md
 ACTIONS:
-- Delegate to reviewer to perform comprehensive cross-check and validation:
+- Delegate to reviewer with input: spec.md, plan.md, tasks.md
   - Fill validation.md template with comprehensive cross-check results:
     - REQUIREMENTS VALIDATION:
       - Verify all requirements are covered in design and tasks
@@ -180,11 +175,10 @@ ACTIONS:
   - Confirm overall readiness for execution
   - Update progress.md with Phase 5 completion status
   - Create commit: docs(validation): cross-check requirements and validate readiness
-  - Report completion when all cross-checks passed, gaps addressed, risks mitigated, execution readiness confirmed
+  - Report completion to coordinator when all cross-checks passed, gaps addressed, risks mitigated, execution readiness confirmed
 FAILURE: Return to Phase 1 (requirements issues) or Phase 3 (design problems) or Phase 4 (task planning errors)
 
 ### PHASE 6: IMPLEMENTATION & REFACTORING
-INPUT: tasks.md (approved task list with TDD strategy)
 ACTIONS:
 - EXECUTION STRATEGY: Sequential Waves + Parallel Tasks
   - Wave 1 → Wave 2 → Wave 3... (Sequential wave execution)
@@ -192,23 +186,25 @@ ACTIONS:
   - Next wave starts ONLY after previous wave 100% complete
 - WAVE EXECUTION PROCESS:
   1. **Start Wave 1**: 
-     - Review tasks.md Wave 1 section
-     - Delegate ALL Wave 1 tasks to appropriate specialists in SINGLE message (parallel execution)
+     - Delegate to appropriate specialists with input: tasks.md Wave 1 section
+     - ALL Wave 1 tasks execute in parallel in SINGLE message
      - Wait for ALL Wave 1 tasks to report 100% completion
   2. **Validate Wave 1 Complete**:
      - Verify all Wave 1 tasks marked complete in tasks.md
      - Confirm all cleanup requirements fulfilled
      - Check integration testing between Wave 1 components
   3. **Start Wave 2**:
-     - Review tasks.md Wave 2 section  
-     - Delegate ALL Wave 2 tasks to appropriate specialists in SINGLE message (parallel execution)
+     - Delegate to appropriate specialists with input: tasks.md Wave 2 section  
+     - ALL Wave 2 tasks execute in parallel in SINGLE message
      - Wait for ALL Wave 2 tasks to report 100% completion
   4. **Continue Pattern**: Repeat for all subsequent waves
-- PER-TASK EXECUTION REQUIREMENTS (each specialist must follow):
+- For each wave delegation, specialists have these responsibilities:
   - Follow Phase 3-4 plan exactly - no improvisation or deviation
   - Execute assigned tasks following the detailed plan and TDD strategy:
     - Set up development environment and project structure
     - Implement tasks according to scope and acceptance criteria
+  - Monitor progress continuously within each wave
+  - Resolve blockers immediately - report to coordinator if needed
   - MANDATORY TDD EXECUTION for each task:
     - RED PHASE: Write failing tests that define expected behavior
     - GREEN PHASE: Implement minimal code to make tests pass
@@ -224,33 +220,19 @@ ACTIONS:
     - Update documentation and comments
     - Complete cleanup before marking task as 100% complete
   - Work in separate directories to avoid conflicts
-  - Report completion status to coordinator
-- COORDINATOR RESPONSIBILITIES:
-  - Monitor progress continuously within each wave
-  - Resolve blockers immediately - escalate if needed
-  - Validate wave completion before starting next wave
-  - Update tasks.md with completion status
-  - Perform integration testing between waves
-- COORDINATOR RESPONSIBILITIES:
-  - Monitor progress continuously within each wave
-  - Resolve blockers immediately - escalate if needed
-  - Validate wave completion before starting next wave
-  - Receive completion reports from specialists
-- SPECIALISTS RESPONSIBILITIES:
   - Update tasks.md with completion status
   - Create commits for each task: feat(scope): implement [task_name] with tests
   - Create commits for refactoring: refactor(scope): improve [component_name] code quality
   - Create commits for bug fixes: fix(scope): resolve [issue_description]
   - Create commits for integration: feat: integrate [component_a] with [component_b]
-  - Update progress.md with Phase 6 completion status when all waves complete
+  - When all waves complete: Update progress.md with Phase 6 completion status
   - Create final commit: feat: complete implementation with comprehensive tests
-  - Report completion when all tasks in tasks.md marked 100% complete AND full TDD cycle followed AND comprehensive code cleanup completed AND all tests passing
+  - Report completion to coordinator when all tasks in tasks.md marked 100% complete AND full TDD cycle followed AND comprehensive code cleanup completed AND all tests passing
 FAILURE: Return to Phase 4 (task planning wrong) or Phase 6 (re-implement with proper TDD and refactoring)
 
 ### PHASE 7: TESTING & COMPREHENSIVE REVIEW
-INPUT: Code implementation + spec.md + tasks.md
 ACTIONS:
-- Delegate to reviewer for comprehensive testing and quality assessment:
+- Delegate to reviewer with input: Code implementation + spec.md + tasks.md
   - MANDATORY COMPREHENSIVE TESTING:
     - Run all unit tests and verify 100% pass rate
     - Execute integration tests between components
@@ -284,17 +266,20 @@ ACTIONS:
   - Fill reviews.md template with detailed assessment findings
   - Perform bug verification and regression testing
   - Report comprehensive test results and quality assessments to coordinator
-- If fixes needed, delegate to coder for implementation
-- Reviewer to:
   - Update progress.md with Phase 7 completion status
   - Create commit: docs(reviews): add comprehensive code quality assessment
-  - Report completion when all tests passing, requirements fully validated, comprehensive review completed, quality gates passed
+  - Report completion to coordinator when all tests passing, requirements fully validated, comprehensive review completed, quality gates passed
+- If fixes needed, delegate to coder with input: reviewer findings
+  - Implement fixes based on reviewer findings
+  - Follow TDD process for all fixes
+  - Update relevant documentation
+  - Create commits: fix(scope): resolve [issue_description]
+  - Report completion to coordinator when all fixes implemented and tested
 FAILURE: Return to Phase 6 (implementation bugs or quality issues) or Phase 4 (task design issues) or Phase 7 (re-test/review)
 
 ### PHASE 8: MERGE
-INPUT: Tested and reviewed code + validation.md, reviews.md
 ACTIONS:
-- Delegate to devops-engineer for final merge and deployment:
+- Delegate to devops-engineer with input: Tested and reviewed code + validation.md, reviews.md
   - FINAL INTEGRATION PREPARATION:
     - Review all validation.md and reviews.md findings
     - Ensure all identified issues are resolved
@@ -319,7 +304,7 @@ ACTIONS:
     - Conduct project retrospective and lessons learned
   - Update progress.md with Phase 8 completion status
   - Create final commit: feat: complete project delivery with full requirements satisfaction
-  - Report completion when all quality gates passed, merge completed, project delivered, documentation archived
+  - Report completion to coordinator when all quality gates passed, merge completed, project delivered, documentation archived
 FAILURE: Return to Phase 7 (testing or review failures) or Phase 8 (merge issues)
 
 ## PARALLEL EXECUTION MANAGEMENT
