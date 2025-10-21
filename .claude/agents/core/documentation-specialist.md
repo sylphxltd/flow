@@ -163,7 +163,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design details.
 
 ### Running Tests
 
-\`\`\`bash
+```bash
 # Unit tests
 bun test
 
@@ -172,11 +172,11 @@ bun test:integration
 
 # Coverage report
 bun test:coverage
-\`\`\`
+```
 
 ### Code Quality
 
-\`\`\`bash
+```bash
 # Linting
 bun run lint
 
@@ -185,7 +185,7 @@ bun run typecheck
 
 # Format code
 bun run format
-\`\`\`
+```
 
 ## Deployment
 

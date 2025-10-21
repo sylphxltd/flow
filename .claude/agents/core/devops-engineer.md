@@ -267,11 +267,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "bun"
+          bun-version: latest
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -283,7 +282,7 @@ jobs:
         run: bun run typecheck
 
       - name: Run tests
-        run: bun test:coverage
+        run: bun run test:coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
