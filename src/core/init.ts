@@ -173,3 +173,62 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
   displayResults(results, agentsDir, target.name, 'Install', options.verbose);
 }
+
+// ============================================================================
+// RULES INSTALLATION FUNCTION
+// ============================================================================
+
+export async function installRules(options: CommonOptions): Promise<void> {
+  const cwd = process.cwd();
+
+  // Resolve target using the target manager
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const target = targetManager.getTargetDefinition(targetId);
+
+  // Only install rules if the target has a rulesFile configured
+  if (!target.config.rulesFile) {
+    return;
+  }
+
+  // Get script directory and resolve templates path (use unified rules.md template)
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const templatePath = path.join(__dirname, '..', 'templates', 'rules', 'rules.md');
+
+  if (!fs.existsSync(templatePath)) {
+    console.warn(`⚠️ Rules template not found: ${templatePath}`);
+    return;
+  }
+
+  // Rules files are installed in the target-specific directory (same level as agents)
+  const agentsDir = path.join(cwd, target.config.agentDir);
+  const targetDir = path.dirname(agentsDir); // Get parent directory (.claude or .opencode)
+  const rulesDestPath = path.join(targetDir, target.config.rulesFile!);
+
+  // Create the directory if it doesn't exist
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  // Check if rules file already exists and is up to date
+  const localInfo = getLocalFileInfo(rulesDestPath);
+  const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+  if (options.dryRun) {
+    console.log(`🔍 Dry run: Would install rules file to ${rulesDestPath.replace(`${cwd}/`, '')}`);
+    return;
+  }
+
+  if (localInfo && localInfo.content === templateContent) {
+    if (options.quiet !== true) {
+      console.log(`📋 Rules file already current: ${target.config.rulesFile}`);
+    }
+    return;
+  }
+
+  // Write the rules file
+  fs.writeFileSync(rulesDestPath, templateContent, 'utf8');
+
+  if (options.quiet !== true) {
+    const action = localInfo ? 'Updated' : 'Created';
+    console.log(`📋 ${action} rules file: ${target.config.rulesFile}`);
+  }
+}

@@ -1,5 +1,5 @@
 import { getDefaultServers, getServersRequiringAPIKeys } from '../config/servers.js';
-import { installAgents } from '../core/init.js';
+import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
@@ -114,6 +114,9 @@ export const initCommand: CommandConfig = {
 
     // Install agents
     await installAgents(options);
+
+    // Install rules file
+    await installRules(options);
 
     console.log('');
     console.log('🎉 Setup complete!');

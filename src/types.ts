@@ -99,6 +99,8 @@ export interface TargetConfig {
   configSchema: string | null;
   /** Path to MCP configuration in config file */
   mcpConfigPath: string;
+  /** Rules file name and path (optional) */
+  rulesFile?: string;
   /** Installation-specific configuration */
   installation: {
     /** Whether to create the agent directory */

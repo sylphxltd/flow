@@ -290,6 +290,7 @@ var TARGET_REGISTRY = {
       configFile: "opencode.jsonc",
       configSchema: "https://opencode.ai/config.json",
       mcpConfigPath: "mcp",
+      rulesFile: "AGENTS.md",
       installation: {
         createAgentDir: true,
         createConfigFile: true,
@@ -385,6 +386,7 @@ var TARGET_REGISTRY = {
       configFile: ".mcp.json",
       configSchema: null,
       mcpConfigPath: "mcpServers",
+      rulesFile: "CLAUDE.md",
       installation: {
         createAgentDir: true,
         createConfigFile: true,
@@ -777,6 +779,42 @@ async function installAgents(options) {
   await Promise.all(processPromises);
   displayResults(results, agentsDir, target.name, "Install", options.verbose);
 }
+async function installRules(options) {
+  const cwd = process.cwd();
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const target = targetManager.getTargetDefinition(targetId);
+  if (!target.config.rulesFile) {
+    return;
+  }
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname2 = path3.dirname(__filename);
+  const templatePath = path3.join(__dirname2, "..", "templates", "rules", "rules.md");
+  if (!fs3.existsSync(templatePath)) {
+    console.warn(`\u26A0\uFE0F Rules template not found: ${templatePath}`);
+    return;
+  }
+  const agentsDir = path3.join(cwd, target.config.agentDir);
+  const targetDir = path3.dirname(agentsDir);
+  const rulesDestPath = path3.join(targetDir, target.config.rulesFile);
+  fs3.mkdirSync(targetDir, { recursive: true });
+  const localInfo = getLocalFileInfo(rulesDestPath);
+  const templateContent = fs3.readFileSync(templatePath, "utf8");
+  if (options.dryRun) {
+    console.log(`\u{1F50D} Dry run: Would install rules file to ${rulesDestPath.replace(`${cwd}/`, "")}`);
+    return;
+  }
+  if (localInfo && localInfo.content === templateContent) {
+    if (options.quiet !== true) {
+      console.log(`\u{1F4CB} Rules file already current: ${target.config.rulesFile}`);
+    }
+    return;
+  }
+  fs3.writeFileSync(rulesDestPath, templateContent, "utf8");
+  if (options.quiet !== true) {
+    const action = localInfo ? "Updated" : "Created";
+    console.log(`\u{1F4CB} ${action} rules file: ${target.config.rulesFile}`);
+  }
+}
 
 // src/utils/target-config.ts
 async function addMCPServersToTarget(cwd, targetId, serverTypes) {
@@ -1078,6 +1116,7 @@ var initCommand = {
       console.log("");
     }
     await installAgents(options);
+    await installRules(options);
     console.log("");
     console.log("\u{1F389} Setup complete!");
     console.log("");

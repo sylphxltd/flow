@@ -39,6 +39,7 @@ export const TARGET_REGISTRY: Record<string, TargetDefinition> = {
       configFile: 'opencode.jsonc',
       configSchema: 'https://opencode.ai/config.json',
       mcpConfigPath: 'mcp',
+      rulesFile: 'AGENTS.md',
       installation: {
         createAgentDir: true,
         createConfigFile: true,
@@ -132,6 +133,7 @@ export const TARGET_REGISTRY: Record<string, TargetDefinition> = {
       configFile: '.mcp.json',
       configSchema: null,
       mcpConfigPath: 'mcpServers',
+      rulesFile: 'CLAUDE.md',
       installation: {
         createAgentDir: true,
         createConfigFile: true,
