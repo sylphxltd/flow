@@ -1,6 +1,6 @@
-# Core Rules
+# Core Reasoning Rules
 
-## Core Reasoning Requirement
+## Reasoning Requirement
 
 **Before every response, you must apply maximum effort to reasoning.**
 

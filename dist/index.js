@@ -145,9 +145,9 @@ function getAllEnvVars(serverId) {
 }
 
 // src/core/init.ts
-import fs3 from "fs";
-import path3 from "path";
-import { fileURLToPath } from "url";
+import fs4 from "fs";
+import path4 from "path";
+import { fileURLToPath as fileURLToPath2 } from "url";
 
 // src/shared.ts
 import fs from "fs";
@@ -271,9 +271,30 @@ function displayResults(results, targetDir, agentName, operation, verbose = fals
   console.log(`\u{1F4C1} Target directory: ${targetDir}`);
 }
 
-// src/core/target-manager.ts
-import fs2 from "fs/promises";
+// src/config/rules.js
+import fs2 from "fs";
+import { fileURLToPath } from "url";
 import path2 from "path";
+var CORE_RULES = {
+  reasoning: "reasoning.md",
+  communication: "communication.md",
+  security: "security.md",
+  quality: "quality.md"
+};
+function getRulesPath(ruleType = "reasoning") {
+  return path2.join(process.cwd(), "config", "rules", CORE_RULES[ruleType]);
+}
+function getAllRuleTypes() {
+  return Object.keys(CORE_RULES);
+}
+function ruleFileExists(ruleType) {
+  const rulePath = getRulesPath(ruleType);
+  return fs2.existsSync(rulePath);
+}
+
+// src/core/target-manager.ts
+import fs3 from "fs/promises";
+import path3 from "path";
 
 // src/config/targets.ts
 var TARGET_REGISTRY = {
@@ -547,47 +568,47 @@ var TargetManager = class {
       {
         target: "opencode",
         check: async () => {
-          const configPath = path2.join(cwd, "opencode.jsonc");
-          const agentDir = path2.join(cwd, ".opencode");
-          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          const configPath = path3.join(cwd, "opencode.jsonc");
+          const agentDir = path3.join(cwd, ".opencode");
+          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
           return configExists || agentDirExists;
         }
       },
       {
         target: "cursor",
         check: async () => {
-          const configPath = path2.join(cwd, "cursor.json");
-          const agentDir = path2.join(cwd, ".cursor");
-          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          const configPath = path3.join(cwd, "cursor.json");
+          const agentDir = path3.join(cwd, ".cursor");
+          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
           return configExists || agentDirExists;
         }
       },
       {
         target: "vscode",
         check: async () => {
-          const configPath = path2.join(cwd, ".vscode", "settings.json");
-          return fs2.access(configPath).then(() => true).catch(() => false);
+          const configPath = path3.join(cwd, ".vscode", "settings.json");
+          return fs3.access(configPath).then(() => true).catch(() => false);
         }
       },
       {
         target: "cli",
         check: async () => {
-          const configPath = path2.join(cwd, "sylphx.json");
-          const agentDir = path2.join(cwd, ".sylphx");
-          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          const configPath = path3.join(cwd, "sylphx.json");
+          const agentDir = path3.join(cwd, ".sylphx");
+          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
           return configExists || agentDirExists;
         }
       },
       {
         target: "claude-code",
         check: async () => {
-          const configPath = path2.join(cwd, ".mcp.json");
-          const agentDir = path2.join(cwd, ".claude");
-          const configExists = await fs2.access(configPath).then(() => true).catch(() => false);
-          const agentDirExists = await fs2.access(agentDir).then(() => true).catch(() => false);
+          const configPath = path3.join(cwd, ".mcp.json");
+          const agentDir = path3.join(cwd, ".claude");
+          const configExists = await fs3.access(configPath).then(() => true).catch(() => false);
+          const agentDirExists = await fs3.access(agentDir).then(() => true).catch(() => false);
           return configExists || agentDirExists;
         }
       }
@@ -624,14 +645,14 @@ var TargetManager = class {
    */
   getAgentDirectory(targetId, cwd = process.cwd()) {
     const config = this.getTargetConfig(targetId);
-    return path2.join(cwd, config.agentDir);
+    return path3.join(cwd, config.agentDir);
   }
   /**
    * Get configuration file path for target
    */
   getConfigFilePath(targetId, cwd = process.cwd()) {
     const config = this.getTargetConfig(targetId);
-    return path2.join(cwd, config.configFile);
+    return path3.join(cwd, config.configFile);
   }
   /**
    * Get help text for all targets
@@ -684,20 +705,20 @@ var targetManager = new TargetManager();
 
 // src/core/init.ts
 async function getAgentFiles() {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname2 = path3.dirname(__filename);
-  const agentsDir = path3.join(__dirname2, "..", "agents");
-  if (!fs3.existsSync(agentsDir)) {
+  const __filename = fileURLToPath2(import.meta.url);
+  const __dirname2 = path4.dirname(__filename);
+  const agentsDir = path4.join(__dirname2, "..", "agents");
+  if (!fs4.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
   }
   const allFiles = [];
-  const rootFiles = fs3.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md")).map((dirent) => dirent.name);
+  const rootFiles = fs4.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md")).map((dirent) => dirent.name);
   allFiles.push(...rootFiles);
-  const subdirs = fs3.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
+  const subdirs = fs4.readdirSync(agentsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory() && dirent.name !== "archived").map((dirent) => dirent.name);
   for (const subdir of subdirs) {
-    const subdirPath = path3.join(agentsDir, subdir);
+    const subdirPath = path4.join(agentsDir, subdir);
     const files = collectFiles(subdirPath, [".md"]);
-    allFiles.push(...files.map((file) => path3.join(subdir, file)));
+    allFiles.push(...files.map((file) => path4.join(subdir, file)));
   }
   return allFiles;
 }
@@ -712,16 +733,16 @@ async function installAgents(options) {
   }
   console.log(`\u{1F4DD} Using target: ${target.name}`);
   const config = target.config;
-  const agentsDir = path3.join(cwd, config.agentDir);
+  const agentsDir = path4.join(cwd, config.agentDir);
   const processContent = async (content, sourcePath) => {
     return await transformer.transformAgentContent(content, void 0, sourcePath);
   };
-  if (options.clear && fs3.existsSync(agentsDir)) {
+  if (options.clear && fs4.existsSync(agentsDir)) {
     let expectedFiles;
     const agentFiles2 = await getAgentFiles();
     expectedFiles = new Set(
       agentFiles2.map((filePath) => {
-        const parsedPath = path3.parse(filePath);
+        const parsedPath = path4.parse(filePath);
         const baseName = parsedPath.name;
         const dir = parsedPath.dir;
         if (config.flatten) {
@@ -733,7 +754,7 @@ async function installAgents(options) {
     );
     clearObsoleteFiles(agentsDir, expectedFiles, [config.agentExtension], results);
   }
-  fs3.mkdirSync(agentsDir, { recursive: true });
+  fs4.mkdirSync(agentsDir, { recursive: true });
   const agentFiles = await getAgentFiles();
   if (options.quiet !== true) {
     console.log(
@@ -745,24 +766,24 @@ async function installAgents(options) {
     console.log("\u2705 Dry run completed - no files were modified");
     return;
   }
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname2 = path3.dirname(__filename);
-  const agentsSourceDir = path3.join(__dirname2, "..", "agents");
+  const __filename = fileURLToPath2(import.meta.url);
+  const __dirname2 = path4.dirname(__filename);
+  const agentsSourceDir = path4.join(__dirname2, "..", "agents");
   const processPromises = agentFiles.map(async (agentFile) => {
-    const sourcePath = path3.join(agentsSourceDir, agentFile);
-    const destPath = path3.join(agentsDir, agentFile);
-    const destDir = path3.dirname(destPath);
-    if (!fs3.existsSync(destDir)) {
-      fs3.mkdirSync(destDir, { recursive: true });
+    const sourcePath = path4.join(agentsSourceDir, agentFile);
+    const destPath = path4.join(agentsDir, agentFile);
+    const destDir = path4.dirname(destPath);
+    if (!fs4.existsSync(destDir)) {
+      fs4.mkdirSync(destDir, { recursive: true });
     }
     const localInfo = getLocalFileInfo(destPath);
     const _isNew = !localInfo;
-    let content = fs3.readFileSync(sourcePath, "utf8");
+    let content = fs4.readFileSync(sourcePath, "utf8");
     content = await processContent(content, agentFile);
     const localProcessed = localInfo ? await processContent(localInfo.content, agentFile) : "";
     const contentChanged = !localInfo || localProcessed !== content;
     if (contentChanged) {
-      fs3.writeFileSync(destPath, content, "utf8");
+      fs4.writeFileSync(destPath, content, "utf8");
       results.push({
         file: agentFile,
         status: localInfo ? "updated" : "added",
@@ -786,19 +807,31 @@ async function installRules(options) {
   if (!target.config.rulesFile) {
     return;
   }
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname2 = path3.dirname(__filename);
-  const templatePath = path3.join(__dirname2, "..", "templates", "rules", "rules.md");
-  if (!fs3.existsSync(templatePath)) {
-    console.warn(`\u26A0\uFE0F Rules template not found: ${templatePath}`);
+  const availableRuleTypes = getAllRuleTypes();
+  const existingRuleFiles = availableRuleTypes.filter((ruleType) => ruleFileExists(ruleType));
+  if (existingRuleFiles.length === 0) {
+    console.warn("\u26A0\uFE0F No rule files found in config/rules/");
     return;
   }
-  const agentsDir = path3.join(cwd, target.config.agentDir);
-  const targetDir = path3.dirname(agentsDir);
-  const rulesDestPath = path3.join(targetDir, target.config.rulesFile);
-  fs3.mkdirSync(targetDir, { recursive: true });
+  let mergedContent = `# Development Rules
+
+`;
+  for (const ruleType of existingRuleFiles) {
+    const rulePath = getRulesPath(ruleType);
+    const ruleContent = fs4.readFileSync(rulePath, "utf8");
+    const lines = ruleContent.split("\n");
+    const contentStartIndex = lines.findIndex((line) => line.startsWith("# ")) + 1;
+    const ruleMainContent = lines.slice(contentStartIndex).join("\n").trim();
+    mergedContent += `---
+
+${ruleMainContent}
+
+`;
+  }
+  mergedContent = mergedContent.replace(/\n\n---\n\n$/, "");
+  const rulesDestPath = path4.join(cwd, target.config.rulesFile);
   const localInfo = getLocalFileInfo(rulesDestPath);
-  const templateContent = fs3.readFileSync(templatePath, "utf8");
+  const templateContent = mergedContent;
   if (options.dryRun) {
     console.log(`\u{1F50D} Dry run: Would install rules file to ${rulesDestPath.replace(`${cwd}/`, "")}`);
     return;
@@ -809,10 +842,12 @@ async function installRules(options) {
     }
     return;
   }
-  fs3.writeFileSync(rulesDestPath, templateContent, "utf8");
+  fs4.writeFileSync(rulesDestPath, templateContent, "utf8");
   if (options.quiet !== true) {
     const action = localInfo ? "Updated" : "Created";
-    console.log(`\u{1F4CB} ${action} rules file: ${target.config.rulesFile}`);
+    const ruleCount = existingRuleFiles.length;
+    const ruleList = existingRuleFiles.map((type) => type.charAt(0).toUpperCase() + type.slice(1)).join(", ");
+    console.log(`\u{1F4CB} ${action} rules file: ${target.config.rulesFile} (merged ${ruleCount} rules: ${ruleList})`);
   }
 }
 
@@ -974,11 +1009,11 @@ function validateTarget(targetId) {
 function targetSupportsMCPServers(targetId) {
   return targetManager.supportsMCPServers(targetId);
 }
-function getNestedProperty(obj, path5) {
-  return path5.split(".").reduce((current, key) => current?.[key], obj);
+function getNestedProperty(obj, path6) {
+  return path6.split(".").reduce((current, key) => current?.[key], obj);
 }
-function setNestedProperty(obj, path5, value) {
-  const keys = path5.split(".");
+function setNestedProperty(obj, path6, value) {
+  const keys = path6.split(".");
   const lastKey = keys.pop();
   const target = keys.reduce((current, key) => {
     if (!current[key] || typeof current[key] !== "object") {
@@ -988,8 +1023,8 @@ function setNestedProperty(obj, path5, value) {
   }, obj);
   target[lastKey] = value;
 }
-function deleteNestedProperty(obj, path5) {
-  const keys = path5.split(".");
+function deleteNestedProperty(obj, path6) {
+  const keys = path6.split(".");
   const lastKey = keys.pop();
   const target = keys.reduce((current, key) => current?.[key], obj);
   if (target) {
@@ -2206,8 +2241,8 @@ var memoryTuiCommand = {
 };
 
 // src/commands/run-command.ts
-import fs4 from "fs/promises";
-import path4 from "path";
+import fs5 from "fs/promises";
+import path5 from "path";
 async function validateRunOptions(options) {
   options.target = await targetManager.resolveTarget({ target: options.target });
   if (!options.agent) {
@@ -2216,13 +2251,13 @@ async function validateRunOptions(options) {
 }
 async function loadAgentContent(agentName) {
   try {
-    const agentPath = path4.join(process.cwd(), "agents", `${agentName}.md`);
+    const agentPath = path5.join(process.cwd(), "agents", `${agentName}.md`);
     try {
-      const content = await fs4.readFile(agentPath, "utf-8");
+      const content = await fs5.readFile(agentPath, "utf-8");
       return content;
     } catch (_error) {
-      const packageAgentPath = path4.join(__dirname, "../../agents", `${agentName}.md`);
-      const content = await fs4.readFile(packageAgentPath, "utf-8");
+      const packageAgentPath = path5.join(__dirname, "../../agents", `${agentName}.md`);
+      const content = await fs5.readFile(packageAgentPath, "utf-8");
       return content;
     }
   } catch (_error) {

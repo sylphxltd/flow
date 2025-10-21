@@ -99,7 +99,7 @@ export interface TargetConfig {
   configSchema: string | null;
   /** Path to MCP configuration in config file */
   mcpConfigPath: string;
-  /** Rules file name and path (optional) */
+  /** Rules file path (optional, relative to project root) */
   rulesFile?: string;
   /** Installation-specific configuration */
   installation: {

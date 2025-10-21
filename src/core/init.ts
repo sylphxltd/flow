@@ -10,6 +10,7 @@ import {
   getLocalFileInfo,
   log,
 } from '../shared.js';
+import { getAllRuleTypes, getRulesPath, ruleFileExists } from '../config/rules.js';
 import { targetManager } from './target-manager.js';
 
 // ============================================================================
@@ -190,27 +191,39 @@ export async function installRules(options: CommonOptions): Promise<void> {
     return;
   }
 
-  // Get script directory and resolve templates path (use unified rules.md template)
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const templatePath = path.join(__dirname, '..', 'templates', 'rules', 'rules.md');
+  // Collect and merge all available rule files
+  const availableRuleTypes = getAllRuleTypes();
+  const existingRuleFiles = availableRuleTypes.filter(ruleType => ruleFileExists(ruleType));
 
-  if (!fs.existsSync(templatePath)) {
-    console.warn(`⚠️ Rules template not found: ${templatePath}`);
+  if (existingRuleFiles.length === 0) {
+    console.warn('⚠️ No rule files found in config/rules/');
     return;
   }
 
-  // Rules files are installed in the target-specific directory (same level as agents)
-  const agentsDir = path.join(cwd, target.config.agentDir);
-  const targetDir = path.dirname(agentsDir); // Get parent directory (.claude or .opencode)
-  const rulesDestPath = path.join(targetDir, target.config.rulesFile!);
+  // Merge all rule files into one content
+  let mergedContent = `# Development Rules\n\n`;
 
-  // Create the directory if it doesn't exist
-  fs.mkdirSync(targetDir, { recursive: true });
+  for (const ruleType of existingRuleFiles) {
+    const rulePath = getRulesPath(ruleType);
+    const ruleContent = fs.readFileSync(rulePath, 'utf8');
+
+    // Extract the main content (skip the first H1 heading)
+    const lines = ruleContent.split('\n');
+    const contentStartIndex = lines.findIndex(line => line.startsWith('# ')) + 1;
+    const ruleMainContent = lines.slice(contentStartIndex).join('\n').trim();
+
+    mergedContent += `---\n\n${ruleMainContent}\n\n`;
+  }
+
+  // Remove the last separator
+  mergedContent = mergedContent.replace(/\n\n---\n\n$/, '');
+
+  // Rules files are installed in the project root
+  const rulesDestPath = path.join(cwd, target.config.rulesFile!);
 
   // Check if rules file already exists and is up to date
   const localInfo = getLocalFileInfo(rulesDestPath);
-  const templateContent = fs.readFileSync(templatePath, 'utf8');
+  const templateContent = mergedContent;
 
   if (options.dryRun) {
     console.log(`🔍 Dry run: Would install rules file to ${rulesDestPath.replace(`${cwd}/`, '')}`);
@@ -229,6 +242,8 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
   if (options.quiet !== true) {
     const action = localInfo ? 'Updated' : 'Created';
-    console.log(`📋 ${action} rules file: ${target.config.rulesFile}`);
+    const ruleCount = existingRuleFiles.length;
+    const ruleList = existingRuleFiles.map(type => type.charAt(0).toUpperCase() + type.slice(1)).join(', ');
+    console.log(`📋 ${action} rules file: ${target.config.rulesFile} (merged ${ruleCount} rules: ${ruleList})`);
   }
 }
