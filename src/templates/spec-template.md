@@ -2,128 +2,101 @@
 
 {{DESCRIPTION}}
 
-## User Stories
-{{#each REQUIREMENTS}}
-### Story {{@index}}: {{this}}
-**As a** [user type],  
-**I want** [functionality],  
-**So that** [benefit/value].
+## Requirements Analysis (Phase 1)
+### Primary Objective
+{{OBJECTIVE}}
 
-**Acceptance Criteria:**
-- [ ] Given [context], when [action], then [expected outcome]
-- [ ] Given [context], when [action], then [expected outcome]
-- [ ] Edge case: [description] should result in [expected outcome]
+### Success Criteria
+- [ ] {{SUCCESS_CRITERION_1}}
+- [ ] {{SUCCESS_CRITERION_2}}
+- [ ] {{SUCCESS_CRITERION_3}}
 
-**Definition of Done:**
-- [ ] Feature implemented and tested
-- [ ] Code review completed
-- [ ] Documentation updated
-- [ ] User acceptance verified
-
-{{/each}}
-
-## Business Requirements
 ### Functional Requirements
 {{#each REQUIREMENTS}}
 - [ ] **FR-{{@index}}**: {{this}}
-  - **Priority**: [High/Medium/Low]
-  - **Source**: [Stakeholder/Requirement]
   - **Verification**: [How to verify this requirement]
+  - **Priority**: [High/Medium/Low]
 {{/each}}
 
 ### Non-Functional Requirements
 #### Performance
 - [ ] Response time: < {{RESPONSE_TIME}}ms for critical operations
 - [ ] Throughput: Support {{THROUGHPUT}} concurrent users
-- [ ] Resource usage: Memory/CPU limits defined
 
 #### Security
 - [ ] Authentication: {{AUTH_METHOD}} implementation
 - [ ] Authorization: Role-based access control
 - [ ] Data protection: Encryption at rest and in transit
 
-#### Usability
-- [ ] Accessibility: WCAG 2.1 AA compliance
-- [ ] User experience: Intuitive interface design
-- [ ] Error handling: Clear error messages and recovery paths
+#### Quality
+- [ ] Test coverage: ≥ {{TEST_COVERAGE}}%
+- [ ] Code quality: Pass linting and formatting checks
+- [ ] Documentation: API and code documentation complete
 
-## Acceptance Criteria
-### Project-Level Criteria
-- [ ] All user stories completed and verified
-- [ ] Performance benchmarks met
-- [ ] Security requirements implemented
-- [ ] Code quality standards met (coverage, linting)
-- [ ] Documentation complete and accurate
+## Clarification & Research (Phase 2)
+### Q&A and Clarifications
+#### Questions Asked
+{{#each QUESTIONS}}
+- **Q**: {{this.question}}
+  - **A**: {{this.answer}}
+  - **Impact**: {{this.impact}}
+{{/each}}
 
-### Quality Gates
-- [ ] Unit test coverage ≥ {{UNIT_COVERAGE_TARGET}}%
-- [ ] Integration tests pass
-- [ ] Security scan passes
-- [ ] Performance tests meet requirements
-- [ ] User acceptance testing completed
+### Research Findings
+#### Technical Approaches
+{{#each TECHNICAL_APPROACHES}}
+- [ ] {{this.approach}} - {{this.rationale}} - {{this.feasibility}}
+{{/each}}
 
-## Assumptions & Constraints
-- [ ] List any assumptions made
-- [ ] Identify any constraints or limitations
+#### Existing Solutions
+{{#each EXISTING_SOLUTIONS}}
+- [ ] {{this.solution}} - {{this.analysis}} - {{this.relevance}}
+{{/each}}
 
-## Technical Requirements
-### Performance Requirements
-- [ ] Response time requirements
-- [ ] Throughput requirements
-- [ ] Resource utilization limits
+#### Risks and Constraints
+{{#each RISKS_CONSTRAINTS}}
+- [ ] {{this.item}} - {{this.type}} - {{this.mitigation}}
+{{/each}}
 
-### Security Requirements
-- [ ] Authentication requirements
-- [ ] Authorization requirements
-- [ ] Data protection requirements
+## Technical Constraints
+### Technology Stack
+- **Frontend**: {{FRONTEND_TECH}}
+- **Backend**: {{BACKEND_TECH}}
+- **Database**: {{DATABASE_TECH}}
+- **Infrastructure**: {{INFRA_TECH}}
 
-### Integration Requirements
-- [ ] External system integrations
-- [ ] API compatibility requirements
-- [ ] Data format requirements
+### Dependencies
+#### External Dependencies
+{{#each EXTERNAL_DEPS}}
+- [ ] {{this.name}} ({{this.version}}) - {{this.purpose}}
+{{/each}}
 
-## Dependencies
-### External Dependencies
-- [ ] List external services/APIs needed
-- [ ] Third-party libraries required
+#### Internal Dependencies
+{{#each INTERNAL_DEPS}}
+- [ ] {{this.component}} - {{this.description}}
+{{/each}}
 
-### Internal Dependencies
-- [ ] Dependencies on other teams/projects
-- [ ] Shared components needed
+## Integration Points
+### External Integrations
+{{#each EXTERNAL_INTEGRATIONS}}
+- [ ] {{this.system}} - {{this.description}} - {{this.protocol}}
+{{/each}}
 
-## Risk Assessment
-### High Risks
-- [ ] Identify high-impact risks
-- [ ] Mitigation strategies
+### Internal Integrations
+{{#each INTERNAL_INTEGRATIONS}}
+- [ ] {{this.component}} - {{this.interface}} - {{this.data_flow}}
+{{/each}}
 
-### Medium Risks
-- [ ] Identify medium-impact risks
-- [ ] Mitigation strategies
+## Quality Gates
+### Definition of Done
+- [ ] Requirements clear, measurable, and complete
+- [ ] All ambiguities resolved and documented
+- [ ] Research comprehensive and documented
+- [ ] Technical feasibility validated
+- [ ] Integration points identified
 
-### Low Risks
-- [ ] Identify low-impact risks
-- [ ] Mitigation strategies
+---
 
-## Implementation Phases
-### Phase 1: Foundation
-- [ ] {{FOUNDATION_MILESTONE_1}}
-- [ ] {{FOUNDATION_MILESTONE_2}}
-
-### Phase 2: Core Features
-- [ ] {{CORE_MILESTONE_1}}
-- [ ] {{CORE_MILESTONE_2}}
-
-### Phase 3: Polish & Quality
-- [ ] {{POLISH_MILESTONE_1}}
-- [ ] {{POLISH_MILESTONE_2}}
-
-## Stakeholders
-- **Product Owner**: {{PRODUCT_OWNER}}
-  - **Tech Lead**: {{TEAM_TECH_LEAD}}
-- **QA Lead**: {{QA_LEAD}}
-- **DevOps**: {{DEVOPS}}
-
-## Communication Plan
-- **Daily Standups**: {{STANDUP_TIME}}
-- **Weekly Reviews**: {{REVIEW_TIME}}
-- **Stakeholder Updates**: {{UPDATE_FREQUENCY}}
+**Last Updated**: {{LAST_UPDATED}}
+**Current Phase**: {{CURRENT_PHASE}}
+**Status**: {{STATUS}}

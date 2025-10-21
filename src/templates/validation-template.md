@@ -1,216 +1,148 @@
-# Validation Report: {{PROJECT_NAME}}
+# Process Validation: {{PROJECT_NAME}}
 
-{{DESCRIPTION}}
-
-## Validation Summary
+## Validation Overview
 - **Project**: {{PROJECT_NAME}}
-- **Type**: {{PROJECT_TYPE}}
-- **Validated By**: {{VALIDATED_BY}}
 - **Validation Date**: {{VALIDATION_DATE}}
-- **Overall Status**: {{OVERALL_STATUS}}
+- **Validator**: {{VALIDATOR}}
+- **Scope**: {{VALIDATION_SCOPE}}
 
-## Requirements Coverage Check
-### Functional Requirements
-- [ ] {{FUNC_REQ_1}} - {{FUNC_REQ_1_STATUS}} - {{FUNC_REQ_1_NOTES}}
-- [ ] {{FUNC_REQ_2}} - {{FUNC_REQ_2_STATUS}} - {{FUNC_REQ_2_NOTES}}
-- [ ] {{FUNC_REQ_3}} - {{FUNC_REQ_3_STATUS}} - {{FUNC_REQ_3_NOTES}}
+## Phase 5: Cross-Check & Validation Results
 
-### Non-Functional Requirements
-- [ ] {{NON_FUNC_REQ_1}} - {{NON_FUNC_REQ_1_STATUS}} - {{NON_FUNC_REQ_1_NOTES}}
-- [ ] {{NON_FUNC_REQ_2}} - {{NON_FUNC_REQ_2_STATUS}} - {{NON_FUNC_REQ_2_NOTES}}
-- [ ] {{NON_FUNC_REQ_3}} - {{NON_FUNC_REQ_3_STATUS}} - {{NON_FUNC_REQ_3_NOTES}}
+### Requirements Coverage Validation
+- **All Requirements Addressed**: {{REQUIREMENTS_COVERAGE_STATUS}}
+- **Acceptance Criteria Mapped to Tasks**: {{ACCEPTANCE_CRITERIA_MAPPED}}
+- **Success Criteria Measurable**: {{SUCCESS_CRITERIA_MEASURABLE}}
+- **Scope Creep Prevention**: {{SCOPE_CREEP_PREVENTION}}
 
-### Acceptance Criteria Mapping
-- [ ] {{ACCEPTANCE_1}} - Mapped to: {{ACCEPTANCE_1_TASKS}}
-- [ ] {{ACCEPTANCE_2}} - Mapped to: {{ACCEPTANCE_2_TASKS}}
-- [ ] {{ACCEPTANCE_3}} - Mapped to: {{ACCEPTANCE_3_TASKS}}
+### Design Consistency Validation
+- **Architecture Alignment**: {{ARCHITECTURE_ALIGNMENT}}
+- **Integration Points Verified**: {{INTEGRATION_POINTS_VERIFIED}}
+- **Design Conflicts Resolved**: {{DESIGN_CONFLICTS_RESOLVED}}
+- **Technical Feasibility Confirmed**: {{TECHNICAL_FEASIBILITY}}
 
-## Plan vs Tasks Validation
-### Architecture Validation
-- [ ] **Component Design**: {{COMPONENT_DESIGN_VALIDATION}}
-- [ ] **Data Flow**: {{DATA_FLOW_VALIDATION}}
-- [ ] **API Design**: {{API_DESIGN_VALIDATION}}
-- [ ] **Security Design**: {{SECURITY_DESIGN_VALIDATION}}
+### Task Planning Validation
+- **Task Completeness**: {{TASK_COMPLETENESS}}
+- **Dependency Mapping Accuracy**: {{DEPENDENCY_MAPPING_ACCURACY}}
+- **Resource Allocation Adequate**: {{RESOURCE_ALLOCATION_ADEQUATE}}
+- **Critical Path Identified**: {{CRITICAL_PATH_IDENTIFIED}}
+- **TDD Strategy Defined**: {{TDD_STRATEGY_DEFINED}}
 
-### Implementation Strategy Validation
-- [ ] **Phase Breakdown**: {{PHASE_BREAKDOWN_VALIDATION}}
-- [ ] **Dependencies Management**: {{DEPENDENCY_VALIDATION}}
-- [ ] **Resource Allocation**: {{RESOURCE_VALIDATION}}
+### Risk Assessment Validation
+- **Risks Identified**: {{RISKS_IDENTIFIED}}
+- **Mitigation Strategies Planned**: {{MITIGATION_STRATEGIES_PLANNED}}
+- **Impact Assessment Complete**: {{IMPACT_ASSESSMENT_COMPLETE}}
+- **Contingency Plans Defined**: {{CONTINGENCY_PLANS_DEFINED}}
 
-### Task Completeness
-- [ ] All plan components implemented in tasks: {{TASK_COMPLETENESS}}
-- [ ] Task priorities are appropriate: {{PRIORITY_VALIDATION}}
-- [ ] Resource allocation is sufficient: {{RESOURCE_ALLOCATION_VALIDATION}}
+## Quality Gates Validation
 
-## Dependency & Conflict Validation
-### Task Dependencies
-- [ ] **Sequential Dependencies**: {{SEQUENTIAL_DEPS_VALIDATION}}
-- [ ] **Parallel Dependencies**: {{PARALLEL_DEPS_VALIDATION}}
-- [ ] **Critical Path Analysis**: {{CRITICAL_PATH_VALIDATION}}
+### Process Quality Gates
+| Gate | Status | Criteria Met | Notes |
+|------|--------|--------------|-------|
+| Requirements Clarity | {{REQUIREMENTS_GATE_STATUS}} | {{REQUIREMENTS_CRITERIA_MET}} | {{REQUIREMENTS_GATE_NOTES}} |
+| Design Completeness | {{DESIGN_GATE_STATUS}} | {{DESIGN_CRITERIA_MET}} | {{DESIGN_GATE_NOTES}} |
+| Task Planning | {{TASK_PLANNING_GATE_STATUS}} | {{TASK_PLANNING_CRITERIA_MET}} | {{TASK_PLANNING_GATE_NOTES}} |
+| Risk Management | {{RISK_MANAGEMENT_GATE_STATUS}} | {{RISK_MANAGEMENT_CRITERIA_MET}} | {{RISK_MANAGEMENT_GATE_NOTES}} |
 
-### Resource Conflicts
-- [ ] **Team Member Conflicts**: {{TEAM_CONFLICTS_VALIDATION}}
-- [ ] **Tool/Environment Conflicts**: {{TOOL_CONFLICTS_VALIDATION}}
-- [ ] **Timeline Conflicts**: {{TIMELINE_CONFLICTS_VALIDATION}}
+### Technical Quality Gates
+| Gate | Status | Criteria Met | Notes |
+|------|--------|--------------|-------|
+| Architecture Soundness | {{ARCHITECTURE_GATE_STATUS}} | {{ARCHITECTURE_CRITERIA_MET}} | {{ARCHITECTURE_GATE_NOTES}} |
+| Integration Feasibility | {{INTEGRATION_GATE_STATUS}} | {{INTEGRATION_CRITERIA_MET}} | {{INTEGRATION_GATE_NOTES}} |
+| Performance Planning | {{PERFORMANCE_GATE_STATUS}} | {{PERFORMANCE_CRITERIA_MET}} | {{PERFORMANCE_GATE_NOTES}} |
+| Security Planning | {{SECURITY_GATE_STATUS}} | {{SECURITY_CRITERIA_MET}} | {{SECURITY_GATE_NOTES}} |
+
+## Execution Readiness Assessment
+
+### Resource Readiness
+- **Team Availability**: {{TEAM_AVAILABILITY}}
+- **Skill Set Coverage**: {{SKILL_SET_COVERAGE}}
+- **Tool Access**: {{TOOL_ACCESS}}
+- **Environment Setup**: {{ENVIRONMENT_SETUP}}
+
+### Dependency Readiness
+- **External Dependencies**: {{EXTERNAL_DEPENDENCIES_READY}}
+- **Internal Dependencies**: {{INTERNAL_DEPENDENCIES_READY}}
+- **Blockers Cleared**: {{BLOCKERS_CLEARED}}
+- **Assumptions Validated**: {{ASSUMPTIONS_VALIDATED}}
+
+### Timeline Validation
+- **Effort Estimation**: {{EFFORT_ESTIMATION_VALID}}
+- **Milestone Planning**: {{MILESTONE_PLANNING_VALID}}
+- **Buffer Time Allocated**: {{BUFFER_TIME_ALLOCATED}}
+- **Deadline Feasibility**: {{DEADLINE_FEASIBILITY}}
+
+## Quality Metrics
+
+### Performance Metrics
+| Metric | Target | Actual | Status | Notes |
+|--------|--------|--------|--------|-------|
+| Response Time | < {{PERF_TARGET}}ms | {{PERF_CURRENT}}ms | {{PERF_STATUS}} | {{PERF_NOTES}} |
+| Throughput | > {{THROUGHPUT_TARGET}} | {{THROUGHPUT_CURRENT}} | {{THROUGHPUT_STATUS}} | {{THROUGHPUT_NOTES}} |
+
+### Security Metrics
+| Metric | Target | Actual | Status | Notes |
+|--------|--------|--------|--------|-------|
+| Vulnerabilities | No critical | {{SECURITY_VULNS}} | {{SECURITY_STATUS}} | {{SECURITY_NOTES}} |
+| Security Score | {{SECURITY_TARGET}}/100 | {{SECURITY_ACTUAL}}/100 | {{SECURITY_STATUS}} | {{SECURITY_NOTES}} |
+
+## Integration Validation
 
 ### Integration Points
-- [ ] **API Integration**: {{API_INTEGRATION_VALIDATION}}
-- [ ] **Database Integration**: {{DB_INTEGRATION_VALIDATION}}
-- [ ] **Third-party Integration**: {{THIRD_PARTY_INTEGRATION_VALIDATION}}
+| Integration | Components | Status | Issues | Resolution |
+|-------------|------------|--------|--------|------------|
+| {{INTEGRATION_1}} | {{INTEGRATION_1_COMPONENTS}} | {{INTEGRATION_1_STATUS}} | {{INTEGRATION_1_ISSUES}} | {{INTEGRATION_1_RESOLUTION}} |
+| {{INTEGRATION_2}} | {{INTEGRATION_2_COMPONENTS}} | {{INTEGRATION_2_STATUS}} | {{INTEGRATION_2_ISSUES}} | {{INTEGRATION_2_RESOLUTION}} |
 
-## Risk Assessment Validation
-### Identified Risks
-- [ ] **Technical Risks**: {{TECH_RISKS_VALIDATION}}
-- [ ] **Timeline Risks**: {{TIMELINE_RISKS_VALIDATION}}
-- [ ] **Resource Risks**: {{RESOURCE_RISKS_VALIDATION}}
-- [ ] **External Risks**: {{EXTERNAL_RISKS_VALIDATION}}
+## Validation Issues & Actions
 
-### Mitigation Strategies
-- [ ] **Risk Mitigation Plans**: {{MITIGATION_VALIDATION}}
-- [ ] **Contingency Plans**: {{CONTINGENCY_VALIDATION}}
-- [ ] **Risk Monitoring**: {{RISK_MONITORING_VALIDATION}}
+### Critical Validation Issues
+| Issue | Impact | Phase Affected | Required Action | Owner |
+|-------|--------|----------------|-----------------|-------|
+| {{CRITICAL_VALIDATION_ISSUE_1}} | {{CRITICAL_ISSUE_1_IMPACT}} | {{CRITICAL_ISSUE_1_PHASE}} | {{CRITICAL_ISSUE_1_ACTION}} | {{CRITICAL_ISSUE_1_OWNER}} |
 
-## Quality Assurance Validation
-### Testing Strategy
-- [ ] **Test Coverage**: {{TEST_COVERAGE_VALIDATION}}
-- [ ] **Test Types**: {{TEST_TYPES_VALIDATION}}
-- [ ] **Test Environment**: {{TEST_ENV_VALIDATION}}
+### Validation Warnings
+| Warning | Impact | Recommendation | Priority |
+|---------|--------|----------------|----------|
+| {{VALIDATION_WARNING_1}} | {{WARNING_1_IMPACT}} | {{WARNING_1_RECOMMENDATION}} | {{WARNING_1_PRIORITY}} |
 
-### Code Quality
-- [ ] **Code Standards**: {{CODE_STANDARDS_VALIDATION}}
-- [ ] **Review Process**: {{REVIEW_PROCESS_VALIDATION}}
-- [ ] **Documentation**: {{DOCUMENTATION_VALIDATION}}
+## Go/No-Go Decision
 
-### Performance Validation
-- [ ] **Performance Requirements**: {{PERF_REQS_VALIDATION}}
-- [ ] **Load Testing**: {{LOAD_TESTING_VALIDATION}}
-- [ ] **Scalability**: {{SCALABILITY_VALIDATION}}
+### Execution Readiness Score
+- **Process Validation**: {{PROCESS_VALIDATION_SCORE}}/100
+- **Technical Validation**: {{TECHNICAL_VALIDATION_SCORE}}/100
+- **Resource Validation**: {{RESOURCE_VALIDATION_SCORE}}/100
+- **Overall Score**: {{OVERALL_VALIDATION_SCORE}}/100
 
-## Security Validation
-### Security Requirements
-- [ ] **Authentication**: {{AUTH_VALIDATION}}
-- [ ] **Authorization**: {{AUTHZ_VALIDATION}}
-- [ ] **Data Protection**: {{DATA_PROTECTION_VALIDATION}}
-- [ ] **Compliance**: {{COMPLIANCE_VALIDATION}}
+### Decision Criteria
+- **Minimum Score Required**: 80/100
+- **Current Score**: {{OVERALL_VALIDATION_SCORE}}/100
+- **Decision**: {{GO_NO_GO_DECISION}}
 
-### Security Testing
-- [ ] **Vulnerability Assessment**: {{VULN_ASSESSMENT_VALIDATION}}
-- [ ] **Penetration Testing**: {{PEN_TESTING_VALIDATION}}
-- [ ] **Security Code Review**: {{SEC_CODE_REVIEW_VALIDATION}}
+### Conditional Approval (If applicable)
+- **Conditions**: {{CONDITIONAL_APPROVAL_CONDITIONS}}
+- **Timeline**: {{CONDITIONAL_APPROVAL_TIMELINE}}
+- **Monitoring Required**: {{CONDITIONAL_APPROVAL_MONITORING}}
 
-## Integration Planning Validation
-### Integration Strategy
-- [ ] **Integration Approach**: {{INTEGRATION_APPROACH_VALIDATION}}
-- [ ] **Integration Timeline**: {{INTEGRATION_TIMELINE_VALIDATION}}
-- [ ] **Integration Resources**: {{INTEGRATION_RESOURCES_VALIDATION}}
+## Validation Summary
 
-### Integration Testing
-- [ ] **Integration Test Plan**: {{INTEGRATION_TEST_PLAN_VALIDATION}}
-- [ ] **Test Data Management**: {{TEST_DATA_VALIDATION}}
-- [ ] **Environment Setup**: {{INTEGRATION_ENV_VALIDATION}}
+### What Passed Validation
+- {{PASSED_VALIDATION_1}}
+- {{PASSED_VALIDATION_2}}
+- {{PASSED_VALIDATION_3}}
 
-## Deployment Validation
-### Deployment Strategy
-- [ ] **Deployment Plan**: {{DEPLOY_PLAN_VALIDATION}}
-- [ ] **Rollback Strategy**: {{ROLLBACK_PLAN_VALIDATION}}
-- [ ] **Environment Readiness**: {{ENV_READINESS_VALIDATION}}
+### What Needs Attention
+- {{NEEDS_ATTENTION_1}}
+- {{NEEDS_ATTENTION_2}}
+- {{NEEDS_ATTENTION_3}}
 
-### Operational Readiness
-- [ ] **Monitoring Setup**: {{MONITORING_VALIDATION}}
-- [ ] **Alerting Configuration**: {{ALERTING_VALIDATION}}
-- [ ] **Documentation**: {{OPS_DOCUMENTATION_VALIDATION}}
+### Recommendations for Execution
+1. {{EXECUTION_RECOMMENDATION_1}}
+2. {{EXECUTION_RECOMMENDATION_2}}
+3. {{EXECUTION_RECOMMENDATION_3}}
 
-## Stakeholder Validation
-### Business Requirements
-- [ ] **Business Objectives**: {{BUSINESS_OBJECTIVES_VALIDATION}}
-- [ ] **User Requirements**: {{USER_REQS_VALIDATION}}
-- [ ] **Stakeholder Sign-off**: {{STAKEHOLDER_SIGNOFF_VALIDATION}}
-
-### Communication Plan
-- [ ] **Stakeholder Communication**: {{COMMUNICATION_VALIDATION}}
-- [ ] **Training Plan**: {{TRAINING_PLAN_VALIDATION}}
-- [ ] **Change Management**: {{CHANGE_MGMT_VALIDATION}}
-
-## Final Assessment
-### Validation Results
-- **Requirements Coverage**: {{REQS_COVERAGE_SCORE}}/100
-- **Plan Completeness**: {{PLAN_COMPLETENESS_SCORE}}/100
-- **Risk Management**: {{RISK_MGMT_SCORE}}/100
-- **Quality Assurance**: {{QA_SCORE}}/100
-- **Security**: {{SECURITY_SCORE}}/100
-- **Overall Score**: {{OVERALL_SCORE}}/100
-
-### Go/No-Go Decision
-- **Recommendation**: {{GO_NO_GO_RECOMMENDATION}}
+## Sign-off
+- **Validator**: {{VALIDATOR_NAME}}
+- **Validation Date**: {{VALIDATION_DATE}}
+- **Go/No-Go**: {{FINAL_GO_NO_GO}}
 - **Confidence Level**: {{CONFIDENCE_LEVEL}}%
-- **Key Concerns**: {{KEY_CONCERNS}}
-- **Blocking Issues**: {{BLOCKING_ISSUES}}
-
-### Next Steps
-1. {{NEXT_STEP_1}}
-2. {{NEXT_STEP_2}}
-3. {{NEXT_STEP_3}}
-
-## Validation History
-### Initial Validation
-- **Date**: {{INITIAL_VALIDATION_DATE}}
-- **Validator**: {{INITIAL_VALIDATOR}}
-- **Result**: {{INITIAL_VALIDATION_RESULT}}
-- **Issues Found**: {{INITIAL_ISSUES_COUNT}}
-
-### Pre-Implementation Validation
-- **Date**: {{PRE_IMPL_VALIDATION_DATE}}
-- **Validator**: {{PRE_IMPL_VALIDATOR}}
-- **Result**: {{PRE_IMPL_VALIDATION_RESULT}}
-- **Issues Resolved**: {{PRE_IMPL_ISSUES_RESOLVED}}
-
-### Post-Implementation Validation
-- **Date**: {{POST_IMPL_VALIDATION_DATE}}
-- **Validator**: {{POST_IMPL_VALIDATOR}}
-- **Result**: {{POST_IMPL_VALIDATION_RESULT}}
-- **Final Issues**: {{POST_IMPL_FINAL_ISSUES}}
-
-## Issues & Resolutions
-### {{ISSUE_1_PRIORITY}} - {{ISSUE_1_TITLE}}
-- **Description**: {{ISSUE_1_DESCRIPTION}}
-- **Impact**: {{ISSUE_1_IMPACT}}
-- **Resolution**: {{ISSUE_1_RESOLUTION}}
-- **Status**: {{ISSUE_1_STATUS}}
-- **Owner**: {{ISSUE_1_OWNER}}
-
-### {{ISSUE_2_PRIORITY}} - {{ISSUE_2_TITLE}}
-- **Description**: {{ISSUE_2_DESCRIPTION}}
-- **Impact**: {{ISSUE_2_IMPACT}}
-- **Resolution**: {{ISSUE_2_RESOLUTION}}
-- **Status**: {{ISSUE_2_STATUS}}
-- **Owner**: {{ISSUE_2_OWNER}}
-
-## Lessons Learned
-### Process Improvements
-- {{LESSON_1}}
-- {{LESSON_2}}
-- {{LESSON_3}}
-
-### Template Improvements
-- {{TEMPLATE_IMPROVEMENT_1}}
-- {{TEMPLATE_IMPROVEMENT_2}}
-- {{TEMPLATE_IMPROVEMENT_3}}
-
-## Sign-offs
-### Technical Sign-off
-- **Name**: {{TECH_SIGNOFF_NAME}}
-- **Title**: {{TECH_SIGNOFF_TITLE}}
-- **Date**: {{TECH_SIGNOFF_DATE}}
-- **Comments**: {{TECH_SIGNOFF_COMMENTS}}
-
-### Business Sign-off
-- **Name**: {{BUSINESS_SIGNOFF_NAME}}
-- **Title**: {{BUSINESS_SIGNOFF_TITLE}}
-- **Date**: {{BUSINESS_SIGNOFF_DATE}}
-- **Comments**: {{BUSINESS_SIGNOFF_COMMENTS}}
-
-### QA Sign-off
-- **Name**: {{QA_SIGNOFF_NAME}}
-- **Title**: {{QA_SIGNOFF_TITLE}}
-- **Date**: {{QA_SIGNOFF_DATE}}
-- **Comments**: {{QA_SIGNOFF_COMMENTS}}
+- **Next Phase**: {{NEXT_PHASE}}

@@ -1,337 +1,276 @@
-# Review History: {{PROJECT_NAME}}
+# Code Review: {{PROJECT_NAME}}
 
-## Review Summary
-- **Total Reviews**: {{TOTAL_REVIEWS}}
-- **Overall Quality Score**: {{QUALITY_SCORE}}/100
-- **Last Review**: {{LAST_REVIEW_DATE}}
+## Review Overview
+- **Project**: {{PROJECT_NAME}}
+- **Review Date**: {{REVIEW_DATE}}
+- **Reviewer**: {{REVIEWER}}
+- **Review Scope**: {{REVIEW_SCOPE}}
+- **Implementation Status**: {{IMPLEMENTATION_STATUS}}
 
-## Review Log
+## Task Completion Verification
 
-### Phase Reviews
-#### Phase 1: SPECIFY & CLARIFY
-- **Review Date**: {{PHASE_1_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_1_REVIEWER}}
-- **Status**: {{PHASE_1_STATUS}}
-- **Score**: {{PHASE_1_SCORE}}/100
-- **Findings**: {{PHASE_1_FINDINGS}}
-- **Action Items**: {{PHASE_1_ACTIONS}}
+### Tasks.md Compliance Check
+| Task ID | Task Description | Status | Completion % | Deliverable | Quality |
+|---------|------------------|--------|--------------|-------------|---------|
+| {{TASK_1_ID}} | {{TASK_1_DESC}} | {{TASK_1_STATUS}} | {{TASK_1_COMPLETION}}% | {{TASK_1_DELIVERABLE}} | {{TASK_1_QUALITY}} |
+| {{TASK_2_ID}} | {{TASK_2_DESC}} | {{TASK_2_STATUS}} | {{TASK_2_COMPLETION}}% | {{TASK_2_DELIVERABLE}} | {{TASK_2_QUALITY}} |
+| {{TASK_3_ID}} | {{TASK_3_DESC}} | {{TASK_3_STATUS}} | {{TASK_3_COMPLETION}}% | {{TASK_3_DELIVERABLE}} | {{TASK_3_QUALITY}} |
 
-#### Phase 2: RESEARCH & ANALYZE
-- **Review Date**: {{PHASE_2_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_2_REVIEWER}}
-- **Status**: {{PHASE_2_STATUS}}
-- **Score**: {{PHASE_2_SCORE}}/100
-- **Findings**: {{PHASE_2_FINDINGS}}
-- **Action Items**: {{PHASE_2_ACTIONS}}
+**Overall Task Completion**: {{OVERALL_TASK_COMPLETION}}%
+**All Tasks Completed**: {{ALL_TASKS_COMPLETED}}
 
-#### Phase 3: PLAN & DESIGN
-- **Review Date**: {{PHASE_3_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_3_REVIEWER}}
-- **Status**: {{PHASE_3_STATUS}}
-- **Score**: {{PHASE_3_SCORE}}/100
-- **Findings**: {{PHASE_3_FINDINGS}}
-- **Action Items**: {{PHASE_3_ACTIONS}}
+### Git Repository Analysis
 
-#### Phase 4: TASK BREAKDOWN & ANALYSIS
-- **Review Date**: {{PHASE_4_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_4_REVIEWER}}
-- **Status**: {{PHASE_4_STATUS}}
-- **Score**: {{PHASE_4_SCORE}}/100
-- **Findings**: {{PHASE_4_FINDINGS}}
-- **Action Items**: {{PHASE_4_ACTIONS}}
+#### Commit History Review
+- **Total Commits**: {{TOTAL_COMMITS}}
+- **Commits per Task**: {{COMMITS_PER_TASK}}
+- **Commit Quality**: {{COMMIT_QUALITY}} (clear messages, logical grouping)
+- **Branch Strategy**: {{BRANCH_STRATEGY_COMPLIANCE}}
 
-#### Phase 5: CROSS-CHECK & VALIDATE
-- **Review Date**: {{PHASE_5_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_5_REVIEWER}}
-- **Status**: {{PHASE_5_STATUS}}
-- **Score**: {{PHASE_5_SCORE}}/100
-- **Findings**: {{PHASE_5_FINDINGS}}
-- **Action Items**: {{PHASE_5_ACTIONS}}
+#### Code Changes Analysis
+**Files Modified**: {{FILES_MODIFIED_COUNT}}
+**Lines Added**: {{LINES_ADDED}}
+**Lines Removed**: {{LINES_REMOVED}}
+**Net Change**: {{NET_CHANGE}} lines
 
-#### Phase 6: IMPLEMENT
-- **Review Date**: {{PHASE_6_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_6_REVIEWER}}
-- **Status**: {{PHASE_6_STATUS}}
-- **Score**: {{PHASE_6_SCORE}}/100
-- **Findings**: {{PHASE_6_FINDINGS}}
-- **Action Items**: {{PHASE_6_ACTIONS}}
+#### Code Quality Metrics
+- **Code Churn**: {{CODE_CHURN}}% (high churn may indicate instability)
+- **File Complexity**: {{FILE_COMPLEXITY_ASSESSMENT}}
+- **Duplicate Code**: {{DUPLICATE_CODE_PERCENTAGE}}%
+- **Dead Code Detected**: {{DEAD_CODE_DETECTED}}
 
-#### Phase 7: TEST & REVIEW
-- **Review Date**: {{PHASE_7_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_7_REVIEWER}}
-- **Status**: {{PHASE_7_STATUS}}
-- **Score**: {{PHASE_7_SCORE}}/100
-- **Findings**: {{PHASE_7_FINDINGS}}
-- **Action Items**: {{PHASE_7_ACTIONS}}
+## Implementation vs Requirements
 
-#### Phase 8: CLEANUP & REFACTOR
-- **Review Date**: {{PHASE_8_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_8_REVIEWER}}
-- **Status**: {{PHASE_8_STATUS}}
-- **Score**: {{PHASE_8_SCORE}}/100
-- **Findings**: {{PHASE_8_FINDINGS}}
-- **Action Items**: {{PHASE_8_ACTIONS}}
+### Requirements Coverage
+| Requirement | Status | Implementation Location | Quality | Notes |
+|-------------|--------|------------------------|---------|-------|
+| {{REQ_1}} | {{REQ_1_STATUS}} | {{REQ_1_LOCATION}} | {{REQ_1_QUALITY}} | {{REQ_1_NOTES}} |
+| {{REQ_2}} | {{REQ_2_STATUS}} | {{REQ_2_LOCATION}} | {{REQ_2_QUALITY}} | {{REQ_2_NOTES}} |
+| {{REQ_3}} | {{REQ_3_STATUS}} | {{REQ_3_LOCATION}} | {{REQ_3_QUALITY}} | {{REQ_3_NOTES}} |
 
-#### Phase 9: DOCUMENT & FINALIZE
-- **Review Date**: {{PHASE_9_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_9_REVIEWER}}
-- **Status**: {{PHASE_9_STATUS}}
-- **Score**: {{PHASE_9_SCORE}}/100
-- **Findings**: {{PHASE_9_FINDINGS}}
-- **Action Items**: {{PHASE_9_ACTIONS}}
+### Acceptance Criteria Verification
+- [ ] {{ACCEPTANCE_CRITERION_1}} - {{AC1_STATUS}}
+- [ ] {{ACCEPTANCE_CRITERION_2}} - {{AC2_STATUS}}
+- [ ] {{ACCEPTANCE_CRITERION_3}} - {{AC3_STATUS}}
 
-#### Phase 10: FINAL QUALITY GATE
-- **Review Date**: {{PHASE_10_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_10_REVIEWER}}
-- **Status**: {{PHASE_10_STATUS}}
-- **Score**: {{PHASE_10_SCORE}}/100
-- **Findings**: {{PHASE_10_FINDINGS}}
-- **Action Items**: {{PHASE_10_ACTIONS}}
+## Code Quality Assessment
 
-#### Phase 11: MERGE
-- **Review Date**: {{PHASE_11_REVIEW_DATE}}
-- **Reviewer**: {{PHASE_11_REVIEWER}}
-- **Status**: {{PHASE_11_STATUS}}
-- **Score**: {{PHASE_11_SCORE}}/100
-- **Findings**: {{PHASE_11_FINDINGS}}
-- **Action Items**: {{PHASE_11_ACTIONS}}
+### Architecture Compliance
+- **Design Adherence**: {{DESIGN_ADHERENCE}}%
+- **Component Structure**: {{COMPONENT_STRUCTURE_QUALITY}}
+- **Integration Points**: {{INTEGRATION_POINTS_STATUS}}
+- **Separation of Concerns**: {{SEPARATION_OF_CONCERNS}}
 
-## Code Reviews
+### Code Standards
+- **Linting**: {{LINTING_STATUS}} ({{LINTING_ERRORS}} errors)
+- **Formatting**: {{FORMATTING_STATUS}}
+- **Naming Conventions**: {{NAMING_CONVENTIONS_STATUS}}
+- **Documentation**: {{DOCUMENTATION_QUALITY}}
 
-### Initial Code Review
-- **Date**: {{INITIAL_CODE_REVIEW_DATE}}
-- **Reviewer**: {{INITIAL_CODE_REVIEWER}}
-- **Files Reviewed**: {{INITIAL_FILES_REVIEWED}}
-- **Lines of Code**: {{INITIAL_LOC}}
-- **Issues Found**: {{INITIAL_ISSUES_FOUND}}
-- **Critical Issues**: {{INITIAL_CRITICAL_ISSUES}}
-- **Major Issues**: {{INITIAL_MAJOR_ISSUES}}
-- **Minor Issues**: {{INITIAL_MINOR_ISSUES}}
-- **Suggestions**: {{INITIAL_SUGGESTIONS}}
-- **Overall Assessment**: {{INITIAL_ASSESSMENT}}
+### Code Refactoring Assessment
+
+#### Refactoring Quality Indicators
+- **Code Smells Resolved**: {{CODE_SMELLS_RESOLVED}}
+- **Complexity Reduction**: {{COMPLEXITY_REDUCTION}}%
+- **Method Length**: {{AVERAGE_METHOD_LENGTH}} lines (target: <20)
+- **Class Size**: {{AVERAGE_CLASS_SIZE}} lines (target: <200)
+- **Parameter Count**: {{AVERAGE_PARAMETER_COUNT}} (target: <4)
+
+#### Technical Debt Analysis
+- **Technical Debt Hours**: {{TECHNICAL_DEBT_HOURS}} (target: <8h)
+- **Debt Ratio**: {{TECHNICAL_DEBT_RATIO}}% of total effort
+- **Hotspots Identified**: {{TECHNICAL_DEBT_HOTSPOTS}}
+- **Legacy Code Refactored**: {{LEGACY_CODE_REFACTORED}}%
+
+#### Code Duplication & Reusability
+- **Duplicate Code**: {{DUPLICATE_CODE_PERCENTAGE}}% (target: <3%)
+- **Reusable Components**: {{REUSABLE_COMPONENTS_CREATED}}
+- **DRY Principle Compliance**: {{DRY_COMPLIANCE}}%
+- **Utility Functions**: {{UTILITY_FUNCTIONS_EXTRACTED}}
+
+#### Design Patterns & Architecture
+- **Design Patterns Applied**: {{DESIGN_PATTERNS_USED}}
+- **SOLID Principles**: {{SOLID_COMPLIANCE}}%
+- **Architecture Patterns**: {{ARCHITECTURE_PATTERNS_FOLLOWED}}
+- **Separation of Concerns**: {{SEPARATION_OF_CONCERNS_SCORE}}/10
+
+### Code Cleanup & Waste Removal
+
+#### Unused Code Detection
+**Issues Found**:
+- **TODO Comments**: {{TODO_COUNT}} (should be resolved before merge)
+- **Console Logs**: {{DEBUG_LOGS_COUNT}} (should be removed in production)
+- **Unused Imports**: {{UNUSED_IMPORTS_COUNT}}
+- **Dead Code Blocks**: {{DEAD_CODE_BLOCKS_COUNT}}
+- **Commented Out Code**: {{COMMENTED_CODE_COUNT}}
+
+#### File Organization
+- **File Structure**: {{FILE_STRUCTURE_QUALITY}}
+- **Naming Consistency**: {{NAMING_CONSISTENCY}}
+- **Module Boundaries**: {{MODULE_BOUNDARIES_CLEAR}}
+- **Import/Export Organization**: {{IMPORT_EXPORT_ORGANIZATION}}
 
 ### Security Review
-- **Date**: {{SECURITY_REVIEW_DATE}}
-- **Reviewer**: {{SECURITY_REVIEWER}}
-- **Security Level**: {{SECURITY_LEVEL}}
-- **Vulnerabilities Found**: {{VULNERABILITIES_FOUND}}
-- **Critical Vulnerabilities**: {{CRITICAL_VULNS}}
-- **High Risk Vulnerabilities**: {{HIGH_RISK_VULNS}}
-- **Medium Risk Vulnerabilities**: {{MEDIUM_RISK_VULNS}}
-- **Low Risk Vulnerabilities**: {{LOW_RISK_VULNS}}
+- **Authentication**: {{AUTHENTICATION_STATUS}}
+- **Authorization**: {{AUTHORIZATION_STATUS}}
+- **Data Protection**: {{DATA_PROTECTION_STATUS}}
+- **Input Validation**: {{INPUT_VALIDATION_STATUS}}
+- **Security Vulnerabilities**: {{SECURITY_VULNERABILITIES}}
+
+### Performance Analysis
+- **Response Time**: {{RESPONSE_TIME}}ms (target: <{{TARGET_RESPONSE_TIME}}ms)
+- **Memory Usage**: {{MEMORY_USAGE}} (target: <{{TARGET_MEMORY_USAGE}})
+- **Database Efficiency**: {{DATABASE_EFFICIENCY}}
+- **Scalability**: {{SCALABILITY_ASSESSMENT}}
+
+## Test Quality Review
+
+### Test Coverage
+- **Overall Coverage**: {{TEST_COVERAGE}}% (target: ≥{{TARGET_TEST_COVERAGE}}%)
+- **Unit Tests**: {{UNIT_TEST_COVERAGE}}%
+- **Integration Tests**: {{INTEGRATION_TEST_COVERAGE}}%
+- **End-to-End Tests**: {{E2E_TEST_COVERAGE}}%
+
+### TDD Compliance Assessment
+- **Test-First Approach**: {{TDD_TEST_FIRST_STATUS}}
+- **Red-Green-Refactor Cycle**: {{TDD_CYCLE_STATUS}}
+- **Test Quality**: {{TEST_QUALITY_ASSESSMENT}}
+- **Test Maintenance**: {{TEST_MAINTENABILITY}}
+
+### Test Effectiveness
+- **Meaningful Tests**: {{MEANINGFUL_TESTS_RATIO}}%
+- **Edge Case Coverage**: {{EDGE_CASE_COVERAGE}}
+- **Error Handling Tests**: {{ERROR_HANDLING_TESTS}}
+
+## Integration Review
+
+### API Contracts
+| Endpoint | Method | Status | Response Time | Notes |
+|----------|--------|--------|---------------|-------|
+| {{API_1_ENDPOINT}} | {{API_1_METHOD}} | {{API_1_STATUS}} | {{API_1_RESPONSE_TIME}} | {{API_1_NOTES}} |
+| {{API_2_ENDPOINT}} | {{API_2_METHOD}} | {{API_2_STATUS}} | {{API_2_RESPONSE_TIME}} | {{API_2_NOTES}} |
+
+### Data Flow
+- **Input Validation**: {{INPUT_VALIDATION_STATUS}}
+- **Data Transformation**: {{DATA_TRANSFORMATION_STATUS}}
+- **Output Formatting**: {{OUTPUT_FORMATTING_STATUS}}
+- **Error Propagation**: {{ERROR_PROPAGATION_STATUS}}
+
+### External Dependencies
+- **Third-party APIs**: {{EXTERNAL_API_STATUS}}
+- **Database Connections**: {{DB_CONNECTION_STATUS}}
+- **Cache Layer**: {{CACHE_LAYER_STATUS}}
+- **File Storage**: {{FILE_STORAGE_STATUS}}
+
+## Code Quality Issues Found
+
+### Critical Issues (Must Fix Before Merge)
+| Issue | Type | Location | Git Blame | Description | Suggested Fix |
+|-------|------|----------|-----------|-------------|---------------|
+| {{CRITICAL_ISSUE_1}} | {{CRITICAL_ISSUE_1_TYPE}} | {{CRITICAL_ISSUE_1_LOCATION}} | {{CRITICAL_ISSUE_1_AUTHOR}} | {{CRITICAL_ISSUE_1_DESC}} | {{CRITICAL_ISSUE_1_FIX}} |
+| {{CRITICAL_ISSUE_2}} | {{CRITICAL_ISSUE_2_TYPE}} | {{CRITICAL_ISSUE_2_LOCATION}} | {{CRITICAL_ISSUE_2_AUTHOR}} | {{CRITICAL_ISSUE_2_DESC}} | {{CRITICAL_ISSUE_2_FIX}} |
+
+### Major Issues (Should Fix)
+| Issue | Type | Location | Git Blame | Description | Suggested Fix |
+|-------|------|----------|-----------|-------------|---------------|
+| {{MAJOR_ISSUE_1}} | {{MAJOR_ISSUE_1_TYPE}} | {{MAJOR_ISSUE_1_LOCATION}} | {{MAJOR_ISSUE_1_AUTHOR}} | {{MAJOR_ISSUE_1_DESC}} | {{MAJOR_ISSUE_1_FIX}} |
+| {{MAJOR_ISSUE_2}} | {{MAJOR_ISSUE_2_TYPE}} | {{MAJOR_ISSUE_2_LOCATION}} | {{MAJOR_ISSUE_2_AUTHOR}} | {{MAJOR_ISSUE_2_DESC}} | {{MAJOR_ISSUE_2_FIX}} |
+
+### Code Smells & Technical Debt
+| Smell | Location | Impact | Refactoring Priority |
+|-------|----------|--------|---------------------|
+| {{CODE_SMELL_1}} | {{CODE_SMELL_1_LOCATION}} | {{CODE_SMELL_1_IMPACT}} | {{CODE_SMELL_1_PRIORITY}} |
+| {{CODE_SMELL_2}} | {{CODE_SMELL_2_LOCATION}} | {{CODE_SMELL_2_IMPACT}} | {{CODE_SMELL_2_PRIORITY}} |
+
+### Cleanup Required
+| Cleanup Type | Count | Locations | Action Required |
+|--------------|-------|-----------|-----------------|
+| TODO Comments | {{TODO_COUNT}} | {{TODO_LOCATIONS}} | Resolve or convert to issues |
+| Console Logs | {{DEBUG_LOGS_COUNT}} | {{DEBUG_LOG_LOCATIONS}} | Remove for production |
+| Unused Code | {{UNUSED_CODE_COUNT}} | {{UNUSED_CODE_LOCATIONS}} | Remove safely |
+| Dead Code | {{DEAD_CODE_COUNT}} | {{DEAD_CODE_LOCATIONS}} | Delete |
+
+## Code Quality Metrics
+
+### Maintainability
+- **Cyclomatic Complexity**: {{CYCLOMATIC_COMPLEXITY}} (target: <10)
+- **Code Duplication**: {{CODE_DUPLICATION}}% (target: <5%)
+- **Technical Debt**: {{TECHNICAL_DEBT_HOURS}} hours
+- **Code Churn**: {{CODE_CHURN}}%
+
+### Reliability
+- **Bug Density**: {{BUG_DENSITY}} bugs/KLOC
+- **Mean Time to Recovery**: {{MTTR}} hours
+- **Error Rate**: {{ERROR_RATE}}%
+
+### Security
 - **Security Score**: {{SECURITY_SCORE}}/100
-- **Recommendations**: {{SECURITY_RECOMMENDATIONS}}
+- **Vulnerabilities**: {{VULNERABILITY_COUNT}} ({{CRITICAL_VULNS}} critical)
+- **Security Hotspots**: {{SECURITY_HOTSPOTS}}
 
-### Performance Review
-- **Date**: {{PERFORMANCE_REVIEW_DATE}}
-- **Reviewer**: {{PERFORMANCE_REVIEWER}}
-- **Performance Metrics**: {{PERFORMANCE_METRICS}}
-- **Benchmarks**: {{BENCHMARKS}}
-- **Performance Issues**: {{PERFORMANCE_ISSUES}}
-- **Optimization Opportunities**: {{OPTIMIZATION_OPPORTUNITIES}}
-- **Performance Score**: {{PERFORMANCE_SCORE}}/100
-- **Recommendations**: {{PERFORMANCE_RECOMMENDATIONS}}
+## Performance Benchmarks
+| Metric | Current | Target | Status |
+|--------|---------|--------|--------|
+| API Response Time | {{API_RESPONSE_TIME}}ms | <{{TARGET_API_RESPONSE_TIME}}ms | {{API_PERFORMANCE_STATUS}} |
+| Database Query Time | {{DB_QUERY_TIME}}ms | <{{TARGET_DB_QUERY_TIME}}ms | {{DB_PERFORMANCE_STATUS}} |
+| Memory Usage | {{MEMORY_USAGE}}MB | <{{TARGET_MEMORY_USAGE}}MB | {{MEMORY_PERFORMANCE_STATUS}} |
+| CPU Usage | {{CPU_USAGE}}% | <{{TARGET_CPU_USAGE}}% | {{CPU_PERFORMANCE_STATUS}} |
 
-### Architecture Review
-- **Date**: {{ARCH_REVIEW_DATE}}
-- **Reviewer**: {{ARCH_REVIEWER}}
-- **Architecture Compliance**: {{ARCH_COMPLIANCE}}
-- **Design Patterns**: {{DESIGN_PATTERNS}}
-- **Scalability Assessment**: {{SCALABILITY_ASSESSMENT}}
-- **Maintainability**: {{MAINTAINABILITY}}
-- **Architecture Score**: {{ARCH_SCORE}}/100
-- **Recommendations**: {{ARCH_RECOMMENDATIONS}}
+## Refactoring Recommendations
 
-## Quality Gates
+### Immediate Refactoring (Before Merge)
+1. **{{IMMEDIATE_REFACTOR_1}}**
+   - **Files**: {{IMMEDIATE_REFACTOR_1_FILES}}
+   - **Effort**: {{IMMEDIATE_REFACTOR_1_EFFORT}}
+   - **Impact**: {{IMMEDIATE_REFACTOR_1_IMPACT}}
 
-### Unit Test Coverage
-- **Target Coverage**: {{TARGET_COVERAGE}}%
-- **Actual Coverage**: {{ACTUAL_COVERAGE}}%
-- **Date**: {{COVERAGE_DATE}}
-- **Status**: {{COVERAGE_STATUS}}
-- **Gaps**: {{COVERAGE_GAPS}}
+2. **{{IMMEDIATE_REFACTOR_2}}**
+   - **Files**: {{IMMEDIATE_REFACTOR_2_FILES}}
+   - **Effort**: {{IMMEDIATE_REFACTOR_2_EFFORT}}
+   - **Impact**: {{IMMEDIATE_REFACTOR_2_IMPACT}}
 
-### Integration Tests
-- **Total Tests**: {{TOTAL_INTEGRATION_TESTS}}
-- **Passed**: {{PASSED_INTEGRATION_TESTS}}
-- **Failed**: {{FAILED_INTEGRATION_TESTS}}
-- **Skipped**: {{SKIPPED_INTEGRATION_TESTS}}
-- **Date**: {{INTEGRATION_TEST_DATE}}
-- **Status**: {{INTEGRATION_TEST_STATUS}}
+### Future Refactoring Opportunities
+1. **{{FUTURE_REFACTOR_1}}**
+   - **Priority**: {{FUTURE_REFACTOR_1_PRIORITY}}
+   - **Estimated Effort**: {{FUTURE_REFACTOR_1_EFFORT}}
+   - **Benefits**: {{FUTURE_REFACTOR_1_BENEFITS}}
 
-### End-to-End Tests
-- **Total Scenarios**: {{TOTAL_E2E_SCENARIOS}}
-- **Passed**: {{PASSED_E2E_SCENARIOS}}
-- **Failed**: {{FAILED_E2E_SCENARIOS}}
-- **Date**: {{E2E_TEST_DATE}}
-- **Status**: {{E2E_TEST_STATUS}}
+2. **{{FUTURE_REFACTOR_2}}**
+   - **Priority**: {{FUTURE_REFACTOR_2_PRIORITY}}
+   - **Estimated Effort**: {{FUTURE_REFACTOR_2_EFFORT}}
+   - **Benefits**: {{FUTURE_REFACTOR_2_BENEFITS}}
 
-### Performance Tests
-- **Load Test Results**: {{LOAD_TEST_RESULTS}}
-- **Stress Test Results**: {{STRESS_TEST_RESULTS}}
-- **Response Time**: {{RESPONSE_TIME}}ms
-- **Throughput**: {{THROUGHPUT}} req/s
-- **Date**: {{PERF_TEST_DATE}}
-- **Status**: {{PERF_TEST_STATUS}}
+### Code Quality Improvements
+1. **{{QUALITY_IMPROVEMENT_1}}**
+2. **{{QUALITY_IMPROVEMENT_2}}
+3. **{{QUALITY_IMPROVEMENT_3}}
 
-### Documentation
-- **API Documentation**: {{API_DOC_STATUS}}
-- **Code Documentation**: {{CODE_DOC_STATUS}}
-- **User Documentation**: {{USER_DOC_STATUS}}
-- **Deployment Documentation**: {{DEPLOY_DOC_STATUS}}
-- **Overall Documentation Score**: {{DOC_SCORE}}/100
-
-## Issues Found & Resolved
-
-### {{REVIEW_DATE_1}} - {{ISSUE_TYPE_1}}
-**Description**: {{ISSUE_DESCRIPTION_1}}
-**Severity**: {{ISSUE_SEVERITY_1}} (Critical/High/Medium/Low)
-**Impact**: {{ISSUE_IMPACT_1}}
-**Found By**: {{ISSUE_FOUNDBY_1}}
-**Assigned To**: {{ISSUE_ASSIGNEDTO_1}}
-**Resolution**: {{ISSUE_RESOLUTION_1}}
-**Resolution Date**: {{ISSUE_RES_DATE_1}}
-**Status**: {{ISSUE_STATUS_1}}
-**Lessons Learned**: {{ISSUE_LESSONS_1}}
-
-### {{REVIEW_DATE_2}} - {{ISSUE_TYPE_2}}
-**Description**: {{ISSUE_DESCRIPTION_2}}
-**Severity**: {{ISSUE_SEVERITY_2}} (Critical/High/Medium/Low)
-**Impact**: {{ISSUE_IMPACT_2}}
-**Found By**: {{ISSUE_FOUNDBY_2}}
-**Assigned To**: {{ISSUE_ASSIGNEDTO_2}}
-**Resolution**: {{ISSUE_RESOLUTION_2}}
-**Resolution Date**: {{ISSUE_RES_DATE_2}}
-**Status**: {{ISSUE_STATUS_2}}
-**Lessons Learned**: {{ISSUE_LESSONS_2}}
-
-### {{REVIEW_DATE_3}} - {{ISSUE_TYPE_3}}
-**Description**: {{ISSUE_DESCRIPTION_3}}
-**Severity**: {{ISSUE_SEVERITY_3}} (Critical/High/Medium/Low)
-**Impact**: {{ISSUE_IMPACT_3}}
-**Found By**: {{ISSUE_FOUNDBY_3}}
-**Assigned To**: {{ISSUE_ASSIGNEDTO_3}}
-**Resolution**: {{ISSUE_RESOLUTION_3}}
-**Resolution Date**: {{ISSUE_RES_DATE_3}}
-**Status**: {{ISSUE_STATUS_3}}
-**Lessons Learned**: {{ISSUE_LESSONS_3}}
-
-## Quality Metrics Trend
-
-### Code Quality Over Time
-| Date | Lines of Code | Test Coverage | Bug Count | Code Quality Score |
-|------|---------------|---------------|-----------|-------------------|
-| {{DATE_1}} | {{LOC_1}} | {{COVERAGE_1}}% | {{BUGS_1}} | {{QUALITY_1}}/100 |
-| {{DATE_2}} | {{LOC_2}} | {{COVERAGE_2}}% | {{BUGS_2}} | {{QUALITY_2}}/100 |
-| {{DATE_3}} | {{LOC_3}} | {{COVERAGE_3}}% | {{BUGS_3}} | {{QUALITY_3}}/100 |
-
-### Review Scores Over Time
-| Phase | Review Date | Score | Reviewer | Status |
-|-------|-------------|-------|----------|---------|
-| {{PHASE_NAME_1}} | {{PHASE_DATE_1}} | {{PHASE_SCORE_1}}/100 | {{PHASE_REVIEWER_1}} | {{PHASE_STATUS_1}} |
-| {{PHASE_NAME_2}} | {{PHASE_DATE_2}} | {{PHASE_SCORE_2}}/100 | {{PHASE_REVIEWER_2}} | {{PHASE_STATUS_2}} |
-| {{PHASE_NAME_3}} | {{PHASE_DATE_3}} | {{PHASE_SCORE_3}}/100 | {{PHASE_REVIEWER_3}} | {{PHASE_STATUS_3}} |
-
-## Lessons Learned
-
-### Process Improvements
-#### {{LESSON_DATE_1}}
-- **Lesson**: {{PROCESS_LESSON_1}}
-- **Impact**: {{PROCESS_IMPACT_1}}
-- **Action**: {{PROCESS_ACTION_1}}
-- **Owner**: {{PROCESS_OWNER_1}}
-
-#### {{LESSON_DATE_2}}
-- **Lesson**: {{PROCESS_LESSON_2}}
-- **Impact**: {{PROCESS_IMPACT_2}}
-- **Action**: {{PROCESS_ACTION_2}}
-- **Owner**: {{PROCESS_OWNER_2}}
-
-### Technical Lessons
-#### {{TECH_LESSON_DATE_1}}
-- **Lesson**: {{TECH_LESSON_1}}
-- **Area**: {{TECH_AREA_1}}
-- **Recommendation**: {{TECH_RECOMMENDATION_1}}
-- **Implementation**: {{TECH_IMPLEMENTATION_1}}
-
-#### {{TECH_LESSON_DATE_2}}
-- **Lesson**: {{TECH_LESSON_2}}
-- **Area**: {{TECH_AREA_2}}
-- **Recommendation**: {{TECH_RECOMMENDATION_2}}
-- **Implementation**: {{TECH_IMPLEMENTATION_2}}
-
-### Team Lessons
-#### {{TEAM_LESSON_DATE_1}}
-- **Lesson**: {{TEAM_LESSON_1}}
-- **Team Impact**: {{TEAM_IMPACT_1}}
-- **Process Change**: {{TEAM_PROCESS_CHANGE_1}}
-- **Training Needed**: {{TEAM_TRAINING_1}}
-
-## Reviewer Feedback
-
-### {{REVIEWER_1}} - {{REVIEWER_1_ROLE}}
-**Overall Feedback**: {{REVIEWER_1_FEEDBACK}}
-**Strengths**: {{REVIEWER_1_STRENGTHS}}
-**Areas for Improvement**: {{REVIEWER_1_IMPROVEMENTS}}
-**Recommendations**: {{REVIEWER_1_RECOMMENDATIONS}}
-
-### {{REVIEWER_2}} - {{REVIEWER_2_ROLE}}
-**Overall Feedback**: {{REVIEWER_2_FEEDBACK}}
-**Strengths**: {{REVIEWER_2_STRENGTHS}}
-**Areas for Improvement**: {{REVIEWER_2_IMPROVEMENTS}}
-**Recommendations**: {{REVIEWER_2_RECOMMENDATIONS}}
-
-## Continuous Improvement
-
-### Action Items
-- [ ] {{ACTION_ITEM_1}} - {{ACTION_OWNER_1}} - {{ACTION_DUE_1}}
-- [ ] {{ACTION_ITEM_2}} - {{ACTION_OWNER_2}} - {{ACTION_DUE_2}}
-- [ ] {{ACTION_ITEM_3}} - {{ACTION_OWNER_3}} - {{ACTION_DUE_3}}
-
-### Process Changes
-- **Change 1**: {{PROCESS_CHANGE_1}}
-- **Implementation Date**: {{PROCESS_CHANGE_DATE_1}}
-- **Impact**: {{PROCESS_CHANGE_IMPACT_1}}
-
-- **Change 2**: {{PROCESS_CHANGE_2}}
-- **Implementation Date**: {{PROCESS_CHANGE_DATE_2}}
-- **Impact**: {{PROCESS_CHANGE_IMPACT_2}}
-
-### Template Improvements
-- **Template 1**: {{TEMPLATE_IMPROVEMENT_1}}
-- **Template 2**: {{TEMPLATE_IMPROVEMENT_2}}
-- **Template 3**: {{TEMPLATE_IMPROVEMENT_3}}
+### Cleanup Actions
+- [ ] Remove all {{TODO_COUNT}} TODO comments
+- [ ] Remove all {{DEBUG_LOGS_COUNT}} console.log statements
+- [ ] Delete {{DEAD_CODE_COUNT}} dead code blocks
+- [ ] Refactor {{COMPLEX_METHODS_COUNT}} overly complex methods
+- [ ] Extract {{REUSABLE_COMPONENTS_NEEDED}} reusable components
 
 ## Final Assessment
 
-### Project Quality Summary
-- **Requirements Compliance**: {{REQ_COMPLIANCE}}/100
-- **Code Quality**: {{CODE_QUALITY}}/100
-- **Test Coverage**: {{TEST_COVERAGE_FINAL}}/100
-- **Documentation Quality**: {{DOC_QUALITY}}/100
-- **Security Score**: {{SECURITY_SCORE_FINAL}}/100
-- **Performance Score**: {{PERF_SCORE_FINAL}}/100
+### Merge Readiness
+- **Code Quality**: {{CODE_QUALITY_ASSESSMENT}}
+- **Requirements Compliance**: {{REQUIREMENTS_COMPLIANCE}}
+- **Test Coverage**: {{TEST_COVERAGE_ASSESSMENT}}
+- **Performance**: {{PERFORMANCE_ASSESSMENT}}
+- **Security**: {{SECURITY_ASSESSMENT}}
 
-### Overall Project Score: {{FINAL_PROJECT_SCORE}}/100
+### Approval Decision
+- **Approved for Merge**: {{APPROVED_FOR_MERGE}}
+- **Conditions**: {{MERGE_CONDITIONS}}
+- **Blockers**: {{MERGE_BLOCKERS}}
 
-### Recommendations for Future Projects
-1. {{FUTURE_RECOMMENDATION_1}}
-2. {{FUTURE_RECOMMENDATION_2}}
-3. {{FUTURE_RECOMMENDATION_3}}
+### Review Summary
+{{REVIEW_SUMMARY}}
 
-## Sign-offs
-
-### Project Manager
-- **Name**: {{PM_NAME}}
-- **Date**: {{PM_SIGNOFF_DATE}}
-- **Comments**: {{PM_COMMENTS}}
-
-### Tech Lead
-- **Name**: {{TECH_LEAD_NAME}}
-- **Date**: {{TECH_LEAD_SIGNOFF_DATE}}
-- **Comments**: {{TECH_LEAD_COMMENTS}}
-
-### QA Lead
-- **Name**: {{QA_LEAD_NAME}}
-- **Date**: {{QA_LEAD_SIGNOFF_DATE}}
-- **Comments**: {{QA_LEAD_COMMENTS}}
+## Sign-off
+- **Reviewer**: {{REVIEWER_NAME}}
+- **Review Date**: {{REVIEW_DATE}}
+- **Overall Rating**: {{OVERALL_RATING}}/10
+- **Recommendation**: {{RECOMMENDATION}}
