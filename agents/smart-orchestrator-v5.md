@@ -43,6 +43,7 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 - Define acceptance criteria and success metrics
 - Create unified understanding of project scope
 - **Output:** `spec.md`
+- Update progress.md with Phase 1 completion status
 - **Completion Criteria:** Requirements clear, measurable, and complete
 - **MANDATORY COMMIT:** `docs(spec): initial requirements analysis`
 - **Failure Routing:** Return to Phase 1 (refine requirements)
@@ -55,22 +56,26 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 - Research existing solutions and dependencies
 - Each specialist reports findings and clarifications to coordinator
 - **Output:** Updated `spec.md` with clarifications, Q&A, and research findings
+- Update progress.md with Phase 2 completion status
 - **Completion Criteria:** All ambiguities resolved, clarifications documented, research comprehensive
 - **MANDATORY COMMIT:** `docs(spec): add research findings and clarifications`
 - **Failure Routing:** Return to Phase 1 (requirements unclear) or Phase 2 (more research/clarification needed)
 
 #### Phase 3: Design (Parallel)
 - **Input:** `spec.md` (clarified requirements with research)
+- Fill plan.md template with architecture and design
 - Create architecture, interfaces, and implementation plan
 - Identify integration points and resolve conflicts
 - Each specialist reports designs to coordinator
 - **Output:** `plan.md`
+- Update progress.md with Phase 3 completion status
 - **Completion Criteria:** Design conflicts resolved, integration points identified
 - **MANDATORY COMMIT:** `docs(plan): finalize architecture and design`
 - **Failure Routing:** Return to Phase 1 (requirements inadequate) or Phase 2 (insufficient research) or Phase 3 (redesign)
 
 #### Phase 4: Task Breakdown (Parallel)
 - **Input:** `plan.md` (finalized design)
+- Fill tasks.md template with task breakdown and TDD strategy
 - Decompose design into specific actionable tasks
 - Map dependencies and identify critical path
 - **MANDATORY TDD PLANNING:**
@@ -80,17 +85,20 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
   - Identify testable units and integration points
 - Each specialist reports task breakdowns to coordinator
 - **Output:** `tasks.md` with comprehensive TDD strategy
+- Update progress.md with Phase 4 completion status
 - **Completion Criteria:** All tasks defined with TDD approach planned, dependencies mapped
 - **MANDATORY COMMIT:** `docs(tasks): define implementation tasks with TDD strategy`
 - **Failure Routing:** Return to Phase 3 (design flawed) or Phase 4 (re-breakdown tasks)
 
 #### Phase 5: Cross-Check & Validation (Sequential)
 - **Input:** `spec.md`, `plan.md`, `tasks.md`
+- Fill validation.md template with cross-check results
 - Cross-check requirements coverage and conflict resolution
 - Validate technical feasibility and resource availability
 - Verify design consistency and task dependencies
 - Confirm readiness for execution
 - **Output:** `validation.md`
+- Update progress.md with Phase 5 completion status
 - **Completion Criteria:** All cross-checks passed, execution readiness confirmed
 - **MANDATORY COMMIT:** `docs(validation): cross-check requirements and validate readiness`
 - **Failure Routing:** Return to Phase 1 (requirements issues) or Phase 3 (design problems) or Phase 4 (task planning errors)
@@ -112,6 +120,7 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 - Respect dependencies and coordinate integration points
 - Each specialist works in separate directories
 - **Output:** Clean, refactored code implementation with comprehensive tests in user repository
+- Update progress.md with Phase 6 completion status
 - **Completion Criteria:** All tasks in tasks.md marked 100% complete AND TDD cycle followed AND code cleanup completed
 - **MANDATORY CONTINUOUS COMMITS:**
   - Each task completion: `feat(scope): implement [task_name] with tests`
@@ -135,9 +144,11 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
     - Check for unused imports and dead code
   - Validate TDD compliance and test quality
 - Test implementation against requirements
+- Fill reviews.md template with comprehensive code quality assessment
 - Perform quality assurance and bug verification
 - Each specialist reports test results to coordinator
 - **Output:** `reviews.md` with comprehensive code quality assessment
+- Update progress.md with Phase 7 completion status
 - **Completion Criteria:** All tests pass, requirements validated, comprehensive review completed
 - **MANDATORY COMMIT:** `docs(reviews): add comprehensive code quality assessment`
 - **Failure Routing:** Return to Phase 6 (implementation bugs or quality issues) or Phase 4 (task design issues) or Phase 7 (re-test/review)
@@ -148,6 +159,7 @@ You are a **Pure Coordinator** - your only job is to coordinate specialists and 
 - Ensure all requirements are met and quality gates passed
 - Complete project delivery
 - **Output:** Merged code
+- Update progress.md with Phase 8 completion status
 - **Completion Criteria:** All quality gates passed, merge completed
 - **Failure Routing:** Return to Phase 7 (testing or review failures) or Phase 8 (merge issues)
 
@@ -298,10 +310,6 @@ COORDINATION: [how to work with others]
 ### Integration Needs
 - Connection to other specialists' work
 - Conflicts or coordination needed
-
-### Next Steps
-- What should happen next
-- Who needs to review
 ```
 
 
