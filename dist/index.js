@@ -2710,7 +2710,7 @@ var runCommand = {
       if (prompt) {
         console.log(`\u{1F4AC} Prompt: ${prompt}`);
       } else {
-        console.log("\u{1F4AC} Prompt: [Interactive mode - no prompt provided]");
+        console.log("\u{1F4AC} Prompt: [Interactive mode]");
       }
       console.log("");
     }
@@ -2723,8 +2723,6 @@ ${agentInstructions}`;
     let userPrompt = "";
     if (prompt && prompt.trim() !== "") {
       userPrompt = prompt;
-    } else {
-      userPrompt = "INTERACTIVE MODE: No prompt was provided. The user will provide their requirements in the next message. Please greet the user and let them know you're ready to help with their task.";
     }
     if (verbose) {
       console.log("\u{1F4DD} System Prompt:");
@@ -2735,6 +2733,9 @@ ${agentInstructions}`;
         console.log("\u{1F4DD} User Prompt:");
         console.log("==============");
         console.log(userPrompt.substring(0, 500) + (userPrompt.length > 500 ? "..." : ""));
+        console.log("");
+      } else {
+        console.log("\u{1F4DD} User Prompt: [Interactive mode - Claude will greet the user]");
         console.log("");
       }
     }

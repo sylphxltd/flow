@@ -132,7 +132,7 @@ export const runCommand: CommandConfig = {
       if (prompt) {
         console.log(`💬 Prompt: ${prompt}`);
       } else {
-        console.log('💬 Prompt: [Interactive mode - no prompt provided]');
+        console.log('💬 Prompt: [Interactive mode]');
       }
       console.log('');
     }
@@ -151,9 +151,9 @@ ${agentInstructions}`;
     let userPrompt = '';
     if (prompt && prompt.trim() !== '') {
       userPrompt = prompt;
-    } else {
-      userPrompt = 'INTERACTIVE MODE: No prompt was provided. The user will provide their requirements in the next message. Please greet the user and let them know you\'re ready to help with their task.';
     }
+    // If no prompt provided, leave userPrompt empty for true interactive mode
+    // Don't add "INTERACTIVE MODE:" message - let Claude handle it naturally
 
     if (verbose) {
       console.log('📝 System Prompt:');
@@ -164,6 +164,9 @@ ${agentInstructions}`;
         console.log('📝 User Prompt:');
         console.log('==============');
         console.log(userPrompt.substring(0, 500) + (userPrompt.length > 500 ? '...' : ''));
+        console.log('');
+      } else {
+        console.log('📝 User Prompt: [Interactive mode - Claude will greet the user]');
         console.log('');
       }
     }
