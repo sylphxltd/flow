@@ -361,10 +361,10 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
    */
   async executeCommand(systemPrompt, userPrompt, options = {}) {
     if (options.dryRun) {
-      console.log("\u{1F50D} Dry run: Would execute Claude Code with separate system and user prompts");
-      console.log("\u{1F4DD} System prompt length:", systemPrompt.length, "characters");
+      console.log("\u{1F50D} Dry run: Would execute Claude Code with --append-system-prompt");
+      console.log("\u{1F4DD} System prompt to append length:", systemPrompt.length, "characters");
       console.log("\u{1F4DD} User prompt length:", userPrompt.length, "characters");
-      console.log("\u{1F4DD} System prompt preview:");
+      console.log("\u{1F4DD} System prompt to append preview:");
       console.log("---");
       console.log(systemPrompt.substring(0, 300) + (systemPrompt.length > 300 ? "..." : ""));
       console.log("---");
@@ -376,13 +376,13 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
       return;
     }
     return new Promise((resolve, reject) => {
-      const args = ["--system-prompt", systemPrompt, "--dangerously-skip-permissions"];
+      const args = ["--append-system-prompt", systemPrompt, "--dangerously-skip-permissions"];
       if (userPrompt.trim() !== "") {
         args.push(userPrompt);
       }
       if (options.verbose) {
         console.log(
-          `\u{1F680} Executing: claude --system-prompt "${systemPrompt.substring(0, 50)}..." ${userPrompt.trim() !== "" ? `"${userPrompt.substring(0, 50)}..." ` : ""}--dangerously-skip-permissions`
+          `\u{1F680} Executing: claude --append-system-prompt "${systemPrompt.substring(0, 50)}..." ${userPrompt.trim() !== "" ? `"${userPrompt.substring(0, 50)}..." ` : ""}--dangerously-skip-permissions`
         );
         console.log(`\u{1F4DD} System prompt length: ${systemPrompt.length} characters`);
         console.log(`\u{1F4DD} User prompt length: ${userPrompt.length} characters`);

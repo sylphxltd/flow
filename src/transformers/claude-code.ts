@@ -460,10 +460,10 @@ export class ClaudeCodeTransformer extends BaseTransformer {
     options: { verbose?: boolean; dryRun?: boolean } = {}
   ): Promise<void> {
     if (options.dryRun) {
-      console.log('🔍 Dry run: Would execute Claude Code with separate system and user prompts');
-      console.log('📝 System prompt length:', systemPrompt.length, 'characters');
+      console.log('🔍 Dry run: Would execute Claude Code with --append-system-prompt');
+      console.log('📝 System prompt to append length:', systemPrompt.length, 'characters');
       console.log('📝 User prompt length:', userPrompt.length, 'characters');
-      console.log('📝 System prompt preview:');
+      console.log('📝 System prompt to append preview:');
       console.log('---');
       console.log(systemPrompt.substring(0, 300) + (systemPrompt.length > 300 ? '...' : ''));
       console.log('---');
@@ -476,8 +476,8 @@ export class ClaudeCodeTransformer extends BaseTransformer {
     }
 
     return new Promise((resolve, reject) => {
-      // Build args array with --system-prompt flag
-      const args = ['--system-prompt', systemPrompt, '--dangerously-skip-permissions'];
+      // Build args array with --append-system-prompt flag
+      const args = ['--append-system-prompt', systemPrompt, '--dangerously-skip-permissions'];
 
       // Only add user prompt if it's not empty (interactive mode)
       if (userPrompt.trim() !== '') {
@@ -486,7 +486,7 @@ export class ClaudeCodeTransformer extends BaseTransformer {
 
       if (options.verbose) {
         console.log(
-          `🚀 Executing: claude --system-prompt "${systemPrompt.substring(0, 50)}..." ${userPrompt.trim() !== '' ? `"${userPrompt.substring(0, 50)}..." ` : ''}--dangerously-skip-permissions`
+          `🚀 Executing: claude --append-system-prompt "${systemPrompt.substring(0, 50)}..." ${userPrompt.trim() !== '' ? `"${userPrompt.substring(0, 50)}..." ` : ''}--dangerously-skip-permissions`
         );
         console.log(`📝 System prompt length: ${systemPrompt.length} characters`);
         console.log(`📝 User prompt length: ${userPrompt.length} characters`);
