@@ -1,8 +1,12 @@
 import {
+  CLIError
+} from "./chunk-G3QAKGBG.js";
+import {
   BaseTransformer
 } from "./chunk-76EOT6BH.js";
 
 // src/transformers/claude-code.ts
+import { spawn } from "child_process";
 var ClaudeCodeTransformer = class extends BaseTransformer {
   /**
    * Transform agent content for Claude Code
@@ -351,6 +355,53 @@ var ClaudeCodeTransformer = class extends BaseTransformer {
       normalized.model = "inherit";
     }
     return normalized;
+  }
+  /**
+   * Execute command using Claude Code with system prompt and user prompt
+   */
+  async executeCommand(systemPrompt, userPrompt, options = {}) {
+    if (options.dryRun) {
+      console.log("\u{1F50D} Dry run: Would execute Claude Code with separate system and user prompts");
+      console.log("\u{1F4DD} System prompt length:", systemPrompt.length, "characters");
+      console.log("\u{1F4DD} User prompt length:", userPrompt.length, "characters");
+      console.log("\u{1F4DD} System prompt preview:");
+      console.log("---");
+      console.log(systemPrompt.substring(0, 300) + (systemPrompt.length > 300 ? "..." : ""));
+      console.log("---");
+      console.log("\u{1F4DD} User prompt preview:");
+      console.log("---");
+      console.log(userPrompt.substring(0, 300) + (userPrompt.length > 300 ? "..." : ""));
+      console.log("---");
+      console.log("\u2705 Dry run completed successfully");
+      return;
+    }
+    return new Promise((resolve, reject) => {
+      const args = ["--system-prompt", systemPrompt, "--dangerously-skip-permissions"];
+      if (userPrompt.trim() !== "") {
+        args.push(userPrompt);
+      }
+      if (options.verbose) {
+        console.log(
+          `\u{1F680} Executing: claude --system-prompt "${systemPrompt.substring(0, 50)}..." ${userPrompt.trim() !== "" ? `"${userPrompt.substring(0, 50)}..." ` : ""}--dangerously-skip-permissions`
+        );
+        console.log(`\u{1F4DD} System prompt length: ${systemPrompt.length} characters`);
+        console.log(`\u{1F4DD} User prompt length: ${userPrompt.length} characters`);
+      }
+      const child = spawn("claude", args, {
+        stdio: "inherit",
+        shell: false
+      });
+      child.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new CLIError(`Claude Code exited with code ${code}`, "CLAUDE_ERROR"));
+        }
+      });
+      child.on("error", (error) => {
+        reject(new CLIError(`Failed to execute Claude Code: ${error.message}`, "CLAUDE_NOT_FOUND"));
+      });
+    });
   }
 };
 export {

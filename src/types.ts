@@ -125,6 +125,8 @@ export interface TargetTransformer {
   validateRequirements(cwd: string): Promise<void>;
   /** Get target-specific help text */
   getHelpText(): string;
+  /** Execute command with the target (optional - not all targets need to support execution) */
+  executeCommand?(systemPrompt: string, userPrompt: string, options: any): Promise<void>;
 }
 
 export interface CommonOptions {

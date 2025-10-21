@@ -1,5 +1,7 @@
+import { spawn } from 'node:child_process';
 import type { MCPServerConfigUnion } from '../types.js';
 import type { TargetConfig } from '../types.js';
+import { CLIError } from '../utils/error-handler.js';
 import { BaseTransformer } from './base.js';
 
 /**
@@ -447,5 +449,65 @@ export class ClaudeCodeTransformer extends BaseTransformer {
     }
 
     return normalized;
+  }
+
+  /**
+   * Execute command using Claude Code with system prompt and user prompt
+   */
+  async executeCommand(
+    systemPrompt: string,
+    userPrompt: string,
+    options: { verbose?: boolean; dryRun?: boolean } = {}
+  ): Promise<void> {
+    if (options.dryRun) {
+      console.log('🔍 Dry run: Would execute Claude Code with separate system and user prompts');
+      console.log('📝 System prompt length:', systemPrompt.length, 'characters');
+      console.log('📝 User prompt length:', userPrompt.length, 'characters');
+      console.log('📝 System prompt preview:');
+      console.log('---');
+      console.log(systemPrompt.substring(0, 300) + (systemPrompt.length > 300 ? '...' : ''));
+      console.log('---');
+      console.log('📝 User prompt preview:');
+      console.log('---');
+      console.log(userPrompt.substring(0, 300) + (userPrompt.length > 300 ? '...' : ''));
+      console.log('---');
+      console.log('✅ Dry run completed successfully');
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      // Build args array with --system-prompt flag
+      const args = ['--system-prompt', systemPrompt, '--dangerously-skip-permissions'];
+
+      // Only add user prompt if it's not empty (interactive mode)
+      if (userPrompt.trim() !== '') {
+        args.push(userPrompt);
+      }
+
+      if (options.verbose) {
+        console.log(
+          `🚀 Executing: claude --system-prompt "${systemPrompt.substring(0, 50)}..." ${userPrompt.trim() !== '' ? `"${userPrompt.substring(0, 50)}..." ` : ''}--dangerously-skip-permissions`
+        );
+        console.log(`📝 System prompt length: ${systemPrompt.length} characters`);
+        console.log(`📝 User prompt length: ${userPrompt.length} characters`);
+      }
+
+      const child = spawn('claude', args, {
+        stdio: 'inherit',
+        shell: false,
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new CLIError(`Claude Code exited with code ${code}`, 'CLAUDE_ERROR'));
+        }
+      });
+
+      child.on('error', (error) => {
+        reject(new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_NOT_FOUND'));
+      });
+    });
   }
 }

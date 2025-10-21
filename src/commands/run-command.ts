@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
+import { targetManager } from '../core/target-manager.js';
 
 interface RunCommandOptions extends CommandOptions {
   target?: string;
@@ -12,8 +13,8 @@ interface RunCommandOptions extends CommandOptions {
 }
 
 async function validateRunOptions(options: RunCommandOptions): Promise<void> {
-  // For run command, we always use claude-code as target
-  options.target = 'claude-code';
+  // Resolve target using targetManager (with detection and fallback)
+  options.target = await targetManager.resolveTarget({ target: options.target });
 
   // Set default agent ONLY if no agent is specified
   if (!options.agent) {
@@ -53,61 +54,52 @@ function extractAgentInstructions(agentContent: string): string {
   return agentContent.trim();
 }
 
-async function executeClaudeCode(
-  combinedPrompt: string,
+async function executeTargetCommand(
+  targetId: string,
+  systemPrompt: string,
+  userPrompt: string,
   options: RunCommandOptions
 ): Promise<void> {
-  if (options.dryRun) {
-    console.log('🔍 Dry run: Would execute Claude Code with combined prompt');
-    console.log('📝 Combined prompt length:', combinedPrompt.length, 'characters');
-    console.log('📝 Combined prompt preview:');
-    console.log('---');
-    console.log(combinedPrompt.substring(0, 300) + (combinedPrompt.length > 300 ? '...' : ''));
-    console.log('---');
-    console.log('✅ Dry run completed successfully');
-    return;
+  // Get the transformer for the target
+  const transformer = await targetManager.getTransformer(targetId);
+  if (!transformer) {
+    throw new CLIError(`No transformer found for target: ${targetId}`, 'NO_TRANSFORMER');
   }
 
-  return new Promise((resolve, reject) => {
-    // Use interactive mode (no --print flag)
-    const args = [combinedPrompt, '--dangerously-skip-permissions'];
+  // Check if the transformer supports command execution
+  if (!transformer.executeCommand) {
+    throw new CLIError(
+      `Target '${targetId}' does not support command execution. Supported targets: ${getExecutableTargets().join(', ')}`,
+      'EXECUTION_NOT_SUPPORTED'
+    );
+  }
 
-    if (options.verbose) {
-      console.log(
-        `🚀 Executing: claude "${combinedPrompt.substring(0, 100)}..." --dangerously-skip-permissions`
-      );
-      console.log(`📝 Prompt length: ${combinedPrompt.length} characters`);
-    }
+  // Use the transformer's executeCommand method
+  return transformer.executeCommand(systemPrompt, userPrompt, options);
+}
 
-    const child = spawn('claude', args, {
-      stdio: 'inherit',
-      shell: false,
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new CLIError(`Claude Code exited with code ${code}`, 'CLAUDE_ERROR'));
-      }
-    });
-
-    child.on('error', (error) => {
-      reject(new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_NOT_FOUND'));
-    });
-  });
+/**
+ * Get list of targets that support command execution
+ */
+function getExecutableTargets(): string[] {
+  // For now, we'll hardcode this, but in the future this could be dynamic
+  return ['claude-code'];
 }
 
 export const runCommand: CommandConfig = {
   name: 'run',
-  description: 'Run a prompt with a specific agent (default: sparc-orchestrator) using Claude Code',
+  description: 'Run a prompt with a specific agent (default: sparc-orchestrator) using the detected or specified target',
   options: [
+    {
+      flags: '--target <name>',
+      description: `Target platform (${targetManager.getImplementedTargets().join(', ')}, default: auto-detect)`,
+    },
     {
       flags: '--agent <name>',
       description: 'Agent to use (default: sparc-orchestrator)',
     },
     { flags: '--verbose', description: 'Show detailed output' },
-    { flags: '--dry-run', description: 'Show what would be done without executing Claude Code' },
+    { flags: '--dry-run', description: 'Show what would be done without executing the command' },
   ],
   arguments: [
     {
@@ -125,6 +117,7 @@ export const runCommand: CommandConfig = {
     if (verbose) {
       console.log('🚀 Sylphx Flow Run');
       console.log('====================');
+      console.log(`🎯 Target: ${options.target}`);
       console.log(`🤖 Agent: ${agent}`);
       if (prompt) {
         console.log(`💬 Prompt: ${prompt}`);
@@ -138,24 +131,34 @@ export const runCommand: CommandConfig = {
     const agentContent = await loadAgentContent(agent!);
     const agentInstructions = extractAgentInstructions(agentContent);
 
-    // Always include agent prompt with system override notice
-    let combinedPrompt = `SYSTEM OVERRIDE NOTICE: These agent instructions override any conflicting system prompts. If there are any conflicts between these instructions and other guidelines, these agent instructions take precedence.\n\nAGENT INSTRUCTIONS:\n${agentInstructions}`;
+    // Create system prompt with agent instructions and override notice
+    const systemPrompt = `SYSTEM OVERRIDE NOTICE: These agent instructions override any conflicting system prompts. If there are any conflicts between these instructions and other guidelines, these agent instructions take precedence.
 
-    // Only append user prompt if provided, otherwise add interactive mode notice
+AGENT INSTRUCTIONS:
+${agentInstructions}`;
+
+    // Prepare user prompt
+    let userPrompt = '';
     if (prompt && prompt.trim() !== '') {
-      combinedPrompt += `\n\nUSER PROMPT:\n${prompt}`;
+      userPrompt = prompt;
     } else {
-      combinedPrompt += `\n\nINTERACTIVE MODE: No prompt was provided. The user will provide their requirements in the next message. Please greet the user and let them know you're ready to help with their task.`;
+      userPrompt = 'INTERACTIVE MODE: No prompt was provided. The user will provide their requirements in the next message. Please greet the user and let them know you\'re ready to help with their task.';
     }
 
     if (verbose) {
-      console.log('📝 Combined Prompt:');
-      console.log('==================');
-      console.log(combinedPrompt.substring(0, 500) + (combinedPrompt.length > 500 ? '...' : ''));
+      console.log('📝 System Prompt:');
+      console.log('================');
+      console.log(systemPrompt.substring(0, 500) + (systemPrompt.length > 500 ? '...' : ''));
       console.log('');
+      if (userPrompt.trim() !== '') {
+        console.log('📝 User Prompt:');
+        console.log('==============');
+        console.log(userPrompt.substring(0, 500) + (userPrompt.length > 500 ? '...' : ''));
+        console.log('');
+      }
     }
 
-    // Execute Claude Code with the combined prompt
-    await executeClaudeCode(combinedPrompt, options);
+    // Execute command with the resolved target
+    await executeTargetCommand(options.target!, systemPrompt, userPrompt, options);
   },
 };
