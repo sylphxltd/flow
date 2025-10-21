@@ -66,12 +66,16 @@ flowchart TD
     P1 --> P1_Action[Delegate to Planner]
     P1_Action --> P2[Phase 2: Research & Clarification]
     
-    subgraph P2_Loop["Phase 2: Iterative Research Loop"]
-        P2 --> P2_Action1[Delegate to Researchers]
-        P2_Action1 --> P2_Action2[Delegate to Planner for Consolidation]
-        P2_Action2 --> P2_Check{More Research Needed?}
-        P2_Check -->|Yes| P2_Action1
-        P2_Check -->|No| P2_Complete[Phase 2 Complete]
+    subgraph P2_Loop["Phase 2: Clarification & Research Loop"]
+        P2 --> P2_Action1[Delegate to Clarification Specialist]
+        P2_Action1 --> P2_Check1{Research Needed?}
+        P2_Check1 -->|Yes| P2_Action2[Delegate to Targeted Researchers]
+        P2_Action2 --> P2_Action3[Delegate to Clarification Specialist]
+        P2_Check1 -->|No| P2_Action3
+        P2_Action3 --> P2_Check2{More Clarification Needed?}
+        P2_Check2 -->|Yes| P2_Check1
+        P2_Check2 -->|No| P2_Action4[Delegate to Planner for Final Consolidation]
+        P2_Action4 --> P2_Complete[Phase 2 Complete]
     end
     
     P2_Complete --> P3[Phase 3: Design]
@@ -147,29 +151,43 @@ FAILURE: Return to Phase 1 (refine requirements)
 
 ### PHASE 2: CLARIFY & RESEARCH
 ACTIONS:
-- **Step 2.1**: Delegate to multiple researchers concurrently with input: spec.md (current requirements)
-  - Analyze project type and requirements to determine needed research domains
-  - Assign researchers based on technical complexity and scope
-  - Each researcher:
-    - Clarify ambiguous requirements and technical details through targeted Q&A
-    - Document all clarifications and answers in spec.md with clear attribution
-    - Investigate technical approaches, architectural patterns, and implementation options
-    - Research existing solutions, open-source projects, and third-party dependencies
-    - Identify technical risks, constraints, and potential blockers
-    - Integration planning - identify where different domains intersect and interact
-    - Report detailed findings and clarifications to coordinator
-- **Step 2.2**: Delegate to planner with input: research findings from all researchers
-  - Consolidate all research findings from researchers
-  - Resolve conflicts between different domain findings
-  - Create unified technical approach
-  - Update spec.md with consolidated findings
+- **Step 2.1**: Delegate to clarification specialist with input: spec.md (current requirements)
+  - Analyze spec.md to identify all unclear, ambiguous, incomplete, or contradictory areas
+  - Create a comprehensive list of clarification needs:
+    - Ambiguous requirements that need more specificity
+    - Technical details that are missing or unclear
+    - Contradictions between different requirements
+    - Gaps in the specification
+    - Assumptions that need to be validated
+  - For each clarification need, assess if research is required:
+    - CAN BE CLARIFIED DIRECTLY: Simple ambiguities that can be resolved through logical analysis
+    - NEEDS RESEARCH: Complex technical questions requiring external information
+  - Report clarification assessment with research requirements
+- **Step 2.2**: IF clarification specialist identified research needs
+  - Delegate to targeted researchers with input: specific research questions from Step 2.1
+  - Each researcher focuses ONLY on their assigned research questions:
+    - Find specific technical information needed
+    - Research existing solutions and approaches
+    - Identify constraints and dependencies
+    - Gather data to inform clarification decisions
+  - Report research findings with direct reference to clarification questions
+- **Step 2.3**: Delegate to clarification specialist with input: original spec.md + research findings (if any)
+  - Use research findings to resolve identified clarification needs
+  - Update spec.md with clarified requirements:
+    - Add specificity to ambiguous requirements
+    - Fill in missing technical details
+    - Resolve contradictions
+    - Document assumptions and constraints
+    - Improve clarity and completeness
+  - Report updated spec.md with remaining clarification needs (if any)
+- **Step 2.4**: IF clarification specialist reports remaining needs → Repeat Step 2.2-2.3
+- **Step 2.5**: Continue loop until clarification specialist reports spec.md is completely clear, specific, and unambiguous
+- **Step 2.6**: Delegate to planner for final consolidation
+  - Review final clarified spec.md
+  - Ensure consistency and completeness
   - Update progress.md with Phase 2 completion status
-  - Create commit: docs(spec): add research findings and clarifications
-  - Report completion to coordinator with assessment: 
-    - IF all ambiguities resolved → Phase 2 complete
-    - IF more research needed → Return to Step 2.1 with new research scope
-- **Step 2.3**: IF planner reports need for more research → Repeat Step 2.1-2.2 with refined research objectives
-- **Step 2.4**: Continue iterative research loop until planner reports all ambiguities resolved, clarifications documented, research comprehensive, technical approach defined
+  - Create commit: docs(spec): finalize clarified requirements
+  - Report completion to coordinator when spec.md is fully clarified
 FAILURE: Return to Phase 1 (requirements unclear) or Phase 2 (more research/clarification needed)
 
 ### PHASE 3: DESIGN
