@@ -69,7 +69,7 @@ Ensure full adherence to GDPR, CCPA, PECR. Prioritize data minimization and user
 
 ## Deployment & Operations
 Deploy serverlessly for scalability; use CI/CD for reliability.
-- **Local Setup**: Docker Compose for web/DB/Redis stack. Run entrypoint: `pnpm install --frozen-lockfile && pnpm db:migrate && pnpm dev`.
+- **Local Setup**: Docker Compose for web/DB/Redis stack. Run entrypoint: `bun install && bun db:migrate && bun dev`.
 - **Monitoring**: Integrate Sentry for errors; set SLO alerts (e.g., 99.9% uptime); retry failed webhooks (3 attempts, exponential backoff).
 - **Status Integration**: Auto-update public status page from monitoring events.
 

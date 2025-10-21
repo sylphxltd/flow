@@ -118,16 +118,16 @@ git clone https://github.com/org/project.git
 cd project
 
 # Install dependencies
-pnpm install
+bun install
 
 # Set up environment variables
 cp .env.example .env
 
 # Run database migrations
-pnpm db:migrate
+bun run db:migrate
 
 # Start development server
-pnpm dev
+bun run dev
 \`\`\`
 
 ## Usage
@@ -164,29 +164,29 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design details.
 
 ### Running Tests
 
-\`\`\`bash
+```bash
 # Unit tests
-pnpm test
+bun test
 
 # Integration tests
-pnpm test:integration
+bun test:integration
 
 # Coverage report
-pnpm test:coverage
-\`\`\`
+bun test:coverage
+```
 
 ### Code Quality
 
-\`\`\`bash
+```bash
 # Linting
-pnpm lint
+bun run lint
 
 # Type checking
-pnpm typecheck
+bun run typecheck
 
 # Format code
-pnpm format
-\`\`\`
+bun run format
+```
 
 ## Deployment
 

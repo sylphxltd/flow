@@ -48,7 +48,7 @@ GraphQL-first, serverless API. Organize backend logic per domain under `src/grap
   - Imp: Wallet credit on session complete; 3x retry.
 
 ## DevOps/Deploy
-- **Local**: Docker Compose (stack); pnpm/Biome (linting/formatting) + Lefthook (Git hooks manager).
+- **Local**: Docker Compose (stack); bun/Biome (linting/formatting) + Lefthook (Git hooks manager).
   - Biome Ignore: Tests (`__tests__/**`, `*.test.*`), generated (`*.generated.*`, `dist/**`, `build/**`), project-specific (e.g., `styled-system`, `*.gql.tada.ts`, `drizzle`, `test-results`, `.next`, `node_modules`) via `biome.json` files section.
   - Biome Config (biome.json): Enable recommended + custom flow; ignoreUnknown false.
     ```
@@ -94,22 +94,22 @@ GraphQL-first, serverless API. Organize backend logic per domain under `src/grap
       }
     }
     ```
-  - Lefthook: Fast Git hooks for pre-commit (Biome lint/format, type-check), pre-push (tests). Install: `pnpm add -D lefthook`; init: `lefthook install`.
+  - Lefthook: Fast Git hooks for pre-commit (Biome lint/format, type-check), pre-push (tests). Install: `bun add -D lefthook`; init: `lefthook install`.
     - Config (lefthook.yml):
       ```
       pre-commit:
         commands:
           biome:
-            run: pnpm biome check --apply {staged_files}
+            run: bun biome check --apply {staged_files}
           types:
-            run: pnpm tsc --noEmit
+            run: bun tsc --noEmit
       pre-push:
         commands:
           test:
-            run: pnpm test
+            run: bun test
       ```
     - Rationale: Enforces quality locally (faster than Husky); integrates Biome/TS checks without blocking CI.
-  - Entry: `pnpm install --frozen && migrate && dev`; Lefthook auto-runs on git actions; `biome check .` in CI.
+  - Entry: `bun install && migrate && dev`; Lefthook auto-runs on git actions; `biome check .` in CI.
 - **Deploy**: Serverless (Vercel); GraphQL BFF.
   - CI: Actions; 99.9% SLO alerts.
 
@@ -168,7 +168,7 @@ Implement a GraphQL-first API with serverless functions for stateless operations
   - Implementation: Handle `checkout.session.completed` webhook to credit wallets; retry failed payments (3x, exponential backoff).
 
 ## DevOps & Deployment
-- **Local Development**: Docker + docker-compose for full stack (web, DB, Redis). Use pnpm for monorepo management; Biome for linting/formatting (run `biome check .` in CI).
-  - Entrypoint: `pnpm install --frozen-lockfile && pnpm db:migrate && pnpm dev`.
+- **Local Development**: Docker + docker-compose for full stack (web, DB, Redis). Use bun for package management; Biome for linting/formatting (run `biome check .` in CI).
+  - Entrypoint: `bun install && bun db:migrate && bun dev`.
 - **Deployment**: Design for serverless (e.g., Vercel/Cloudflare); stateless backend via GraphQL Backend-for-Frontend (BFF) pattern. Ensure cold-start optimization (<200ms).
   - CI/CD: GitHub Actions for tests/deploy; monitor SLOs (99.9% uptime) with alerts.

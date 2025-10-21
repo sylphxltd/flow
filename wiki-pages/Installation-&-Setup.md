@@ -31,10 +31,10 @@ git clone https://github.com/sylphxltd/flow.git
 cd flow
 
 # Install dependencies
-pnpm install
+bun install
 
 # Build the project
-pnpm build
+bun run build
 
 # Run locally
 node dist/index.js --help

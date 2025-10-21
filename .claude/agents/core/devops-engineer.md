@@ -125,16 +125,18 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY pnpm-lock.yaml ./
+COPY bun.lockb ./
 
 # Install dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build application
-RUN pnpm build
+RUN bun run build
 
 # Production stage
 FROM node:20-alpine AS runner
@@ -269,19 +271,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "bun"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Run linter
-        run: pnpm lint
+        run: bun run lint
 
       - name: Run type check
-        run: pnpm typecheck
+        run: bun run typecheck
 
       - name: Run tests
-        run: pnpm test:coverage
+        run: bun test:coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
