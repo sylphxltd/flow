@@ -64,16 +64,15 @@ ACTIONS:
   - Define success metrics and KPIs
   - Create unified understanding of project scope and boundaries
   - Identify stakeholders and their needs
-OUTPUT: spec.md with complete requirements analysis
-PROGRESS: Update progress.md with Phase 1 completion status
-COMPLETION: All requirements clear, measurable, complete, and validated
-COMMIT: docs(spec): initial requirements analysis
+  - Update progress.md with Phase 1 completion status
+  - Create commit: docs(spec): initial requirements analysis
+  - Report completion when all requirements clear, measurable, complete, and validated
 FAILURE: Return to Phase 1 (refine requirements)
 
 ### PHASE 2: CLARIFY & RESEARCH
 INPUT: spec.md (initial requirements)
 ACTIONS:
-- Delegate to appropriate researchers based on project requirements:
+- Delegate to multiple researchers concurrently based on project requirements:
   - Analyze project type and requirements to determine needed research domains
   - Assign researchers based on technical complexity and scope
   - Each researcher:
@@ -89,10 +88,9 @@ ACTIONS:
   - Resolve conflicts between different domain findings
   - Create unified technical approach
   - Update spec.md with consolidated findings
-OUTPUT: Updated spec.md with clarifications, Q&A, research findings, and technical recommendations
-PROGRESS: Update progress.md with Phase 2 completion status
-COMPLETION: All ambiguities resolved, clarifications documented, research comprehensive, technical approach defined
-COMMIT: docs(spec): add research findings and clarifications
+  - Update progress.md with Phase 2 completion status
+  - Create commit: docs(spec): add research findings and clarifications
+  - Report completion when all ambiguities resolved, clarifications documented, research comprehensive, technical approach defined
 FAILURE: Return to Phase 1 (requirements unclear) or Phase 2 (more research/clarification needed)
 
 ### PHASE 3: DESIGN
@@ -112,10 +110,9 @@ ACTIONS:
   - Resolve design conflicts and ensure consistency
   - Validate design against requirements and constraints
   - Ensure architectural consistency and validate integration points
-OUTPUT: plan.md with complete architecture, component designs, interfaces, and implementation plan
-PROGRESS: Update progress.md with Phase 3 completion status
-COMPLETION: Design conflicts resolved, integration points identified, architecture validated, implementation plan complete
-COMMIT: docs(plan): finalize architecture and design
+  - Update progress.md with Phase 3 completion status
+  - Create commit: docs(plan): finalize architecture and design
+  - Report completion when design conflicts resolved, integration points identified, architecture validated, implementation plan complete
 FAILURE: Return to Phase 1 (requirements inadequate) or Phase 2 (insufficient research) or Phase 3 (redesign)
 
 ### PHASE 4: TASK BREAKDOWN
@@ -149,10 +146,9 @@ ACTIONS:
     - Document wave execution strategy and parallel task groups
   - Validate dependencies, resolve conflicts, optimize critical path
   - Create unified project timeline with clear wave structure
-OUTPUT: tasks.md with comprehensive task breakdown, TDD strategy, dependencies, and project timeline
-PROGRESS: Update progress.md with Phase 4 completion status
-COMPLETION: All tasks defined with clear scope, TDD approach planned, dependencies mapped, critical path identified, timeline established
-COMMIT: docs(tasks): define implementation tasks with TDD strategy
+  - Update progress.md with Phase 4 completion status
+  - Create commit: docs(tasks): define implementation tasks with TDD strategy
+  - Report completion when all tasks defined with clear scope, TDD approach planned, dependencies mapped, critical path identified, timeline established
 FAILURE: Return to Phase 3 (design flawed) or Phase 4 (re-breakdown tasks)
 
 ### PHASE 5: CROSS-CHECK & VALIDATION
@@ -182,10 +178,9 @@ ACTIONS:
   - Identify and document any gaps, conflicts, or risks
   - Create mitigation strategies for identified issues
   - Confirm overall readiness for execution
-OUTPUT: validation.md with comprehensive validation results, risk assessment, and readiness confirmation
-PROGRESS: Update progress.md with Phase 5 completion status
-COMPLETION: All cross-checks passed, gaps addressed, risks mitigated, execution readiness confirmed
-COMMIT: docs(validation): cross-check requirements and validate readiness
+  - Update progress.md with Phase 5 completion status
+  - Create commit: docs(validation): cross-check requirements and validate readiness
+  - Report completion when all cross-checks passed, gaps addressed, risks mitigated, execution readiness confirmed
 FAILURE: Return to Phase 1 (requirements issues) or Phase 3 (design problems) or Phase 4 (task planning errors)
 
 ### PHASE 6: IMPLEMENTATION & REFACTORING
@@ -236,15 +231,20 @@ ACTIONS:
   - Validate wave completion before starting next wave
   - Update tasks.md with completion status
   - Perform integration testing between waves
-OUTPUT: Clean, refactored, production-ready code implementation with comprehensive test coverage in user repository
-PROGRESS: Update progress.md with Phase 6 completion status
-COMPLETION: All tasks in tasks.md marked 100% complete AND full TDD cycle followed AND comprehensive code cleanup completed AND all tests passing
-CONTINUOUS COMMITS:
-- Each task completion: feat(scope): implement [task_name] with tests
-- Each refactoring: refactor(scope): improve [component_name] code quality
-- Each bug fix: fix(scope): resolve [issue_description]
-- Integration milestone: feat: integrate [component_a] with [component_b]
-- Final integration: feat: complete implementation with comprehensive tests
+- COORDINATOR RESPONSIBILITIES:
+  - Monitor progress continuously within each wave
+  - Resolve blockers immediately - escalate if needed
+  - Validate wave completion before starting next wave
+  - Receive completion reports from specialists
+- SPECIALISTS RESPONSIBILITIES:
+  - Update tasks.md with completion status
+  - Create commits for each task: feat(scope): implement [task_name] with tests
+  - Create commits for refactoring: refactor(scope): improve [component_name] code quality
+  - Create commits for bug fixes: fix(scope): resolve [issue_description]
+  - Create commits for integration: feat: integrate [component_a] with [component_b]
+  - Update progress.md with Phase 6 completion status when all waves complete
+  - Create final commit: feat: complete implementation with comprehensive tests
+  - Report completion when all tasks in tasks.md marked 100% complete AND full TDD cycle followed AND comprehensive code cleanup completed AND all tests passing
 FAILURE: Return to Phase 4 (task planning wrong) or Phase 6 (re-implement with proper TDD and refactoring)
 
 ### PHASE 7: TESTING & COMPREHENSIVE REVIEW
@@ -285,10 +285,10 @@ ACTIONS:
   - Perform bug verification and regression testing
   - Report comprehensive test results and quality assessments to coordinator
 - If fixes needed, delegate to coder for implementation
-OUTPUT: reviews.md with comprehensive testing results, code quality assessment, technical debt analysis, and recommendations
-PROGRESS: Update progress.md with Phase 7 completion status
-COMPLETION: All tests passing, requirements fully validated, comprehensive review completed, quality gates passed
-COMMIT: docs(reviews): add comprehensive code quality assessment
+- Reviewer to:
+  - Update progress.md with Phase 7 completion status
+  - Create commit: docs(reviews): add comprehensive code quality assessment
+  - Report completion when all tests passing, requirements fully validated, comprehensive review completed, quality gates passed
 FAILURE: Return to Phase 6 (implementation bugs or quality issues) or Phase 4 (task design issues) or Phase 7 (re-test/review)
 
 ### PHASE 8: MERGE
@@ -317,11 +317,10 @@ ACTIONS:
     - Deploy to staging/production as required
     - Archive project documentation and artifacts
     - Conduct project retrospective and lessons learned
-OUTPUT: Merged code in main branch, release artifacts, documentation, and project delivery summary
-PROGRESS: Update progress.md with Phase 8 completion status
-COMPLETION: All quality gates passed, merge completed, project delivered, documentation archived
+  - Update progress.md with Phase 8 completion status
+  - Create final commit: feat: complete project delivery with full requirements satisfaction
+  - Report completion when all quality gates passed, merge completed, project delivered, documentation archived
 FAILURE: Return to Phase 7 (testing or review failures) or Phase 8 (merge issues)
-FINAL COMMIT: feat: complete project delivery with full requirements satisfaction
 
 ## PARALLEL EXECUTION MANAGEMENT
 
