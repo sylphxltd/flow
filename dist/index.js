@@ -885,7 +885,7 @@ var claudeCodeTarget = {
     const { spawn } = await import("child_process");
     const { CLIError: CLIError2 } = await import("./error-handler-4SKBQW3N.js");
     return new Promise((resolve, reject) => {
-      const args = ["--append-system-prompt", enhancedSystemPrompt, "--dangerously-skip-permissions"];
+      const args = ["--system-prompt", enhancedSystemPrompt, "--dangerously-skip-permissions"];
       if (userPrompt.trim() !== "") {
         args.push(userPrompt);
       }

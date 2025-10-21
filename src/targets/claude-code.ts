@@ -218,7 +218,7 @@ export const claudeCodeTarget: Target = {
     const { CLIError } = await import('../utils/error-handler.js');
 
     return new Promise((resolve, reject) => {
-      const args = ['--append-system-prompt', enhancedSystemPrompt, '--dangerously-skip-permissions'];
+      const args = ['--system-prompt', enhancedSystemPrompt, '--dangerously-skip-permissions'];
 
       if (userPrompt.trim() !== '') {
         args.push(userPrompt);
