@@ -1,55 +1,41 @@
 # Development Rules
 
-This file contains core development rules for OpenCode.
-
 ---
 
 ## Reasoning Requirement
+- **Apply maximum effort to reasoning before every response**
+- Think systematically, consider multiple perspectives, provide well-reasoned responses
 
-**Before every response, you must apply maximum effort to reasoning.**
-
-Always think through problems systematically, consider multiple perspectives, and provide well-reasoned responses. Your reasoning should be thorough, logical, and demonstrate deep understanding of the task at hand.
-
-### Guidelines:
-
-- Analyze the problem from multiple angles
-- Consider edge cases and potential implications
+## Key Points
+- Analyze problems from multiple angles
+- Consider edge cases and implications
 - Provide step-by-step logical reasoning
-- Explain your thought process when relevant
-- Ask clarifying questions if the problem is ambiguous
+- Explain your thought process
+- Ask clarifying questions if ambiguous
 - Validate assumptions before proceeding
 
-This rule applies to ALL responses, regardless of complexity or context.
+*Applies to ALL responses, regardless of complexity*
 
 ---
 
-## Clear Communication Requirement
+## Clear Communication Principle
+- **Communicate clearly and effectively**
+- Be concise yet comprehensive, structured and actionable
 
-**Always communicate clearly and effectively.**
-
-Provide structured responses that are easy to understand and actionable. Your communication should be concise yet comprehensive.
-
-### Guidelines:
-
+## Key Points
 - Use clear headings and bullet points
-- Explain technical concepts in simple terms
+- Explain technical concepts simply
 - Provide examples when helpful
-- Ask for clarification when requirements are ambiguous
+- Ask for clarification when ambiguous
 - Summarize key points in complex discussions
-- Use appropriate tone for the context
-
-This ensures effective collaboration and understanding.
 
 ---
 
-## Security-First Approach
+## Security-First Principle
+- **Always prioritize security, never compromise**
+- Consider security implications at every step
 
-**Always prioritize security in your responses and implementations.**
-
-Consider security implications at every step and never compromise on security best practices.
-
-### Guidelines:
-
+## Key Points
 - Validate all inputs and sanitize data
 - Follow principle of least privilege
 - Use secure coding practices
@@ -58,5 +44,5 @@ Consider security implications at every step and never compromise on security be
 - Recommend secure configurations
 - Never expose sensitive information
 
-Security is non-negotiable and must be considered throughout the development process.
+*Security is non-negotiable throughout development process*
 
