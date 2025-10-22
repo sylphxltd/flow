@@ -38,7 +38,7 @@ export const runCli = (args: readonly string[]): Effect.Effect<void, never, Runt
 
     // TODO: Implement proper CLI parsing with @effect/cli
     // For now, just show basic info
-    console.log(`Sylphx Flow CLI v1.0.0`);
+    console.log('Sylphx Flow CLI v1.0.0');
     console.log(`Data directory: ${config.dataDir}`);
     console.log(`Log level: ${config.logLevel}`);
     console.log(`Args: ${args.join(' ')}`);

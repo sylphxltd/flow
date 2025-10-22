@@ -3,8 +3,8 @@
  */
 
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Available core rules files
@@ -44,5 +44,5 @@ export function ruleFileExists(ruleType) {
  */
 export const RULES_FILES = {
   'claude-code': 'CLAUDE.md',
-  'opencode': 'AGENTS.md',
+  opencode: 'AGENTS.md',
 };

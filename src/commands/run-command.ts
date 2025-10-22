@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
-import { targetManager } from '../core/target-manager.js';
 
 interface RunCommandOptions extends CommandOptions {
   target?: string;
@@ -90,7 +90,7 @@ function executeTargetCommand(
  * Get list of targets that support command execution
  */
 function getExecutableTargets(): string[] {
-  return targetManager.getImplementedTargetIDs().filter(targetId => {
+  return targetManager.getImplementedTargetIDs().filter((targetId) => {
     const target = targetManager.getTarget(targetId);
     return target?.executeCommand !== undefined;
   });
@@ -98,7 +98,8 @@ function getExecutableTargets(): string[] {
 
 export const runCommand: CommandConfig = {
   name: 'run',
-  description: 'Run a prompt with a specific agent (default: sparc-orchestrator) using the detected or specified target',
+  description:
+    'Run a prompt with a specific agent (default: sparc-orchestrator) using the detected or specified target',
   options: [
     {
       flags: '--target <name>',

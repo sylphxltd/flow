@@ -1,24 +1,24 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Effect } from 'effect';
 import { pipe } from 'effect/Function';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AppError,
-  MemoryError,
   ConfigError,
-  McpError,
-  TerminalError,
-  NetworkError,
-  ValidationError,
-  PermissionError,
-  createError,
-  wrapError,
-  isErrorType,
-  getErrorTag,
-  matchError,
-  shouldRetry,
-  retryStrategy,
   ErrorService,
   ErrorServiceLive,
+  McpError,
+  MemoryError,
+  NetworkError,
+  PermissionError,
+  TerminalError,
+  ValidationError,
+  createError,
+  getErrorTag,
+  isErrorType,
+  matchError,
+  retryStrategy,
+  shouldRetry,
+  wrapError,
 } from '../../src/core/errors.js';
 
 describe('Error Handling Foundation', () => {

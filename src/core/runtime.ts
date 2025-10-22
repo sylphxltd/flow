@@ -1,4 +1,4 @@
-import { Effect, Layer, Context, Config, Logger } from 'effect';
+import { Config, Context, Effect, Layer, Logger } from 'effect';
 
 // ============================================================================
 // RUNTIME CONFIGURATION

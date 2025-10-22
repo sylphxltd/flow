@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { Effect } from 'effect';
 import { pipe } from 'effect/Function';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { RuntimeConfig, RuntimeConfigLive, execute, runSync } from '../../src/core/runtime.js';
 
 describe('Runtime Configuration', () => {

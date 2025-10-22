@@ -1,12 +1,7 @@
-import { Target } from '../types.js';
-import {
-  fileUtils,
-  yamlUtils,
-  pathUtils,
-  generateHelpText
-} from '../utils/target-utils.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Target } from '../types.js';
+import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
 
 /**
  * OpenCode target - composition approach with all original functionality
@@ -105,7 +100,8 @@ export const opencodeTarget: Target = {
     return config;
   },
 
-  getConfigPath: (cwd: string) => Promise.resolve(fileUtils.getConfigPath(opencodeTarget.config, cwd)),
+  getConfigPath: (cwd: string) =>
+    Promise.resolve(fileUtils.getConfigPath(opencodeTarget.config, cwd)),
 
   /**
    * Read OpenCode configuration with structure normalization
@@ -167,5 +163,5 @@ export const opencodeTarget: Target = {
     } catch {
       return false;
     }
-  }
+  },
 };

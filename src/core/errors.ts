@@ -1,4 +1,4 @@
-import { Effect, Layer, Context } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 
 // ============================================================================
 // BASE ERROR CLASSES
@@ -284,10 +284,10 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
  * Create a tagged error with context
  */
 export const createError = <T extends AppError>(
-  ErrorClass: new (message: string, cause?: Error, ...args: any[]) => T,
+  ErrorClass: new (message: string, cause?: Error, ...args: unknown[]) => T,
   message: string,
   cause?: Error,
-  ...args: any[]
+  ...args: unknown[]
 ): T => {
   return new ErrorClass(message, cause, ...args);
 };
@@ -296,10 +296,10 @@ export const createError = <T extends AppError>(
  * Wrap errors in a specific error type
  */
 export const wrapError = <T extends AppError>(
-  ErrorClass: new (message: string, cause?: Error, ...args: any[]) => T,
+  ErrorClass: new (message: string, cause?: Error, ...args: unknown[]) => T,
   error: unknown,
   message?: string,
-  ...args: any[]
+  ...args: unknown[]
 ): T => {
   if (error instanceof AppError) {
     return error as T;
@@ -317,7 +317,7 @@ export const wrapError = <T extends AppError>(
  */
 export const isErrorType = <T extends AppError>(
   error: unknown,
-  ErrorClass: new (...args: any[]) => T
+  ErrorClass: new (...args: unknown[]) => T
 ): error is T => {
   return error instanceof ErrorClass;
 };
@@ -346,7 +346,7 @@ export const matchError = <A>(
   const tag = getErrorTag(error);
 
   if (error instanceof AppError && cases[tag]) {
-    return cases[tag]!(error);
+    return cases[tag]?.(error) ?? defaultValue;
   }
 
   return defaultValue;

@@ -1,4 +1,4 @@
-import { Effect, Layer, Context } from 'effect';
+import { Context, type Effect, Layer } from 'effect';
 
 // ============================================================================
 // SERVICE INTERFACES

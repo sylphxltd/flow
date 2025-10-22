@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  MemoryService,
-  ConfigService,
-  McpService,
-  TerminalService,
-  MemoryError,
-  ConfigError,
-  McpError,
-  type MemoryEntry,
   type AppConfig,
+  ConfigError,
+  ConfigService,
+  McpError,
+  McpService,
+  type MemoryEntry,
+  MemoryError,
+  MemoryService,
+  TerminalService,
 } from '../../src/services/service-types.js';
 
 describe('Service Types', () => {

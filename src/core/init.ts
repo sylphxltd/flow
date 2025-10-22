@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getAllRuleTypes, getRulesPath, ruleFileExists } from '../config/rules.js';
 import {
   type CommonOptions,
   type ProcessResult,
@@ -10,7 +11,6 @@ import {
   getLocalFileInfo,
   log,
 } from '../shared.js';
-import { getAllRuleTypes, getRulesPath, ruleFileExists } from '../config/rules.js';
 import { targetManager } from './target-manager.js';
 
 // ============================================================================
@@ -196,7 +196,7 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
   // Collect and merge all available rule files
   const availableRuleTypes = getAllRuleTypes();
-  const existingRuleFiles = availableRuleTypes.filter(ruleType => ruleFileExists(ruleType));
+  const existingRuleFiles = availableRuleTypes.filter((ruleType) => ruleFileExists(ruleType));
 
   if (existingRuleFiles.length === 0) {
     console.warn('⚠️ No rule files found in config/rules/');
@@ -212,7 +212,7 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
     // Extract the main content (skip the first H1 heading)
     const lines = ruleContent.split('\n');
-    const contentStartIndex = lines.findIndex(line => line.startsWith('# ')) + 1;
+    const contentStartIndex = lines.findIndex((line) => line.startsWith('# ')) + 1;
     const ruleMainContent = lines.slice(contentStartIndex).join('\n').trim();
 
     mergedContent += `---\n\n${ruleMainContent}\n\n`;
@@ -246,7 +246,11 @@ export async function installRules(options: CommonOptions): Promise<void> {
   if (options.quiet !== true) {
     const action = localInfo ? 'Updated' : 'Created';
     const ruleCount = existingRuleFiles.length;
-    const ruleList = existingRuleFiles.map(type => type.charAt(0).toUpperCase() + type.slice(1)).join(', ');
-    console.log(`📋 ${action} rules file: ${target.config.rulesFile} (merged ${ruleCount} rules: ${ruleList})`);
+    const ruleList = existingRuleFiles
+      .map((type) => type.charAt(0).toUpperCase() + type.slice(1))
+      .join(', ');
+    console.log(
+      `📋 ${action} rules file: ${target.config.rulesFile} (merged ${ruleCount} rules: ${ruleList})`
+    );
   }
 }

@@ -2,9 +2,9 @@
  * Target registry - contains all available targets
  */
 
-import type { Target } from '../types.js';
-import { opencodeTarget } from '../targets/opencode.js';
 import { claudeCodeTarget } from '../targets/claude-code.js';
+import { opencodeTarget } from '../targets/opencode.js';
+import type { Target } from '../types.js';
 
 /**
  * Target registry to avoid circular dependencies
@@ -31,35 +31,35 @@ export class TargetRegistry {
    * Get implemented targets only
    */
   getImplementedTargets(): Target[] {
-    return this.targets.filter(target => target.isImplemented);
+    return this.targets.filter((target) => target.isImplemented);
   }
 
   /**
    * Get all target IDs
    */
   getAllTargetIDs(): string[] {
-    return this.targets.map(target => target.id);
+    return this.targets.map((target) => target.id);
   }
 
   /**
    * Get implemented target IDs
    */
   getImplementedTargetIDs(): string[] {
-    return this.getImplementedTargets().map(target => target.id);
+    return this.getImplementedTargets().map((target) => target.id);
   }
 
   /**
    * Get target by ID
    */
   getTarget(id: string): Target | undefined {
-    return this.targets.find(target => target.id === id);
+    return this.targets.find((target) => target.id === id);
   }
 
   /**
    * Get default target
    */
   getDefaultTarget(): Target {
-    const defaultTarget = this.targets.find(target => target.isDefault);
+    const defaultTarget = this.targets.find((target) => target.isDefault);
     if (!defaultTarget) {
       throw new Error('No default target configured');
     }
@@ -70,8 +70,9 @@ export class TargetRegistry {
    * Get targets that support MCP servers
    */
   getTargetsWithMCPSupport(): Target[] {
-    return this.getImplementedTargets()
-      .filter(target => target.config.installation.supportedMcpServers);
+    return this.getImplementedTargets().filter(
+      (target) => target.config.installation.supportedMcpServers
+    );
   }
 
   /**
@@ -111,6 +112,7 @@ export const getImplementedTargetIDs = () => targetRegistry.getImplementedTarget
 export const getDefaultTarget = () => targetRegistry.getDefaultTarget().id;
 export const getTarget = (id: string) => targetRegistry.getTarget(id);
 export const isTargetImplemented = (id: string) => targetRegistry.isTargetImplemented(id);
-export const getTargetsWithMCPSupport = () => targetRegistry.getTargetsWithMCPSupport().map(target => target.id);
+export const getTargetsWithMCPSupport = () =>
+  targetRegistry.getTargetsWithMCPSupport().map((target) => target.id);
 
 export type TargetID = ReturnType<typeof getAllTargetIDs>[number];

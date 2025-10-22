@@ -312,7 +312,7 @@ export function getTargetHelpText(targetId: string): string {
  */
 export function getAllTargetsHelpText(): string {
   const targets = targetManager.getImplementedTargets();
-  return targets.map(target => target.getHelpText()).join('\n\n');
+  return targets.map((target) => target.getHelpText()).join('\n\n');
 }
 
 /**
@@ -321,10 +321,14 @@ export function getAllTargetsHelpText(): string {
 export function validateTarget(targetId: string): string {
   const target = targetManager.getTarget(targetId);
   if (!target) {
-    throw new Error(`Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`);
+    throw new Error(
+      `Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
+    );
   }
   if (!target.isImplemented) {
-    throw new Error(`Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`);
+    throw new Error(
+      `Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
+    );
   }
   return targetId;
 }

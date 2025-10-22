@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { Effect } from 'effect';
 import { pipe } from 'effect/Function';
+import { describe, expect, it } from 'vitest';
 import { RuntimeConfigLive } from '../../src/core/runtime.js';
 
 describe('Effect CLI', () => {

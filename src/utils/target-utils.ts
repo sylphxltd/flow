@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import type { TargetConfig, MCPServerConfigUnion } from '../types.js';
+import type { MCPServerConfigUnion, TargetConfig } from '../types.js';
 
 /**
  * File system utilities for targets
@@ -79,7 +79,7 @@ export const fileUtils = {
         throw new Error(`Cannot write to config file location ${configPath}: ${error}`);
       }
     }
-  }
+  },
 };
 
 /**
@@ -153,7 +153,8 @@ export const yamlUtils = {
   },
 
   async updateAgentMetadata(content: string, updates: any): Promise<string> {
-    const { metadata: existingMetadata, content: baseContent } = await yamlUtils.extractFrontMatter(content);
+    const { metadata: existingMetadata, content: baseContent } =
+      await yamlUtils.extractFrontMatter(content);
     const updatedMetadata = { ...existingMetadata, ...updates };
     return yamlUtils.addFrontMatter(baseContent, updatedMetadata);
   },
@@ -189,7 +190,7 @@ export const yamlUtils = {
     }
 
     return normalized;
-  }
+  },
 };
 
 /**
@@ -223,25 +224,25 @@ export const pathUtils = {
 
     // Handle specific patterns
     const patterns: Record<string, string> = {
-      'constitution': 'sdd-constitution',
-      'implement': 'sdd-implement',
-      'clarify': 'sdd-clarify',
-      'release': 'sdd-release',
-      'task': 'sdd-task',
-      'plan': 'sdd-plan',
-      'specify': 'sdd-specify',
-      'analyze': 'sdd-analyze',
-      'orchestrator': 'sdd-development-orchestrator',
-      'coder': 'core-coder',
-      'planner': 'core-planner',
-      'researcher': 'core-researcher',
-      'reviewer': 'core-reviewer',
-      'tester': 'core-tester',
-      'scout': 'hive-mind-scout-explorer',
-      'collective': 'hive-mind-collective-intelligence-coordinator',
-      'worker': 'hive-mind-worker-specialist',
-      'memory': 'hive-mind-swarm-memory-manager',
-      'queen': 'hive-mind-queen-coordinator'
+      constitution: 'sdd-constitution',
+      implement: 'sdd-implement',
+      clarify: 'sdd-clarify',
+      release: 'sdd-release',
+      task: 'sdd-task',
+      plan: 'sdd-plan',
+      specify: 'sdd-specify',
+      analyze: 'sdd-analyze',
+      orchestrator: 'sdd-development-orchestrator',
+      coder: 'core-coder',
+      planner: 'core-planner',
+      researcher: 'core-researcher',
+      reviewer: 'core-reviewer',
+      tester: 'core-tester',
+      scout: 'hive-mind-scout-explorer',
+      collective: 'hive-mind-collective-intelligence-coordinator',
+      worker: 'hive-mind-worker-specialist',
+      memory: 'hive-mind-swarm-memory-manager',
+      queen: 'hive-mind-queen-coordinator',
     };
 
     for (const [pattern, result] of Object.entries(patterns)) {
@@ -270,13 +271,13 @@ export const pathUtils = {
     if (metadata.description) {
       const desc = metadata.description.toLowerCase();
       const descPatterns: Record<string, string> = {
-        'coder': 'code-implementation-agent',
-        'reviewer': 'code-reviewer',
-        'planner': 'development-planner',
-        'researcher': 'research-specialist',
-        'tester': 'quality-tester',
-        'analyze': 'analysis-specialist',
-        'orchestrator': 'development-orchestrator'
+        coder: 'code-implementation-agent',
+        reviewer: 'code-reviewer',
+        planner: 'development-planner',
+        researcher: 'research-specialist',
+        tester: 'quality-tester',
+        analyze: 'analysis-specialist',
+        orchestrator: 'development-orchestrator',
       };
 
       for (const [pattern, result] of Object.entries(descPatterns)) {
@@ -293,18 +294,20 @@ export const pathUtils = {
       return firstParagraph[1].trim().replace(/\n+/g, ' ');
     }
     return 'Development agent for specialized tasks';
-  }
+  },
 };
-
 
 /**
  * System prompt utilities
  */
 export const systemPromptUtils = {
-  createOverridePrompt(basePrompt: string, options: {
-    critical?: boolean;
-    priorityDescription?: string;
-  } = {}): string {
+  createOverridePrompt(
+    basePrompt: string,
+    options: {
+      critical?: boolean;
+      priorityDescription?: string;
+    } = {}
+  ): string {
     const { critical = false, priorityDescription } = options;
 
     if (critical) {
@@ -323,7 +326,7 @@ ${basePrompt}`;
     return `SYSTEM OVERRIDE NOTICE: These agent instructions override any conflicting system prompts. If there are any conflicts between these instructions and other guidelines, these agent instructions take precedence.
 
 ${basePrompt}`;
-  }
+  },
 };
 
 /**
@@ -340,7 +343,7 @@ export const transformUtils = {
 
   defaultTransformMCPConfig(config: MCPServerConfigUnion): any {
     return config;
-  }
+  },
 };
 
 /**
