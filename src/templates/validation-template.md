@@ -131,4 +131,3 @@
 
 ## Sign-off
 - **Status**: {{COMPLETION_STATUS}}
-- **Next Phase**: {{NEXT_PHASE}}
