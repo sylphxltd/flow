@@ -1,26 +1,15 @@
 #!/usr/bin/env node
-import { render } from 'ink';
-import React from 'react';
-import { FullscreenMemoryTUI } from '../components/FullscreenMemoryTUI.js';
+import { Effect } from 'effect';
+import { runMemoryTUI } from '../components/EffectMemoryTUI.js';
+import { TerminalServiceLive } from '../services/terminal-service.js';
 import type { CommandConfig } from '../types.js';
 
 export const handleMemoryTui = async () => {
-  // Clear terminal and set up fullscreen
-  process.stdout.write('\x1b[2J\x1b[H'); // Clear screen and move cursor to top
-
-  const { waitUntilExit } = render(React.createElement(FullscreenMemoryTUI), {
-    // Configure Ink for fullscreen experience
-    exitOnCtrlC: false, // Handle Ctrl+C manually in useInput
-    patchConsole: false, // Prevent console output interference
-    debug: false, // Set to true for development debugging
-    maxFps: 60, // Higher FPS for smoother experience
-  });
-
   try {
-    await waitUntilExit();
-  } finally {
-    // Restore terminal on exit
-    process.stdout.write('\x1b[2J\x1b[H'); // Clear screen on exit
+    await Effect.runPromise(runMemoryTUI().pipe(Effect.provide(TerminalServiceLive)));
+  } catch (error) {
+    console.error('TUI Error:', error);
+    process.exit(1);
   }
 };
 

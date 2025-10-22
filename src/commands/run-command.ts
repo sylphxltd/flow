@@ -1,9 +1,17 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { Effect } from 'effect';
 import { targetManager } from '../core/target-manager.js';
+import { TerminalService } from '../services/service-types.js';
+import { TerminalServiceLive } from '../services/terminal-service.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
+
+// Helper to run terminal effects synchronously
+const runTerminal = (effect: Effect.Effect<void, any, TerminalService>) => {
+  Effect.runSync(effect.pipe(Effect.provide(TerminalServiceLive)));
+};
 
 interface RunCommandOptions extends CommandOptions {
   target?: string;
@@ -126,16 +134,23 @@ export const runCommand: CommandConfig = {
     const { prompt, agent, verbose } = options;
 
     if (verbose) {
-      console.log('🚀 Sylphx Flow Run');
-      console.log('====================');
-      console.log(`🎯 Target: ${options.target}`);
-      console.log(`🤖 Agent: ${agent}`);
-      if (prompt) {
-        console.log(`💬 Prompt: ${prompt}`);
-      } else {
-        console.log('💬 Prompt: [Interactive mode]');
-      }
-      console.log('');
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.print('🚀 Sylphx Flow Run\n====================\n', {
+            bold: true,
+            color: 'cyan',
+          });
+          yield* terminal.print(`🎯 Target: ${options.target}\n`);
+          yield* terminal.print(`🤖 Agent: ${agent}\n`);
+          if (prompt) {
+            yield* terminal.print(`💬 Prompt: ${prompt}\n`);
+          } else {
+            yield* terminal.print('💬 Prompt: [Interactive mode]\n');
+          }
+          yield* terminal.print('');
+        })
+      );
     }
 
     // Load agent content
@@ -155,19 +170,31 @@ ${agentInstructions}`;
     // Don't add "INTERACTIVE MODE:" message - let Claude handle it naturally
 
     if (verbose) {
-      console.log('📝 System Prompt:');
-      console.log('================');
-      console.log(systemPrompt.substring(0, 500) + (systemPrompt.length > 500 ? '...' : ''));
-      console.log('');
-      if (userPrompt.trim() !== '') {
-        console.log('📝 User Prompt:');
-        console.log('==============');
-        console.log(userPrompt.substring(0, 500) + (userPrompt.length > 500 ? '...' : ''));
-        console.log('');
-      } else {
-        console.log('📝 User Prompt: [Interactive mode - Claude will greet the user]');
-        console.log('');
-      }
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.print('📝 System Prompt:\n================\n', {
+            bold: true,
+            color: 'blue',
+          });
+          yield* terminal.print(
+            systemPrompt.substring(0, 500) + (systemPrompt.length > 500 ? '...' : '') + '\n\n'
+          );
+          if (userPrompt.trim() !== '') {
+            yield* terminal.print('📝 User Prompt:\n==============\n', {
+              bold: true,
+              color: 'green',
+            });
+            yield* terminal.print(
+              userPrompt.substring(0, 500) + (userPrompt.length > 500 ? '...' : '') + '\n\n'
+            );
+          } else {
+            yield* terminal.print(
+              '📝 User Prompt: [Interactive mode - Claude will greet the user]\n\n'
+            );
+          }
+        })
+      );
     }
 
     // Execute command with the resolved target

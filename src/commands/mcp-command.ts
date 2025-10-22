@@ -1,5 +1,8 @@
+import { Effect } from 'effect';
 import { getAllServerIDs, getServersRequiringAPIKeys } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
+import { TerminalService } from '../services/service-types.js';
+import { TerminalServiceLive } from '../services/terminal-service.js';
 import type { CommandConfig, CommandHandler } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import {
@@ -10,17 +13,27 @@ import {
   validateTarget,
 } from '../utils/target-config.js';
 
+// Helper to run terminal effects synchronously
+const runTerminal = (effect: Effect.Effect<void, any, TerminalService>) => {
+  Effect.runSync(effect.pipe(Effect.provide(TerminalServiceLive)));
+};
+
 // MCP start handler
 const mcpStartHandler: CommandHandler = async () => {
   // Import and start the Sylphx Flow MCP server
   await import('../servers/sylphx-flow-mcp-server.js');
 
-  console.log('🚀 Starting Sylphx Flow MCP Server...');
-  console.log('📍 Database: .sylphx-flow/memory.db');
-  console.log(
-    '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
+  runTerminal(
+    Effect.gen(function* () {
+      const terminal = yield* TerminalService;
+      yield* terminal.print('🚀 Starting Sylphx Flow MCP Server...');
+      yield* terminal.print('📍 Database: .sylphx-flow/memory.db');
+      yield* terminal.print(
+        '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
+      );
+      yield* terminal.print('💡 Press Ctrl+C to stop the server');
+    })
   );
-  console.log('💡 Press Ctrl+C to stop the server');
 
   // The server is already initialized in the module
   // We just need to keep the process alive
@@ -44,11 +57,23 @@ const mcpInstallHandler: CommandHandler = async (options: {
   const servers = options.servers || [];
 
   if (options.all) {
-    console.log(`🔧 Installing all available MCP tools for ${targetId}...`);
+    runTerminal(
+      Effect.gen(function* () {
+        const terminal = yield* TerminalService;
+        yield* terminal.print(`🔧 Installing all available MCP tools for ${targetId}...`);
+      })
+    );
     const allServers = getAllServerIDs();
 
     if (options.dryRun) {
-      console.log(`🔍 Dry run: Would install all MCP tools: ${allServers.join(', ')}`);
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.print(
+            `🔍 Dry run: Would install all MCP tools: ${allServers.join(', ')}`
+          );
+        })
+      );
     } else {
       // Check for servers that need API keys and configure them first
       const serversNeedingKeys = getServersRequiringAPIKeys();
@@ -56,7 +81,12 @@ const mcpInstallHandler: CommandHandler = async (options: {
       const serversWithoutKeys: string[] = [];
 
       if (serversNeedingKeys.length > 0) {
-        console.log('\n🔑 Some MCP tools require API keys:');
+        runTerminal(
+          Effect.gen(function* () {
+            const terminal = yield* TerminalService;
+            yield* terminal.print('\n🔑 Some MCP tools require API keys:');
+          })
+        );
 
         for (const serverType of serversNeedingKeys) {
           const shouldKeepOrInstall = await configureMCPServerForTarget(
@@ -82,14 +112,26 @@ const mcpInstallHandler: CommandHandler = async (options: {
 
       if (serversToInstall.length > 0) {
         await addMCPServersToTarget(process.cwd(), targetId, serversToInstall as any);
-        console.log(`✅ MCP tools installed: ${serversToInstall.join(', ')}`);
+        runTerminal(
+          Effect.gen(function* () {
+            const terminal = yield* TerminalService;
+            yield* terminal.success(`MCP tools installed: ${serversToInstall.join(', ')}`);
+          })
+        );
       }
 
       if (serversWithoutKeys.length > 0) {
-        console.log(
-          `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+        runTerminal(
+          Effect.gen(function* () {
+            const terminal = yield* TerminalService;
+            yield* terminal.warning(
+              `Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+            );
+            yield* terminal.print(
+              '   You can install them later with: sylphx-flow mcp config <server-name>'
+            );
+          })
         );
-        console.log('   You can install them later with: sylphx-flow mcp config <server-name>');
       }
     }
     return;
@@ -105,8 +147,13 @@ const mcpInstallHandler: CommandHandler = async (options: {
     if (getAllServerIDs().includes(server as any)) {
       validServers.push(server);
     } else {
-      console.warn(
-        `Warning: Unknown MCP server '${server}'. Available: ${getAllServerIDs().join(', ')}`
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.warning(
+            `Unknown MCP server '${server}'. Available: ${getAllServerIDs().join(', ')}`
+          );
+        })
       );
     }
   }
@@ -119,9 +166,19 @@ const mcpInstallHandler: CommandHandler = async (options: {
     );
   }
 
-  console.log(`🔧 Installing MCP tools for ${targetId}: ${validServers.join(', ')}`);
+  runTerminal(
+    Effect.gen(function* () {
+      const terminal = yield* TerminalService;
+      yield* terminal.print(`🔧 Installing MCP tools for ${targetId}: ${validServers.join(', ')}`);
+    })
+  );
   if (options.dryRun) {
-    console.log('🔍 Dry run: Would install MCP tools:', validServers.join(', '));
+    runTerminal(
+      Effect.gen(function* () {
+        const terminal = yield* TerminalService;
+        yield* terminal.print(`🔍 Dry run: Would install MCP tools: ${validServers.join(', ')}`);
+      })
+    );
   } else {
     // Check for servers that need API keys and configure them first
     const serversNeedingKeys = validServers.filter((server) =>
@@ -131,7 +188,12 @@ const mcpInstallHandler: CommandHandler = async (options: {
     const serversWithoutKeys: string[] = [];
 
     if (serversNeedingKeys.length > 0) {
-      console.log('\n🔑 Some MCP tools require API keys:');
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.print('\n🔑 Some MCP tools require API keys:');
+        })
+      );
 
       for (const serverType of serversNeedingKeys) {
         const shouldKeepOrInstall = await configureMCPServerForTarget(
@@ -157,14 +219,26 @@ const mcpInstallHandler: CommandHandler = async (options: {
 
     if (serversToInstall.length > 0) {
       await addMCPServersToTarget(process.cwd(), targetId, serversToInstall as any);
-      console.log(`✅ MCP tools installed: ${serversToInstall.join(', ')}`);
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.success(`MCP tools installed: ${serversToInstall.join(', ')}`);
+        })
+      );
     }
 
     if (serversWithoutKeys.length > 0) {
-      console.log(
-        `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.warning(
+            `Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+          );
+          yield* terminal.print(
+            '   You can install them later with: sylphx-flow mcp config <server-name>'
+          );
+        })
       );
-      console.log('   You can install them later with: sylphx-flow mcp config <server-name>');
     }
   }
 };
