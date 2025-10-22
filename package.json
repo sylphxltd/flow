@@ -34,8 +34,9 @@
   "homepage": "https://github.com/sylphxltd/flow#readme",
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --minify --splitting --external react-devtools-core",
-    "dev": "tsx index.ts",
-    "start": "node dist/index.js",
+    "dev": "bun src/index.ts",
+    "start": "bun dist/index.js",
+    "start:node": "node dist/index.js",
     "clean": "rm -rf dist",
     "prepublishOnly": "bun build",
     "prepare": "bun run build",
