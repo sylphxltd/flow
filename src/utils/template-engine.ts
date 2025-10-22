@@ -7,13 +7,24 @@ interface TemplateData {
 
 export class TemplateEngine {
   private templatesDir: string;
+  private mode: 'coordinator' | 'implementer';
 
-  constructor(templatesDir = 'src/templates') {
+  constructor(templatesDir = 'src/templates', mode: 'coordinator' | 'implementer' = 'coordinator') {
     this.templatesDir = templatesDir;
+    this.mode = mode;
   }
 
   private loadTemplate(templateName: string): string {
-    const templatePath = join(this.templatesDir, `${templateName}-template.md`);
+    // Shared templates (spec, plan, validation, reviews) are in shared folder
+    const sharedTemplates = ['spec', 'plan', 'validation', 'reviews'];
+
+    if (sharedTemplates.includes(templateName)) {
+      const templatePath = join(this.templatesDir, 'shared', `${templateName}-template.md`);
+      return readFileSync(templatePath, 'utf8');
+    }
+
+    // Mode-specific templates (tasks, progress) are in mode folder
+    const templatePath = join(this.templatesDir, this.mode, `${templateName}-template.md`);
     return readFileSync(templatePath, 'utf8');
   }
 

@@ -91,11 +91,11 @@ flowchart LR
 
 **What to do**:
 - Break down design into implementation tasks in tasks.md
-- Organize tasks into sequential waves based on dependencies
+- Organize tasks into sequential stages based on dependencies
 - For each task define: scope, deliverables, acceptance criteria, complexity
 - MANDATORY TDD PLANNING: test strategy, frameworks, coverage requirements, test cases
 - Update progress.md
-- Commit: `docs(tasks): organize implementation tasks in waves`
+- Commit: `docs(tasks): organize implementation tasks by stages`
 
 ### Phase 5: Validation
 
@@ -113,7 +113,7 @@ flowchart LR
 ### Phase 6: Implementation
 
 **What to do**:
-- Execute all tasks wave by wave following tasks.md
+- Execute all tasks stage by stage following tasks.md
 - Follow TDD approach: Write test → Implement → Refactor
 - MANDATORY cleanup per task: Remove TODO/debug code, eliminate duplication, optimize performance, add error handling, update docs
 - Update tasks.md completion status

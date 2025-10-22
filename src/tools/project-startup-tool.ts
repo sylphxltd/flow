@@ -169,6 +169,7 @@ export interface ProjectStartupArgs {
   project_type: 'feature' | 'bugfix' | 'hotfix' | 'refactor' | 'migration';
   project_name: string;
   create_branch?: boolean;
+  mode?: 'coordinator' | 'implementer';
 }
 
 export function registerProjectStartupTool(server: McpServer) {
@@ -187,6 +188,12 @@ export function registerProjectStartupTool(server: McpServer) {
           .boolean()
           .optional()
           .describe('Whether to create a git branch (default: true)'),
+        mode: z
+          .enum(['coordinator', 'implementer'])
+          .optional()
+          .describe(
+            'Execution mode: coordinator (delegation-based) or implementer (direct execution). Default: coordinator'
+          ),
       },
     },
     projectStartupTool
@@ -195,7 +202,7 @@ export function registerProjectStartupTool(server: McpServer) {
 
 export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
   try {
-    const { project_type, project_name, create_branch = true } = args;
+    const { project_type, project_name, create_branch = true, mode = 'coordinator' } = args;
 
     // Generate project details automatically
     const generatedDetails = generateProjectDetails(project_type, project_name);
@@ -386,8 +393,8 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
       BRANCH_STRATEGY_COMPLIANCE: 'Pending',
     };
 
-    // Step 4: Generate all templates
-    const templateEngine = new TemplateEngine();
+    // Step 4: Generate all templates with mode-specific templates
+    const templateEngine = new TemplateEngine('src/templates', mode);
     const templates = templateEngine.generateAllProjectTemplates(projectData);
 
     // Step 5: Create all template files

@@ -164,11 +164,13 @@ flowchart LR
 
 **Phase 4.2**: Delegate to planner for wave organization with input: All Phase 4.1 reports
 - Consolidate all task breakdowns into unified tasks.md
-- Analyze dependencies and organize into sequential waves (sequential tasks vs parallel tasks)
+- Analyze dependencies and organize into sequential waves for parallel execution
+- Each wave contains tasks that can be executed simultaneously (no conflicts)
+- Waves execute sequentially (Wave 2 starts after Wave 1 complete)
 - Optimize each wave for maximum parallel efficiency
 - Ensure all TDD requirements properly integrated
 - Update progress.md with Phase 4 completion
-- Commit: docs(tasks): organize implementation tasks in waves
+- Commit: docs(tasks): organize implementation tasks in waves for parallel execution
 - Report completion when tasks organized in waves, dependencies clear, TDD integrated
 
 **On Failure**: Return to Phase 3 (design flawed) or Phase 4 (re-breakdown tasks)
@@ -193,6 +195,7 @@ flowchart LR
 
 **Phase 6.1**: Wave 1 implementation - Delegate individually to assigned specialists for each task in Wave 1
 - Send ALL delegations SIMULTANEOUSLY in parallel (same specialist may receive multiple tasks)
+- All tasks in Wave 1 execute in parallel with no conflicts
 - Follow Phase 3-4 plan exactly (no improvisation)
 - Execute tasks per TDD strategy from tasks.md
 - MANDATORY per-task cleanup: Remove TODO/console.log/debug, eliminate duplication/dead code, optimize performance, follow standards, add error handling/logging, update docs
@@ -202,8 +205,9 @@ flowchart LR
 - Report completion when all Wave 1 tasks finished
 
 **Phase 6.2+**: Subsequent waves - Repeat pattern for Wave 2, 3, etc.
-- Same delegation pattern as Wave 1
-- Wave complete when all tasks in that wave finished
+- Same parallel delegation pattern as Wave 1
+- Each wave's tasks execute in parallel within that wave
+- Waves execute sequentially (next wave starts after previous complete)
 - Continue until all waves complete
 
 **When All Waves Complete**: Phase 6 complete, proceed to Phase 7
