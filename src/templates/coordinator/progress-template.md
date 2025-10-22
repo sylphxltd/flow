@@ -19,43 +19,18 @@
 | 8: Delivery | {{PHASE_8_STATUS}} | {{PHASE_8_NOTES}} |
 
 ## Current Blockers
-| Blocker | Resolution Plan |
-|---------|-----------------|
-| {{BLOCKER_1}} | {{BLOCKER_1_RESOLUTION}} |
-| {{BLOCKER_2}} | {{BLOCKER_2_RESOLUTION}} |
-
-## Recent Actions
-- {{ACTION_1}}
-- {{ACTION_2}}
-- {{ACTION_3}}
-
-## Files Modified
-- spec.md: {{SPEC_STATUS}}
-- plan.md: {{PLAN_STATUS}}
-- tasks.md: {{TASKS_STATUS}}
-- validation.md: {{VALIDATION_STATUS}}
-- reviews.md: {{REVIEWS_STATUS}}
+(List any blockers preventing progress)
 
 ## Recovery Instructions
 **If workflow interrupted, resume here:**
 
-1. **Check current phase**: {{CURRENT_PHASE}}
-2. **Read relevant docs**:
-   - If in Phase 1-2: Read `spec.md`
-   - If in Phase 3: Read `plan.md`
-   - If in Phase 4-6: Read `tasks.md`
-   - If in Phase 5: Read `validation.md`
-   - If in Phase 7-8: Read `reviews.md`
-3. **Check blockers above** - resolve before continuing
-4. **Execute next action**: {{NEXT_ACTION}}
-5. **Update this file** after completing action
-
-## Quick Status
-- [ ] Phase 1 complete
-- [ ] Phase 2 complete
-- [ ] Phase 3 complete
-- [ ] Phase 4 complete
-- [ ] Phase 5 complete
-- [ ] Phase 6 complete
-- [ ] Phase 7 complete
-- [ ] Phase 8 complete
+1. **Current Phase**: {{CURRENT_PHASE}}
+2. **Next Action**: {{NEXT_ACTION}}
+3. **Read relevant docs**:
+   - Phase 1-2: `spec.md`
+   - Phase 3: `plan.md`
+   - Phase 4-6: `tasks.md`
+   - Phase 5: `validation.md`
+   - Phase 7-8: `reviews.md`
+4. Check blockers above before continuing
+5. Update this file after completing each phase

@@ -3,82 +3,68 @@
 {{DESCRIPTION}}
 
 ## Architecture Overview
+(Add mermaid diagram or description of system architecture)
+
 ```mermaid
 graph TB
     A[Frontend] --> B[API Gateway]
     B --> C[Backend Services]
     C --> D[Database]
-    C --> E[External APIs]
-    C --> F[Cache]
 ```
 
 ## Component Architecture
 
 ### Frontend Components
-- **{{FRONTEND_COMP_1}}**: {{FRONTEND_COMP_1_DESC}}
-- **{{FRONTEND_COMP_2}}**: {{FRONTEND_COMP_2_DESC}}
-- **{{FRONTEND_COMP_3}}**: {{FRONTEND_COMP_3_DESC}}
+(List and describe frontend components)
 
 ### Backend Services
-- **{{BACKEND_SVC_1}}**: {{BACKEND_SVC_1_DESC}}
-- **{{BACKEND_SVC_2}}**: {{BACKEND_SVC_2_DESC}}
-- **{{BACKEND_SVC_3}}**: {{BACKEND_SVC_3_DESC}}
+(List and describe backend services)
 
 ### Data Layer
-- **Primary DB**: {{PRIMARY_DB_DESC}}
-- **Cache Layer**: {{CACHE_DESC}}
-- **File Storage**: {{STORAGE_DESC}}
+(Describe database, cache, storage)
 
 ## Integration Points
 
 ### Internal
-- **Component Communication**: {{INTERNAL_INTEGRATION}}
-- **Data Flow**: {{DATA_FLOW_STRATEGY}}
-- **Service Coordination**: {{SERVICE_COORDINATION}}
+- **Component Communication**: (describe)
+- **Data Flow**: (describe)
+- **Service Coordination**: (describe)
 
 ### External
-- **Third-party APIs**: {{EXTERNAL_APIS}}
-- **Payment Gateways**: {{PAYMENT_INTEGRATION}}
-- **Authentication Services**: {{AUTH_INTEGRATION}}
+- **Third-party APIs**: (list)
+- **Payment Gateways**: (if applicable)
+- **Authentication Services**: (describe)
 
 ## Design Conflicts & Resolutions
-{{#each DESIGN_CONFLICTS}}
-- **{{this.conflict}}** → {{this.resolution}}
-{{/each}}
+(Document any conflicts found and how they were resolved)
 
 ## Technical Decisions
 
 ### Architecture Decisions
 | Decision | Rationale | Trade-offs |
 |----------|-----------|------------|
-| {{ARCH_DECISION_1}} | {{ARCH_DECISION_1_RATIONALE}} | {{ARCH_DECISION_1_TRADEOFFS}} |
-| {{ARCH_DECISION_2}} | {{ARCH_DECISION_2_RATIONALE}} | {{ARCH_DECISION_2_TRADEOFFS}} |
+| (Decision 1) | (Why) | (What we gave up) |
+| (Decision 2) | (Why) | (What we gave up) |
 
 ### Technology Choices
-- **Frontend**: {{FRONTEND_TECH}} - {{FRONTEND_RATIONALE}}
-- **Backend**: {{BACKEND_TECH}} - {{BACKEND_RATIONALE}}
-- **Database**: {{DATABASE_TECH}} - {{DATABASE_RATIONALE}}
-- **Infrastructure**: {{INFRA_TECH}} - {{INFRA_RATIONALE}}
+- **Frontend**: (technology) - (rationale)
+- **Backend**: (technology) - (rationale)
+- **Database**: (technology) - (rationale)
+- **Infrastructure**: (technology) - (rationale)
 
 ## Task Categories
-{{#each TASK_CATEGORIES}}
-- **{{this.category}}**: {{this.description}}
-{{/each}}
+(Will be filled during Phase 4)
 
 ## Critical Path
-{{#each CRITICAL_PATH}}
-- **{{this.task}}** - Dependencies: {{this.prerequisites}}
-{{/each}}
+(Will be identified during Phase 4)
 
 ## Deployment Strategy
-- **Staging**: {{STAGING_STRATEGY}}
-- **Production**: {{PRODUCTION_STRATEGY}}
-- **Monitoring**: {{MONITORING_STRATEGY}}
+- **Staging**: (describe)
+- **Production**: (describe)
+- **Monitoring**: (describe)
 
-## Completion Status
+## Completion Checklist
 - [ ] Design conflicts resolved
 - [ ] Integration points identified
 - [ ] Architecture decisions documented
 - [ ] Technical feasibility validated
-
-**Status**: {{COMPLETION_STATUS}}

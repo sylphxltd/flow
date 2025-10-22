@@ -1,15 +1,21 @@
 # Code Review: {{PROJECT_NAME}}
 
 ## Test Results
-- **Unit Tests**: {{UNIT_TESTS_PASSING}}/{{UNIT_TESTS_TOTAL}}
-- **Integration Tests**: {{INTEGRATION_TESTS_PASSING}}/{{INTEGRATION_TESTS_TOTAL}}
-- **E2E Tests**: {{E2E_TESTS_PASSING}}/{{E2E_TESTS_TOTAL}}
-- **Coverage**: {{TEST_COVERAGE}}%
+- **Unit Tests**: __ / __ passing
+- **Integration Tests**: __ / __ passing
+- **E2E Tests**: __ / __ passing
+- **Coverage**: __%
+
+**Test Failures** (if any):
+
 
 ## Task Completion
-- [ ] All tasks from tasks.md completed
+- [ ] All tasks from tasks.md completed (both checkboxes)
 - [ ] All deliverables meet acceptance criteria
 - [ ] TDD requirements satisfied
+
+**Incomplete Tasks** (if any):
+
 
 ## Code Quality
 - [ ] No TODO/FIXME/debug code remaining
@@ -18,15 +24,28 @@
 - [ ] Proper error handling
 - [ ] Documentation complete
 
+**Quality Issues** (if any):
+
+
 ## Requirements Verification
 - [ ] All functional requirements implemented
 - [ ] Non-functional requirements met
 - [ ] User acceptance criteria satisfied
 
-## Issues Found
-{{ISSUES_FOUND}}
+**Missing Requirements** (if any):
 
-## Recommendation
-**Action**: {{RECOMMENDED_ACTION}}
 
-**Status**: {{COMPLETION_STATUS}}
+## Overall Assessment
+**Quality Level**: Excellent / Good / Needs Work / Critical Issues
+
+**Issues Summary**:
+
+
+**Recommended Action**:
+- [ ] Ready for Phase 8 (Delivery)
+- [ ] Minor fixes needed (stay in Phase 7)
+- [ ] Major issues - return to Phase 6 (Implementation)
+- [ ] Critical issues - return to earlier phase
+
+**Next Steps**:
+

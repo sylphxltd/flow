@@ -6,84 +6,69 @@
 {{OBJECTIVE}}
 
 ## Success Criteria
-- [ ] {{SUCCESS_CRITERION_1}}
-- [ ] {{SUCCESS_CRITERION_2}}
-- [ ] {{SUCCESS_CRITERION_3}}
+- [ ] (Add success criterion 1)
+- [ ] (Add success criterion 2)
+- [ ] (Add success criterion 3)
 
 ## Functional Requirements
-{{#each REQUIREMENTS}}
-- [ ] **FR-{{@index}}**: {{this}}
-{{/each}}
+(Add functional requirements as you identify them)
+- [ ] **FR-1**: 
+- [ ] **FR-2**: 
+- [ ] **FR-3**: 
 
 ## Non-Functional Requirements
 
 ### Performance
-- [ ] Response time: < {{RESPONSE_TIME}}ms for critical operations
-- [ ] Throughput: Support {{THROUGHPUT}} concurrent users
+- [ ] Response time: < __ ms for critical operations
+- [ ] Throughput: Support __ concurrent users
 
 ### Security
-- [ ] Authentication: {{AUTH_METHOD}}
+- [ ] Authentication: (specify method)
 - [ ] Authorization: Role-based access control
 - [ ] Data protection: Encryption at rest and in transit
 
 ### Quality
-- [ ] Test coverage: ≥ {{TEST_COVERAGE}}%
+- [ ] Test coverage: ≥ __%
 - [ ] Code quality: Pass linting and formatting
 - [ ] Documentation: Complete API and code docs
 
 ## Clarifications & Research
+(Add Q&A, research findings, and technical decisions as you progress through Phase 2)
 
 ### Questions & Answers
-{{#each QUESTIONS}}
-- **Q**: {{this.question}}
-  - **A**: {{this.answer}}
-{{/each}}
+
 
 ### Technical Approaches
-{{#each TECHNICAL_APPROACHES}}
-- {{this.approach}} - {{this.rationale}}
-{{/each}}
+
 
 ### Risks & Constraints
-{{#each RISKS_CONSTRAINTS}}
-- {{this.item}} - {{this.mitigation}}
-{{/each}}
+
 
 ## Technology Stack
-- **Frontend**: {{FRONTEND_TECH}}
-- **Backend**: {{BACKEND_TECH}}
-- **Database**: {{DATABASE_TECH}}
-- **Infrastructure**: {{INFRA_TECH}}
+- **Frontend**: (specify)
+- **Backend**: (specify)
+- **Database**: (specify)
+- **Infrastructure**: (specify)
 
 ## Dependencies
 
 ### External
-{{#each EXTERNAL_DEPS}}
-- {{this.name}} ({{this.version}}) - {{this.purpose}}
-{{/each}}
+(List external dependencies with versions and purposes)
 
 ### Internal
-{{#each INTERNAL_DEPS}}
-- {{this.component}} - {{this.description}}
-{{/each}}
+(List internal component dependencies)
 
 ## Integration Points
 
 ### External
-{{#each EXTERNAL_INTEGRATIONS}}
-- {{this.system}} - {{this.description}}
-{{/each}}
+(List external system integrations)
 
 ### Internal
-{{#each INTERNAL_INTEGRATIONS}}
-- {{this.component}} - {{this.interface}}
-{{/each}}
+(List internal component integrations)
 
-## Completion Status
+## Completion Checklist
 - [ ] Requirements clear and complete
 - [ ] Ambiguities resolved
 - [ ] Research complete
 - [ ] Technical feasibility validated
 - [ ] Integration points identified
-
-**Status**: {{COMPLETION_STATUS}}
