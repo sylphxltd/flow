@@ -284,32 +284,30 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
  * Create a tagged error with context
  */
 export const createError = <T extends AppError>(
-  ErrorClass: new (message: string, cause?: Error, ...args: unknown[]) => T,
+  ErrorClass: new (message: string, ...args: readonly unknown[]) => T,
   message: string,
-  cause?: Error,
-  ...args: unknown[]
+  ...args: readonly unknown[]
 ): T => {
-  return new ErrorClass(message, cause, ...args);
+  return new ErrorClass(message, ...args);
 };
 
 /**
  * Wrap errors in a specific error type
  */
 export const wrapError = <T extends AppError>(
-  ErrorClass: new (message: string, cause?: Error, ...args: unknown[]) => T,
+  ErrorClass: new (message: string, ...args: readonly unknown[]) => T,
   error: unknown,
-  message?: string,
-  ...args: unknown[]
+  ...args: readonly unknown[]
 ): T => {
   if (error instanceof AppError) {
     return error as T;
   }
 
   if (error instanceof Error) {
-    return new ErrorClass(message || error.message, error, ...args);
+    return new ErrorClass(error.message, error, ...args);
   }
 
-  return new ErrorClass(message || String(error), undefined, ...args);
+  return new ErrorClass(String(error), undefined, ...args);
 };
 
 /**
@@ -317,7 +315,7 @@ export const wrapError = <T extends AppError>(
  */
 export const isErrorType = <T extends AppError>(
   error: unknown,
-  ErrorClass: new (...args: unknown[]) => T
+  ErrorClass: new (message: string, ...args: readonly unknown[]) => T
 ): error is T => {
   return error instanceof ErrorClass;
 };

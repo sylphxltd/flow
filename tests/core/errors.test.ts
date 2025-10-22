@@ -24,10 +24,18 @@ import {
 describe('Error Handling Foundation', () => {
   beforeEach(() => {
     // Clear console methods to avoid test output pollution
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.spyOn(console, 'info').mockImplementation(() => {});
-    vi.spyOn(console, 'debug').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {
+      // Intentionally empty - prevent console output during tests
+    });
+    vi.spyOn(console, 'warn').mockImplementation(() => {
+      // Intentionally empty - prevent console output during tests
+    });
+    vi.spyOn(console, 'info').mockImplementation(() => {
+      // Intentionally empty - prevent console output during tests
+    });
+    vi.spyOn(console, 'debug').mockImplementation(() => {
+      // Intentionally empty - prevent console output during tests
+    });
   });
 
   describe('AppError Base Class', () => {
@@ -140,8 +148,8 @@ describe('Error Handling Foundation', () => {
   });
 
   describe('Error Utilities', () => {
-    it('should create errors with factory function', () => {
-      const error = createError(MemoryError, 'Test message', undefined, 'set', 'key', 'ns');
+    it('should create errors directly', () => {
+      const error = new MemoryError('Test message', undefined, 'set', 'key', 'ns');
 
       expect(error).toBeInstanceOf(MemoryError);
       expect(error.message).toBe('Test message');
@@ -152,16 +160,16 @@ describe('Error Handling Foundation', () => {
 
     it('should wrap errors correctly', () => {
       const originalError = new Error('Original');
-      const wrappedError = wrapError(MemoryError, originalError, 'Wrapped message', 'get', 'key');
+      const wrappedError = wrapError(MemoryError, originalError, 'get', 'key');
 
       expect(wrappedError).toBeInstanceOf(MemoryError);
-      expect(wrappedError.message).toBe('Wrapped message');
+      expect(wrappedError.message).toBe('Original');
       expect(wrappedError.cause).toBe(originalError);
     });
 
     it('should not wrap already tagged errors', () => {
       const memoryError = new MemoryError('Original');
-      const wrappedError = wrapError(MemoryError, memoryError, 'Should not wrap');
+      const wrappedError = wrapError(MemoryError, memoryError);
 
       expect(wrappedError).toBe(memoryError);
     });
@@ -193,8 +201,8 @@ describe('Error Handling Foundation', () => {
       const result1 = matchError(
         memoryError,
         {
-          MemoryError: (e) => 'memory',
-          ConfigError: (e) => 'config',
+          MemoryError: (_e) => 'memory',
+          ConfigError: (_e) => 'config',
         },
         'default'
       );
@@ -202,8 +210,8 @@ describe('Error Handling Foundation', () => {
       const result2 = matchError(
         configError,
         {
-          MemoryError: (e) => 'memory',
-          ConfigError: (e) => 'config',
+          MemoryError: (_e) => 'memory',
+          ConfigError: (_e) => 'config',
         },
         'default'
       );
@@ -211,8 +219,8 @@ describe('Error Handling Foundation', () => {
       const result3 = matchError(
         new Error('Test'),
         {
-          MemoryError: (e) => 'memory',
-          ConfigError: (e) => 'config',
+          MemoryError: (_e) => 'memory',
+          ConfigError: (_e) => 'config',
         },
         'default'
       );

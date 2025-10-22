@@ -6,9 +6,13 @@ import { RuntimeConfig, RuntimeConfigLive, execute, runSync } from '../../src/co
 describe('Runtime Configuration', () => {
   beforeEach(() => {
     // Reset environment before each test
+    // biome-ignore lint/performance/noDelete: Required for test isolation
     delete process.env.LOG_LEVEL;
+    // biome-ignore lint/performance/noDelete: Required for test isolation
     delete process.env.DATA_DIR;
+    // biome-ignore lint/performance/noDelete: Required for test isolation
     delete process.env.MAX_CONNECTIONS;
+    // biome-ignore lint/performance/noDelete: Required for test isolation
     delete process.env.TIMEOUT;
   });
 

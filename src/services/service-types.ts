@@ -258,7 +258,7 @@ export const ServicesLayer = Layer.empty;
  * Create a service layer with dependencies
  */
 export const makeServiceLayer = <S, R, E>(
-  tag: Context.Tag<S, any>,
+  tag: Context.Tag<S, S>,
   implementation: Effect.Effect<S, E, R>
 ): Layer.Layer<S, E, R> => {
   return Layer.effect(tag, implementation);
