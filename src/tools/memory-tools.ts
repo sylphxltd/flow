@@ -1,6 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 import { LibSQLMemoryStorage, type MemoryEntry } from '../utils/libsql-storage.js';
 
 // Initialize memory storage
@@ -333,6 +332,17 @@ async function memoryStats(): Promise<CallToolResult> {
   }
 }
 
+// Simple schema objects that mimic zod API for MCP SDK compatibility
+const createStringSchema = (description?: string) => ({
+  _type: 'string',
+  describe: (desc: string) => createStringSchema(desc),
+  optional: () => ({
+    _type: 'optional_string',
+    describe: (desc: string) => createStringSchema(desc),
+  }),
+  description,
+});
+
 // Register all memory tools
 export function registerMemoryTools(server: McpServer) {
   server.registerTool(
@@ -340,12 +350,31 @@ export function registerMemoryTools(server: McpServer) {
     {
       description: 'Store a value in persistent memory for agent coordination',
       inputSchema: {
-        key: z.string().describe("Memory key (e.g., 'swarm/coder/status')"),
-        value: z.string().describe('Value to store (will be JSON stringified)'),
-        namespace: z.string().optional().describe('Optional namespace for organization'),
+        key: createStringSchema("Memory key (e.g., 'swarm/coder/status')"),
+        value: createStringSchema('Value to store (will be JSON stringified)'),
+        namespace: createStringSchema('Optional namespace for organization').optional(),
       },
     },
-    memorySet
+    (args: unknown) => {
+      // Basic validation for args
+      if (!args || typeof args !== 'object') {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: '❌ Invalid arguments: object expected',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const obj = args as any;
+      return memorySet({
+        key: obj.key,
+        value: obj.value,
+        namespace: obj.namespace,
+      });
+    }
   );
 
   server.registerTool(
@@ -353,11 +382,29 @@ export function registerMemoryTools(server: McpServer) {
     {
       description: 'Retrieve a value from persistent memory',
       inputSchema: {
-        key: z.string().describe('Memory key to retrieve'),
-        namespace: z.string().optional().describe('Optional namespace'),
+        key: createStringSchema('Memory key to retrieve'),
+        namespace: createStringSchema('Optional namespace').optional(),
       },
     },
-    memoryGet
+    (args: unknown) => {
+      // Basic validation for args
+      if (!args || typeof args !== 'object') {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: '❌ Invalid arguments: object expected',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const obj = args as any;
+      return memoryGet({
+        key: obj.key,
+        namespace: obj.namespace,
+      });
+    }
   );
 
   server.registerTool(
@@ -365,11 +412,29 @@ export function registerMemoryTools(server: McpServer) {
     {
       description: 'Search memory entries by pattern',
       inputSchema: {
-        pattern: z.string().describe('Search pattern (matches keys, namespaces, and values)'),
-        namespace: z.string().optional().describe('Optional namespace to limit search'),
+        pattern: createStringSchema('Search pattern (matches keys, namespaces, and values)'),
+        namespace: createStringSchema('Optional namespace to limit search').optional(),
       },
     },
-    memorySearch
+    (args: unknown) => {
+      // Basic validation for args
+      if (!args || typeof args !== 'object') {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: '❌ Invalid arguments: object expected',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const obj = args as any;
+      return memorySearch({
+        pattern: obj.pattern,
+        namespace: obj.namespace,
+      });
+    }
   );
 
   server.registerTool(
@@ -377,10 +442,16 @@ export function registerMemoryTools(server: McpServer) {
     {
       description: 'List all memory entries',
       inputSchema: {
-        namespace: z.string().optional().describe('Optional namespace to filter by'),
+        namespace: createStringSchema('Optional namespace to filter by').optional(),
       },
     },
-    memoryList
+    (args: unknown) => {
+      // Basic validation for args
+      const obj = args && typeof args === 'object' ? (args as any) : {};
+      return memoryList({
+        namespace: obj.namespace,
+      });
+    }
   );
 
   server.registerTool(
@@ -388,11 +459,29 @@ export function registerMemoryTools(server: McpServer) {
     {
       description: 'Delete a memory entry',
       inputSchema: {
-        key: z.string().describe('Memory key to delete'),
-        namespace: z.string().optional().describe('Optional namespace'),
+        key: createStringSchema('Memory key to delete'),
+        namespace: createStringSchema('Optional namespace').optional(),
       },
     },
-    memoryDelete
+    (args: unknown) => {
+      // Basic validation for args
+      if (!args || typeof args !== 'object') {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: '❌ Invalid arguments: object expected',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const obj = args as any;
+      return memoryDelete({
+        key: obj.key,
+        namespace: obj.namespace,
+      });
+    }
   );
 
   server.registerTool(
@@ -400,13 +489,18 @@ export function registerMemoryTools(server: McpServer) {
     {
       description: 'Clear memory entries',
       inputSchema: {
-        namespace: z
-          .string()
-          .optional()
-          .describe('Optional namespace to clear (omits to clear all)'),
+        namespace: createStringSchema(
+          'Optional namespace to clear (omits to clear all)'
+        ).optional(),
       },
     },
-    memoryClear
+    (args: unknown) => {
+      // Basic validation for args
+      const obj = args && typeof args === 'object' ? (args as any) : {};
+      return memoryClear({
+        namespace: obj.namespace,
+      });
+    }
   );
 
   server.registerTool(

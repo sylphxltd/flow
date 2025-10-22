@@ -3,7 +3,6 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 import { type ProjectData, TemplateEngine } from '../utils/template-engine.js';
 
 // ============================================================================
@@ -143,25 +142,104 @@ export interface ProjectStartupArgs {
   create_branch?: boolean;
 }
 
+// Basic validation function
+const validateProjectStartupArgs = (
+  args: unknown
+): { success: boolean; data?: ProjectStartupArgs; error?: string } => {
+  if (!args || typeof args !== 'object') {
+    return { success: false, error: 'Invalid arguments: object expected' };
+  }
+
+  const obj = args as any;
+  const validTypes = ['feature', 'bugfix', 'hotfix', 'refactor', 'migration'];
+
+  if (!obj.project_type || !validTypes.includes(obj.project_type)) {
+    return {
+      success: false,
+      error: `Invalid project_type: must be one of ${validTypes.join(', ')}`,
+    };
+  }
+
+  if (!obj.project_name || typeof obj.project_name !== 'string') {
+    return { success: false, error: 'Invalid project_name: string required' };
+  }
+
+  if (obj.create_branch !== undefined && typeof obj.create_branch !== 'boolean') {
+    return { success: false, error: 'Invalid create_branch: boolean expected' };
+  }
+
+  return {
+    success: true,
+    data: {
+      project_type: obj.project_type,
+      project_name: obj.project_name,
+      create_branch: obj.create_branch,
+    },
+  };
+};
+
+// Simple schema objects that mimic zod API for MCP SDK compatibility
+const createStringSchema = (description?: string) => ({
+  _type: 'string',
+  describe: (desc: string) => createStringSchema(desc),
+  optional: () => ({
+    _type: 'optional_string',
+    describe: (desc: string) => createStringSchema(desc),
+  }),
+  description,
+});
+
+const createEnumSchema = (values: string[], description?: string) => ({
+  _type: 'enum',
+  enum: values,
+  describe: (desc: string) => createEnumSchema(values, desc),
+  description,
+});
+
+const createBooleanSchema = (description?: string) => ({
+  _type: 'boolean',
+  describe: (desc: string) => createBooleanSchema(desc),
+  optional: () => ({
+    _type: 'optional_boolean',
+    describe: (desc: string) => createBooleanSchema(desc),
+  }),
+  description,
+});
+
 export function registerProjectStartupTool(server: McpServer) {
   server.registerTool(
     'project_startup',
     {
       description: 'Initialize a new project with comprehensive templates and workspace structure',
       inputSchema: {
-        project_type: z
-          .enum(['feature', 'bugfix', 'hotfix', 'refactor', 'migration'])
-          .describe('Type of project'),
-        project_name: z
-          .string()
-          .describe('Name of the project (use letters, numbers, hyphens, underscores only)'),
-        create_branch: z
-          .boolean()
-          .optional()
-          .describe('Whether to create a git branch (default: true)'),
+        project_type: createEnumSchema(
+          ['feature', 'bugfix', 'hotfix', 'refactor', 'migration'],
+          'Type of project'
+        ),
+        project_name: createStringSchema(
+          'Name of the project (use letters, numbers, hyphens, underscores only)'
+        ),
+        create_branch: createBooleanSchema(
+          'Whether to create a git branch (default: true)'
+        ).optional(),
       },
     },
-    projectStartupTool
+    (args: unknown) => {
+      // Validate args using basic validation
+      const validationResult = validateProjectStartupArgs(args);
+      if (!validationResult.success) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ ${validationResult.error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+      return projectStartupTool(validationResult.data!);
+    }
   );
 }
 

@@ -11,6 +11,7 @@ describe('Transformers', () => {
     stripYaml: false,
     flatten: false,
     configFile: 'opencode.jsonc',
+    configSchema: null,
     mcpConfigPath: 'mcp',
     installation: {
       createAgentDir: true,
@@ -26,6 +27,7 @@ describe('Transformers', () => {
     stripYaml: false,
     flatten: false,
     configFile: '.mcp.json',
+    configSchema: null,
     mcpConfigPath: 'mcpServers',
     installation: {
       createAgentDir: true,

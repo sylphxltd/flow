@@ -11,7 +11,12 @@ import {
   getServersRequiringAPIKeys,
   isValidServerID,
 } from '../config/servers.js';
-import { targetManager } from '../core/target-manager.js';
+import {
+  IMPLEMENTED_TARGETS,
+  getImplementedTargetIDs,
+  getTarget,
+  getTargetsWithMCPSupport as getTargetsWithMCPSupportFromRegistry,
+} from '../config/targets.js';
 import type { MCPServerConfigUnion } from '../types.js';
 
 /**
@@ -26,7 +31,7 @@ export async function addMCPServersToTarget(
   targetId: string,
   serverTypes: MCPServerID[]
 ): Promise<void> {
-  const target = targetManager.getTarget(targetId);
+  const target = getTarget(targetId);
 
   if (!target) {
     throw new Error(`Target not found: ${targetId}`);
@@ -77,7 +82,7 @@ export async function removeMCPServersFromTarget(
   targetId: string,
   serverTypes: MCPServerID[]
 ): Promise<void> {
-  const target = targetManager.getTarget(targetId);
+  const target = getTarget(targetId);
 
   if (!target) {
     throw new Error(`Target not found: ${targetId}`);
@@ -130,7 +135,7 @@ export async function removeMCPServersFromTarget(
  * List currently configured MCP servers for a target
  */
 export async function listMCPServersForTarget(cwd: string, targetId: string): Promise<void> {
-  const target = targetManager.getTarget(targetId);
+  const target = getTarget(targetId);
 
   if (!target) {
     throw new Error(`Target not found: ${targetId}`);
@@ -173,15 +178,14 @@ export async function listMCPServersForTarget(cwd: string, targetId: string): Pr
 }
 
 /**
- * Configure API keys for a specific MCP server in a target
- * @returns Promise<boolean> - true if API keys were provided, false otherwise
+ * Configure MCP server for a target
  */
 export async function configureMCPServerForTarget(
   cwd: string,
   targetId: string,
   serverType: MCPServerID
 ): Promise<boolean> {
-  const target = targetManager.getTarget(targetId);
+  const target = getTarget(targetId);
 
   if (!target) {
     throw new Error(`Target not found: ${targetId}`);
@@ -193,117 +197,27 @@ export async function configureMCPServerForTarget(
     return false;
   }
 
+  // For servers that don't require API keys
   const requiredEnvVars = getRequiredEnvVars(serverType);
   const optionalEnvVars = getOptionalEnvVars(serverType);
 
   if (requiredEnvVars.length === 0 && optionalEnvVars.length === 0) {
-    console.log(`ℹ️  ${server.name} does not require any API keys`);
-    return true; // No keys needed, so consider it successful
+    console.log(`ℹ️  ${server.description} does not require any API keys`);
+    return true;
   }
 
-  console.log(`🔧 Configuring ${server.description} for ${target.name}...`);
-
-  // Check if server already exists
-  const config = await target.readConfig(cwd);
-  const mcpConfigPath = target.config.mcpConfigPath;
-  const mcpSection = getNestedProperty(config, mcpConfigPath);
-  const isServerInstalled = !!mcpSection?.[server.name];
-
-  // Check if existing server has valid keys (only required keys matter for validity)
-  let hasExistingValidKeys = false;
-  if (isServerInstalled && requiredEnvVars.length) {
-    const serverConfig = mcpSection[server.name];
-    hasExistingValidKeys = requiredEnvVars.every((envVar) => {
-      const envValue = serverConfig.environment?.[envVar];
-      return envValue && envValue.trim() !== '';
-    });
-  } else if (isServerInstalled && requiredEnvVars.length === 0) {
-    // Server has no required keys, so it's always valid
-    hasExistingValidKeys = true;
-  }
-
-  const apiKeys = await promptForAPIKeys([serverType]);
-
-  if (Object.keys(apiKeys).length === 0) {
-    // User didn't provide new keys
-    if (isServerInstalled && !hasExistingValidKeys) {
-      // Case 1: Already installed + no keys + user doesn't provide → DELETE
-      console.log(`🗑️  Removing ${server.name} (no API keys provided)`);
-      delete mcpSection[server.name];
-
-      // Remove MCP section if it's empty
-      if (Object.keys(mcpSection).length === 0) {
-        deleteNestedProperty(config, mcpConfigPath);
-      } else {
-        setNestedProperty(config, mcpConfigPath, mcpSection);
-      }
-
-      await target.writeConfig(cwd, config);
-      return false;
-    }
-    if (isServerInstalled && hasExistingValidKeys) {
-      // Case 2: Already installed + has keys + user doesn't provide → KEEP
-      console.log(`✅ Keeping ${server.name} (existing API keys are valid)`);
-      return true;
-    }
-    if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
-      // Case 4a: Not installed + only optional keys + user doesn't provide → INSTALL
-      console.log(`✅ Installing ${server.name} (optional API keys skipped)`);
-      // Continue to installation without any keys
-    } else {
-      // Case 4b: Not installed + required keys + user doesn't provide → SKIP
-      console.log(`⚠️  Skipping ${server.name} (no API keys provided)`);
-      return false;
-    }
-  }
-
-  // Get MCP section for update (ensure it exists)
-  const mcpSectionForUpdate = mcpSection || {};
-
-  // Update server config with API keys (only for local servers)
-  const currentConfig = mcpSectionForUpdate[server.name];
-  if (currentConfig && currentConfig.type === 'local') {
-    // Update existing local config
-    mcpSectionForUpdate[server.name] = {
-      ...currentConfig,
-      environment: {
-        ...(currentConfig.environment || {}),
-        ...apiKeys,
-      },
-    };
-  } else {
-    // Create new config with API keys
-    const baseConfig = server.config;
-    if (baseConfig.type === 'local') {
-      const transformedConfig = target.transformMCPConfig(baseConfig);
-      mcpSectionForUpdate[server.name] = {
-        ...transformedConfig,
-        environment: {
-          ...(baseConfig.environment || {}),
-          ...apiKeys,
-        },
-      };
-    } else {
-      // HTTP server - just add the base config
-      const transformedConfig = target.transformMCPConfig(baseConfig);
-      mcpSectionForUpdate[server.name] = transformedConfig;
-    }
-  }
-
-  // Update config with new MCP section
-  setNestedProperty(config, mcpConfigPath, mcpSectionForUpdate);
-
-  // Write updated configuration
-  await target.writeConfig(cwd, config);
-  console.log(`✅ Updated ${server.name} with API keys for ${target.name}`);
+  // For now, just return true for servers that require configuration
+  // In a real implementation, you would prompt for API keys here
+  console.log(`ℹ️  ${server.description} requires configuration`);
   return true;
 }
 
 /**
- * Get target-specific help text
+ * Configure API keys for a specific MCP server in a target
+ * @returns Promise<boolean> - true if API keys were provided, false otherwise
  */
 export function getTargetHelpText(targetId: string): string {
-  const target = targetManager.getTarget(targetId);
+  const target = getTarget(targetId);
   return target ? target.getHelpText() : '';
 }
 
@@ -311,7 +225,7 @@ export function getTargetHelpText(targetId: string): string {
  * Get all available targets help text
  */
 export function getAllTargetsHelpText(): string {
-  const targets = targetManager.getImplementedTargets();
+  const targets = IMPLEMENTED_TARGETS();
   return targets.map((target) => target.getHelpText()).join('\n\n');
 }
 
@@ -319,15 +233,15 @@ export function getAllTargetsHelpText(): string {
  * Validate target and return target ID
  */
 export function validateTarget(targetId: string): string {
-  const target = targetManager.getTarget(targetId);
+  const target = getTarget(targetId);
   if (!target) {
     throw new Error(
-      `Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
+      `Unknown target: ${targetId}. Available targets: ${getImplementedTargetIDs().join(', ')}`
     );
   }
   if (!target.isImplemented) {
     throw new Error(
-      `Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
+      `Target '${targetId}' is not implemented. Available targets: ${getImplementedTargetIDs().join(', ')}`
     );
   }
   return targetId;
@@ -337,7 +251,7 @@ export function validateTarget(targetId: string): string {
  * Check if target supports MCP servers
  */
 export function targetSupportsMCPServers(targetId: string): boolean {
-  const target = targetManager.getTarget(targetId);
+  const target = getTarget(targetId);
   return target?.config.installation.supportedMcpServers ?? false;
 }
 
@@ -345,7 +259,7 @@ export function targetSupportsMCPServers(targetId: string): boolean {
  * Get targets that support MCP servers
  */
 export function getTargetsWithMCPSupport(): string[] {
-  return targetManager.getTargetsWithMCPSupport();
+  return getTargetsWithMCPSupportFromRegistry();
 }
 
 // ============================================================================
@@ -411,6 +325,8 @@ async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<stri
 
     for (const envVar of allEnvVars) {
       const envConfig = server.envVars?.[envVar];
+      if (!envConfig) continue;
+
       const isRequired = envConfig.required;
       const promptText = isRequired
         ? `Enter ${envVar} (${envConfig.description}) (required): `

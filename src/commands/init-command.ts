@@ -1,6 +1,9 @@
+import { Effect, Runtime } from 'effect';
 import { getDefaultServers, getServersRequiringAPIKeys } from '../config/servers.js';
 import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
+import { TerminalService } from '../services/service-types.js';
+import { TerminalServiceLive } from '../services/terminal-service.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import {
@@ -10,6 +13,11 @@ import {
   targetSupportsMCPServers,
   validateTarget,
 } from '../utils/target-config.js';
+
+// Helper to run terminal effects synchronously
+const runTerminal = (effect: Effect.Effect<void, any, TerminalService>) => {
+  Effect.runSync(effect.pipe(Effect.provide(TerminalServiceLive)));
+};
 
 async function validateInitOptions(options: CommandOptions): Promise<void> {
   // Resolve target (use specified, detect, or default)
@@ -49,19 +57,35 @@ export const initCommand: CommandConfig = {
     await validateInitOptions(options);
     const targetId = options.target!;
 
-    console.log('🚀 Sylphx Flow Setup');
-    console.log('======================');
-    console.log(`🎯 Target: ${targetId}`);
-    console.log('');
+    runTerminal(
+      Effect.gen(function* () {
+        const terminal = yield* TerminalService;
+        yield* terminal.print('🚀 Sylphx Flow Setup\n======================\n', {
+          bold: true,
+          color: 'cyan',
+        });
+        yield* terminal.print(`🎯 Target: ${targetId}\n\n`);
+      })
+    );
 
     // Install MCP tools by default (unless --no-mcp is specified)
     if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
-      console.log('📦 Installing MCP tools...');
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.print('📦 Installing MCP tools...');
+        })
+      );
       const defaultServers = getDefaultServers();
 
       if (options.dryRun) {
-        console.log('🔍 Dry run: Would install all MCP servers');
-        console.log(`   • ${defaultServers.join(', ')}`);
+        runTerminal(
+          Effect.gen(function* () {
+            const terminal = yield* TerminalService;
+            yield* terminal.print('🔍 Dry run: Would install all MCP servers');
+            yield* terminal.print(`   • ${defaultServers.join(', ')}`);
+          })
+        );
       } else {
         // First, identify servers that need API keys and configure them
         const serversNeedingKeys = getServersRequiringAPIKeys();
@@ -69,7 +93,12 @@ export const initCommand: CommandConfig = {
         const serversWithoutKeys: string[] = [];
 
         if (serversNeedingKeys.length > 0) {
-          console.log('\n🔑 Some MCP tools require API keys:');
+          runTerminal(
+            Effect.gen(function* () {
+              const terminal = yield* TerminalService;
+              yield* terminal.print('\n🔑 Some MCP tools require API keys:');
+            })
+          );
 
           // Configure API keys first, before installing (handles all 4 cases)
           for (const serverType of serversNeedingKeys) {
@@ -96,20 +125,42 @@ export const initCommand: CommandConfig = {
 
         if (serversToInstall.length > 0) {
           await addMCPServersToTarget(process.cwd(), targetId, serversToInstall as any);
-          console.log(`✅ MCP tools installed: ${serversToInstall.join(', ')}`);
+          runTerminal(
+            Effect.gen(function* () {
+              const terminal = yield* TerminalService;
+              yield* terminal.success(`MCP tools installed: ${serversToInstall.join(', ')}`);
+            })
+          );
         }
 
         if (serversWithoutKeys.length > 0) {
-          console.log(
-            `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+          runTerminal(
+            Effect.gen(function* () {
+              const terminal = yield* TerminalService;
+              yield* terminal.warning(
+                `Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
+              );
+              yield* terminal.print(
+                '   You can install them later with: sylphx-flow mcp install <server-name>'
+              );
+            })
           );
-          console.log('   You can install them later with: sylphx-flow mcp install <server-name>');
         }
       }
-      console.log('');
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.print('');
+        })
+      );
     } else if (options.mcp !== false && !targetSupportsMCPServers(targetId)) {
-      console.log('⚠️  MCP tools are not supported for this target');
-      console.log('');
+      runTerminal(
+        Effect.gen(function* () {
+          const terminal = yield* TerminalService;
+          yield* terminal.warning('MCP tools are not supported for this target');
+          yield* terminal.print('');
+        })
+      );
     }
 
     // Install agents
@@ -118,21 +169,33 @@ export const initCommand: CommandConfig = {
     // Install rules file
     await installRules(options);
 
-    console.log('');
-    console.log('🎉 Setup complete!');
-    console.log('');
-    console.log('📋 Next steps:');
+    runTerminal(
+      Effect.gen(function* () {
+        const terminal = yield* TerminalService;
+        yield* terminal.print('');
+        yield* terminal.success('Setup complete!');
+        yield* terminal.print('');
+        yield* terminal.print('📋 Next steps:');
+      })
+    );
 
     // Target-specific next steps
     const target = targetManager.getTarget(targetId);
-    if (targetId === 'opencode') {
-      console.log('   • Open OpenCode and start using your agents!');
-      if (options.mcp !== false) {
-        console.log('   • MCP tools will be automatically loaded by OpenCode');
-      }
-    } else {
-      console.log(`   • Start using your agents with ${target?.name || targetId}!`);
-      console.log(`   • Run 'sylphx-flow init --help' for target-specific information`);
-    }
+    runTerminal(
+      Effect.gen(function* () {
+        const terminal = yield* TerminalService;
+        if (targetId === 'opencode') {
+          yield* terminal.print('   • Open OpenCode and start using your agents!');
+          if (options.mcp !== false) {
+            yield* terminal.print('   • MCP tools will be automatically loaded by OpenCode');
+          }
+        } else {
+          yield* terminal.print(`   • Start using your agents with ${target?.name || targetId}!`);
+          yield* terminal.print(
+            `   • Run 'sylphx-flow init --help' for target-specific information`
+          );
+        }
+      })
+    );
   },
 };

@@ -1,6 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 
 // Logger utility
 const Logger = {
@@ -32,12 +31,24 @@ function isValidTimeFormat(time: string): boolean {
 
 // Get current time in a specific timezone
 function getCurrentTime(args: {
-  timezone: string;
+  timezone?: string;
 }): CallToolResult {
   try {
     const { timezone } = args;
 
     // Validate timezone
+    if (!timezone || typeof timezone !== 'string') {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Invalid timezone: timezone parameter is required and must be a string. Please use a valid IANA timezone name (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo').`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
     if (!isValidTimezone(timezone)) {
       return {
         content: [
@@ -119,12 +130,49 @@ function getCurrentTime(args: {
 
 // Convert time between timezones
 function convertTime(args: {
-  source_timezone: string;
-  time: string;
-  target_timezone: string;
+  source_timezone?: string;
+  time?: string;
+  target_timezone?: string;
 }): CallToolResult {
   try {
     const { source_timezone, time, target_timezone } = args;
+
+    // Validate inputs
+    if (!source_timezone || typeof source_timezone !== 'string') {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Invalid source timezone: source_timezone parameter is required and must be a string. Please use a valid IANA timezone name.`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    if (!target_timezone || typeof target_timezone !== 'string') {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Invalid target timezone: target_timezone parameter is required and must be a string. Please use a valid IANA timezone name.`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    if (!time || typeof time !== 'string') {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Invalid time: time parameter is required and must be a string. Please use 24-hour format (HH:MM).`,
+          },
+        ],
+        isError: true,
+      };
+    }
 
     // Validate timezones
     if (!isValidTimezone(source_timezone)) {
@@ -263,6 +311,13 @@ function convertTime(args: {
   }
 }
 
+// Simple schema objects that mimic zod API for MCP SDK compatibility
+const createStringSchema = (description?: string) => ({
+  _type: 'string',
+  describe: (desc: string) => createStringSchema(desc),
+  description,
+});
+
 // Register all time tools
 export function registerTimeTools(server: McpServer) {
   server.registerTool(
@@ -270,9 +325,9 @@ export function registerTimeTools(server: McpServer) {
     {
       description: 'Get current time in a specific timezone or system timezone',
       inputSchema: {
-        timezone: z
-          .string()
-          .describe("IANA timezone name (e.g., 'America/New_York', 'Europe/London')"),
+        timezone: createStringSchema(
+          "IANA timezone name (e.g., 'America/New_York', 'Europe/London')"
+        ),
       },
     },
     getCurrentTime
@@ -283,9 +338,9 @@ export function registerTimeTools(server: McpServer) {
     {
       description: 'Convert time between timezones',
       inputSchema: {
-        source_timezone: z.string().describe('Source IANA timezone name'),
-        time: z.string().describe('Time in 24-hour format (HH:MM)'),
-        target_timezone: z.string().describe('Target IANA timezone name'),
+        source_timezone: createStringSchema('Source IANA timezone name'),
+        time: createStringSchema('Time in 24-hour format (HH:MM)'),
+        target_timezone: createStringSchema('Target IANA timezone name'),
       },
     },
     convertTime

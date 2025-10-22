@@ -201,20 +201,42 @@ export class McpError extends Error {
 }
 
 /**
+ * Terminal service errors
+ */
+export class TerminalError extends Error {
+  readonly _tag = 'TerminalError';
+
+  constructor(
+    message: string,
+    public readonly cause?: Error,
+    public readonly operation?: string
+  ) {
+    super(message);
+    this.name = 'TerminalError';
+  }
+}
+
+/**
  * Terminal service interface
  */
 export interface TerminalService {
-  readonly print: (message: string, style?: TerminalStyle) => Effect.Effect<void, never, never>;
-  readonly success: (message: string) => Effect.Effect<void, never, never>;
-  readonly error: (message: string) => Effect.Effect<void, never, never>;
-  readonly warning: (message: string) => Effect.Effect<void, never, never>;
-  readonly info: (message: string) => Effect.Effect<void, never, never>;
-  readonly table: (data: unknown[], options?: TableOptions) => Effect.Effect<void, never, never>;
+  readonly print: (
+    message: string,
+    style?: TerminalStyle
+  ) => Effect.Effect<void, TerminalError, never>;
+  readonly success: (message: string) => Effect.Effect<void, TerminalError, never>;
+  readonly error: (message: string) => Effect.Effect<void, TerminalError, never>;
+  readonly warning: (message: string) => Effect.Effect<void, TerminalError, never>;
+  readonly info: (message: string) => Effect.Effect<void, TerminalError, never>;
+  readonly table: (
+    data: unknown[],
+    options?: TableOptions
+  ) => Effect.Effect<void, TerminalError, never>;
   readonly progress: (
     total: number,
     current: number,
     message?: string
-  ) => Effect.Effect<void, never, never>;
+  ) => Effect.Effect<void, TerminalError, never>;
 }
 
 /**
