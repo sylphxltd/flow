@@ -2,8 +2,6 @@
 
 ## Validation Overview
 - **Project**: {{PROJECT_NAME}}
-- **Validation Date**: {{VALIDATION_DATE}}
-- **Validator**: {{VALIDATOR}}
 - **Scope**: {{VALIDATION_SCOPE}}
 
 ## Phase 5: Cross-Check & Validation Results
@@ -83,7 +81,6 @@
 | Metric | Target | Actual | Status | Notes |
 |--------|--------|--------|--------|-------|
 | Vulnerabilities | No critical | {{SECURITY_VULNS}} | {{SECURITY_STATUS}} | {{SECURITY_NOTES}} |
-| Security Score | {{SECURITY_TARGET}}/100 | {{SECURITY_ACTUAL}}/100 | {{SECURITY_STATUS}} | {{SECURITY_NOTES}} |
 
 ## Integration Validation
 
@@ -107,15 +104,7 @@
 
 ## Go/No-Go Decision
 
-### Execution Readiness Score
-- **Process Validation**: {{PROCESS_VALIDATION_SCORE}}/100
-- **Technical Validation**: {{TECHNICAL_VALIDATION_SCORE}}/100
-- **Resource Validation**: {{RESOURCE_VALIDATION_SCORE}}/100
-- **Overall Score**: {{OVERALL_VALIDATION_SCORE}}/100
-
 ### Decision Criteria
-- **Minimum Score Required**: 80/100
-- **Current Score**: {{OVERALL_VALIDATION_SCORE}}/100
 - **Decision**: {{GO_NO_GO_DECISION}}
 
 ### Conditional Approval (If applicable)
@@ -141,8 +130,5 @@
 3. {{EXECUTION_RECOMMENDATION_3}}
 
 ## Sign-off
-- **Validator**: {{VALIDATOR_NAME}}
-- **Validation Date**: {{VALIDATION_DATE}}
-- **Go/No-Go**: {{FINAL_GO_NO_GO}}
-- **Confidence Level**: {{CONFIDENCE_LEVEL}}%
+- **Status**: {{COMPLETION_STATUS}}
 - **Next Phase**: {{NEXT_PHASE}}

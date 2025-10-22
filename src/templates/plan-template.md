@@ -92,8 +92,6 @@ graph TB
 - [ ] Technical feasibility validated
 - [ ] Task dependencies mapped
 
----
-
-**Last Updated**: {{LAST_UPDATED}}
-**Current Phase**: {{CURRENT_PHASE}}
-**Status**: {{STATUS}}
+## Sign-off
+- **Status**: {{COMPLETION_STATUS}}
+- **Next Phase**: {{NEXT_PHASE}}

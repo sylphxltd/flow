@@ -95,8 +95,6 @@
 - [ ] Technical feasibility validated
 - [ ] Integration points identified
 
----
-
-**Last Updated**: {{LAST_UPDATED}}
-**Current Phase**: {{CURRENT_PHASE}}
-**Status**: {{STATUS}}
+## Sign-off
+- **Status**: {{COMPLETION_STATUS}}
+- **Next Phase**: {{NEXT_PHASE}}

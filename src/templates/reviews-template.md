@@ -2,8 +2,6 @@
 
 ## Review Overview
 - **Project**: {{PROJECT_NAME}}
-- **Review Date**: {{REVIEW_DATE}}
-- **Reviewer**: {{REVIEWER}}
 - **Review Scope**: {{REVIEW_SCOPE}}
 - **Implementation Status**: {{IMPLEMENTATION_STATUS}}
 
@@ -204,7 +202,6 @@
 - **Error Rate**: {{ERROR_RATE}}%
 
 ### Security
-- **Security Score**: {{SECURITY_SCORE}}/100
 - **Vulnerabilities**: {{VULNERABILITY_COUNT}} ({{CRITICAL_VULNS}} critical)
 - **Security Hotspots**: {{SECURITY_HOTSPOTS}}
 
@@ -242,8 +239,8 @@
 
 ### Code Quality Improvements
 1. **{{QUALITY_IMPROVEMENT_1}}**
-2. **{{QUALITY_IMPROVEMENT_2}}
-3. **{{QUALITY_IMPROVEMENT_3}}
+2. **{{QUALITY_IMPROVEMENT_2}}**
+3. **{{QUALITY_IMPROVEMENT_3}}**
 
 ### Cleanup Actions
 - [ ] Remove all {{TODO_COUNT}} TODO comments
@@ -270,7 +267,5 @@
 {{REVIEW_SUMMARY}}
 
 ## Sign-off
-- **Reviewer**: {{REVIEWER_NAME}}
-- **Review Date**: {{REVIEW_DATE}}
-- **Overall Rating**: {{OVERALL_RATING}}/10
-- **Recommendation**: {{RECOMMENDATION}}
+- **Status**: {{COMPLETION_STATUS}}
+- **Next Phase**: {{NEXT_PHASE}}

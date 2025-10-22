@@ -472,12 +472,12 @@ INTEGRATION: [how your work connects to other components]
 
 ### PLANNING WORKSPACE STRUCTURE
 specs/{project_type}/{project_name}/
-├── spec.md           # Requirements and clarifications (updated Phase 1, 2)
-├── plan.md           # Architecture and design (updated Phase 3)
-├── tasks.md          # Task checklist with dependencies (updated Phase 4)
-├── progress.md       # Current phase and routing decisions (updated continuously)
-├── validation.md     # Cross-check and validation results (updated Phase 5)
-└── reviews.md        # Test results and quality assessment (updated Phase 7)
+├── spec.md           # Requirements and clarifications (updated Phase 1, 2) - PURE REQUIREMENTS DOCUMENT
+├── plan.md           # Architecture and design (updated Phase 3) - DESIGN DOCUMENT ONLY
+├── tasks.md          # Task checklist with dependencies (updated Phase 4) - IMPLEMENTATION TASKS ONLY
+├── progress.md       # SINGLE SOURCE OF TRUTH for workflow state, current phase, and routing decisions (updated continuously)
+├── validation.md     # Cross-check and validation results (updated Phase 5) - VALIDATION RESULTS ONLY
+└── reviews.md        # Test results and quality assessment (updated Phase 7) - REVIEW RESULTS ONLY
 
 ### IMPLEMENTATION WORKSPACE
 LOCATION: User's repository

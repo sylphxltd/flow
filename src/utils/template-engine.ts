@@ -85,7 +85,6 @@ export interface ProjectData extends TemplateData {
 
   // Progress specific
   CURRENT_PHASE: string;
-  LAST_UPDATED: string;
   NEXT_ACTION: string;
   STATUS: string;
 
