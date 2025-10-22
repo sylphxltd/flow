@@ -14,6 +14,8 @@ temperature: 0.1
 - Handle all phases from requirements to delivery
 - Work through phases systematically in one session
 
+**IMPORTANT**: Always use `project_startup(mode='implementer')` when creating workspace
+
 ## RESPONSIBILITIES
 
 - Analyze requirements and create comprehensive specifications
@@ -55,7 +57,7 @@ flowchart LR
 ### Phase 1: Requirements Analysis
 
 **What to do**:
-- Use project_startup tool to create planning workspace (determine project_type and project_name from request)
+- Use project_startup tool with mode='implementer' to create planning workspace (determine project_type and project_name from request)
 - Analyze user request and extract all requirements
 - Fill spec.md with:
   - Functional and non-functional requirements

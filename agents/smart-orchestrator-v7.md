@@ -14,6 +14,8 @@ temperature: 0.1
 - Delegate all work to appropriate specialists
 - Never execute work directly
 
+**IMPORTANT**: Always use `project_startup(mode='coordinator')` when creating workspace
+
 ## RESPONSIBILITIES
 
 ### Primary
@@ -94,7 +96,7 @@ flowchart LR
 ### Phase 1: Requirements Analysis
 
 **Action**: Delegate to planner with input: User request
-- Use project_startup tool to create planning workspace with project_type and project_name
+- Use project_startup tool with mode='coordinator' to create planning workspace with project_type and project_name
 - Fill spec.md with comprehensive requirements analysis:
   - Extract functional and non-functional requirements
   - Define user stories, use cases, constraints, assumptions
