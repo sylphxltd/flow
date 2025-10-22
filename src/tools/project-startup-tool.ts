@@ -25,6 +25,34 @@ const Logger = {
 // HELPER FUNCTIONS
 // ============================================================================
 
+function generateBranchSuffix(projectType: string, projectName: string): string {
+  // Check existing branches with same base name
+  const baseBranchName = `${projectType}/${projectName}`;
+  const existingBranchesResult = runGitCommand('git branch --list --format="%(refname:short)"');
+
+  if (!existingBranchesResult.success) {
+    return ''; // No suffix if can't check branches
+  }
+
+  const existingBranches = existingBranchesResult.output.split('\n').filter((b) => b.trim());
+  const matchingBranches = existingBranches.filter((branch) => branch.startsWith(baseBranchName));
+
+  if (matchingBranches.length === 0) {
+    return ''; // No existing branches, no suffix needed
+  }
+
+  // Extract existing numbers and find next available
+  const numbers = matchingBranches.map((branch) => {
+    const match = branch.match(
+      new RegExp(`^${baseBranchName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:-(\\d+))?$`)
+    );
+    return match?.[1] ? Number.parseInt(match[1], 10) : 1;
+  });
+
+  const maxNumber = Math.max(...numbers, 0);
+  return `-${maxNumber + 1}`;
+}
+
 function generateProjectDetails(
   projectType: string,
   projectName: string
@@ -186,7 +214,8 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
       };
     }
 
-    const branchName = `${project_type}/${project_name}`;
+    const branchSuffix = generateBranchSuffix(project_type, project_name);
+    const branchName = `${project_type}/${project_name}${branchSuffix}`;
     const workspaceDir = join('specs', project_type, project_name);
     const timestamp = new Date().toISOString().split('T')[0];
 
