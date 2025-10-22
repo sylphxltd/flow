@@ -99,8 +99,8 @@ flowchart TD
         P6_Wave1 --> P6_Wave2[Delegate Wave 2 Tasks]
         P6_Wave2 --> P6_Wave3[Delegate Wave 3 Tasks]
         P6_Wave3 --> P6_MoreWaves{More Waves?}
-        P6_MoreWaves -->|Yes| P6_WaveN[Delegate Wave N Tasks]
-        P6_WaveN --> P6_MoreWaves
+        P6_MoreWaves -->|Yes| P6_NextWave[Delegate Next Wave]
+        P6_NextWave --> P6_MoreWaves
         P6_MoreWaves -->|No| P6_Complete[All Waves Complete]
     end
     
@@ -110,7 +110,7 @@ flowchart TD
     P7_Action1 --> P7_Check{Test Results}
     P7_Check -->|All Pass| P8[Phase 8: Delivery]
     P7_Check -->|Minor Issues| P7_Action2[Delegate to Coder]
-    P7_Action2 --> P7_Action1
+    P7_Action2 --> P7_Check
     P7_Check -->|Major Issues| P6
     P7_Check -->|Critical Issues| P4
     P7_Check -->|Fundamental Issues| P3
@@ -288,14 +288,22 @@ ACTIONS:
   - Next wave starts ONLY after previous wave 100% complete
 - WAVE EXECUTION PROCESS:
   1. **Start Wave 1**: 
-     - Delegate to appropriate specialists with input: tasks.md Wave 1 section
-     - ALL Wave 1 tasks execute in parallel in SINGLE message
-     - Specialists report completion when all Wave 1 tasks done
+     - **TASK ANALYSIS**: Read tasks.md Wave 1 section (already organized by specialist type)
+     - **PARALLEL DELEGATION**: 
+       - Delegate EACH task individually to its assigned specialist
+       - Send ALL delegations SIMULTANEOUSLY in parallel
+       - Same specialist may receive multiple delegations for different tasks
+       - Each specialist processes all their assigned tasks in parallel
+     - **EXECUTION**: Specialists work independently on their assigned tasks
+     - **COORDINATION**: Integration points coordinated through coordinator
+     - **COMPLETION**: Each specialist reports completion when all their tasks done
+     - **WAVE COMPLETION**: Wave 1 complete when ALL specialists report completion
   2. **Start Wave 2**:
-     - Delegate to appropriate specialists with input: tasks.md Wave 2 section  
-     - ALL Wave 2 tasks execute in parallel in SINGLE message
-     - Specialists report completion when all Wave 2 tasks done
-  3. **Continue Pattern**: Repeat for all subsequent waves until all waves complete
+     - **TASK ANALYSIS**: Read tasks.md Wave 2 section
+     - **PARALLEL DELEGATION**: Repeat individual task delegation pattern
+     - **SIMULTANEOUS EXECUTION**: All specialists work on their assigned tasks in parallel
+     - **WAVE COMPLETION**: Wave 2 complete when all tasks finished
+  3. **Continue Pattern**: Repeat individual parallel delegation for all subsequent waves
 - For each wave delegation, specialists have these responsibilities:
   - Follow Phase 3-4 plan exactly - no improvisation or deviation
   - Execute assigned tasks following the detailed plan and TDD strategy:
@@ -431,6 +439,8 @@ LLM automatically determines optimal assignment strategy:
 
 
 ### DELEGATION TEMPLATE
+
+#### SINGLE SPECIALIST DELEGATION
 PROJECT: [description]
 ROLE: [specialist type]
 PLANNING_WORKSPACE: [path from tool]
@@ -464,6 +474,25 @@ REPORTING FORMAT:
 - Conflicts or coordination needed
 
 INTEGRATION: [how your work connects to other components]
+
+#### WAVE COORDINATION (Phase 6)
+When multiple specialists are working in parallel on the same wave:
+
+WAVE TRACKING:
+- Maintain list of all active delegations for current wave
+- Track each specialist's assigned tasks and completion status
+- Monitor integration points between specialists' work
+
+COMPLETION VERIFICATION:
+- Wave complete when ALL delegated tasks report 100% completion
+- Verify integration points work between specialists' components
+- Ensure no conflicts or overlapping work
+- Confirm all tests pass for the entire wave
+
+WAVE PROGRESSION:
+- Only start next wave after current wave fully complete
+- Update tasks.md with completion status for all tasks in current wave
+- Document any cross-specialist coordination issues and resolutions
 
 
 
