@@ -22,7 +22,11 @@ const DEFAULT_CONFIG = {
 
 // Server configuration interface
 interface ServerConfig {
-  disableResources?: boolean;
+  enableMemory?: boolean;
+  enableTime?: boolean;
+  enableProjectStartup?: boolean;
+  enableKnowledge?: boolean;
+  knowledgeAsTools?: boolean;
 }
 
 // Logger utility
@@ -50,28 +54,45 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     description: DEFAULT_CONFIG.description,
   });
 
-  // Register all tool categories
-  registerMemoryTools(server);
-  registerTimeTools(server);
-  registerProjectStartupTool(server);
+  // Register tool categories based on configuration
+  const enabledTools: string[] = [];
+
+  if (config.enableMemory) {
+    registerMemoryTools(server);
+    enabledTools.push(
+      'memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
+    );
+  }
+
+  if (config.enableTime) {
+    registerTimeTools(server);
+    enabledTools.push('time_get_current, time_format, time_parse');
+  }
+
+  if (config.enableProjectStartup) {
+    registerProjectStartupTool(server);
+    enabledTools.push('project_startup');
+  }
 
   // Register knowledge (resources OR tools, not both)
-  if (config.disableResources) {
-    Logger.info('📚 Registering knowledge as MCP tools');
-    registerKnowledgeTools(server);
+  if (config.enableKnowledge) {
+    if (config.knowledgeAsTools) {
+      Logger.info('📚 Registering knowledge as MCP tools');
+      registerKnowledgeTools(server);
+      enabledTools.push('knowledge_search, knowledge_get');
+      console.log('📚 Knowledge: Enabled (as tools)');
+    } else {
+      Logger.info('📚 Registering knowledge as MCP resources');
+      registerKnowledgeResources(server);
+      console.log('📚 Knowledge: Enabled (as resources)');
+    }
+  }
 
-    console.log('📚 Knowledge resources: Disabled (using tools instead)');
-    console.log(
-      '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats, knowledge_search, knowledge_get'
-    );
+  // Display enabled tools
+  if (enabledTools.length > 0) {
+    console.log(`🔧 Enabled tools: ${enabledTools.join(', ')}`);
   } else {
-    Logger.info('📚 Registering knowledge as MCP resources');
-    registerKnowledgeResources(server);
-
-    console.log('📚 Knowledge resources: Enabled (as MCP resources)');
-    console.log(
-      '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
-    );
+    console.log('🔧 No tools enabled');
   }
 
   // SERVER STARTUP

@@ -129,6 +129,16 @@ export abstract class Target {
   public readonly isDefault?: boolean;
   /** Whether this target is fully implemented */
   public readonly isImplemented: boolean;
+  /** MCP server configuration for this target */
+  public readonly mcpServerConfig?: {
+    [serverId: string]: {
+      enableMemory?: boolean;
+      enableTime?: boolean;
+      enableProjectStartup?: boolean;
+      enableKnowledge?: boolean;
+      knowledgeAsTools?: boolean;
+    };
+  };
 
   constructor(
     id: string,
@@ -137,7 +147,16 @@ export abstract class Target {
     config: TargetConfig,
     category: 'ide' | 'editor' | 'cli',
     isDefault?: boolean,
-    isImplemented = true
+    isImplemented = true,
+    mcpServerConfig?: {
+      [serverId: string]: {
+        enableMemory?: boolean;
+        enableTime?: boolean;
+        enableProjectStartup?: boolean;
+        enableKnowledge?: boolean;
+        knowledgeAsTools?: boolean;
+      };
+    }
   ) {
     this.id = id;
     this.name = name;
@@ -146,6 +165,7 @@ export abstract class Target {
     this.category = category;
     this.isDefault = isDefault;
     this.isImplemented = isImplemented;
+    this.mcpServerConfig = mcpServerConfig;
   }
 
   /** Transform agent content for the target */

@@ -15,6 +15,16 @@ export const opencodeTarget: Target = {
   isImplemented: true,
   isDefault: true,
 
+  mcpServerConfig: {
+    'sylphx-flow': {
+      enableMemory: false,
+      enableTime: true,
+      enableProjectStartup: false,
+      enableKnowledge: true,
+      knowledgeAsTools: true,
+    },
+  },
+
   config: {
     agentDir: '.opencode/agent',
     agentExtension: '.md',
@@ -79,18 +89,6 @@ export const opencodeTarget: Target = {
 
       if (config.env) {
         openCodeConfig.environment = config.env;
-      }
-
-      return openCodeConfig;
-    }
-
-    // Handle local format (add --no-resources for sylphx-flow on OpenCode)
-    if (config.type === 'local' && serverId === 'sylphx-flow') {
-      const openCodeConfig = { ...config };
-
-      // OpenCode doesn't support MCP resources well, use tools instead
-      if (!openCodeConfig.command.includes('--no-resources')) {
-        openCodeConfig.command = [...openCodeConfig.command, '--no-resources'];
       }
 
       return openCodeConfig;

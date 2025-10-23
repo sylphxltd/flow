@@ -13,9 +13,62 @@ import { startSylphxFlowMCPServer } from '../servers/sylphx-flow-mcp-server.js';
 
 // MCP start handler
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
-  await startSylphxFlowMCPServer({
-    disableResources: options.resources === false,
-  });
+  // Apply presets if specified
+  let config = {
+    enableMemory: options.memory === true,
+    enableTime: options.time === true,
+    enableProjectStartup: options.projectStartup === true,
+    enableKnowledge: options.knowledge === true,
+    knowledgeAsTools: options.knowledgeAsTools === true,
+  };
+
+  if (options.preset) {
+    switch (options.preset) {
+      case 'opencode':
+        config = {
+          enableMemory: false,
+          enableTime: true,
+          enableProjectStartup: false,
+          enableKnowledge: true,
+          knowledgeAsTools: true,
+        };
+        break;
+      case 'claude-code':
+        config = {
+          enableMemory: false,
+          enableTime: true,
+          enableProjectStartup: true,
+          enableKnowledge: true,
+          knowledgeAsTools: false,
+        };
+        break;
+      case 'claude-code':
+        config = {
+          enableMemory: true,
+          enableTime: false,
+          enableProjectStartup: true,
+          enableKnowledge: true,
+          knowledgeAsTools: false,
+        };
+        break;
+      case 'minimal':
+        config = {
+          enableMemory: false,
+          enableTime: false,
+          enableProjectStartup: false,
+          enableKnowledge: false,
+          knowledgeAsTools: false,
+        };
+        break;
+      default:
+        throw new CLIError(
+          `Unknown preset: ${options.preset}. Available: opencode, claude-code, minimal`,
+          'INVALID_PRESET'
+        );
+    }
+  }
+
+  await startSylphxFlowMCPServer(config);
 
   // Keep the process alive
   process.stdin.resume();
@@ -211,7 +264,27 @@ export const mcpCommand: CommandConfig = {
       description: 'Start the Sylphx Flow MCP server',
       options: [
         {
-          flags: '--no-resources',
+          flags: '--preset <type>',
+          description: 'Use preset configuration (opencode, claude-code, minimal)',
+        },
+        {
+          flags: '--enable-memory',
+          description: 'Enable memory tools',
+        },
+        {
+          flags: '--enable-time',
+          description: 'Enable time tools',
+        },
+        {
+          flags: '--enable-project-startup',
+          description: 'Enable project startup tools',
+        },
+        {
+          flags: '--enable-knowledge',
+          description: 'Enable knowledge resources',
+        },
+        {
+          flags: '--knowledge-as-tools',
           description: 'Register knowledge as tools instead of resources',
         },
       ],

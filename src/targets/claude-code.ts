@@ -20,6 +20,16 @@ export const claudeCodeTarget: Target = {
   isImplemented: true,
   isDefault: false,
 
+  mcpServerConfig: {
+    'sylphx-flow': {
+      enableMemory: false,
+      enableTime: true,
+      enableProjectStartup: true,
+      enableKnowledge: true,
+      knowledgeAsTools: false,
+    },
+  },
+
   config: {
     agentDir: '.claude/agents',
     agentExtension: '.md',

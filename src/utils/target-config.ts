@@ -59,7 +59,27 @@ export async function addMCPServersToTarget(
     if (mcpSection[server.name]) {
       console.log(`ℹ️  MCP server already exists: ${server.name}`);
     } else {
-      const transformedConfig = target.transformMCPConfig(server.config, server.id);
+      let transformedConfig = target.transformMCPConfig(server.config, server.id);
+
+      // Apply target-specific configuration for sylphx-flow
+      if (server.id === 'sylphx-flow' && target.mcpServerConfig?.['sylphx-flow']) {
+        const targetConfig = target.mcpServerConfig['sylphx-flow'];
+        const args = [];
+
+        if (targetConfig.enableMemory) args.push('--enable-memory');
+        if (targetConfig.enableTime) args.push('--enable-time');
+        if (targetConfig.enableProjectStartup) args.push('--enable-project-startup');
+        if (targetConfig.enableKnowledge) args.push('--enable-knowledge');
+        if (targetConfig.knowledgeAsTools) args.push('--knowledge-as-tools');
+
+        // Update the command to include the configuration
+        if (transformedConfig.type === 'local') {
+          transformedConfig.command = [...transformedConfig.command, ...args];
+        } else if (transformedConfig.type === 'stdio') {
+          transformedConfig.args = [...(transformedConfig.args || []), ...args];
+        }
+      }
+
       mcpSection[server.name] = transformedConfig;
       console.log(`📦 Added MCP server: ${server.name} (${server.description})`);
       addedCount++;
