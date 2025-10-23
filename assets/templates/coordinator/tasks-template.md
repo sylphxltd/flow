@@ -1,12 +1,9 @@
-# Implementation Tasks: (Project name)
+# Tasks: (Project name)
 
-(Brief description of implementation approach and wave strategy)
+(Brief description of implementation approach and wave organization strategy)
 
 ## Wave Execution Strategy
-(Organize tasks into sequential waves - each wave contains tasks that can execute in parallel with no conflicts. Example:)
-- **Wave 1**: Foundation tasks - Execute in parallel, no dependencies
-- **Wave 2**: Core features - Execute in parallel after Wave 1
-- **Wave 3**: Integration - Execute in parallel after Wave 2
+(Organize tasks into sequential waves based on dependencies. Each wave contains tasks that can execute in parallel with no conflicts. Determine the number of waves based on project complexity - could be 2, 3, 4, or more waves.)
 
 ## Mandatory Per-Task Cleanup
 **Before marking any task complete:**
@@ -17,51 +14,27 @@
 
 ---
 
-## Wave 1: (Wave name - e.g., "Foundation Setup")
+## Wave 1: (Wave name based on tasks - e.g., "Foundation", "Setup", "Infrastructure")
+- [ ] **[specialist]** (Task description with specific deliverable - e.g., "Setup database schema and migrations")
+- [ ] **[specialist]** (Task description with specific deliverable)
+- [ ] **[specialist]** (Task description with specific deliverable)
 
-### TASK_1: (Task description - what needs to be implemented)
-- [ ] **Implemented**: (Specific deliverable - e.g., "JWT middleware with token validation")
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Assigned to**: (Specialist - e.g., backend-engineer)
-- **Files Modified**: (Update after completion)
-- **Notes**: (Decisions, issues, context)
-
-### TASK_2: (Task description)
-- [ ] **Implemented**: (Specific deliverable)
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Assigned to**: (Specialist)
-- **Files Modified**: 
-- **Notes**: 
-
-(Add more tasks as needed for Wave 1)
+(Add more tasks as needed - all tasks in Wave 1 can execute in parallel)
 
 ---
 
-## Wave 2: (Wave name - e.g., "Core Features")
+## Wave 2: (Wave name - e.g., "Core Features", "Business Logic") - After Wave 1
+- [ ] **[specialist]** (Task description - include dependencies if specific, e.g., "Implement auth API (depends: database)")
+- [ ] **[specialist]** (Task description with specific deliverable)
 
-### TASK_X: (Task description)
-- **Dependencies**: (Which Wave 1 tasks must complete first, or write "None")
-- [ ] **Implemented**: (Specific deliverable)
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Assigned to**: (Specialist)
-- **Files Modified**: 
-- **Notes**: 
-
-(Add more tasks as needed for Wave 2)
+(Add more tasks as needed - all tasks in Wave 2 can execute in parallel)
 
 ---
 
-## Wave 3: (Wave name - e.g., "Integration & Polish")
+## Wave 3+: (Add more waves as needed based on dependencies)
+- [ ] **[specialist]** (Task description with specific deliverable)
 
-### TASK_Y: (Task description)
-- **Dependencies**: (Which previous tasks must complete first, or write "None")
-- [ ] **Implemented**: (Specific deliverable)
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Assigned to**: (Specialist)
-- **Files Modified**: 
-- **Notes**: 
-
-(Add more tasks and waves as needed)
+(Continue adding waves until all tasks are organized)
 
 ---
 
@@ -69,15 +42,23 @@
 (Document any tactical refinements made during Phase 6 - splits, reorders, merges, or write "None")
 
 Example:
-- **TASK_4 [REFINED]**: Split into 4a-4d (reason: too coarse for parallel execution)
-- **TASK_7**: Reordered to Wave 2 (reason: dependency on TASK_3 discovered)
+- **Task "Implement auth" [REFINED]**: Split into "Setup JWT", "Create middleware", "Add login endpoint" (reason: too coarse)
+- **Task "Deploy API"**: Moved from Wave 2 to Wave 3 (reason: dependency on integration tests discovered)
+
+---
+
+## Test Strategy
+(Define testing approach - will be validated in Phase 7)
+- **Frameworks**: (e.g., "Jest for unit tests, Playwright for E2E")
+- **Coverage**: 80%+ on critical paths (auth, data operations, business logic)
+- **Key scenarios**: (List critical test cases)
 
 ---
 
 ## Progress Summary
-- **Wave 1**: __ / __ tasks done (both checkboxes per task)
-- **Wave 2**: __ / __ tasks done
-- **Wave 3**: __ / __ tasks done
+- **Wave 1**: __ / __ tasks complete
+- **Wave 2**: __ / __ tasks complete
+(Add more waves as needed)
 - **Total**: __ / __ tasks complete
 
 ## Quick Reference
