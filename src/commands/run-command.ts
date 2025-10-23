@@ -32,7 +32,7 @@ async function loadAgentContent(agentName: string): Promise<string> {
       return content;
     } catch (_error) {
       // Try to load from the package's agents directory
-      const packageAgentPath = path.join(__dirname, '../agents', `${agentName}.md`);
+      const packageAgentPath = path.join(__dirname, 'agents', `${agentName}.md`);
       const content = await fs.readFile(packageAgentPath, 'utf-8');
       return content;
     }
