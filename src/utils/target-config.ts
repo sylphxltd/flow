@@ -64,13 +64,12 @@ export async function addMCPServersToTarget(
       // Apply target-specific configuration for sylphx-flow
       if (server.id === 'sylphx-flow' && target.mcpServerConfig?.['sylphx-flow']) {
         const targetConfig = target.mcpServerConfig['sylphx-flow'];
-        const args = [];
+        const args: string[] = [];
 
         if (targetConfig.disableMemory) args.push('--disable-memory');
         if (targetConfig.disableTime) args.push('--disable-time');
         if (targetConfig.disableProjectStartup) args.push('--disable-project-startup');
         if (targetConfig.disableKnowledge) args.push('--disable-knowledge');
-        if (targetConfig.knowledgeAsTools) args.push('--knowledge-as-tools');
 
         // Update the command to include the configuration
         if (transformedConfig.type === 'local') {

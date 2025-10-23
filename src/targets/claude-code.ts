@@ -26,7 +26,6 @@ export const claudeCodeTarget: Target = {
       disableTime: false,
       disableProjectStartup: false,
       disableKnowledge: false,
-      knowledgeAsTools: false,
     },
   },
 

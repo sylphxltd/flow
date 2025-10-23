@@ -136,7 +136,6 @@ export abstract class Target {
       disableTime?: boolean;
       disableProjectStartup?: boolean;
       disableKnowledge?: boolean;
-      knowledgeAsTools?: boolean;
     };
   };
 
@@ -154,7 +153,6 @@ export abstract class Target {
         disableTime?: boolean;
         disableProjectStartup?: boolean;
         disableKnowledge?: boolean;
-        knowledgeAsTools?: boolean;
       };
     }
   ) {

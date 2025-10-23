@@ -21,7 +21,6 @@ export const opencodeTarget: Target = {
       disableTime: false,
       disableProjectStartup: false,
       disableKnowledge: false,
-      knowledgeAsTools: true,
     },
   },
 

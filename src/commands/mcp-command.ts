@@ -19,7 +19,6 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     disableTime: options.disableTime === true,
     disableProjectStartup: options.disableProjectStartup === true,
     disableKnowledge: options.disableKnowledge === true,
-    knowledgeAsTools: options.knowledgeAsTools === true,
   };
 
   if (options.preset) {
@@ -30,7 +29,6 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
           disableTime: false, // Enable time
           disableProjectStartup: true, // Disable project startup
           disableKnowledge: false, // Enable knowledge
-          knowledgeAsTools: true, // Knowledge as tools
         };
         break;
       case 'claude-code':
@@ -39,7 +37,6 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
           disableTime: false, // Enable time
           disableProjectStartup: false, // Enable project startup
           disableKnowledge: false, // Enable knowledge
-          knowledgeAsTools: false, // Knowledge as resources
         };
         break;
       case 'minimal':
@@ -48,7 +45,6 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
           disableTime: true,
           disableProjectStartup: true,
           disableKnowledge: true,
-          knowledgeAsTools: false,
         };
         break;
       default:
@@ -272,11 +268,7 @@ export const mcpCommand: CommandConfig = {
         },
         {
           flags: '--disable-knowledge',
-          description: 'Disable knowledge resources',
-        },
-        {
-          flags: '--knowledge-as-tools',
-          description: 'Register knowledge as tools instead of resources',
+          description: 'Disable knowledge tools',
         },
       ],
       handler: mcpStartHandler,

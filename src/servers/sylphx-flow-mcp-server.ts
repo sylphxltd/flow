@@ -4,10 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
-import {
-  registerKnowledgeResources,
-  registerKnowledgeTools,
-} from '../resources/knowledge-resources.js';
+import { registerKnowledgeTools } from '../resources/knowledge-resources.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -26,7 +23,6 @@ interface ServerConfig {
   disableTime?: boolean;
   disableProjectStartup?: boolean;
   disableKnowledge?: boolean;
-  knowledgeAsTools?: boolean;
 }
 
 // Logger utility
@@ -51,7 +47,6 @@ function parseArgs(): ServerConfig {
   if (args.includes('--disable-time')) config.disableTime = true;
   if (args.includes('--disable-project-startup')) config.disableProjectStartup = true;
   if (args.includes('--disable-knowledge')) config.disableKnowledge = true;
-  if (args.includes('--knowledge-as-tools')) config.knowledgeAsTools = true;
 
   // Handle enable flags (backward compatibility)
   if (args.includes('--enable-memory')) config.disableMemory = false;
@@ -104,18 +99,12 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('project_startup');
   }
 
-  // Knowledge resources (enabled by default, can be disabled)
+  // Knowledge tools (enabled by default, can be disabled)
   if (!config.disableKnowledge) {
-    if (config.knowledgeAsTools) {
-      Logger.info('📚 Registering knowledge as MCP tools');
-      registerKnowledgeTools(server);
-      enabledTools.push('knowledge_search, knowledge_get');
-      console.log('📚 Knowledge: Enabled (as tools)');
-    } else {
-      Logger.info('📚 Registering knowledge as MCP resources');
-      registerKnowledgeResources(server);
-      console.log('📚 Knowledge: Enabled (as resources)');
-    }
+    Logger.info('📚 Registering knowledge tools');
+    registerKnowledgeTools(server);
+    enabledTools.push('search_knowledge, get_knowledge');
+    console.log('📚 Knowledge: Enabled');
   }
 
   // Display enabled tools

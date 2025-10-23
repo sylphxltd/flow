@@ -114,40 +114,6 @@ export function getKnowledgeContent(uri: string): string {
 }
 
 /**
- * Register knowledge resources with MCP server
- * Dynamically scans knowledge directory and registers all .md files
- */
-export function registerKnowledgeResources(server: McpServer) {
-  const resources = getAllKnowledgeResources();
-
-  // Register as resources (primary method)
-  for (const resource of resources) {
-    server.registerResource(
-      resource.name,
-      resource.uri,
-      {
-        description: resource.description,
-        mimeType: 'text/markdown',
-      },
-      async () => {
-        const content = getKnowledgeContent(resource.uri);
-        return {
-          contents: [
-            {
-              uri: resource.uri,
-              text: content,
-              mimeType: 'text/markdown',
-            },
-          ],
-        };
-      }
-    );
-  }
-
-  console.error(`[INFO] Registered ${resources.length} knowledge resources`);
-}
-
-/**
  * Simple fuzzy search scoring
  * Returns score 0-1 based on keyword matches in name, description, category
  */
@@ -185,7 +151,6 @@ function scoreKnowledgeResource(
 
 /**
  * Register knowledge tools with MCP server
- * Fallback for environments that don't properly support resources
  */
 export function registerKnowledgeTools(server: McpServer) {
   const resources = getAllKnowledgeResources();
