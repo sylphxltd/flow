@@ -13,8 +13,47 @@
       ],
       "environment": {
         "GEMINI_API_KEY": "{file:.secrets/GEMINI_API_KEY}",
-        "GEMINI_MODEL": "gemini-2.5-flash"
+        "GEMINI_MODEL": "{file:.secrets/GEMINI_MODEL}"
       }
+    },
+    "gpt-image-1-mcp": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@napolab/gpt-image-1-mcp"
+      ],
+      "environment": {
+        "OPENAI_API_KEY": "{file:.secrets/OPENAI_API_KEY}"
+      }
+    },
+    "perplexity-ask": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "server-perplexity-ask"
+      ],
+      "environment": {
+        "PERPLEXITY_API_KEY": "{file:.secrets/PERPLEXITY_API_KEY}"
+      }
+    },
+    "sylphx_flow": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "github:sylphxltd/flow",
+        "mcp",
+        "start"
+      ]
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app"
     }
   },
   "$schema": "https://opencode.ai/config.json"
