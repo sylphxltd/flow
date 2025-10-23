@@ -130,7 +130,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   // Use same logic as getAgentFiles() - simple path resolution
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const agentsSourceDir = path.join(__dirname, '..', 'agents');
+  const agentsSourceDir = path.join(__dirname, 'agents');
 
   // Process files in parallel for better performance
   const processPromises = agentFiles.map(async (agentFile) => {
