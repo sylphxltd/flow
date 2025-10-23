@@ -1,11 +1,9 @@
-# Implementation Tasks: {{PROJECT_NAME}}
+# Tasks: (Project name)
 
-{{DESCRIPTION}}
+(Brief description of implementation approach and wave organization strategy)
 
 ## Wave Execution Strategy
-- **Wave 1**: {{WAVE_1_TASKS}} - Execute in parallel, no dependencies
-- **Wave 2**: {{WAVE_2_TASKS}} - Execute in parallel after Wave 1
-- **Wave 3**: {{WAVE_3_TASKS}} - Execute in parallel after Wave 2
+(Organize tasks into sequential waves based on dependencies. Each wave contains tasks that can execute in parallel with no conflicts. Determine the number of waves based on project complexity - could be 2, 3, 4, or more waves.)
 
 ## Mandatory Per-Task Cleanup
 **Before marking any task complete:**
@@ -16,71 +14,54 @@
 
 ---
 
-## Wave 1: Parallel Execution
+## Wave 1: (Wave name based on tasks - e.g., "Foundation", "Setup", "Infrastructure")
+- [ ] **[specialist]** (Task description with specific deliverable - e.g., "Setup database schema and migrations")
+- [ ] **[specialist]** (Task description with specific deliverable)
+- [ ] **[specialist]** (Task description with specific deliverable)
 
-### TASK_1: {{TASK_1_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_1_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: (update after completion)
-- **Notes**: (decisions, issues, context)
-
-### TASK_2: {{TASK_2_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_2_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
-
-### TASK_3: {{TASK_3_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_3_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+(Add more tasks as needed - all tasks in Wave 1 can execute in parallel)
 
 ---
 
-## Wave 2: Parallel Execution (After Wave 1)
+## Wave 2: (Wave name - e.g., "Core Features", "Business Logic") - After Wave 1
+- [ ] **[specialist]** (Task description - include dependencies if specific, e.g., "Implement auth API (depends: database)")
+- [ ] **[specialist]** (Task description with specific deliverable)
 
-### TASK_4: {{TASK_4_DESCRIPTION}}
-- **Dependencies**: {{TASK_4_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_4_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
-
-### TASK_5: {{TASK_5_DESCRIPTION}}
-- **Dependencies**: {{TASK_5_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_5_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+(Add more tasks as needed - all tasks in Wave 2 can execute in parallel)
 
 ---
 
-## Wave 3: Parallel Execution (After Wave 2)
+## Wave 3+: (Add more waves as needed based on dependencies)
+- [ ] **[specialist]** (Task description with specific deliverable)
 
-### TASK_6: {{TASK_6_DESCRIPTION}}
-- **Dependencies**: {{TASK_6_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_6_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+(Continue adding waves until all tasks are organized)
 
-### TASK_7: {{TASK_7_DESCRIPTION}}
-- **Dependencies**: {{TASK_7_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_7_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+---
+
+## Task Modifications
+(Document any tactical refinements made during Phase 6 - splits, reorders, merges, or write "None")
+
+Example:
+- **Task "Implement auth" [REFINED]**: Split into "Setup JWT", "Create middleware", "Add login endpoint" (reason: too coarse)
+- **Task "Deploy API"**: Moved from Wave 2 to Wave 3 (reason: dependency on integration tests discovered)
+
+---
+
+## Test Strategy
+(Define testing approach - will be validated in Phase 7)
+- **Frameworks**: (e.g., "Jest for unit tests, Playwright for E2E")
+- **Coverage**: 80%+ on critical paths (auth, data operations, business logic)
+- **Key scenarios**: (List critical test cases)
 
 ---
 
 ## Progress Summary
-- **Wave 1**: __ / 3 tasks done (both checkboxes per task)
-- **Wave 2**: __ / 2 tasks done
-- **Wave 3**: __ / 2 tasks done
-- **Total**: __ / 7 tasks complete
+- **Wave 1**: __ / __ tasks complete
+- **Wave 2**: __ / __ tasks complete
+(Add more waves as needed)
+- **Total**: __ / __ tasks complete
 
 ## Quick Reference
-- **Current Wave**: 
-- **Next Task**: 
-- **Blockers**: 
+- **Current Wave**: (Which wave is currently executing)
+- **Next Task**: (Next task to start)
+- **Blockers**: (Any blockers preventing progress, or write "None") 
