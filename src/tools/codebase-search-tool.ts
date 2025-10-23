@@ -175,7 +175,7 @@ Limitations:
           ? '✅ HIT (using cached index)'
           : `⚠️ MISS (${stats.indexedFiles} files indexed, ${stats.skippedFiles} skipped)`;
 
-        const indexStats = `\n---\n\n**Index Stats:**\n- Total files: ${stats.totalFiles}\n- Cache: ${cacheStatus}\n- Index time: ${indexTime}ms\n- Search time: ${searchTime}ms\n- Embeddings: ${vectorStorage ? '✅ enabled' : '❌ disabled (set OPENAI_API_KEY to enable)'}\n\n*Cache location: .sylphx-flow/search-cache/*\n*Cache TTL: 1 hour (auto-refresh on file changes)*\n`;
+        const indexStats = `\n---\n\n**Index Stats:**\n- Total files: ${stats.totalFiles}\n- Cache: ${cacheStatus}\n- Index time: ${indexTime}ms\n- Search time: ${searchTime}ms\n- Embeddings: ${vectorStorage ? '✅ enabled' : '❌ disabled (set OPENAI_API_KEY to enable)'}\n\n*Cache location: .sylphx-flow/search-cache/*\n*Cache invalidation: File-based (auto-detects new/modified/deleted files)*\n`;
 
         return {
           content: [

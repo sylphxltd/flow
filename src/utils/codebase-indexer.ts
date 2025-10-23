@@ -27,7 +27,6 @@ export interface IndexCache {
   files: Map<string, { mtime: number; hash: string }>; // Track file changes
   tfidfIndex?: SearchIndex;
   vectorIndexPath?: string;
-  cacheTTL?: number; // Cache time-to-live in milliseconds (default: 1 hour)
 }
 
 /**
@@ -250,7 +249,7 @@ export class CodebaseIndexer {
       const cacheData = fs.readFileSync(cachePath, 'utf8');
       const parsed = JSON.parse(cacheData);
 
-      const cache: IndexCache = {
+      return {
         version: parsed.version,
         codebaseRoot: parsed.codebaseRoot,
         indexedAt: parsed.indexedAt,
@@ -258,20 +257,7 @@ export class CodebaseIndexer {
         files: new Map(parsed.files),
         tfidfIndex: parsed.tfidfIndex,
         vectorIndexPath: parsed.vectorIndexPath,
-        cacheTTL: parsed.cacheTTL || 3600000, // Default 1 hour
       };
-
-      // Check if cache is expired
-      const cacheTTL = cache.cacheTTL || 3600000;
-      const cacheAge = Date.now() - new Date(cache.indexedAt).getTime();
-      if (cacheAge > cacheTTL) {
-        console.error(
-          `[INFO] Cache expired (age: ${Math.round(cacheAge / 1000 / 60)}min, TTL: ${Math.round(cacheTTL / 1000 / 60)}min)`
-        );
-        return null;
-      }
-
-      return cache;
     } catch (error) {
       console.error('[ERROR] Failed to load cache:', error);
       return null;
@@ -427,7 +413,6 @@ export class CodebaseIndexer {
       vectorIndexPath: vectorStorage
         ? path.join(this.cacheDir, 'codebase-vectors.hnsw')
         : undefined,
-      cacheTTL: 3600000, // 1 hour
     };
 
     this.saveCache(this.cache);
