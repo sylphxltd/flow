@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getKnowledgeDir } from '../utils/paths.js';
+import { semanticSearch, getSearchIndexStats } from '../utils/semantic-search.js';
 
 /**
  * Parse YAML frontmatter from markdown file
@@ -209,21 +210,48 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
       const categories = args.categories as string[] | undefined;
       const includeContent = (args.include_content as boolean) ?? true;
 
-      // Filter by categories if specified
-      let filteredResources = resources;
-      if (categories && categories.length > 0) {
-        filteredResources = resources.filter((r) => categories.includes(r.category));
-      }
+      // Try semantic search first (TF-IDF based)
+      const semanticResults = semanticSearch(query, {
+        limit,
+        categories,
+        minScore: 0.01,
+      });
 
-      // Score and sort resources
-      const scored = filteredResources
-        .map((r) => ({
-          resource: r,
-          score: scoreKnowledgeResource(r, query),
-        }))
-        .filter((item) => item.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit);
+      let scored: Array<{
+        resource: { uri: string; name: string; description: string; category: string };
+        score: number;
+      }>;
+
+      if (semanticResults.length > 0) {
+        // Use semantic search results
+        scored = semanticResults.map((result) => {
+          const resource = resources.find((r) => r.uri === result.uri);
+          return {
+            resource: resource || {
+              uri: result.uri,
+              name: result.uri,
+              description: '',
+              category: result.uri.split('/')[1] || '',
+            },
+            score: result.score,
+          };
+        });
+      } else {
+        // Fallback to fuzzy search
+        let filteredResources = resources;
+        if (categories && categories.length > 0) {
+          filteredResources = resources.filter((r) => categories.includes(r.category));
+        }
+
+        scored = filteredResources
+          .map((r) => ({
+            resource: r,
+            score: scoreKnowledgeResource(r, query),
+          }))
+          .filter((item) => item.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, limit);
+      }
 
       if (scored.length === 0) {
         return {
@@ -256,7 +284,10 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
         return result;
       });
 
-      const summary = `Found ${scored.length} relevant knowledge resource(s) for "${query}":\n\n`;
+      const indexStats = getSearchIndexStats();
+      const searchMethod = semanticResults.length > 0 ? 'semantic (TF-IDF)' : 'fuzzy keyword';
+      const summary = `Found ${scored.length} relevant knowledge resource(s) for "${query}" using ${searchMethod} search:\n${indexStats ? `\n*Search index: ${indexStats.totalDocuments} docs, ${indexStats.uniqueTerms} terms*\n` : ''}\n`;
+
       return {
         content: [
           {

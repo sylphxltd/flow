@@ -43,3 +43,7 @@ claude-flow
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
 .secrets/
+
+# Vector search indexes (generated at build time)
+*.hnsw
+*.meta.json
