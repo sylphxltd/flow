@@ -108,18 +108,101 @@ flowchart LR
   - Task coverage and dependencies
   - Technical feasibility and timeline
 - Document gaps, risks, and mitigation strategies
-- Fix any issues found before proceeding
+- Assess severity: PASS / MINOR_ISSUES / CRITICAL_ISSUES
 - Update progress.md
 - Commit: `docs(validation): validate readiness`
+
+**Process Result**:
+
+| Status | Action |
+|--------|--------|
+| `PASS` | → Proceed to Phase 6 |
+| `MINOR_ISSUES` | → Fix issues in spec.md/plan.md/tasks.md<br/>→ Commit: `docs(scope): address validation findings`<br/>→ **Retry Phase 5** (max 2 times, then escalate to user) |
+| `CRITICAL_ISSUES` | → Identify root cause<br/>→ Return to Phase 1 (requirements) / 3 (design) / 4 (tasks)<br/>→ Update progress.md with routing decision |
 
 ### Phase 6: Implementation
 
 **What to do**:
 - Execute all tasks stage by stage following tasks.md
-- Follow TDD approach: Write test → Implement → Refactor
-- MANDATORY cleanup per task: Remove TODO/debug code, eliminate duplication, optimize performance, add error handling, update docs
-- Update tasks.md completion status
-- Commit per task: `feat(scope): implement [task]`, `refactor(scope): improve [component]`, `fix(scope): resolve [issue]`
+- For each task:
+  - **Before starting**: Check if task needs refinement (see Task Modification Protocol below)
+  - Follow TDD approach: Write test → Implement → Refactor
+  - MANDATORY cleanup: Remove TODO/debug code, eliminate duplication, optimize performance, add error handling, update docs
+  - Update tasks.md completion status
+  - Commit per task: `feat(scope): implement [task]`, `refactor(scope): improve [component]`, `fix(scope): resolve [issue]`
+
+---
+
+#### Task Modification Protocol
+
+**When you can modify tasks.md during implementation:**
+
+**ALLOWED (Tactical Refinements)**:
+- ✅ **Split coarse tasks** into subtasks
+  - Example: "Implement auth" → "Setup JWT", "Create middleware", "Add login endpoint"
+  - Reason: Task too coarse, needs breakdown for clarity
+  
+- ✅ **Reorder tasks** within same stage
+  - Example: Swap Task 2 and Task 3 if dependency discovered
+  - Reason: Execution order optimization
+  
+- ✅ **Add implementation details** to existing tasks
+  - Example: Add "Use bcrypt for password hashing" to auth task
+  - Reason: Technical specification clarification
+  
+- ✅ **Merge duplicate tasks**
+  - Example: Combine "Add error logging" and "Setup logger" into one
+  - Reason: Eliminate redundancy
+
+**PROHIBITED (Strategic Changes)**:
+- ❌ **Add new features** not in spec.md
+  - Must return to Phase 1 to update requirements
+  
+- ❌ **Remove planned features** from tasks.md
+  - Must return to Phase 1 to update requirements
+  
+- ❌ **Change architecture** or design approach
+  - Must return to Phase 3 to update plan.md
+  
+- ❌ **Skip tasks** without justification
+  - Must document reason in progress.md
+
+**How to modify tasks.md:**
+
+1. **Document change** in tasks.md:
+   ```markdown
+   ## Stage 2: Core Features
+   
+   ### TASK_4: Implement user authentication [REFINED]
+   **Original**: Single task
+   **Refined into**:
+   - [x] 4a. Setup JWT library and config
+   - [x] 4b. Create authentication middleware
+   - [ ] 4c. Implement login endpoint
+   - [ ] 4d. Implement logout endpoint
+   
+   **Reason**: Task too coarse, split for better tracking
+   **Modified**: 2024-01-15 during implementation
+   ```
+
+2. **Update progress.md**:
+   ```markdown
+   ## Task Modifications
+   - Task 4: Split into 4a-4d (reason: too coarse)
+   ```
+
+3. **Commit change**:
+   ```bash
+   git commit -m "docs(tasks): refine Task 4 into subtasks for clarity"
+   ```
+
+4. **Continue implementation** with refined tasks
+
+**Validation in Phase 7**:
+- Review will check if modifications were tactical (allowed) or strategic (prohibited)
+- Strategic changes will trigger return to earlier phases
+
+---
 
 ### Phase 7: Quality Assurance
 
@@ -128,10 +211,24 @@ flowchart LR
 - Verify 100% task completion and acceptance criteria met
 - Review code quality, test coverage, security practices
 - Check for technical debt, cleanup verification
+- Review task modifications (if any) - ensure tactical only
 - Fill reviews.md with comprehensive assessment
-- Fix any issues found
+- Assess severity: PASS / MINOR_ISSUES / CRITICAL_ISSUES
 - Update progress.md
 - Commit: `docs(reviews): quality assessment`
+
+**Process Result**:
+
+| Status | Action |
+|--------|--------|
+| `PASS` | → Proceed to Phase 8 |
+| `MINOR_ISSUES` | → Fix issues (tests, code quality, cleanup)<br/>→ Commit: `fix(scope): address QA findings`<br/>→ **Retry Phase 7** (max 2 times, then escalate to user) |
+| `CRITICAL_ISSUES` | → Identify root cause<br/>→ Return to Phase 6 (implementation bugs)<br/>→ Update progress.md with routing decision |
+
+**Task Modification Validation**:
+- If strategic changes detected (add/remove features, change architecture)
+- → Mark as CRITICAL_ISSUES
+- → Return to Phase 1/3/4 to update planning documents
 
 ### Phase 8: Delivery
 
