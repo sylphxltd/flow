@@ -9,7 +9,7 @@ export class TemplateEngine {
   private templatesDir: string;
   private mode: 'coordinator' | 'implementer';
 
-  constructor(templatesDir = 'src/templates', mode: 'coordinator' | 'implementer' = 'coordinator') {
+  constructor(templatesDir: string, mode: 'coordinator' | 'implementer' = 'coordinator') {
     this.templatesDir = templatesDir;
     this.mode = mode;
   }

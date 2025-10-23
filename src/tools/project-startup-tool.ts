@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -394,7 +395,11 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
     };
 
     // Step 4: Generate all templates with mode-specific templates
-    const templateEngine = new TemplateEngine('src/templates', mode);
+    // Resolve templates directory relative to this file's location (for MCP server usage)
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatesDir = join(__dirname, '..', 'templates');
+    const templateEngine = new TemplateEngine(templatesDir, mode);
     const templates = templateEngine.generateAllProjectTemplates(projectData);
 
     // Step 5: Create all template files
