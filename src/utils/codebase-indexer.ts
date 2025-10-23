@@ -27,6 +27,7 @@ export interface IndexCache {
   files: Map<string, { mtime: number; hash: string }>; // Track file changes
   tfidfIndex?: SearchIndex;
   vectorIndexPath?: string;
+  cacheTTL?: number; // Cache time-to-live in milliseconds (default: 1 hour)
 }
 
 /**
@@ -249,7 +250,7 @@ export class CodebaseIndexer {
       const cacheData = fs.readFileSync(cachePath, 'utf8');
       const parsed = JSON.parse(cacheData);
 
-      return {
+      const cache: IndexCache = {
         version: parsed.version,
         codebaseRoot: parsed.codebaseRoot,
         indexedAt: parsed.indexedAt,
@@ -257,7 +258,20 @@ export class CodebaseIndexer {
         files: new Map(parsed.files),
         tfidfIndex: parsed.tfidfIndex,
         vectorIndexPath: parsed.vectorIndexPath,
+        cacheTTL: parsed.cacheTTL || 3600000, // Default 1 hour
       };
+
+      // Check if cache is expired
+      const cacheTTL = cache.cacheTTL || 3600000;
+      const cacheAge = Date.now() - new Date(cache.indexedAt).getTime();
+      if (cacheAge > cacheTTL) {
+        console.error(
+          `[INFO] Cache expired (age: ${Math.round(cacheAge / 1000 / 60)}min, TTL: ${Math.round(cacheTTL / 1000 / 60)}min)`
+        );
+        return null;
+      }
+
+      return cache;
     } catch (error) {
       console.error('[ERROR] Failed to load cache:', error);
       return null;
@@ -304,10 +318,12 @@ export class CodebaseIndexer {
     const files = scanCodebase(this.codebaseRoot, this.codebaseRoot, this.ig);
     console.error(`[INFO] Found ${files.length} files`);
 
-    // Detect changes
+    // Detect changes (new, modified, deleted files)
     const changedFiles: CodebaseFile[] = [];
+    const deletedFiles: string[] = [];
     const fileMap = new Map<string, { mtime: number; hash: string }>();
 
+    // Check for new/modified files
     for (const file of files) {
       const hash = simpleHash(file.content);
       fileMap.set(file.path, { mtime: file.mtime, hash });
@@ -318,7 +334,17 @@ export class CodebaseIndexer {
       }
     }
 
-    const cacheHit = !force && changedFiles.length === 0;
+    // Check for deleted files
+    if (this.cache?.files) {
+      for (const cachedPath of this.cache.files.keys()) {
+        if (!fileMap.has(cachedPath)) {
+          deletedFiles.push(cachedPath);
+        }
+      }
+    }
+
+    const hasChanges = changedFiles.length > 0 || deletedFiles.length > 0;
+    const cacheHit = !force && !hasChanges;
 
     if (cacheHit && this.cache?.tfidfIndex) {
       console.error('[INFO] Cache hit! Using cached index');
@@ -331,6 +357,14 @@ export class CodebaseIndexer {
           cacheHit: true,
         },
       };
+    }
+
+    // Log changes
+    if (changedFiles.length > 0) {
+      console.error(`[INFO] Changed files: ${changedFiles.length}`);
+    }
+    if (deletedFiles.length > 0) {
+      console.error(`[INFO] Deleted files: ${deletedFiles.length}`);
     }
 
     console.error(`[INFO] Indexing ${changedFiles.length} changed files...`);
@@ -393,6 +427,7 @@ export class CodebaseIndexer {
       vectorIndexPath: vectorStorage
         ? path.join(this.cacheDir, 'codebase-vectors.hnsw')
         : undefined,
+      cacheTTL: 3600000, // 1 hour
     };
 
     this.saveCache(this.cache);
