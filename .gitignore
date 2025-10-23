@@ -48,3 +48,12 @@ hive-mind-prompt-*.txt
 *.hnsw
 *.meta.json
 .sylphx-flow/search-cache/
+
+## Build artifacts and temporary files
+dist/lancedb.*.node
+package-lock.json
+*.tgz
+
+## Unused vector storage implementations
+src/utils/hnsw-vector-storage.ts
+src/utils/simple-vector-storage.ts

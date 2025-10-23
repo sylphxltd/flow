@@ -7,7 +7,11 @@
   "bin": {
     "sylphx-flow": "dist/index.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/sylphxltd/flow.git"
@@ -57,6 +61,7 @@
     "gpt-3-encoder": "1.1.4"
   },
   "dependencies": {
+    "@lancedb/lancedb": "^0.22.2",
     "@libsql/client": "^0.15.15",
     "@modelcontextprotocol/sdk": "^1.18.1",
     "@types/react": "^19.2.2",
@@ -72,7 +77,6 @@
     "ink-table": "^3.1.0",
     "ink-text-input": "^6.0.0",
     "react": "^19.2.0",
-    "vectra": "^0.11.1",
     "yaml": "^2.8.1",
     "zod": "^3.25.76"
   },
