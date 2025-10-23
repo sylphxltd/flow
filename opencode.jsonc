@@ -20,6 +20,18 @@
     "grep": {
       "type": "remote",
       "url": "https://mcp.grep.app"
+    },
+    "gemini-google-search": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-gemini-google-search"
+      ],
+      "environment": {
+        "GEMINI_API_KEY": "",
+        "GEMINI_MODEL": "gemini-2.5-flash"
+      }
     }
   },
   "$schema": "https://opencode.ai/config.json"

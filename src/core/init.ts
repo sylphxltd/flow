@@ -21,7 +21,7 @@ async function getAgentFiles(): Promise<string[]> {
   // Get script directory and resolve agents path using import.meta.url
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const agentsDir = path.join(__dirname, '..', 'agents');
+  const agentsDir = path.join(__dirname, 'agents');
 
   if (!fs.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
@@ -129,7 +129,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   // Process files individually - create both sdd/ and core/ subdirectory structures
   // Use same logic as getAgentFiles() - simple path resolution
   const __filename = fileURLToPath(import.meta.url);
+  console.log("filename", __filename);
   const __dirname = path.dirname(__filename);
+  console.log("dirname", __dirname)
   const agentsSourceDir = path.join(__dirname, 'agents');
 
   // Process files in parallel for better performance
