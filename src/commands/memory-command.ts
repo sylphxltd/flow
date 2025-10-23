@@ -200,17 +200,15 @@ export const memoryCommand: CommandConfig = {
     {
       name: 'search',
       description: 'Search memory entries',
-      options: [
-        { flags: '<pattern>', description: 'Search pattern' },
-        { flags: '--namespace <name>', description: 'Filter by namespace (default: all)' },
-      ],
+      arguments: [{ name: 'pattern', required: true, description: 'Search pattern' }],
+      options: [{ flags: '--namespace <name>', description: 'Filter by namespace (default: all)' }],
       handler: memorySearchHandler,
     },
     {
       name: 'delete',
       description: 'Delete memory entry',
+      arguments: [{ name: 'key', required: true, description: 'Memory key to delete' }],
       options: [
-        { flags: '<key>', description: 'Memory key to delete' },
         { flags: '--namespace <name>', description: 'Namespace (default: default)' },
         { flags: '--confirm', description: 'Skip confirmation prompt' },
       ],

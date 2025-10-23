@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getAllRuleTypes, getRulesPath, ruleFileExists } from '../config/rules.js';
 import {
   type CommonOptions,
@@ -18,10 +17,8 @@ import { targetManager } from './target-manager.js';
 // ============================================================================
 
 async function getAgentFiles(): Promise<string[]> {
-  // Get script directory and resolve agents path using import.meta.url
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const agentsDir = path.join(__dirname, 'agents');
+  const { getAgentsDir } = await import('../utils/paths.js');
+  const agentsDir = getAgentsDir();
 
   if (!fs.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
@@ -127,12 +124,8 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   }
 
   // Process files individually - create both sdd/ and core/ subdirectory structures
-  // Use same logic as getAgentFiles() - simple path resolution
-  const __filename = fileURLToPath(import.meta.url);
-  console.log('filename', __filename);
-  const __dirname = path.dirname(__filename);
-  console.log('dirname', __dirname);
-  const agentsSourceDir = path.join(__dirname, 'agents');
+  const { getAgentsDir } = await import('../utils/paths.js');
+  const agentsSourceDir = getAgentsDir();
 
   // Process files in parallel for better performance
   const processPromises = agentFiles.map(async (agentFile) => {
@@ -198,7 +191,9 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
   // Collect and merge all available rule files
   const availableRuleTypes = getAllRuleTypes();
-  const existingRuleFiles = availableRuleTypes.filter((ruleType) => ruleFileExists(ruleType));
+  const existingRuleFiles = availableRuleTypes.filter((ruleType) =>
+    ruleFileExists(ruleType as keyof typeof import('../config/rules.js').CORE_RULES)
+  );
 
   if (existingRuleFiles.length === 0) {
     console.warn('⚠️ No rule files found in config/rules/');
@@ -209,7 +204,7 @@ export async function installRules(options: CommonOptions): Promise<void> {
   let mergedContent = `# Development Rules\n\n`;
 
   for (const ruleType of existingRuleFiles) {
-    const rulePath = getRulesPath(ruleType);
+    const rulePath = getRulesPath(ruleType as keyof typeof import('../config/rules.js').CORE_RULES);
     const ruleContent = fs.readFileSync(rulePath, 'utf8');
 
     // Extract the main content (skip the first H1 heading)

@@ -1,0 +1,2 @@
+import"./index-tncp4b5b.js";class s extends Error{code;constructor(n,e){super(n);this.code=e;this.name="CLIError"}}function t(n,e){let o=n instanceof Error?n.message:String(n),r=e?` (${e})`:"";if(console.error(`❌ Error${r}: ${o}`),n instanceof s&&n.code)console.error(`   Code: ${n.code}`);process.exit(1)}function c(n,e){return async(o)=>{try{await n(o)}catch(r){t(r,e)}}}export{t as handleError,c as createAsyncHandler,s as CLIError};
+export{s as a,c as b};
