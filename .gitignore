@@ -44,6 +44,7 @@ claude-flow
 hive-mind-prompt-*.txt
 .secrets/
 
-# Vector search indexes (generated at build time)
+## Vector search indexes (generated at runtime)
 *.hnsw
 *.meta.json
+.sylphx-flow/search-cache/

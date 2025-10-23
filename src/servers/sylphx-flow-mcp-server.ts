@@ -5,6 +5,7 @@ import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
 import { registerKnowledgeTools } from '../resources/knowledge-resources.js';
+import { registerCodebaseSearchTool } from '../tools/codebase-search-tool.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -23,6 +24,7 @@ interface ServerConfig {
   disableTime?: boolean;
   disableProjectStartup?: boolean;
   disableKnowledge?: boolean;
+  disableCodebaseSearch?: boolean;
 }
 
 // Logger utility
@@ -47,6 +49,7 @@ function parseArgs(): ServerConfig {
   if (args.includes('--disable-time')) config.disableTime = true;
   if (args.includes('--disable-project-startup')) config.disableProjectStartup = true;
   if (args.includes('--disable-knowledge')) config.disableKnowledge = true;
+  if (args.includes('--disable-codebase-search')) config.disableCodebaseSearch = true;
 
   // Handle enable flags (backward compatibility)
   if (args.includes('--enable-memory')) config.disableMemory = false;
@@ -105,6 +108,14 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     registerKnowledgeTools(server);
     enabledTools.push('search_knowledge, get_knowledge');
     console.log('📚 Knowledge: Enabled');
+  }
+
+  // Codebase search tools (enabled by default, can be disabled)
+  if (!config.disableCodebaseSearch) {
+    Logger.info('🔍 Registering codebase search tools');
+    registerCodebaseSearchTool(server);
+    enabledTools.push('codebase_search, codebase_reindex');
+    console.log('🔍 Codebase Search: Enabled');
   }
 
   // Display enabled tools
