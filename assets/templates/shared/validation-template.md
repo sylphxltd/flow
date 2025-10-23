@@ -1,46 +1,25 @@
 # Validation: {{PROJECT_NAME}}
 
+(This file is filled by the reviewer in Phase 5 - do not edit manually)
+
 ## Requirements Coverage
-- [ ] All requirements addressed
-- [ ] Acceptance criteria mapped to tasks
-- [ ] Success criteria measurable
-- [ ] Scope clearly defined
-
-**Issues Found**:
-
+✅ All covered / ❌ Gaps:
+(Reviewer: List any requirements in spec.md not addressed in plan.md or tasks.md, or write "None")
 
 ## Design Consistency
-- [ ] Architecture alignment verified
-- [ ] Integration points identified
-- [ ] Design conflicts resolved
-- [ ] Technical feasibility confirmed
+✅ Consistent / ❌ Conflicts:
+(Reviewer: List any conflicts between spec.md and plan.md, or write "None")
 
-**Issues Found**:
+## Task Completeness
+✅ Complete / ❌ Missing:
+(Reviewer: List any plan.md components not covered in tasks.md, or write "None")
 
+## TDD Strategy
+✅ Adequate / ❌ Issues:
+(Reviewer: Check if test strategy in tasks.md is comprehensive, or write "None")
 
-## Task Planning
-- [ ] Task completeness verified
-- [ ] Dependencies mapped accurately
-- [ ] Critical path identified
-- [ ] TDD strategy defined
+---
 
-**Issues Found**:
-
-
-## Risks & Mitigation
-- [ ] Risks identified
-- [ ] Mitigation strategies planned
-- [ ] Impact assessed
-- [ ] Contingency plans defined
-
-**Issues Found**:
-
-
-## Overall Assessment
-**Ready to proceed**: Yes / No
-
-**Blockers** (if not ready):
-
-
-**Action Required** (if not ready):
-
+**Status**: (PASS / MINOR_ISSUES / CRITICAL_ISSUES)  
+**Summary**: (1-2 sentences summarizing validation results)  
+**Action**: (What needs to be done if not PASS, or "None")
