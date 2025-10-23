@@ -26,32 +26,30 @@ const Logger = {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function generateBranchSuffix(projectType: string, projectName: string): string {
-  // Check existing branches with same base name
-  const baseBranchName = `${projectType}/${projectName}`;
-  const existingBranchesResult = runGitCommand('git branch --list --format="%(refname:short)"');
-
-  if (!existingBranchesResult.success) {
-    return ''; // No suffix if can't check branches
+export function generateRandomSuffix(): string {
+  // Generate a random 8-character string (lowercase letters and numbers)
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
+  return `-${result}`;
+}
 
-  const existingBranches = existingBranchesResult.output.split('\n').filter((b) => b.trim());
-  const matchingBranches = existingBranches.filter((branch) => branch.startsWith(baseBranchName));
+export function generateCommitMessage(projectType: string, projectName: string): string {
+  // Map project types to conventional commit types
+  const commitTypeMap: Record<string, string> = {
+    feature: 'feat',
+    bugfix: 'fix',
+    hotfix: 'fix',
+    refactor: 'refactor',
+    migration: 'feat',
+  };
 
-  if (matchingBranches.length === 0) {
-    return ''; // No existing branches, no suffix needed
-  }
+  const commitType = commitTypeMap[projectType] || 'feat';
+  const scope = projectType; // Use project type as scope
 
-  // Extract existing numbers and find next available
-  const numbers = matchingBranches.map((branch) => {
-    const match = branch.match(
-      new RegExp(`^${baseBranchName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:-(\\d+))?$`)
-    );
-    return match?.[1] ? Number.parseInt(match[1], 10) : 1;
-  });
-
-  const maxNumber = Math.max(...numbers, 0);
-  return `-${maxNumber + 1}`;
+  return `${commitType}(${scope}): initialize ${projectName} workspace and comprehensive templates`;
 }
 
 function generateProjectDetails(
@@ -222,9 +220,9 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
       };
     }
 
-    const branchSuffix = generateBranchSuffix(project_type, project_name);
+    const branchSuffix = generateRandomSuffix();
     const branchName = `${project_type}/${project_name}${branchSuffix}`;
-    const workspaceDir = join('specs', project_type, project_name);
+    const workspaceDir = join('specs', project_type, `${project_name}${branchSuffix}`);
     const timestamp = new Date().toISOString().split('T')[0];
 
     Logger.info(`🚀 Starting project initialization: ${branchName}`);
@@ -273,6 +271,7 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
       REQUIREMENTS: requirements,
       TIMESTAMP: timestamp,
       BRANCH_NAME: branchName,
+      PROJECT_ID: `${project_name}${branchSuffix}`, // Unique identifier
 
       // Progress specific
       CURRENT_PHASE: 'Phase 1: Requirements Analysis',
@@ -414,7 +413,7 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
     if (create_branch) {
       const addResult = runGitCommand('git add .');
       const commitResult = runGitCommand(
-        `git commit -m "feat(${project_name}): initialize project workspace and comprehensive templates"`
+        `git commit -m "${generateCommitMessage(project_type, project_name)}"`
       );
 
       if (!addResult.success || !commitResult.success) {

@@ -93,6 +93,7 @@ export interface ProjectData extends TemplateData {
   REQUIREMENTS: string[];
   TIMESTAMP: string;
   BRANCH_NAME: string;
+  PROJECT_ID: string;
 
   // Progress specific
   CURRENT_PHASE: string;
