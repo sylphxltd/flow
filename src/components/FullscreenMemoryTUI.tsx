@@ -1,7 +1,7 @@
 import { Box, Text, useApp, useInput } from 'ink';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LibSQLMemoryStorage, type MemoryEntry } from '../utils/libsql-storage.js';
+import { DrizzleMemoryStorage, type MemoryEntry } from '../utils/drizzle-storage.js';
 
 type ViewMode = 'list' | 'view' | 'edit' | 'add' | 'search' | 'help' | 'confirm-delete';
 
@@ -45,7 +45,7 @@ export const FullscreenMemoryTUI: React.FC = () => {
     showHelp: false,
   });
 
-  const memory = useMemo(() => new LibSQLMemoryStorage(), []);
+  const memory = useMemo(() => new DrizzleMemoryStorage(), []);
 
   const loadEntries = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, message: 'Loading...' }));

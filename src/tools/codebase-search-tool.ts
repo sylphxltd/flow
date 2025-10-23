@@ -43,7 +43,7 @@ function getIndexer(): CodebaseIndexer {
 /**
  * Start background indexing (non-blocking)
  */
-function startBackgroundIndexing(options: { force?: boolean } = {}) {
+async function startBackgroundIndexing(options: { force?: boolean } = {}) {
   if (indexingStatus.isIndexing && !options.force) {
     console.error('[INFO] Indexing already in progress');
     return;
@@ -52,7 +52,7 @@ function startBackgroundIndexing(options: { force?: boolean } = {}) {
   const indexer = getIndexer();
 
   // Check cache first
-  const cacheStats = indexer.getCacheStats();
+  const cacheStats = await indexer.getCacheStats();
   if (cacheStats.exists && !options.force) {
     console.error('[INFO] Cache exists, skipping background indexing');
     return;
@@ -100,7 +100,7 @@ async function ensureIndexed(options: { force?: boolean } = {}) {
   }
 
   // Check cache
-  const cacheStats = indexer.getCacheStats();
+  const cacheStats = await indexer.getCacheStats();
   if (cacheStats.exists && !options.force) {
     console.error('[INFO] Using cached codebase index');
     indexPromise = indexer.indexCodebase({ force: false });
@@ -344,7 +344,7 @@ Useful when search_codebase returns "indexing in progress" message.`,
     },
     async () => {
       const indexer = getIndexer();
-      const cacheStats = indexer.getCacheStats();
+      const cacheStats = await indexer.getCacheStats();
 
       if (indexingStatus.isIndexing) {
         const elapsed = Math.round((Date.now() - indexingStatus.startTime) / 1000);

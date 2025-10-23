@@ -8,7 +8,7 @@ import path from 'node:path';
 import ignore, { type Ignore } from 'ignore';
 import { buildSearchIndex, type SearchIndex } from './tfidf.js';
 import { VectorStorage, type VectorDocument } from './vector-storage.js';
-import { LibSQLMemoryStorage } from './libsql-storage.js';
+import { DrizzleMemoryStorage } from './drizzle-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
 
 export interface CodebaseFile {
@@ -225,13 +225,13 @@ export class CodebaseIndexer {
   private cacheDir: string;
   private cache: IndexCache | null = null;
   private ig: Ignore;
-  private db: LibSQLMemoryStorage;
+  private db: DrizzleMemoryStorage;
 
   constructor(codebaseRoot: string, cacheDir: string) {
     this.codebaseRoot = codebaseRoot;
     this.cacheDir = cacheDir;
     this.ig = loadGitignore(codebaseRoot);
-    this.db = new LibSQLMemoryStorage();
+    this.db = new DrizzleMemoryStorage();
 
     // Ensure cache directory exists
     if (!fs.existsSync(cacheDir)) {
@@ -253,14 +253,17 @@ export class CodebaseIndexer {
         if (tfidfDoc) {
           const rawTerms = tfidfDoc.rawTerms || {};
           const terms = new Map<string, number>();
+          const rawTermsMap = new Map<string, number>();
+
           for (const [term, freq] of Object.entries(rawTerms)) {
             terms.set(term, freq as number);
+            rawTermsMap.set(term, freq as number);
           }
 
           documents.push({
             uri: `file://${file.path}`,
             terms,
-            rawTerms,
+            rawTerms: rawTermsMap,
             magnitude: tfidfDoc.magnitude,
           });
         }
@@ -297,8 +300,8 @@ export class CodebaseIndexer {
    */
   private async loadCache(): Promise<IndexCache | null> {
     try {
-      // Initialize codebase tables if they don't exist
-      await this.db.initializeCodebaseTables();
+      // Initialize database
+      await this.db.initialize();
 
       // Get metadata
       const version = await this.db.getCodebaseMetadata('version');
@@ -345,7 +348,7 @@ export class CodebaseIndexer {
   private async saveCache(cache: IndexCache): Promise<void> {
     try {
       // Initialize tables
-      await this.db.initializeCodebaseTables();
+      await this.db.initialize();
 
       // Save metadata
       await this.db.setCodebaseMetadata('version', cache.version);
@@ -584,7 +587,7 @@ export class CodebaseIndexer {
     indexedAt?: string;
   }> {
     try {
-      await this.db.initializeCodebaseTables();
+      await this.db.initialize();
       const stats = await this.db.getCodebaseIndexStats();
       return {
         exists: stats.fileCount > 0,
@@ -606,7 +609,7 @@ export class CodebaseIndexer {
   async clearCache(): Promise<void> {
     try {
       // Clear database tables
-      await this.db.initializeCodebaseTables();
+      await this.db.initialize();
       await this.db.clearCodebaseIndex();
 
       // Also clean up any old JSON files

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandHandler } from '../types.js';
-import { LibSQLMemoryStorage } from '../utils/libsql-storage.js';
+import { DrizzleMemoryStorage, type MemoryEntry } from '../utils/drizzle-storage.js';
 
 // Memory list handler
 const memoryListHandler: CommandHandler = async (options) => {
-  const memory = new LibSQLMemoryStorage();
+  const memory = new DrizzleMemoryStorage();
   const entries = await memory.getAll();
 
   if (options.namespace && options.namespace !== 'all') {
@@ -67,7 +67,7 @@ const memorySearchHandler: CommandHandler = async (options) => {
     process.exit(1);
   }
 
-  const memory = new LibSQLMemoryStorage();
+  const memory = new DrizzleMemoryStorage();
   const results = await memory.search(options.pattern, options.namespace);
 
   console.log(`🔍 Search results for pattern: ${options.pattern}`);
@@ -102,7 +102,7 @@ const memoryDeleteHandler: CommandHandler = async (options) => {
     process.exit(1);
   }
 
-  const memory = new LibSQLMemoryStorage();
+  const memory = new DrizzleMemoryStorage();
   const deleted = await memory.delete(options.key, options.namespace || 'default');
 
   if (deleted) {
@@ -119,7 +119,7 @@ const memoryClearHandler: CommandHandler = async (options) => {
     process.exit(1);
   }
 
-  const memory = new LibSQLMemoryStorage();
+  const memory = new DrizzleMemoryStorage();
 
   if (options.namespace) {
     await memory.clear(options.namespace);
@@ -132,7 +132,7 @@ const memoryClearHandler: CommandHandler = async (options) => {
 
 // Memory stats handler
 const memoryStatsHandler: CommandHandler = async () => {
-  const memory = new LibSQLMemoryStorage();
+  const memory = new DrizzleMemoryStorage();
   const stats = await memory.getStats();
 
   console.log('📊 Memory Statistics');
@@ -171,7 +171,7 @@ const memorySetHandler: CommandHandler = async (options) => {
   const value = args[valueIndex];
   const namespace = options.namespace || 'default';
 
-  const memory = new LibSQLMemoryStorage();
+  const memory = new DrizzleMemoryStorage();
   await memory.set(key, value, namespace);
 
   console.log(`✅ Set memory entry: ${namespace}:${key} = "${value}"`);
