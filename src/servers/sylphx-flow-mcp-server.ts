@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -21,9 +20,10 @@ const DEFAULT_CONFIG = {
     'Sylphx Flow MCP server providing coordination tools for AI agents. Persistent SQLite-based storage with namespace support for agent coordination and state management.',
 };
 
-// Parse command line arguments
-const args = process.argv.slice(2);
-const DISABLE_RESOURCES = args.includes('--no-resources');
+// Server configuration interface
+interface ServerConfig {
+  disableResources?: boolean;
+}
 
 // Logger utility
 const Logger = {
@@ -37,44 +37,55 @@ const Logger = {
   },
 };
 
-Logger.info('🚀 Starting Sylphx Flow MCP Server...');
-Logger.info(`📋 Description: ${DEFAULT_CONFIG.description.substring(0, 100)}...`);
+// Main server function
+export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
+  console.log('🚀 Starting Sylphx Flow MCP Server...');
+  console.log('📍 Database: .sylphx-flow/memory.db');
 
-const server = new McpServer({
-  name: DEFAULT_CONFIG.name,
-  version: DEFAULT_CONFIG.version,
-  description: DEFAULT_CONFIG.description,
-});
+  Logger.info(`📋 Description: ${DEFAULT_CONFIG.description.substring(0, 100)}...`);
 
-// ============================================================================
-// TOOL REGISTRATION
-// ============================================================================
+  const server = new McpServer({
+    name: DEFAULT_CONFIG.name,
+    version: DEFAULT_CONFIG.version,
+    description: DEFAULT_CONFIG.description,
+  });
 
-// Register all tool categories
-registerMemoryTools(server);
-registerTimeTools(server);
-registerProjectStartupTool(server);
+  // Register all tool categories
+  registerMemoryTools(server);
+  registerTimeTools(server);
+  registerProjectStartupTool(server);
 
-// Register knowledge (resources OR tools, not both)
-if (DISABLE_RESOURCES) {
-  Logger.info('📚 Registering knowledge as MCP tools');
-  registerKnowledgeTools(server);
-} else {
-  Logger.info('📚 Registering knowledge as MCP resources');
-  registerKnowledgeResources(server);
-}
+  // Register knowledge (resources OR tools, not both)
+  if (config.disableResources) {
+    Logger.info('📚 Registering knowledge as MCP tools');
+    registerKnowledgeTools(server);
 
-// SERVER STARTUP
-// ============================================================================
+    console.log('📚 Knowledge resources: Disabled (using tools instead)');
+    console.log(
+      '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats, knowledge_search, knowledge_get'
+    );
+  } else {
+    Logger.info('📚 Registering knowledge as MCP resources');
+    registerKnowledgeResources(server);
 
-async function main() {
+    console.log('📚 Knowledge resources: Enabled (as MCP resources)');
+    console.log(
+      '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
+    );
+  }
+
+  // SERVER STARTUP
+  // ============================================================================
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
     Logger.success('✅ MCP Server connected and ready');
+
+    console.log('💡 Press Ctrl+C to stop the server');
+    return server;
   } catch (error: unknown) {
     Logger.error('Failed to start MCP server', error);
-    process.exit(1);
+    throw error;
   }
 }
 
@@ -87,10 +98,4 @@ process.on('SIGINT', () => {
 process.on('SIGTERM', () => {
   Logger.info('🛑 Shutting down MCP server...');
   process.exit(0);
-});
-
-// Start the server
-main().catch((error) => {
-  Logger.error('Fatal error starting server', error);
-  process.exit(1);
 });

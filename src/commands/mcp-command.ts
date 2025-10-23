@@ -1,6 +1,6 @@
 import { getAllServerIDs, getServersRequiringAPIKeys } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
-import type { CommandConfig, CommandHandler } from '../types.js';
+import type { CommandConfig, CommandHandler, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import {
   addMCPServersToTarget,
@@ -9,21 +9,15 @@ import {
   targetSupportsMCPServers,
   validateTarget,
 } from '../utils/target-config.js';
+import { startSylphxFlowMCPServer } from '../servers/sylphx-flow-mcp-server.js';
 
 // MCP start handler
-const mcpStartHandler: CommandHandler = async () => {
-  // Import and start the Sylphx Flow MCP server
-  await import('../servers/sylphx-flow-mcp-server.js');
+const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
+  await startSylphxFlowMCPServer({
+    disableResources: options.resources === false,
+  });
 
-  console.log('🚀 Starting Sylphx Flow MCP Server...');
-  console.log('📍 Database: .sylphx-flow/memory.db');
-  console.log(
-    '🔧 Available tools: memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
-  );
-  console.log('💡 Press Ctrl+C to stop the server');
-
-  // The server is already initialized in the module
-  // We just need to keep the process alive
+  // Keep the process alive
   process.stdin.resume();
 };
 
@@ -215,7 +209,12 @@ export const mcpCommand: CommandConfig = {
     {
       name: 'start',
       description: 'Start the Sylphx Flow MCP server',
-      options: [],
+      options: [
+        {
+          flags: '--no-resources',
+          description: 'Register knowledge as tools instead of resources',
+        },
+      ],
       handler: mcpStartHandler,
     },
     {
