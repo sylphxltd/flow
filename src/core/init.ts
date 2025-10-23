@@ -21,7 +21,7 @@ async function getAgentFiles(): Promise<string[]> {
   // Get script directory and resolve agents path using import.meta.url
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const agentsDir = path.join(__dirname, '..', 'agents');
+  const agentsDir = path.join(__dirname, '..', '..', 'agents');
 
   if (!fs.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
@@ -196,7 +196,7 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
   // Collect and merge all available rule files
   const availableRuleTypes = getAllRuleTypes();
-  const existingRuleFiles = availableRuleTypes.filter(ruleType => ruleFileExists(ruleType));
+  const existingRuleFiles = availableRuleTypes.filter((ruleType) => ruleFileExists(ruleType));
 
   if (existingRuleFiles.length === 0) {
     console.warn('⚠️ No rule files found in config/rules/');
@@ -212,7 +212,7 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
     // Extract the main content (skip the first H1 heading)
     const lines = ruleContent.split('\n');
-    const contentStartIndex = lines.findIndex(line => line.startsWith('# ')) + 1;
+    const contentStartIndex = lines.findIndex((line) => line.startsWith('# ')) + 1;
     const ruleMainContent = lines.slice(contentStartIndex).join('\n').trim();
 
     mergedContent += `---\n\n${ruleMainContent}\n\n`;
@@ -246,7 +246,11 @@ export async function installRules(options: CommonOptions): Promise<void> {
   if (options.quiet !== true) {
     const action = localInfo ? 'Updated' : 'Created';
     const ruleCount = existingRuleFiles.length;
-    const ruleList = existingRuleFiles.map(type => type.charAt(0).toUpperCase() + type.slice(1)).join(', ');
-    console.log(`📋 ${action} rules file: ${target.config.rulesFile} (merged ${ruleCount} rules: ${ruleList})`);
+    const ruleList = existingRuleFiles
+      .map((type) => type.charAt(0).toUpperCase() + type.slice(1))
+      .join(', ');
+    console.log(
+      `📋 ${action} rules file: ${target.config.rulesFile} (merged ${ruleCount} rules: ${ruleList})`
+    );
   }
 }
