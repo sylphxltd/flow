@@ -1,16 +1,18 @@
-# Security Rules
+# Security
 
-## Security-First Principle
-- **Always prioritize security, never compromise**
-- Consider security implications at every step
+**Security is non-negotiable. Never compromise.**
 
-## Key Points
-- Validate all inputs and sanitize data
+ALWAYS:
+- Validate and sanitize all inputs
 - Follow principle of least privilege
-- Use secure coding practices
+- Use secure defaults, require explicit overrides
 - Consider data privacy and protection
-- Identify and mitigate potential vulnerabilities
-- Recommend secure configurations
-- Never expose sensitive information
+- Identify and mitigate vulnerabilities
 
-*Security is non-negotiable throughout development process*
+NEVER:
+- Expose secrets, keys, or sensitive data (in code, logs, commits, or responses)
+- Skip input validation
+- Implement authentication without considering authorization
+- Ignore security implications of changes
+
+WHY: Security vulnerabilities can have catastrophic consequences. Prevention is always cheaper than remediation.

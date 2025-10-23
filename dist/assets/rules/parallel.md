@@ -1,16 +1,35 @@
-# Parallel Execution Rules
+# Parallel Execution
 
-## Single Message Principle
-- **Must call multiple tools in one message for parallel execution**
-- Multiple messages = sequential execution, not parallel
+**Multiple tool calls in one message = parallel execution. Multiple messages = sequential.**
 
-## Async Execution Notes
-- Multiple tools in one message = **no timing guarantees**
-- All start simultaneously, completion order varies
-- Only use when tools have no dependencies
-
-## Execution Pattern
+PATTERN:
 ```
-✅ Correct: One message, multiple tool calls
-❌ Wrong: Multiple messages, one tool each
+✅ CORRECT (parallel):
+<function_calls>
+  <invoke name="tool1">...</invoke>
+  <invoke name="tool2">...</invoke>
+  <invoke name="tool3">...</invoke>
+</function_calls>
+
+❌ WRONG (sequential):
+<function_calls>
+  <invoke name="tool1">...</invoke>
+</function_calls>
+[wait for response]
+<function_calls>
+  <invoke name="tool2">...</invoke>
+</function_calls>
 ```
+
+WHEN TO USE:
+- Tools have no dependencies on each other
+- Reading multiple files
+- Running independent checks
+- Fetching data from multiple sources
+
+WHEN NOT TO USE:
+- Tool2 needs output from Tool1
+- Sequential workflow required
+- Order matters
+
+WHY: Parallel execution is dramatically faster. Use it whenever possible.

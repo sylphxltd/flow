@@ -189,34 +189,15 @@ export async function installRules(options: CommonOptions): Promise<void> {
     return;
   }
 
-  // Collect and merge all available rule files
-  const availableRuleTypes = getAllRuleTypes();
-  const existingRuleFiles = availableRuleTypes.filter((ruleType) =>
-    ruleFileExists(ruleType as keyof typeof import('../config/rules.js').CORE_RULES)
-  );
-
-  if (existingRuleFiles.length === 0) {
-    console.warn('⚠️ No rule files found in config/rules/');
+  // Read the core rules file
+  if (!ruleFileExists('core')) {
+    console.warn('⚠️ Core rules file not found');
     return;
   }
 
-  // Merge all rule files into one content
-  let mergedContent = `# Development Rules\n\n`;
-
-  for (const ruleType of existingRuleFiles) {
-    const rulePath = getRulesPath(ruleType as keyof typeof import('../config/rules.js').CORE_RULES);
-    const ruleContent = fs.readFileSync(rulePath, 'utf8');
-
-    // Extract the main content (skip the first H1 heading)
-    const lines = ruleContent.split('\n');
-    const contentStartIndex = lines.findIndex((line) => line.startsWith('# ')) + 1;
-    const ruleMainContent = lines.slice(contentStartIndex).join('\n').trim();
-
-    mergedContent += `---\n\n${ruleMainContent}\n\n`;
-  }
-
-  // Remove the last separator
-  mergedContent = mergedContent.replace(/\n\n---\n\n$/, '');
+  const rulePath = getRulesPath('core');
+  const ruleContent = fs.readFileSync(rulePath, 'utf8');
+  const mergedContent = ruleContent;
 
   // Rules files are installed in the project root
   const rulesDestPath = path.join(cwd, target.config.rulesFile!);
@@ -242,12 +223,6 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
   if (options.quiet !== true) {
     const action = localInfo ? 'Updated' : 'Created';
-    const ruleCount = existingRuleFiles.length;
-    const ruleList = existingRuleFiles
-      .map((type) => type.charAt(0).toUpperCase() + type.slice(1))
-      .join(', ');
-    console.log(
-      `📋 ${action} rules file: ${target.config.rulesFile} (merged ${ruleCount} rules: ${ruleList})`
-    );
+    console.log(`📋 ${action} rules file: ${target.config.rulesFile}`);
   }
 }

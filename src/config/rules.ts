@@ -5,17 +5,13 @@
 import { getRuleFile } from '../utils/paths.js';
 
 export const CORE_RULES = {
-  reasoning: 'reasoning.md',
-  communication: 'communication.md',
-  security: 'security.md',
-  parallel: 'parallel.md',
-  commit: 'commit.md',
+  core: 'core.md',
 } as const;
 
 /**
  * Get the path to a specific core rules file
  */
-export function getRulesPath(ruleType: keyof typeof CORE_RULES = 'reasoning'): string {
+export function getRulesPath(ruleType: keyof typeof CORE_RULES = 'core'): string {
   return getRuleFile(CORE_RULES[ruleType]);
 }
 

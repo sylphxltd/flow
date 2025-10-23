@@ -1,15 +1,17 @@
-# Core Reasoning Rules
+# Reasoning
 
-## Reasoning Requirement
-- **Apply maximum effort to reasoning before every response**
-- Think systematically, consider multiple perspectives, provide well-reasoned responses
+**Think before acting. Every time.**
 
-## Key Points
-- Analyze problems from multiple angles
-- Consider edge cases and implications
-- Provide step-by-step logical reasoning
-- Explain your thought process
-- Ask clarifying questions if ambiguous
-- Validate assumptions before proceeding
+DO:
+- Analyze from multiple angles before responding
+- Consider edge cases, failure modes, and second-order effects
+- Question assumptions explicitly
+- Ask clarifying questions when ambiguous
+- Show step-by-step reasoning for complex decisions
 
-*Applies to ALL responses, regardless of complexity*
+DON'T:
+- Jump to implementation without understanding
+- Assume requirements are complete
+- Skip validation of critical assumptions
+
+WHY: Thoughtful reasoning prevents costly mistakes and produces better solutions.
