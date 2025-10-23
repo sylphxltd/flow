@@ -1,10 +1,6 @@
 import { Target } from '../types.js';
-import {
-  fileUtils,
-  yamlUtils,
-  pathUtils,
-  generateHelpText
-} from '../utils/target-utils.js';
+import { fileUtils, yamlUtils, pathUtils, generateHelpText } from '../utils/target-utils.js';
+import { secretUtils } from '../utils/secret-utils.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -33,6 +29,7 @@ export const opencodeTarget: Target = {
       createAgentDir: true,
       createConfigFile: true,
       supportedMcpServers: true,
+      useSecretFiles: true,
     },
   },
 
@@ -105,7 +102,8 @@ export const opencodeTarget: Target = {
     return config;
   },
 
-  getConfigPath: (cwd: string) => Promise.resolve(fileUtils.getConfigPath(opencodeTarget.config, cwd)),
+  getConfigPath: (cwd: string) =>
+    Promise.resolve(fileUtils.getConfigPath(opencodeTarget.config, cwd)),
 
   /**
    * Read OpenCode configuration with structure normalization
@@ -113,12 +111,15 @@ export const opencodeTarget: Target = {
   async readConfig(cwd: string): Promise<any> {
     const config = await fileUtils.readConfig(opencodeTarget.config, cwd);
 
+    // Resolve any file references in the configuration
+    const resolvedConfig = await secretUtils.resolveFileReferences(cwd, config);
+
     // Ensure the config has the expected structure
-    if (!config.mcp) {
-      config.mcp = {};
+    if (!resolvedConfig.mcp) {
+      resolvedConfig.mcp = {};
     }
 
-    return config;
+    return resolvedConfig;
   },
 
   /**
@@ -167,5 +168,5 @@ export const opencodeTarget: Target = {
     } catch {
       return false;
     }
-  }
+  },
 };

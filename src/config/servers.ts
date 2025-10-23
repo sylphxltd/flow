@@ -11,6 +11,8 @@ export interface EnvVarConfig {
   required: boolean;
   /** Default value (if any) */
   default?: string;
+  /** Whether this environment variable contains sensitive data and should be stored as secret */
+  secret?: boolean;
 }
 
 export interface MCPServerDefinition {
@@ -60,6 +62,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       OPENAI_API_KEY: {
         description: 'OpenAI API key for image generation',
         required: true,
+        secret: true,
       },
     },
     category: 'ai',
@@ -79,6 +82,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       PERPLEXITY_API_KEY: {
         description: 'Perplexity API key for search and queries',
         required: true,
+        secret: true,
       },
     },
     category: 'ai',
@@ -97,6 +101,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       CONTEXT7_API_KEY: {
         description: 'Context7 API key for enhanced documentation access',
         required: false,
+        secret: true,
       },
     },
     category: 'external',
@@ -116,6 +121,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       GEMINI_API_KEY: {
         description: 'Google Gemini API key for search functionality',
         required: true,
+        secret: true,
       },
       GEMINI_MODEL: {
         description: 'Gemini model to use for search',
@@ -241,6 +247,34 @@ export function getAllEnvVars(serverId: MCPServerID): string[] {
   }
 
   return Object.keys(server.envVars);
+}
+
+/**
+ * Get secret environment variables for a server
+ */
+export function getSecretEnvVars(serverId: MCPServerID): string[] {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) {
+    return [];
+  }
+
+  return Object.entries(server.envVars)
+    .filter(([, config]) => config.secret)
+    .map(([name]) => name);
+}
+
+/**
+ * Get non-secret environment variables for a server
+ */
+export function getNonSecretEnvVars(serverId: MCPServerID): string[] {
+  const server = MCP_SERVER_REGISTRY[serverId];
+  if (!server?.envVars) {
+    return [];
+  }
+
+  return Object.entries(server.envVars)
+    .filter(([, config]) => !config.secret)
+    .map(([name]) => name);
 }
 
 /**

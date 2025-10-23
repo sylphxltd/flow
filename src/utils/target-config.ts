@@ -7,12 +7,14 @@ import {
   getDefaultServers,
   getOptionalEnvVars,
   getRequiredEnvVars,
+  getSecretEnvVars,
   getServerDefinition,
   getServersRequiringAPIKeys,
   isValidServerID,
 } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import type { MCPServerConfigUnion } from '../types.js';
+import { secretUtils } from './secret-utils.js';
 
 /**
  * Target-specific MCP configuration utilities
@@ -260,6 +262,35 @@ export async function configureMCPServerForTarget(
   // Get MCP section for update (ensure it exists)
   const mcpSectionForUpdate = mcpSection || {};
 
+  // Separate secret and non-secret API keys based on server configuration
+  const secretEnvVars = getSecretEnvVars(server.id);
+  const secretApiKeys: Record<string, string> = {};
+  const nonSecretApiKeys: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(apiKeys)) {
+    if (secretEnvVars.includes(key)) {
+      secretApiKeys[key] = value;
+    } else {
+      nonSecretApiKeys[key] = value;
+    }
+  }
+
+  // Convert secret API keys to file references if target supports it
+  let processedSecretApiKeys = secretApiKeys;
+  const targetConfig = targetManager.getTarget(targetId);
+  if (
+    targetConfig &&
+    targetConfig.config.installation.supportedMcpServers &&
+    targetConfig.config.installation.useSecretFiles !== false &&
+    Object.keys(secretApiKeys).length > 0
+  ) {
+    processedSecretApiKeys = await secretUtils.convertSecretsToFileReferences(cwd, secretApiKeys);
+    await secretUtils.addToGitignore(cwd);
+  }
+
+  // Combine processed secret keys with non-secret keys
+  const processedApiKeys = { ...nonSecretApiKeys, ...processedSecretApiKeys };
+
   // Update server config with API keys (only for local servers)
   const currentConfig = mcpSectionForUpdate[server.name];
   if (currentConfig && currentConfig.type === 'local') {
@@ -268,7 +299,7 @@ export async function configureMCPServerForTarget(
       ...currentConfig,
       environment: {
         ...(currentConfig.environment || {}),
-        ...apiKeys,
+        ...processedApiKeys,
       },
     };
   } else {
@@ -280,7 +311,7 @@ export async function configureMCPServerForTarget(
         ...transformedConfig,
         environment: {
           ...(baseConfig.environment || {}),
-          ...apiKeys,
+          ...processedApiKeys,
         },
       };
     } else {
@@ -312,7 +343,7 @@ export function getTargetHelpText(targetId: string): string {
  */
 export function getAllTargetsHelpText(): string {
   const targets = targetManager.getImplementedTargets();
-  return targets.map(target => target.getHelpText()).join('\n\n');
+  return targets.map((target) => target.getHelpText()).join('\n\n');
 }
 
 /**
@@ -321,10 +352,14 @@ export function getAllTargetsHelpText(): string {
 export function validateTarget(targetId: string): string {
   const target = targetManager.getTarget(targetId);
   if (!target) {
-    throw new Error(`Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`);
+    throw new Error(
+      `Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
+    );
   }
   if (!target.isImplemented) {
-    throw new Error(`Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`);
+    throw new Error(
+      `Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
+    );
   }
   return targetId;
 }
@@ -407,6 +442,8 @@ async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<stri
 
     for (const envVar of allEnvVars) {
       const envConfig = server.envVars?.[envVar];
+      if (!envConfig) continue;
+
       const isRequired = envConfig.required;
       const promptText = isRequired
         ? `Enter ${envVar} (${envConfig.description}) (required): `

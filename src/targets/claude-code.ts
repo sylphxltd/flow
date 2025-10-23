@@ -4,7 +4,7 @@ import {
   yamlUtils,
   pathUtils,
   generateHelpText,
-  systemPromptUtils
+  systemPromptUtils,
 } from '../utils/target-utils.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,6 +34,7 @@ export const claudeCodeTarget: Target = {
       createAgentDir: true,
       createConfigFile: true,
       supportedMcpServers: true,
+      useSecretFiles: false,
     },
   },
 
@@ -50,11 +51,7 @@ export const claudeCodeTarget: Target = {
       await yamlUtils.extractFrontMatter(content);
 
     // Convert OpenCode format to Claude Code format
-    const claudeCodeMetadata = convertToClaudeCodeFormat(
-      existingMetadata,
-      baseContent,
-      sourcePath
-    );
+    const claudeCodeMetadata = convertToClaudeCodeFormat(existingMetadata, baseContent, sourcePath);
 
     // If additional metadata is provided, merge it
     if (metadata) {
@@ -112,7 +109,8 @@ export const claudeCodeTarget: Target = {
     return config;
   },
 
-  getConfigPath: (cwd: string) => Promise.resolve(fileUtils.getConfigPath(claudeCodeTarget.config, cwd)),
+  getConfigPath: (cwd: string) =>
+    Promise.resolve(fileUtils.getConfigPath(claudeCodeTarget.config, cwd)),
 
   /**
    * Read Claude Code configuration with structure normalization
@@ -140,7 +138,8 @@ export const claudeCodeTarget: Target = {
     await fileUtils.writeConfig(claudeCodeTarget.config, cwd, config);
   },
 
-  validateRequirements: (cwd: string) => fileUtils.validateRequirements(claudeCodeTarget.config, cwd),
+  validateRequirements: (cwd: string) =>
+    fileUtils.validateRequirements(claudeCodeTarget.config, cwd),
 
   /**
    * Get detailed Claude Code-specific help text
@@ -188,7 +187,8 @@ export const claudeCodeTarget: Target = {
     help += '      }\n';
     help += '    }\n';
     help += '  }\n\n';
-    help += 'Note: Environment variables can be expanded in command, args, env, url, and headers.\n\n';
+    help +=
+      'Note: Environment variables can be expanded in command, args, env, url, and headers.\n\n';
 
     return help;
   },
@@ -259,7 +259,7 @@ Please begin your response with a comprehensive summary of all the instructions 
     } catch {
       return false;
     }
-  }
+  },
 };
 
 /**
@@ -271,12 +271,11 @@ function convertToClaudeCodeFormat(
   sourcePath?: string
 ): any {
   // Use explicit name from metadata if available, otherwise extract from content or path
-  const agentName = openCodeMetadata.name ||
-    pathUtils.extractAgentName(content, openCodeMetadata, sourcePath);
+  const agentName =
+    openCodeMetadata.name || pathUtils.extractAgentName(content, openCodeMetadata, sourcePath);
 
   // Extract description from metadata or content
-  const description = openCodeMetadata.description ||
-    pathUtils.extractDescription(content);
+  const description = openCodeMetadata.description || pathUtils.extractDescription(content);
 
   // Only keep supported fields for Claude Code
   const result: any = {

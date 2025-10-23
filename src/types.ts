@@ -109,6 +109,8 @@ export interface TargetConfig {
     createConfigFile: boolean;
     /** Whether MCP servers are supported */
     supportedMcpServers: boolean;
+    /** Whether to use secret file references for sensitive environment variables */
+    useSecretFiles?: boolean;
   };
 }
 
@@ -128,7 +130,15 @@ export abstract class Target {
   /** Whether this target is fully implemented */
   public readonly isImplemented: boolean;
 
-  constructor(id: string, name: string, description: string, config: TargetConfig, category: 'ide' | 'editor' | 'cli', isDefault?: boolean, isImplemented = true) {
+  constructor(
+    id: string,
+    name: string,
+    description: string,
+    config: TargetConfig,
+    category: 'ide' | 'editor' | 'cli',
+    isDefault?: boolean,
+    isImplemented = true
+  ) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -139,7 +149,11 @@ export abstract class Target {
   }
 
   /** Transform agent content for the target */
-  abstract transformAgentContent(content: string, metadata?: any, sourcePath?: string): Promise<string>;
+  abstract transformAgentContent(
+    content: string,
+    metadata?: any,
+    sourcePath?: string
+  ): Promise<string>;
 
   /** Transform MCP server configuration for the target */
   abstract transformMCPConfig(config: MCPServerConfigUnion): any;

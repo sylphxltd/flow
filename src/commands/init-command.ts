@@ -3,6 +3,7 @@ import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
+import { secretUtils } from '../utils/secret-utils.js';
 import {
   addMCPServersToTarget,
   configureMCPServerForTarget,
@@ -110,6 +111,12 @@ export const initCommand: CommandConfig = {
     } else if (options.mcp !== false && !targetSupportsMCPServers(targetId)) {
       console.log('⚠️  MCP tools are not supported for this target');
       console.log('');
+    }
+
+    // Ensure .secrets directory is set up for OpenCode target
+    if (targetId === 'opencode') {
+      await secretUtils.ensureSecretsDir(process.cwd());
+      await secretUtils.addToGitignore(process.cwd());
     }
 
     // Install agents
