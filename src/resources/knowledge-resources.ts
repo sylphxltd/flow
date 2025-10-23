@@ -168,11 +168,12 @@ Available knowledge resources:
 
 ${knowledgeList}
 
-When to use (BEFORE starting work):
-- **Phase 2 (Research)**: Check relevant stack/universal knowledge before clarifying requirements
-- **Phase 3 (Design)**: Review architecture patterns, security, and performance best practices before designing
-- **Phase 6 (Implementation)**: Consult framework-specific patterns and common pitfalls before coding
-- **Phase 7 (Testing)**: Review testing strategies and coverage requirements before QA
+When to use this tool (BEFORE starting work):
+- **Before research/clarification**: Check relevant stack/universal knowledge to understand domain constraints
+- **Before design/architecture**: Review architecture patterns, security, and performance best practices
+- **Before implementation**: Consult framework-specific patterns, common pitfalls, and best practices
+- **Before testing/QA**: Review testing strategies, coverage requirements, and quality standards
+- **Before deployment**: Check deployment patterns, infrastructure, and monitoring guidance
 
 Use this when you need:
 - Specific framework patterns (React hooks, Next.js App Router, Node.js APIs)
@@ -185,7 +186,7 @@ Use this when you need:
 
 The knowledge is curated for LLM code generation - includes decision trees, common bugs, and practical patterns.
 
-**Best Practice**: Check relevant knowledge BEFORE making architectural decisions or writing code, not after encountering issues.`,
+**Best Practice**: Check relevant knowledge BEFORE making decisions or writing code, not after encountering issues.`,
       inputSchema: {
         uri: z
           .string()
