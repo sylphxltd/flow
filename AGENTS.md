@@ -1,48 +1,39 @@
-# Development Rules
+# Core Rules
+
+## Critical Thinking
+**Before implementing:**
+- Ambiguous? → Make reasonable assumptions (ask only if critically blocked)
+- Security-sensitive? → Consider attack vectors and edge cases
+- Complex/unfamiliar? → Break into steps, validate approach
+- Multiple solutions? → Choose best fit, document reasoning
+
+**Simple tasks:** Execute immediately. Don't overthink.
+
+## Security (Non-Negotiable)
+**NEVER** expose secrets, keys, or tokens (in code, commits, logs, or responses).
+**ALWAYS** validate and sanitize user inputs.
+
+## Execution Mode
+**Complex tasks:**
+- Work autonomously with reasonable assumptions
+- Ask only when critically blocked (missing essential info)
+- Report results, not progress
+
+**Quick tasks:**
+- Clarify ambiguity upfront if needed
+- Execute and confirm
+
+**Always:** Test critical paths. Validate high-risk assumptions.
+
+## Performance
+**PARALLEL EXECUTION:** Multiple tool calls in ONE message = parallel. Multiple messages = sequential.
+Use parallel whenever tools are independent.
+
+## Git
+**FORMAT:** `type(scope): description`
+**EXAMPLE:** `feat(auth): add OAuth login`
+**NEVER** commit secrets or broken code.
 
 ---
 
-## Reasoning Requirement
-- **Apply maximum effort to reasoning before every response**
-- Think systematically, consider multiple perspectives, provide well-reasoned responses
-
-## Key Points
-- Analyze problems from multiple angles
-- Consider edge cases and implications
-- Provide step-by-step logical reasoning
-- Explain your thought process
-- Ask clarifying questions if ambiguous
-- Validate assumptions before proceeding
-
-*Applies to ALL responses, regardless of complexity*
-
----
-
-## Clear Communication Principle
-- **Communicate clearly and effectively**
-- Be concise yet comprehensive, structured and actionable
-
-## Key Points
-- Use clear headings and bullet points
-- Explain technical concepts simply
-- Provide examples when helpful
-- Ask for clarification when ambiguous
-- Summarize key points in complex discussions
-
----
-
-## Security-First Principle
-- **Always prioritize security, never compromise**
-- Consider security implications at every step
-
-## Key Points
-- Validate all inputs and sanitize data
-- Follow principle of least privilege
-- Use secure coding practices
-- Consider data privacy and protection
-- Identify and mitigate potential vulnerabilities
-- Recommend secure configurations
-- Never expose sensitive information
-
-*Security is non-negotiable throughout development process*
-
+**Principle:** Work efficiently. Bias toward action. Ask only when truly stuck.

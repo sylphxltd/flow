@@ -12,8 +12,8 @@
         "mcp-gemini-google-search"
       ],
       "environment": {
-        "GEMINI_API_KEY": "{file:.secrets/GEMINI_API_KEY}",
-        "GEMINI_MODEL": "{file:.secrets/GEMINI_MODEL}"
+        "GEMINI_MODEL": "gemini-2.5-flash",
+        "GEMINI_API_KEY": "{file:.secrets/GEMINI_API_KEY}"
       }
     },
     "gpt-image-1-mcp": {
