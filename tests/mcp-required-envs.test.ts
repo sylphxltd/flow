@@ -3,10 +3,9 @@ import type { MCPServerID } from '../src/config/servers.js';
 import { Target } from '../src/types.js';
 
 // Mock the target manager
-const mockGetTarget = vi.fn();
 vi.mock('../src/core/target-manager.js', () => ({
   targetManager: {
-    getTarget: mockGetTarget,
+    getTarget: vi.fn(),
   },
 }));
 
@@ -76,7 +75,7 @@ describe('MCP Required Environment Variables', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetTarget.mockReturnValue(mockTarget);
+    vi.mocked(targetManager.getTarget).mockReturnValue(mockTarget);
   });
 
   it('should skip gemini-google-search when GEMINI_API_KEY is not provided', async () => {
@@ -129,8 +128,7 @@ describe('MCP Required Environment Variables', () => {
   it('should keep existing server with valid API keys when user provides no input', async () => {
     // Mock that server is already installed with valid API key
     vi.mocked(mockTarget.readConfig).mockResolvedValue({
-      enabledMcpjsonServers: ['gemini-google-search'],
-      mcpServers: {
+      enabledMcpjsonServers: {
         'gemini-google-search': {
           type: 'local',
           command: ['npx', '-y', 'mcp-gemini-google-search'],
@@ -162,8 +160,7 @@ describe('MCP Required Environment Variables', () => {
   it('should remove existing server with invalid API keys when user provides no input', async () => {
     // Mock that server is already installed but with empty API key
     vi.mocked(mockTarget.readConfig).mockResolvedValue({
-      enabledMcpjsonServers: ['gemini-google-search'],
-      mcpServers: {
+      enabledMcpjsonServers: {
         'gemini-google-search': {
           type: 'local',
           command: ['npx', '-y', 'mcp-gemini-google-search'],

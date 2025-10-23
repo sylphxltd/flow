@@ -19,6 +19,7 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     disableTime: options.disableTime === true,
     disableProjectStartup: options.disableProjectStartup === true,
     disableKnowledge: options.disableKnowledge === true,
+    disableCodebaseSearch: options.disableCodebaseSearch === true,
   };
 
   if (options.preset) {
@@ -29,6 +30,7 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
           disableTime: false, // Enable time
           disableProjectStartup: true, // Disable project startup
           disableKnowledge: false, // Enable knowledge
+          disableCodebaseSearch: false, // Enable codebase search
         };
         break;
       case 'claude-code':
@@ -37,6 +39,7 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
           disableTime: false, // Enable time
           disableProjectStartup: false, // Enable project startup
           disableKnowledge: false, // Enable knowledge
+          disableCodebaseSearch: false, // Enable codebase search
         };
         break;
       case 'minimal':
@@ -45,6 +48,7 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
           disableTime: true,
           disableProjectStartup: true,
           disableKnowledge: true,
+          disableCodebaseSearch: true,
         };
         break;
       default:
@@ -269,6 +273,10 @@ export const mcpCommand: CommandConfig = {
         {
           flags: '--disable-knowledge',
           description: 'Disable knowledge tools',
+        },
+        {
+          flags: '--disable-codebase-search',
+          description: 'Disable codebase search tools',
         },
       ],
       handler: mcpStartHandler,

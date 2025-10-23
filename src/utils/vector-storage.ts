@@ -5,7 +5,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { HierarchicalNSW } from 'hnswlib-node';
+
+// Simple require import for hnswlib-node
+const { HierarchicalNSW } = require('hnswlib-node');
 
 export interface VectorDocument {
   id: string; // Unique identifier (URI or file path)
@@ -39,7 +41,7 @@ export interface VectorIndexMetadata {
  * Vector storage manager using HNSW index
  */
 export class VectorStorage {
-  private index: HierarchicalNSW | null = null;
+  private index: any | null = null;
   private documents: Map<number, VectorDocument> = new Map();
   private idToIndex: Map<string, number> = new Map();
   private metadata: VectorIndexMetadata;

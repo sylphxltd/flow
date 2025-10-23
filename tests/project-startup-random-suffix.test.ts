@@ -1,4 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock paths before importing
+vi.mock('../src/utils/paths.js', () => ({
+  getDistDir: () => '/dist',
+  getAssetsDir: () => '/dist/assets',
+}));
+
 import { generateRandomSuffix, generateCommitMessage } from '../src/tools/project-startup-tool.js';
 
 // Mock file system operations for integration tests
@@ -9,7 +16,9 @@ vi.mock('node:fs', () => ({
 }));
 
 vi.mock('node:path', () => ({
-  join: vi.fn((...paths) => paths.join('/')),
+  default: {
+    join: vi.fn((...paths) => paths.join('/')),
+  },
 }));
 
 describe('Project Startup Functions', () => {
