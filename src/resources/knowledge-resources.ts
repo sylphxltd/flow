@@ -148,6 +148,42 @@ export function registerKnowledgeResources(server: McpServer) {
 }
 
 /**
+ * Simple fuzzy search scoring
+ * Returns score 0-1 based on keyword matches in name, description, category
+ */
+function scoreKnowledgeResource(
+  resource: { name: string; description: string; category: string; uri: string },
+  query: string
+): number {
+  const queryLower = query.toLowerCase();
+  const keywords = queryLower.split(/\s+/);
+
+  let score = 0;
+  const searchText =
+    `${resource.name} ${resource.description} ${resource.category} ${resource.uri}`.toLowerCase();
+
+  for (const keyword of keywords) {
+    if (searchText.includes(keyword)) {
+      // Boost score if keyword appears in name (more important)
+      if (resource.name.toLowerCase().includes(keyword)) {
+        score += 0.5;
+      }
+      // Boost if in description
+      if (resource.description.toLowerCase().includes(keyword)) {
+        score += 0.3;
+      }
+      // Boost if in category
+      if (resource.category.toLowerCase().includes(keyword)) {
+        score += 0.2;
+      }
+    }
+  }
+
+  // Normalize by number of keywords
+  return Math.min(1, score / keywords.length);
+}
+
+/**
  * Register knowledge tools with MCP server
  * Fallback for environments that don't properly support resources
  */
@@ -158,15 +194,13 @@ export function registerKnowledgeTools(server: McpServer) {
   const knowledgeList = resources.map((r) => `• ${r.uri}\n  ${r.description}`).join('\n\n');
 
   server.registerTool(
-    'get_knowledge',
+    'search_knowledge',
     {
-      description: `Access domain-specific knowledge and best practices for software development.
+      description: `Search and retrieve domain-specific knowledge and best practices for software development.
 
 **IMPORTANT: Use this tool PROACTIVELY before starting work, not reactively when stuck.**
 
-Available knowledge resources:
-
-${knowledgeList}
+This tool searches across all knowledge resources and returns the most relevant matches with full content.
 
 When to use this tool (BEFORE starting work):
 - **Before research/clarification**: Check relevant stack/universal knowledge to understand domain constraints
@@ -175,18 +209,113 @@ When to use this tool (BEFORE starting work):
 - **Before testing/QA**: Review testing strategies, coverage requirements, and quality standards
 - **Before deployment**: Check deployment patterns, infrastructure, and monitoring guidance
 
-Use this when you need:
-- Specific framework patterns (React hooks, Next.js App Router, Node.js APIs)
-- Database guidance (SQL optimization, indexing, migrations)
-- Security best practices (OWASP, auth patterns, vulnerabilities)
-- Performance optimization (profiling, caching, optimization)
-- Testing strategies (TDD, unit/integration/e2e)
-- Deployment patterns (Docker, CI/CD, monitoring)
-- Architecture guidance (SaaS patterns, tech stack decisions, UI/UX)
+Available knowledge categories:
+- **stacks**: Framework-specific patterns (React, Next.js, Node.js)
+- **data**: Database patterns (SQL, indexing, migrations)
+- **guides**: Architecture guidance (SaaS, tech stack, UI/UX)
+- **universal**: Cross-cutting concerns (security, performance, testing, deployment)
 
 The knowledge is curated for LLM code generation - includes decision trees, common bugs, and practical patterns.
 
 **Best Practice**: Check relevant knowledge BEFORE making decisions or writing code, not after encountering issues.`,
+      inputSchema: {
+        query: z
+          .string()
+          .describe(
+            'Search query (e.g., "react performance", "security auth", "database indexing")'
+          ),
+        limit: z
+          .number()
+          .optional()
+          .describe('Maximum number of results to return (default: 5, max: 10)'),
+        categories: z
+          .array(z.string())
+          .optional()
+          .describe('Filter by categories: stacks, data, guides, universal'),
+        include_content: z
+          .boolean()
+          .optional()
+          .describe('Include full content in results (default: true)'),
+      },
+    },
+    (args) => {
+      const query = args.query as string;
+      const limit = Math.min((args.limit as number) || 5, 10);
+      const categories = args.categories as string[] | undefined;
+      const includeContent = (args.include_content as boolean) ?? true;
+
+      // Filter by categories if specified
+      let filteredResources = resources;
+      if (categories && categories.length > 0) {
+        filteredResources = resources.filter((r) => categories.includes(r.category));
+      }
+
+      // Score and sort resources
+      const scored = filteredResources
+        .map((r) => ({
+          resource: r,
+          score: scoreKnowledgeResource(r, query),
+        }))
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
+
+      if (scored.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `No knowledge resources found for query: "${query}"\n\nAvailable categories: stacks, data, guides, universal\n\nTry broader search terms or check available resources with different keywords.`,
+            },
+          ],
+        };
+      }
+
+      // Build response
+      const results = scored.map((item) => {
+        const { resource, score } = item;
+        let result = `## ${resource.name} (${resource.category})\n`;
+        result += `**URI**: ${resource.uri}\n`;
+        result += `**Relevance**: ${(score * 100).toFixed(0)}%\n`;
+        result += `**Description**: ${resource.description}\n\n`;
+
+        if (includeContent) {
+          try {
+            const content = getKnowledgeContent(resource.uri);
+            result += `---\n\n${content}\n\n`;
+          } catch (error) {
+            result += `*Error loading content*\n\n`;
+          }
+        }
+
+        return result;
+      });
+
+      const summary = `Found ${scored.length} relevant knowledge resource(s) for "${query}":\n\n`;
+      return {
+        content: [
+          {
+            type: 'text',
+            text: summary + results.join('\n---\n\n'),
+          },
+        ],
+      };
+    }
+  );
+
+  server.registerTool(
+    'get_knowledge',
+    {
+      description: `Get knowledge resource by exact URI.
+
+**NOTE: Prefer using 'search_knowledge' instead - it's easier and doesn't require knowing exact URIs.**
+
+This tool retrieves a specific knowledge resource when you already know its exact URI.
+
+Available URIs:
+${knowledgeList}
+
+For most use cases, use 'search_knowledge' with keywords instead of this tool.`,
       inputSchema: {
         uri: z
           .string()
@@ -222,30 +351,5 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
     }
   );
 
-  server.registerTool(
-    'list_knowledge',
-    {
-      description: 'List all available knowledge resources with descriptions',
-      inputSchema: {},
-    },
-    () => {
-      const list = resources
-        .map(
-          (r) =>
-            `**${r.name}** (${r.category})\n` + `URI: ${r.uri}\n` + `Description: ${r.description}`
-        )
-        .join('\n\n');
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `# Available Knowledge Resources\n\n${list}\n\nUse get_knowledge(uri) to access specific knowledge.`,
-          },
-        ],
-      };
-    }
-  );
-
-  console.error(`[INFO] Registered ${resources.length} knowledge tools`);
+  console.error(`[INFO] Registered knowledge tools: search_knowledge, get_knowledge`);
 }
