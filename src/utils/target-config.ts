@@ -226,8 +226,13 @@ export async function configureMCPServerForTarget(
 
   const apiKeys = await promptForAPIKeys([serverType]);
 
-  if (Object.keys(apiKeys).length === 0) {
-    // User didn't provide new keys
+  // Check if all required environment variables are provided
+  const hasAllRequiredKeys = requiredEnvVars.every(
+    (envVar) => apiKeys[envVar] && apiKeys[envVar].trim() !== ''
+  );
+
+  if (!hasAllRequiredKeys) {
+    // User didn't provide all required keys
     if (isServerInstalled && !hasExistingValidKeys) {
       // Case 1: Already installed + no keys + user doesn't provide → DELETE
       console.log(`🗑️  Removing ${server.name} (no API keys provided)`);
@@ -248,15 +253,9 @@ export async function configureMCPServerForTarget(
       console.log(`✅ Keeping ${server.name} (existing API keys are valid)`);
       return true;
     }
-    if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
-      // Case 4a: Not installed + only optional keys + user doesn't provide → INSTALL
-      console.log(`✅ Installing ${server.name} (optional API keys skipped)`);
-      // Continue to installation without any keys
-    } else {
-      // Case 4b: Not installed + required keys + user doesn't provide → SKIP
-      console.log(`⚠️  Skipping ${server.name} (no API keys provided)`);
-      return false;
-    }
+    // Case 4: Not installed + required keys + user doesn't provide → SKIP
+    console.log(`⚠️  Skipping ${server.name} (required API keys not provided)`);
+    return false;
   }
 
   // Get MCP section for update (ensure it exists)
