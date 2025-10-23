@@ -224,7 +224,30 @@ export async function configureMCPServerForTarget(
     hasExistingValidKeys = true;
   }
 
-  const apiKeys = await promptForAPIKeys([serverType]);
+  // First, check environment variables for existing API keys
+  const envApiKeys: Record<string, string> = {};
+  const allEnvVars = getAllEnvVars(serverType);
+
+  for (const envVar of allEnvVars) {
+    const envValue = process.env[envVar];
+    if (envValue && envValue.trim() !== '') {
+      envApiKeys[envVar] = envValue.trim();
+    }
+  }
+
+  // If we have all required keys from environment, use them
+  const hasAllRequiredEnvKeys = requiredEnvVars.every(
+    (envVar) => envApiKeys[envVar] && envApiKeys[envVar].trim() !== ''
+  );
+
+  let apiKeys: Record<string, string>;
+  if (hasAllRequiredEnvKeys) {
+    console.log(`✅ Found required API keys in environment variables`);
+    apiKeys = { ...envApiKeys };
+  } else {
+    // Prompt for missing keys
+    apiKeys = await promptForAPIKeys([serverType], envApiKeys);
+  }
 
   // Check if all required environment variables are provided
   const hasAllRequiredKeys = requiredEnvVars.every(
@@ -419,14 +442,17 @@ function deleteNestedProperty(obj: any, path: string): void {
 /**
  * Prompt user for API keys interactively
  */
-async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<string, string>> {
+async function promptForAPIKeys(
+  serverTypes: MCPServerID[],
+  existingKeys: Record<string, string> = {}
+): Promise<Record<string, string>> {
   const { createInterface } = await import('node:readline');
   const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  const apiKeys: Record<string, string> = {};
+  const apiKeys: Record<string, string> = { ...existingKeys };
 
   for (const serverType of serverTypes) {
     const server = MCP_SERVER_REGISTRY[serverType];

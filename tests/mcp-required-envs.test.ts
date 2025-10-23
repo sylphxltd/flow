@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MCPServerID } from '../src/config/servers.js';
-import { targetManager } from '../src/core/target-manager.js';
 import { Target } from '../src/types.js';
-import { configureMCPServerForTarget } from '../src/utils/target-config.js';
 
 // Mock the target manager
+const mockGetTarget = vi.fn();
 vi.mock('../src/core/target-manager.js', () => ({
   targetManager: {
-    getTarget: vi.fn(),
+    getTarget: mockGetTarget,
   },
 }));
+
+// Import after mocking
+import { targetManager } from '../src/core/target-manager.js';
+import { configureMCPServerForTarget } from '../src/utils/target-config.js';
 
 // Mock secret utils
 vi.mock('../src/utils/secret-utils.js', () => ({
@@ -73,7 +76,7 @@ describe('MCP Required Environment Variables', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(targetManager.getTarget).mockReturnValue(mockTarget);
+    mockGetTarget.mockReturnValue(mockTarget);
   });
 
   it('should skip gemini-google-search when GEMINI_API_KEY is not provided', async () => {

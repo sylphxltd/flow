@@ -1,12 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Mock readline at the top level
+const mockCreateInterface = vi.fn(() => ({
+  question: vi.fn((prompt: string, callback: (answer: string) => void) => {
+    setImmediate(() => callback(''));
+  }),
+  close: vi.fn(),
+}));
+
+vi.mock('node:readline', () => ({
+  createInterface: mockCreateInterface,
+}));
+
 // Mock the target manager module
+const mockGetTarget = vi.fn();
+const mockGetAllTargets = vi.fn();
+const mockGetImplementedTargets = vi.fn();
+const mockResolveTarget = vi.fn();
+
 vi.mock('../src/core/target-manager.js', () => ({
   targetManager: {
-    getTarget: vi.fn(),
-    getAllTargets: vi.fn(),
-    getImplementedTargets: vi.fn(),
-    resolveTarget: vi.fn(),
+    getTarget: mockGetTarget,
+    getAllTargets: mockGetAllTargets,
+    getImplementedTargets: mockGetImplementedTargets,
+    resolveTarget: mockResolveTarget,
   },
 }));
 
@@ -44,8 +61,7 @@ describe('MCP Configuration Tests', () => {
       transformMCPConfig: vi.fn((config: any) => config),
     };
 
-    const { targetManager } = await import('../src/core/target-manager.js');
-    (targetManager.getTarget as any).mockReturnValue(mockTargetDefinition);
+    mockGetTarget.mockReturnValue(mockTargetDefinition);
   });
 
   afterEach(() => {
@@ -87,14 +103,11 @@ describe('MCP Configuration Tests', () => {
       // Mock no existing server
       mockTargetDefinition.readConfig.mockResolvedValue({});
 
-      // Mock the readline module to return empty input immediately
-      vi.doMock('node:readline', () => ({
-        createInterface: vi.fn(() => ({
-          question: vi.fn((prompt: string, callback: (answer: string) => void) => {
-            setImmediate(() => callback(''));
-          }),
-          close: vi.fn(),
-        })),
+      // Mock readline is already set up at the top level
+
+      // We need to mock this at the top level, not inside the test
+      vi.mock('node:readline', () => ({
+        createInterface: mockReadline,
       }));
 
       const result = await configureMCPServerForTarget(

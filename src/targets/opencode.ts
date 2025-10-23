@@ -131,6 +131,22 @@ export const opencodeTarget: Target = {
       config.mcp = {};
     }
 
+    // Convert secrets to file references if secret files are enabled
+    if (opencodeTarget.config.installation?.useSecretFiles) {
+      // Process each MCP server's environment variables
+      for (const [serverId, serverConfig] of Object.entries(config.mcp || {})) {
+        if (serverConfig && typeof serverConfig === 'object' && 'environment' in serverConfig) {
+          const envVars = serverConfig.environment as Record<string, string>;
+          if (envVars && typeof envVars === 'object') {
+            serverConfig.environment = await secretUtils.convertSecretsToFileReferences(
+              cwd,
+              envVars
+            );
+          }
+        }
+      }
+    }
+
     await fileUtils.writeConfig(opencodeTarget.config, cwd, config);
   },
 
