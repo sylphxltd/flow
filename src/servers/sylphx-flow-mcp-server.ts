@@ -114,8 +114,8 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   if (!config.disableCodebaseSearch) {
     Logger.info('🔍 Registering codebase search tools');
     registerCodebaseSearchTool(server);
-    enabledTools.push('search_codebase, reindex_codebase');
-    console.log('🔍 Codebase Search: Enabled');
+    enabledTools.push('search_codebase, reindex_codebase, get_indexing_status');
+    console.log('🔍 Codebase Search: Enabled (background indexing started)');
   }
 
   // Display enabled tools

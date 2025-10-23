@@ -13,6 +13,20 @@ import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 // Global indexer instance (lazy initialization)
 let globalIndexer: CodebaseIndexer | null = null;
 let indexPromise: Promise<any> | null = null;
+let indexingStatus: {
+  isIndexing: boolean;
+  progress: number; // 0-100
+  totalFiles: number;
+  indexedFiles: number;
+  startTime: number;
+  error?: string;
+} = {
+  isIndexing: false,
+  progress: 0,
+  totalFiles: 0,
+  indexedFiles: 0,
+  startTime: 0,
+};
 
 /**
  * Get or create codebase indexer
@@ -27,12 +41,60 @@ function getIndexer(): CodebaseIndexer {
 }
 
 /**
- * Ensure codebase is indexed (lazy indexing)
+ * Start background indexing (non-blocking)
+ */
+function startBackgroundIndexing(options: { force?: boolean } = {}) {
+  if (indexingStatus.isIndexing && !options.force) {
+    console.error('[INFO] Indexing already in progress');
+    return;
+  }
+
+  const indexer = getIndexer();
+
+  // Check cache first
+  const cacheStats = indexer.getCacheStats();
+  if (cacheStats.exists && !options.force) {
+    console.error('[INFO] Cache exists, skipping background indexing');
+    return;
+  }
+
+  // Start indexing in background
+  indexingStatus.isIndexing = true;
+  indexingStatus.progress = 0;
+  indexingStatus.startTime = Date.now();
+  indexingStatus.error = undefined;
+
+  console.error('[INFO] Starting background codebase indexing...');
+  const embeddingProvider = process.env.OPENAI_API_KEY ? getDefaultEmbeddingProvider() : undefined;
+
+  indexPromise = indexer
+    .indexCodebase({
+      force: options.force,
+      embeddingProvider,
+    })
+    .then((result) => {
+      indexingStatus.isIndexing = false;
+      indexingStatus.progress = 100;
+      indexingStatus.totalFiles = result.stats.totalFiles;
+      indexingStatus.indexedFiles = result.stats.indexedFiles;
+      console.error(`[INFO] Background indexing complete: ${result.stats.totalFiles} files`);
+      return result;
+    })
+    .catch((error) => {
+      indexingStatus.isIndexing = false;
+      indexingStatus.error = error instanceof Error ? error.message : String(error);
+      console.error('[ERROR] Background indexing failed:', error);
+      throw error;
+    });
+}
+
+/**
+ * Ensure codebase is indexed (wait if needed)
  */
 async function ensureIndexed(options: { force?: boolean } = {}) {
   const indexer = getIndexer();
 
-  // Check if already indexing
+  // If already indexing, wait for it
   if (indexPromise && !options.force) {
     return indexPromise;
   }
@@ -45,14 +107,10 @@ async function ensureIndexed(options: { force?: boolean } = {}) {
     return indexPromise;
   }
 
-  // Index codebase
-  console.error('[INFO] Indexing codebase (first time or cache miss)...');
-  const embeddingProvider = process.env.OPENAI_API_KEY ? getDefaultEmbeddingProvider() : undefined;
-
-  indexPromise = indexer.indexCodebase({
-    force: options.force,
-    embeddingProvider,
-  });
+  // Start indexing if not already started
+  if (!indexingStatus.isIndexing) {
+    startBackgroundIndexing(options);
+  }
 
   return indexPromise;
 }
@@ -116,6 +174,32 @@ Limitations:
         const limit = Math.min((args.limit as number) || 5, 20);
         const language = args.language as string | undefined;
         const forceReindex = (args.force_reindex as boolean) || false;
+
+        // Check if indexing is in progress
+        if (indexingStatus.isIndexing) {
+          const elapsed = Math.round((Date.now() - indexingStatus.startTime) / 1000);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `⏳ Codebase indexing in progress...\n\n**Status:**\n- Progress: ${indexingStatus.progress}%\n- Files indexed: ${indexingStatus.indexedFiles}/${indexingStatus.totalFiles}\n- Elapsed time: ${elapsed}s\n\n*Please wait a moment and try again. First-time indexing typically takes 1-5 seconds.*\n\n**Tip:** You can use \`get_indexing_status\` to check progress.`,
+              },
+            ],
+          };
+        }
+
+        // Check if indexing failed
+        if (indexingStatus.error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `❌ Indexing failed: ${indexingStatus.error}\n\nTry using \`reindex_codebase\` to rebuild the index.`,
+              },
+            ],
+            isError: true,
+          };
+        }
 
         // Ensure codebase is indexed
         const startTime = Date.now();
@@ -244,5 +328,75 @@ This will clear the cache and rebuild the entire index.`,
     }
   );
 
-  console.error('[INFO] Registered codebase search tools: search_codebase, reindex_codebase');
+  server.registerTool(
+    'get_indexing_status',
+    {
+      description: `Get current codebase indexing status.
+
+Use this to check:
+- Whether indexing is in progress
+- Indexing progress percentage
+- Number of files indexed
+- Any indexing errors
+
+Useful when search_codebase returns "indexing in progress" message.`,
+      inputSchema: {},
+    },
+    async () => {
+      const indexer = getIndexer();
+      const cacheStats = indexer.getCacheStats();
+
+      if (indexingStatus.isIndexing) {
+        const elapsed = Math.round((Date.now() - indexingStatus.startTime) / 1000);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `⏳ **Indexing in Progress**\n\n- Progress: ${indexingStatus.progress}%\n- Files indexed: ${indexingStatus.indexedFiles}/${indexingStatus.totalFiles}\n- Elapsed time: ${elapsed}s\n- Estimated remaining: ~${Math.max(0, 5 - elapsed)}s\n\n*First-time indexing typically takes 1-5 seconds depending on codebase size.*`,
+            },
+          ],
+        };
+      }
+
+      if (indexingStatus.error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ **Indexing Failed**\n\nError: ${indexingStatus.error}\n\nTry using \`reindex_codebase\` to rebuild the index.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      if (cacheStats.exists) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✅ **Index Ready**\n\n- Total files: ${cacheStats.fileCount}\n- Last indexed: ${cacheStats.indexedAt}\n- Status: Ready for search\n\n*You can now use \`search_codebase\` to search the codebase.*`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `⚠️ **Not Indexed**\n\nThe codebase has not been indexed yet.\n\nIndexing will start automatically when you first use \`search_codebase\`.`,
+          },
+        ],
+      };
+    }
+  );
+
+  // Start background indexing on server startup
+  console.error('[INFO] Starting background codebase indexing...');
+  startBackgroundIndexing();
+
+  console.error(
+    '[INFO] Registered codebase search tools: search_codebase, reindex_codebase, get_indexing_status'
+  );
 }
