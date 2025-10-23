@@ -59,7 +59,7 @@ export async function addMCPServersToTarget(
     if (mcpSection[server.name]) {
       console.log(`ℹ️  MCP server already exists: ${server.name}`);
     } else {
-      const transformedConfig = target.transformMCPConfig(server.config);
+      const transformedConfig = target.transformMCPConfig(server.config, server.id);
       mcpSection[server.name] = transformedConfig;
       console.log(`📦 Added MCP server: ${server.name} (${server.description})`);
       addedCount++;
@@ -328,7 +328,7 @@ export async function configureMCPServerForTarget(
     // Create new config with API keys
     const baseConfig = server.config;
     if (baseConfig.type === 'local') {
-      const transformedConfig = target.transformMCPConfig(baseConfig);
+      const transformedConfig = target.transformMCPConfig(baseConfig, server.id);
       mcpSectionForUpdate[server.name] = {
         ...transformedConfig,
         environment: {
@@ -338,7 +338,7 @@ export async function configureMCPServerForTarget(
       };
     } else {
       // HTTP server - just add the base config
-      const transformedConfig = target.transformMCPConfig(baseConfig);
+      const transformedConfig = target.transformMCPConfig(baseConfig, server.id);
       mcpSectionForUpdate[server.name] = transformedConfig;
     }
   }

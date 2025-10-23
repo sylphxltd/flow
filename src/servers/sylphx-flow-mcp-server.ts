@@ -5,7 +5,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
-import { registerKnowledgeResources } from '../resources/knowledge-resources.js';
+import {
+  registerKnowledgeResources,
+  registerKnowledgeTools,
+} from '../resources/knowledge-resources.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -17,6 +20,10 @@ const DEFAULT_CONFIG = {
   description:
     'Sylphx Flow MCP server providing coordination tools for AI agents. Persistent SQLite-based storage with namespace support for agent coordination and state management.',
 };
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const DISABLE_RESOURCES = args.includes('--no-resources');
 
 // Logger utility
 const Logger = {
@@ -48,8 +55,14 @@ registerMemoryTools(server);
 registerTimeTools(server);
 registerProjectStartupTool(server);
 
-// Register knowledge resources
-registerKnowledgeResources(server);
+// Register knowledge (resources OR tools, not both)
+if (DISABLE_RESOURCES) {
+  Logger.info('📚 Registering knowledge as MCP tools');
+  registerKnowledgeTools(server);
+} else {
+  Logger.info('📚 Registering knowledge as MCP resources');
+  registerKnowledgeResources(server);
+}
 
 // SERVER STARTUP
 // ============================================================================

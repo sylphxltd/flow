@@ -65,7 +65,7 @@ export const claudeCodeTarget: Target = {
    * Transform MCP server configuration for Claude Code
    * Convert from various formats to Claude Code's optimal format
    */
-  transformMCPConfig(config: any): any {
+  transformMCPConfig(config: any, serverId?: string): any {
     // Handle legacy OpenCode 'local' type
     if (config.type === 'local') {
       // Convert OpenCode 'local' array command to Claude Code format

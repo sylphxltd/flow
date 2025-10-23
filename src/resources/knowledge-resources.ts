@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import { getKnowledgeDir } from '../utils/paths.js';
 
 /**
@@ -119,6 +120,7 @@ export function getKnowledgeContent(uri: string): string {
 export function registerKnowledgeResources(server: McpServer) {
   const resources = getAllKnowledgeResources();
 
+  // Register as resources (primary method)
   for (const resource of resources) {
     server.registerResource(
       resource.name,
@@ -143,4 +145,96 @@ export function registerKnowledgeResources(server: McpServer) {
   }
 
   console.error(`[INFO] Registered ${resources.length} knowledge resources`);
+}
+
+/**
+ * Register knowledge tools with MCP server
+ * Fallback for environments that don't properly support resources
+ */
+export function registerKnowledgeTools(server: McpServer) {
+  const resources = getAllKnowledgeResources();
+
+  // Build description with all available knowledge
+  const knowledgeList = resources.map((r) => `• ${r.uri}\n  ${r.description}`).join('\n\n');
+
+  server.registerTool(
+    'get_knowledge',
+    {
+      description: `Access domain-specific knowledge and best practices for software development.
+
+Available knowledge resources:
+
+${knowledgeList}
+
+Use this when you need:
+- Specific framework patterns (React hooks, Next.js App Router, Node.js APIs)
+- Database guidance (SQL optimization, indexing, migrations)
+- Security best practices (OWASP, auth patterns, vulnerabilities)
+- Performance optimization (profiling, caching, optimization)
+- Testing strategies (TDD, unit/integration/e2e)
+- Deployment patterns (Docker, CI/CD, monitoring)
+- Architecture guidance (SaaS patterns, tech stack decisions, UI/UX)
+
+The knowledge is curated for LLM code generation - includes decision trees, common bugs, and practical patterns.`,
+      inputSchema: {
+        uri: z
+          .string()
+          .describe(
+            `Knowledge URI to access (e.g., "knowledge://stacks/react-app"). Available: ${resources.map((r) => r.uri).join(', ')}`
+          ),
+      },
+    },
+    (args) => {
+      const uri = args.uri as string;
+      try {
+        const content = getKnowledgeContent(uri);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: content,
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ Error: ${errorMessage}\n\nAvailable knowledge URIs:\n${resources.map((r) => `• ${r.uri}`).join('\n')}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    'list_knowledge',
+    {
+      description: 'List all available knowledge resources with descriptions',
+      inputSchema: {},
+    },
+    () => {
+      const list = resources
+        .map(
+          (r) =>
+            `**${r.name}** (${r.category})\n` + `URI: ${r.uri}\n` + `Description: ${r.description}`
+        )
+        .join('\n\n');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# Available Knowledge Resources\n\n${list}\n\nUse get_knowledge(uri) to access specific knowledge.`,
+          },
+        ],
+      };
+    }
+  );
+
+  console.error(`[INFO] Registered ${resources.length} knowledge tools`);
 }

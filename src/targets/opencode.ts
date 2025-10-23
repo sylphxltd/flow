@@ -64,7 +64,7 @@ export const opencodeTarget: Target = {
    * Transform MCP server configuration for OpenCode
    * Convert from Claude Code's optimal format to OpenCode's format
    */
-  transformMCPConfig(config: any): any {
+  transformMCPConfig(config: any, serverId?: string): any {
     // Handle new Claude Code stdio format
     if (config.type === 'stdio') {
       // Convert Claude Code format to OpenCode format
@@ -79,6 +79,18 @@ export const opencodeTarget: Target = {
 
       if (config.env) {
         openCodeConfig.environment = config.env;
+      }
+
+      return openCodeConfig;
+    }
+
+    // Handle local format (add --no-resources for sylphx_flow on OpenCode)
+    if (config.type === 'local' && serverId === 'sylphx-flow') {
+      const openCodeConfig = { ...config };
+
+      // OpenCode doesn't support MCP resources well, use tools instead
+      if (!openCodeConfig.command.includes('--no-resources')) {
+        openCodeConfig.command = [...openCodeConfig.command, '--no-resources'];
       }
 
       return openCodeConfig;

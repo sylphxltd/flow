@@ -156,7 +156,7 @@ export abstract class Target {
   ): Promise<string>;
 
   /** Transform MCP server configuration for the target */
-  abstract transformMCPConfig(config: MCPServerConfigUnion): any;
+  abstract transformMCPConfig(config: MCPServerConfigUnion, serverId?: string): any;
 
   /** Get the configuration file path for the target */
   abstract getConfigPath(cwd: string): Promise<string>;
