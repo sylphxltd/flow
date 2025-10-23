@@ -53,6 +53,13 @@ export function getRulesDir(): string {
 }
 
 /**
+ * Get path to knowledge directory
+ */
+export function getKnowledgeDir(): string {
+  return path.join(ASSETS_ROOT, 'knowledge');
+}
+
+/**
  * Get path to a specific rule file
  */
 export function getRuleFile(filename: string): string {

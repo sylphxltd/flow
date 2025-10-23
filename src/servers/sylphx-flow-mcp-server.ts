@@ -5,6 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
+import { registerKnowledgeResources } from '../resources/knowledge-resources.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -46,6 +47,9 @@ const server = new McpServer({
 registerMemoryTools(server);
 registerTimeTools(server);
 registerProjectStartupTool(server);
+
+// Register knowledge resources
+registerKnowledgeResources(server);
 
 // SERVER STARTUP
 // ============================================================================
