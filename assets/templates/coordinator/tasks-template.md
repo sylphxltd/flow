@@ -1,11 +1,12 @@
-# Implementation Tasks: {{PROJECT_NAME}}
+# Implementation Tasks: (Project name)
 
-{{DESCRIPTION}}
+(Brief description of implementation approach and wave strategy)
 
 ## Wave Execution Strategy
-- **Wave 1**: {{WAVE_1_TASKS}} - Execute in parallel, no dependencies
-- **Wave 2**: {{WAVE_2_TASKS}} - Execute in parallel after Wave 1
-- **Wave 3**: {{WAVE_3_TASKS}} - Execute in parallel after Wave 2
+(Organize tasks into sequential waves - each wave contains tasks that can execute in parallel with no conflicts. Example:)
+- **Wave 1**: Foundation tasks - Execute in parallel, no dependencies
+- **Wave 2**: Core features - Execute in parallel after Wave 1
+- **Wave 3**: Integration - Execute in parallel after Wave 2
 
 ## Mandatory Per-Task Cleanup
 **Before marking any task complete:**
@@ -16,71 +17,70 @@
 
 ---
 
-## Wave 1: Parallel Execution
+## Wave 1: (Wave name - e.g., "Foundation Setup")
 
-### TASK_1: {{TASK_1_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_1_DELIVERABLE}}
+### TASK_1: (Task description - what needs to be implemented)
+- [ ] **Implemented**: (Specific deliverable - e.g., "JWT middleware with token validation")
 - [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: (update after completion)
-- **Notes**: (decisions, issues, context)
+- **Assigned to**: (Specialist - e.g., backend-engineer)
+- **Files Modified**: (Update after completion)
+- **Notes**: (Decisions, issues, context)
 
-### TASK_2: {{TASK_2_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_2_DELIVERABLE}}
+### TASK_2: (Task description)
+- [ ] **Implemented**: (Specific deliverable)
 - [ ] **Cleanup Complete**: See mandatory checklist above
+- **Assigned to**: (Specialist)
 - **Files Modified**: 
 - **Notes**: 
 
-### TASK_3: {{TASK_3_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_3_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+(Add more tasks as needed for Wave 1)
 
 ---
 
-## Wave 2: Parallel Execution (After Wave 1)
+## Wave 2: (Wave name - e.g., "Core Features")
 
-### TASK_4: {{TASK_4_DESCRIPTION}}
-- **Dependencies**: {{TASK_4_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_4_DELIVERABLE}}
+### TASK_X: (Task description)
+- **Dependencies**: (Which Wave 1 tasks must complete first, or write "None")
+- [ ] **Implemented**: (Specific deliverable)
 - [ ] **Cleanup Complete**: See mandatory checklist above
+- **Assigned to**: (Specialist)
 - **Files Modified**: 
 - **Notes**: 
 
-### TASK_5: {{TASK_5_DESCRIPTION}}
-- **Dependencies**: {{TASK_5_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_5_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+(Add more tasks as needed for Wave 2)
 
 ---
 
-## Wave 3: Parallel Execution (After Wave 2)
+## Wave 3: (Wave name - e.g., "Integration & Polish")
 
-### TASK_6: {{TASK_6_DESCRIPTION}}
-- **Dependencies**: {{TASK_6_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_6_DELIVERABLE}}
+### TASK_Y: (Task description)
+- **Dependencies**: (Which previous tasks must complete first, or write "None")
+- [ ] **Implemented**: (Specific deliverable)
 - [ ] **Cleanup Complete**: See mandatory checklist above
+- **Assigned to**: (Specialist)
 - **Files Modified**: 
 - **Notes**: 
 
-### TASK_7: {{TASK_7_DESCRIPTION}}
-- **Dependencies**: {{TASK_7_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_7_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+(Add more tasks and waves as needed)
+
+---
+
+## Task Modifications
+(Document any tactical refinements made during Phase 6 - splits, reorders, merges, or write "None")
+
+Example:
+- **TASK_4 [REFINED]**: Split into 4a-4d (reason: too coarse for parallel execution)
+- **TASK_7**: Reordered to Wave 2 (reason: dependency on TASK_3 discovered)
 
 ---
 
 ## Progress Summary
-- **Wave 1**: __ / 3 tasks done (both checkboxes per task)
-- **Wave 2**: __ / 2 tasks done
-- **Wave 3**: __ / 2 tasks done
-- **Total**: __ / 7 tasks complete
+- **Wave 1**: __ / __ tasks done (both checkboxes per task)
+- **Wave 2**: __ / __ tasks done
+- **Wave 3**: __ / __ tasks done
+- **Total**: __ / __ tasks complete
 
 ## Quick Reference
-- **Current Wave**: 
-- **Next Task**: 
-- **Blockers**: 
+- **Current Wave**: (Which wave is currently executing)
+- **Next Task**: (Next task to start)
+- **Blockers**: (Any blockers preventing progress, or write "None") 
