@@ -1,7 +1,6 @@
 ---
 name: Tech Stack (Recommended)
-description: Opinionated stack: Next.js, PandaCSS, GraphQL, Pothos, Drizzle - optimized for LLM accuracy
-category: guides
+description: Opinionated stack (Next.js, PandaCSS, GraphQL, Pothos, Drizzle) - optimized for LLM accuracy
 ---
 
 # Optimized Technical Stack and Framework Guidelines

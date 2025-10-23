@@ -1,7 +1,6 @@
 ---
 name: UI/UX Guidelines
 description: Modern SPA design patterns, PandaCSS, Radix UI, conversational interfaces
-category: guides
 ---
 
 # Modern SPA UI/UX Guidelines (AI Instruction)

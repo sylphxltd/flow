@@ -67,13 +67,16 @@ function scanKnowledgeFiles(
       const content = fs.readFileSync(fullPath, 'utf8');
       const { metadata } = parseFrontmatter(content);
 
+      // Derive category from first path segment (stacks/react-app.md → stacks)
+      const category = uriPath.split('/')[0] || '';
+
       results.push({
         relativePath,
         fullPath,
         uri: `knowledge://${uriPath}`,
         name: metadata.name || uriPath,
         description: metadata.description || '',
-        category: metadata.category || '',
+        category,
       });
     }
   }

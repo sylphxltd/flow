@@ -1,7 +1,6 @@
 ---
 name: Security Best Practices
 description: OWASP, authentication, authorization, vulnerabilities, secure coding
-category: universal
 ---
 
 # Security Best Practices

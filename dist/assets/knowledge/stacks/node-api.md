@@ -1,7 +1,6 @@
 ---
 name: Node.js API
 description: Express/Fastify, REST/GraphQL, authentication, middleware, error handling
-category: stacks
 ---
 
 # Backend Development

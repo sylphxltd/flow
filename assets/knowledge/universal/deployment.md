@@ -1,7 +1,6 @@
 ---
 name: Deployment & DevOps
 description: Docker, CI/CD, monitoring, scaling, infrastructure
-category: universal
 ---
 
 # Infrastructure & DevOps

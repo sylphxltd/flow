@@ -1,7 +1,6 @@
 ---
 name: SaaS Template
 description: Complete SaaS feature spec: auth, billing, multi-tenancy, compliance
-category: guides
 ---
 
 # Optimized SaaS Platform Specification Template

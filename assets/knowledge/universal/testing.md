@@ -1,7 +1,6 @@
 ---
 name: Testing Strategies
 description: Unit, integration, e2e, TDD, mocking, test architecture
-category: universal
 ---
 
 # Testing Strategies

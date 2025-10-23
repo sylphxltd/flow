@@ -1,7 +1,6 @@
 ---
 name: Performance Optimization
 description: Profiling, caching, optimization patterns across frontend and backend
-category: universal
 ---
 
 # Performance Optimization

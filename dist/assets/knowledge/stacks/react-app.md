@@ -1,7 +1,6 @@
 ---
 name: React Application
 description: React patterns, hooks, state management, performance, common bugs and fixes
-category: stacks
 ---
 
 # Frontend Development - Practical Patterns

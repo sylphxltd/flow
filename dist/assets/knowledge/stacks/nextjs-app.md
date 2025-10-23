@@ -1,7 +1,6 @@
 ---
 name: Next.js Application
 description: Next.js App Router, Server Components, data fetching, routing, deployment
-category: stacks
 ---
 
 # Next.js Application Development

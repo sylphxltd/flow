@@ -1,7 +1,6 @@
 ---
 name: SQL & Relational DBs
 description: Postgres/MySQL patterns, indexing, transactions, migrations, query optimization
-category: data
 ---
 
 # SQL & Relational Databases
