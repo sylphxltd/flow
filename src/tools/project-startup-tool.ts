@@ -395,10 +395,10 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
     };
 
     // Step 4: Generate all templates with mode-specific templates
-    // Resolve templates directory relative to the src/ directory (for MCP server usage)
+    // Resolve templates directory relative to the executing script location
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatesDir = join(__dirname, '..', 'templates');
+    const templatesDir = join(__dirname, 'templates');
     const templateEngine = new TemplateEngine(templatesDir, mode);
     const templates = templateEngine.generateAllProjectTemplates(projectData);
 

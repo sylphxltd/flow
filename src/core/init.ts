@@ -21,7 +21,7 @@ async function getAgentFiles(): Promise<string[]> {
   // Get script directory and resolve agents path using import.meta.url
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const agentsDir = path.join(__dirname, '..', '..', 'agents');
+  const agentsDir = path.join(__dirname, '..', 'agents');
 
   if (!fs.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
