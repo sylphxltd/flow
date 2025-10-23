@@ -84,7 +84,7 @@ export const opencodeTarget: Target = {
       return openCodeConfig;
     }
 
-    // Handle local format (add --no-resources for sylphx_flow on OpenCode)
+    // Handle local format (add --no-resources for sylphx-flow on OpenCode)
     if (config.type === 'local' && serverId === 'sylphx-flow') {
       const openCodeConfig = { ...config };
 

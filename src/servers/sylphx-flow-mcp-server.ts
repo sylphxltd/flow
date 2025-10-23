@@ -15,7 +15,7 @@ import {
 // ============================================================================
 
 const DEFAULT_CONFIG = {
-  name: 'sylphx_flow',
+  name: 'sylphx-flow',
   version: '1.0.0',
   description:
     'Sylphx Flow MCP server providing coordination tools for AI agents. Persistent SQLite-based storage with namespace support for agent coordination and state management.',

@@ -39,7 +39,7 @@ export interface MCPServerDefinition {
 export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
   'sylphx-flow': {
     id: 'sylphx-flow',
-    name: 'sylphx_flow',
+    name: 'sylphx-flow',
     description: 'Sylphx Flow MCP server for agent coordination and memory management',
     config: {
       type: 'local' as const,

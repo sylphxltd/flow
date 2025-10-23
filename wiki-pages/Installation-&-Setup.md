@@ -96,7 +96,7 @@ The `init` command automatically creates:
 ```jsonc
 {
   "mcp": {
-    "sylphx_flow": {
+    "sylphx-flow": {
       "type": "local",
       "command": ["npx", "github:sylphxltd/flow", "mcp", "start"]
     }

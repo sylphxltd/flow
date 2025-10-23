@@ -26,7 +26,7 @@
         "PERPLEXITY_API_KEY": "{file:.secrets/PERPLEXITY_API_KEY}"
       }
     },
-    "sylphx_flow": {
+    "sylphx-flow": {
       "type": "local",
       "command": ["npx", "-y", "github:sylphxltd/flow", "mcp", "start", "--no-resources"]
     },
