@@ -133,15 +133,39 @@ export const opencodeTarget: Target = {
 
     // Convert secrets to file references if secret files are enabled
     if (opencodeTarget.config.installation?.useSecretFiles) {
+      // Import here to avoid circular dependency
+      const { MCP_SERVER_REGISTRY } = await import('../config/servers.js');
+
       // Process each MCP server's environment variables
       for (const [serverId, serverConfig] of Object.entries(config.mcp || {})) {
         if (serverConfig && typeof serverConfig === 'object' && 'environment' in serverConfig) {
           const envVars = serverConfig.environment as Record<string, string>;
           if (envVars && typeof envVars === 'object') {
-            serverConfig.environment = await secretUtils.convertSecretsToFileReferences(
-              cwd,
-              envVars
-            );
+            // Find the corresponding server definition to get secret env vars
+            const serverDef = Object.values(MCP_SERVER_REGISTRY).find((s) => s.name === serverId);
+            if (serverDef && serverDef.envVars) {
+              // Separate secret and non-secret variables
+              const secretEnvVars: Record<string, string> = {};
+              const nonSecretEnvVars: Record<string, string> = {};
+
+              for (const [key, value] of Object.entries(envVars)) {
+                const envConfig = serverDef.envVars[key];
+                if (envConfig?.secret && value && !secretUtils.isFileReference(value)) {
+                  secretEnvVars[key] = value;
+                } else {
+                  nonSecretEnvVars[key] = value;
+                }
+              }
+
+              // Convert only secret variables
+              const convertedSecrets = await secretUtils.convertSecretsToFileReferences(
+                cwd,
+                secretEnvVars
+              );
+
+              // Merge back
+              serverConfig.environment = { ...nonSecretEnvVars, ...convertedSecrets };
+            }
           }
         }
       }

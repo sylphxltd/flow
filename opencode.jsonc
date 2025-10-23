@@ -4,17 +4,17 @@
   // See https://modelcontextprotocol.io for more information
 
   "mcp": {
-    "sylphx_flow": {
+    "gemini-google-search": {
       "type": "local",
-      "command": ["npx", "github:sylphxltd/flow", "mcp", "start"]
-    },
-    "context7": {
-      "type": "remote",
-      "url": "https://mcp.context7.com/mcp"
-    },
-    "grep": {
-      "type": "remote",
-      "url": "https://mcp.grep.app"
+      "command": [
+        "npx",
+        "-y",
+        "mcp-gemini-google-search"
+      ],
+      "environment": {
+        "GEMINI_API_KEY": "{file:.secrets/GEMINI_API_KEY}",
+        "GEMINI_MODEL": "gemini-2.5-flash"
+      }
     }
   },
   "$schema": "https://opencode.ai/config.json"
