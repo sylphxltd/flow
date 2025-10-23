@@ -22,10 +22,10 @@ export const claudeCodeTarget: Target = {
 
   mcpServerConfig: {
     'sylphx-flow': {
-      enableMemory: false,
-      enableTime: true,
-      enableProjectStartup: true,
-      enableKnowledge: true,
+      disableMemory: true,
+      disableTime: false,
+      disableProjectStartup: false,
+      disableKnowledge: false,
       knowledgeAsTools: false,
     },
   },

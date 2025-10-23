@@ -6,11 +6,7 @@
   "mcp": {
     "gemini-google-search": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "mcp-gemini-google-search"
-      ],
+      "command": ["npx", "-y", "mcp-gemini-google-search"],
       "environment": {
         "GEMINI_MODEL": "gemini-2.5-flash",
         "GEMINI_API_KEY": "{file:.secrets/GEMINI_API_KEY}"
@@ -18,21 +14,14 @@
     },
     "gpt-image-1-mcp": {
       "type": "local",
-      "command": [
-        "npx",
-        "@napolab/gpt-image-1-mcp"
-      ],
+      "command": ["npx", "@napolab/gpt-image-1-mcp"],
       "environment": {
         "OPENAI_API_KEY": "{file:.secrets/OPENAI_API_KEY}"
       }
     },
     "perplexity-ask": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "server-perplexity-ask"
-      ],
+      "command": ["npx", "-y", "server-perplexity-ask"],
       "environment": {
         "PERPLEXITY_API_KEY": "{file:.secrets/PERPLEXITY_API_KEY}"
       }
@@ -48,13 +37,11 @@
     "sylphx-flow": {
       "type": "local",
       "command": [
-        "npx",
-        "-y",
-        "github:sylphxltd/flow",
+        "node",
+        "dist/index.js",
         "mcp",
         "start",
-        "--enable-time",
-        "--enable-knowledge",
+        "--disable-memory",
         "--knowledge-as-tools"
       ]
     }

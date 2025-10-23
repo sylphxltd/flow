@@ -66,10 +66,10 @@ export async function addMCPServersToTarget(
         const targetConfig = target.mcpServerConfig['sylphx-flow'];
         const args = [];
 
-        if (targetConfig.enableMemory) args.push('--enable-memory');
-        if (targetConfig.enableTime) args.push('--enable-time');
-        if (targetConfig.enableProjectStartup) args.push('--enable-project-startup');
-        if (targetConfig.enableKnowledge) args.push('--enable-knowledge');
+        if (targetConfig.disableMemory) args.push('--disable-memory');
+        if (targetConfig.disableTime) args.push('--disable-time');
+        if (targetConfig.disableProjectStartup) args.push('--disable-project-startup');
+        if (targetConfig.disableKnowledge) args.push('--disable-knowledge');
         if (targetConfig.knowledgeAsTools) args.push('--knowledge-as-tools');
 
         // Update the command to include the configuration

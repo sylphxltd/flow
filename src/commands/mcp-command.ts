@@ -13,12 +13,12 @@ import { startSylphxFlowMCPServer } from '../servers/sylphx-flow-mcp-server.js';
 
 // MCP start handler
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
-  // Apply presets if specified
+  // Apply disable flags (new approach - whitelist by default, disable specified)
   let config = {
-    enableMemory: options.memory === true,
-    enableTime: options.time === true,
-    enableProjectStartup: options.projectStartup === true,
-    enableKnowledge: options.knowledge === true,
+    disableMemory: options.disableMemory === true,
+    disableTime: options.disableTime === true,
+    disableProjectStartup: options.disableProjectStartup === true,
+    disableKnowledge: options.disableKnowledge === true,
     knowledgeAsTools: options.knowledgeAsTools === true,
   };
 
@@ -26,37 +26,28 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     switch (options.preset) {
       case 'opencode':
         config = {
-          enableMemory: false,
-          enableTime: true,
-          enableProjectStartup: false,
-          enableKnowledge: true,
-          knowledgeAsTools: true,
+          disableMemory: true, // Disable memory
+          disableTime: false, // Enable time
+          disableProjectStartup: true, // Disable project startup
+          disableKnowledge: false, // Enable knowledge
+          knowledgeAsTools: true, // Knowledge as tools
         };
         break;
       case 'claude-code':
         config = {
-          enableMemory: false,
-          enableTime: true,
-          enableProjectStartup: true,
-          enableKnowledge: true,
-          knowledgeAsTools: false,
-        };
-        break;
-      case 'claude-code':
-        config = {
-          enableMemory: true,
-          enableTime: false,
-          enableProjectStartup: true,
-          enableKnowledge: true,
-          knowledgeAsTools: false,
+          disableMemory: true, // Disable memory
+          disableTime: false, // Enable time
+          disableProjectStartup: false, // Enable project startup
+          disableKnowledge: false, // Enable knowledge
+          knowledgeAsTools: false, // Knowledge as resources
         };
         break;
       case 'minimal':
         config = {
-          enableMemory: false,
-          enableTime: false,
-          enableProjectStartup: false,
-          enableKnowledge: false,
+          disableMemory: true, // Disable all
+          disableTime: true,
+          disableProjectStartup: true,
+          disableKnowledge: true,
           knowledgeAsTools: false,
         };
         break;
@@ -268,20 +259,20 @@ export const mcpCommand: CommandConfig = {
           description: 'Use preset configuration (opencode, claude-code, minimal)',
         },
         {
-          flags: '--enable-memory',
-          description: 'Enable memory tools',
+          flags: '--disable-memory',
+          description: 'Disable memory tools',
         },
         {
-          flags: '--enable-time',
-          description: 'Enable time tools',
+          flags: '--disable-time',
+          description: 'Disable time tools',
         },
         {
-          flags: '--enable-project-startup',
-          description: 'Enable project startup tools',
+          flags: '--disable-project-startup',
+          description: 'Disable project startup tools',
         },
         {
-          flags: '--enable-knowledge',
-          description: 'Enable knowledge resources',
+          flags: '--disable-knowledge',
+          description: 'Disable knowledge resources',
         },
         {
           flags: '--knowledge-as-tools',

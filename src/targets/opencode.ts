@@ -17,10 +17,10 @@ export const opencodeTarget: Target = {
 
   mcpServerConfig: {
     'sylphx-flow': {
-      enableMemory: false,
-      enableTime: true,
-      enableProjectStartup: false,
-      enableKnowledge: true,
+      disableMemory: true,
+      disableTime: false,
+      disableProjectStartup: false,
+      disableKnowledge: false,
       knowledgeAsTools: true,
     },
   },

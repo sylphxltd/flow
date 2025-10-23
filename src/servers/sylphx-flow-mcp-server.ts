@@ -22,10 +22,10 @@ const DEFAULT_CONFIG = {
 
 // Server configuration interface
 interface ServerConfig {
-  enableMemory?: boolean;
-  enableTime?: boolean;
-  enableProjectStartup?: boolean;
-  enableKnowledge?: boolean;
+  disableMemory?: boolean;
+  disableTime?: boolean;
+  disableProjectStartup?: boolean;
+  disableKnowledge?: boolean;
   knowledgeAsTools?: boolean;
 }
 
@@ -41,8 +41,35 @@ const Logger = {
   },
 };
 
+// Parse command line arguments for backward compatibility
+function parseArgs(): ServerConfig {
+  const args = process.argv.slice(2);
+  const config: ServerConfig = {};
+
+  // Handle disable flags (new approach)
+  if (args.includes('--disable-memory')) config.disableMemory = true;
+  if (args.includes('--disable-time')) config.disableTime = true;
+  if (args.includes('--disable-project-startup')) config.disableProjectStartup = true;
+  if (args.includes('--disable-knowledge')) config.disableKnowledge = true;
+  if (args.includes('--knowledge-as-tools')) config.knowledgeAsTools = true;
+
+  // Handle enable flags (backward compatibility)
+  if (args.includes('--enable-memory')) config.disableMemory = false;
+  if (args.includes('--enable-time')) config.disableTime = false;
+  if (args.includes('--enable-project-startup')) config.disableProjectStartup = false;
+  if (args.includes('--enable-knowledge')) config.disableKnowledge = false;
+
+  return config;
+}
+
 // Main server function
 export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
+  // If no config provided, try to parse from command line arguments
+  if (Object.keys(config).length === 0) {
+    config = parseArgs();
+  }
+
+  console.error('Debug: Final config =', config);
   console.log('🚀 Starting Sylphx Flow MCP Server...');
   console.log('📍 Database: .sylphx-flow/memory.db');
 
@@ -54,28 +81,31 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     description: DEFAULT_CONFIG.description,
   });
 
-  // Register tool categories based on configuration
+  // Register all tool categories by default (whitelist approach)
   const enabledTools: string[] = [];
 
-  if (config.enableMemory) {
+  // Memory tools (enabled by default, can be disabled)
+  if (!config.disableMemory) {
     registerMemoryTools(server);
     enabledTools.push(
       'memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
     );
   }
 
-  if (config.enableTime) {
+  // Time tools (enabled by default, can be disabled)
+  if (!config.disableTime) {
     registerTimeTools(server);
     enabledTools.push('time_get_current, time_format, time_parse');
   }
 
-  if (config.enableProjectStartup) {
+  // Project startup tools (enabled by default, can be disabled)
+  if (!config.disableProjectStartup) {
     registerProjectStartupTool(server);
     enabledTools.push('project_startup');
   }
 
-  // Register knowledge (resources OR tools, not both)
-  if (config.enableKnowledge) {
+  // Knowledge resources (enabled by default, can be disabled)
+  if (!config.disableKnowledge) {
     if (config.knowledgeAsTools) {
       Logger.info('📚 Registering knowledge as MCP tools');
       registerKnowledgeTools(server);
@@ -92,7 +122,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   if (enabledTools.length > 0) {
     console.log(`🔧 Enabled tools: ${enabledTools.join(', ')}`);
   } else {
-    console.log('🔧 No tools enabled');
+    console.log('🔧 All tools disabled');
   }
 
   // SERVER STARTUP

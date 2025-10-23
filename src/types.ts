@@ -132,10 +132,10 @@ export abstract class Target {
   /** MCP server configuration for this target */
   public readonly mcpServerConfig?: {
     [serverId: string]: {
-      enableMemory?: boolean;
-      enableTime?: boolean;
-      enableProjectStartup?: boolean;
-      enableKnowledge?: boolean;
+      disableMemory?: boolean;
+      disableTime?: boolean;
+      disableProjectStartup?: boolean;
+      disableKnowledge?: boolean;
       knowledgeAsTools?: boolean;
     };
   };
@@ -150,10 +150,10 @@ export abstract class Target {
     isImplemented = true,
     mcpServerConfig?: {
       [serverId: string]: {
-        enableMemory?: boolean;
-        enableTime?: boolean;
-        enableProjectStartup?: boolean;
-        enableKnowledge?: boolean;
+        disableMemory?: boolean;
+        disableTime?: boolean;
+        disableProjectStartup?: boolean;
+        disableKnowledge?: boolean;
         knowledgeAsTools?: boolean;
       };
     }
