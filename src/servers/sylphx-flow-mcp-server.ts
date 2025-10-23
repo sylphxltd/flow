@@ -106,8 +106,8 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   if (!config.disableKnowledge) {
     Logger.info('📚 Registering knowledge tools');
     registerKnowledgeTools(server);
-    enabledTools.push('search_knowledge, get_knowledge');
-    console.log('📚 Knowledge: Enabled');
+    enabledTools.push('search_knowledge, get_knowledge, get_knowledge_status');
+    console.log('📚 Knowledge: Enabled (background indexing started)');
   }
 
   // Codebase search tools (enabled by default, can be disabled)

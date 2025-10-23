@@ -33,8 +33,7 @@
   },
   "homepage": "https://github.com/sylphxltd/flow#readme",
   "scripts": {
-    "build": "bun run build:search-index && bun build src/index.ts --outdir dist --target node --minify --splitting --external react-devtools-core && cp -r assets dist/",
-    "build:search-index": "bun scripts/build-search-index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --minify --splitting --external react-devtools-core && cp -r assets dist/",
     "dev": "bun src/index.ts",
     "start": "bun dist/index.js",
     "start:node": "node dist/index.js",

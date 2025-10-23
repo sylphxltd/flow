@@ -3,7 +3,12 @@ import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getKnowledgeDir } from '../utils/paths.js';
-import { semanticSearch, getSearchIndexStats } from '../utils/semantic-search.js';
+import {
+  semanticSearch,
+  getSearchIndexStats,
+  startKnowledgeIndexing,
+  getKnowledgeIndexingStatus,
+} from '../utils/semantic-search.js';
 
 /**
  * Parse YAML frontmatter from markdown file
@@ -204,14 +209,14 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
           .describe('Include full content in results (default: true)'),
       },
     },
-    (args) => {
+    async (args) => {
       const query = args.query as string;
       const limit = Math.min((args.limit as number) || 5, 10);
       const categories = args.categories as string[] | undefined;
       const includeContent = (args.include_content as boolean) ?? true;
 
       // Try semantic search first (TF-IDF based)
-      const semanticResults = semanticSearch(query, {
+      const semanticResults = await semanticSearch(query, {
         limit,
         categories,
         minScore: 0.01,
@@ -284,7 +289,7 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
         return result;
       });
 
-      const indexStats = getSearchIndexStats();
+      const indexStats = await getSearchIndexStats();
       const searchMethod = semanticResults.length > 0 ? 'semantic (TF-IDF)' : 'fuzzy keyword';
       const summary = `Found ${scored.length} relevant knowledge resource(s) for "${query}" using ${searchMethod} search:\n${indexStats ? `\n*Search index: ${indexStats.totalDocuments} docs, ${indexStats.uniqueTerms} terms*\n` : ''}\n`;
 
@@ -347,5 +352,73 @@ For most use cases, use 'search_knowledge' with keywords instead of this tool.`,
     }
   );
 
-  console.error(`[INFO] Registered knowledge tools: search_knowledge, get_knowledge`);
+  server.registerTool(
+    'get_knowledge_status',
+    {
+      description: `Get current knowledge indexing status.
+
+Use this to check:
+- Whether knowledge indexing is in progress
+- If knowledge search is ready
+- Any indexing errors
+
+Useful when search_knowledge is slow or returns no results.`,
+      inputSchema: {},
+    },
+    async () => {
+      const status = getKnowledgeIndexingStatus();
+
+      if (status.isIndexing) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `⏳ **Knowledge Indexing in Progress**\n\n- Progress: ${status.progress}%\n- Status: Building search index\n\n*This typically takes <1 second for knowledge base.*`,
+            },
+          ],
+        };
+      }
+
+      if (status.error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ **Knowledge Indexing Failed**\n\nError: ${status.error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      if (status.isReady) {
+        const stats = await getSearchIndexStats();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✅ **Knowledge Index Ready**\n\n- Total documents: ${stats?.totalDocuments || 0}\n- Unique terms: ${stats?.uniqueTerms || 0}\n- Status: Ready for search\n\n*You can now use \`search_knowledge\` to search the knowledge base.*`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `⚠️ **Not Indexed**\n\nKnowledge base has not been indexed yet.\n\nIndexing will start automatically when you first use \`search_knowledge\`.`,
+          },
+        ],
+      };
+    }
+  );
+
+  // Start background indexing on server startup
+  console.error('[INFO] Starting background knowledge indexing...');
+  startKnowledgeIndexing();
+
+  console.error(
+    `[INFO] Registered knowledge tools: search_knowledge, get_knowledge, get_knowledge_status`
+  );
 }
