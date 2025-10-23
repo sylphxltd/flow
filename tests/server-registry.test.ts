@@ -134,6 +134,7 @@ describe('Server Registry Tests', () => {
         CONTEXT7_API_KEY: {
           description: 'Context7 API key for enhanced documentation access',
           required: false,
+          secret: true,
         },
       });
       expect(context7.category).toBe('external');
@@ -151,6 +152,7 @@ describe('Server Registry Tests', () => {
         OPENAI_API_KEY: {
           description: 'OpenAI API key for image generation',
           required: true,
+          secret: true,
         },
       });
       expect(gptImage.category).toBe('ai');
@@ -168,6 +170,7 @@ describe('Server Registry Tests', () => {
         GEMINI_API_KEY: {
           description: 'Google Gemini API key for search functionality',
           required: true,
+          secret: true,
         },
         GEMINI_MODEL: {
           description: 'Gemini model to use for search',

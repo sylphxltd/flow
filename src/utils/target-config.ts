@@ -419,7 +419,6 @@ function deleteNestedProperty(obj: any, path: string): void {
 
 /**
  * Prompt user for API keys interactively
- * (Copied from mcp-config.ts to avoid circular dependencies)
  */
 async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<string, string>> {
   const { createInterface } = await import('node:readline');
@@ -445,9 +444,22 @@ async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<stri
       if (!envConfig) continue;
 
       const isRequired = envConfig.required;
-      const promptText = isRequired
-        ? `Enter ${envVar} (${envConfig.description}) (required): `
-        : `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
+      const hasDefault = envConfig.default !== undefined;
+
+      let promptText: string;
+      if (isRequired) {
+        if (hasDefault) {
+          promptText = `Enter ${envVar} (${envConfig.description}) (required, default: ${envConfig.default}): `;
+        } else {
+          promptText = `Enter ${envVar} (${envConfig.description}) (required): `;
+        }
+      } else {
+        if (hasDefault) {
+          promptText = `Enter ${envVar} (${envConfig.description}) (optional, default: ${envConfig.default}, press Enter to use default): `;
+        } else {
+          promptText = `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
+        }
+      }
 
       const answer = await new Promise<string>((resolve) => {
         rl.question(promptText, (input) => {
@@ -455,13 +467,26 @@ async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<stri
         });
       });
 
+      let finalValue: string | undefined;
+      let actionText: string;
+
       if (answer) {
-        apiKeys[envVar] = answer;
-        console.log(`✅ Set ${envVar}`);
+        finalValue = answer;
+        actionText = `Set ${envVar}`;
+      } else if (hasDefault) {
+        finalValue = envConfig.default;
+        actionText = `Using default for ${envVar}`;
       } else if (isRequired) {
         console.log(`⚠️  Skipped required ${envVar} - server may not function properly`);
+        continue;
       } else {
         console.log(`ℹ️  Skipped optional ${envVar}`);
+        continue;
+      }
+
+      if (finalValue) {
+        apiKeys[envVar] = finalValue;
+        console.log(`✅ ${actionText}`);
       }
     }
   }

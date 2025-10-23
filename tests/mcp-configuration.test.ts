@@ -3,8 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mock the target manager module
 vi.mock('../src/core/target-manager.js', () => ({
   targetManager: {
-    getTargetDefinition: vi.fn(),
-    getTransformer: vi.fn(),
+    getTarget: vi.fn(),
+    getAllTargets: vi.fn(),
+    getImplementedTargets: vi.fn(),
+    resolveTarget: vi.fn(),
   },
 }));
 
@@ -30,18 +32,20 @@ describe('MCP Configuration Tests', () => {
       config: {
         mcpConfigPath: 'mcpServers',
         configFile: 'test-config.json',
+        installation: {
+          createAgentDir: true,
+          createConfigFile: true,
+          supportedMcpServers: true,
+          useSecretFiles: true,
+        },
       },
-    };
-
-    mockTransformer = {
-      readConfig: vi.fn(),
-      writeConfig: vi.fn(),
+      readConfig: vi.fn().mockResolvedValue({ mcpServers: {} }),
+      writeConfig: vi.fn().mockResolvedValue(undefined),
       transformMCPConfig: vi.fn((config: any) => config),
     };
 
     const { targetManager } = await import('../src/core/target-manager.js');
-    (targetManager.getTargetDefinition as any).mockReturnValue(mockTargetDefinition);
-    (targetManager.getTransformer as any).mockResolvedValue(mockTransformer);
+    (targetManager.getTarget as any).mockReturnValue(mockTargetDefinition);
   });
 
   afterEach(() => {
@@ -69,7 +73,7 @@ describe('MCP Configuration Tests', () => {
       const { configureMCPServerForTarget } = await import('../src/utils/target-config.js');
 
       // Mock no existing server
-      mockTransformer.readConfig.mockResolvedValue({});
+      mockTargetDefinition.readConfig.mockResolvedValue({});
 
       const result = await configureMCPServerForTarget('/test/cwd', 'test-target', 'grep' as any);
 
@@ -81,7 +85,7 @@ describe('MCP Configuration Tests', () => {
       const { configureMCPServerForTarget } = await import('../src/utils/target-config.js');
 
       // Mock no existing server
-      mockTransformer.readConfig.mockResolvedValue({});
+      mockTargetDefinition.readConfig.mockResolvedValue({});
 
       // Mock the readline module to return empty input immediately
       vi.doMock('node:readline', () => ({
@@ -100,7 +104,7 @@ describe('MCP Configuration Tests', () => {
       );
 
       expect(result).toBe(true); // Should install even when no optional keys provided
-      expect(mockTransformer.writeConfig).toHaveBeenCalled();
+      expect(mockTargetDefinition.writeConfig).toHaveBeenCalled();
     });
   });
 });
