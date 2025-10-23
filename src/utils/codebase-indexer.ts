@@ -8,6 +8,7 @@ import path from 'node:path';
 import ignore, { type Ignore } from 'ignore';
 import { buildSearchIndex, type SearchIndex } from './tfidf.js';
 import { VectorStorage, type VectorDocument } from './vector-storage.js';
+import { LibSQLMemoryStorage } from './libsql-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
 
 export interface CodebaseFile {
@@ -224,11 +225,13 @@ export class CodebaseIndexer {
   private cacheDir: string;
   private cache: IndexCache | null = null;
   private ig: Ignore;
+  private db: LibSQLMemoryStorage;
 
   constructor(codebaseRoot: string, cacheDir: string) {
     this.codebaseRoot = codebaseRoot;
     this.cacheDir = cacheDir;
     this.ig = loadGitignore(codebaseRoot);
+    this.db = new LibSQLMemoryStorage();
 
     // Ensure cache directory exists
     if (!fs.existsSync(cacheDir)) {
@@ -237,43 +240,169 @@ export class CodebaseIndexer {
   }
 
   /**
-   * Load cache from disk
+   * Build TF-IDF index from database
    */
-  private loadCache(): IndexCache | null {
-    const cachePath = path.join(this.cacheDir, 'codebase-index.json');
-    if (!fs.existsSync(cachePath)) {
-      return null;
-    }
-
+  private async buildTFIDFIndexFromDB(): Promise<SearchIndex | undefined> {
     try {
-      const cacheData = fs.readFileSync(cachePath, 'utf8');
-      const parsed = JSON.parse(cacheData);
+      // Get all documents from database
+      const documents = [];
+      const dbFiles = await this.db.getAllCodebaseFiles();
+
+      for (const file of dbFiles) {
+        const tfidfDoc = await this.db.getTFIDFDocument(file.path);
+        if (tfidfDoc) {
+          const rawTerms = tfidfDoc.rawTerms || {};
+          const terms = new Map<string, number>();
+          for (const [term, freq] of Object.entries(rawTerms)) {
+            terms.set(term, freq as number);
+          }
+
+          documents.push({
+            uri: `file://${file.path}`,
+            terms,
+            rawTerms,
+            magnitude: tfidfDoc.magnitude,
+          });
+        }
+      }
+
+      // Get IDF values
+      const idfRecords = await this.db.getIDFValues();
+      const idf = new Map<string, number>();
+      for (const [term, value] of Object.entries(idfRecords)) {
+        idf.set(term, value as number);
+      }
+
+      if (documents.length === 0) {
+        return undefined;
+      }
 
       return {
-        version: parsed.version,
-        codebaseRoot: parsed.codebaseRoot,
-        indexedAt: parsed.indexedAt,
-        fileCount: parsed.fileCount,
-        files: new Map(parsed.files),
-        tfidfIndex: parsed.tfidfIndex,
-        vectorIndexPath: parsed.vectorIndexPath,
+        documents,
+        idf,
+        totalDocuments: documents.length,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          version: '1.0.0',
+        },
       };
     } catch (error) {
-      console.error('[ERROR] Failed to load cache:', error);
+      console.error('[ERROR] Failed to build TF-IDF index from database:', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Load cache from database
+   */
+  private async loadCache(): Promise<IndexCache | null> {
+    try {
+      // Initialize codebase tables if they don't exist
+      await this.db.initializeCodebaseTables();
+
+      // Get metadata
+      const version = await this.db.getCodebaseMetadata('version');
+      const codebaseRoot = await this.db.getCodebaseMetadata('codebaseRoot');
+      const indexedAt = await this.db.getCodebaseMetadata('indexedAt');
+      const fileCount = await this.db.getCodebaseMetadata('fileCount');
+
+      if (!version || !codebaseRoot || !indexedAt || !fileCount) {
+        return null;
+      }
+
+      // Get all files
+      const dbFiles = await this.db.getAllCodebaseFiles();
+      const files = new Map<string, { mtime: number; hash: string }>();
+
+      for (const file of dbFiles) {
+        files.set(file.path, { mtime: file.mtime, hash: file.hash });
+      }
+
+      // Build TF-IDF index from database
+      const tfidfIndex = await this.buildTFIDFIndexFromDB();
+
+      // Get vector index path
+      const vectorIndexPath = await this.db.getCodebaseMetadata('vectorIndexPath');
+
+      return {
+        version,
+        codebaseRoot,
+        indexedAt,
+        fileCount: parseInt(fileCount),
+        files,
+        tfidfIndex,
+        vectorIndexPath,
+      };
+    } catch (error) {
+      console.error('[ERROR] Failed to load cache from database:', error);
       return null;
     }
   }
 
   /**
-   * Save cache to disk
+   * Save cache to database
    */
-  private saveCache(cache: IndexCache): void {
-    const cachePath = path.join(this.cacheDir, 'codebase-index.json');
-    const serialized = {
-      ...cache,
-      files: Array.from(cache.files.entries()),
-    };
-    fs.writeFileSync(cachePath, JSON.stringify(serialized, null, 2), 'utf8');
+  private async saveCache(cache: IndexCache): Promise<void> {
+    try {
+      // Initialize tables
+      await this.db.initializeCodebaseTables();
+
+      // Save metadata
+      await this.db.setCodebaseMetadata('version', cache.version);
+      await this.db.setCodebaseMetadata('codebaseRoot', cache.codebaseRoot);
+      await this.db.setCodebaseMetadata('indexedAt', cache.indexedAt);
+      await this.db.setCodebaseMetadata('fileCount', cache.fileCount.toString());
+      if (cache.vectorIndexPath) {
+        await this.db.setCodebaseMetadata('vectorIndexPath', cache.vectorIndexPath);
+      }
+
+      // Save files
+      for (const [filePath, fileInfo] of cache.files.entries()) {
+        await this.db.upsertCodebaseFile({
+          path: filePath,
+          mtime: fileInfo.mtime,
+          hash: fileInfo.hash,
+        });
+      }
+
+      // Save TF-IDF index if available
+      if (cache.tfidfIndex) {
+        // Save documents
+        for (const doc of cache.tfidfIndex.documents) {
+          const filePath = doc.uri.replace('file://', '');
+          // Convert rawTerms Map to Record
+          const rawTermsRecord: Record<string, number> = {};
+          for (const [term, freq] of doc.rawTerms.entries()) {
+            rawTermsRecord[term] = freq;
+          }
+
+          await this.db.upsertTFIDFDocument(filePath, {
+            magnitude: doc.magnitude,
+            termCount: doc.terms.size,
+            rawTerms: rawTermsRecord,
+          });
+
+          // Save terms
+          const terms: Record<string, number> = {};
+          for (const [term, freq] of doc.terms.entries()) {
+            terms[term] = freq;
+          }
+          await this.db.setTFIDFTerms(filePath, terms);
+        }
+
+        // Save IDF values
+        const idfValues: Record<string, number> = {};
+        for (const [term, value] of cache.tfidfIndex.idf.entries()) {
+          idfValues[term] = value;
+        }
+        await this.db.setIDFValues(idfValues);
+      }
+
+      console.error('[INFO] Cache saved to database');
+    } catch (error) {
+      console.error('[ERROR] Failed to save cache to database:', error);
+      throw error;
+    }
   }
 
   /**
@@ -298,7 +427,7 @@ export class CodebaseIndexer {
     const { embeddingProvider } = options;
 
     // Load existing cache
-    this.cache = this.loadCache();
+    this.cache = await this.loadCache();
 
     // Scan codebase
     console.error('[INFO] Scanning codebase...');
@@ -432,7 +561,7 @@ export class CodebaseIndexer {
         : undefined,
     };
 
-    this.saveCache(this.cache);
+    await this.saveCache(this.cache);
 
     return {
       tfidfIndex,
@@ -449,33 +578,51 @@ export class CodebaseIndexer {
   /**
    * Get cache statistics
    */
-  getCacheStats(): {
+  async getCacheStats(): Promise<{
     exists: boolean;
     fileCount: number;
     indexedAt?: string;
-  } {
-    const cache = this.loadCache();
-    return {
-      exists: cache !== null,
-      fileCount: cache?.fileCount || 0,
-      indexedAt: cache?.indexedAt,
-    };
+  }> {
+    try {
+      await this.db.initializeCodebaseTables();
+      const stats = await this.db.getCodebaseIndexStats();
+      return {
+        exists: stats.fileCount > 0,
+        fileCount: stats.fileCount,
+        indexedAt: stats.indexedAt,
+      };
+    } catch (error) {
+      console.error('[ERROR] Failed to get cache stats:', error);
+      return {
+        exists: false,
+        fileCount: 0,
+      };
+    }
   }
 
   /**
    * Clear cache
    */
-  clearCache(): void {
-    const cachePath = path.join(this.cacheDir, 'codebase-index.json');
-    if (fs.existsSync(cachePath)) {
-      fs.unlinkSync(cachePath);
-    }
+  async clearCache(): Promise<void> {
+    try {
+      // Clear database tables
+      await this.db.initializeCodebaseTables();
+      await this.db.clearCodebaseIndex();
 
-    const vectorPath = path.join(this.cacheDir, 'codebase-vectors.hnsw');
-    if (fs.existsSync(vectorPath)) {
-      fs.unlinkSync(vectorPath);
-    }
+      // Also clean up any old JSON files
+      const cachePath = path.join(this.cacheDir, 'codebase-index.json');
+      if (fs.existsSync(cachePath)) {
+        fs.unlinkSync(cachePath);
+      }
 
-    console.error('[INFO] Cache cleared');
+      const vectorPath = path.join(this.cacheDir, 'codebase-vectors.hnsw');
+      if (fs.existsSync(vectorPath)) {
+        fs.unlinkSync(vectorPath);
+      }
+
+      console.error('[INFO] Cache cleared from database and files');
+    } catch (error) {
+      console.error('[ERROR] Failed to clear cache:', error);
+    }
   }
 }
