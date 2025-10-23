@@ -1,86 +1,27 @@
-# Implementation Tasks: {{PROJECT_NAME}}
+# Tasks: {{PROJECT_NAME}}
 
-{{DESCRIPTION}}
-
-## Sequential Execution Strategy
-- **Stage 1**: {{STAGE_1_TASKS}} - Foundation, no dependencies
-- **Stage 2**: {{STAGE_2_TASKS}} - Core features, depends on Stage 1
-- **Stage 3**: {{STAGE_3_TASKS}} - Integration, depends on Stage 2
-
-## Mandatory Per-Task Cleanup
-**Before marking any task complete:**
-1. Remove TODOs, console.log, debug code
-2. Eliminate code duplication
-3. Refactor for maintainability
-4. Verify code standards compliance
-
----
+(Break down implementation into stages based on dependencies. Use checkboxes to track progress.)
 
 ## Stage 1: Foundation
+(Tasks with no dependencies - can start immediately)
+- [ ] (Task 1: e.g., "Setup project structure and dependencies")
+- [ ] (Task 2: e.g., "Configure database and migrations")
+- [ ] (Task 3: e.g., "Setup testing framework")
 
-### TASK_1: {{TASK_1_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_1_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: (update after completion)
-- **Notes**: (decisions, issues, context)
+## Stage 2: Core (after Stage 1)
+(Main feature implementation - depends on foundation)
+- [ ] (Task 4: e.g., "Implement authentication service")
+- [ ] (Task 5: e.g., "Create user management API")
 
-### TASK_2: {{TASK_2_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_2_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
-
-### TASK_3: {{TASK_3_DESCRIPTION}}
-- [ ] **Implemented**: {{TASK_3_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
+## Stage 3: Integration (after Stage 2)
+(Connect components and add polish - depends on core features)
+- [ ] (Task 6: e.g., "Integrate frontend with backend API")
+- [ ] (Task 7: e.g., "Add error handling and logging")
 
 ---
 
-## Stage 2: Core Features (After Stage 1)
-
-### TASK_4: {{TASK_4_DESCRIPTION}}
-- **Dependencies**: {{TASK_4_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_4_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
-
-### TASK_5: {{TASK_5_DESCRIPTION}}
-- **Dependencies**: {{TASK_5_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_5_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
-
----
-
-## Stage 3: Integration (After Stage 2)
-
-### TASK_6: {{TASK_6_DESCRIPTION}}
-- **Dependencies**: {{TASK_6_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_6_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
-
-### TASK_7: {{TASK_7_DESCRIPTION}}
-- **Dependencies**: {{TASK_7_DEPENDENCIES}}
-- [ ] **Implemented**: {{TASK_7_DELIVERABLE}}
-- [ ] **Cleanup Complete**: See mandatory checklist above
-- **Files Modified**: 
-- **Notes**: 
-
----
-
-## Progress Summary
-- **Stage 1**: __ / 3 tasks done (both checkboxes per task)
-- **Stage 2**: __ / 2 tasks done
-- **Stage 3**: __ / 2 tasks done
-- **Total**: __ / 7 tasks complete
-
-## Quick Reference
-- **Current Stage**: 
-- **Next Task**: 
-- **Blockers**: 
+## Test Strategy
+(Define testing approach - will be validated in Phase 7)
+- **Frameworks**: (e.g., "Jest for unit tests, Playwright for E2E")
+- **Coverage**: 80%+ on critical paths (auth, data operations, business logic)
+- **Key scenarios**: (List critical test cases: e.g., "User login flow", "Data validation", "Error recovery")
