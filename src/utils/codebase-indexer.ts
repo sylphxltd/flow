@@ -294,7 +294,8 @@ export class CodebaseIndexer {
       cacheHit: boolean;
     };
   }> {
-    const { force = false, embeddingProvider } = options;
+    let { force = false } = options;
+    const { embeddingProvider } = options;
 
     // Load existing cache
     this.cache = this.loadCache();
@@ -303,6 +304,21 @@ export class CodebaseIndexer {
     console.error('[INFO] Scanning codebase...');
     const files = scanCodebase(this.codebaseRoot, this.codebaseRoot, this.ig);
     console.error(`[INFO] Found ${files.length} files`);
+
+    // Validate cache (check if file count changed significantly)
+    if (this.cache && !force) {
+      const fileCountDiff = Math.abs(files.length - this.cache.fileCount);
+      const fileCountChangePercent = (fileCountDiff / this.cache.fileCount) * 100;
+
+      // If file count changed by >20%, force full reindex for safety
+      if (fileCountChangePercent > 20) {
+        console.error(
+          `[WARN] File count changed significantly (${fileCountChangePercent.toFixed(1)}%), forcing full reindex`
+        );
+        force = true;
+        this.cache = null;
+      }
+    }
 
     // Detect changes (new, modified, deleted files)
     const changedFiles: CodebaseFile[] = [];

@@ -62,7 +62,7 @@ async function ensureIndexed(options: { force?: boolean } = {}) {
  */
 export function registerCodebaseSearchTool(server: McpServer) {
   server.registerTool(
-    'codebase_search',
+    'search_codebase',
     {
       description: `Search the current codebase using semantic search (TF-IDF + optional embeddings).
 
@@ -202,7 +202,7 @@ Limitations:
   );
 
   server.registerTool(
-    'codebase_reindex',
+    'reindex_codebase',
     {
       description: `Force reindex the entire codebase.
 
@@ -244,5 +244,5 @@ This will clear the cache and rebuild the entire index.`,
     }
   );
 
-  console.error('[INFO] Registered codebase search tools: codebase_search, codebase_reindex');
+  console.error('[INFO] Registered codebase search tools: search_codebase, reindex_codebase');
 }
