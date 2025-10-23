@@ -162,9 +162,17 @@ export function registerKnowledgeTools(server: McpServer) {
     {
       description: `Access domain-specific knowledge and best practices for software development.
 
+**IMPORTANT: Use this tool PROACTIVELY before starting work, not reactively when stuck.**
+
 Available knowledge resources:
 
 ${knowledgeList}
+
+When to use (BEFORE starting work):
+- **Phase 2 (Research)**: Check relevant stack/universal knowledge before clarifying requirements
+- **Phase 3 (Design)**: Review architecture patterns, security, and performance best practices before designing
+- **Phase 6 (Implementation)**: Consult framework-specific patterns and common pitfalls before coding
+- **Phase 7 (Testing)**: Review testing strategies and coverage requirements before QA
 
 Use this when you need:
 - Specific framework patterns (React hooks, Next.js App Router, Node.js APIs)
@@ -175,7 +183,9 @@ Use this when you need:
 - Deployment patterns (Docker, CI/CD, monitoring)
 - Architecture guidance (SaaS patterns, tech stack decisions, UI/UX)
 
-The knowledge is curated for LLM code generation - includes decision trees, common bugs, and practical patterns.`,
+The knowledge is curated for LLM code generation - includes decision trees, common bugs, and practical patterns.
+
+**Best Practice**: Check relevant knowledge BEFORE making architectural decisions or writing code, not after encountering issues.`,
       inputSchema: {
         uri: z
           .string()
