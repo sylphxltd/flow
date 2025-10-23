@@ -1,8 +1,8 @@
-import { Target } from '../types.js';
-import { fileUtils, yamlUtils, pathUtils, generateHelpText } from '../utils/target-utils.js';
-import { secretUtils } from '../utils/secret-utils.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Target } from '../types.js';
+import { secretUtils } from '../utils/secret-utils.js';
+import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
 
 /**
  * OpenCode target - composition approach with all original functionality

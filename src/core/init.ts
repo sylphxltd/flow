@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getAllRuleTypes, getRulesPath, ruleFileExists } from '../config/rules.js';
 import {
   type CommonOptions,
   type ProcessResult,
@@ -10,7 +11,6 @@ import {
   getLocalFileInfo,
   log,
 } from '../shared.js';
-import { getAllRuleTypes, getRulesPath, ruleFileExists } from '../config/rules.js';
 import { targetManager } from './target-manager.js';
 
 // ============================================================================
@@ -129,9 +129,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   // Process files individually - create both sdd/ and core/ subdirectory structures
   // Use same logic as getAgentFiles() - simple path resolution
   const __filename = fileURLToPath(import.meta.url);
-  console.log("filename", __filename);
+  console.log('filename', __filename);
   const __dirname = path.dirname(__filename);
-  console.log("dirname", __dirname)
+  console.log('dirname', __dirname);
   const agentsSourceDir = path.join(__dirname, 'agents');
 
   // Process files in parallel for better performance

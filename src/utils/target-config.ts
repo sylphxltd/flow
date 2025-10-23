@@ -452,12 +452,10 @@ async function promptForAPIKeys(serverTypes: MCPServerID[]): Promise<Record<stri
         } else {
           promptText = `Enter ${envVar} (${envConfig.description}) (required): `;
         }
+      } else if (hasDefault) {
+        promptText = `Enter ${envVar} (${envConfig.description}) (optional, default: ${envConfig.default}, press Enter to use default): `;
       } else {
-        if (hasDefault) {
-          promptText = `Enter ${envVar} (${envConfig.description}) (optional, default: ${envConfig.default}, press Enter to use default): `;
-        } else {
-          promptText = `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
-        }
+        promptText = `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
       }
 
       const answer = await new Promise<string>((resolve) => {

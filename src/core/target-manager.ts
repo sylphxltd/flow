@@ -1,9 +1,10 @@
-import { targetRegistry,
+import {
   getAllTargetIDs,
+  getDefaultTarget,
   getImplementedTargetIDs,
-  getTargetsWithMCPSupport,
   getTarget,
-  getDefaultTarget
+  getTargetsWithMCPSupport,
+  targetRegistry,
 } from '../config/targets.js';
 
 /**
@@ -38,7 +39,9 @@ export class TargetManager {
     // If target is explicitly specified, use it
     if (options.target) {
       if (!getTarget(options.target)) {
-        throw new Error(`Unknown target: ${options.target}. Available targets: ${getAllTargetIDs().join(', ')}`);
+        throw new Error(
+          `Unknown target: ${options.target}. Available targets: ${getAllTargetIDs().join(', ')}`
+        );
       }
       return options.target;
     }
@@ -63,8 +66,8 @@ export class TargetManager {
 
       // Prioritize non-default targets for detection
       // Default target should only be used if nothing else is detected
-      const nonDefaultTargets = implementedTargets.filter(target => !target.isDefault);
-      const defaultTargets = implementedTargets.filter(target => target.isDefault);
+      const nonDefaultTargets = implementedTargets.filter((target) => !target.isDefault);
+      const defaultTargets = implementedTargets.filter((target) => target.isDefault);
 
       // Check non-default targets first
       for (const target of nonDefaultTargets) {

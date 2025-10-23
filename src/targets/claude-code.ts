@@ -1,13 +1,13 @@
-import { Target } from '../types.js';
-import {
-  fileUtils,
-  yamlUtils,
-  pathUtils,
-  generateHelpText,
-  systemPromptUtils,
-} from '../utils/target-utils.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Target } from '../types.js';
+import {
+  fileUtils,
+  generateHelpText,
+  pathUtils,
+  systemPromptUtils,
+  yamlUtils,
+} from '../utils/target-utils.js';
 
 /**
  * Claude Code target - composition approach with all original functionality
