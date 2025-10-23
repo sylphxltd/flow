@@ -37,8 +37,9 @@
     "sylphx-flow": {
       "type": "local",
       "command": [
-        "node",
-        "dist/index.js",
+        "npx",
+        "-y",
+        "github:sylphxltd/flow",
         "mcp",
         "start",
         "--disable-memory",
