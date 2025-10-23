@@ -1,23 +1,21 @@
 /**
- * Vector storage using HNSW (Hierarchical Navigable Small World) index
+ * Vector storage using Vectra (TypeScript-native vector database)
  * Supports both knowledge base and codebase embeddings
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
-
-// Simple require import for hnswlib-node
-const { HierarchicalNSW } = require('hnswlib-node');
+import { LocalIndex } from 'vectra';
 
 export interface VectorDocument {
   id: string; // Unique identifier (URI or file path)
   embedding: number[]; // Vector embedding
   metadata: {
     type: 'knowledge' | 'code'; // Document type
-    content?: string; // Original content (optional)
-    category?: string; // Category (for knowledge)
-    language?: string; // Programming language (for code)
-    [key: string]: unknown;
+    content: string; // Original content (empty string if not provided)
+    category: string; // Category (empty string if not provided)
+    language: string; // Programming language (empty string if not provided)
+    [key: string]: string | number | boolean;
   };
 }
 
@@ -38,15 +36,14 @@ export interface VectorIndexMetadata {
 }
 
 /**
- * Vector storage manager using HNSW index
+ * Vector storage manager using Vectra LocalIndex
  */
 export class VectorStorage {
-  private index: any | null = null;
-  private documents: Map<number, VectorDocument> = new Map();
-  private idToIndex: Map<string, number> = new Map();
+  private index: LocalIndex | null = null;
   private metadata: VectorIndexMetadata;
   private indexPath: string;
-  private metadataPath: string;
+  private dimensions: number;
+  private isUpdating: boolean = false;
 
   constructor(
     indexPath: string,
@@ -59,29 +56,25 @@ export class VectorStorage {
     } = {}
   ) {
     this.indexPath = indexPath;
-    this.metadataPath = indexPath.replace(/\.hnsw$/, '.meta.json');
-
-    const { maxElements = 10000, m = 16, efConstruction = 200, efSearch = 50 } = options;
+    this.dimensions = dimensions;
 
     this.metadata = {
-      version: '1.0.0',
+      version: '2.0.0', // Updated version for Vectra
       dimensions,
       totalDocuments: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    // Initialize HNSW index
-    this.index = new HierarchicalNSW('cosine', dimensions);
-    this.index.initIndex(maxElements, m, efConstruction, 100);
-    this.index.setEf(efSearch);
+    // Initialize Vectra LocalIndex
+    this.index = new LocalIndex(indexPath);
   }
 
   /**
    * Load existing index from disk
    */
   static async load(indexPath: string): Promise<VectorStorage | null> {
-    const metadataPath = indexPath.replace(/\.hnsw$/, '.meta.json');
+    const metadataPath = indexPath.replace(/\.index$/, '.meta.json');
 
     if (!fs.existsSync(indexPath) || !fs.existsSync(metadataPath)) {
       return null;
@@ -90,32 +83,25 @@ export class VectorStorage {
     try {
       // Load metadata
       const metadataJson = fs.readFileSync(metadataPath, 'utf8');
-      const metadata: VectorIndexMetadata & { documents: VectorDocument[] } =
-        JSON.parse(metadataJson);
+      const metadata: VectorIndexMetadata = JSON.parse(metadataJson);
 
       // Create storage instance
       const storage = new VectorStorage(indexPath, metadata.dimensions);
-      storage.metadata = {
-        version: metadata.version,
-        dimensions: metadata.dimensions,
-        totalDocuments: metadata.totalDocuments,
-        createdAt: metadata.createdAt,
-        updatedAt: metadata.updatedAt,
-        embeddingModel: metadata.embeddingModel,
-      };
+      storage.metadata = metadata;
 
-      // Load HNSW index
-      storage.index?.readIndex(indexPath);
-
-      // Restore documents map
-      for (let i = 0; i < metadata.documents.length; i++) {
-        const doc = metadata.documents[i];
-        storage.documents.set(i, doc);
-        storage.idToIndex.set(doc.id, i);
+      // Check if Vectra index exists
+      const indexExists = await storage.index!.isIndexCreated();
+      if (!indexExists) {
+        console.error('[ERROR] Vectra index not found');
+        return null;
       }
 
+      // Get stats to update document count
+      const stats = await storage.index!.getIndexStats();
+      storage.metadata.totalDocuments = stats.items;
+
       console.error(
-        `[INFO] Loaded vector index: ${metadata.totalDocuments} documents, ${metadata.dimensions}D`
+        `[INFO] Loaded vector index: ${storage.metadata.totalDocuments} documents, ${storage.metadata.dimensions}D`
       );
       return storage;
     } catch (error) {
@@ -127,151 +113,254 @@ export class VectorStorage {
   /**
    * Add document to index
    */
-  addDocument(doc: VectorDocument): void {
+  async addDocument(doc: VectorDocument): Promise<void> {
     if (!this.index) {
       throw new Error('Index not initialized');
     }
 
-    if (doc.embedding.length !== this.metadata.dimensions) {
+    if (doc.embedding.length !== this.dimensions) {
       throw new Error(
-        `Embedding dimension mismatch: expected ${this.metadata.dimensions}, got ${doc.embedding.length}`
+        `Embedding dimension mismatch: expected ${this.dimensions}, got ${doc.embedding.length}`
       );
     }
 
-    // Check if document already exists
-    if (this.idToIndex.has(doc.id)) {
-      console.warn(`[WARN] Document already exists: ${doc.id}, skipping`);
-      return;
+    // Start update if not already updating
+    if (!this.isUpdating) {
+      await this.index.beginUpdate();
+      this.isUpdating = true;
     }
 
-    const index = this.documents.size;
-    this.index.addPoint(doc.embedding, index);
-    this.documents.set(index, doc);
-    this.idToIndex.set(doc.id, index);
-    this.metadata.totalDocuments++;
-    this.metadata.updatedAt = new Date().toISOString();
+    try {
+      // Check if document already exists
+      const existingDoc = await this.index.getItem(doc.id);
+      if (existingDoc) {
+        console.warn(`[WARN] Document already exists: ${doc.id}, updating`);
+        await this.index.upsertItem({
+          id: doc.id,
+          vector: doc.embedding,
+          metadata: {
+            type: doc.metadata.type,
+            content: doc.metadata.content || '',
+            category: doc.metadata.category || '',
+            language: doc.metadata.language || '',
+          },
+        });
+      } else {
+        await this.index.insertItem({
+          id: doc.id,
+          vector: doc.embedding,
+          metadata: {
+            type: doc.metadata.type,
+            content: doc.metadata.content || '',
+            category: doc.metadata.category || '',
+            language: doc.metadata.language || '',
+          },
+        });
+        this.metadata.totalDocuments++;
+      }
+      this.metadata.updatedAt = new Date().toISOString();
+    } catch (error) {
+      console.error('[ERROR] Failed to add document:', error);
+      throw error;
+    }
   }
 
   /**
    * Add multiple documents in batch
    */
-  addDocuments(docs: VectorDocument[]): void {
-    for (const doc of docs) {
-      this.addDocument(doc);
+  async addDocuments(docs: VectorDocument[]): Promise<void> {
+    if (!this.index) {
+      throw new Error('Index not initialized');
+    }
+
+    await this.index.beginUpdate();
+    this.isUpdating = true;
+
+    try {
+      for (const doc of docs) {
+        await this.addDocument(doc);
+      }
+      await this.index.endUpdate();
+      this.isUpdating = false;
+    } catch (error) {
+      await this.index.cancelUpdate();
+      this.isUpdating = false;
+      throw error;
     }
   }
 
   /**
    * Search for similar documents
    */
-  search(
+  async search(
     queryEmbedding: number[],
     options: {
       k?: number; // Number of results
       filter?: (doc: VectorDocument) => boolean; // Filter function
     } = {}
-  ): VectorSearchResult[] {
+  ): Promise<VectorSearchResult[]> {
     if (!this.index) {
       throw new Error('Index not initialized');
     }
 
-    if (queryEmbedding.length !== this.metadata.dimensions) {
+    if (queryEmbedding.length !== this.dimensions) {
       throw new Error(
-        `Query embedding dimension mismatch: expected ${this.metadata.dimensions}, got ${queryEmbedding.length}`
+        `Query embedding dimension mismatch: expected ${this.dimensions}, got ${queryEmbedding.length}`
       );
     }
 
     const { k = 5, filter } = options;
 
-    // Search HNSW index
-    const result = this.index.searchKnn(queryEmbedding, k * 2); // Get more results for filtering
+    try {
+      // Search Vectra index
+      const results = await this.index.queryItems(queryEmbedding, '', k * 2); // Get more results for filtering
 
-    const results: VectorSearchResult[] = [];
+      const filteredResults: VectorSearchResult[] = [];
 
-    for (let i = 0; i < result.neighbors.length; i++) {
-      const docIndex = result.neighbors[i];
-      const distance = result.distances[i];
-      const doc = this.documents.get(docIndex);
+      for (const result of results) {
+        // Convert Vectra result to our format
+        const doc: VectorDocument = {
+          id: result.item.id,
+          embedding: result.item.vector,
+          metadata: result.item.metadata as VectorDocument['metadata'],
+        };
 
-      if (!doc) continue;
+        // Apply filter if provided
+        if (filter && !filter(doc)) continue;
 
-      // Apply filter if provided
-      if (filter && !filter(doc)) continue;
+        // Convert score to similarity (Vectra uses cosine similarity)
+        const similarity = result.score; // Vectra score is already 0-1
+        const distance = 1 - similarity; // Convert to distance
 
-      // Convert distance to similarity (cosine distance: 0 = identical, 2 = opposite)
-      const similarity = 1 - distance / 2;
+        filteredResults.push({
+          id: doc.id,
+          distance,
+          similarity,
+          metadata: doc.metadata,
+        });
 
-      results.push({
-        id: doc.id,
-        distance,
-        similarity,
-        metadata: doc.metadata,
-      });
+        if (filteredResults.length >= k) break;
+      }
 
-      if (results.length >= k) break;
+      return filteredResults;
+    } catch (error) {
+      console.error('[ERROR] Failed to search index:', error);
+      throw error;
     }
-
-    return results;
   }
 
   /**
    * Get document by ID
    */
-  getDocument(id: string): VectorDocument | null {
-    const index = this.idToIndex.get(id);
-    if (index === undefined) return null;
-    return this.documents.get(index) || null;
+  async getDocument(id: string): Promise<VectorDocument | null> {
+    if (!this.index) {
+      throw new Error('Index not initialized');
+    }
+
+    try {
+      const item = await this.index.getItem(id);
+      if (!item) return null;
+
+      return {
+        id: item.id,
+        embedding: item.vector,
+        metadata: item.metadata as VectorDocument['metadata'],
+      };
+    } catch (error) {
+      console.error('[ERROR] Failed to get document:', error);
+      return null;
+    }
   }
 
   /**
    * Save index to disk
    */
-  save(): void {
+  async save(): Promise<void> {
     if (!this.index) {
       throw new Error('Index not initialized');
     }
 
-    // Ensure directory exists
-    const dir = path.dirname(this.indexPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    try {
+      // End update if in progress
+      if (this.isUpdating) {
+        await this.index.endUpdate();
+        this.isUpdating = false;
+      }
+
+      // Save metadata
+      const metadataPath = this.indexPath.replace(/\.index$/, '.meta.json');
+      fs.writeFileSync(metadataPath, JSON.stringify(this.metadata, null, 2), 'utf8');
+
+      console.error(`[INFO] Saved vector index: ${this.indexPath}`);
+    } catch (error) {
+      console.error('[ERROR] Failed to save index:', error);
+      throw error;
     }
-
-    // Save HNSW index
-    this.index.writeIndex(this.indexPath);
-
-    // Save metadata and documents
-    const metadataWithDocs = {
-      ...this.metadata,
-      documents: Array.from(this.documents.values()),
-    };
-
-    fs.writeFileSync(this.metadataPath, JSON.stringify(metadataWithDocs, null, 2), 'utf8');
-
-    console.error(`[INFO] Saved vector index: ${this.indexPath}`);
   }
 
   /**
    * Get index statistics
    */
-  getStats(): VectorIndexMetadata {
-    return { ...this.metadata };
+  async getStats(): Promise<VectorIndexMetadata> {
+    if (!this.index) {
+      throw new Error('Index not initialized');
+    }
+
+    try {
+      const stats = await this.index.getIndexStats();
+      this.metadata.totalDocuments = stats.items;
+      return { ...this.metadata };
+    } catch (error) {
+      console.error('[ERROR] Failed to get stats:', error);
+      return { ...this.metadata };
+    }
   }
 
   /**
    * Clear index
    */
-  clear(): void {
-    this.documents.clear();
-    this.idToIndex.clear();
-    this.metadata.totalDocuments = 0;
-    this.metadata.updatedAt = new Date().toISOString();
+  async clear(): Promise<void> {
+    if (!this.index) {
+      throw new Error('Index not initialized');
+    }
 
-    // Reinitialize index
-    if (this.index) {
-      this.index = new HierarchicalNSW('cosine', this.metadata.dimensions);
-      this.index.initIndex(10000, 16, 200, 100);
-      this.index.setEf(50);
+    try {
+      // Delete and recreate index
+      await this.index.deleteIndex();
+      await this.index.createIndex();
+
+      this.metadata.totalDocuments = 0;
+      this.metadata.updatedAt = new Date().toISOString();
+      this.isUpdating = false;
+    } catch (error) {
+      console.error('[ERROR] Failed to clear index:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create index if it doesn't exist
+   */
+  async createIndex(): Promise<void> {
+    if (!this.index) {
+      throw new Error('Index not initialized');
+    }
+
+    try {
+      const exists = await this.index.isIndexCreated();
+      if (!exists) {
+        await this.index.createIndex({
+          version: 1,
+          deleteIfExists: false,
+          metadata_config: {
+            indexed: ['type', 'category', 'language'],
+          },
+        });
+        console.error(`[INFO] Created new vector index: ${this.indexPath}`);
+      }
+    } catch (error) {
+      console.error('[ERROR] Failed to create index:', error);
+      throw error;
     }
   }
 }

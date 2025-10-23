@@ -402,8 +402,9 @@ export class CodebaseIndexer {
             embedding,
             metadata: {
               type: 'code',
-              language: file.language,
+              language: file.language || '',
               content: file.content.slice(0, 500), // Store snippet
+              category: '',
             },
           };
 

@@ -75,12 +75,12 @@ describe('MCP Required Environment Variables', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(targetManager.getTarget).mockReturnValue(mockTarget);
+    (targetManager.getTarget as any).mockReturnValue(mockTarget);
   });
 
   it('should skip gemini-google-search when GEMINI_API_KEY is not provided', async () => {
     // Mock that server is not installed
-    vi.mocked(mockTarget.readConfig).mockResolvedValue({
+    (mockTarget.readConfig as any).mockResolvedValue({
       enabledMcpjsonServers: [],
     });
 
@@ -105,7 +105,7 @@ describe('MCP Required Environment Variables', () => {
 
   it('should install servers without required environment variables', async () => {
     // Mock that server is not installed
-    vi.mocked(mockTarget.readConfig).mockResolvedValue({
+    (mockTarget.readConfig as any).mockResolvedValue({
       enabledMcpjsonServers: [],
     });
 
@@ -127,7 +127,7 @@ describe('MCP Required Environment Variables', () => {
 
   it('should keep existing server with valid API keys when user provides no input', async () => {
     // Mock that server is already installed with valid API key
-    vi.mocked(mockTarget.readConfig).mockResolvedValue({
+    (mockTarget.readConfig as any).mockResolvedValue({
       enabledMcpjsonServers: {
         'gemini-google-search': {
           type: 'local',
@@ -159,7 +159,7 @@ describe('MCP Required Environment Variables', () => {
 
   it('should remove existing server with invalid API keys when user provides no input', async () => {
     // Mock that server is already installed but with empty API key
-    vi.mocked(mockTarget.readConfig).mockResolvedValue({
+    (mockTarget.readConfig as any).mockResolvedValue({
       enabledMcpjsonServers: {
         'gemini-google-search': {
           type: 'local',
