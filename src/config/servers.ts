@@ -32,6 +32,8 @@ export interface MCPServerDefinition {
   category: 'core' | 'external' | 'ai';
   /** Whether this server is included by default in init */
   defaultInInit?: boolean;
+  /** Whether this server is required and cannot be uninstalled */
+  required?: boolean;
 }
 
 /**
@@ -99,6 +101,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     },
     category: 'core',
     defaultInInit: true,
+    required: true,
   },
 
   'gpt-image': {
