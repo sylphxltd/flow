@@ -206,6 +206,9 @@ export class MCPService {
         const server = MCP_SERVER_REGISTRY[serverId];
         const configuredValues = serverConfigs[serverId] || {};
 
+        // Prepare config with environment variables
+        let configToTransform = { ...server.config };
+
         // If server has env vars and we have configured values, merge them
         if (Object.keys(configuredValues).length > 0) {
           const serverConfigEnv = server.config.type === 'local' ? server.config.environment : {};
@@ -217,14 +220,15 @@ export class MCPService {
             }
           }
 
-          mcpSection[server.name] = {
+          configToTransform = {
             ...server.config,
             environment: updatedEnv,
           };
-        } else {
-          // No configuration needed, use default
-          mcpSection[server.name] = server.config;
         }
+
+        // Transform config for target-specific format
+        const transformedConfig = this.target.transformMCPConfig(configToTransform, serverId);
+        mcpSection[server.name] = transformedConfig;
       }
 
       // Write updated config
