@@ -1,10 +1,19 @@
+/**
+ * Codebase CLI commands - 代碼庫 CLI 命令
+ * Codebase search and management functionality
+ */
+
 import { Command } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
+import { render } from 'ink';
+import React from 'react';
+import { CodebaseStatusUI } from '../components/CodebaseStatusUI.js';
 import { CodebaseIndexer } from '../utils/codebase-indexer.js';
 import { CLIError } from '../utils/error-handler.js';
 import { searchService } from '../utils/unified-search-service.js';
 
+/**
+ * Codebase search command
+ */
 export const codebaseSearchCommand = new Command('search')
   .description('Search codebase files and source code')
   .argument('<query>', 'Search query - use natural language, function names, or technical terms')
@@ -15,11 +24,8 @@ export const codebaseSearchCommand = new Command('search')
   .option('--exclude <patterns...>', 'Exclude paths containing these patterns')
   .action(async (query, options) => {
     try {
-      console.log('');
-      console.log(chalk.cyan.bold('▸ Search Codebase'));
-      console.log(chalk.gray(`  Query: "${query}"`));
+      console.log(`🔍 Searching codebase for: "${query}"`);
 
-      const spinner = ora('Searching...').start();
       await searchService.initialize();
 
       const result = await searchService.searchCodebase(query, {
@@ -30,76 +36,67 @@ export const codebaseSearchCommand = new Command('search')
         exclude_paths: options.exclude,
       });
 
-      spinner.stop();
-
       const output = searchService.formatResultsForCLI(result.results, query, result.totalIndexed);
       console.log(output);
-      console.log('');
     } catch (error) {
-      console.error(chalk.red(`\n✗ Error: ${(error as Error).message}\n`));
+      console.error(`❌ Error: ${(error as Error).message}`);
       process.exit(1);
     }
   });
 
+/**
+ * Codebase reindex command
+ */
 export const codebaseReindexCommand = new Command('reindex')
   .description('Reindex all codebase files')
   .action(async () => {
     try {
-      console.log('');
-      console.log(chalk.cyan.bold('▸ Reindex Codebase'));
-
-      const spinner = ora('Scanning and indexing files...').start();
+      console.log('🔄 Starting codebase reindexing...');
+      console.log('📂 Scanning and indexing files...');
 
       const indexer = new CodebaseIndexer();
       const embeddingProvider = await (
         await import('../utils/embeddings.js')
       ).getDefaultEmbeddingProvider();
-
       await indexer.indexCodebase({ embeddingProvider });
 
-      spinner.succeed(chalk.green('Indexing complete'));
-      console.log('');
+      console.log('✅ Indexing complete!');
     } catch (error) {
-      throw new CLIError(`Codebase reindex failed: ${(error as Error).message}`);
+      throw new CLIError(`Codebase status failed: ${(error as Error).message}`);
     }
   });
 
+/**
+ * Codebase status command
+ */
 export const codebaseStatusCommand = new Command('status')
   .description('Get codebase search system status')
   .action(async () => {
     try {
-      console.log('');
-      console.log(chalk.cyan.bold('▸ Codebase Status'));
-
       await searchService.initialize();
       const status = await searchService.getStatus();
 
-      if (status.codebase.indexed) {
-        console.log(chalk.green('\n✓ Indexed and ready'));
-        console.log(chalk.gray(`  Files: ${status.codebase.fileCount}`));
-        if (status.codebase.indexedAt) {
-          console.log(
-            chalk.gray(`  Last indexed: ${new Date(status.codebase.indexedAt).toLocaleString()}`)
-          );
-        }
-      } else {
-        console.log(chalk.yellow('\n⚠ Not indexed'));
-        console.log(chalk.gray('  Run: sylphx-flow codebase reindex'));
-      }
-
-      console.log(chalk.cyan('\n▸ Available Commands'));
-      console.log(chalk.gray('  • codebase search <query>'));
-      console.log(chalk.gray('  • codebase reindex'));
-      console.log(chalk.gray('  • codebase status'));
-      console.log('');
+      render(
+        React.createElement(CodebaseStatusUI, {
+          indexed: status.codebase.indexed,
+          fileCount: status.codebase.fileCount || 0,
+          indexedAt: status.codebase.indexedAt,
+        })
+      );
     } catch (error) {
-      console.error(chalk.red(`\n✗ Error: ${(error as Error).message}\n`));
+      console.error(`❌ Error: ${(error as Error).message}`);
       process.exit(1);
     }
   });
 
-export const codebaseCommand = new Command('codebase')
-  .description('Manage codebase indexing and search')
-  .addCommand(codebaseSearchCommand)
-  .addCommand(codebaseReindexCommand)
-  .addCommand(codebaseStatusCommand);
+/**
+ * Main codebase command
+ */
+export const codebaseCommand = new Command('codebase').description(
+  'Codebase search and management commands'
+);
+
+// Add subcommands
+codebaseCommand.addCommand(codebaseSearchCommand);
+codebaseCommand.addCommand(codebaseReindexCommand);
+codebaseCommand.addCommand(codebaseStatusCommand);

@@ -1,24 +1,26 @@
-import { render } from 'ink';
-import React from 'react';
-import { MCPConfigUI } from '../components/MCPConfigUI.js';
-import { getAllServerIDs, getServersRequiringAPIKeys } from '../config/servers.js';
-import type { MCPServerID } from '../config/servers.js';
+import chalk from 'chalk';
+import inquirer from 'inquirer';
+import ora from 'ora';
+import {
+  getAllServerIDs,
+  getServersRequiringAPIKeys,
+  MCP_SERVER_REGISTRY,
+  type MCPServerID,
+} from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
-import { startSylphxFlowMCPServer } from '../servers/sylphx-flow-mcp-server.js';
 import type { CommandConfig, CommandHandler, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import {
   addMCPServersToTarget,
-  configureMCPServerForTarget,
   listMCPServersForTarget,
   targetSupportsMCPServers,
-  validateTarget,
+  getNestedProperty,
+  setNestedProperty,
 } from '../utils/target-config.js';
 
-// MCP start handler
+// MCP start handler (unchanged - doesn't need UI)
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
-  // Apply disable flags (new approach - whitelist by default, disable specified)
-  let config = {
+  const config = {
     disableMemory: options.disableMemory === true,
     disableTime: options.disableTime === true,
     disableProjectStartup: options.disableProjectStartup === true,
@@ -29,31 +31,31 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
   if (options.preset) {
     switch (options.preset) {
       case 'opencode':
-        config = {
-          disableMemory: true, // Disable memory
-          disableTime: false, // Enable time
-          disableProjectStartup: true, // Disable project startup
-          disableKnowledge: false, // Enable knowledge
-          disableCodebaseSearch: false, // Enable codebase search
-        };
+        Object.assign(config, {
+          disableMemory: true,
+          disableTime: false,
+          disableProjectStartup: true,
+          disableKnowledge: false,
+          disableCodebaseSearch: false,
+        });
         break;
       case 'claude-code':
-        config = {
-          disableMemory: true, // Disable memory
-          disableTime: false, // Enable time
-          disableProjectStartup: false, // Enable project startup
-          disableKnowledge: false, // Enable knowledge
-          disableCodebaseSearch: false, // Enable codebase search
-        };
+        Object.assign(config, {
+          disableMemory: true,
+          disableTime: false,
+          disableProjectStartup: false,
+          disableKnowledge: false,
+          disableCodebaseSearch: false,
+        });
         break;
       case 'minimal':
-        config = {
-          disableMemory: true, // Disable all
+        Object.assign(config, {
+          disableMemory: true,
           disableTime: true,
           disableProjectStartup: true,
           disableKnowledge: true,
           disableCodebaseSearch: true,
-        };
+        });
         break;
       default:
         throw new CLIError(
@@ -63,9 +65,8 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     }
   }
 
+  const { startSylphxFlowMCPServer } = await import('../servers/sylphx-flow-mcp-server.js');
   await startSylphxFlowMCPServer(config);
-
-  // Keep the process alive
   process.stdin.resume();
 };
 
@@ -76,112 +77,66 @@ const mcpInstallHandler: CommandHandler = async (options: {
   dryRun?: boolean;
   target?: string;
 }) => {
-  // Resolve target
   const targetId = await targetManager.resolveTarget({ target: options.target });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
   }
 
+  console.log('');
+  console.log(chalk.cyan.bold('▸ Install MCP Tools'));
+  console.log(chalk.gray(`  Target: ${targetId}`));
+
   const servers = options.servers || [];
 
   if (options.all) {
-    console.log(`🔧 Installing all available MCP tools for ${targetId}...`);
     const allServers = getAllServerIDs();
 
     if (options.dryRun) {
-      console.log(`🔍 Dry run: Would install all MCP tools: ${allServers.join(', ')}`);
-    } else {
-      // Check for servers that need API keys and configure them first
-      const serversNeedingKeys = getServersRequiringAPIKeys();
-      const serversWithKeys: string[] = [];
-      const serversWithoutKeys: string[] = [];
-
-      if (serversNeedingKeys.length > 0) {
-        console.log('\n🔑 Some MCP tools require API keys:');
-
-        for (const serverType of serversNeedingKeys) {
-          const shouldKeepOrInstall = await configureMCPServerForTarget(
-            process.cwd(),
-            targetId,
-            serverType
-          );
-          if (shouldKeepOrInstall) {
-            serversWithKeys.push(serverType);
-          } else {
-            serversWithoutKeys.push(serverType);
-          }
-        }
-      }
-
-      // Get servers that don't need API keys
-      const serversNotNeedingKeys = allServers.filter(
-        (server) => !serversNeedingKeys.includes(server)
-      );
-
-      // Combine servers that don't need keys with servers that have keys
-      const serversToInstall = [...serversNotNeedingKeys, ...serversWithKeys];
-
-      if (serversToInstall.length > 0) {
-        await addMCPServersToTarget(process.cwd(), targetId, serversToInstall as any);
-        console.log(`✅ MCP tools installed: ${serversToInstall.join(', ')}`);
-      }
-
-      if (serversWithoutKeys.length > 0) {
-        console.log(
-          `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
-        );
-        console.log('   You can install them later with: sylphx-flow mcp config <server-name>');
-      }
+      console.log(chalk.yellow('\n  Dry run - would install:'));
+      allServers.forEach((s) => console.log(chalk.gray(`    • ${s}`)));
+      return;
     }
-    return;
-  }
 
-  if (servers.length === 0) {
-    throw new CLIError('Please specify MCP tools to install or use --all', 'NO_SERVERS_SPECIFIED');
-  }
-
-  // Validate server types
-  const validServers: string[] = [];
-  for (const server of servers) {
-    if (getAllServerIDs().includes(server as any)) {
-      validServers.push(server);
-    } else {
-      console.warn(
-        `Warning: Unknown MCP server '${server}'. Available: ${getAllServerIDs().join(', ')}`
-      );
-    }
-  }
-
-  if (validServers.length === 0) {
-    const availableServers = getAllServerIDs();
-    throw new CLIError(
-      `Invalid MCP tools. Available: ${availableServers.join(', ')}`,
-      'INVALID_MCP_SERVERS'
-    );
-  }
-
-  console.log(`🔧 Installing MCP tools for ${targetId}: ${validServers.join(', ')}`);
-  if (options.dryRun) {
-    console.log('🔍 Dry run: Would install MCP tools:', validServers.join(', '));
-  } else {
-    // Check for servers that need API keys and configure them first
-    const serversNeedingKeys = validServers.filter((server) =>
-      getServersRequiringAPIKeys().includes(server as any)
-    );
+    const serversNeedingKeys = getServersRequiringAPIKeys();
     const serversWithKeys: string[] = [];
     const serversWithoutKeys: string[] = [];
 
     if (serversNeedingKeys.length > 0) {
-      console.log('\n🔑 Some MCP tools require API keys:');
+      console.log(chalk.cyan('\n▸ Configure Servers'));
 
       for (const serverType of serversNeedingKeys) {
-        const shouldKeepOrInstall = await configureMCPServerForTarget(
-          process.cwd(),
-          targetId,
-          serverType as any
-        );
-        if (shouldKeepOrInstall) {
+        const server = MCP_SERVER_REGISTRY[serverType];
+        console.log(chalk.cyan(`\n  ${server.name}`));
+
+        if (!server.envVars) {
+          serversWithKeys.push(serverType);
+          continue;
+        }
+
+        const values: Record<string, string> = {};
+
+        for (const [key, config] of Object.entries(server.envVars)) {
+          const answer = await inquirer.prompt([
+            {
+              type: config.secret ? 'password' : 'input',
+              name: 'value',
+              message: `${key}${config.required ? ' *' : ''}`,
+              default: config.default,
+              mask: config.secret ? '•' : undefined,
+            },
+          ]);
+
+          if (answer.value) {
+            values[key] = answer.value;
+          }
+        }
+
+        const hasAllRequired = Object.entries(server.envVars)
+          .filter(([, cfg]) => cfg.required)
+          .every(([key]) => values[key]);
+
+        if (hasAllRequired) {
           serversWithKeys.push(serverType);
         } else {
           serversWithoutKeys.push(serverType);
@@ -189,97 +144,212 @@ const mcpInstallHandler: CommandHandler = async (options: {
       }
     }
 
-    // Get servers that don't need API keys
-    const serversNotNeedingKeys = validServers.filter(
-      (server) => !serversNeedingKeys.includes(server)
-    );
-
-    // Combine servers that don't need keys with servers that have keys
+    const serversNotNeedingKeys = allServers.filter((s) => !serversNeedingKeys.includes(s));
     const serversToInstall = [...serversNotNeedingKeys, ...serversWithKeys];
 
     if (serversToInstall.length > 0) {
+      const spinner = ora('Installing MCP tools...').start();
       await addMCPServersToTarget(process.cwd(), targetId, serversToInstall as any);
-      console.log(`✅ MCP tools installed: ${serversToInstall.join(', ')}`);
+      spinner.succeed(chalk.green(`Installed: ${serversToInstall.join(', ')}`));
     }
 
     if (serversWithoutKeys.length > 0) {
-      console.log(
-        `⚠️  Removed or skipped MCP tools (no API keys provided): ${serversWithoutKeys.join(', ')}`
-      );
-      console.log('   You can install them later with: sylphx-flow mcp config <server-name>');
+      console.log(chalk.yellow(`\n⚠ Skipped: ${serversWithoutKeys.join(', ')}`));
+      console.log(chalk.gray('  Configure later with: sylphx-flow mcp config <server>'));
+    }
+
+    console.log('');
+    return;
+  }
+
+  if (servers.length === 0) {
+    throw new CLIError('Please specify MCP tools to install or use --all', 'NO_SERVERS_SPECIFIED');
+  }
+
+  // Validate servers
+  const validServers: string[] = [];
+  for (const server of servers) {
+    if (getAllServerIDs().includes(server as any)) {
+      validServers.push(server);
+    } else {
+      console.log(chalk.yellow(`⚠ Unknown server: ${server}`));
     }
   }
+
+  if (validServers.length === 0) {
+    throw new CLIError(
+      `Invalid MCP tools. Available: ${getAllServerIDs().join(', ')}`,
+      'INVALID_MCP_SERVERS'
+    );
+  }
+
+  if (options.dryRun) {
+    console.log(chalk.yellow('\n  Dry run - would install:'));
+    validServers.forEach((s) => console.log(chalk.gray(`    • ${s}`)));
+    console.log('');
+    return;
+  }
+
+  const spinner = ora('Installing MCP tools...').start();
+  await addMCPServersToTarget(process.cwd(), targetId, validServers as any);
+  spinner.succeed(chalk.green(`Installed: ${validServers.join(', ')}`));
+  console.log('');
 };
 
 // MCP list handler
 const mcpListHandler: CommandHandler = async (options) => {
-  // Resolve target
   const targetId = await targetManager.resolveTarget({ target: options?.target });
+
+  console.log('');
+  console.log(chalk.cyan.bold('▸ Configured MCP Tools'));
+  console.log(chalk.gray(`  Target: ${targetId}`));
+  console.log('');
+
   await listMCPServersForTarget(process.cwd(), targetId);
+  console.log('');
 };
 
 // MCP config handler
 const mcpConfigHandler: CommandHandler = async (options) => {
   const server = options.server as string;
-
-  // Resolve target
   const targetId = await targetManager.resolveTarget({ target: options.target });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
   }
 
-  // Get existing configuration values from environment and config
-  const existingValues: Record<string, string> = {};
+  console.log('');
+  console.log(chalk.cyan.bold('▸ Configure MCP Server'));
+  console.log(chalk.gray(`  Target: ${targetId}`));
 
-  // If no server specified, show server selection UI
+  // If no server specified, show selection
+  let selectedServerId: MCPServerID;
+
   if (!server) {
-    const { waitUntilExit } = render(
-      React.createElement(MCPConfigUI, {
-        existingValues,
-        targetId,
-        cwd: process.cwd(),
-        onSave: async (values: Record<string, string>, selectedServerId?: MCPServerID) => {
-          if (selectedServerId) {
-            console.log('✅ Configuration saved successfully!');
-          }
-        },
-        onCancel: () => {
-          console.log('Configuration cancelled');
-          process.exit(0);
-        },
-      })
-    );
-    await waitUntilExit();
+    const answer = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'server',
+        message: 'Select server to configure:',
+        choices: getAllServerIDs().map((id) => {
+          const srv = MCP_SERVER_REGISTRY[id];
+          return {
+            name: `${srv.name} - ${srv.description}`,
+            value: id,
+          };
+        }),
+      },
+    ]);
+    selectedServerId = answer.server;
+  } else {
+    if (!getAllServerIDs().includes(server as any)) {
+      throw new CLIError(
+        `Invalid MCP server: ${server}. Available: ${getAllServerIDs().join(', ')}`,
+        'INVALID_MCP_SERVER'
+      );
+    }
+    selectedServerId = server as MCPServerID;
+  }
+
+  const serverDef = MCP_SERVER_REGISTRY[selectedServerId];
+
+  console.log(chalk.cyan(`\n▸ ${serverDef.name}`));
+  console.log(chalk.gray(`  ${serverDef.description}`));
+
+  if (!serverDef.envVars) {
+    console.log(chalk.gray('\n  No configuration needed'));
+    console.log('');
     return;
   }
 
-  // Validate server
-  if (!getAllServerIDs().includes(server as any)) {
-    const availableServers = getAllServerIDs();
-    throw new CLIError(
-      `Invalid MCP server: ${server}. Available: ${availableServers.join(', ')}`,
-      'INVALID_MCP_SERVER'
-    );
+  // Get current values
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
 
-  // Show configuration UI for specific server
-  const { waitUntilExit } = render(
-    React.createElement(MCPConfigUI, {
-      serverId: server as MCPServerID,
-      existingValues,
-      targetId,
-      cwd: process.cwd(),
-      onSave: async (values: Record<string, string>) => {
-        console.log('✅ Configuration saved successfully!');
-      },
-      onCancel: () => {
-        console.log('Configuration cancelled');
-        process.exit(0);
-      },
-    })
-  );
-  await waitUntilExit();
+  const config = await target.readConfig(process.cwd());
+  const mcpConfigPath = target.config.mcpConfigPath;
+  const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
+  const existingConfig = mcpSection[serverDef.name];
+  const existingEnv = existingConfig?.environment || {};
+
+  // Prompt for values
+  const values: Record<string, string> = {};
+
+  for (const [key, envConfig] of Object.entries(serverDef.envVars)) {
+    const currentValue = existingEnv[key] || process.env[key];
+
+    // Model selection
+    if (key === 'EMBEDDING_MODEL') {
+      const answer = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'value',
+          message: `${key}${envConfig.required ? ' *' : ''}`,
+          choices: ['text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'],
+          default: currentValue || envConfig.default || 'text-embedding-3-small',
+        },
+      ]);
+      values[key] = answer.value;
+    } else if (key === 'GEMINI_MODEL') {
+      const answer = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'value',
+          message: `${key}${envConfig.required ? ' *' : ''}`,
+          choices: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'],
+          default: currentValue || envConfig.default || 'gemini-2.5-flash',
+        },
+      ]);
+      values[key] = answer.value;
+    } else {
+      // Regular input
+      const answer = await inquirer.prompt([
+        {
+          type: envConfig.secret ? 'password' : 'input',
+          name: 'value',
+          message: `${key}${envConfig.required ? ' *' : ''}${currentValue ? ' (press Enter to keep current)' : ''}`,
+          default: !envConfig.secret && currentValue ? currentValue : envConfig.default,
+          mask: envConfig.secret ? '•' : undefined,
+        },
+      ]);
+
+      if (answer.value) {
+        values[key] = answer.value;
+      } else if (currentValue) {
+        values[key] = currentValue;
+      }
+    }
+
+    // Show saved value
+    const displayValue =
+      envConfig.secret && values[key] ? '•'.repeat(Math.min(8, values[key].length)) : values[key];
+    console.log(chalk.gray(`  ${key}: ${displayValue}`));
+  }
+
+  // Save configuration
+  const spinner = ora('Saving configuration...').start();
+
+  const serverConfig_env = serverDef.config.type === 'local' ? serverDef.config.environment : {};
+  const updatedEnv = { ...serverConfig_env };
+
+  for (const [key, value] of Object.entries(values)) {
+    if (value && value.trim() !== '') {
+      updatedEnv[key] = value;
+    }
+  }
+
+  mcpSection[serverDef.name] = {
+    ...serverDef.config,
+    environment: updatedEnv,
+  };
+
+  setNestedProperty(config, mcpConfigPath, mcpSection);
+  await target.writeConfig(process.cwd(), config);
+
+  spinner.succeed(chalk.green('Configuration saved'));
+  console.log('');
 };
 
 export const mcpCommand: CommandConfig = {
@@ -300,26 +370,11 @@ export const mcpCommand: CommandConfig = {
           flags: '--preset <type>',
           description: 'Use preset configuration (opencode, claude-code, minimal)',
         },
-        {
-          flags: '--disable-memory',
-          description: 'Disable memory tools',
-        },
-        {
-          flags: '--disable-time',
-          description: 'Disable time tools',
-        },
-        {
-          flags: '--disable-project-startup',
-          description: 'Disable project startup tools',
-        },
-        {
-          flags: '--disable-knowledge',
-          description: 'Disable knowledge tools',
-        },
-        {
-          flags: '--disable-codebase-search',
-          description: 'Disable codebase search tools',
-        },
+        { flags: '--disable-memory', description: 'Disable memory tools' },
+        { flags: '--disable-time', description: 'Disable time tools' },
+        { flags: '--disable-project-startup', description: 'Disable project startup tools' },
+        { flags: '--disable-knowledge', description: 'Disable knowledge tools' },
+        { flags: '--disable-codebase-search', description: 'Disable codebase search tools' },
       ],
       handler: mcpStartHandler,
     },
@@ -351,7 +406,7 @@ export const mcpCommand: CommandConfig = {
       arguments: [
         {
           name: 'server',
-          description: `MCP server to configure (${getServersRequiringAPIKeys().join(', ')}) - optional, will show selection UI if not provided`,
+          description: `MCP server to configure (${getServersRequiringAPIKeys().join(', ')}) - optional`,
           required: false,
         },
       ],
