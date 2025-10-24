@@ -4,42 +4,17 @@
  */
 
 import { drizzle } from 'drizzle-orm/libsql';
-import { createClient } from '@libsql/client';
 import { migrate } from 'drizzle-orm/libsql/migrator';
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as schema from './memory-schema.js';
-import { ConnectionError, DatabaseError } from '../utils/database-errors.js';
+import { BaseDatabaseClient } from './base-database-client.js';
+import { DatabaseError } from '../utils/database-errors.js';
 
 export type MemoryDatabase = ReturnType<typeof drizzle<typeof schema>>;
 
-export class MemoryDatabaseClient {
-  private client: ReturnType<typeof createClient>;
-  public db: MemoryDatabase;
-
+export class MemoryDatabaseClient extends BaseDatabaseClient<typeof schema> {
   constructor() {
-    try {
-      const memoryDir = path.join(process.cwd(), '.sylphx-flow');
-
-      // Ensure directory exists
-      if (!fs.existsSync(memoryDir)) {
-        fs.mkdirSync(memoryDir, { recursive: true });
-      }
-
-      const dbPath = path.join(memoryDir, 'memory.db');
-
-      this.client = createClient({
-        url: `file:${dbPath}`,
-      });
-
-      this.db = drizzle(this.client, { schema });
-    } catch (error) {
-      throw new ConnectionError(
-        'Failed to initialize memory database connection',
-        { url: `file:${path.join(process.cwd(), '.sylphx-flow/memory.db')}` },
-        error as Error
-      );
-    }
+    super('memory', schema);
   }
 
   /**
@@ -58,14 +33,9 @@ export class MemoryDatabaseClient {
       // Run migrations
       const migrationsPath = path.join(process.cwd(), 'drizzle', 'memory');
 
-      if (fs.existsSync(migrationsPath)) {
-        await migrate(this.db, { migrationsFolder: migrationsPath });
-        console.error('[INFO] Memory database migrations completed');
-      } else {
-        // Create tables directly if no migrations
-        await this.createTables();
-        console.error('[INFO] Memory database tables created');
-      }
+      // For now, create tables directly since we don't have migration files yet
+      await this.createTables();
+      console.error('[INFO] Memory database tables created');
     } catch (error) {
       throw new DatabaseError(
         'Failed to initialize memory database',
@@ -80,7 +50,7 @@ export class MemoryDatabaseClient {
    */
   private async createTables(): Promise<void> {
     // Create memory table
-    await this.client.execute(`
+    await this.createTable(`
         CREATE TABLE IF NOT EXISTS memory_table (
           key TEXT NOT NULL,
           namespace TEXT NOT NULL DEFAULT 'default',
@@ -93,15 +63,15 @@ export class MemoryDatabaseClient {
       `);
 
     // Create indexes
-    await this.client.execute(`
+    await this.createIndex(`
         CREATE INDEX IF NOT EXISTS idx_memory_namespace ON memory_table (namespace)
       `);
 
-    await this.client.execute(`
+    await this.createIndex(`
         CREATE INDEX IF NOT EXISTS idx_memory_timestamp ON memory_table (timestamp)
       `);
 
-    await this.client.execute(`
+    await this.createIndex(`
         CREATE INDEX IF NOT EXISTS idx_memory_key ON memory_table (key)
       `);
   }
@@ -114,14 +84,10 @@ export class MemoryDatabaseClient {
     migrationCount: number;
   }> {
     try {
-      const result = await this.client.execute(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='memory_table'
-      `);
-
+      const exists = await this.tableExists('memory_table');
       return {
-        isMigrated: result.rows.length > 0,
-        migrationCount: result.rows.length,
+        isMigrated: exists,
+        migrationCount: exists ? 1 : 0,
       };
     } catch (error) {
       throw new DatabaseError(
