@@ -463,14 +463,14 @@ export function getTargetsWithMCPSupport(): string[] {
 /**
  * Get nested property from object using dot notation
  */
-function getNestedProperty(obj: any, path: string): any {
+export function getNestedProperty(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 }
 
 /**
  * Set nested property in object using dot notation
  */
-function setNestedProperty(obj: any, path: string, value: any): void {
+export function setNestedProperty(obj: any, path: string, value: any): void {
   const keys = path.split('.');
   const lastKey = keys.pop()!;
   const target = keys.reduce((current, key) => {
@@ -485,7 +485,7 @@ function setNestedProperty(obj: any, path: string, value: any): void {
 /**
  * Delete nested property from object using dot notation
  */
-function deleteNestedProperty(obj: any, path: string): void {
+export function deleteNestedProperty(obj: any, path: string): void {
   const keys = path.split('.');
   const lastKey = keys.pop()!;
   const target = keys.reduce((current, key) => current?.[key], obj);

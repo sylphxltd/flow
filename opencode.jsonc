@@ -47,9 +47,9 @@
         "start"
       ],
       "environment": {
+        "OPENAI_API_KEY": "",
         "OPENAI_BASE_URL": "https://api.openai.com/v1",
-        "EMBEDDING_MODEL": "text-embedding-3-small",
-        "OPENAI_API_KEY": "{file:.secrets/OPENAI_API_KEY}"
+        "EMBEDDING_MODEL": "text-embedding-3-small"
       }
     },
     "context7": {

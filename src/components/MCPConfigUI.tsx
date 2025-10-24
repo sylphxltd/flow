@@ -1,8 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Text, useInput, useApp } from 'ink';
+import { Box, Text, useApp, useInput } from 'ink';
 import TextInput from 'ink-text-input';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { MCPServerID } from '../config/servers.js';
-import { MCP_SERVER_REGISTRY } from '../config/servers.js';
+import {
+  MCP_SERVER_REGISTRY,
+  getAllServerIDs,
+  getAllEnvVars,
+  getSecretEnvVars,
+  getRequiredEnvVars,
+} from '../config/servers.js';
+import { targetManager } from '../core/target-manager.js';
+import {
+  getNestedProperty,
+  setNestedProperty,
+  deleteNestedProperty,
+} from '../utils/target-config.js';
 
 interface ConfigField {
   name: string;
@@ -13,6 +25,7 @@ interface ConfigField {
   currentValue?: string;
   value: string;
   isSecret: boolean;
+  options?: string[];
 }
 
 interface ServerConfig {
@@ -23,52 +36,95 @@ interface ServerConfig {
 }
 
 interface MCPConfigUIProps {
-  serverId: MCPServerID;
+  serverId?: MCPServerID;
   existingValues: Record<string, string>;
-  onSave: (values: Record<string, string>) => void;
+  targetId: string;
+  cwd: string;
+  onSave: (values: Record<string, string>, selectedServerId?: MCPServerID) => void;
   onCancel: () => void;
 }
 
-export function MCPConfigUI({ serverId, existingValues, onSave, onCancel }: MCPConfigUIProps) {
+export function MCPConfigUI({
+  serverId,
+  existingValues,
+  targetId,
+  cwd,
+  onSave,
+  onCancel,
+}: MCPConfigUIProps) {
   const { exit } = useApp();
   const [currentFieldIndex, setCurrentFieldIndex] = useState(0);
   const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [mode, setMode] = useState<'server-select' | 'config'>('server-select');
+  const [isSelectingOption, setIsSelectingOption] = useState(false);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
 
-  // Initialize server configuration
+  const availableServers = getAllServerIDs().map((id) => {
+    const server = MCP_SERVER_REGISTRY[id];
+    return {
+      id,
+      name: server?.name || id,
+      description: server?.description || 'Unknown server',
+      fields: server?.envVars ? Object.keys(server.envVars) : [],
+    };
+  });
+
   useEffect(() => {
-    const server = MCP_SERVER_REGISTRY[serverId];
-    if (!server) return;
+    if (serverId && MCP_SERVER_REGISTRY[serverId]) {
+      setMode('config');
+      const server = MCP_SERVER_REGISTRY[serverId];
+      if (!server) return;
 
-    const fields: ConfigField[] = [];
+      const fields: ConfigField[] = [];
 
-    if (server.envVars) {
-      Object.entries(server.envVars).forEach(([key, config]) => {
-        fields.push({
-          name: key,
-          description: config.description,
-          required: config.required,
-          secret: config.secret || false,
-          defaultValue: config.default,
-          currentValue: existingValues[key],
-          value: existingValues[key] || config.default || '',
-          isSecret: config.secret || false,
+      if (server.envVars) {
+        Object.entries(server.envVars).forEach(([key, config]) => {
+          let options: string[] | undefined;
+
+          if (key === 'EMBEDDING_MODEL') {
+            options = [
+              'text-embedding-3-small',
+              'text-embedding-3-large',
+              'text-embedding-ada-002',
+            ];
+          } else if (key === 'GEMINI_MODEL') {
+            options = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+          }
+
+          fields.push({
+            name: key,
+            description: config.description,
+            required: config.required,
+            secret: config.secret || false,
+            defaultValue: config.default,
+            currentValue: existingValues[key],
+            value: existingValues[key] || config.default || '',
+            isSecret: config.secret || false,
+            options,
+          });
         });
-      });
-    }
+      }
 
-    setServerConfig({
-      id: server.id,
-      name: server.name,
-      description: server.description,
-      fields,
-    });
+      setServerConfig({
+        id: server.id,
+        name: server.name,
+        description: server.description,
+        fields,
+      });
+    } else {
+      setMode('server-select');
+      setServerConfig(null);
+    }
   }, [serverId, existingValues]);
 
-  // Handle keyboard input
   useInput((input, key) => {
     if (key.escape) {
+      if (isSelectingOption) {
+        setIsSelectingOption(false);
+        return;
+      }
       onCancel();
       return;
     }
@@ -79,37 +135,119 @@ export function MCPConfigUI({ serverId, existingValues, onSave, onCancel }: MCPC
     }
 
     if (key.return) {
-      if (currentFieldIndex === serverConfig?.fields.length) {
+      if (isSelectingOption) {
+        const currentField = serverConfig?.fields[currentFieldIndex];
+        if (currentField?.options) {
+          updateFieldValue(currentFieldIndex, currentField.options[selectedOptionIndex]);
+        }
+        setIsSelectingOption(false);
+        setCurrentFieldIndex((prev) => Math.min(prev + 1, serverConfig?.fields.length || 0));
+        return;
+      }
+
+      if (mode === 'server-select') {
+        if (currentFieldIndex < availableServers.length) {
+          const selectedServer = availableServers[currentFieldIndex];
+          const serverId = selectedServer.id as MCPServerID;
+          const server = MCP_SERVER_REGISTRY[serverId];
+
+          if (server) {
+            const fields: ConfigField[] = [];
+
+            if (server.envVars) {
+              Object.entries(server.envVars).forEach(([key, config]) => {
+                let options: string[] | undefined;
+
+                if (key === 'EMBEDDING_MODEL') {
+                  options = [
+                    'text-embedding-3-small',
+                    'text-embedding-3-large',
+                    'text-embedding-ada-002',
+                  ];
+                } else if (key === 'GEMINI_MODEL') {
+                  options = [
+                    'gemini-2.5-flash',
+                    'gemini-2.5-pro',
+                    'gemini-1.5-flash',
+                    'gemini-1.5-pro',
+                  ];
+                }
+
+                fields.push({
+                  name: key,
+                  description: config.description,
+                  required: config.required,
+                  secret: config.secret || false,
+                  defaultValue: config.default,
+                  currentValue: existingValues[key],
+                  value: existingValues[key] || config.default || '',
+                  isSecret: config.secret || false,
+                  options,
+                });
+              });
+            }
+
+            setServerConfig({
+              id: server.id,
+              name: server.name,
+              description: server.description,
+              fields,
+            });
+            setMode('config');
+            setCurrentFieldIndex(0);
+          }
+        }
+      } else if (currentFieldIndex === serverConfig?.fields.length) {
         handleSubmit();
       } else {
-        setCurrentFieldIndex((prev) => Math.min(prev + 1, serverConfig?.fields.length || 0));
+        const currentField = serverConfig?.fields[currentFieldIndex];
+        if (currentField?.options) {
+          const currentValueIndex = currentField.options.findIndex(
+            (opt) => opt === currentField.value
+          );
+          setSelectedOptionIndex(currentValueIndex >= 0 ? currentValueIndex : 0);
+          setIsSelectingOption(true);
+        } else {
+          setCurrentFieldIndex((prev) => Math.min(prev + 1, serverConfig?.fields.length || 0));
+        }
       }
       return;
     }
 
     if (key.tab) {
-      setCurrentFieldIndex((prev) => (prev + 1) % ((serverConfig?.fields.length || 0) + 1));
-      return;
-    }
-
-    if (key.shift && input === 'Tab') {
-      setCurrentFieldIndex((prev) => (prev === 0 ? serverConfig?.fields.length || 0 : prev - 1));
+      if (mode === 'server-select') {
+        setCurrentFieldIndex((prev) => (prev + 1) % availableServers.length);
+      } else {
+        setCurrentFieldIndex((prev) => (prev + 1) % ((serverConfig?.fields.length || 0) + 1));
+      }
       return;
     }
 
     if (key.upArrow) {
-      setCurrentFieldIndex((prev) => Math.max(0, prev - 1));
+      if (isSelectingOption) {
+        setSelectedOptionIndex((prev) => Math.max(0, prev - 1));
+      } else {
+        setCurrentFieldIndex((prev) => Math.max(0, prev - 1));
+      }
       return;
     }
 
     if (key.downArrow) {
-      setCurrentFieldIndex((prev) => Math.min(prev + 1, serverConfig?.fields.length || 0));
+      if (isSelectingOption) {
+        const currentField = serverConfig?.fields[currentFieldIndex];
+        const maxIndex = (currentField?.options?.length || 1) - 1;
+        setSelectedOptionIndex((prev) => Math.min(prev + 1, maxIndex));
+      } else {
+        const maxIndex =
+          mode === 'server-select' ? availableServers.length - 1 : serverConfig?.fields.length || 0;
+        setCurrentFieldIndex((prev) => Math.min(prev + 1, maxIndex));
+      }
       return;
     }
   });
 
-  const handleSubmit = useCallback(() => {
-    if (!serverConfig) return;
+  const handleSubmit = useCallback(async () => {
+    if (!serverConfig || mode !== 'config') return;
 
     setIsSubmitting(true);
     const values: Record<string, string> = {};
@@ -118,17 +256,49 @@ export function MCPConfigUI({ serverId, existingValues, onSave, onCancel }: MCPC
       values[field.name] = field.value || field.defaultValue || '';
     });
 
-    onSave(values);
-    setShowSuccess(true);
+    try {
+      const target = targetManager.getTarget(targetId);
+      if (!target) {
+        throw new Error(`Target not found: ${targetId}`);
+      }
 
-    setTimeout(() => {
-      exit();
-    }, 1500);
-  }, [serverConfig, onSave, exit]);
+      const config = await target.readConfig(cwd);
+      const mcpConfigPath = target.config.mcpConfigPath;
+      const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
+
+      const server = MCP_SERVER_REGISTRY[serverConfig.id];
+      const serverConfig_env = server.config.type === 'local' ? server.config.environment : {};
+
+      const updatedEnv = { ...serverConfig_env };
+      for (const [key, value] of Object.entries(values)) {
+        if (value && value.trim() !== '') {
+          updatedEnv[key] = value;
+        }
+      }
+
+      mcpSection[server.name] = {
+        ...server.config,
+        environment: updatedEnv,
+      };
+
+      setNestedProperty(config, mcpConfigPath, mcpSection);
+      await target.writeConfig(cwd, config);
+
+      onSave(values, serverConfig.id);
+      setShowSuccess(true);
+
+      setTimeout(() => {
+        exit();
+      }, 1500);
+    } catch (error) {
+      console.error('Failed to save configuration:', error);
+      setIsSubmitting(false);
+    }
+  }, [serverConfig, mode, targetId, cwd, onSave, exit]);
 
   const updateFieldValue = useCallback(
     (index: number, value: string) => {
-      if (!serverConfig) return;
+      if (!serverConfig || mode !== 'config') return;
 
       const newFields = [...serverConfig.fields];
       newFields[index] = { ...newFields[index], value };
@@ -138,24 +308,61 @@ export function MCPConfigUI({ serverId, existingValues, onSave, onCancel }: MCPC
         fields: newFields,
       });
     },
-    [serverConfig]
+    [serverConfig, mode]
   );
+
+  if (mode === 'server-select') {
+    return (
+      <Box flexDirection="column">
+        <Box marginBottom={1}>
+          <Text bold color="cyan">
+            ▸ MCP Configuration
+          </Text>
+        </Box>
+
+        <Box flexDirection="column">
+          {availableServers.map((server, index) => {
+            const isActive = index === currentFieldIndex;
+            const hasConfig = server.fields && server.fields.length > 0;
+
+            return (
+              <Box key={server.id}>
+                <Text>
+                  <Text color={isActive ? 'cyan' : 'gray'}>{isActive ? '❯ ' : '  '}</Text>
+                  <Text color={isActive ? 'white' : 'gray'} bold={isActive}>
+                    {server.name}
+                  </Text>
+                  {hasConfig && (
+                    <Text color="gray" dimColor>
+                      {' '}
+                      ({server.fields.length})
+                    </Text>
+                  )}
+                </Text>
+              </Box>
+            );
+          })}
+        </Box>
+
+        <Box marginTop={1}>
+          <Text dimColor>↑↓ navigate • ⏎ select • esc cancel</Text>
+        </Box>
+      </Box>
+    );
+  }
 
   if (!serverConfig) {
     return (
-      <Box flexDirection="column" padding={1}>
-        <Text color="red">❌ Loading server configuration...</Text>
+      <Box>
+        <Text color="yellow">Loading...</Text>
       </Box>
     );
   }
 
   if (showSuccess) {
     return (
-      <Box flexDirection="column" justifyContent="center" alignItems="center" height={10}>
-        <Text color="green" bold>
-          ✅ Configuration saved successfully!
-        </Text>
-        <Text color="gray">Exiting...</Text>
+      <Box>
+        <Text color="green">✓ Saved</Text>
       </Box>
     );
   }
@@ -163,22 +370,13 @@ export function MCPConfigUI({ serverId, existingValues, onSave, onCancel }: MCPC
   const isLastField = currentFieldIndex === serverConfig.fields.length;
 
   return (
-    <Box flexDirection="column" padding={1}>
-      {/* Header */}
+    <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text bold color="blue">
-          🔧 Configure {serverConfig.description}
+        <Text bold color="cyan">
+          ▸ {serverConfig.name}
         </Text>
       </Box>
 
-      {/* Server Info */}
-      <Box marginBottom={1}>
-        <Text color="gray">
-          Server: {serverConfig.name} ({serverConfig.id})
-        </Text>
-      </Box>
-
-      {/* Configuration Fields */}
       {serverConfig.fields.map((field, index) => {
         const isActive = index === currentFieldIndex;
         const hasValue = field.value || field.currentValue;
@@ -188,80 +386,56 @@ export function MCPConfigUI({ serverId, existingValues, onSave, onCancel }: MCPC
             : field.value || field.defaultValue || '';
 
         return (
-          <Box key={field.name} marginBottom={1} flexDirection="column">
-            <Box marginBottom={1}>
-              <Text color={isActive ? 'cyan' : 'white'}>
+          <Box key={field.name} marginBottom={1}>
+            <Box width={20}>
+              <Text color={isActive ? 'cyan' : 'gray'}>
+                {isActive ? '❯ ' : '  '}
                 {field.name}
-                {field.required && <Text color="red"> *</Text>}
-                {field.defaultValue && !field.value && (
-                  <Text color="gray"> (default: {field.defaultValue})</Text>
-                )}
+                {field.required && <Text color="red">*</Text>}
               </Text>
             </Box>
-
-            <Box>
-              <Text color="gray" dimColor>
-                {field.description}
-              </Text>
-            </Box>
-
-            <Box marginTop={1}>
+            <Box flexGrow={1}>
               {isActive ? (
-                <TextInput
-                  value={field.value}
-                  onChange={(value) => updateFieldValue(index, value)}
-                  placeholder={field.defaultValue || ''}
-                  mask={field.isSecret ? '•' : undefined}
-                  focus={isActive}
-                />
+                field.options ? (
+                  isSelectingOption ? (
+                    <Box flexDirection="column">
+                      {field.options.map((option, optIndex) => (
+                        <Text
+                          key={option}
+                          color={optIndex === selectedOptionIndex ? 'cyan' : 'gray'}
+                        >
+                          {optIndex === selectedOptionIndex ? '❯ ' : '  '}
+                          {option}
+                        </Text>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Text color="white">{field.value || field.defaultValue} ▼</Text>
+                  )
+                ) : (
+                  <TextInput
+                    value={field.value}
+                    onChange={(value) => updateFieldValue(index, value)}
+                    placeholder={field.defaultValue || field.description}
+                    mask={field.isSecret ? '•' : undefined}
+                  />
+                )
               ) : (
-                <Box borderStyle="round" borderColor={hasValue ? 'green' : 'gray'} paddingX={1}>
-                  <Text color={hasValue ? 'white' : 'gray'}>
-                    {displayValue || <Text color="gray">Empty</Text>}
-                  </Text>
-                </Box>
+                <Text color={hasValue ? 'white' : 'gray'}>{displayValue || '—'}</Text>
               )}
             </Box>
-
-            {isActive && (
-              <Box marginTop={1}>
-                <Text color="cyan" dimColor>
-                  {field.isSecret ? '🔒 Secret field' : '📝 Text field'}
-                  {' • '}
-                  {field.required ? 'Required' : 'Optional'}
-                  {field.currentValue && ' • Has existing value'}
-                </Text>
-              </Box>
-            )}
           </Box>
         );
       })}
 
-      {/* Submit Button */}
-      <Box marginTop={2}>
+      <Box marginTop={1}>
         {isLastField ? (
-          <Box flexDirection="column">
-            <Text bold color={isSubmitting ? 'gray' : 'green'}>
-              {isSubmitting ? '⏳ Saving...' : '💾 Save Configuration'}
-            </Text>
-            <Box marginTop={1}>
-              <Text color="gray" dimColor>
-                Press Enter to save, Esc to cancel
-              </Text>
-            </Box>
-          </Box>
-        ) : (
-          <Text color="gray" dimColor>
-            Navigate with ↑↓ Tab, press Enter on Save Configuration
+          <Text color={isSubmitting ? 'gray' : 'green'}>
+            {isSubmitting ? '⏳ Saving...' : '❯ Press ⏎ to save'}
           </Text>
+        ) : (
+          <Text dimColor>↑↓ navigate • ⏎ next • esc cancel</Text>
         )}
-      </Box>
-
-      {/* Help */}
-      <Box marginTop={2} borderStyle="single" padding={1}>
-        <Text color="gray">
-          <Text bold>Controls:</Text> Tab/↑↓ Navigate • Enter Select • Esc Cancel • Ctrl+C Exit
-        </Text>
       </Box>
     </Box>
   );

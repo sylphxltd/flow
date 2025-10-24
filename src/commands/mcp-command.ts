@@ -1,5 +1,10 @@
+import { render } from 'ink';
+import React from 'react';
+import { MCPConfigUI } from '../components/MCPConfigUI.js';
 import { getAllServerIDs, getServersRequiringAPIKeys } from '../config/servers.js';
+import type { MCPServerID } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
+import { startSylphxFlowMCPServer } from '../servers/sylphx-flow-mcp-server.js';
 import type { CommandConfig, CommandHandler, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import {
@@ -9,7 +14,6 @@ import {
   targetSupportsMCPServers,
   validateTarget,
 } from '../utils/target-config.js';
-import { startSylphxFlowMCPServer } from '../servers/sylphx-flow-mcp-server.js';
 
 // MCP start handler
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
@@ -217,15 +221,37 @@ const mcpListHandler: CommandHandler = async (options) => {
 // MCP config handler
 const mcpConfigHandler: CommandHandler = async (options) => {
   const server = options.server as string;
-  if (!server) {
-    throw new CLIError('Please specify a server to configure', 'NO_SERVER_SPECIFIED');
-  }
 
   // Resolve target
   const targetId = await targetManager.resolveTarget({ target: options.target });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
+  }
+
+  // Get existing configuration values from environment and config
+  const existingValues: Record<string, string> = {};
+
+  // If no server specified, show server selection UI
+  if (!server) {
+    const { waitUntilExit } = render(
+      React.createElement(MCPConfigUI, {
+        existingValues,
+        targetId,
+        cwd: process.cwd(),
+        onSave: async (values: Record<string, string>, selectedServerId?: MCPServerID) => {
+          if (selectedServerId) {
+            console.log('✅ Configuration saved successfully!');
+          }
+        },
+        onCancel: () => {
+          console.log('Configuration cancelled');
+          process.exit(0);
+        },
+      })
+    );
+    await waitUntilExit();
+    return;
   }
 
   // Validate server
@@ -237,7 +263,23 @@ const mcpConfigHandler: CommandHandler = async (options) => {
     );
   }
 
-  await configureMCPServerForTarget(process.cwd(), targetId, server as any);
+  // Show configuration UI for specific server
+  const { waitUntilExit } = render(
+    React.createElement(MCPConfigUI, {
+      serverId: server as MCPServerID,
+      existingValues,
+      targetId,
+      cwd: process.cwd(),
+      onSave: async (values: Record<string, string>) => {
+        console.log('✅ Configuration saved successfully!');
+      },
+      onCancel: () => {
+        console.log('Configuration cancelled');
+        process.exit(0);
+      },
+    })
+  );
+  await waitUntilExit();
 };
 
 export const mcpCommand: CommandConfig = {
@@ -309,8 +351,8 @@ export const mcpCommand: CommandConfig = {
       arguments: [
         {
           name: 'server',
-          description: `MCP server to configure (${getServersRequiringAPIKeys().join(', ')})`,
-          required: true,
+          description: `MCP server to configure (${getServersRequiringAPIKeys().join(', ')}) - optional, will show selection UI if not provided`,
+          required: false,
         },
       ],
       options: [],
