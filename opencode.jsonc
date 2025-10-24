@@ -53,8 +53,7 @@
         "github:sylphxltd/flow",
         "mcp",
         "start",
-        "--disable-memory",
-        "--knowledge-as-tools"
+        "--disable-memory"
       ]
     }
   },
