@@ -131,7 +131,11 @@ export const initCommand: CommandConfig = {
           },
         ]);
 
-        const selectedServers = serverSelectionAnswer.selectedServers as MCPServerID[];
+        let selectedServers = serverSelectionAnswer.selectedServers as MCPServerID[];
+
+        // Ensure all required servers are included
+        const requiredServers = allServers.filter((id) => MCP_SERVER_REGISTRY[id].required);
+        selectedServers = [...new Set([...requiredServers, ...selectedServers])];
 
         if (selectedServers.length > 0) {
           // Configure each selected server that needs configuration
