@@ -98,8 +98,7 @@ const memorySearchHandler: CommandHandler = async (options) => {
 // Memory delete handler
 const memoryDeleteHandler: CommandHandler = async (options) => {
   if (!options.key) {
-    console.error('❌ Key is required. Use --key <key>');
-    process.exit(1);
+    throw new CLIError('Key is required. Use --key <key>');
   }
 
   const memory = new SeparatedMemoryStorage();
@@ -115,8 +114,7 @@ const memoryDeleteHandler: CommandHandler = async (options) => {
 // Memory clear handler
 const memoryClearHandler: CommandHandler = async (options) => {
   if (!options.confirm) {
-    console.error('❌ Confirmation required. Use --confirm to clear memory entries');
-    process.exit(1);
+    throw new CLIError('Confirmation required. Use --confirm to clear memory entries');
   }
 
   const memory = new SeparatedMemoryStorage();
@@ -144,16 +142,37 @@ const memoryStatsHandler: CommandHandler = async () => {
   if (stats.namespaces.length > 0) {
     console.log('Namespaces:');
     stats.namespaces.forEach((ns) => {
-      const count = stats.namespaceCounts[ns] || 0;
-      console.log(`  • ${ns}: ${count} entries`);
+      console.log(`  • ${ns}`);
     });
     console.log('');
   }
 
-  console.log(`Oldest Entry: ${stats.oldestEntry || 'N/A'}`);
-  console.log(`Newest Entry: ${stats.newestEntry || 'N/A'}`);
-  console.log('');
   console.log('📍 Database: .sylphx-flow/memory.db');
+};
+
+// Memory get handler
+const memoryGetHandler: CommandHandler = async (options) => {
+  const args = process.argv.slice(2);
+  const keyIndex = args.indexOf('get') + 1;
+
+  if (keyIndex >= args.length) {
+    throw new CLIError('Usage: flow memory get <key> [--namespace <namespace>]');
+  }
+
+  const key = args[keyIndex];
+  const namespace = options.namespace || 'default';
+
+  const memory = new SeparatedMemoryStorage();
+  const entry = await memory.get(key, namespace);
+
+  if (entry) {
+    console.log(`📄 Memory entry: ${namespace}:${key}`);
+    console.log(`Value: ${JSON.stringify(entry.value, null, 2)}`);
+    console.log(`Created: ${entry.created_at}`);
+    console.log(`Updated: ${entry.updated_at}`);
+  } else {
+    console.log(`❌ Memory entry not found: ${namespace}:${key}`);
+  }
 };
 
 // Memory set handler (for testing)
@@ -163,8 +182,7 @@ const memorySetHandler: CommandHandler = async (options) => {
   const valueIndex = keyIndex + 1;
 
   if (keyIndex >= args.length || valueIndex >= args.length) {
-    console.error('❌ Usage: flow memory set <key> <value> [--namespace <namespace>]');
-    process.exit(1);
+    throw new CLIError('Usage: flow memory set <key> <value> [--namespace <namespace>]');
   }
 
   const key = args[keyIndex];
@@ -228,6 +246,13 @@ export const memoryCommand: CommandConfig = {
       description: 'Show memory statistics',
       options: [{ flags: '--namespace <name>', description: 'Filter by namespace (default: all)' }],
       handler: memoryStatsHandler,
+    },
+    {
+      name: 'get',
+      description: 'Get memory entry',
+      arguments: [{ name: 'key', required: true, description: 'Memory key to retrieve' }],
+      options: [{ flags: '--namespace <name>', description: 'Namespace (default: default)' }],
+      handler: memoryGetHandler,
     },
     {
       name: 'set',

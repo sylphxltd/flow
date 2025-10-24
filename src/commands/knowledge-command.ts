@@ -6,6 +6,7 @@
 import { Command } from 'commander';
 import { searchService } from '../utils/unified-search-service.js';
 import { getKnowledgeContent } from '../resources/knowledge-resources.js';
+import { CLIError } from '../utils/error-handler.js';
 
 /**
  * Knowledge search command
@@ -29,8 +30,7 @@ export const knowledgeSearchCommand = new Command('search')
       const output = searchService.formatResultsForCLI(result.results, query, result.totalIndexed);
       console.log(output);
     } catch (error) {
-      console.error(`❌ Error: ${(error as Error).message}`);
-      process.exit(1);
+      throw new CLIError(`Knowledge search failed: ${(error as Error).message}`);
     }
   });
 
@@ -45,7 +45,7 @@ export const knowledgeGetCommand = new Command('get')
       const content = getKnowledgeContent(uri);
       console.log(content);
     } catch (error) {
-      console.error(`❌ Error: ${(error as Error).message}`);
+      const errorMessage = `Knowledge get failed: ${(error as Error).message}`;
 
       // Show available URIs
       const availableURIs = await searchService.getAvailableKnowledgeURIs();
@@ -53,7 +53,7 @@ export const knowledgeGetCommand = new Command('get')
         console.log('\n**Available knowledge URIs:**');
         availableURIs.forEach((uri) => console.log(`• ${uri}`));
       }
-      process.exit(1);
+      throw new CLIError(errorMessage);
     }
   });
 
@@ -104,8 +104,7 @@ export const knowledgeListCommand = new Command('list')
       console.log(`• sylphx knowledge search <query> - Search knowledge base`);
       console.log(`• sylphx knowledge get <uri> - Get specific document`);
     } catch (error) {
-      console.error(`❌ Error: ${(error as Error).message}`);
-      process.exit(1);
+      throw new CLIError(`Knowledge status failed: ${(error as Error).message}`);
     }
   });
 
@@ -137,11 +136,8 @@ export const knowledgeStatusCommand = new Command('status')
       console.log('\n**Available Commands:**');
       console.log('• sylphx knowledge search <query> - Search knowledge base');
       console.log('• sylphx knowledge get <uri> - Get specific document');
-      console.log('• sylphx knowledge list - List all resources');
-      console.log('• sylphx knowledge status - Show this status');
     } catch (error) {
-      console.error(`❌ Error: ${(error as Error).message}`);
-      process.exit(1);
+      throw new CLIError(`Knowledge list failed: ${(error as Error).message}`);
     }
   });
 

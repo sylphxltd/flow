@@ -49,5 +49,21 @@ export function runCLI(): void {
     program.help();
   }
 
-  program.parse();
+  // Add global error handling
+  process.on('uncaughtException', (error) => {
+    console.error(`❌ Uncaught error: ${error.message}`);
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    console.error(`❌ Unhandled rejection: ${reason}`);
+    process.exit(1);
+  });
+
+  try {
+    program.parse();
+  } catch (error) {
+    console.error(`❌ Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
 }

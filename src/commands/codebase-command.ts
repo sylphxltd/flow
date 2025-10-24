@@ -6,6 +6,7 @@
 import { Command } from 'commander';
 import { searchService } from '../utils/unified-search-service.js';
 import { CodebaseIndexer } from '../utils/codebase-indexer.js';
+import { CLIError } from '../utils/error-handler.js';
 
 /**
  * Codebase search command
@@ -55,8 +56,7 @@ export const codebaseReindexCommand = new Command('reindex')
 
       console.log('✅ Indexing complete!');
     } catch (error) {
-      console.error(`❌ Indexing failed: ${(error as Error).message}`);
-      process.exit(1);
+      throw new CLIError(`Codebase status failed: ${(error as Error).message}`);
     }
   });
 
