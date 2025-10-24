@@ -13,7 +13,7 @@ function getNestedProperty(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 }
 
-// MCP start handler (unchanged - doesn't need UI)
+// MCP start handler - simplified and targeted
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
   const config = {
     disableMemory: options.disableMemory === true,
@@ -52,28 +52,22 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     for (const [serverName, serverConfig] of Object.entries(mcpSection)) {
       if (!serverConfig || typeof serverConfig !== 'object') continue;
 
-      // Handle different config formats
+      // Simply add flags to the command, regardless of format
       if (serverConfig.type === 'stdio') {
-        // Claude Code format: stdio with command + args + env
+        // Claude Code format: has args array
         if (!serverConfig.args) {
           serverConfig.args = [];
         }
-
-        // Remove existing disable flags to avoid duplicates
-        serverConfig.args = serverConfig.args.filter((arg: string) => !disableFlags.includes(arg));
-
-        // Add new flags
         serverConfig.args.push(...requestedFlags);
 
       } else if (serverConfig.type === 'local' && Array.isArray(serverConfig.command)) {
-        // OpenCode format: local with command array
-        // Remove existing disable flags to avoid duplicates
-        const filteredCommand = serverConfig.command.filter((arg: string) => !disableFlags.includes(arg));
+        // OpenCode format: has command array
+        serverConfig.command.push(...requestedFlags);
 
-        // Add new flags
-        serverConfig.command = [...filteredCommand, ...requestedFlags];
+      } else if (serverConfig.type === 'http' || serverConfig.type === 'remote') {
+        // HTTP/remote servers don't use command args - ignore
+        continue;
       }
-      // Note: Other config types (remote/http) don't use command args for CLI-based servers
     }
 
     await target.writeConfig(process.cwd(), configData);
