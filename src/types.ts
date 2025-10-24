@@ -40,6 +40,15 @@ export interface CommandArgument {
   required?: boolean;
 }
 
+export interface ServerFlagConfig {
+  /** Description of what this flag does */
+  description: string;
+  /** Whether this flag is enabled by default */
+  enabled?: boolean;
+  /** Async function to determine if this flag should be enabled based on context */
+  shouldEnable?: () => Promise<boolean>;
+}
+
 export interface MCPServerConfig {
   // Common fields
   type: 'stdio';
@@ -65,6 +74,27 @@ export interface MCPServerConfigHTTPLegacy {
   type: 'remote';
   url: string;
   headers?: Record<string, string>;
+}
+
+// Type guard functions for better type safety
+export function isStdioConfig(config: MCPServerConfigUnion): config is MCPServerConfig {
+  return config.type === 'stdio';
+}
+
+export function isLocalConfig(config: MCPServerConfigUnion): config is MCPServerConfigLegacy {
+  return config.type === 'local';
+}
+
+export function isHttpConfig(config: MCPServerConfigUnion): config is MCPServerConfigHTTP | MCPServerConfigHTTPLegacy {
+  return config.type === 'http' || config.type === 'remote';
+}
+
+// Type for CLI-based servers that support command arguments
+export type CLICommandConfig = MCPServerConfig | MCPServerConfigLegacy;
+
+// Type guard for CLI servers
+export function isCLICommandConfig(config: MCPServerConfigUnion): config is CLICommandConfig {
+  return isStdioConfig(config) || isLocalConfig(config);
 }
 
 export type MCPServerConfigUnion =
