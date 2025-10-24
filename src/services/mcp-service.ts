@@ -206,12 +206,22 @@ export class MCPService {
         const server = MCP_SERVER_REGISTRY[serverId];
         const configuredValues = serverConfigs[serverId] || {};
 
-        // Prepare config with environment variables
+        // Prepare config with environment variables and dynamic command
         let configToTransform = { ...server.config };
+
+        // Handle dynamic command generation in the config itself
+        if (server.config.type === 'local' && typeof server.config.command === 'function') {
+          const commandArray = await server.config.command();
+          configToTransform = {
+            ...server.config,
+            command: commandArray,
+          };
+        }
 
         // If server has env vars and we have configured values, merge them
         if (Object.keys(configuredValues).length > 0) {
-          const serverConfigEnv = server.config.type === 'local' ? server.config.environment : {};
+          const serverConfigEnv = server.config.type === 'local' ? server.config.environment :
+                                server.config.type === 'stdio' ? server.config.env : {};
           const updatedEnv = { ...serverConfigEnv };
 
           for (const [key, value] of Object.entries(configuredValues)) {
@@ -220,10 +230,11 @@ export class MCPService {
             }
           }
 
-          configToTransform = {
-            ...server.config,
-            environment: updatedEnv,
-          };
+          if (configToTransform.type === 'local') {
+            configToTransform.environment = updatedEnv;
+          } else if (configToTransform.type === 'stdio') {
+            configToTransform.env = updatedEnv;
+          }
         }
 
         // Transform config for target-specific format

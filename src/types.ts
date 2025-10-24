@@ -40,14 +40,8 @@ export interface CommandArgument {
   required?: boolean;
 }
 
-export interface ServerFlagConfig {
-  /** Description of what this flag does */
-  description: string;
-  /** Whether this flag is enabled by default */
-  enabled?: boolean;
-  /** Async function to determine if this flag should be enabled based on context */
-  shouldEnable?: () => Promise<boolean>;
-}
+export type ServerFlagConfig = string | (() => Promise<boolean>);
+
 
 export interface MCPServerConfig {
   // Common fields
@@ -66,7 +60,7 @@ export interface MCPServerConfigHTTP {
 // Legacy OpenCode types (for backward compatibility)
 export interface MCPServerConfigLegacy {
   type: 'local';
-  command: string[];
+  command: string[] | (() => Promise<string[]>);
   environment?: Record<string, string>;
 }
 

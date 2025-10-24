@@ -4,7 +4,7 @@ import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import { MCPService } from '../services/mcp-service.js';
-import type { CommandConfig, CommandHandler, CommandOptions } from '../types.js';
+import type { CommandConfig, CommandHandler, CommandOptions, CLICommandConfig, isCLICommandConfig } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
 

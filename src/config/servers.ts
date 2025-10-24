@@ -41,6 +41,7 @@ export interface MCPServerDefinition {
   required?: boolean;
 }
 
+
 /**
  * Central registry of all available MCP servers
  * This replaces all hardcoded server lists throughout the codebase
@@ -52,7 +53,33 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     description: 'Sylphx Flow MCP server for agent coordination and memory management',
     config: {
       type: 'local' as const,
-      command: ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'] as string[],
+      command: async () => {
+        let finalCommand = ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'];
+
+        // Add disable flags based on server configuration and target
+        const serverDef = MCP_SERVER_REGISTRY['sylphx-flow'];
+
+        if (serverDef?.flags) {
+          const flagsToAdd: string[] = [];
+
+          // Check each flag configuration
+          for (const [flagName, flagConfig] of Object.entries(serverDef.flags)) {
+            if (typeof flagConfig === 'function') {
+              const shouldEnable = await flagConfig();
+              if (shouldEnable) {
+                flagsToAdd.push(`--${flagName}`);
+              }
+            } else if (typeof flagConfig === 'string') {
+              // Static flag - always add
+              flagsToAdd.push(`--${flagName}`);
+            }
+          }
+
+          finalCommand.push(...flagsToAdd);
+        }
+
+        return finalCommand;
+      },
       environment: {
         OPENAI_API_KEY: '',
         OPENAI_BASE_URL: 'https://api.openai.com/v1',
@@ -118,44 +145,37 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       },
     },
     flags: {
-      'disable-memory': {
-        description: 'Disable memory functionality',
-        shouldEnable: async () => {
-          // Check current target from environment or context
-          // This would need to be passed from the command context
-          // For now, implement basic logic
+      'disable-memory': async () => {
+        // For Claude Code target, disable memory by default
+        try {
+          const fs = await import('node:fs/promises');
+          const path = await import('node:path');
 
-          // For Claude Code target, disable memory by default
-          try {
-            const fs = await import('node:fs/promises');
-            const path = await import('node:path');
+          // Check if we're in a Claude Code project
+          const mcpJsonPath = path.join(process.cwd(), '.mcp.json');
+          const claudeConfigPath = path.join(process.cwd(), '.claude', 'settings.local.json');
 
-            // Check if we're in a Claude Code project
-            const mcpJsonPath = path.join(process.cwd(), '.mcp.json');
-            const claudeConfigPath = path.join(process.cwd(), '.claude', 'settings.local.json');
+          const [mcpExists, claudeExists] = await Promise.allSettled([
+            fs.access(mcpJsonPath).then(() => true).catch(() => false),
+            fs.access(claudeConfigPath).then(() => true).catch(() => false)
+          ]);
 
-            const [mcpExists, claudeExists] = await Promise.allSettled([
-              fs.access(mcpJsonPath).then(() => true).catch(() => false),
-              fs.access(claudeConfigPath).then(() => true).catch(() => false)
-            ]);
-
-            if (mcpExists.success || claudeExists.success) {
-              return true; // Claude Code target detected
-            }
-
-            // Check OpenCode project
-            const opencodeConfigPath = path.join(process.cwd(), 'opencode.jsonc');
-            const opencodeExists = await fs.access(opencodeConfigPath).then(() => true).catch(() => false);
-
-            if (opencodeExists) {
-              return false; // OpenCode target detected - don't disable memory
-            }
-          } catch {
-            // If detection fails, don't disable memory
+          if (mcpExists.success || claudeExists.success) {
+            return true; // Claude Code target detected
           }
 
-          return false;
-        },
+          // Check OpenCode project
+          const opencodeConfigPath = path.join(process.cwd(), 'opencode.jsonc');
+          const opencodeExists = await fs.access(opencodeConfigPath).then(() => true).catch(() => false);
+
+          if (opencodeExists) {
+            return false; // OpenCode target detected - don't disable memory
+          }
+        } catch {
+          // If detection fails, don't disable memory
+        }
+
+        return false;
       },
     },
     category: 'core',
