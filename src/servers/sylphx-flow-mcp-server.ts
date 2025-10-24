@@ -78,11 +78,11 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   console.log('🔍 Initializing embedding provider...');
   try {
     const embeddingProvider = await getDefaultEmbeddingProvider();
-    console.log(`✅ Embedding provider initialized: ${embeddingProvider.name}`);
+    console.log(`✓ Embedding provider initialized: ${embeddingProvider.name}`);
 
     // Initialize search service with embeddings
     await searchService.initialize();
-    console.log('✅ Search service initialized with embeddings');
+    console.log('✓ Search service initialized with embeddings');
   } catch (error) {
     console.log('⚠️  Failed to initialize embeddings, using TF-IDF only:', error);
     await searchService.initialize();
@@ -147,7 +147,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    Logger.success('✅ MCP Server connected and ready');
+    Logger.success('✓ MCP Server connected and ready');
 
     console.log('💡 Press Ctrl+C to stop the server');
     return server;

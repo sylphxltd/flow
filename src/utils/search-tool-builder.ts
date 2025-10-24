@@ -194,7 +194,7 @@ Shows:
           content: [
             {
               type: 'text',
-              text: `✅ **Index Ready**\n\n- Total items: ${stats?.totalDocuments || 0}\n- Unique terms: ${stats?.uniqueTerms || 0}\n- Status: Ready for search`,
+              text: `✓ **Index Ready**\n\n- Total items: ${stats?.totalDocuments || 0}\n- Unique terms: ${stats?.uniqueTerms || 0}\n- Status: Ready for search`,
             },
           ],
         };

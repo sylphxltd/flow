@@ -87,7 +87,7 @@ export async function addMCPServersToTarget(
 
   // Write the updated configuration
   await target.writeConfig(cwd, config);
-  console.log(`✅ Updated ${target.config.configFile} with ${addedCount} new MCP server(s)`);
+  console.log(`✓ Updated ${target.config.configFile} with ${addedCount} new MCP server(s)`);
 }
 
 /**
@@ -144,7 +144,7 @@ export async function removeMCPServersFromTarget(
 
   // Write the updated configuration
   await target.writeConfig(cwd, config);
-  console.log(`✅ Updated ${target.config.configFile} (removed ${removedCount} MCP server(s))`);
+  console.log(`✓ Updated ${target.config.configFile} (removed ${removedCount} MCP server(s))`);
 }
 
 /**
@@ -263,7 +263,7 @@ export async function configureMCPServerForTarget(
 
   // mcp config is always for configuring - show UI with existing values
   console.log(
-    `✅ Found existing API keys, you can update them or press Enter to keep current values`
+    `✓ Found existing API keys, you can update them or press Enter to keep current values`
   );
   const apiKeys = await promptForAPIKeys([serverType], envApiKeys);
 
@@ -296,7 +296,7 @@ export async function configureMCPServerForTarget(
     }
     if (isServerInstalled && hasExistingValidKeys) {
       // Case 2: Already installed + has keys + user doesn't provide → KEEP
-      console.log(`✅ Keeping ${server.name} (existing API keys are valid)`);
+      console.log(`✓ Keeping ${server.name} (existing API keys are valid)`);
       return true;
     }
     // Case 4: Not installed + required keys + user doesn't provide → SKIP
@@ -317,7 +317,7 @@ export async function configureMCPServerForTarget(
       console.log(`🔧 Updating ${server.name} configuration...`);
       // Proceed to save/update the configuration
     } else {
-      console.log(`✅ No changes needed for ${server.name}`);
+      console.log(`✓ No changes needed for ${server.name}`);
       return true;
     }
   }
@@ -403,7 +403,7 @@ export async function configureMCPServerForTarget(
 
   // Write updated configuration
   await target.writeConfig(cwd, config);
-  console.log(`✅ Updated ${server.name} with API keys for ${target.name}`);
+  console.log(`✓ Updated ${server.name} with API keys for ${target.name}`);
   return true;
 }
 
@@ -571,7 +571,7 @@ async function promptForAPIKeys(
 
       if (finalValue) {
         apiKeys[envVar] = finalValue;
-        console.log(`✅ ${actionText}`);
+        console.log(`✓ ${actionText}`);
       }
     }
   }

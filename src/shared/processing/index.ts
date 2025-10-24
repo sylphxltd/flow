@@ -92,9 +92,9 @@ export async function displayResults(
     const changed = results.filter((r) => r.status === 'added' || r.status === 'updated').length;
 
     if (changed > 0) {
-      console.log(`✅ ${changed} files updated`);
+      console.log(`✓ ${changed} files updated`);
     } else {
-      console.log(`✅ All ${total} files already current`);
+      console.log(`✓ All ${total} files already current`);
     }
     return;
   }
@@ -137,9 +137,9 @@ export async function displayResults(
   const changed = results.filter((r) => r.status === 'added' || r.status === 'updated').length;
 
   if (changed > 0) {
-    log(`✅ ${operation} complete: ${changed}/${total} files modified`, 'green');
+    log(`✓ ${operation} complete: ${changed}/${total} files modified`, 'green');
   } else {
-    log(`✅ ${operation} complete: All ${total} files already current`, 'blue');
+    log(`✓ ${operation} complete: All ${total} files already current`, 'blue');
   }
 
   console.log(`📁 Target directory: ${targetDir}`);

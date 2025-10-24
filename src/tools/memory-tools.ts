@@ -35,7 +35,7 @@ async function memorySet(args: {
       content: [
         {
           type: 'text',
-          text: `✅ Stored memory: ${namespace}:${key}`,
+          text: `✓ Stored memory: ${namespace}:${key}`,
         },
       ],
     };
@@ -243,7 +243,7 @@ async function memoryDelete(args: {
       content: [
         {
           type: 'text',
-          text: `✅ Deleted memory: ${namespace}:${key}`,
+          text: `✓ Deleted memory: ${namespace}:${key}`,
         },
       ],
     };
@@ -275,7 +275,7 @@ async function memoryClear(args: {
       content: [
         {
           type: 'text',
-          text: `✅ Cleared memory: ${namespace || 'all namespaces'}`,
+          text: `✓ Cleared memory: ${namespace || 'all namespaces'}`,
         },
       ],
     };

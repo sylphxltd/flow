@@ -105,7 +105,7 @@ const memoryDeleteHandler: CommandHandler = async (options) => {
   const deleted = await memory.delete(options.key, options.namespace || 'default');
 
   if (deleted) {
-    console.log(`✅ Deleted memory entry: ${options.namespace || 'default'}:${options.key}`);
+    console.log(`✓ Deleted memory entry: ${options.namespace || 'default'}:${options.key}`);
   } else {
     console.log(`❌ Memory entry not found: ${options.namespace || 'default'}:${options.key}`);
   }
@@ -121,10 +121,10 @@ const memoryClearHandler: CommandHandler = async (options) => {
 
   if (options.namespace) {
     await memory.clear(options.namespace);
-    console.log(`✅ Cleared all memory entries in namespace: ${options.namespace}`);
+    console.log(`✓ Cleared all memory entries in namespace: ${options.namespace}`);
   } else {
     await memory.clear();
-    console.log('✅ Cleared all memory entries');
+    console.log('✓ Cleared all memory entries');
   }
 };
 
@@ -192,7 +192,7 @@ const memorySetHandler: CommandHandler = async (options) => {
   const memory = new SeparatedMemoryStorage();
   await memory.set(key, value, namespace);
 
-  console.log(`✅ Set memory entry: ${namespace}:${key} = "${value}"`);
+  console.log(`✓ Set memory entry: ${namespace}:${key} = "${value}"`);
 };
 
 // Export commands

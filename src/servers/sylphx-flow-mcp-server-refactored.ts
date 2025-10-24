@@ -151,8 +151,8 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
             const toolNames = mcpPlugin.getToolNames ? mcpPlugin.getToolNames() : [];
             totalTools += toolNames.length;
 
-            logger.info(`✅ Registered ${toolNames.length} tools from plugin: ${plugin.metadata.name}`);
-            console.log(`  ✅ ${plugin.metadata.name}: ${toolNames.length} tools`);
+            logger.info(`✓ Registered ${toolNames.length} tools from plugin: ${plugin.metadata.name}`);
+            console.log(`  ✓ ${plugin.metadata.name}: ${toolNames.length} tools`);
           }
         } catch (error) {
           logger.error(`Failed to register tools from plugin: ${plugin.metadata.name}`, error);
@@ -170,8 +170,8 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
     const transport = new StdioServerTransport();
     await server.connect(transport);
 
-    logger.success('✅ MCP Server connected and ready');
-    console.log('✅ MCP Server connected and ready');
+    logger.success('✓ MCP Server connected and ready');
+    console.log('✓ MCP Server connected and ready');
     console.log('💡 Press Ctrl+C to stop the server');
 
     return server;
@@ -209,7 +209,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
         const pluginList = plugins
           .sort((a, b) => a.metadata.priority - b.metadata.priority)
           .map(plugin => {
-            const status = plugin.metadata.enabled ? '✅' : '❌';
+            const status = plugin.metadata.enabled ? '✓' : '❌';
             return `${status} **${plugin.metadata.name}** v${plugin.metadata.version} (${plugin.metadata.category})`;
           })
           .join('\n');
@@ -259,7 +259,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
           content: [
             {
               type: 'text',
-              text: `✅ Plugin enabled: ${plugin_name}`,
+              text: `✓ Plugin enabled: ${plugin_name}`,
             },
           ],
         };
@@ -297,7 +297,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
           content: [
             {
               type: 'text',
-              text: `✅ Plugin disabled: ${plugin_name}`,
+              text: `✓ Plugin disabled: ${plugin_name}`,
             },
           ],
         };
@@ -332,7 +332,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
 
         const healthSummary = Object.entries(health)
           .map(([name, result]) => {
-            const status = result.healthy ? '✅' : '❌';
+            const status = result.healthy ? '✓' : '❌';
             const error = result.error ? ` (${result.error})` : '';
             return `${status} ${name}${error}`;
           })
@@ -340,7 +340,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
 
         const statusText = [
           '🏥 **System Health**',
-          `Running: ${status.running ? '✅' : '❌'}`,
+          `Running: ${status.running ? '✓' : '❌'}`,
           `Services: ${status.services}`,
           '',
           '**Plugin Health:**',

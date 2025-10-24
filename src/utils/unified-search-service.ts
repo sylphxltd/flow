@@ -288,7 +288,7 @@ export class UnifiedSearchService {
       return `📭 No results found for "${query}"\n\n**Total indexed files:** ${totalIndexed}`;
     }
 
-    const summary = `✅ Found ${results.length} result(s) for "${query}":\n\n`;
+    const summary = `✓ Found ${results.length} result(s) for "${query}":\n\n`;
     const formattedResults = results
       .map((result, i) => {
         let line = `${i + 1}. **${result.title}** (Score: ${result.score.toFixed(3)})`;

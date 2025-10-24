@@ -193,7 +193,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
             content: [
               {
                 type: 'text',
-                text: `✅ Memory set: ${key} in namespace: ${namespace}`,
+                text: `✓ Memory set: ${key} in namespace: ${namespace}`,
               },
             ],
           };

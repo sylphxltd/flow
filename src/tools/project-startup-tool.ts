@@ -272,7 +272,7 @@ export async function projectStartupTool(args: ProjectStartupArgs): Promise<Call
           isError: true,
         };
       }
-      Logger.success(`✅ Created and checked out branch: ${branchName}`);
+      Logger.success(`✓ Created and checked out branch: ${branchName}`);
     }
 
     // Step 2: Create workspace directory structure
@@ -430,11 +430,11 @@ export async function projectStartupTool(args: ProjectStartupArgs): Promise<Call
       if (!addResult.success || !commitResult.success) {
         Logger.error('Warning: Failed to create initial commit');
       } else {
-        Logger.success('✅ Created initial commit with project templates');
+        Logger.success('✓ Created initial commit with project templates');
       }
     }
 
-    Logger.success(`✅ Project "${validatedProjectName}" initialized successfully!`);
+    Logger.success(`✓ Project "${validatedProjectName}" initialized successfully!`);
 
     return {
       content: [

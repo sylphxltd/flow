@@ -121,7 +121,7 @@ export const knowledgeStatusCommand = new Command('status')
       const status = await searchService.getStatus();
 
       if (status.knowledge.indexed) {
-        console.log(`**Status:** ✅ Ready`);
+        console.log(`**Status:** ✓ Ready`);
         console.log(`**Documents:** ${status.knowledge.documentCount} files`);
       } else if (status.knowledge.isIndexing) {
         console.log(`**Status:** 🔄 Building index (${status.knowledge.progress || 0}%)`);

@@ -119,7 +119,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   }
 
   if (options.dryRun) {
-    console.log('✅ Dry run completed - no files were modified');
+    console.log('✓ Dry run completed - no files were modified');
     return;
   }
 
