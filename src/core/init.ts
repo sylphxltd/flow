@@ -70,7 +70,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     throw new Error(`Target not found: ${targetId}`);
   }
 
-  console.log(`📝 Using target: ${target.name}`);
+  console.log(`Using target: ${target.name}`);
 
   const config = target.config;
   const agentsDir = path.join(cwd, config.agentDir);
@@ -113,7 +113,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   // Show agent setup info
   if (options.quiet !== true) {
     console.log(
-      `📁 Installing ${agentFiles.length} agents to ${agentsDir.replace(`${process.cwd()}/`, '')}`
+      `Installing ${agentFiles.length} agents to ${agentsDir.replace(`${process.cwd()}/`, '')}`
     );
     console.log('');
   }

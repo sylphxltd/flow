@@ -155,6 +155,10 @@ export const initCommand: CommandConfig = {
             }
           }
 
+          // Flush output to prevent buffering issues
+          console.log('');
+          if (process.stdout.write) process.stdout.write('\n');
+
           // Install all selected servers
           const spinner = ora('Installing MCP servers...').start();
           try {
@@ -173,7 +177,10 @@ export const initCommand: CommandConfig = {
       await secretUtils.addToGitignore(process.cwd());
     }
 
+    // Flush output to prevent buffering issues
     console.log('');
+    if (process.stdout.write) process.stdout.write('\n');
+
     const agentSpinner = ora('Installing agents...').start();
     await installAgents(options);
     agentSpinner.succeed('Agents installed');
