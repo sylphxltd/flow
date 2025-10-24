@@ -19,13 +19,35 @@ Complete migration of core dependencies to Effect ecosystem without backward com
 ## Libraries to Replace
 
 ### Current → Effect Equivalents
-1. **Custom Error Handling** → `effect` (Effect error system)
-2. **commander** → `@effect/cli` (CLI framework)
-3. **@modelcontextprotocol/sdk** → `@effect/ai` (AI/MCP integration)
-4. **@libsql/client** → `@effect/libsql` (Database client)
-5. **console.log/error** → `@effect/log` (Structured logging)
-6. **Node fs operations** → `@effect/platform` (File system)
-7. **Async/Promise patterns** → `effect` (Effect-based async)
+1. **Custom Error Handling** → `effect` (Effect error system with tagged errors)
+2. **commander** → `@effect/cli` (Declarative CLI with type safety)
+3. **@modelcontextprotocol/sdk** → `@effect/ai` (Provider-agnostic AI integration)
+4. **@libsql/client** → `@effect/sql-libsql` (Type-safe SQL with libSQL)
+5. **console.log/error** → `@effect/log` (Structured logging with levels)
+6. **Node fs operations** → `@effect/platform` (Platform abstractions)
+7. **Async/Promise patterns** → `effect` (Effect-based async with composability)
+
+## Key Effect Patterns to Apply
+
+### Error Handling
+- Replace custom CLIError with Effect's tagged errors
+- Use Effect.catchTags for specific error handling
+- Replace try/catch with Effect.gen and error propagation
+
+### CLI Migration
+- Replace commander commands with @effect/cli Command.make
+- Use Command.handler for async command handlers
+- Leverage automatic help generation
+
+### Database Migration
+- Replace raw @libsql/client with @effect/sql-libsql
+- Use tagged template literals for SQL queries
+- Implement repositories with Effect services
+
+### Async Patterns
+- Replace Promise.all with Effect.all
+- Use Effect.gen for sequential async operations
+- Replace async/await with Effect patterns
 
 ## Requirements
 
