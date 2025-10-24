@@ -321,11 +321,6 @@ const mcpConfigHandler: CommandHandler = async (options) => {
         values[key] = currentValue;
       }
     }
-
-    // Show saved value
-    const displayValue =
-      envConfig.secret && values[key] ? '•'.repeat(Math.min(8, values[key].length)) : values[key];
-    console.log(chalk.gray(`  ${key}: ${displayValue}`));
   }
 
   // Save configuration
