@@ -4,12 +4,12 @@
 
 ## Stage 1: Foundation Setup
 (Tasks with no dependencies - can start immediately)
-- [ ] TASK_1: Update package.json with Effect ecosystem dependencies
-- [ ] TASK_2: Remove old dependencies (commander, @libsql/client, @modelcontextprotocol/sdk)
+- [x] TASK_1: Update package.json with Effect ecosystem dependencies
+- [x] TASK_2: Remove old dependencies (commander, @libsql/client, @modelcontextprotocol/sdk)
 - [ ] TASK_3: Configure TypeScript for Effect (strict mode, proper imports)
-- [ ] TASK_4: Create Effect error types to replace CLIError
-- [ ] TASK_5: Setup basic Effect runtime and logging configuration
-- [ ] TASK_6: Create base Effect Layer structure for services
+- [x] TASK_4: Create Effect error types to replace CLIError
+- [x] TASK_5: Setup basic Effect runtime and logging configuration
+- [x] TASK_6: Create base Effect Layer structure for services
 
 ## Stage 2: CLI Migration
 (Depend on Stage 1 - migrate CLI framework)
