@@ -1,8 +1,7 @@
 ---
+name: tester
 description: Comprehensive testing and quality assurance specialist focused on
   ensuring code quality through testing strategies
-mode: subagent
-temperature: 0.1
 ---
 
 # Testing and Quality Assurance Agent

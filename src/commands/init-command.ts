@@ -85,7 +85,7 @@ export const initCommand: CommandConfig = {
 
       if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
         const mcpService = new MCPService(targetId);
-        const availableServers = mcpService.getAvailableServers();
+        const availableServers = await mcpService.getAvailableServers();
         console.log(chalk.cyan('\n▸ MCP Tools'));
         for (const s of availableServers) {
           console.log(chalk.gray(`  • ${MCP_SERVER_REGISTRY[s].name}`));
@@ -105,30 +105,26 @@ export const initCommand: CommandConfig = {
     // Process MCP servers with simple inquirer UI
     if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
       const mcpService = new MCPService(targetId);
-      const availableServers = mcpService.getAvailableServers();
+      const allServers = mcpService.getAllServerIds();
+      const installedServers = await mcpService.getInstalledServerIds();
 
-      if (availableServers.length === 0) {
-        console.log('');
-        console.log(chalk.cyan.bold('▸ MCP Tools'));
-        console.log('');
-        console.log(chalk.green('✓ All tools already installed'));
-      } else {
-        console.log('');
-        console.log(chalk.cyan.bold('▸ Configure MCP Tools'));
-        console.log('');
+      console.log('');
+      console.log(chalk.cyan.bold('▸ Configure MCP Tools'));
+      console.log('');
 
-        // Show server selection
-        const serverSelectionAnswer = await inquirer.prompt([
-          {
-            type: 'checkbox',
-            name: 'selectedServers',
-            message: 'Select MCP tools to install:',
-            choices: availableServers.map((id) => {
+      // Show server selection (show all servers, mark installed ones as checked)
+      const serverSelectionAnswer = await inquirer.prompt([
+        {
+          type: 'checkbox',
+          name: 'selectedServers',
+          message: 'Select MCP tools to install:',
+          choices: allServers.map((id) => {
               const server = MCP_SERVER_REGISTRY[id];
+              const isInstalled = installedServers.includes(id);
               return {
                 name: `${server.name} - ${server.description}`,
                 value: id,
-                checked: server.required || server.defaultInInit || false,
+                checked: server.required || isInstalled || server.defaultInInit || false,
                 disabled: server.required ? '(required)' : false,
               };
             }),
@@ -144,34 +140,30 @@ export const initCommand: CommandConfig = {
             return server.envVars && Object.keys(server.envVars).length > 0;
           });
 
+          const serverConfigsMap: Record<MCPServerID, Record<string, string>> = {};
+
           if (serversNeedingConfig.length > 0) {
-            console.log(chalk.cyan('\n▸ Configure selected MCP tools'));
+            console.log('');
+            console.log(chalk.cyan.bold('▸ Configure selected MCP tools'));
 
+            const collectedEnv: Record<string, string> = {};
             for (const serverId of serversNeedingConfig) {
-              const serverDef = MCP_SERVER_REGISTRY[serverId];
-              console.log(chalk.cyan(`\n▸ ${serverDef.name}`));
-              console.log(chalk.gray(`  ${serverDef.description}`));
-
-              // Use MCPService to configure the server
-              await mcpService.configureServer(serverId);
+              // configureServer will print the server name and description
+              const configValues = await mcpService.configureServer(serverId, collectedEnv);
+              serverConfigsMap[serverId] = configValues;
             }
           }
-
-          // Flush output to prevent buffering issues
-          console.log('');
-          if (process.stdout.write) process.stdout.write('\n');
 
           // Install all selected servers
           const spinner = ora('Installing MCP servers...').start();
           try {
-            await mcpService.installServers(selectedServers);
+            await mcpService.installServers(selectedServers, serverConfigsMap);
             spinner.succeed('MCP servers installed');
           } catch (error) {
             spinner.fail(chalk.red('Failed to install MCP servers'));
             throw error;
           }
         }
-      }
     }
 
     if (targetId === 'opencode') {
@@ -179,17 +171,14 @@ export const initCommand: CommandConfig = {
       await secretUtils.addToGitignore(process.cwd());
     }
 
-    // Flush output to prevent buffering issues
     console.log('');
-    if (process.stdout.write) process.stdout.write('\n');
-
     const agentSpinner = ora('Installing agents...').start();
-    await installAgents(options);
+    await installAgents({ ...options, quiet: true });
     agentSpinner.succeed('Agents installed');
 
     console.log('');
     const rulesSpinner = ora('Installing rules...').start();
-    await installRules(options);
+    await installRules({ ...options, quiet: true });
     rulesSpinner.succeed('Rules installed');
 
     console.log('');

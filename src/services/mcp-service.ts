@@ -1,7 +1,5 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-
-import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
@@ -34,14 +32,14 @@ export class MCPService {
     return Object.keys(MCP_SERVER_REGISTRY) as MCPServerID[];
   }
 
-  getAvailableServers(): MCPServerID[] {
-    const existingServerIds = this.getInstalledServerIds();
+  async getAvailableServers(): Promise<MCPServerID[]> {
+    const existingServerIds = await this.getInstalledServerIds();
     return this.getAllServerIds().filter((id) => !existingServerIds.includes(id));
   }
 
-  getInstalledServerIds(): MCPServerID[] {
+  async getInstalledServerIds(): Promise<MCPServerID[]> {
     try {
-      const configData = this.target.readConfig(process.cwd());
+      const configData = await this.target.readConfig(process.cwd());
       const mcpConfigPath = this.target.config.mcpConfigPath;
       const existingMcpSection = this.getNestedProperty(configData, mcpConfigPath) || {};
       const existingServerNames = Object.keys(existingMcpSection);
@@ -100,7 +98,7 @@ export class MCPService {
 
     console.log('');
     console.log(chalk.cyan(`▸ ${server.name}`));
-    console.log(chalk.gray(server.description));
+    console.log(chalk.gray(`  ${server.description}`));
     console.log('');
 
     for (const [key, config] of Object.entries(server.envVars)) {
@@ -179,115 +177,74 @@ export class MCPService {
     }
 
     console.log(chalk.green('✓ Configured'));
+    console.log('');
 
     return values;
   }
 
-  async installServers(serverIds: MCPServerID[], options: InstallOptions = {}): Promise<void> {
+  /**
+   * Install MCP servers to config file
+   * Note: Configuration should be done separately before calling this
+   */
+  async installServers(
+    serverIds: MCPServerID[],
+    serverConfigs: Record<MCPServerID, Record<string, string>> = {}
+  ): Promise<void> {
     if (serverIds.length === 0) {
-      console.log(chalk.green('✓ No servers to install'));
       return;
     }
-
-    console.log('');
-    console.log(chalk.gray(`Installing: ${serverIds.join(', ')}`));
-
-    const serversNeedingConfig = this.getRequiringConfiguration(serverIds);
-    const serverConfigs: Array<{ id: MCPServerID; values: Record<string, string> }> = [];
-
-    if (serversNeedingConfig.length > 0) {
-      const collectedEnv: Record<string, string> = {};
-      for (const serverId of serversNeedingConfig) {
-        const values = await this.configureServer(serverId, collectedEnv);
-        serverConfigs.push({ id: serverId, values });
-      }
-    }
-
-    if (!options.skipValidation) {
-      const invalidServers: Array<{ id: MCPServerID; name: string; validation: ValidationResult }> =
-        [];
-
-      for (const { id: serverId, values } of serverConfigs) {
-        const validation = this.validateServer(serverId, values);
-        if (!validation.isValid) {
-          const server = MCP_SERVER_REGISTRY[serverId];
-          invalidServers.push({ id: serverId, name: server.name, validation });
-        }
-      }
-
-      if (invalidServers.length > 0) {
-        console.log(chalk.yellow('⚠ Skipping servers with invalid configuration:'));
-        invalidServers.forEach(({ name, validation }) => {
-          const issues = [...validation.missingRequired, ...validation.invalidValues];
-          console.log(chalk.gray(`  • ${name}: ${issues.join(', ')}`));
-        });
-
-        const validServerConfigs = serverConfigs.filter(
-          ({ id: serverId }) => !invalidServers.some((s) => s.id === serverId)
-        );
-        serverConfigs.length = 0;
-        serverConfigs.push(...validServerConfigs);
-      }
-    }
-
-    if (options.dryRun) {
-      console.log(chalk.yellow('\n  Dry run - configuration prepared but not saved'));
-      return;
-    }
-
-    const spinner = ora('Saving configuration...').start();
 
     try {
-      const configData = this.target.readConfig(process.cwd());
+      // Read current config
+      const configData = await this.target.readConfig(process.cwd());
       const mcpConfigPath = this.target.config.mcpConfigPath;
       const existingMcpSection = this.getNestedProperty(configData, mcpConfigPath) || {};
       const mcpSection = { ...existingMcpSection };
 
-      for (const { id: serverId, values } of serverConfigs) {
+      // Add/update each server
+      for (const serverId of serverIds) {
         const server = MCP_SERVER_REGISTRY[serverId];
-        const serverConfigEnv = server.config.type === 'local' ? server.config.environment : {};
+        const configuredValues = serverConfigs[serverId] || {};
 
-        const updatedEnv = { ...serverConfigEnv };
-        for (const [key, value] of Object.entries(values)) {
-          if (value && value.trim() !== '') {
-            updatedEnv[key] = value;
+        // If server has env vars and we have configured values, merge them
+        if (Object.keys(configuredValues).length > 0) {
+          const serverConfigEnv = server.config.type === 'local' ? server.config.environment : {};
+          const updatedEnv = { ...serverConfigEnv };
+
+          for (const [key, value] of Object.entries(configuredValues)) {
+            if (value && value.trim() !== '') {
+              updatedEnv[key] = value;
+            }
           }
+
+          mcpSection[server.name] = {
+            ...server.config,
+            environment: updatedEnv,
+          };
+        } else {
+          // No configuration needed, use default
+          mcpSection[server.name] = server.config;
         }
-
-        mcpSection[server.name] = {
-          ...server.config,
-          environment: updatedEnv,
-        };
       }
 
-      const serversNotNeedingConfig = serverIds.filter((s) => !serversNeedingConfig.includes(s));
-      for (const serverId of serversNotNeedingConfig) {
-        const server = MCP_SERVER_REGISTRY[serverId];
-        mcpSection[server.name] = server.config;
-      }
-
+      // Write updated config
       this.setNestedProperty(configData, mcpConfigPath, mcpSection);
-      this.target.writeConfig(process.cwd(), configData);
-
-      spinner.succeed(
-        `${serverIds.length} server${serverIds.length > 1 ? 's' : ''} installed`
-      );
+      await this.target.writeConfig(process.cwd(), configData);
     } catch (error) {
-      spinner.fail(chalk.red('Failed to save configuration'));
-      throw error;
+      throw new Error(`Failed to install MCP servers: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  readConfig(): TargetConfigurationData {
+  async readConfig(): Promise<TargetConfigurationData> {
     try {
-      return this.target.readConfig(process.cwd()) as TargetConfigurationData;
+      return (await this.target.readConfig(process.cwd())) as TargetConfigurationData;
     } catch (error) {
       return { settings: {} };
     }
   }
 
-  writeConfig(configData: TargetConfigurationData): void {
-    this.target.writeConfig(process.cwd(), configData);
+  async writeConfig(configData: TargetConfigurationData): Promise<void> {
+    await this.target.writeConfig(process.cwd(), configData);
   }
 
   private getNestedProperty(obj: TargetConfigurationData, path: string): unknown {

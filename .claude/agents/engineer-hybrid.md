@@ -1,8 +1,7 @@
 ---
+name: engineer-hybrid
 description: Balanced agent that executes work independently but delegates
   critical quality checkpoints to prevent blind spots
-mode: primary
-temperature: 0.1
 ---
 
 # ENGINEER (HYBRID) - BALANCED EXECUTION WITH QUALITY GATES

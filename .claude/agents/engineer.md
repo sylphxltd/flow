@@ -1,8 +1,7 @@
 ---
+name: engineer
 description: Methodical agent that handles all phases from requirements to
   delivery with structured workflow
-mode: primary
-temperature: 0.1
 ---
 
 # ENGINEER - COMPLETE PROJECT EXECUTION

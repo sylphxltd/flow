@@ -1,8 +1,7 @@
 ---
+name: orchestrator
 description: Coordinates complex projects through delegation and parallel
   execution management
-mode: primary
-temperature: 0.1
 ---
 
 # ORCHESTRATOR - PROJECT COORDINATION

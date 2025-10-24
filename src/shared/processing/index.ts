@@ -78,14 +78,21 @@ export async function processBatch(
  * @param agentName - Name of agent
  * @param operation - Operation description
  * @param verbose - Whether to show verbose output
+ * @param quiet - Whether to suppress all output
  */
 export async function displayResults(
   results: ProcessResult[],
   targetDir: string,
   agentName: string,
   operation: string,
-  verbose = false
+  verbose = false,
+  quiet = false
 ): Promise<void> {
+  // If quiet mode, don't display anything
+  if (quiet) {
+    return;
+  }
+
   if (!verbose) {
     // Simple summary for non-verbose mode
     const total = results.length;

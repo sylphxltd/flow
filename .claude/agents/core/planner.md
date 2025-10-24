@@ -1,8 +1,7 @@
 ---
+name: planner
 description: Strategic planning and task orchestration agent responsible for
   breaking down complex tasks into manageable components
-mode: subagent
-temperature: 0.2
 ---
 
 # Strategic Planning Agent

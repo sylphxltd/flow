@@ -70,7 +70,9 @@ export async function installAgents(options: CommonOptions): Promise<void> {
     throw new Error(`Target not found: ${targetId}`);
   }
 
-  console.log(`Using target: ${target.name}`);
+  if (options.quiet !== true) {
+    console.log(`Using target: ${target.name}`);
+  }
 
   const config = target.config;
   const agentsDir = path.join(cwd, config.agentDir);
@@ -166,7 +168,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
 
   await Promise.all(processPromises);
 
-  displayResults(results, agentsDir, target.name, 'Install', options.verbose);
+  displayResults(results, agentsDir, target.name, 'Install', options.verbose, options.quiet);
 }
 
 // ============================================================================
