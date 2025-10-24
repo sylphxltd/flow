@@ -1,7 +1,5 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-
-import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
