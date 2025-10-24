@@ -8,6 +8,11 @@ import type { CommandConfig, CommandHandler, CommandOptions } from '../types.js'
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
 
+// Helper function to get nested property
+function getNestedProperty(obj: any, path: string): any {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
 // MCP start handler (unchanged - doesn't need UI)
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
   const config = {
@@ -19,6 +24,7 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
   };
 
   
+  
   const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
   const target = targetManager.getTarget(targetId);
 
@@ -28,39 +34,46 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
 
   try {
     const configData = await target.readConfig(process.cwd());
-    const mcpSection = configData?.mcp || {};
+    const mcpConfigPath = target.config.mcpConfigPath || 'mcp';
+    const mcpSection = getNestedProperty(configData, mcpConfigPath) || {};
 
-    // Update sylphx-flow configuration only for targets that support disable flags
-    if (mcpSection['sylphx-flow']) {
-      const serverConfig = mcpSection['sylphx-flow'];
+    // Update MCP server configurations with disable flags
+    const disableFlags = ['--disable-memory', '--disable-time', '--disable-project-startup', '--disable-knowledge', '--disable-codebase-search'];
+    const requestedFlags: string[] = [];
 
-      // For Claude Code target, update environment variables (this is the correct format)
-      if (targetId === 'claude-code') {
-        serverConfig.environment = {
-          ...serverConfig.environment,
-          ...config,
-        };
-      } else if (targetId === 'opencode') {
-        // For OpenCode target, convert disable flags to command arguments
-        const newArgs: string[] = [];
+    // Build requested flags from config
+    if (config.disableMemory) requestedFlags.push('--disable-memory');
+    if (config.disableTime) requestedFlags.push('--disable-time');
+    if (config.disableProjectStartup) requestedFlags.push('--disable-project-startup');
+    if (config.disableKnowledge) requestedFlags.push('--disable-knowledge');
+    if (config.disableCodebaseSearch) requestedFlags.push('--disable-codebase-search');
 
-        if (config.disableMemory) newArgs.push('--disable-memory');
-        if (config.disableTime) newArgs.push('--disable-time');
-        if (config.disableProjectStartup) newArgs.push('--disable-project-startup');
-        if (config.disableKnowledge) newArgs.push('--disable-knowledge');
-        if (config.disableCodebaseSearch) newArgs.push('--disable-codebase-search');
+    // Apply flags to all configured servers
+    for (const [serverName, serverConfig] of Object.entries(mcpSection)) {
+      if (!serverConfig || typeof serverConfig !== 'object') continue;
 
-        // Add args to command if there are any, avoiding duplicates
-        if (newArgs.length > 0 && serverConfig.command && Array.isArray(serverConfig.command)) {
-          // Remove existing disable flags to avoid duplicates
-          const disableFlags = ['--disable-memory', '--disable-time', '--disable-project-startup', '--disable-knowledge', '--disable-codebase-search'];
-          const filteredCommand = serverConfig.command.filter((arg: string) => !disableFlags.includes(arg));
-
-          // Add new flags
-          serverConfig.command = [...filteredCommand, ...newArgs];
+      // Handle different config formats
+      if (serverConfig.type === 'stdio') {
+        // Claude Code format: stdio with command + args + env
+        if (!serverConfig.args) {
+          serverConfig.args = [];
         }
+
+        // Remove existing disable flags to avoid duplicates
+        serverConfig.args = serverConfig.args.filter((arg: string) => !disableFlags.includes(arg));
+
+        // Add new flags
+        serverConfig.args.push(...requestedFlags);
+
+      } else if (serverConfig.type === 'local' && Array.isArray(serverConfig.command)) {
+        // OpenCode format: local with command array
+        // Remove existing disable flags to avoid duplicates
+        const filteredCommand = serverConfig.command.filter((arg: string) => !disableFlags.includes(arg));
+
+        // Add new flags
+        serverConfig.command = [...filteredCommand, ...requestedFlags];
       }
-      // For other targets, we don't apply these flags as they may not support them
+      // Note: Other config types (remote/http) don't use command args for CLI-based servers
     }
 
     await target.writeConfig(process.cwd(), configData);
