@@ -43,7 +43,7 @@ async function getAgentFiles(): Promise<string[]> {
   // Collect files from each subdirectory
   for (const subdir of subdirs) {
     const subdirPath = path.join(agentsDir, subdir);
-    const files = collectFiles(subdirPath, ['.md']);
+    const files = await collectFiles(subdirPath, ['.md']);
     allFiles.push(...files.map((file) => path.join(subdir, file)));
   }
 
@@ -138,7 +138,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
-    const localInfo = getLocalFileInfo(destPath);
+    const localInfo = await getLocalFileInfo(destPath);
     const _isNew = !localInfo;
 
     // Read content from source
@@ -203,7 +203,7 @@ export async function installRules(options: CommonOptions): Promise<void> {
   const rulesDestPath = path.join(cwd, target.config.rulesFile!);
 
   // Check if rules file already exists and is up to date
-  const localInfo = getLocalFileInfo(rulesDestPath);
+  const localInfo = await getLocalFileInfo(rulesDestPath);
   const templateContent = mergedContent;
 
   if (options.dryRun) {
