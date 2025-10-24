@@ -19,5 +19,5 @@
     "jsxImportSource": "react"
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", "scripts", "src/commands/mcp.ts"]
+  "exclude": ["node_modules", "dist", "scripts"]
 }

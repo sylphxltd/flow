@@ -7,11 +7,7 @@
   "bin": {
     "sylphx-flow": "dist/index.js"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "README.md", "LICENSE"],
   "repository": {
     "type": "git",
     "url": "https://github.com/sylphxltd/flow.git"
@@ -44,7 +40,7 @@
     "clean": "rm -rf dist",
     "prepublishOnly": "bun build",
     "prepare": "bun run build",
-    "postinstall": "node -e \"try{require('gpt-3-encoder')}catch(e){console.log('Fixing gpt-3-encoder...');require('child_process').execSync('npm install gpt-3-encoder@1.1.4 --no-save', {stdio:'inherit'})}\"",
+
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
@@ -69,6 +65,7 @@
     "commander": "^12.0.0",
     "drizzle-orm": "^0.44.7",
     "figlet": "^1.9.3",
+    "gpt-3-encoder": "^1.1.4",
     "ignore": "^7.0.5",
     "ink": "^6.3.1",
     "ink-select-input": "^6.2.0",

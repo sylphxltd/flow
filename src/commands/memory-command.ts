@@ -2,6 +2,7 @@
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandHandler } from '../types.js';
 import { SeparatedMemoryStorage, type MemoryEntry } from '../utils/separated-storage.js';
+import { CLIError } from '../utils/error-handler.js';
 
 // Memory list handler
 const memoryListHandler: CommandHandler = async (options) => {
@@ -63,8 +64,7 @@ const memoryListHandler: CommandHandler = async (options) => {
 // Memory search handler
 const memorySearchHandler: CommandHandler = async (options) => {
   if (!options.pattern) {
-    console.error('❌ Search pattern is required. Use --pattern <pattern>');
-    process.exit(1);
+    throw new CLIError('Search pattern is required. Use --pattern <pattern>');
   }
 
   const memory = new SeparatedMemoryStorage();
