@@ -1,5 +1,9 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+
+// Force inquirer to not use colors to fix terminal compatibility
+process.env.FORCE_COLOR = '0';
+inquirer.prompt = inquirer.prompt.bind({ ...inquirer, colors: false });
 import { DrizzleMemoryStorage, type MemoryEntry } from '../utils/drizzle-storage.js';
 
 interface MemoryEntryChoice extends inquirer.ChoiceBase {
