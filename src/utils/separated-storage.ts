@@ -6,14 +6,14 @@
  * This file now acts as a compatibility layer that delegates to the specialized storage modules
  */
 
-import { MemoryStorage, type MemoryEntry } from './memory-storage.js';
 import {
   CacheStorage,
   type CodebaseFileEntry,
-  type TfidfTermEntry,
   type TfidfDocumentEntry,
   type TfidfIdfEntry,
+  type TfidfTermEntry,
 } from './cache-storage.js';
+import { type MemoryEntry, MemoryStorage } from './memory-storage.js';
 
 // Re-export interfaces for backward compatibility
 export type { MemoryEntry } from './memory-storage.js';
@@ -48,14 +48,14 @@ export class SeparatedMemoryStorage {
   /**
    * Set a memory entry
    */
-  async set(key: string, value: any, namespace: string = 'default'): Promise<void> {
+  async set(key: string, value: any, namespace = 'default'): Promise<void> {
     return this.memoryStorage.set(key, value, namespace);
   }
 
   /**
    * Get a memory entry
    */
-  async get(key: string, namespace: string = 'default'): Promise<MemoryEntry | null> {
+  async get(key: string, namespace = 'default'): Promise<MemoryEntry | null> {
     return this.memoryStorage.get(key, namespace);
   }
 
@@ -76,14 +76,14 @@ export class SeparatedMemoryStorage {
   /**
    * Delete a memory entry
    */
-  async delete(key: string, namespace: string = 'default'): Promise<boolean> {
+  async delete(key: string, namespace = 'default'): Promise<boolean> {
     return this.memoryStorage.delete(key, namespace);
   }
 
   /**
    * Clear all memory entries in a namespace
    */
-  async clear(namespace: string = 'default'): Promise<void> {
+  async clear(namespace = 'default'): Promise<void> {
     return this.memoryStorage.clear(namespace);
   }
 
@@ -351,8 +351,8 @@ export class SeparatedMemoryStorage {
     const metadata = await this.cacheStorage.getAllMetadata();
     return {
       indexedAt: metadata.indexedAt,
-      totalFiles: parseInt(metadata.totalFiles || '0'),
-      totalTerms: parseInt(metadata.totalTerms || '0'),
+      totalFiles: Number.parseInt(metadata.totalFiles || '0'),
+      totalTerms: Number.parseInt(metadata.totalTerms || '0'),
     };
   }
 

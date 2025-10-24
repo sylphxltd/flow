@@ -33,9 +33,9 @@ export function generateMockEmbedding(text: string, dimensions = 1536): number[]
   return embedding;
 }
 
-import * as lancedb from '@lancedb/lancedb';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
+import * as lancedb from '@lancedb/lancedb';
 
 export interface VectorDocument {
   id: string;
@@ -68,7 +68,7 @@ export class VectorStorage {
   private metadata: VectorStorageMetadata;
   private indexPath: string;
   private dimensions: number;
-  private tableName: string = 'vectors';
+  private tableName = 'vectors';
 
   constructor(indexPath: string, dimensions: number) {
     this.indexPath = indexPath;
@@ -83,7 +83,7 @@ export class VectorStorage {
   /**
    * Initialize the database connection
    */
-  private async initialize(): Promise<void> {
+  async initialize(): Promise<void> {
     if (this.db) return;
 
     try {
@@ -98,7 +98,17 @@ export class VectorStorage {
 
       // Check if table exists
       const tables = await this.db.tableNames();
-      if (!tables.includes(this.tableName)) {
+      if (tables.includes(this.tableName)) {
+        this.table = await this.db.openTable(this.tableName);
+
+        // Update count
+        try {
+          this.metadata.count = await this.table.countRows();
+          console.error(`[INFO] Loaded LanceDB table with ${this.metadata.count} vectors`);
+        } catch (e) {
+          this.metadata.count = 0;
+        }
+      } else {
         // Create simple table
         const data = [
           {
@@ -117,16 +127,6 @@ export class VectorStorage {
         await this.table.delete('id = ?', ['init']);
 
         console.error(`[INFO] Created new LanceDB table: ${this.tableName}`);
-      } else {
-        this.table = await this.db.openTable(this.tableName);
-
-        // Update count
-        try {
-          this.metadata.count = await this.table.countRows();
-          console.error(`[INFO] Loaded LanceDB table with ${this.metadata.count} vectors`);
-        } catch (e) {
-          this.metadata.count = 0;
-        }
       }
     } catch (error) {
       console.error('[ERROR] Failed to initialize LanceDB:', error);

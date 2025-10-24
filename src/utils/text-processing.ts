@@ -172,7 +172,7 @@ export function generateNGrams(text: string, n = 3): string[] {
  */
 export function tokenize(text: string): string[] {
   // Remove markdown syntax
-  let cleaned = text
+  const cleaned = text
     .replace(/```[\s\S]*?```/g, ' ') // Remove code blocks
     .replace(/`[^`]+`/g, ' ') // Remove inline code
     .replace(/#{1,6}\s/g, '') // Remove headers

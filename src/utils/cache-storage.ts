@@ -3,19 +3,19 @@
  * 專門處理臨時緩存數據（可以重新生成，不應該上 Git）
  */
 
-import { eq, desc, count } from 'drizzle-orm';
-import { CacheDatabaseClient, type CacheDatabase } from '../db/cache-db.js';
+import { count, desc, eq } from 'drizzle-orm';
+import { type CacheDatabase, CacheDatabaseClient } from '../db/cache-db.js';
 import {
-  codebaseFiles,
-  codebaseMetadata,
-  tfidfTerms,
-  tfidfDocuments,
-  tfidfIdf,
   type NewCodebaseFile,
   type NewCodebaseMetadata,
-  type NewTfidfTerm,
   type NewTfidfDocument,
   type NewTfidfIdf,
+  type NewTfidfTerm,
+  codebaseFiles,
+  codebaseMetadata,
+  tfidfDocuments,
+  tfidfIdf,
+  tfidfTerms,
 } from '../db/cache-schema.js';
 import { executeOperation } from './database-errors.js';
 

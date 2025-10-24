@@ -5,12 +5,12 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildSearchIndex, processQuery, type SearchIndex } from './tfidf.js';
 import { getKnowledgeDir } from './paths.js';
+import { type SearchIndex, buildSearchIndex, processQuery } from './tfidf.js';
 
 let cachedIndex: SearchIndex | null = null;
 let indexingPromise: Promise<SearchIndex> | null = null;
-let indexingStatus = {
+const indexingStatus = {
   isIndexing: false,
   progress: 0,
   error: undefined as string | undefined,

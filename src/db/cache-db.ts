@@ -3,12 +3,12 @@
  * 負責管理可以重新生成的緩存數據（代碼索引、搜索詞彙等）
  */
 
-import { drizzle } from 'drizzle-orm/libsql';
-import { migrate } from 'drizzle-orm/libsql/migrator';
 import * as path from 'node:path';
-import * as schema from './cache-schema.js';
-import { BaseDatabaseClient } from './base-database-client.js';
+import type { drizzle } from 'drizzle-orm/libsql';
+import { migrate } from 'drizzle-orm/libsql/migrator';
 import { DatabaseError } from '../utils/database-errors.js';
+import { BaseDatabaseClient } from './base-database-client.js';
+import * as schema from './cache-schema.js';
 
 export type CacheDatabase = ReturnType<typeof drizzle<typeof schema>>;
 

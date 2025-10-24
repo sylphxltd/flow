@@ -3,12 +3,12 @@
  * 負責管理需要持久化和版本控制的記憶數據
  */
 
-import { drizzle } from 'drizzle-orm/libsql';
-import { migrate } from 'drizzle-orm/libsql/migrator';
 import * as path from 'node:path';
-import * as schema from './memory-schema.js';
-import { BaseDatabaseClient } from './base-database-client.js';
+import type { drizzle } from 'drizzle-orm/libsql';
+import { migrate } from 'drizzle-orm/libsql/migrator';
 import { DatabaseError } from '../utils/database-errors.js';
+import { BaseDatabaseClient } from './base-database-client.js';
+import * as schema from './memory-schema.js';
 
 export type MemoryDatabase = ReturnType<typeof drizzle<typeof schema>>;
 

@@ -1,11 +1,14 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+import { registerCodebaseTools } from '../tools/codebase-tools.js';
+import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
-import { registerCodebaseTools } from '../tools/codebase-tools.js';
-import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
+import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
+import { secretUtils } from '../utils/secret-utils.js';
+import { searchService } from '../utils/unified-search-service.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -70,6 +73,20 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   console.error('Debug: Final config =', config);
   console.log('🚀 Starting Sylphx Flow MCP Server...');
   console.log('📍 Database: .sylphx-flow/memory.db');
+
+  // Initialize embedding provider for vector search
+  console.log('🔍 Initializing embedding provider...');
+  try {
+    const embeddingProvider = await getDefaultEmbeddingProvider();
+    console.log(`✅ Embedding provider initialized: ${embeddingProvider.name}`);
+
+    // Initialize search service with embeddings
+    await searchService.initialize();
+    console.log('✅ Search service initialized with embeddings');
+  } catch (error) {
+    console.log('⚠️  Failed to initialize embeddings, using TF-IDF only:', error);
+    await searchService.initialize();
+  }
 
   Logger.info(`📋 Description: ${DEFAULT_CONFIG.description.substring(0, 100)}...`);
 

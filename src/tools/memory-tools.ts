@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { SeparatedMemoryStorage, type MemoryEntry } from '../utils/separated-storage.js';
+import { type MemoryEntry, SeparatedMemoryStorage } from '../utils/separated-storage.js';
 
 // Global memory storage instance
 const memoryStorage = new SeparatedMemoryStorage();

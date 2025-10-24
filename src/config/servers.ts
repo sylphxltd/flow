@@ -44,6 +44,28 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     config: {
       type: 'local' as const,
       command: ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'] as string[],
+      environment: {
+        OPENAI_API_KEY: '',
+        OPENAI_BASE_URL: 'https://api.openai.com/v1',
+        EMBEDDING_MODEL: 'text-embedding-3-small',
+      },
+    },
+    envVars: {
+      OPENAI_API_KEY: {
+        description: 'OpenAI API key for vector search embeddings',
+        required: false,
+        secret: true,
+      },
+      OPENAI_BASE_URL: {
+        description: 'Base URL for OpenAI-compatible embedding API',
+        required: false,
+        default: 'https://api.openai.com/v1',
+      },
+      EMBEDDING_MODEL: {
+        description: 'Embedding model to use for vector search',
+        required: false,
+        default: 'text-embedding-3-small',
+      },
     },
     category: 'core',
     defaultInInit: true,

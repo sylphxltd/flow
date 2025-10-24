@@ -3,8 +3,8 @@
  * 專門處理需要持久化嘅 memory 數據（應該上 Git）
  */
 
-import { eq, and, like, desc, count, or } from 'drizzle-orm';
-import { MemoryDatabaseClient, type MemoryDatabase } from '../db/memory-db.js';
+import { and, count, desc, eq, like, or } from 'drizzle-orm';
+import { type MemoryDatabase, MemoryDatabaseClient } from '../db/memory-db.js';
 import { memory } from '../db/memory-schema.js';
 
 // Memory entry interface
@@ -58,7 +58,7 @@ export class MemoryStorage {
   /**
    * Set a memory entry
    */
-  async set(key: string, value: any, namespace: string = 'default'): Promise<void> {
+  async set(key: string, value: any, namespace = 'default'): Promise<void> {
     const errorMessage = `Failed to set memory entry: ${namespace}:${key}`;
 
     try {
@@ -102,7 +102,7 @@ export class MemoryStorage {
   /**
    * Get a memory entry
    */
-  async get(key: string, namespace: string = 'default'): Promise<MemoryEntry | null> {
+  async get(key: string, namespace = 'default'): Promise<MemoryEntry | null> {
     const errorMessage = `Failed to get memory entry: ${namespace}:${key}`;
 
     try {
@@ -197,7 +197,7 @@ export class MemoryStorage {
   /**
    * Delete a memory entry
    */
-  async delete(key: string, namespace: string = 'default'): Promise<boolean> {
+  async delete(key: string, namespace = 'default'): Promise<boolean> {
     const errorMessage = `Failed to delete memory entry: ${namespace}:${key}`;
 
     try {
@@ -221,7 +221,7 @@ export class MemoryStorage {
   /**
    * Clear all memory entries in a namespace
    */
-  async clear(namespace: string = 'default'): Promise<void> {
+  async clear(namespace = 'default'): Promise<void> {
     const errorMessage = `Failed to clear memory namespace: ${namespace}`;
 
     try {

@@ -3,16 +3,16 @@
  * Type-safe database operations replacing raw SQL
  */
 
-import { eq, and, like, desc, count } from 'drizzle-orm';
-import { DrizzleDatabase, type Database } from '../db/index.js';
+import { and, count, desc, eq, like } from 'drizzle-orm';
+import { type Database, DrizzleDatabase } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import type {
-  NewMemory,
   CodebaseFile,
-  NewTfidfTerm,
-  TfidfDocument,
+  NewMemory,
   NewTfidfDocument,
   NewTfidfIdf,
+  NewTfidfTerm,
+  TfidfDocument,
 } from '../db/schema.js';
 import {
   DatabaseError,

@@ -1,11 +1,11 @@
 import { Command } from 'commander';
+import { codebaseCommand } from './commands/codebase-command.js';
 import { initCommand } from './commands/init-command.js';
+import { knowledgeCommand } from './commands/knowledge-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
 import { memoryCommand } from './commands/memory-command.js';
 import { handleMemoryTui } from './commands/memory-tui-command.js';
 import { runCommand } from './commands/run-command.js';
-import { codebaseCommand } from './commands/codebase-command.js';
-import { knowledgeCommand } from './commands/knowledge-command.js';
 
 import { createCommand } from './utils/command-builder.js';
 import { showDefaultHelp } from './utils/help.js';

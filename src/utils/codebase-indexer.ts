@@ -6,10 +6,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore, { type Ignore } from 'ignore';
-import { buildSearchIndex, type SearchIndex } from './tfidf.js';
-import { VectorStorage, type VectorDocument } from './vector-storage.js';
-import { SeparatedMemoryStorage } from './separated-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
+import { SeparatedMemoryStorage } from './separated-storage.js';
+import { type SearchIndex, buildSearchIndex } from './tfidf.js';
+import { type VectorDocument, VectorStorage } from './vector-storage.js';
 
 export interface CodebaseFile {
   path: string; // Relative path from codebase root
@@ -334,7 +334,7 @@ export class CodebaseIndexer {
         version,
         codebaseRoot,
         indexedAt,
-        fileCount: parseInt(fileCount),
+        fileCount: Number.parseInt(fileCount),
         files,
         tfidfIndex,
         vectorIndexPath,

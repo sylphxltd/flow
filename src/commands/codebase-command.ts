@@ -4,9 +4,9 @@
  */
 
 import { Command } from 'commander';
-import { searchService } from '../utils/unified-search-service.js';
 import { CodebaseIndexer } from '../utils/codebase-indexer.js';
 import { CLIError } from '../utils/error-handler.js';
+import { searchService } from '../utils/unified-search-service.js';
 
 /**
  * Codebase search command
@@ -26,7 +26,7 @@ export const codebaseSearchCommand = new Command('search')
       await searchService.initialize();
 
       const result = await searchService.searchCodebase(query, {
-        limit: parseInt(options.limit),
+        limit: Number.parseInt(options.limit),
         include_content: options.includeContent !== 'false',
         file_extensions: options.extensions,
         path_filter: options.path,
@@ -52,7 +52,10 @@ export const codebaseReindexCommand = new Command('reindex')
       console.log('📂 Scanning and indexing files...');
 
       const indexer = new CodebaseIndexer();
-      await indexer.indexCodebase();
+      const embeddingProvider = await (
+        await import('../utils/embeddings.js')
+      ).getDefaultEmbeddingProvider();
+      await indexer.indexCodebase({ embeddingProvider });
 
       console.log('✅ Indexing complete!');
     } catch (error) {
@@ -72,16 +75,16 @@ export const codebaseStatusCommand = new Command('status')
       await searchService.initialize();
       const status = await searchService.getStatus();
 
-      if (!status.codebase.indexed) {
-        console.log('**Status:** ⚠️ Not indexed');
-        console.log('**Files:** 0 files indexed');
-        console.log('**Note:** Run "sylphx codebase reindex" to index codebase');
-      } else {
+      if (status.codebase.indexed) {
         console.log(`**Status:** ✅ Ready`);
         console.log(`**Files:** ${status.codebase.fileCount} files indexed`);
         if (status.codebase.indexedAt) {
           console.log(`**Indexed:** ${new Date(status.codebase.indexedAt).toLocaleString()}`);
         }
+      } else {
+        console.log('**Status:** ⚠️ Not indexed');
+        console.log('**Files:** 0 files indexed');
+        console.log('**Note:** Run "sylphx codebase reindex" to index codebase');
       }
 
       console.log('\n**Available Commands:**');

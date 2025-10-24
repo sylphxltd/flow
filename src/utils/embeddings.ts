@@ -5,6 +5,18 @@
 
 import { generateMockEmbedding } from './vector-storage.js';
 
+export interface ModelInfo {
+  id: string;
+  object: string;
+  created?: number;
+  owned_by?: string;
+}
+
+export interface EmbeddingModelOption {
+  id: string;
+  description: string;
+}
+
 export interface EmbeddingProvider {
   name: string;
   dimensions: number;
@@ -111,6 +123,87 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       return texts.map((text) => generateMockEmbedding(text, this.dimensions));
     }
   }
+
+  /**
+   * List all available models from the OpenAI-compatible API
+   */
+  async listModels(): Promise<ModelInfo[]> {
+    if (!this.apiKey) {
+      throw new Error('API key required to list models');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/models`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} ${error}`);
+      }
+
+      const data = await response.json();
+      return data.data.map((model: any) => ({
+        id: model.id,
+        object: model.object,
+        created: model.created,
+        owned_by: model.owned_by,
+      }));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to list models: ${error.message}`);
+      }
+      throw new Error('Failed to list models: Unknown error');
+    }
+  }
+
+  /**
+   * Filter models to only include embedding models
+   */
+  async listEmbeddingModels(): Promise<ModelInfo[]> {
+    const allModels = await this.listModels();
+    return allModels.filter(
+      (model) => model.id.includes('embedding') || model.id.includes('text-embedding')
+    );
+  }
+
+  /**
+   * Test if the API connection is working
+   */
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.listModels();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get available embedding models with their details
+   */
+  async getEmbeddingModelOptions(): Promise<EmbeddingModelOption[]> {
+    const embeddingModels = await this.listEmbeddingModels();
+
+    return embeddingModels.map((model) => ({
+      id: model.id,
+      description: this.getModelDescription(model.id),
+    }));
+  }
+
+  private getModelDescription(modelId: string): string {
+    const descriptions: Record<string, string> = {
+      'text-embedding-3-small': 'Latest small embedding model (1536 dimensions)',
+      'text-embedding-3-large': 'Latest large embedding model (3072 dimensions)',
+      'text-embedding-ada-002': 'Legacy embedding model (1536 dimensions)',
+    };
+
+    return descriptions[modelId] || `Embedding model: ${modelId}`;
+  }
 }
 
 /**
@@ -137,12 +230,27 @@ export class MockEmbeddingProvider implements EmbeddingProvider {
  * Get default embedding provider
  * Uses OpenAI if API key is available, otherwise mock
  */
-export function getDefaultEmbeddingProvider(): EmbeddingProvider {
-  const apiKey = process.env.OPENAI_API_KEY;
+export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> {
+  // Try to load from secrets first
+  let secrets: Record<string, string> = {};
+  try {
+    const { secretUtils } = await import('./secret-utils.js');
+    secrets = await secretUtils.loadSecrets(process.cwd()).catch(() => ({}));
+  } catch (error) {
+    // Ignore if secretUtils is not available
+  }
+
+  const apiKey = secrets.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+  const baseURL = secrets.OPENAI_BASE_URL || process.env.OPENAI_BASE_URL;
+  const model = secrets.EMBEDDING_MODEL || process.env.EMBEDDING_MODEL;
 
   if (apiKey) {
-    console.error('[INFO] Using OpenAI embeddings (text-embedding-3-small)');
-    return new OpenAIEmbeddingProvider({ apiKey });
+    console.error(`[INFO] Using OpenAI embeddings (${model || 'text-embedding-3-small'})`);
+    return new OpenAIEmbeddingProvider({
+      apiKey,
+      baseURL,
+      model: model as any,
+    });
   }
 
   console.error('[INFO] Using mock embeddings (no OPENAI_API_KEY)');

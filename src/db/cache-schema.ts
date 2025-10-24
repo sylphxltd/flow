@@ -3,7 +3,7 @@
  * 包含代碼庫索引、搜索詞彙等可以重新生成的數據
  */
 
-import { sqliteTable, text, integer, real, index, primaryKey } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 // Codebase files table (代碼庫檔案索引)
 export const codebaseFiles = sqliteTable(

@@ -1,7 +1,12 @@
-import { getDefaultServers, getServersRequiringAPIKeys } from '../config/servers.js';
+import {
+  getDefaultServers,
+  getServersRequiringAPIKeys,
+  getServersWithOptionalAPIKeys,
+} from '../config/servers.js';
 import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
+import { OpenAIEmbeddingProvider } from '../utils/embeddings.js';
 import { CLIError } from '../utils/error-handler.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import {
@@ -66,14 +71,18 @@ export const initCommand: CommandConfig = {
       } else {
         // First, identify servers that need API keys and configure them
         const serversNeedingKeys = getServersRequiringAPIKeys();
+        const serversWithOptionalKeys = getServersWithOptionalAPIKeys();
         const serversWithKeys: string[] = [];
         const serversWithoutKeys: string[] = [];
 
-        if (serversNeedingKeys.length > 0) {
+        // Combine servers that require keys with those that have optional keys
+        const allServersNeedingConfiguration = [...serversNeedingKeys, ...serversWithOptionalKeys];
+
+        if (allServersNeedingConfiguration.length > 0) {
           console.log('\n🔑 Some MCP tools require API keys:');
 
           // Configure API keys first, before installing (handles all 4 cases)
-          for (const serverType of serversNeedingKeys) {
+          for (const serverType of allServersNeedingConfiguration) {
             const shouldKeepOrInstall = await configureMCPServerForTarget(
               process.cwd(),
               targetId,
@@ -117,6 +126,119 @@ export const initCommand: CommandConfig = {
     if (targetId === 'opencode') {
       await secretUtils.ensureSecretsDir(process.cwd());
       await secretUtils.addToGitignore(process.cwd());
+
+      // Check if embedding is already configured
+      const secrets = await secretUtils.loadSecrets(process.cwd()).catch(() => ({}));
+      const hasEmbeddingConfig = (secrets as any).OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+
+      if (!hasEmbeddingConfig && !options.dryRun) {
+        console.log('\n🔍 Embedding Configuration');
+        console.log('==========================');
+        console.log('Sylphx Flow uses embeddings for vector search in knowledge and codebase.');
+        console.log('Would you like to configure embedding settings now?');
+
+        const { createInterface } = await import('node:readline');
+        const rl = createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+
+        const answer = await new Promise<string>((resolve) => {
+          rl.question('Configure embeddings? (Y/n): ', (input) => {
+            resolve(input.trim().toLowerCase() || 'y');
+          });
+        });
+
+        if (answer === 'y' || answer === 'yes') {
+          console.log('\n🔧 Configuring embedding settings...');
+
+          // Get API key
+          const apiKey = await new Promise<string>((resolve) => {
+            rl.question('Enter OpenAI API key (required): ', (input) => {
+              resolve(input.trim());
+            });
+          });
+
+          if (apiKey) {
+            // Get base URL
+            const baseURL = await new Promise<string>((resolve) => {
+              rl.question('Enter base URL (default: https://api.openai.com/v1): ', (input) => {
+                resolve(input.trim() || 'https://api.openai.com/v1');
+              });
+            });
+
+            // Test connection and list models
+            console.log('\n🔍 Testing connection and listing available models...');
+            const provider = new OpenAIEmbeddingProvider({ apiKey, baseURL });
+
+            const isConnected = await provider.testConnection();
+            if (isConnected) {
+              console.log('✅ Connection successful!');
+
+              try {
+                const modelOptions = await provider.getEmbeddingModelOptions();
+
+                if (modelOptions.length > 0) {
+                  console.log('\n📋 Available embedding models:');
+                  modelOptions.forEach((model, index) => {
+                    console.log(`  ${index + 1}. ${model.id} - ${model.description}`);
+                  });
+
+                  // Get model selection
+                  const modelIndex = await new Promise<string>((resolve) => {
+                    rl.question(
+                      `\nSelect model (1-${modelOptions.length}, default: 1): `,
+                      (input) => {
+                        resolve(input.trim() || '1');
+                      }
+                    );
+                  });
+
+                  const selectedIndex = Number.parseInt(modelIndex, 10) - 1;
+                  if (selectedIndex >= 0 && selectedIndex < modelOptions.length) {
+                    const selectedModel = modelOptions[selectedIndex].id;
+
+                    // Save configuration
+                    const embeddingSecrets = {
+                      OPENAI_API_KEY: apiKey,
+                      OPENAI_BASE_URL: baseURL,
+                      EMBEDDING_MODEL: selectedModel,
+                    };
+
+                    await secretUtils.saveSecrets(process.cwd(), embeddingSecrets);
+
+                    console.log(`✅ Embedding configuration saved:`);
+                    console.log(`   • API Key: ${apiKey.substring(0, 10)}...`);
+                    console.log(`   • Base URL: ${baseURL}`);
+                    console.log(`   • Model: ${selectedModel}`);
+                  }
+                }
+              } catch (error) {
+                console.log('⚠️  Could not list models, but API key is saved');
+
+                // Save basic configuration
+                const embeddingSecrets = {
+                  OPENAI_API_KEY: apiKey,
+                  OPENAI_BASE_URL: baseURL,
+                };
+
+                await secretUtils.saveSecrets(process.cwd(), embeddingSecrets);
+                console.log(`✅ Basic embedding configuration saved:`);
+                console.log(`   • API Key: ${apiKey.substring(0, 10)}...`);
+                console.log(`   • Base URL: ${baseURL}`);
+              }
+            } else {
+              console.log('❌ Connection failed. You can configure embeddings later manually.');
+            }
+          } else {
+            console.log('⚠️  No API key provided. You can configure embeddings later manually.');
+          }
+        } else {
+          console.log('ℹ️  Skipping embedding configuration.');
+        }
+
+        rl.close();
+      }
     }
 
     // Install agents

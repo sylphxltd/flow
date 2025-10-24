@@ -3,9 +3,10 @@
  * 所有搜索功能（CLI、MCP、API）都使用相同的核心邏輯
  */
 
+import type { EmbeddingProvider } from './embeddings.js';
+import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
 import { SeparatedMemoryStorage } from './separated-storage.js';
-import { searchDocuments, type SearchIndex } from './tfidf.js';
-import { getKnowledgeIndexer } from './knowledge-indexer.js';
+import { type SearchIndex, searchDocuments } from './tfidf.js';
 
 export interface SearchResult {
   uri: string;
@@ -44,6 +45,7 @@ export interface SearchStatus {
 export class UnifiedSearchService {
   private memoryStorage: SeparatedMemoryStorage;
   private knowledgeIndexer = getKnowledgeIndexer();
+  private embeddingProvider?: EmbeddingProvider;
 
   constructor() {
     this.memoryStorage = new SeparatedMemoryStorage();
@@ -54,6 +56,16 @@ export class UnifiedSearchService {
    */
   async initialize(): Promise<void> {
     await this.memoryStorage.initialize();
+
+    // Initialize embedding provider if not already done
+    if (!this.embeddingProvider) {
+      this.embeddingProvider = await (
+        await import('./embeddings.js')
+      ).getDefaultEmbeddingProvider();
+    }
+
+    // Reinitialize knowledge indexer with embedding provider
+    this.knowledgeIndexer = getKnowledgeIndexer(this.embeddingProvider);
   }
 
   /**
@@ -247,8 +259,10 @@ export class UnifiedSearchService {
       // 獲取 IDF 值
       const idfRecords = await this.memoryStorage.getIDFValues();
       const idf = new Map<string, number>();
-      for (const [term, value] of Object.entries(idfRecords)) {
-        idf.set(term, value as number);
+      for (const entry of idfRecords as any[]) {
+        if (entry.term && entry.idfValue !== undefined) {
+          idf.set(entry.term, entry.idfValue);
+        }
       }
 
       return {

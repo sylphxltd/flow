@@ -59,7 +59,7 @@ export async function addMCPServersToTarget(
     if (mcpSection[server.name]) {
       console.log(`ℹ️  MCP server already exists: ${server.name}`);
     } else {
-      let transformedConfig = target.transformMCPConfig(server.config, server.id);
+      const transformedConfig = target.transformMCPConfig(server.config, server.id);
 
       // Apply target-specific configuration for sylphx-flow
       if (server.id === 'sylphx-flow' && target.mcpServerConfig?.['sylphx-flow']) {
@@ -202,6 +202,8 @@ export async function configureMCPServerForTarget(
   targetId: string,
   serverType: MCPServerID
 ): Promise<boolean> {
+  console.log(`🔍 Debug: configureMCPServerForTarget called with serverType = ${serverType}`);
+
   const target = targetManager.getTarget(targetId);
 
   if (!target) {
@@ -259,21 +261,23 @@ export async function configureMCPServerForTarget(
     (envVar) => envApiKeys[envVar] && envApiKeys[envVar].trim() !== ''
   );
 
-  let apiKeys: Record<string, string>;
-  if (hasAllRequiredEnvKeys) {
-    console.log(`✅ Found required API keys in environment variables`);
-    apiKeys = { ...envApiKeys };
-  } else {
-    // Prompt for missing keys
-    apiKeys = await promptForAPIKeys([serverType], envApiKeys);
-  }
+  // mcp config is always for configuring - show UI with existing values
+  console.log(
+    `✅ Found existing API keys, you can update them or press Enter to keep current values`
+  );
+  const apiKeys = await promptForAPIKeys([serverType], envApiKeys);
 
   // Check if all required environment variables are provided
   const hasAllRequiredKeys = requiredEnvVars.every(
     (envVar) => apiKeys[envVar] && apiKeys[envVar].trim() !== ''
   );
 
-  if (!hasAllRequiredKeys) {
+  console.log(
+    `🔍 Debug: requiredEnvVars.length = ${requiredEnvVars.length}, hasAllRequiredKeys = ${hasAllRequiredKeys}`
+  );
+
+  // For servers with required keys, validate them
+  if (requiredEnvVars.length > 0 && !hasAllRequiredKeys) {
     // User didn't provide all required keys
     if (isServerInstalled && !hasExistingValidKeys) {
       // Case 1: Already installed + no keys + user doesn't provide → DELETE
@@ -300,6 +304,24 @@ export async function configureMCPServerForTarget(
     return false;
   }
 
+  // For servers with only optional envVars (like sylphx-flow), always proceed to save
+  // if the user provided any values or if the server is being configured
+  if (requiredEnvVars.length === 0 && optionalEnvVars.length > 0) {
+    const hasUserInput = Object.keys(apiKeys).some((key) => {
+      const envValue = apiKeys[key];
+      const existingValue = envApiKeys[key];
+      return envValue && envValue !== existingValue;
+    });
+
+    if (hasUserInput || !isServerInstalled) {
+      console.log(`🔧 Updating ${server.name} configuration...`);
+      // Proceed to save/update the configuration
+    } else {
+      console.log(`✅ No changes needed for ${server.name}`);
+      return true;
+    }
+  }
+
   // Get MCP section for update (ensure it exists)
   const mcpSectionForUpdate = mcpSection || {};
 
@@ -319,14 +341,28 @@ export async function configureMCPServerForTarget(
   // Convert secret API keys to file references if target supports it
   let processedSecretApiKeys = secretApiKeys;
   const targetConfig = targetManager.getTarget(targetId);
+
+  console.log(`🔍 Debug: secretApiKeys =`, Object.keys(secretApiKeys));
+  console.log(
+    `🔍 Debug: targetConfig.supportedMcpServers =`,
+    targetConfig?.config.installation.supportedMcpServers
+  );
+  console.log(
+    `🔍 Debug: targetConfig.useSecretFiles =`,
+    targetConfig?.config.installation.useSecretFiles
+  );
+
   if (
     targetConfig &&
     targetConfig.config.installation.supportedMcpServers &&
     targetConfig.config.installation.useSecretFiles !== false &&
     Object.keys(secretApiKeys).length > 0
   ) {
+    console.log(`🔍 Debug: Converting secrets to file references...`);
     processedSecretApiKeys = await secretUtils.convertSecretsToFileReferences(cwd, secretApiKeys);
     await secretUtils.addToGitignore(cwd);
+  } else {
+    console.log(`🔍 Debug: Skipping secret conversion`);
   }
 
   // Combine processed secret keys with non-secret keys
@@ -489,18 +525,22 @@ async function promptForAPIKeys(
 
       const isRequired = envConfig.required;
       const hasDefault = envConfig.default !== undefined;
+      const existingValue = existingKeys[envVar];
+      const displayExisting = existingValue
+        ? ` (current: ${existingValue.substring(0, 8)}${existingValue.length > 8 ? '...' : ''})`
+        : '';
 
       let promptText: string;
       if (isRequired) {
         if (hasDefault) {
-          promptText = `Enter ${envVar} (${envConfig.description}) (required, default: ${envConfig.default}): `;
+          promptText = `Enter ${envVar} (${envConfig.description}) (required, default: ${envConfig.default}${displayExisting}): `;
         } else {
-          promptText = `Enter ${envVar} (${envConfig.description}) (required): `;
+          promptText = `Enter ${envVar} (${envConfig.description}) (required${displayExisting}): `;
         }
       } else if (hasDefault) {
-        promptText = `Enter ${envVar} (${envConfig.description}) (optional, default: ${envConfig.default}, press Enter to use default): `;
+        promptText = `Enter ${envVar} (${envConfig.description}) (optional, default: ${envConfig.default}${displayExisting}, press Enter to keep current): `;
       } else {
-        promptText = `Enter ${envVar} (${envConfig.description}) (optional, press Enter to skip): `;
+        promptText = `Enter ${envVar} (${envConfig.description}) (optional${displayExisting}, press Enter to keep current): `;
       }
 
       const answer = await new Promise<string>((resolve) => {
@@ -514,7 +554,10 @@ async function promptForAPIKeys(
 
       if (answer) {
         finalValue = answer;
-        actionText = `Set ${envVar}`;
+        actionText = `Updated ${envVar}`;
+      } else if (existingValue) {
+        finalValue = existingValue;
+        actionText = `Kept existing ${envVar}`;
       } else if (hasDefault) {
         finalValue = envConfig.default;
         actionText = `Using default for ${envVar}`;
@@ -533,6 +576,7 @@ async function promptForAPIKeys(
     }
   }
 
+  console.log(`🔍 Debug: promptForAPIKeys returning apiKeys =`, apiKeys);
   rl.close();
   return apiKeys;
 }

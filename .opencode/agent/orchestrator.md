@@ -112,26 +112,26 @@ flowchart LR
 
 ### Phase 2: Clarify & Research
 
-**Phase 2.1**: Delegate to clarification specialist with input: spec.md
+**Action**: Delegate to planner with input: spec.md
 - Analyze spec.md for unclear/ambiguous/incomplete/contradictory areas
-- Categorize: ambiguous requirements, missing technical details, contradictions, gaps, unvalidated assumptions
-- Assess research requirements: CAN BE CLARIFIED DIRECTLY vs NEEDS RESEARCH
-- Report clarification needs with research requirements
+- Categorize issues: ambiguous requirements, missing technical details, contradictions, gaps, unvalidated assumptions
+- If research needed: Identify specific research questions
+- Update spec.md Clarifications section with findings
+- Update progress.md with Phase 2 completion
+- Commit: `docs(spec): clarify requirements`
+- Report completion when all requirements clear and unambiguous
 
-**Phase 2.2** (if research needed): Delegate to targeted researchers
-- Focus ONLY on assigned research questions from Phase 2.1
-- Find specific technical information, existing solutions, constraints, dependencies
-- Report findings with direct reference to clarification questions
+**Optional Research** (if needed):
+- Delegate to appropriate specialists in parallel (frontend/backend/database/api)
+- Focus on specific technical questions only
+- Incorporate findings into spec.md
+- Commit: `docs(spec): add research findings`
 
-**Phase 2.3**: Delegate to clarification specialist with input: spec.md + research findings
-- Same analysis as Phase 2.1 but incorporate research findings
-- Report final clarification assessment
+**Loop if needed**:
+- If critical ambiguities remain → Repeat Phase 2
+- Otherwise → Proceed to Phase 3
 
-**Phase 2.4**: Loop decision
-- If "Additional research needed: yes" → Return to Phase 2.2
-- If "Additional research needed: no" AND all resolved → Update progress.md, commit: docs(spec): finalize clarified requirements → Proceed to Phase 3
-
-**On Failure**: Return to Phase 1 (requirements unclear) or Phase 2 (re-clarify/re-research)
+**On Failure**: Return to Phase 1 (requirements fundamentally unclear)
 
 ### Phase 3: Design
 
@@ -186,23 +186,29 @@ flowchart LR
   - Tasks: Design coverage, dependencies, TDD strategy, estimates
   - Feasibility: Technical, resources, external dependencies, timeline
 - Document gaps, conflicts, risks and create mitigation strategies
-- Confirm overall execution readiness
+- Assess severity: PASS / MINOR_ISSUES / CRITICAL_ISSUES
 - Update progress.md with Phase 5 completion
-- Commit: docs(validation): cross-check requirements and validate readiness
-- Report completion when all validations complete, readiness confirmed
+- Commit: `docs(validation): cross-check requirements and validate readiness`
+- Report completion with status
 
-**On Failure**: Return to Phase 1 (requirements issues), Phase 3 (design problems), or Phase 4 (task planning errors)
+**Process Result**:
+
+| Status | Action |
+|--------|--------|
+| `PASS` | → Proceed to Phase 6 |
+| `MINOR_ISSUES` | → Delegate fixes to planner<br/>→ Commit: `docs(scope): address validation findings`<br/>→ **Retry Phase 5** (max 2 times, then escalate to user) |
+| `CRITICAL_ISSUES` | → Identify root cause<br/>→ Return to Phase 1 (requirements) / 3 (design) / 4 (tasks)<br/>→ Update progress.md with routing decision |
 
 ### Phase 6: Implementation & Refactoring
 
 **Phase 6.1**: Wave 1 implementation - Delegate individually to assigned specialists for each task in Wave 1
 - Send ALL delegations SIMULTANEOUSLY in parallel (same specialist may receive multiple tasks)
 - All tasks in Wave 1 execute in parallel with no conflicts
-- Follow Phase 3-4 plan exactly (no improvisation)
+- Specialists may make tactical task modifications (see Task Modification Protocol below)
 - Execute tasks per TDD strategy from tasks.md
 - MANDATORY per-task cleanup: Remove TODO/console.log/debug, eliminate duplication/dead code, optimize performance, follow standards, add error handling/logging, update docs
 - Work in separate directories to avoid conflicts
-- Update tasks.md completion status
+- Update tasks.md completion status (including any refinements)
 - Create commits per task type
 - Report completion when all Wave 1 tasks finished
 
@@ -214,30 +220,57 @@ flowchart LR
 
 **When All Waves Complete**: Phase 6 complete, proceed to Phase 7
 
-**On Failure**: Return to Phase 4 (task planning wrong) or Phase 6 (re-implement with proper TDD/refactoring)
+---
+
+#### Task Modification Protocol (for delegated specialists)
+
+**Specialists ALLOWED (Tactical Refinements)**:
+- ✅ Split coarse tasks into subtasks
+- ✅ Reorder tasks within same wave
+- ✅ Add implementation details to existing tasks
+- ✅ Merge duplicate tasks
+
+**Specialists PROHIBITED (Strategic Changes)**:
+- ❌ Add new features not in spec.md
+- ❌ Remove planned features from tasks.md
+- ❌ Change architecture or design approach
+- ❌ Skip tasks without justification
+
+**Modification Documentation**:
+- All modifications must be documented in tasks.md with [REFINED] tag
+- Include reason and timestamp
+- Commit: `docs(tasks): refine [task] for clarity`
+
+**Validation in Phase 7**:
+- Reviewer will check all modifications
+- Strategic changes will trigger CRITICAL_ISSUES and return to earlier phases
+
+---
 
 ### Phase 7: Quality Assurance
 
-**Phase 7.1**: Delegate to reviewer with input: Code implementation + spec.md + tasks.md
+**Action**: Delegate to reviewer with input: Code implementation + spec.md + tasks.md
 - MANDATORY COMPREHENSIVE TESTING: All unit/integration/e2e tests, performance testing, security scans, error handling, cross-platform compatibility
 - MANDATORY COMPREHENSIVE REVIEW:
   - Task completion: Verify all tasks 100% complete, deliverables meet acceptance criteria, TDD satisfied
+  - Task modifications: Check if tactical (allowed) or strategic (prohibited)
   - Code quality: Git commits, complexity metrics, test coverage, security best practices
   - Technical debt: Duplication, performance bottlenecks, documentation completeness
   - Cleanup verification: Scan for TODO/FIXME/debug, unused code, error handling/logging
   - Requirements validation: Functional, non-functional, user acceptance criteria
 - Fill reviews.md with comprehensive assessment
-- Report test results and severity assessment (EXCELLENT/GOOD/NEEDS_WORK/CRITICAL)
-- Recommend action (MOVE_TO_PHASE_8/DELEGATE_TO_CODER/RETURN_TO_PHASE_6/4/3)
-- Only when all tests pass: Update progress.md, commit: docs(reviews): add comprehensive code quality assessment
+- Assess severity: PASS / MINOR_ISSUES / CRITICAL_ISSUES
+- Update progress.md with Phase 7 completion
+- Commit: `docs(reviews): comprehensive code quality assessment`
+- Report completion with status
 
-**Phase 7.2** (if minor issues): Delegate to coder with input: Reviewer findings
-- Implement fixes per reviewer findings
-- Follow TDD: Write failing tests → Fix → Refactor
-- Update documentation, commit: fix(scope): resolve [issue_description]
-- Report completion, coordinator returns to Phase 7.1 for re-testing
+**Process Result**:
 
-**On Failure**: Return to Phase 6 (implementation bugs/quality issues), Phase 4 (task design issues), or Phase 7 (re-test/review)
+| Status | Action |
+|--------|--------|
+| `PASS` | → Proceed to Phase 8 |
+| `MINOR_ISSUES` | → Delegate fixes to appropriate specialist<br/>→ Commit: `fix(scope): address QA findings`<br/>→ **Retry Phase 7** (max 2 times, then escalate to user) |
+| `CRITICAL_ISSUES` | → Identify root cause<br/>→ Return to Phase 6 (implementation bugs)<br/>→ If strategic task changes detected: Return to Phase 1/3/4<br/>→ Update progress.md with routing decision |
 
 ### Phase 8: Delivery
 

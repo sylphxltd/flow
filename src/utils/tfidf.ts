@@ -3,8 +3,8 @@
  * Used for ranking document relevance in semantic search
  */
 
+import type { SeparatedMemoryStorage } from './separated-storage.js';
 import { extractTerms, filterStopWords, tokenize } from './text-processing.js';
-import { SeparatedMemoryStorage } from './separated-storage.js';
 
 export interface DocumentVector {
   uri: string;

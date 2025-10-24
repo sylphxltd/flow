@@ -3,13 +3,13 @@
  * Type-safe database operations with proper migrations
  */
 
-import { drizzle } from 'drizzle-orm/libsql';
-import { createClient } from '@libsql/client';
-import { migrate } from 'drizzle-orm/libsql/migrator';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as schema from './schema.js';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
+import { migrate } from 'drizzle-orm/libsql/migrator';
 import { ConnectionError, DatabaseError } from '../utils/database-errors.js';
+import * as schema from './schema.js';
 
 export type Database = ReturnType<typeof drizzle<typeof schema>>;
 

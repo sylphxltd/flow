@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandHandler } from '../types.js';
-import { SeparatedMemoryStorage, type MemoryEntry } from '../utils/separated-storage.js';
 import { CLIError } from '../utils/error-handler.js';
+import { type MemoryEntry, SeparatedMemoryStorage } from '../utils/separated-storage.js';
 
 // Memory list handler
 const memoryListHandler: CommandHandler = async (options) => {

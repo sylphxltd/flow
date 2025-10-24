@@ -4,9 +4,9 @@
  */
 
 import { Command } from 'commander';
-import { searchService } from '../utils/unified-search-service.js';
 import { getKnowledgeContent } from '../resources/knowledge-resources.js';
 import { CLIError } from '../utils/error-handler.js';
+import { searchService } from '../utils/unified-search-service.js';
 
 /**
  * Knowledge search command
@@ -23,7 +23,7 @@ export const knowledgeSearchCommand = new Command('search')
       await searchService.initialize();
 
       const result = await searchService.searchKnowledge(query, {
-        limit: parseInt(options.limit),
+        limit: Number.parseInt(options.limit),
         include_content: options.includeContent !== 'false',
       });
 
@@ -120,17 +120,15 @@ export const knowledgeStatusCommand = new Command('status')
       await searchService.initialize();
       const status = await searchService.getStatus();
 
-      if (!status.knowledge.indexed) {
-        if (status.knowledge.isIndexing) {
-          console.log(`**Status:** 🔄 Building index (${status.knowledge.progress || 0}%)`);
-          console.log('**Note:** Please wait a moment and try again');
-        } else {
-          console.log('**Status:** ⚠️ Not initialized');
-          console.log('**Note:** Will auto-index on first search');
-        }
-      } else {
+      if (status.knowledge.indexed) {
         console.log(`**Status:** ✅ Ready`);
         console.log(`**Documents:** ${status.knowledge.documentCount} files`);
+      } else if (status.knowledge.isIndexing) {
+        console.log(`**Status:** 🔄 Building index (${status.knowledge.progress || 0}%)`);
+        console.log('**Note:** Please wait a moment and try again');
+      } else {
+        console.log('**Status:** ⚠️ Not initialized');
+        console.log('**Note:** Will auto-index on first search');
       }
 
       console.log('\n**Available Commands:**');

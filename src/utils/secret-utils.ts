@@ -118,6 +118,42 @@ export const secretUtils = {
   },
 
   /**
+   * Save multiple secrets to files
+   */
+  async saveSecrets(cwd: string, secrets: Record<string, string>): Promise<void> {
+    for (const [key, value] of Object.entries(secrets)) {
+      await secretUtils.writeSecret(cwd, key, value);
+    }
+  },
+
+  /**
+   * Load all secrets from .secrets directory
+   */
+  async loadSecrets(cwd: string): Promise<Record<string, string>> {
+    const secretsDir = secretUtils.getSecretsDir(cwd);
+    const secrets: Record<string, string> = {};
+
+    try {
+      const files = await fs.readdir(secretsDir);
+
+      for (const file of files) {
+        const filePath = path.join(secretsDir, file);
+        const stat = await fs.stat(filePath);
+
+        if (stat.isFile()) {
+          const content = await fs.readFile(filePath, 'utf8');
+          secrets[file] = content.trim();
+        }
+      }
+    } catch (error) {
+      // Directory doesn't exist or can't be read
+      // Return empty secrets object
+    }
+
+    return secrets;
+  },
+
+  /**
    * Add .secrets to .gitignore if not already present
    */
   async addToGitignore(cwd: string): Promise<void> {

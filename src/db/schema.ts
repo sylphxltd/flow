@@ -3,7 +3,7 @@
  * Type-safe database schema with migrations support
  */
 
-import { sqliteTable, text, integer, real, index, primaryKey } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 // Memory table for persistent storage
 export const memory = sqliteTable(

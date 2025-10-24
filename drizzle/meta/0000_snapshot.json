@@ -60,16 +60,12 @@
       "indexes": {
         "idx_codebase_files_mtime": {
           "name": "idx_codebase_files_mtime",
-          "columns": [
-            "mtime"
-          ],
+          "columns": ["mtime"],
           "isUnique": false
         },
         "idx_codebase_files_hash": {
           "name": "idx_codebase_files_hash",
-          "columns": [
-            "hash"
-          ],
+          "columns": ["hash"],
           "isUnique": false
         }
       },
@@ -152,33 +148,24 @@
       "indexes": {
         "idx_memory_namespace": {
           "name": "idx_memory_namespace",
-          "columns": [
-            "namespace"
-          ],
+          "columns": ["namespace"],
           "isUnique": false
         },
         "idx_memory_timestamp": {
           "name": "idx_memory_timestamp",
-          "columns": [
-            "timestamp"
-          ],
+          "columns": ["timestamp"],
           "isUnique": false
         },
         "idx_memory_key": {
           "name": "idx_memory_key",
-          "columns": [
-            "key"
-          ],
+          "columns": ["key"],
           "isUnique": false
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "memory_key_namespace_pk": {
-          "columns": [
-            "key",
-            "namespace"
-          ],
+          "columns": ["key", "namespace"],
           "name": "memory_key_namespace_pk"
         }
       },
@@ -223,12 +210,8 @@
           "name": "tfidf_documents_file_path_codebase_files_path_fk",
           "tableFrom": "tfidf_documents",
           "tableTo": "codebase_files",
-          "columnsFrom": [
-            "file_path"
-          ],
-          "columnsTo": [
-            "path"
-          ],
+          "columnsFrom": ["file_path"],
+          "columnsTo": ["path"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -289,16 +272,12 @@
       "indexes": {
         "idx_tfidf_terms_term": {
           "name": "idx_tfidf_terms_term",
-          "columns": [
-            "term"
-          ],
+          "columns": ["term"],
           "isUnique": false
         },
         "idx_tfidf_terms_file": {
           "name": "idx_tfidf_terms_file",
-          "columns": [
-            "file_path"
-          ],
+          "columns": ["file_path"],
           "isUnique": false
         }
       },
@@ -307,12 +286,8 @@
           "name": "tfidf_terms_file_path_codebase_files_path_fk",
           "tableFrom": "tfidf_terms",
           "tableTo": "codebase_files",
-          "columnsFrom": [
-            "file_path"
-          ],
-          "columnsTo": [
-            "path"
-          ],
+          "columnsFrom": ["file_path"],
+          "columnsTo": ["path"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock paths before importing
 vi.mock('../src/utils/paths.js', () => ({
@@ -19,7 +19,7 @@ vi.mock('node:path', () => ({
   },
 }));
 
-import { generateRandomSuffix, generateCommitMessage } from '../src/tools/project-startup-tool.js';
+import { generateCommitMessage, generateRandomSuffix } from '../src/tools/project-startup-tool.js';
 
 // Skipping these tests due to path mocking issues in test environment
 // The functionality is tested manually and works correctly

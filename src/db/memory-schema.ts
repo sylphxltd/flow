@@ -3,7 +3,7 @@
  * 包含用戶記憶、協調數據等需要持久化的信息
  */
 
-import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 // Memory table for persistent storage (永久記憶)
 export const memory = sqliteTable(
