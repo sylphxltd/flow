@@ -4,10 +4,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
-import {
-  registerCodebaseSearchTool,
-  registerKnowledgeSearchTool,
-} from '../tools/unified-search-tools.js';
+import { registerCodebaseTools } from '../tools/codebase-tools.js';
+import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -104,20 +102,20 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('project_startup');
   }
 
-  // Codebase search tool (independent, enabled by default)
+  // Codebase tools (enabled by default)
   if (!config.disableCodebaseSearch) {
-    Logger.info('🔍 Registering codebase search tool');
-    registerCodebaseSearchTool(server);
+    Logger.info('🔍 Registering codebase tools');
+    registerCodebaseTools(server);
     enabledTools.push('search_codebase');
-    console.log('🔍 Codebase Search: Enabled');
+    console.log('🔍 Codebase Tools: Enabled');
   }
 
-  // Knowledge search tool (independent, enabled by default)
+  // Knowledge tools (enabled by default)
   if (!config.disableKnowledge) {
-    Logger.info('📚 Registering knowledge search tool');
-    registerKnowledgeSearchTool(server);
-    enabledTools.push('search_knowledge');
-    console.log('📚 Knowledge Search: Enabled');
+    Logger.info('📚 Registering knowledge tools');
+    registerKnowledgeTools(server);
+    enabledTools.push('search_knowledge', 'get_knowledge');
+    console.log('📚 Knowledge Tools: Enabled');
   }
 
   // Display enabled tools

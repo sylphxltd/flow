@@ -1,25 +1,43 @@
 /**
- * Unified search tools - 統一搜尋工具
- * Codebase 同 knowledge 使用相同架構，只係 source 唔同
+ * Codebase tools - 代碼庫工具
+ * All tools for working with project source code and files
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { searchDocuments } from '../utils/tfidf.js';
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
-import { getKnowledgeIndexer } from '../utils/knowledge-indexer.js';
 import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 
-// Global instances
+// Global instance
 const memoryStorage = new SeparatedMemoryStorage();
-const knowledgeIndexer = getKnowledgeIndexer();
+
 /**
- * Register codebase search tool (independent)
+ * Register codebase search tool
  */
 export function registerCodebaseSearchTool(server: McpServer): void {
   server.tool(
     'search_codebase',
-    'Search project source files, documentation, and code. Use this to find implementations, functions, classes, or any code-related content.',
+    `Search project source files, documentation, and code. Use this to find implementations, functions, classes, or any code-related content.
+
+**IMPORTANT: Use this tool PROACTIVELY before starting work, not reactively when stuck.**
+
+This tool searches across all codebase files and returns the most relevant matches with content snippets.
+
+When to use this tool (BEFORE starting work):
+- **Before implementation**: Find existing patterns, similar functions, or reusable components
+- **Before refactoring**: Understand current implementation and dependencies
+- **Before adding features**: Check for existing similar functionality or conflicting code
+- **Before debugging**: Search for error messages, function names, or related code
+- **Before writing tests**: Find existing test patterns and test utilities
+
+The search includes:
+- Source code files (.ts, .js, .tsx, .jsx, etc.)
+- Configuration files (.json, .yaml, .toml, etc.)
+- Documentation files (.md, .txt, etc.)
+- Build and deployment files
+
+**Best Practice**: Search the codebase BEFORE writing new code to avoid duplication and follow existing patterns.`,
     {
       query: {
         type: z.string(),
@@ -33,21 +51,58 @@ export function registerCodebaseSearchTool(server: McpServer): void {
         type: z.boolean().default(true).optional(),
         description: 'Include file content snippets in results (default: true)',
       },
+      file_extensions: {
+        type: z.array(z.string()).optional(),
+        description: 'Filter by file extensions (e.g., [".ts", ".tsx", ".js"])',
+      },
+      path_filter: {
+        type: z.string().optional(),
+        description: 'Filter by path pattern (e.g., "src/components", "tests", "docs")',
+      },
+      exclude_paths: {
+        type: z.array(z.string()).optional(),
+        description:
+          'Exclude paths containing these patterns (e.g., ["node_modules", ".git", "dist"])',
+      },
     },
-    async ({ query, limit = 10, include_content = true }) => {
+    async ({
+      query,
+      limit = 10,
+      include_content = true,
+      file_extensions,
+      path_filter,
+      exclude_paths,
+    }) => {
       try {
         // Initialize memory storage
         await memoryStorage.initialize();
 
         // Get all codebase files and their TF-IDF data
-        const files = await memoryStorage.getAllCodebaseFiles();
+        let files = await memoryStorage.getAllCodebaseFiles();
+
+        // Apply filters
+        if (file_extensions && file_extensions.length > 0) {
+          files = files.filter((file) =>
+            file_extensions.some((ext: string) => file.path.endsWith(ext))
+          );
+        }
+
+        if (path_filter) {
+          files = files.filter((file) => file.path.includes(path_filter));
+        }
+
+        if (exclude_paths && exclude_paths.length > 0) {
+          files = files.filter(
+            (file) => !exclude_paths.some((exclude: string) => file.path.includes(exclude))
+          );
+        }
 
         if (files.length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: '📭 No codebase files indexed yet. The codebase needs to be indexed first before searching.',
+                text: '📭 No codebase files found matching the filters. Try adjusting the filters or check if files are indexed.',
               },
             ],
           };
@@ -82,7 +137,7 @@ export function registerCodebaseSearchTool(server: McpServer): void {
             content: [
               {
                 type: 'text',
-                text: '📭 No searchable content found in indexed files.',
+                text: '📭 No searchable content found in filtered files.',
               },
             ],
           };
@@ -146,7 +201,7 @@ export function registerCodebaseSearchTool(server: McpServer): void {
           content: [
             {
               type: 'text',
-              text: `❌ Knowledge search error: ${(error as Error).message}`,
+              text: `❌ Codebase search error: ${(error as Error).message}`,
             },
           ],
         };
@@ -156,77 +211,8 @@ export function registerCodebaseSearchTool(server: McpServer): void {
 }
 
 /**
- * Register both search tools (convenience function)
+ * Register all codebase tools
  */
-export function registerUnifiedSearchTools(server: McpServer): void {
+export function registerCodebaseTools(server: McpServer): void {
   registerCodebaseSearchTool(server);
-  registerKnowledgeSearchTool(server);
-}
-
-/**
- * Register knowledge search tool (independent)
- */
-export function registerKnowledgeSearchTool(server: McpServer): void {
-  server.tool(
-    'search_knowledge',
-    'Search knowledge base, documentation, guides, and reference materials. Use this for domain knowledge, best practices, setup instructions, and conceptual information.',
-    {
-      query: {
-        type: z.string(),
-        description: 'Search query - use natural language, technology names, or topic keywords',
-      },
-      limit: {
-        type: z.number().default(10).optional(),
-        description: 'Maximum number of results to return (default: 10)',
-      },
-    },
-    async ({ query, limit = 10 }) => {
-      try {
-        // Try semantic search first, fallback to TF-IDF
-        let results;
-        try {
-          const embeddingProvider = getDefaultEmbeddingProvider();
-          console.log('[INFO] Attempting semantic search for knowledge...');
-          // TODO: Implement proper semantic search with vector storage
-          console.log('[INFO] Semantic search not available, using TF-IDF fallback');
-        } catch (error) {
-          console.log('[INFO] Using TF-IDF search');
-        }
-
-        // Load knowledge index and search with TF-IDF
-        const index = await knowledgeIndexer.loadIndex();
-        results = await searchDocuments(query, index, {
-          limit,
-          minScore: 0.1, // Internal default
-        });
-
-        const summary = `Found ${results.length} knowledge result(s) for "${query}":\n\n`;
-        const formattedResults = results
-          .map((result: any, i: number) => {
-            const title = result.metadata?.title || result.uri?.split('/').pop() || 'Unknown';
-
-            return `${i + 1}. **${title}**\n   *Score: ${result.score?.toFixed(3) || 'N/A'}*\n   *Source: ${result.uri}*`;
-          })
-          .join('\n\n');
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: summary + formattedResults,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `❌ Knowledge search error: ${(error as Error).message}`,
-            },
-          ],
-        };
-      }
-    }
-  );
 }
