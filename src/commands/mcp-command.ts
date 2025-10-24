@@ -1,9 +1,7 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 
-// Force inquirer to not use colors to fix terminal compatibility
-process.env.FORCE_COLOR = '0';
-inquirer.prompt = inquirer.prompt.bind({ ...inquirer, colors: false });
+import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
