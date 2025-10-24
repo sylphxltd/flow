@@ -1,1 +1,32 @@
-{}
+{
+  // MCP (Model Context Protocol) server configuration
+
+  // See https://modelcontextprotocol.io for more information
+
+  "mcp": {
+    "sylphx-flow": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "github:sylphxltd/flow",
+        "mcp",
+        "start"
+      ],
+      "environment": {
+        "OPENAI_API_KEY": "",
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_MODEL": "text-embedding-3-small"
+      }
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+    },
+    "grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app"
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}

@@ -115,21 +115,26 @@ export const initCommand: CommandConfig = {
         console.log(chalk.green('✓ All tools already installed'));
         newServers = [];
       } else {
-        const selectableServers = availableServers.filter(
-          (id) => !MCP_SERVER_REGISTRY[id].required
-        );
+        // Show required servers info first
         const requiredServers = availableServers.filter((id) => MCP_SERVER_REGISTRY[id].required);
+        const optionalServers = availableServers.filter((id) => !MCP_SERVER_REGISTRY[id].required);
 
-        if (selectableServers.length === 0) {
+        if (requiredServers.length > 0) {
           console.log('');
-          console.log(chalk.gray('Installing required tools...'));
-          newServers = requiredServers;
-        } else {
+          console.log(chalk.gray('Required tools (will be installed automatically):'));
+          requiredServers.forEach((id) => {
+            const server = MCP_SERVER_REGISTRY[id];
+            console.log(chalk.gray(`  ✓ ${server.name} - ${server.description}`));
+          });
+        }
+
+        if (optionalServers.length > 0) {
+          console.log('');
           const { selectedServers } = await inquirer.prompt({
             type: 'checkbox',
             name: 'selectedServers',
-            message: 'Select tools to install',
-            choices: selectableServers.map((id) => {
+            message: 'Select optional tools to install',
+            choices: optionalServers.map((id) => {
               const server = MCP_SERVER_REGISTRY[id];
               return {
                 name: `${server.name} - ${server.description}`,
@@ -140,6 +145,8 @@ export const initCommand: CommandConfig = {
           });
 
           newServers = [...requiredServers, ...selectedServers] as MCPServerID[];
+        } else {
+          newServers = requiredServers;
         }
       }
 
