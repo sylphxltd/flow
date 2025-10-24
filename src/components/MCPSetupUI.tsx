@@ -1,4 +1,4 @@
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useApp } from 'ink';
 import TextInput from 'ink-text-input';
 import { useState, useCallback } from 'react';
 import type { MCPServerID } from '../config/servers.js';
@@ -33,6 +33,7 @@ interface MCPSetupUIProps {
 }
 
 export function MCPSetupUI({ availableServers, onComplete, onCancel }: MCPSetupUIProps) {
+  const { exit } = useApp();
   // Initialize MCP states
   const [mcpStates, setMCPStates] = useState<MCPState[]>(() =>
     availableServers.map((id) => {
@@ -108,12 +109,14 @@ export function MCPSetupUI({ availableServers, onComplete, onCancel }: MCPSetupU
         return;
       }
       onCancel();
+      exit();
       return;
     }
 
     // Ctrl+C
     if (key.ctrl && input === 'c') {
       onCancel();
+      exit();
       return;
     }
 
@@ -282,7 +285,8 @@ export function MCPSetupUI({ availableServers, onComplete, onCancel }: MCPSetupU
     });
 
     onComplete(configs);
-  }, [mcpStates, onComplete]);
+    exit();
+  }, [mcpStates, onComplete, exit]);
 
   // Selection view
   if (viewMode === 'selection') {
