@@ -33,16 +33,7 @@ memory/agents/*
 coordination/memory_bank/*
 coordination/subtasks/*
 coordination/orchestration/*
-*.db
-*.db-journal
-*.db-wal
-*.sqlite
-*.sqlite-journal
-*.sqlite-wal
 claude-flow
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
-.secrets/
 
 ## Vector search indexes (generated at runtime)
 *.hnsw
@@ -57,3 +48,27 @@ package-lock.json
 ## Unused vector storage implementations
 src/utils/hnsw-vector-storage.ts
 src/utils/simple-vector-storage.ts
+
+# Removed Windows wrapper files per user request
+hive-mind-prompt-*.txt
+.secrets/
+
+# Sylphx Flow Database Files (Auto-managed)
+# Cache database (temporary, should NOT be committed)
+.sylphx-flow/cache.db
+.sylphx-flow/cache.db-*
+.sylphx-flow/cache.db-shm
+.sylphx-flow/cache.db-wal
+# Memory database backups and temporary files
+.sylphx-flow/memory.db.backup*
+.sylphx-flow/memory.db.tmp*
+.sylphx-flow/memory.db-shm
+.sylphx-flow/memory.db-wal
+# Old/backup databases
+.sylphx-flow/*.db.old
+.sylphx-flow/*.db.backup*
+# Database journal files
+*.db-journal
+*.db-wal
+*.sqlite-journal
+*.sqlite-wal

@@ -8,7 +8,7 @@ import path from 'node:path';
 import ignore, { type Ignore } from 'ignore';
 import { buildSearchIndex, type SearchIndex } from './tfidf.js';
 import { VectorStorage, type VectorDocument } from './vector-storage.js';
-import { DrizzleMemoryStorage } from './drizzle-storage.js';
+import { SeparatedMemoryStorage } from './separated-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
 
 export interface CodebaseFile {
@@ -28,6 +28,12 @@ export interface IndexCache {
   files: Map<string, { mtime: number; hash: string }>; // Track file changes
   tfidfIndex?: SearchIndex;
   vectorIndexPath?: string;
+}
+
+export interface CodebaseIndexerOptions {
+  codebaseRoot?: string;
+  cacheDir?: string;
+  batchSize?: number;
 }
 
 /**
@@ -225,18 +231,15 @@ export class CodebaseIndexer {
   private cacheDir: string;
   private cache: IndexCache | null = null;
   private ig: Ignore;
-  private db: DrizzleMemoryStorage;
+  private db: SeparatedMemoryStorage;
+  private options: CodebaseIndexerOptions;
 
-  constructor(codebaseRoot: string, cacheDir: string) {
-    this.codebaseRoot = codebaseRoot;
-    this.cacheDir = cacheDir;
-    this.ig = loadGitignore(codebaseRoot);
-    this.db = new DrizzleMemoryStorage();
-
-    // Ensure cache directory exists
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
+  constructor(options: CodebaseIndexerOptions = {}) {
+    this.options = { batchSize: 100, ...options };
+    this.codebaseRoot = options.codebaseRoot || process.cwd();
+    this.cacheDir = options.cacheDir || path.join(this.codebaseRoot, '.sylphx-flow', 'cache');
+    this.ig = ignore();
+    this.db = new SeparatedMemoryStorage();
   }
 
   /**

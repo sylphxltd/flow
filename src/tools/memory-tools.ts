@@ -1,10 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { DrizzleMemoryStorage, type MemoryEntry } from '../utils/drizzle-storage.js';
+import { SeparatedMemoryStorage, type MemoryEntry } from '../utils/separated-storage.js';
 
-// Initialize memory storage
-const memoryStorage = new DrizzleMemoryStorage();
+// Global memory storage instance
+const memoryStorage = new SeparatedMemoryStorage();
 
 // Logger utility
 const Logger = {
