@@ -3,6 +3,7 @@
  * Supports OpenAI embeddings (with fallback to mock embeddings)
  */
 
+import { envSecurity, securitySchemas } from './security.js';
 import { generateMockEmbedding } from './vector-storage.js';
 
 export interface ModelInfo {
@@ -42,9 +43,23 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       baseURL?: string;
     } = {}
   ) {
-    this.apiKey = options.apiKey || process.env.OPENAI_API_KEY || '';
+    // Validate and get API key with security checks
+    this.apiKey = options.apiKey || envSecurity.getEnvVar('OPENAI_API_KEY') || '';
     this.model = options.model || 'text-embedding-3-small';
-    this.baseURL = options.baseURL || 'https://api.openai.com/v1';
+
+    // Validate base URL
+    const providedBaseURL =
+      options.baseURL || envSecurity.getEnvVar('OPENAI_BASE_URL', 'https://api.openai.com/v1');
+    if (providedBaseURL) {
+      try {
+        this.baseURL = securitySchemas.url.parse(providedBaseURL);
+      } catch (error) {
+        console.warn('[WARN] Invalid OPENAI_BASE_URL format, using default');
+        this.baseURL = 'https://api.openai.com/v1';
+      }
+    } else {
+      this.baseURL = 'https://api.openai.com/v1';
+    }
 
     // Set dimensions based on model
     if (this.model === 'text-embedding-3-large') {
@@ -53,7 +68,17 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       this.dimensions = 1536;
     }
 
-    if (!this.apiKey) {
+    if (this.apiKey) {
+      // Validate API key format
+      try {
+        securitySchemas.apiKey.parse(this.apiKey);
+      } catch (error) {
+        console.warn(
+          '[WARN] Invalid OPENAI_API_KEY format. Embeddings will use mock implementation.'
+        );
+        this.apiKey = '';
+      }
+    } else {
       console.warn('[WARN] OPENAI_API_KEY not set. Embeddings will use mock implementation.');
     }
   }
@@ -240,9 +265,11 @@ export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> 
     // Ignore if secretUtils is not available
   }
 
-  const apiKey = secrets.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-  const baseURL = secrets.OPENAI_BASE_URL || process.env.OPENAI_BASE_URL;
-  const model = secrets.EMBEDDING_MODEL || process.env.EMBEDDING_MODEL;
+  const apiKey = secrets.OPENAI_API_KEY || envSecurity.getEnvVar('OPENAI_API_KEY');
+  const baseURL =
+    secrets.OPENAI_BASE_URL ||
+    envSecurity.getEnvVar('OPENAI_BASE_URL', 'https://api.openai.com/v1');
+  const model = secrets.EMBEDDING_MODEL || envSecurity.getEnvVar('EMBEDDING_MODEL');
 
   if (apiKey) {
     console.error(`[INFO] Using OpenAI embeddings (${model || 'text-embedding-3-small'})`);

@@ -1,4 +1,5 @@
 import type { MCPServerConfigUnion } from '../types.js';
+import { envSecurity, securitySchemas } from '../utils/security.js';
 
 /**
  * Central MCP server registry for Sylphx Flow
@@ -73,15 +74,27 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
         default: 'text-embedding-3-small',
         dependsOn: ['OPENAI_API_KEY', 'OPENAI_BASE_URL'],
         fetchChoices: async () => {
-          const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-          const apiKey = process.env.OPENAI_API_KEY;
+          // Validate environment variables
+          const validatedBaseUrl = envSecurity.getEnvVar(
+            'OPENAI_BASE_URL',
+            'https://api.openai.com/v1'
+          );
+          const validatedApiKey = envSecurity.getEnvVar('OPENAI_API_KEY');
 
-          if (!apiKey) {
+          if (!validatedApiKey) {
             throw new Error('OPENAI_API_KEY is required to fetch embedding models');
           }
 
-          const response = await fetch(`${baseUrl}/models`, {
-            headers: { Authorization: `Bearer ${apiKey}` },
+          // Additional validation for API key format
+          try {
+            securitySchemas.apiKey.parse(validatedApiKey);
+          } catch (error) {
+            throw new Error('Invalid OPENAI_API_KEY format');
+          }
+
+          const response = await fetch(`${validatedBaseUrl}/models`, {
+            headers: { Authorization: `Bearer ${validatedApiKey}` },
+            timeout: 10000, // Add timeout to prevent hanging
           });
 
           if (!response.ok) {

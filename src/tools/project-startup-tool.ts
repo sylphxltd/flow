@@ -1,10 +1,10 @@
-import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getTemplatesDir } from '../utils/paths.js';
+import { commandSecurity, cryptoUtils, securitySchemas } from '../utils/security.js';
 import { type ProjectData, TemplateEngine } from '../utils/template-engine.js';
 
 // ============================================================================
@@ -27,13 +27,8 @@ const Logger = {
 // ============================================================================
 
 export function generateRandomSuffix(): string {
-  // Generate a random 8-character string (lowercase letters and numbers)
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `-${result}`;
+  // Generate cryptographically secure random 8-character string
+  return cryptoUtils.generateSecureRandom(4).substring(0, 8);
 }
 
 export function generateCommitMessage(projectType: string, projectName: string): string {
@@ -138,12 +133,31 @@ function generateProjectDetails(
   };
 }
 
-function runGitCommand(command: string): { success: boolean; output: string; error: string } {
+async function runGitCommand(
+  command: string,
+  args: string[] = []
+): Promise<{ success: boolean; output: string; error: string }> {
   try {
-    const output = execSync(command, { encoding: 'utf8', cwd: process.cwd() });
-    return { success: true, output: output.trim(), error: '' };
+    // Validate command and arguments to prevent injection
+    if (command !== 'git') {
+      throw new Error(`Only git commands are allowed, got: ${command}`);
+    }
+
+    const validatedArgs = commandSecurity.validateCommandArgs(args);
+
+    const { stdout, stderr } = await commandSecurity.safeExecFile('git', validatedArgs, {
+      cwd: process.cwd(),
+      timeout: 30000,
+    });
+
+    return {
+      success: true,
+      output: stdout.trim(),
+      error: stderr.trim(),
+    };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    Logger.error(`Git command failed: ${command} ${args.join(' ')}`, error);
     return { success: false, output: '', error: errorMessage };
   }
 }
@@ -199,30 +213,31 @@ export function registerProjectStartupTool(server: McpServer) {
   );
 }
 
-export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
+export async function projectStartupTool(args: ProjectStartupArgs): Promise<CallToolResult> {
   try {
     const { project_type, project_name, create_branch = true, mode = 'coordinator' } = args;
 
+    // Validate inputs using security schemas
+    const validatedProjectType = z
+      .enum(['feature', 'bugfix', 'hotfix', 'refactor', 'migration'])
+      .parse(project_type);
+    const validatedProjectName = securitySchemas.projectName.parse(project_name);
+
     // Generate project details automatically
-    const generatedDetails = generateProjectDetails(project_type, project_name);
+    const generatedDetails = generateProjectDetails(validatedProjectType, validatedProjectName);
     const { description, requirements, objective, scope } = generatedDetails;
 
-    // Validate project name
-    if (!/^[a-zA-Z0-9-_]+$/.test(project_name)) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `❌ Invalid project name: "${project_name}". Use only letters, numbers, hyphens, and underscores.`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
     const branchSuffix = generateRandomSuffix();
-    const branchName = `${project_type}/${project_name}${branchSuffix}`;
-    const workspaceDir = join('specs', project_type, `${project_name}${branchSuffix}`);
+    const branchName = `${validatedProjectType}/${validatedProjectName}${branchSuffix}`;
+
+    // Validate branch name using security schema
+    securitySchemas.branchName.parse(branchName);
+
+    const workspaceDir = join(
+      'specs',
+      validatedProjectType,
+      `${validatedProjectName}${branchSuffix}`
+    );
     const timestamp = new Date().toISOString().split('T')[0];
 
     Logger.info(`🚀 Starting project initialization: ${branchName}`);
@@ -231,7 +246,7 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
     let branchResult = { success: true, output: '', error: '' };
     if (create_branch) {
       // Check if we're on main branch
-      const currentBranch = runGitCommand('git rev-parse --abbrev-ref HEAD');
+      const currentBranch = await runGitCommand('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
       if (currentBranch.success && currentBranch.output !== 'main') {
         return {
           content: [
@@ -245,7 +260,7 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
       }
 
       // Create and checkout new branch
-      branchResult = runGitCommand(`git checkout -b ${branchName}`);
+      branchResult = await runGitCommand('git', ['checkout', '-b', branchName]);
       if (!branchResult.success) {
         return {
           content: [
@@ -408,10 +423,9 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
 
     // Step 6: Initial commit
     if (create_branch) {
-      const addResult = runGitCommand('git add .');
-      const commitResult = runGitCommand(
-        `git commit -m "${generateCommitMessage(project_type, project_name)}"`
-      );
+      const addResult = await runGitCommand('git', ['add', '.']);
+      const commitMessage = generateCommitMessage(validatedProjectType, validatedProjectName);
+      const commitResult = await runGitCommand('git', ['commit', '-m', commitMessage]);
 
       if (!addResult.success || !commitResult.success) {
         Logger.error('Warning: Failed to create initial commit');
@@ -420,7 +434,7 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
       }
     }
 
-    Logger.success(`✅ Project "${project_name}" initialized successfully!`);
+    Logger.success(`✅ Project "${validatedProjectName}" initialized successfully!`);
 
     return {
       content: [
@@ -430,8 +444,8 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
             {
               success: true,
               project: {
-                type: project_type,
-                name: project_name,
+                type: validatedProjectType,
+                name: validatedProjectName,
                 branch: branchName,
                 workspace: workspaceDir,
                 description,
@@ -446,7 +460,7 @@ export function projectStartupTool(args: ProjectStartupArgs): CallToolResult {
                 initial_commit: create_branch,
               },
               next_steps: [
-                `1. Review and update specs/${project_type}/${project_name}/spec.md with detailed requirements`,
+                `1. Review and update specs/${validatedProjectType}/${validatedProjectName}/spec.md with detailed requirements`,
                 '2. Fill in project-specific data in all template files',
                 '3. Proceed with Phase 1: SPECIFY & CLARIFY',
                 '4. Follow the workflow in progress.md',

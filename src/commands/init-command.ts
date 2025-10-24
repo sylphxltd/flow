@@ -1,14 +1,14 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
+import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
+import { MCPService } from '../services/mcp-service.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { targetSupportsMCPServers, validateTarget } from '../utils/target-config.js';
-import { MCPService } from '../services/mcp-service.js';
 
 async function validateInitOptions(options: CommandOptions): Promise<void> {
   const targetId = await targetManager.resolveTarget({ target: options.target });
@@ -144,12 +144,12 @@ export const initCommand: CommandConfig = {
 
           if (serversNeedingConfig.length > 0) {
             console.log(chalk.cyan('\n▸ Configure selected MCP tools'));
-            
+
             for (const serverId of serversNeedingConfig) {
               const serverDef = MCP_SERVER_REGISTRY[serverId];
               console.log(chalk.cyan(`\n▸ ${serverDef.name}`));
               console.log(chalk.gray(`  ${serverDef.description}`));
-              
+
               // Use MCPService to configure the server
               await mcpService.configureServer(serverId);
             }

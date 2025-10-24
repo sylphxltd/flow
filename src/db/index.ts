@@ -169,7 +169,11 @@ export class DrizzleDatabase {
   /**
    * Perform database health check
    */
-  async healthCheck(): Promise<{ healthy: boolean; error?: string; details?: any }> {
+  async healthCheck(): Promise<{
+    healthy: boolean;
+    error?: string;
+    details?: Record<string, unknown>;
+  }> {
     try {
       // Test basic connectivity
       await this.client.execute('SELECT 1');
@@ -202,3 +206,17 @@ export class DrizzleDatabase {
 // Export schema and types
 export * from './schema.js';
 export { schema };
+
+// Re-export commonly used database functions
+export {
+  storeMemory,
+  retrieveMemory,
+  searchMemory,
+  clearMemory,
+} from './memory-db';
+
+export {
+  handleDatabaseError,
+  isDatabaseError,
+  createDatabaseError,
+} from '../utils/database-errors';

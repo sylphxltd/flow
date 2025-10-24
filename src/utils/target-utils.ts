@@ -2,13 +2,18 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import type { MCPServerConfigUnion, TargetConfig } from '../types.js';
+import { pathSecurity, sanitize } from './security.js';
 
 /**
  * File system utilities for targets
  */
 export const fileUtils = {
   getConfigPath(config: TargetConfig, cwd: string): string {
-    return path.join(cwd, config.configFile);
+    // Validate config file name to prevent path traversal
+    const configFileName = pathSecurity.validatePath(config.configFile);
+
+    // Safely join paths with the current working directory
+    return pathSecurity.safeJoin(cwd, configFileName);
   },
 
   async readConfig(config: TargetConfig, cwd: string): Promise<any> {
@@ -55,11 +60,12 @@ export const fileUtils = {
   },
 
   async validateRequirements(config: TargetConfig, cwd: string): Promise<void> {
-    const agentDir = path.join(cwd, config.agentDir);
+    // Validate and safely create agent directory
+    const agentDir = pathSecurity.safeJoin(cwd, config.agentDir);
     try {
       await fs.mkdir(agentDir, { recursive: true });
 
-      const testFile = path.join(agentDir, '.sylphx-test');
+      const testFile = pathSecurity.safeJoin(agentDir, '.sylphx-test');
       await fs.writeFile(testFile, 'test', 'utf8');
       await fs.unlink(testFile);
     } catch (error) {
@@ -72,7 +78,7 @@ export const fileUtils = {
         const configDir = path.dirname(configPath);
         await fs.mkdir(configDir, { recursive: true });
 
-        const testFile = path.join(configDir, '.sylphx-test');
+        const testFile = pathSecurity.safeJoin(configDir, '.sylphx-test');
         await fs.writeFile(testFile, 'test', 'utf8');
         await fs.unlink(testFile);
       } catch (error) {
@@ -204,11 +210,26 @@ export const pathUtils = {
   },
 
   getAgentFilePath(sourcePath: string, config: TargetConfig, agentDir: string): string {
+    // Validate source path to prevent path traversal
+    if (!sourcePath || typeof sourcePath !== 'string') {
+      throw new Error('Source path must be a non-empty string');
+    }
+
+    // Check for dangerous patterns in source path
+    if (sourcePath.includes('..') || sourcePath.startsWith('/') || sourcePath.startsWith('\\')) {
+      throw new Error(`Invalid source path: ${sourcePath}`);
+    }
+
     if (config.flatten) {
       const flattenedName = pathUtils.flattenPath(sourcePath);
-      return path.join(agentDir, `${flattenedName}${config.agentExtension}`);
+      const fileName = `${flattenedName}${config.agentExtension}`;
+      return pathSecurity.safeJoin(agentDir, fileName);
     }
-    return path.join(agentDir, sourcePath);
+
+    // Sanitize the source path and join safely
+    const sanitizedPath = sanitize.fileName(sourcePath);
+    const fullPath = pathSecurity.safeJoin(agentDir, sanitizedPath + config.agentExtension);
+    return fullPath;
   },
 
   extractNameFromPath(sourcePath: string): string | null {

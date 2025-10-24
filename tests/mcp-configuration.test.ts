@@ -105,11 +105,6 @@ describe('MCP Configuration Tests', () => {
 
       // Mock readline is already set up at the top level
 
-      // We need to mock this at the top level, not inside the test
-      vi.mock('node:readline', () => ({
-        createInterface: mockReadline,
-      }));
-
       const result = await configureMCPServerForTarget(
         '/test/cwd',
         'test-target',

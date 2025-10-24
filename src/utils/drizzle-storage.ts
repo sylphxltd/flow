@@ -9,7 +9,6 @@ import * as schema from '../db/schema.js';
 import type {
   CodebaseFile,
   NewMemory,
-  NewTfidfDocument,
   NewTfidfIdf,
   NewTfidfTerm,
   TfidfDocument,

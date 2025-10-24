@@ -1,12 +1,12 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
+import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
+import { MCPService } from '../services/mcp-service.js';
 import type { CommandConfig, CommandHandler, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
-import { MCPService } from '../services/mcp-service.js';
 
 // MCP start handler (unchanged - doesn't need UI)
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
@@ -68,7 +68,6 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
 
   try {
     const configData = await target.readConfig(process.cwd());
-    const mcpConfigPath = target.config.mcpConfigPath;
     const mcpSection = configData?.mcp || {};
 
     // Update sylphx-flow configuration
@@ -108,7 +107,15 @@ const mcpConfigHandler: CommandHandler = async (options) => {
   // If no server specified, show selection
   let selectedServerId: MCPServerID;
 
-  if (!server) {
+  if (server) {
+    if (!mcpService.getAllServerIds().includes(server as MCPServerID)) {
+      throw new CLIError(
+        `Invalid MCP server: ${server}. Available: ${mcpService.getAllServerIds().join(', ')}`,
+        'INVALID_MCP_SERVER'
+      );
+    }
+    selectedServerId = server as MCPServerID;
+  } else {
     const answer = await inquirer.prompt([
       {
         type: 'list',
@@ -124,14 +131,6 @@ const mcpConfigHandler: CommandHandler = async (options) => {
       },
     ]);
     selectedServerId = answer.server;
-  } else {
-    if (!mcpService.getAllServerIds().includes(server as any)) {
-      throw new CLIError(
-        `Invalid MCP server: ${server}. Available: ${mcpService.getAllServerIds().join(', ')}`,
-        'INVALID_MCP_SERVER'
-      );
-    }
-    selectedServerId = server as MCPServerID;
   }
 
   const serverDef = MCP_SERVER_REGISTRY[selectedServerId];
@@ -145,7 +144,7 @@ const mcpConfigHandler: CommandHandler = async (options) => {
   }
 
   // Configure server
-  const values = await mcpService.configureServer(selectedServerId);
+  await mcpService.configureServer(selectedServerId);
 
   // Save configuration
   const spinner = ora('Saving configuration...').start();
@@ -194,7 +193,7 @@ const mcpAddHandler: CommandHandler = async (options: CommandOptions) => {
   const allServerIds = mcpService.getAllServerIds();
 
   // Validate server names
-  const invalidServers = serverList.filter((s) => !allServerIds.includes(s as any));
+  const invalidServers = serverList.filter((s) => !allServerIds.includes(s as MCPServerID));
   if (invalidServers.length > 0) {
     throw new CLIError(
       `Invalid MCP servers: ${invalidServers.join(', ')}. Available: ${allServerIds.join(', ')}`,
@@ -226,7 +225,7 @@ const mcpRemoveHandler: CommandHandler = async (options: CommandOptions) => {
   const installedServerIds = mcpService.getInstalledServerIds();
 
   // Validate server names
-  const invalidServers = servers.filter((s) => !installedServerIds.includes(s as any));
+  const invalidServers = servers.filter((s) => !installedServerIds.includes(s as MCPServerID));
   if (invalidServers.length > 0) {
     throw new CLIError(
       `MCP servers not installed: ${invalidServers.join(', ')}. Installed: ${installedServerIds.join(', ')}`,

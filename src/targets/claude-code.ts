@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Target } from '../types.js';
+import type { MCPServerConfigUnion, Target } from '../types.js';
+import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
+import { commandSecurity, sanitize } from '../utils/security.js';
 import {
   fileUtils,
   generateHelpText,
@@ -53,7 +55,7 @@ export const claudeCodeTarget: Target = {
    */
   async transformAgentContent(
     content: string,
-    metadata?: any,
+    metadata?: AgentMetadata,
     sourcePath?: string
   ): Promise<string> {
     const { metadata: existingMetadata, content: baseContent } =
@@ -74,7 +76,7 @@ export const claudeCodeTarget: Target = {
    * Transform MCP server configuration for Claude Code
    * Convert from various formats to Claude Code's optimal format
    */
-  transformMCPConfig(config: any, serverId?: string): any {
+  transformMCPConfig(config: MCPServerConfigUnion, serverId?: string): Record<string, unknown> {
     // Handle legacy OpenCode 'local' type
     if (config.type === 'local') {
       // Convert OpenCode 'local' array command to Claude Code format
@@ -138,7 +140,7 @@ export const claudeCodeTarget: Target = {
   /**
    * Write Claude Code configuration with structure normalization
    */
-  async writeConfig(cwd: string, config: any): Promise<void> {
+  async writeConfig(cwd: string, config: Record<string, unknown>): Promise<void> {
     // Ensure the config has the expected structure for Claude Code
     if (!config.mcpServers) {
       config.mcpServers = {};
@@ -210,52 +212,53 @@ export const claudeCodeTarget: Target = {
     userPrompt: string,
     options: { verbose?: boolean; dryRun?: boolean } = {}
   ): Promise<void> {
+    // Sanitize and validate inputs
+    const sanitizedSystemPrompt = sanitize.yamlContent(systemPrompt);
+    const sanitizedUserPrompt = sanitize.string(userPrompt, 10000);
+
     // Add summary request to system prompt
-    const enhancedSystemPrompt = `${systemPrompt}
+    const enhancedSystemPrompt = `${sanitizedSystemPrompt}
 
 Please begin your response with a comprehensive summary of all the instructions and context provided above.`;
 
     if (options.dryRun) {
       console.log('🔍 Dry run: Would execute Claude Code with --append-system-prompt');
       console.log('📝 System prompt to append length:', enhancedSystemPrompt.length, 'characters');
-      console.log('📝 User prompt length:', userPrompt.length, 'characters');
+      console.log('📝 User prompt length:', sanitizedUserPrompt.length, 'characters');
       console.log('✅ Dry run completed successfully');
       return;
     }
 
-    const { spawn } = await import('node:child_process');
     const { CLIError } = await import('../utils/error-handler.js');
 
-    return new Promise((resolve, reject) => {
+    try {
+      // Use secure command execution
       const args = ['--system-prompt', enhancedSystemPrompt, '--dangerously-skip-permissions'];
 
-      if (userPrompt.trim() !== '') {
-        args.push(userPrompt);
+      if (sanitizedUserPrompt.trim() !== '') {
+        args.push(sanitizedUserPrompt);
       }
 
       if (options.verbose) {
         console.log(`🚀 Executing Claude Code with system prompt`);
         console.log(`📝 System prompt length: ${enhancedSystemPrompt.length} characters`);
-        console.log(`📝 User prompt length: ${userPrompt.length} characters`);
+        console.log(`📝 User prompt length: ${sanitizedUserPrompt.length} characters`);
       }
 
-      const child = spawn('claude', args, {
+      // Use secure command execution instead of spawn
+      await commandSecurity.safeExecFile('claude', args, {
+        timeout: 300000, // 5 minutes timeout for Claude Code
         stdio: 'inherit',
-        shell: false,
       });
-
-      child.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new CLIError(`Claude Code exited with code ${code}`, 'CLAUDE_ERROR'));
-        }
-      });
-
-      child.on('error', (error) => {
-        reject(new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_NOT_FOUND'));
-      });
-    });
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        throw new CLIError('Claude Code not found. Please install it first.', 'CLAUDE_NOT_FOUND');
+      } else if (error.code) {
+        throw new CLIError(`Claude Code exited with code ${error.code}`, 'CLAUDE_ERROR');
+      } else {
+        throw new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_ERROR');
+      }
+    }
   },
 
   /**

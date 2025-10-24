@@ -60,7 +60,7 @@ export abstract class BaseDatabaseClient<TSchema extends Record<string, unknown>
   abstract healthCheck(): Promise<{
     healthy: boolean;
     error?: string;
-    details?: any;
+    details?: Record<string, unknown>;
   }>;
 
   /**

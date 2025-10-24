@@ -13,8 +13,8 @@ export interface CommandOptions {
   pattern?: string;
   key?: string;
   confirm?: boolean;
-  // Dynamic argument properties
-  [key: string]: any;
+  // Dynamic argument properties - using safer unknown instead of any
+  [key: string]: unknown;
 }
 
 export type CommandHandler = (options: CommandOptions) => Promise<void>;
@@ -169,21 +169,24 @@ export abstract class Target {
   /** Transform agent content for the target */
   abstract transformAgentContent(
     content: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
     sourcePath?: string
   ): Promise<string>;
 
   /** Transform MCP server configuration for the target */
-  abstract transformMCPConfig(config: MCPServerConfigUnion, serverId?: string): any;
+  abstract transformMCPConfig(
+    config: MCPServerConfigUnion,
+    serverId?: string
+  ): Record<string, unknown>;
 
   /** Get the configuration file path for the target */
   abstract getConfigPath(cwd: string): Promise<string>;
 
   /** Read the target's configuration file */
-  abstract readConfig(cwd: string): Promise<any>;
+  abstract readConfig(cwd: string): Promise<Record<string, unknown>>;
 
   /** Write the target's configuration file */
-  abstract writeConfig(cwd: string, config: any): Promise<void>;
+  abstract writeConfig(cwd: string, config: Record<string, unknown>): Promise<void>;
 
   /** Validate target-specific requirements */
   abstract validateRequirements(cwd: string): Promise<void>;
@@ -192,7 +195,11 @@ export abstract class Target {
   abstract getHelpText(): string;
 
   /** Execute command with the target (optional - not all targets need to support execution) */
-  async executeCommand?(systemPrompt: string, userPrompt: string, options: any): Promise<void>;
+  async executeCommand?(
+    systemPrompt: string,
+    userPrompt: string,
+    options: Record<string, unknown>
+  ): Promise<void>;
 
   /** Detect if this target is being used in the current environment (optional) */
   detectFromEnvironment?(): boolean;

@@ -8,7 +8,7 @@
  * @param content - The JSONC string to parse
  * @returns The parsed JavaScript object
  */
-export function parseJSONC(content: string): any {
+export function parseJSONC(content: string): unknown {
   try {
     // Remove single-line comments (//) but not inside strings
     let cleaned = removeComments(content);
@@ -105,7 +105,7 @@ function removeComments(content: string): string {
  * @param indent - Indentation spaces (default: 2)
  * @returns The formatted JSON string
  */
-export function stringifyJSONC(obj: any, schema?: string, indent = 2): string {
+export function stringifyJSONC(obj: Record<string, unknown>, schema?: string, indent = 2): string {
   const config = { ...obj };
 
   // Add schema if provided and not already present
@@ -148,7 +148,7 @@ export async function readJSONCFile(filePath: string): Promise<any> {
  */
 export async function writeJSONCFile(
   filePath: string,
-  obj: any,
+  obj: Record<string, unknown>,
   schema?: string,
   indent = 2
 ): Promise<void> {

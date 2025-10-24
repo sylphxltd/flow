@@ -165,7 +165,11 @@ export class CacheDatabaseClient extends BaseDatabaseClient<typeof schema> {
   /**
    * Perform database health check
    */
-  async healthCheck(): Promise<{ healthy: boolean; error?: string; details?: any }> {
+  async healthCheck(): Promise<{
+    healthy: boolean;
+    error?: string;
+    details?: Record<string, unknown>;
+  }> {
     try {
       // Test basic connectivity
       await this.client.execute('SELECT 1');

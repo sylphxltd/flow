@@ -1,9 +1,10 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
+import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import type { Target } from '../types.js';
+import type { TargetConfigurationData } from '../types/target-config.types.js';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -275,23 +276,28 @@ export class MCPService {
     }
   }
 
-  readConfig(): any {
+  readConfig(): TargetConfigurationData {
     try {
-      return this.target.readConfig(process.cwd());
+      return this.target.readConfig(process.cwd()) as TargetConfigurationData;
     } catch (error) {
-      return {};
+      return { settings: {} };
     }
   }
 
-  writeConfig(configData: any): void {
+  writeConfig(configData: TargetConfigurationData): void {
     this.target.writeConfig(process.cwd(), configData);
   }
 
-  private getNestedProperty(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+  private getNestedProperty(obj: TargetConfigurationData, path: string): unknown {
+    return path.split('.').reduce((current: unknown, key: string) => {
+      if (typeof current === 'object' && current !== null) {
+        return (current as Record<string, unknown>)[key];
+      }
+      return undefined;
+    }, obj);
   }
 
-  private setNestedProperty(obj: any, path: string, value: any): void {
+  private setNestedProperty(obj: TargetConfigurationData, path: string, value: unknown): void {
     const keys = path.split('.');
     const lastKey = keys.pop()!;
     const target = keys.reduce((current, key) => {

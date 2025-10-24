@@ -319,7 +319,7 @@ export class UnifiedSearchService {
   formatResultsForMCP(
     results: SearchResult[],
     query: string,
-    totalIndexed: number
+    _totalIndexed: number
   ): {
     content: Array<{ type: 'text'; text: string }>;
   } {

@@ -42,7 +42,7 @@ export async function buildSearchIndexFromDB(
     if (filters) {
       if (filters.file_extensions && filters.file_extensions.length > 0) {
         files = files.filter((file) =>
-          filters.file_extensions!.some((ext: string) => file.path.endsWith(ext))
+          filters.file_extensions?.some((ext: string) => file.path.endsWith(ext))
         );
       }
 

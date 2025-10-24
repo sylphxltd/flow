@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Target } from '../types.js';
+import type { MCPServerConfigUnion, Target } from '../types.js';
+import type { AgentMetadata } from '../types/target-config.types.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
 
@@ -48,7 +49,7 @@ export const opencodeTarget: Target = {
    */
   async transformAgentContent(
     content: string,
-    metadata?: any,
+    metadata?: AgentMetadata,
     _sourcePath?: string
   ): Promise<string> {
     // For OpenCode, we preserve YAML front matter but remove name field
@@ -73,11 +74,11 @@ export const opencodeTarget: Target = {
    * Transform MCP server configuration for OpenCode
    * Convert from Claude Code's optimal format to OpenCode's format
    */
-  transformMCPConfig(config: any, serverId?: string): any {
+  transformMCPConfig(config: MCPServerConfigUnion, serverId?: string): Record<string, unknown> {
     // Handle new Claude Code stdio format
     if (config.type === 'stdio') {
       // Convert Claude Code format to OpenCode format
-      const openCodeConfig: any = {
+      const openCodeConfig: Record<string, unknown> = {
         type: 'local',
         command: [config.command],
       };
@@ -134,7 +135,7 @@ export const opencodeTarget: Target = {
   /**
    * Write OpenCode configuration with structure normalization
    */
-  async writeConfig(cwd: string, config: any): Promise<void> {
+  async writeConfig(cwd: string, config: Record<string, unknown>): Promise<void> {
     // Ensure the config has the expected structure for OpenCode
     if (!config.mcp) {
       config.mcp = {};

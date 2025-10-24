@@ -110,10 +110,10 @@ export async function confirm(question: string, defaultValue = true): Promise<bo
     rl.question(prompt, (answer) => {
       rl.close();
       const input = answer.trim().toLowerCase();
-      if (!input) {
-        resolve(defaultValue);
-      } else {
+      if (input) {
         resolve(input === 'y' || input === 'yes');
+      } else {
+        resolve(defaultValue);
       }
     });
   });

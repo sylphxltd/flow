@@ -1,5 +1,5 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import ora from 'ora';
 import { CodebaseIndexer } from '../utils/codebase-indexer.js';
 import { CLIError } from '../utils/error-handler.js';
