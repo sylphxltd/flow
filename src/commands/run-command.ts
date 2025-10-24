@@ -4,6 +4,7 @@ import path from 'node:path';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
+import { getAgentsDir } from '../utils/paths.js';
 
 interface RunCommandOptions extends CommandOptions {
   target?: string;
@@ -24,15 +25,17 @@ async function validateRunOptions(options: RunCommandOptions): Promise<void> {
 
 async function loadAgentContent(agentName: string): Promise<string> {
   try {
-    // Try to load from agents directory
-    const agentPath = path.join(process.cwd(), 'agents', `${agentName}.md`);
+    // First try to load from local agents directory (for user-defined agents)
+    const localAgentPath = path.join(process.cwd(), 'agents', `${agentName}.md`);
 
     try {
-      const content = await fs.readFile(agentPath, 'utf-8');
+      const content = await fs.readFile(localAgentPath, 'utf-8');
       return content;
     } catch (_error) {
       // Try to load from the package's agents directory
-      const packageAgentPath = path.join(__dirname, 'agents', `${agentName}.md`);
+      const packageAgentsDir = getAgentsDir();
+      const packageAgentPath = path.join(packageAgentsDir, `${agentName}.md`);
+
       const content = await fs.readFile(packageAgentPath, 'utf-8');
       return content;
     }
