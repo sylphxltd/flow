@@ -4,7 +4,7 @@ import { initCommand } from './commands/init-command.js';
 import { knowledgeCommand } from './commands/knowledge-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
 import { memoryCommand } from './commands/memory-command.js';
-import { handleMemoryTui } from './commands/memory-tui-command.js';
+import { handleMemoryTuiCommand } from './commands/memory-tui-command.js';
 import { runCommand } from './commands/run-command.js';
 
 import { createCommand } from './utils/command-builder.js';
@@ -33,7 +33,7 @@ export function createCLI(): Command {
     .command('tui')
     .description('Launch interactive Sylphx Flow TUI')
     .option('--target <type>', 'Target platform (opencode, default: auto-detect)')
-    .action(handleMemoryTui);
+    .action(handleMemoryTuiCommand);
 
   program.action(() => {
     showDefaultHelp();
