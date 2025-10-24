@@ -228,6 +228,25 @@ export class MCPService {
 
         // Transform config for target-specific format
         const transformedConfig = this.target.transformMCPConfig(configToTransform, serverId);
+
+        // Apply target-specific configuration for sylphx-flow
+        if (serverId === 'sylphx-flow' && this.target.mcpServerConfig?.['sylphx-flow']) {
+          const targetConfig = this.target.mcpServerConfig['sylphx-flow'];
+          const args: string[] = [];
+
+          if (targetConfig.disableMemory) args.push('--disable-memory');
+          if (targetConfig.disableTime) args.push('--disable-time');
+          if (targetConfig.disableProjectStartup) args.push('--disable-project-startup');
+          if (targetConfig.disableKnowledge) args.push('--disable-knowledge');
+
+          // Update the command to include the configuration
+          if (transformedConfig.type === 'local') {
+            transformedConfig.command = [...transformedConfig.command, ...args];
+          } else if (transformedConfig.type === 'stdio') {
+            transformedConfig.args = [...(transformedConfig.args || []), ...args];
+          }
+        }
+
         mcpSection[server.name] = transformedConfig;
       }
 
@@ -237,7 +256,7 @@ export class MCPService {
 
       // Approve MCP servers if the target supports it
       if (this.target.approveMCPServers) {
-        const serverNames = selectedServers.map((id) => this.getServerById(id).name);
+        const serverNames = serverIds.map((id) => MCP_SERVER_REGISTRY[id].name);
         await this.target.approveMCPServers(process.cwd(), serverNames);
       }
     } catch (error) {
