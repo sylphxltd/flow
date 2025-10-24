@@ -70,12 +70,37 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     const configData = await target.readConfig(process.cwd());
     const mcpSection = configData?.mcp || {};
 
-    // Update sylphx-flow configuration
+    // Update sylphx-flow configuration only for targets that support disable flags
     if (mcpSection['sylphx-flow']) {
-      mcpSection['sylphx-flow'].environment = {
-        ...mcpSection['sylphx-flow'].environment,
-        ...config,
-      };
+      const serverConfig = mcpSection['sylphx-flow'];
+
+      // For Claude Code target, update environment variables (this is the correct format)
+      if (targetId === 'claude-code') {
+        serverConfig.environment = {
+          ...serverConfig.environment,
+          ...config,
+        };
+      } else if (targetId === 'opencode') {
+        // For OpenCode target, convert disable flags to command arguments
+        const newArgs: string[] = [];
+
+        if (config.disableMemory) newArgs.push('--disable-memory');
+        if (config.disableTime) newArgs.push('--disable-time');
+        if (config.disableProjectStartup) newArgs.push('--disable-project-startup');
+        if (config.disableKnowledge) newArgs.push('--disable-knowledge');
+        if (config.disableCodebaseSearch) newArgs.push('--disable-codebase-search');
+
+        // Add args to command if there are any, avoiding duplicates
+        if (newArgs.length > 0 && serverConfig.command && Array.isArray(serverConfig.command)) {
+          // Remove existing disable flags to avoid duplicates
+          const disableFlags = ['--disable-memory', '--disable-time', '--disable-project-startup', '--disable-knowledge', '--disable-codebase-search'];
+          const filteredCommand = serverConfig.command.filter((arg: string) => !disableFlags.includes(arg));
+
+          // Add new flags
+          serverConfig.command = [...filteredCommand, ...newArgs];
+        }
+      }
+      // For other targets, we don't apply these flags as they may not support them
     }
 
     await target.writeConfig(process.cwd(), configData);

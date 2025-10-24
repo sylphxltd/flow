@@ -16,15 +16,7 @@ export const opencodeTarget: Target = {
   isImplemented: true,
   isDefault: true,
 
-  mcpServerConfig: {
-    'sylphx-flow': {
-      disableMemory: true,
-      disableTime: false,
-      disableProjectStartup: false,
-      disableKnowledge: false,
-    },
-  },
-
+  
   config: {
     agentDir: '.opencode/agent',
     agentExtension: '.md',
