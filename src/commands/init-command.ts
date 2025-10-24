@@ -159,7 +159,7 @@ export const initCommand: CommandConfig = {
           const spinner = ora('Installing MCP servers...').start();
           try {
             await mcpService.installServers(selectedServers);
-            spinner.succeed(chalk.green('✓ MCP servers installed'));
+            spinner.succeed('MCP servers installed');
           } catch (error) {
             spinner.fail(chalk.red('Failed to install MCP servers'));
             throw error;
@@ -176,12 +176,12 @@ export const initCommand: CommandConfig = {
     console.log('');
     const agentSpinner = ora('Installing agents...').start();
     await installAgents(options);
-    agentSpinner.succeed(chalk.green('✓ Agents installed'));
+    agentSpinner.succeed('Agents installed');
 
     console.log('');
     const rulesSpinner = ora('Installing rules...').start();
     await installRules(options);
-    rulesSpinner.succeed(chalk.green('✓ Rules installed'));
+    rulesSpinner.succeed('Rules installed');
 
     console.log('');
     console.log(chalk.green.bold('✓ Setup complete!'));

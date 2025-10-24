@@ -268,7 +268,7 @@ export class MCPService {
       this.target.writeConfig(process.cwd(), configData);
 
       spinner.succeed(
-        chalk.green(`✓ ${serverIds.length} server${serverIds.length > 1 ? 's' : ''} installed`)
+        `${serverIds.length} server${serverIds.length > 1 ? 's' : ''} installed`
       );
     } catch (error) {
       spinner.fail(chalk.red('Failed to save configuration'));
