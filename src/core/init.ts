@@ -207,13 +207,13 @@ export async function installRules(options: CommonOptions): Promise<void> {
   const templateContent = mergedContent;
 
   if (options.dryRun) {
-    console.log(`🔍 Dry run: Would install rules file to ${rulesDestPath.replace(`${cwd}/`, '')}`);
+    console.log(`Dry run: Would install rules file to ${rulesDestPath.replace(`${cwd}/`, '')}`);
     return;
   }
 
   if (localInfo && localInfo.content === templateContent) {
     if (options.quiet !== true) {
-      console.log(`📋 Rules file already current: ${target.config.rulesFile}`);
+      console.log(`Rules file already current: ${target.config.rulesFile}`);
     }
     return;
   }
@@ -223,6 +223,6 @@ export async function installRules(options: CommonOptions): Promise<void> {
 
   if (options.quiet !== true) {
     const action = localInfo ? 'Updated' : 'Created';
-    console.log(`📋 ${action} rules file: ${target.config.rulesFile}`);
+    console.log(`${action} rules file: ${target.config.rulesFile}`);
   }
 }

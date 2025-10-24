@@ -223,9 +223,9 @@ export const claudeCodeTarget: Target = {
 Please begin your response with a comprehensive summary of all the instructions and context provided above.`;
 
     if (options.dryRun) {
-      console.log('🔍 Dry run: Would execute Claude Code with --append-system-prompt');
-      console.log('📝 System prompt to append length:', enhancedSystemPrompt.length, 'characters');
-      console.log('📝 User prompt length:', sanitizedUserPrompt.length, 'characters');
+      console.log('Dry run: Would execute Claude Code with --append-system-prompt');
+      console.log('System prompt to append length:', enhancedSystemPrompt.length, 'characters');
+      console.log('User prompt length:', sanitizedUserPrompt.length, 'characters');
       console.log('✓ Dry run completed successfully');
       return;
     }
