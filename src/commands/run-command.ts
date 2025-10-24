@@ -13,8 +13,8 @@ interface RunCommandOptions extends CommandOptions {
 }
 
 async function validateRunOptions(options: RunCommandOptions): Promise<void> {
-  // Resolve target using targetManager (with detection and fallback)
-  options.target = await targetManager.resolveTarget({ target: options.target });
+  // Resolve target using targetManager (with detection, fallback, and selection)
+  options.target = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
 
   // Set default agent ONLY if no agent is specified
   if (!options.agent) {

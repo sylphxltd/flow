@@ -50,25 +50,7 @@ export const initCommand: CommandConfig = {
 
     // Target selection
     if (!targetId) {
-      const availableTargets = targetManager.getImplementedTargetIDs();
-
-      const answer = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'target',
-          message: 'Select target platform:',
-          choices: availableTargets.map((id) => {
-            const target = targetManager.getTarget(id);
-            return {
-              name: target?.name || id,
-              value: id,
-            };
-          }),
-          default: 'opencode',
-        },
-      ]);
-
-      targetId = answer.target;
+      targetId = await targetManager.promptForTargetSelection();
       options.target = targetId;
     }
 

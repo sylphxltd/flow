@@ -18,48 +18,8 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     disableCodebaseSearch: options.disableCodebaseSearch === true,
   };
 
-  if (options.preset) {
-    switch (options.preset) {
-      case 'opencode':
-        Object.assign(config, {
-          disableMemory: true,
-          disableTime: false,
-          disableProjectStartup: true,
-          disableKnowledge: false,
-          disableCodebaseSearch: false,
-        });
-        break;
-      case 'claude-code':
-        Object.assign(config, {
-          disableMemory: true,
-          disableTime: false,
-          disableProjectStartup: false,
-          disableKnowledge: false,
-          disableCodebaseSearch: false,
-        });
-        break;
-      case 'minimal':
-        Object.assign(config, {
-          disableMemory: true,
-          disableTime: true,
-          disableProjectStartup: true,
-          disableKnowledge: true,
-          disableCodebaseSearch: true,
-        });
-        break;
-      case 'full':
-        Object.assign(config, {
-          disableMemory: false,
-          disableTime: false,
-          disableProjectStartup: false,
-          disableKnowledge: false,
-          disableCodebaseSearch: false,
-        });
-        break;
-    }
-  }
-
-  const targetId = await targetManager.resolveTarget({ target: options.target });
+  
+  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
   const target = targetManager.getTarget(targetId);
 
   if (!target) {
@@ -117,7 +77,7 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
 // MCP config handler
 const mcpConfigHandler: CommandHandler = async (options) => {
   const server = options.server as string;
-  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
@@ -186,7 +146,7 @@ const mcpConfigHandler: CommandHandler = async (options) => {
 
 // MCP list handler
 const mcpListHandler: CommandHandler = async (options: CommandOptions) => {
-  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
@@ -198,7 +158,7 @@ const mcpListHandler: CommandHandler = async (options: CommandOptions) => {
 // MCP add handler
 const mcpAddHandler: CommandHandler = async (options: CommandOptions) => {
   const servers = options.servers as string[];
-  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
@@ -233,7 +193,7 @@ const mcpAddHandler: CommandHandler = async (options: CommandOptions) => {
 // MCP remove handler
 const mcpRemoveHandler: CommandHandler = async (options: CommandOptions) => {
   const servers = options.servers as string[];
-  const targetId = await targetManager.resolveTarget({ target: options.target });
+  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
@@ -276,10 +236,6 @@ export const mcpCommand: CommandConfig = {
       name: 'start',
       description: 'Start Sylphx Flow MCP server with specific configuration',
       options: [
-        {
-          flags: '--preset <type>',
-          description: 'Use preset configuration (opencode, claude-code, minimal, full)',
-        },
         { flags: '--disable-memory', description: 'Disable memory functionality' },
         { flags: '--disable-time', description: 'Disable time functionality' },
         {

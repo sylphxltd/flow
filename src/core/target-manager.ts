@@ -7,6 +7,7 @@ import {
   targetRegistry,
 } from '../config/targets.js';
 import { projectSettings } from '../utils/settings.js';
+import inquirer from 'inquirer';
 
 /**
  * Simplified target manager that works with the new Target-based architecture
@@ -34,9 +35,34 @@ export class TargetManager {
   }
 
   /**
+   * Prompt user to select a target platform
+   */
+  async promptForTargetSelection(): Promise<string> {
+    const availableTargets = this.getImplementedTargetIDs();
+
+    const answer = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'target',
+        message: 'Select target platform:',
+        choices: availableTargets.map((id) => {
+          const target = this.getTarget(id);
+          return {
+            name: target?.name || id,
+            value: id,
+          };
+        }),
+        default: getDefaultTarget(),
+      },
+    ]);
+
+    return answer.target;
+  }
+
+  /**
    * Resolve target with fallback to default and detection
    */
-  async resolveTarget(options: { target?: string }): Promise<string> {
+  async resolveTarget(options: { target?: string; allowSelection?: boolean }): Promise<string> {
     // If target is explicitly specified, use it
     if (options.target) {
       if (!getTarget(options.target)) {
@@ -61,6 +87,11 @@ export class TargetManager {
     const detectedTarget = this.detectTargetFromEnvironment();
     if (detectedTarget) {
       return detectedTarget;
+    }
+
+    // If selection is allowed and no target found, prompt user
+    if (options.allowSelection) {
+      return await this.promptForTargetSelection();
     }
 
     // Fall back to system default target
