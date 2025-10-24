@@ -352,6 +352,17 @@ const mcpConfigHandler: CommandHandler = async (options) => {
     }
   }
 
+  // Check required fields
+  const missingRequired = Object.entries(serverDef.envVars || {})
+    .filter(([key, cfg]) => cfg.required && !values[key])
+    .map(([key]) => key);
+
+  if (missingRequired.length > 0) {
+    console.log(chalk.red(`\n✗ Missing required fields: ${missingRequired.join(', ')}`));
+    console.log('');
+    return;
+  }
+
   // Save configuration
   const spinner = ora('Saving configuration...').start();
 
