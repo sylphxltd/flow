@@ -13,6 +13,8 @@ export interface EnvVarConfig {
   default?: string;
   /** Whether this environment variable contains sensitive data and should be stored as secret */
   secret?: boolean;
+  /** Async function to fetch choices for list inputs */
+  fetchChoices?: () => Promise<string[]>;
 }
 
 export interface MCPServerDefinition {
@@ -65,6 +67,34 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
         description: 'Embedding model to use for vector search',
         required: false,
         default: 'text-embedding-3-small',
+        fetchChoices: async () => {
+          const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+          const apiKey = process.env.OPENAI_API_KEY;
+
+          if (!apiKey) {
+            throw new Error('OPENAI_API_KEY is required to fetch embedding models');
+          }
+
+          const response = await fetch(`${baseUrl}/models`, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch models: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          const embeddingModels = data.data
+            .filter((m: any) => m.id.includes('embedding'))
+            .map((m: any) => m.id)
+            .sort();
+
+          if (embeddingModels.length === 0) {
+            throw new Error('No embedding models found');
+          }
+
+          return embeddingModels;
+        },
       },
     },
     category: 'core',

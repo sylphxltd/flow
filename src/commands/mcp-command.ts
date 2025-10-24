@@ -274,35 +274,62 @@ const mcpConfigHandler: CommandHandler = async (options) => {
   const existingConfig = mcpSection[serverDef.name];
   const existingEnv = existingConfig?.environment || {};
 
+  // Collect environment values that fetchChoices might need
+  const collectedEnv: Record<string, string> = {};
+
   // Prompt for values
   const values: Record<string, string> = {};
 
   for (const [key, envConfig] of Object.entries(serverDef.envVars)) {
     const currentValue = existingEnv[key] || process.env[key];
 
-    // Model selection
-    if (key === 'EMBEDDING_MODEL') {
-      const answer = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'value',
-          message: `${key}${envConfig.required ? ' *' : ''}`,
-          choices: ['text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'],
-          default: currentValue || envConfig.default || 'text-embedding-3-small',
-        },
-      ]);
-      values[key] = answer.value;
-    } else if (key === 'GEMINI_MODEL') {
-      const answer = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'value',
-          message: `${key}${envConfig.required ? ' *' : ''}`,
-          choices: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'],
-          default: currentValue || envConfig.default || 'gemini-2.5-flash',
-        },
-      ]);
-      values[key] = answer.value;
+    if (envConfig.fetchChoices) {
+      const spinner = ora(`Fetching ${key} options...`).start();
+
+      // Set environment variables for fetchChoices to use
+      for (const [envKey, envValue] of Object.entries(collectedEnv)) {
+        if (envValue) {
+          process.env[envKey] = envValue;
+        }
+      }
+
+      try {
+        const choices = await envConfig.fetchChoices();
+        spinner.stop();
+
+        const answer = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'value',
+            message: `${key}${envConfig.required ? ' *' : ''}`,
+            choices,
+            default: currentValue || envConfig.default || choices[0],
+          },
+        ]);
+        values[key] = answer.value;
+        collectedEnv[key] = answer.value;
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        spinner.fail(chalk.red(`Failed to fetch ${key} options: ${errorMsg}`));
+
+        // Fall back to manual input
+        const answer = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'value',
+            message: `${key}${envConfig.required ? ' *' : ''}${currentValue ? ' (press Enter to keep current)' : ''}`,
+            default: currentValue || envConfig.default,
+          },
+        ]);
+
+        if (answer.value) {
+          values[key] = answer.value;
+          collectedEnv[key] = answer.value;
+        } else if (currentValue) {
+          values[key] = currentValue;
+          collectedEnv[key] = currentValue;
+        }
+      }
     } else {
       // Regular input
       const answer = await inquirer.prompt([
@@ -317,8 +344,10 @@ const mcpConfigHandler: CommandHandler = async (options) => {
 
       if (answer.value) {
         values[key] = answer.value;
+        collectedEnv[key] = answer.value;
       } else if (currentValue) {
         values[key] = currentValue;
+        collectedEnv[key] = currentValue;
       }
     }
   }
