@@ -58,9 +58,3 @@ hive-mind-prompt-*.txt
 .sylphx-flow/cache.db*
 # Ignore memory database temporary files, but keep memory.db itself
 .sylphx-flow/memory.db-*
-.sylphx-flow/memory.db.*
-# Database journal files (all databases)
-*.db-journal
-*.db-wal
-*.sqlite-journal
-*.sqlite-wal
