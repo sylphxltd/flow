@@ -81,21 +81,16 @@ export class AutoGitignoreManager {
         return;
       }
 
-      // 簡潔的數據庫規則 - 只管理我們需要的
+      // 簡化的數據庫規則 - 用 folder level pattern
       const databaseRules = [
         '',
         '# Sylphx Flow Database Files (Auto-managed)',
-        '# Cache database (temporary, should NOT be committed)',
-        '.sylphx-flow/cache.db',
-        '.sylphx-flow/cache.db-*',
-        '.sylphx-flow/cache.db-shm',
-        '.sylphx-flow/cache.db-wal',
-        '# Memory database backups and temporary files',
-        '.sylphx-flow/memory.db.backup*',
-        '.sylphx-flow/memory.db.tmp*',
-        '.sylphx-flow/memory.db-shm',
-        '.sylphx-flow/memory.db-wal',
-        '# Database journal files',
+        '# Ignore ALL cache database files (temporary)',
+        '.sylphx-flow/cache.db*',
+        '# Ignore memory database temporary files, but keep memory.db itself',
+        '.sylphx-flow/memory.db-*',
+        '.sylphx-flow/memory.db.*',
+        '# Database journal files (all databases)',
         '*.db-journal',
         '*.db-wal',
         '*.sqlite-journal',
