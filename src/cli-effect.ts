@@ -14,9 +14,19 @@ import { handleMemoryTui } from './commands/memory-tui-command.js';
 /**
  * Simple TUI command to test the new CLI
  */
-const tuiCommand = Command.make('tui').pipe(
-  Command.withDescription('Launch interactive Sylphx Flow TUI')
-);
+const tuiCommand = Command.make('tui', {}, () =>
+  Effect.gen(function* () {
+    yield* Effect.tryPromise({
+      try: () => Promise.resolve(handleMemoryTui()),
+      catch: (error) => {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return new CLIError({
+          message: `Failed to launch TUI: ${errorMessage}`,
+        });
+      },
+    });
+  })
+).pipe(Command.withDescription('Launch interactive Sylphx Flow TUI'));
 
 /**
  * Main CLI command with subcommands

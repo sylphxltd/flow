@@ -50,12 +50,12 @@
 
 ## Stage 6: Service Layer Migration
 (Depend on Stages 2-5 - migrate remaining application logic)
-- [ ] TASK_32: Replace remaining Promise patterns with Effect
-- [ ] TASK_33: Update storage classes to use Effect services
-- [ ] TASK_34: Migrate indexer classes to Effect patterns
-- [ ] TASK_35: Update search services to use Effect
-- [ ] TASK_36: Replace async utility functions with Effect
-- [ ] TASK_37: Update command builders and validators
+- [x] TASK_32: Replace remaining Promise patterns with Effect
+- [x] TASK_33: Update storage classes to use Effect services
+- [x] TASK_34: Migrate indexer classes to Effect patterns
+- [x] TASK_35: Update search services to use Effect
+- [x] TASK_36: Replace async utility functions with Effect
+- [x] TASK_37: Update command builders and validators
 
 ## Stage 7: Testing & Validation
 (Depend on all previous stages - comprehensive testing)

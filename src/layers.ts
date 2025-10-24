@@ -9,6 +9,7 @@ import { SqlClient } from '@effect/sql';
 import { NodeContext } from '@effect/platform-node';
 import { FileSystemLive } from './utils/file-system-effect.js';
 import { LoggingLive } from './utils/logging-effect.js';
+import { UnifiedSearchServiceLive } from './utils/unified-search-service-effect.js';
 
 /**
  * Service tags for dependency injection
@@ -31,5 +32,6 @@ export const ServicesLive = Layer.mergeAll(
   DatabaseLive,
   FileSystemLive,
   LoggingLive,
+  UnifiedSearchServiceLive,
   NodeContext.layer
 );
