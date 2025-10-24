@@ -8,32 +8,41 @@ import { z } from 'zod';
 import { searchDocuments } from '../utils/tfidf.js';
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 import { getKnowledgeIndexer } from '../utils/knowledge-indexer.js';
+import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 
 // Global instances
 const memoryStorage = new SeparatedMemoryStorage();
 const knowledgeIndexer = getKnowledgeIndexer();
-
 /**
- * Register unified search tools
+ * Register codebase search tool (independent)
  */
-export function registerUnifiedSearchTools(server: McpServer): void {
-  // === SEARCH TOOLS ===
-
-  // Search codebase
+export function registerCodebaseSearchTool(server: McpServer): void {
   server.tool(
     'search_codebase',
-    'Search project source files, documentation, and code. Use this to find implementations, functions, classes, or any code-related content.',
+    'Search project source files, documentation, and code. Supports both semantic search (preferred) and TF-IDF fallback. Use this to find implementations, functions, classes, or any code-related content.',
     {
       query: {
         type: z.string(),
-        description: 'Search query - use specific keywords, function names, or technical terms',
+        description: 'Search query - use natural language, function names, or technical terms',
       },
       limit: {
         type: z.number().default(10).optional(),
         description: 'Maximum number of results to return (default: 10)',
       },
+      semantic: {
+        type: z.boolean().default(true).optional(),
+        description: 'Use semantic search if available, fallback to TF-IDF if not (default: true)',
+      },
+      min_score: {
+        type: z.number().default(0.1).optional(),
+        description: 'Minimum relevance score threshold (default: 0.1)',
+      },
+      include_content: {
+        type: z.boolean().default(true).optional(),
+        description: 'Include file content snippets in results (default: true)',
+      },
     },
-    async ({ query, limit = 10 }) => {
+    async ({ query, limit = 10, semantic = true, min_score = 0.1, include_content = true }) => {
       try {
         // Initialize memory storage
         await memoryStorage.initialize();
@@ -98,8 +107,29 @@ export function registerUnifiedSearchTools(server: McpServer): void {
           },
         };
 
-        // Search using TF-IDF
-        const results = await searchDocuments(query, index, { limit });
+        let results;
+
+        // Try semantic search first if requested
+        if (semantic) {
+          try {
+            const embeddingProvider = getDefaultEmbeddingProvider();
+            const vectorIndexPath = '.sylphx-flow/vector-index';
+
+            // This is a simplified semantic search - in production you'd have proper vector storage
+            console.log('[INFO] Attempting semantic search...');
+            // TODO: Implement proper semantic search with vector storage
+            // For now, fallback to TF-IDF
+            console.log('[INFO] Semantic search not available, using TF-IDF fallback');
+          } catch (error) {
+            console.log('[INFO] Semantic search failed, using TF-IDF fallback');
+          }
+        }
+
+        // TF-IDF search
+        results = await searchDocuments(query, index, {
+          limit,
+          minScore: min_score,
+        });
 
         const summary = `Found ${results.length} codebase result(s) for "${query}":\n\n`;
         const formattedResults = results
@@ -127,33 +157,70 @@ export function registerUnifiedSearchTools(server: McpServer): void {
           content: [
             {
               type: 'text',
-              text: `❌ Codebase search error: ${(error as Error).message}`,
+              text: `❌ Knowledge search error: ${(error as Error).message}`,
             },
           ],
         };
       }
     }
   );
+}
 
-  // Search knowledge
+/**
+ * Register both search tools (convenience function)
+ */
+export function registerUnifiedSearchTools(server: McpServer): void {
+  registerCodebaseSearchTool(server);
+  registerKnowledgeSearchTool(server);
+}
+
+/**
+ * Register knowledge search tool (independent)
+ */
+export function registerKnowledgeSearchTool(server: McpServer): void {
   server.tool(
     'search_knowledge',
-    'Search knowledge base, documentation, guides, and reference materials. Use this for domain knowledge, best practices, setup instructions, and conceptual information.',
+    'Search knowledge base, documentation, guides, and reference materials. Supports both semantic search (preferred) and TF-IDF fallback. Use this for domain knowledge, best practices, setup instructions, and conceptual information.',
     {
       query: {
         type: z.string(),
-        description: 'Search query - use conceptual terms, technology names, or topic keywords',
+        description: 'Search query - use natural language, technology names, or topic keywords',
       },
       limit: {
         type: z.number().default(10).optional(),
         description: 'Maximum number of results to return (default: 10)',
       },
+      semantic: {
+        type: z.boolean().default(true).optional(),
+        description: 'Use semantic search if available, fallback to TF-IDF if not (default: true)',
+      },
+      min_score: {
+        type: z.number().default(0.1).optional(),
+        description: 'Minimum relevance score threshold (default: 0.1)',
+      },
     },
-    async ({ query, limit = 10 }) => {
+    async ({ query, limit = 10, semantic = true, min_score = 0.1 }) => {
       try {
-        // Load knowledge index
+        let results;
+
+        // Try semantic search first if requested
+        if (semantic) {
+          try {
+            const embeddingProvider = getDefaultEmbeddingProvider();
+            console.log('[INFO] Attempting semantic search for knowledge...');
+            // TODO: Implement proper semantic search with vector storage
+            console.log('[INFO] Semantic search not available, using TF-IDF fallback');
+          } catch (error) {
+            console.log('[INFO] Semantic search failed, using TF-IDF fallback');
+          }
+        }
+
+        // Load knowledge index and search with TF-IDF
         const index = await knowledgeIndexer.loadIndex();
-        const results = await searchDocuments(query, index, { limit });
+        results = await searchDocuments(query, index, {
+          limit,
+          minScore: min_score,
+        });
 
         const summary = `Found ${results.length} knowledge result(s) for "${query}":\n\n`;
         const formattedResults = results

@@ -4,7 +4,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
-import { registerUnifiedSearchTools } from '../tools/unified-search-tools.js';
+import {
+  registerCodebaseSearchTool,
+  registerKnowledgeSearchTool,
+} from '../tools/unified-search-tools.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -101,22 +104,20 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('project_startup');
   }
 
-  // Unified search tools (enabled by default, can be disabled)
-  if (!config.disableKnowledge && !config.disableCodebaseSearch) {
-    Logger.info('🔍 Registering unified search tools');
-    registerUnifiedSearchTools(server);
-    enabledTools.push('search_codebase, search_knowledge');
-    console.log('🔍 Search: Codebase and Knowledge enabled');
-  } else if (!config.disableKnowledge) {
-    Logger.info('📚 Registering knowledge search only');
-    // Register only knowledge tools - need to split this
-    enabledTools.push('search_knowledge');
-    console.log('📚 Knowledge Search: Enabled');
-  } else if (!config.disableCodebaseSearch) {
-    Logger.info('🔍 Registering codebase search only');
-    // Register only codebase tools - need to split this
+  // Codebase search tool (independent, enabled by default)
+  if (!config.disableCodebaseSearch) {
+    Logger.info('🔍 Registering codebase search tool');
+    registerCodebaseSearchTool(server);
     enabledTools.push('search_codebase');
     console.log('🔍 Codebase Search: Enabled');
+  }
+
+  // Knowledge search tool (independent, enabled by default)
+  if (!config.disableKnowledge) {
+    Logger.info('📚 Registering knowledge search tool');
+    registerKnowledgeSearchTool(server);
+    enabledTools.push('search_knowledge');
+    console.log('📚 Knowledge Search: Enabled');
   }
 
   // Display enabled tools
