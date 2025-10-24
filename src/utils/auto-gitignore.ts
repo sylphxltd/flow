@@ -1,120 +1,109 @@
 /**
- * Auto .gitignore manager - 自動 .gitignore 管理器
- * 運行時自動添加必要的數據庫規則，無需手動管理
+ * Intelligent auto .gitignore manager - 智能自動 .gitignore 管理器
+ * 分析現有 gitignore，智能添加/更新 Sylphx Flow 相關規則
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-export class AutoGitignoreManager {
-  private gitignorePath: string;
+// Sylphx Flow 需要嘅所有規則 (可以隨時擴展)
+const SYLPHX_FLOW_RULES = [
+  '# Sylphx Flow Database Files (Auto-managed)',
+  '# Ignore ALL cache database files (temporary)',
+  '.sylphx-flow/cache.db*',
+  '# Ignore memory database temporary files, but keep memory.db itself',
+  '.sylphx-flow/memory.db-*',
+];
 
-  constructor() {
-    this.gitignorePath = path.join(process.cwd(), '.gitignore');
-  }
+export const autoGitignore = {
+  /**
+   * 智能分析並更新 gitignore
+   */
+  initialize(): void {
+    const gitignorePath = path.join(process.cwd(), '.gitignore');
+
+    if (!fs.existsSync(gitignorePath)) {
+      return;
+    }
+
+    try {
+      const content = fs.readFileSync(gitignorePath, 'utf-8');
+      const result = this.analyzeAndUpdateGitignore(content);
+
+      if (result.needsUpdate) {
+        fs.writeFileSync(gitignorePath, result.newContent);
+      }
+    } catch (error) {
+      // 靜默失敗，唔好影響用戶體驗
+    }
+  },
 
   /**
-   * 清理現有的 .gitignore，移除重複和空區塊
+   * 分析 gitignore 內容，決定需要做咩更新
    */
-  private cleanExistingGitignore(content: string): string {
+  analyzeAndUpdateGitignore(content: string): { needsUpdate: boolean; newContent: string } {
     const lines = content.split('\n');
-    const cleanedLines: string[] = [];
-    let inDatabaseSection = false;
-    let skipEmptyDatabaseSections = true;
+    const newLines: string[] = [];
+    let inSylphxSection = false;
+    let sylphxRulesFound: string[] = [];
 
+    // 分析現有內容
     for (const line of lines) {
       const trimmed = line.trim();
 
-      // 檢測數據庫區塊開始
+      // 檢測 Sylphx Flow section
       if (trimmed === '# Sylphx Flow Database Files (Auto-managed)') {
-        if (inDatabaseSection) {
-          // 跳過重複的數據庫區塊
-          skipEmptyDatabaseSections = true;
-          continue;
-        }
-        inDatabaseSection = true;
-        skipEmptyDatabaseSections = false;
+        inSylphxSection = true;
+        continue; // 跳過 section header，我哋會重新生成
       }
 
-      // 如果在數據庫區塊中，但遇到下一個主要區塊，則結束
+      // 如果喺 Sylphx section 裡面，但遇到其他 section，就結束
       if (
-        inDatabaseSection &&
+        inSylphxSection &&
         trimmed &&
         !trimmed.startsWith('#') &&
         !trimmed.includes('Sylphx Flow')
       ) {
-        inDatabaseSection = false;
+        inSylphxSection = false;
       }
 
-      // 跳過空的數據庫區塊
-      if (skipEmptyDatabaseSections && inDatabaseSection) {
-        continue;
+      // 收集現有嘅 Sylphx rules
+      if (inSylphxSection && trimmed && !trimmed.startsWith('#')) {
+        sylphxRulesFound.push(trimmed);
+        continue; // 跳過舊 rules，我哋會重新生成
       }
 
-      if (!skipEmptyDatabaseSections) {
-        cleanedLines.push(line);
+      // 保留非 Sylphx section 嘅內容
+      if (!inSylphxSection) {
+        newLines.push(line);
       }
     }
 
-    return cleanedLines.join('\n');
-  }
+    // 檢查是否需要更新
+    const currentRules = sylphxRulesFound.sort();
+    const expectedRules = SYLPHX_FLOW_RULES.filter((rule) => !rule.startsWith('#')).sort();
+    const needsUpdate =
+      currentRules.length !== expectedRules.length ||
+      !currentRules.every((rule, i) => rule === expectedRules[i]);
 
-  /**
-   * 確保數據庫規則存在於 .gitignore 中
-   */
-  ensureDatabaseRules(): void {
-    try {
-      // 如果 .gitignore 不存在，什麼都不做 - 讓用戶自己創建
-      if (!fs.existsSync(this.gitignorePath)) {
-        console.error('[INFO] No .gitignore found, skipping database rules');
-        return;
-      }
-
-      let content = fs.readFileSync(this.gitignorePath, 'utf-8');
-
-      // 清理現有的重複數據庫區塊
-      content = this.cleanExistingGitignore(content);
-
-      // 檢查是否已經有數據庫規則區塊
-      if (content.includes('# Sylphx Flow Database Files (Auto-managed)')) {
-        console.error('[INFO] Database rules already exist in .gitignore');
-        return;
-      }
-
-      // 簡化的數據庫規則 - 用 folder level pattern
-      const databaseRules = [
-        '',
-        '# Sylphx Flow Database Files (Auto-managed)',
-        '# Ignore ALL cache database files (temporary)',
-        '.sylphx-flow/cache.db*',
-        '# Ignore memory database temporary files, but keep memory.db itself',
-        '.sylphx-flow/memory.db-*',
-        '.sylphx-flow/memory.db.*',
-        '# Database journal files (all databases)',
-        '*.db-journal',
-        '*.db-wal',
-        '*.sqlite-journal',
-        '*.sqlite-wal',
-      ];
-
-      // 添加規則到文件末尾
-      const newContent = content.endsWith('\n') ? content : content + '\n';
-      const updatedContent = newContent + databaseRules.join('\n') + '\n';
-
-      fs.writeFileSync(this.gitignorePath, updatedContent, 'utf-8');
-      console.error(`[INFO] Added database rules to .gitignore`);
-    } catch (error) {
-      console.error('[WARN] Failed to update .gitignore:', (error as Error).message);
+    if (!needsUpdate) {
+      return { needsUpdate: false, newContent: content };
     }
-  }
 
-  /**
-   * 初始化自動 .gitignore 管理
-   */
-  initialize(): void {
-    this.ensureDatabaseRules();
-  }
-}
+    // 生成新內容
+    const finalLines = [...newLines];
 
-// 導出單例實例
-export const autoGitignore = new AutoGitignoreManager();
+    // 移除尾部空行
+    while (finalLines.length > 0 && finalLines[finalLines.length - 1].trim() === '') {
+      finalLines.pop();
+    }
+
+    // 添加 Sylphx Flow section
+    finalLines.push('', ...SYLPHX_FLOW_RULES, '');
+
+    return {
+      needsUpdate: true,
+      newContent: finalLines.join('\n'),
+    };
+  },
+};
