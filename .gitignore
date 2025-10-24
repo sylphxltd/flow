@@ -1,4 +1,57 @@
+# Keep installation scripts in repo
+# (These are meant to be distributed)
 
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.log
+node_modules/
+
+# Claude Flow generated files
+.claude/settings.local.json
+.mcp.json
+claude-flow.config.json
+.swarm/
+.hive-mind/
+.claude-flow/
+memory/
+coordination/
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+claude-flow
+
+## Vector search indexes (generated at runtime)
+*.hnsw
+*.meta.json
+.sylphx-flow/search-cache/
+
+## Build artifacts and temporary files
+dist/lancedb.*.node
+package-lock.json
+*.tgz
+
+## Unused vector storage implementations
+src/utils/hnsw-vector-storage.ts
+src/utils/simple-vector-storage.ts
+
+# Removed Windows wrapper files per user request
+hive-mind-prompt-*.txt
+.secrets/
 
 # Sylphx Flow Database Files (Auto-managed)
 # Cache database (temporary, should NOT be committed)
@@ -11,6 +64,9 @@
 .sylphx-flow/memory.db.tmp*
 .sylphx-flow/memory.db-shm
 .sylphx-flow/memory.db-wal
+# Old/backup databases
+.sylphx-flow/*.db.old
+.sylphx-flow/*.db.backup*
 # Database journal files
 *.db-journal
 *.db-wal
