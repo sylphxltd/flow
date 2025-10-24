@@ -4,6 +4,7 @@ import { mcpCommand } from './commands/mcp-command.js';
 import { memoryCommand } from './commands/memory-command.js';
 import { handleMemoryTui } from './commands/memory-tui-command.js';
 import { runCommand } from './commands/run-command.js';
+import { searchCommand } from './commands/search-command.js';
 
 import { createCommand } from './utils/command-builder.js';
 import { showDefaultHelp } from './utils/help.js';
@@ -17,6 +18,9 @@ export function createCLI(): Command {
     .version('1.0.0');
 
   const commands = [initCommand, mcpCommand, memoryCommand, runCommand];
+
+  // Add search command directly since it has subcommands
+  program.addCommand(searchCommand);
 
   for (const commandConfig of commands) {
     program.addCommand(createCommand(commandConfig));

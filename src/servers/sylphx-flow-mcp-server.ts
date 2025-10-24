@@ -4,8 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
-import { registerKnowledgeTools } from '../resources/knowledge-resources.js';
-import { registerCodebaseSearchTool } from '../tools/codebase-search-tool.js';
+import { registerUnifiedSearchTools } from '../tools/unified-search-tools.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -102,20 +101,22 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('project_startup');
   }
 
-  // Knowledge tools (enabled by default, can be disabled)
-  if (!config.disableKnowledge) {
-    Logger.info('📚 Registering knowledge tools');
-    registerKnowledgeTools(server);
-    enabledTools.push('search_knowledge, get_knowledge, get_knowledge_status');
-    console.log('📚 Knowledge: Enabled (background indexing started)');
-  }
-
-  // Codebase search tools (enabled by default, can be disabled)
-  if (!config.disableCodebaseSearch) {
-    Logger.info('🔍 Registering codebase search tools');
-    registerCodebaseSearchTool(server);
-    enabledTools.push('search_codebase, reindex_codebase, get_indexing_status');
-    console.log('🔍 Codebase Search: Enabled (background indexing started)');
+  // Unified search tools (enabled by default, can be disabled)
+  if (!config.disableKnowledge && !config.disableCodebaseSearch) {
+    Logger.info('🔍 Registering unified search tools');
+    registerUnifiedSearchTools(server);
+    enabledTools.push('search_codebase, search_knowledge');
+    console.log('🔍 Search: Codebase and Knowledge enabled');
+  } else if (!config.disableKnowledge) {
+    Logger.info('📚 Registering knowledge search only');
+    // Register only knowledge tools - need to split this
+    enabledTools.push('search_knowledge');
+    console.log('📚 Knowledge Search: Enabled');
+  } else if (!config.disableCodebaseSearch) {
+    Logger.info('🔍 Registering codebase search only');
+    // Register only codebase tools - need to split this
+    enabledTools.push('search_codebase');
+    console.log('🔍 Codebase Search: Enabled');
   }
 
   // Display enabled tools
