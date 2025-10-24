@@ -125,34 +125,13 @@ The search includes:
           };
         }
 
-        if (path_filter) {
-          files = files.filter((file) => file.path.includes(path_filter));
-        }
-
-        if (exclude_paths && exclude_paths.length > 0) {
-          files = files.filter(
-            (file) => !exclude_paths.some((exclude: string) => file.path.includes(exclude))
-          );
-        }
-
-        if (files.length === 0) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: '📭 No codebase files found matching the filters. Try adjusting the filters or check if files are indexed.',
-              },
-            ],
-          };
-        }
-
         // Build search documents from file data
         const searchDocs: any[] = [];
         for (const file of files) {
           const tfidfDoc = await memoryStorage.getTFIDFDocument(file.path);
           if (tfidfDoc) {
-            // Parse rawTerms from JSON string
-            const rawTerms = JSON.parse(tfidfDoc.rawTerms || '{}');
+            // rawTerms is already deserialized by safeDeserialize()
+            const rawTerms = tfidfDoc.rawTerms || {};
 
             // Convert to Map<string, number>
             const rawTermsMap = new Map<string, number>();
