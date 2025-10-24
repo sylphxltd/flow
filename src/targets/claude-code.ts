@@ -255,7 +255,7 @@ Please begin your response with a comprehensive summary of all the instructions 
           }
         }
 
-        args.push('--append-system-prompt', promptToUse);
+        args.push('--system-prompt', promptToUse);
 
         if (sanitizedUserPrompt.trim() !== '') {
           args.push(sanitizedUserPrompt);
