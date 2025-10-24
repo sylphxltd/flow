@@ -40,7 +40,6 @@ export interface CommandArgument {
   required?: boolean;
 }
 
-export type ServerFlagConfig = string | (() => Promise<boolean>);
 
 
 export interface MCPServerConfig {

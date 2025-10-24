@@ -31,8 +31,6 @@ export interface MCPServerDefinition {
   config: MCPServerConfigUnion;
   /** Environment variables configuration */
   envVars?: Record<string, EnvVarConfig>;
-  /** Command line flags configuration */
-  flags?: Record<string, ServerFlagConfig>;
   /** Server category for grouping */
   category: 'core' | 'external' | 'ai';
   /** Whether this server is included by default in init */
@@ -56,26 +54,31 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       command: async () => {
         let finalCommand = ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'];
 
-        // Add disable flags based on server configuration and target
-        const serverDef = MCP_SERVER_REGISTRY['sylphx-flow'];
+        // For Claude Code target, disable memory by default
+        try {
+          const fs = await import('node:fs/promises');
+          const path = await import('node:path');
 
-        if (serverDef?.flags) {
-          const flagsToAdd: string[] = [];
+          // Check if we're in a Claude Code project
+          const mcpJsonPath = path.join(process.cwd(), '.mcp.json');
+          const claudeConfigPath = path.join(process.cwd(), '.claude', 'settings.local.json');
 
-          // Check each flag configuration
-          for (const [flagName, flagConfig] of Object.entries(serverDef.flags)) {
-            if (typeof flagConfig === 'function') {
-              const shouldEnable = await flagConfig();
-              if (shouldEnable) {
-                flagsToAdd.push(`--${flagName}`);
-              }
-            } else if (typeof flagConfig === 'string') {
-              // Static flag - always add
-              flagsToAdd.push(`--${flagName}`);
-            }
+          const [mcpExists, claudeExists] = await Promise.allSettled([
+            fs.access(mcpJsonPath).then(() => true).catch(() => false),
+            fs.access(claudeConfigPath).then(() => true).catch(() => false)
+          ]);
+
+          if (mcpExists.success || claudeExists.success) {
+            finalCommand.push('--disable-memory'); // Claude Code target detected
           }
 
-          finalCommand.push(...flagsToAdd);
+          // Check OpenCode project
+          const opencodeConfigPath = path.join(process.cwd(), 'opencode.jsonc');
+          const opencodeExists = await fs.access(opencodeConfigPath).then(() => true).catch(() => false);
+
+          // For OpenCode, don't add any disable flags
+        } catch {
+          // If detection fails, don't disable memory
         }
 
         return finalCommand;
@@ -142,40 +145,6 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
 
           return embeddingModels;
         },
-      },
-    },
-    flags: {
-      'disable-memory': async () => {
-        // For Claude Code target, disable memory by default
-        try {
-          const fs = await import('node:fs/promises');
-          const path = await import('node:path');
-
-          // Check if we're in a Claude Code project
-          const mcpJsonPath = path.join(process.cwd(), '.mcp.json');
-          const claudeConfigPath = path.join(process.cwd(), '.claude', 'settings.local.json');
-
-          const [mcpExists, claudeExists] = await Promise.allSettled([
-            fs.access(mcpJsonPath).then(() => true).catch(() => false),
-            fs.access(claudeConfigPath).then(() => true).catch(() => false)
-          ]);
-
-          if (mcpExists.success || claudeExists.success) {
-            return true; // Claude Code target detected
-          }
-
-          // Check OpenCode project
-          const opencodeConfigPath = path.join(process.cwd(), 'opencode.jsonc');
-          const opencodeExists = await fs.access(opencodeConfigPath).then(() => true).catch(() => false);
-
-          if (opencodeExists) {
-            return false; // OpenCode target detected - don't disable memory
-          }
-        } catch {
-          // If detection fails, don't disable memory
-        }
-
-        return false;
       },
     },
     category: 'core',
