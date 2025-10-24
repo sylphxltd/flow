@@ -1,6 +1,8 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
+import { render } from 'ink';
+import React from 'react';
 import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
 import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
@@ -9,6 +11,7 @@ import { CLIError } from '../utils/error-handler.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { targetSupportsMCPServers, validateTarget } from '../utils/target-config.js';
 import { MCPService } from '../services/mcp-service.js';
+import { InteractiveMCPSetup } from '../components/InteractiveMCPSetup.js';
 
 async function validateInitOptions(options: CommandOptions): Promise<void> {
   const targetId = await targetManager.resolveTarget({ target: options.target });
@@ -100,58 +103,106 @@ export const initCommand: CommandConfig = {
       return;
     }
 
-    // Process MCP servers
+    // Process MCP servers with interactive UI
     if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
       const mcpService = new MCPService(targetId);
       const availableServers = mcpService.getAvailableServers();
 
-      console.log('');
-      console.log(chalk.cyan.bold('▸ MCP Tools'));
-
-      let newServers: MCPServerID[];
-
       if (availableServers.length === 0) {
         console.log('');
+        console.log(chalk.cyan.bold('▸ MCP Tools'));
+        console.log('');
         console.log(chalk.green('✓ All tools already installed'));
-        newServers = [];
       } else {
-        // Show required servers info first
-        const requiredServers = availableServers.filter((id) => MCP_SERVER_REGISTRY[id].required);
-        const optionalServers = availableServers.filter((id) => !MCP_SERVER_REGISTRY[id].required);
+        console.log('');
+        console.log(chalk.cyan.bold('▸ Configure MCP Tools'));
+        console.log('');
 
-        if (requiredServers.length > 0) {
-          console.log('');
-          console.log(chalk.gray('Required tools (will be installed automatically):'));
-          requiredServers.forEach((id) => {
-            const server = MCP_SERVER_REGISTRY[id];
-            console.log(chalk.gray(`  ✓ ${server.name} - ${server.description}`));
-          });
-        }
+        try {
+          // Use interactive MCP setup
+          const configs = await new Promise<Record<MCPServerID, Record<string, string>>>(
+            (resolve, reject) => {
+              const { waitUntilExit } = render(
+                React.createElement(InteractiveMCPSetup, {
+                  availableServers,
+                  existingConfigs: {},
+                  onComplete: (configs) => {
+                    resolve(configs);
+                    waitUntilExit();
+                  },
+                  onCancel: () => {
+                    reject(new Error('Setup cancelled'));
+                    waitUntilExit();
+                  },
+                })
+              );
+            }
+          );
 
-        if (optionalServers.length > 0) {
-          console.log('');
-          const { selectedServers } = await inquirer.prompt({
-            type: 'checkbox',
-            name: 'selectedServers',
-            message: 'Select optional tools to install',
-            choices: optionalServers.map((id) => {
-              const server = MCP_SERVER_REGISTRY[id];
-              return {
-                name: `${server.name} - ${server.description}`,
-                value: id,
-                checked: server.defaultInInit === true,
+          // Install selected servers
+          const selectedServers = Object.keys(configs) as MCPServerID[];
+          if (selectedServers.length > 0) {
+            console.log('');
+            const spinner = ora('Installing MCP tools...').start();
+
+            try {
+              const target = targetManager.getTarget(targetId);
+              if (!target) {
+                throw new Error(`Target not found: ${targetId}`);
+              }
+
+              const configData = await target.readConfig(process.cwd());
+              const mcpConfigPath = target.config.mcpConfigPath;
+
+              // Helper functions
+              const getNestedProperty = (obj: any, path: string): any => {
+                return path.split('.').reduce((current, key) => current?.[key], obj);
               };
-            }),
-          });
 
-          newServers = [...requiredServers, ...selectedServers] as MCPServerID[];
-        } else {
-          newServers = requiredServers;
+              const setNestedProperty = (obj: any, path: string, value: any): void => {
+                const keys = path.split('.');
+                const lastKey = keys.pop()!;
+                const targetObj = keys.reduce((current, key) => {
+                  if (!current[key]) current[key] = {};
+                  return current[key];
+                }, obj);
+                targetObj[lastKey] = value;
+              };
+
+              let mcpSection = getNestedProperty(configData, mcpConfigPath) || {};
+
+              for (const serverId of selectedServers) {
+                const server = MCP_SERVER_REGISTRY[serverId];
+                const serverEnv = configs[serverId];
+
+                mcpSection[server.name] = {
+                  ...server.config,
+                  environment: {
+                    ...(server.config.type === 'local' ? server.config.environment : {}),
+                    ...serverEnv,
+                  },
+                };
+              }
+
+              setNestedProperty(configData, mcpConfigPath, mcpSection);
+              await target.writeConfig(process.cwd(), configData);
+
+              spinner.succeed(chalk.green(`✓ Installed ${selectedServers.length} MCP tools`));
+            } catch (error) {
+              spinner.fail(chalk.red('✗ Failed to install MCP tools'));
+              throw error;
+            }
+          } else {
+            console.log(chalk.yellow('No MCP tools selected'));
+          }
+        } catch (error) {
+          if ((error as Error).message === 'Setup cancelled') {
+            console.log('');
+            console.log(chalk.yellow('✗ Setup cancelled'));
+            process.exit(0);
+          }
+          throw error;
         }
-      }
-
-      if (newServers.length > 0) {
-        await mcpService.installServers(newServers);
       }
     }
 
