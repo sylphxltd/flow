@@ -46,7 +46,7 @@ export async function getLocalFileInfo(
 ): Promise<{ content: string; mtime: Date } | null> {
   const info = await getFileInfo(filePath);
 
-  if (!info.exists || !info.isFile()) {
+  if (!info.exists || !info.isFile) {
     return null;
   }
 

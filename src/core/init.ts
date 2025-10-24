@@ -29,7 +29,7 @@ async function getAgentFiles(): Promise<string[]> {
   // First, collect files directly in the agents root directory
   const rootFiles = fs
     .readdirSync(agentsDir, { withFileTypes: true })
-    .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.md'))
+    .filter((dirent: fs.Dirent) => dirent.isFile() && dirent.name.endsWith('.md'))
     .map((dirent) => dirent.name);
 
   allFiles.push(...rootFiles);
@@ -37,7 +37,7 @@ async function getAgentFiles(): Promise<string[]> {
   // Then, collect files from subdirectories (excluding 'archived')
   const subdirs = fs
     .readdirSync(agentsDir, { withFileTypes: true })
-    .filter((dirent) => dirent.isDirectory() && dirent.name !== 'archived')
+    .filter((dirent: fs.Dirent) => dirent.isDirectory() && dirent.name !== 'archived')
     .map((dirent) => dirent.name);
 
   // Collect files from each subdirectory
