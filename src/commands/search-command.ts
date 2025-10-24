@@ -4,13 +4,10 @@
  */
 
 import { Command } from 'commander';
-import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
-import { getKnowledgeIndexer } from '../utils/knowledge-indexer.js';
-import { searchDocuments } from '../utils/tfidf.js';
+import { searchService } from '../utils/unified-search-service.js';
 import { CodebaseIndexer } from '../utils/codebase-indexer.js';
 
-const memoryStorage = new SeparatedMemoryStorage();
-const knowledgeIndexer = getKnowledgeIndexer();
+// 統一使用 searchService - CLI 同 MCP 用相同邏輯
 
 /**
  * Search status command
@@ -22,41 +19,37 @@ export const searchStatusCommand = new Command('status')
     try {
       console.log('\n🔍 Search Systems Status\n');
 
+      await searchService.initialize();
+      const status = await searchService.getStatus();
+
       // Codebase status
       console.log('### 🔍 Codebase Search');
-      try {
-        await memoryStorage.initialize();
-        const files = await memoryStorage.getAllCodebaseFiles();
-
-        if (files.length === 0) {
-          console.log('**Status:** ⚠️ Not indexed');
-          console.log('**Files:** 0 files indexed');
-          console.log('**Note:** Run "sylphx search reindex" to index codebase');
-        } else {
-          console.log(`**Status:** ✅ Ready`);
-          console.log(`**Files:** ${files.length} files indexed`);
+      if (!status.codebase.indexed) {
+        console.log('**Status:** ⚠️ Not indexed');
+        console.log('**Files:** 0 files indexed');
+        console.log('**Note:** Run "sylphx search reindex" to index codebase');
+      } else {
+        console.log(`**Status:** ✅ Ready`);
+        console.log(`**Files:** ${status.codebase.fileCount} files indexed`);
+        if (status.codebase.indexedAt) {
+          console.log(`**Indexed:** ${new Date(status.codebase.indexedAt).toLocaleString()}`);
         }
-      } catch (error) {
-        console.log(`**Status:** ❌ Error`);
-        console.log(`**Error:** ${(error as Error).message}`);
       }
 
       console.log('');
 
       // Knowledge status
       console.log('### 📚 Knowledge Search');
-      try {
-        const knowledgeStatus = knowledgeIndexer.getStatus();
-        if (knowledgeStatus.isIndexing) {
-          console.log(`**Status:** 🔄 Building index (${knowledgeStatus.progress}%)`);
+      if (!status.knowledge.indexed) {
+        if (status.knowledge.isIndexing) {
+          console.log(`**Status:** 🔄 Building index (${status.knowledge.progress || 0}%)`);
         } else {
-          const index = await knowledgeIndexer.loadIndex();
-          console.log(`**Status:** ✅ Ready`);
-          console.log(`**Documents:** ${index.totalDocuments} files`);
+          console.log('**Status:** ⚠️ Not initialized');
+          console.log('**Note:** Will auto-index on first search');
         }
-      } catch (error) {
-        console.log(`**Status:** ⚠️ Not initialized`);
-        console.log('**Note:** Will auto-index on first search');
+      } else {
+        console.log(`**Status:** ✅ Ready`);
+        console.log(`**Documents:** ${status.knowledge.documentCount} files`);
       }
 
       console.log('');
@@ -136,104 +129,52 @@ export const searchDirectCommand = new Command('search')
       const limit = parseInt(options.limit);
       const includeContent = options.content !== false;
 
+      await searchService.initialize();
+
       if (options.knowledge) {
         console.log(`📚 Searching knowledge base for: "${query}"`);
 
         try {
-          const index = await knowledgeIndexer.loadIndex();
-          const results = await searchDocuments(query, index, { limit });
+          const result = await searchService.searchKnowledge(query, {
+            limit,
+            include_content: includeContent,
+          });
 
-          if (results.length === 0) {
+          if (result.results.length === 0) {
             console.log('📭 No results found');
             return;
           }
 
-          console.log(`\n✅ Found ${results.length} results:\n`);
-          results.forEach((result: any, i: number) => {
-            const title = result.metadata?.title || result.uri?.split('/').pop() || 'Unknown';
-            console.log(`${i + 1}. **${title}** (Score: ${result.score?.toFixed(3)})`);
-            console.log(`   Source: ${result.uri}`);
+          console.log(`\n✅ Found ${result.results.length} results:\n`);
+          result.results.forEach((item, i) => {
+            console.log(`${i + 1}. **${item.title}** (Score: ${item.score.toFixed(3)})`);
+            console.log(`   Source: ${item.uri}`);
           });
         } catch (error) {
-          console.log('📭 Knowledge base not indexed yet');
+          console.log(`📭 ${(error as Error).message}`);
         }
       } else {
         console.log(`🔍 Searching codebase for: "${query}"`);
 
         try {
-          await memoryStorage.initialize();
-          const files = await memoryStorage.getAllCodebaseFiles();
+          const result = await searchService.searchCodebase(query, {
+            limit,
+            include_content: includeContent,
+          });
 
-          if (files.length === 0) {
-            console.log('📭 Codebase not indexed yet. Run "sylphx search reindex" first.');
-            return;
-          }
-
-          // Build search documents
-          const searchDocs: any[] = [];
-          for (const file of files) {
-            const tfidfDoc = await memoryStorage.getTFIDFDocument(file.path);
-            if (tfidfDoc) {
-              const rawTerms = tfidfDoc.rawTerms || {};
-              const rawTermsMap = new Map<string, number>();
-              for (const [term, freq] of Object.entries(rawTerms)) {
-                rawTermsMap.set(term, freq as number);
-              }
-
-              searchDocs.push({
-                uri: `file://${file.path}`,
-                content: file.content || '',
-                terms: rawTermsMap,
-                rawTerms: rawTermsMap,
-                magnitude: tfidfDoc.magnitude || 0,
-              });
-            }
-          }
-
-          if (searchDocs.length === 0) {
-            console.log('📭 No searchable content found');
-            return;
-          }
-
-          // Load IDF values from database
-          const idfRecords = await memoryStorage.getIDFValues();
-          const idfMap = new Map<string, number>();
-          for (const [term, value] of Object.entries(idfRecords)) {
-            idfMap.set(term, value as number);
-          }
-
-          // Create search index
-          const index = {
-            documents: searchDocs,
-            idf: idfMap,
-            totalDocuments: searchDocs.length,
-            metadata: {
-              generatedAt: new Date().toISOString(),
-              version: '1.0.0',
-            },
-          };
-
-          const results = await searchDocuments(query, index, { limit });
-
-          if (results.length === 0) {
+          if (result.results.length === 0) {
             console.log('📭 No results found');
             return;
           }
 
-          console.log(`\n✅ Found ${results.length} results:\n`);
-          results.forEach((result: any, i: number) => {
-            const filename = result.uri?.replace('file://', '') || 'Unknown';
-            const doc = searchDocs.find((d) => d.uri === result.uri);
-            const preview = doc?.content?.substring(0, 100) || '';
-            const more = doc?.content && doc.content.length > 100 ? '...' : '';
-
-            console.log(`${i + 1}. **${filename}** (Score: ${result.score?.toFixed(3)})`);
-            if (preview) {
-              console.log(`   \`${preview}${more}\``);
-            }
-          });
+          const formattedOutput = searchService.formatResultsForCLI(
+            result.results,
+            query,
+            result.totalIndexed
+          );
+          console.log(formattedOutput);
         } catch (error) {
-          console.log('📭 Codebase not indexed yet. Run "sylphx search reindex" first.');
+          console.log(`📭 ${(error as Error).message}`);
         }
       }
     } catch (error) {

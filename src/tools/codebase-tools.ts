@@ -5,12 +5,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { searchDocuments } from '../utils/tfidf.js';
-import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
-import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
-
-// Global instance
-const memoryStorage = new SeparatedMemoryStorage();
+import { searchService } from '../utils/unified-search-service.js';
 
 /**
  * Register codebase search tool
@@ -78,141 +73,19 @@ The search includes:
       exclude_paths,
     }) => {
       try {
-        // Initialize memory storage
-        await memoryStorage.initialize();
+        // 使用統一搜索服務 - 同 CLI 用相同邏輯
+        await searchService.initialize();
 
-        // Get all codebase files and their TF-IDF data
-        const allFiles = await memoryStorage.getAllCodebaseFiles();
-
-        // Check if codebase is indexed at all
-        if (allFiles.length === 0) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: '📭 No codebase files indexed yet. The codebase needs to be indexed first before searching.\n\n**To index the codebase:**\n- Use CLI: `sylphx search reindex`\n- Or check if indexing is in progress\n\n**Current Status:** Not indexed',
-              },
-            ],
-          };
-        }
-
-        // Apply filters
-        let files = allFiles;
-        if (file_extensions && file_extensions.length > 0) {
-          files = files.filter((file) =>
-            file_extensions.some((ext: string) => file.path.endsWith(ext))
-          );
-        }
-
-        if (path_filter) {
-          files = files.filter((file) => file.path.includes(path_filter));
-        }
-
-        if (exclude_paths && exclude_paths.length > 0) {
-          files = files.filter(
-            (file) => !exclude_paths.some((exclude: string) => file.path.includes(exclude))
-          );
-        }
-
-        if (files.length === 0) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `📭 No codebase files found matching the filters.\n\n**Total indexed files:** ${allFiles.length}\n**Applied filters:**\n${file_extensions ? `- File extensions: ${file_extensions.join(', ')}` : ''}\n${path_filter ? `- Path filter: "${path_filter}"` : ''}\n${exclude_paths ? `- Exclude paths: ${exclude_paths.join(', ')}` : ''}\n\n**Suggestions:**\n- Try broader filters or remove some restrictions\n- Check available files with: \`sylphx search status\``,
-              },
-            ],
-          };
-        }
-
-        // Build search documents from file data
-        const searchDocs: any[] = [];
-        for (const file of files) {
-          const tfidfDoc = await memoryStorage.getTFIDFDocument(file.path);
-          if (tfidfDoc) {
-            // rawTerms is already deserialized by safeDeserialize()
-            const rawTerms = tfidfDoc.rawTerms || {};
-
-            // Convert to Map<string, number>
-            const rawTermsMap = new Map<string, number>();
-            for (const [term, freq] of Object.entries(rawTerms)) {
-              rawTermsMap.set(term, freq as number);
-            }
-
-            searchDocs.push({
-              uri: `file://${file.path}`,
-              content: file.content || '',
-              terms: rawTermsMap, // Use rawTerms as terms for TF-IDF
-              rawTerms: rawTermsMap,
-              magnitude: tfidfDoc.magnitude || 0,
-            });
-          }
-        }
-
-        if (searchDocs.length === 0) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: '📭 No searchable content found in filtered files.',
-              },
-            ],
-          };
-        }
-
-        // Create search index
-        const index = {
-          documents: searchDocs,
-          idf: new Map(),
-          totalDocuments: searchDocs.length,
-          metadata: {
-            generatedAt: new Date().toISOString(),
-            version: '1.0.0',
-          },
-        };
-
-        // Try semantic search first, fallback to TF-IDF
-        let results;
-        try {
-          const embeddingProvider = getDefaultEmbeddingProvider();
-          console.log('[INFO] Attempting semantic search...');
-          // TODO: Implement proper semantic search with vector storage
-          console.log('[INFO] Semantic search not available, using TF-IDF fallback');
-        } catch (error) {
-          console.log('[INFO] Using TF-IDF search');
-        }
-
-        // TF-IDF search (with sensible defaults)
-        results = await searchDocuments(query, index, {
+        const result = await searchService.searchCodebase(query, {
           limit,
-          minScore: 0.1, // Internal default, user doesn't need to specify
+          include_content,
+          file_extensions,
+          path_filter,
+          exclude_paths,
         });
 
-        const summary = `Found ${results.length} codebase result(s) for "${query}":\n\n`;
-        const formattedResults = results
-          .map((result: any, i: number) => {
-            const filename = result.uri?.replace('file://', '') || 'Unknown';
-            let content = '';
-
-            if (include_content) {
-              const doc = searchDocs.find((d) => d.uri === result.uri);
-              content = doc?.content
-                ? `\n\`\`\`\n${doc.content.substring(0, 500)}${doc.content.length > 500 ? '...' : ''}\n\`\`\``
-                : '';
-            }
-
-            return `${i + 1}. **${filename}** (Score: ${result.score?.toFixed(3) || 'N/A'})${content}`;
-          })
-          .join('\n\n');
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: summary + formattedResults,
-            },
-          ],
-        };
+        // 返回 MCP 格式
+        return searchService.formatResultsForMCP(result.results, query, result.totalIndexed);
       } catch (error) {
         return {
           content: [

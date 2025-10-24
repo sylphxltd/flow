@@ -4,6 +4,7 @@
  */
 
 import { extractTerms, filterStopWords, tokenize } from './text-processing.js';
+import { SeparatedMemoryStorage } from './separated-storage.js';
 
 export interface DocumentVector {
   uri: string;
@@ -20,6 +21,93 @@ export interface SearchIndex {
     generatedAt: string;
     version: string;
   };
+}
+
+/**
+ * Build search index from database (shared between CLI and MCP)
+ */
+export async function buildSearchIndexFromDB(
+  memoryStorage: SeparatedMemoryStorage,
+  filters?: {
+    file_extensions?: string[];
+    path_filter?: string;
+    exclude_paths?: string[];
+  }
+): Promise<SearchIndex | null> {
+  try {
+    // Get all files from database
+    let files = await memoryStorage.getAllCodebaseFiles();
+
+    // Apply filters
+    if (filters) {
+      if (filters.file_extensions && filters.file_extensions.length > 0) {
+        files = files.filter((file) =>
+          filters.file_extensions!.some((ext: string) => file.path.endsWith(ext))
+        );
+      }
+
+      if (filters.path_filter) {
+        files = files.filter((file) => file.path.includes(filters.path_filter!));
+      }
+
+      if (filters.exclude_paths && filters.exclude_paths.length > 0) {
+        files = files.filter(
+          (file) => !filters.exclude_paths!.some((exclude: string) => file.path.includes(exclude))
+        );
+      }
+    }
+
+    if (files.length === 0) {
+      return null;
+    }
+
+    // Build search documents
+    const documents = [];
+    for (const file of files) {
+      const tfidfDoc = await memoryStorage.getTFIDFDocument(file.path);
+      if (tfidfDoc) {
+        const rawTerms = tfidfDoc.rawTerms || {};
+        const terms = new Map<string, number>();
+        const rawTermsMap = new Map<string, number>();
+
+        for (const [term, freq] of Object.entries(rawTerms)) {
+          terms.set(term, freq as number);
+          rawTermsMap.set(term, freq as number);
+        }
+
+        documents.push({
+          uri: `file://${file.path}`,
+          terms,
+          rawTerms: rawTermsMap,
+          magnitude: tfidfDoc.magnitude,
+        });
+      }
+    }
+
+    if (documents.length === 0) {
+      return null;
+    }
+
+    // Get IDF values from database
+    const idfRecords = await memoryStorage.getIDFValues();
+    const idf = new Map<string, number>();
+    for (const [term, value] of Object.entries(idfRecords)) {
+      idf.set(term, value as number);
+    }
+
+    return {
+      documents,
+      idf,
+      totalDocuments: documents.length,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        version: '1.0.0',
+      },
+    };
+  } catch (error) {
+    console.error('[ERROR] Failed to build search index from database:', error);
+    return null;
+  }
 }
 
 /**
