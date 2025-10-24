@@ -106,7 +106,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   if (!config.disableCodebaseSearch) {
     Logger.info('🔍 Registering codebase tools');
     registerCodebaseTools(server);
-    enabledTools.push('search_codebase');
+    enabledTools.push('codebase_search');
     console.log('🔍 Codebase Tools: Enabled');
   }
 
@@ -114,7 +114,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   if (!config.disableKnowledge) {
     Logger.info('📚 Registering knowledge tools');
     registerKnowledgeTools(server);
-    enabledTools.push('search_knowledge', 'get_knowledge');
+    enabledTools.push('knowledge_search', 'knowledge_get');
     console.log('📚 Knowledge Tools: Enabled');
   }
 

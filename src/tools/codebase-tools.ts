@@ -12,7 +12,7 @@ import { searchService } from '../utils/unified-search-service.js';
  */
 export function registerCodebaseSearchTool(server: McpServer): void {
   server.registerTool(
-    'search_codebase',
+    'codebase_search',
     {
       description: `Search project source files, documentation, and code. Use this to find implementations, functions, classes, or any code-related content.
 

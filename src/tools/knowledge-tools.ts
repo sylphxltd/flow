@@ -5,25 +5,20 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { searchDocuments } from '../utils/tfidf.js';
-import { getKnowledgeIndexer } from '../utils/knowledge-indexer.js';
-import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
-
-// Global instance
-const knowledgeIndexer = getKnowledgeIndexer();
+import { searchService } from '../utils/unified-search-service.js';
 
 /**
  * Register knowledge search tool
  */
 export function registerKnowledgeSearchTool(server: McpServer): void {
   server.registerTool(
-    'search_knowledge',
+    'knowledge_search',
     {
       description: `Search knowledge base, documentation, guides, and reference materials. Use this for domain knowledge, best practices, setup instructions, and conceptual information.
 
 **IMPORTANT: Use this tool PROACTIVELY before starting work, not reactively when stuck.**
 
-This tool searches across all knowledge resources and returns the most relevant matches. Use include_content=false to reduce context usage, then use get_knowledge for specific documents.
+This tool searches across all knowledge resources and returns the most relevant matches. Use include_content=false to reduce context usage, then use knowledge_get for specific documents.
 
 When to use this tool (BEFORE starting work):
 - **Before research/clarification**: Check relevant stack/universal knowledge to understand domain constraints
@@ -55,54 +50,30 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
           .default(true)
           .optional()
           .describe(
-            'Include full content in results (default: true). Use false to reduce context, then get_knowledge for specific docs'
+            'Include full content in results (default: true). Use false to reduce context, then knowledge_get for specific docs'
           ),
       },
     },
     async ({ query, limit = 10, include_content = true }) => {
       try {
-        // Check indexing status first
-        const status = knowledgeIndexer.getStatus();
+        // 使用統一搜索服務 - 同 CLI 用相同邏輯
+        await searchService.initialize();
 
-        if (status.isIndexing) {
+        // 檢查知識庫狀態
+        const status = await searchService.getStatus();
+
+        if (status.knowledge.isIndexing) {
           return {
             content: [
               {
                 type: 'text',
-                text: `⏳ **Knowledge Indexing in Progress**\n\n- Progress: ${status.progress}%\n- Indexed: ${status.indexedItems}/${status.totalItems} files\n- Status: Building search index\n\n*This typically takes <1 second for knowledge base.*\n\n**Please wait a moment and try again.**`,
+                text: `⏳ **Knowledge Indexing in Progress**\n\n- Progress: ${status.knowledge.progress || 0}%\n- Status: Building search index\n\n*This typically takes <1 second for knowledge base.*\n\n**Please wait a moment and try again.**`,
               },
             ],
           };
         }
 
-        if (status.error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `❌ **Knowledge Indexing Failed**\n\nError: ${status.error}\n\n**To fix:**\n- Check knowledge files in assets/knowledge/\n- Try restarting the MCP server\n- Use CLI: \`sylphx search status\` for details`,
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        // Try semantic search first, fallback to TF-IDF
-        let results;
-        try {
-          const embeddingProvider = getDefaultEmbeddingProvider();
-          console.log('[INFO] Attempting semantic search for knowledge...');
-          // TODO: Implement proper semantic search with vector storage
-          console.log('[INFO] Semantic search not available, using TF-IDF fallback');
-        } catch (error) {
-          console.log('[INFO] Using TF-IDF search');
-        }
-
-        // Load knowledge index and search with TF-IDF
-        const index = await knowledgeIndexer.loadIndex();
-
-        // Check if index has any documents
-        if (index.totalDocuments === 0) {
+        if (!status.knowledge.indexed) {
           return {
             content: [
               {
@@ -113,48 +84,14 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
           };
         }
 
-        results = await searchDocuments(query, index, {
+        // 使用統一搜索服務搜索知識庫
+        const result = await searchService.searchKnowledge(query, {
           limit,
-          minScore: 0.1, // Internal default
+          include_content,
         });
 
-        const summary = `Found ${results.length} knowledge result(s) for "${query}":\n\n`;
-
-        let formattedResults: string[];
-        if (include_content) {
-          // Load content for each result
-          const { getKnowledgeContent } = await import('../resources/knowledge-resources.js');
-          formattedResults = await Promise.all(
-            results.map(async (result: any, i: number) => {
-              const title = result.metadata?.title || result.uri?.split('/').pop() || 'Unknown';
-              let content = '';
-
-              try {
-                content = getKnowledgeContent(result.uri);
-                content = `\n\n---\n\n${content}`;
-              } catch (error) {
-                content = '\n\n*Error loading content*';
-              }
-
-              return `${i + 1}. **${title}**\n   *Score: ${result.score?.toFixed(3) || 'N/A'}*\n   *Source: ${result.uri}*${content}`;
-            })
-          );
-        } else {
-          // Just metadata without content
-          formattedResults = results.map((result: any, i: number) => {
-            const title = result.metadata?.title || result.uri?.split('/').pop() || 'Unknown';
-            return `${i + 1}. **${title}**\n   *Score: ${result.score?.toFixed(3) || 'N/A'}*\n   *Source: ${result.uri}*`;
-          });
-        }
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: summary + formattedResults.join('\n\n'),
-            },
-          ],
-        };
+        // 返回 MCP 格式 - 使用統一服務嘅格式化方法
+        return searchService.formatResultsForMCP(result.results, query, result.totalIndexed);
       } catch (error) {
         return {
           content: [
@@ -174,28 +111,15 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
  */
 export function registerGetKnowledgeTool(server: McpServer): void {
   server.registerTool(
-    'get_knowledge',
+    'knowledge_get',
     {
       description: `Get knowledge resource by exact URI.
 
-**NOTE: Prefer using 'search_knowledge' with include_content=false first, then use this tool for specific documents.**
+**NOTE: Prefer using 'knowledge_search' with include_content=false first, then use this tool for specific documents.**
 
-This tool retrieves a specific knowledge resource when you already know its exact URI.
+This tool retrieves a specific knowledge resource when you already know its exact URI from search results.
 
-Available URIs:
-- knowledge://stacks/react-app
-- knowledge://stacks/nextjs-app  
-- knowledge://stacks/node-api
-- knowledge://data/sql
-- knowledge://guides/saas-template
-- knowledge://guides/tech-stack
-- knowledge://guides/ui-ux
-- knowledge://universal/security
-- knowledge://universal/performance
-- knowledge://universal/testing
-- knowledge://universal/deployment
-
-For most use cases, use 'search_knowledge' with keywords first to find relevant URIs.`,
+The available URIs are dynamically generated from the indexed knowledge base. Use 'knowledge_search' to discover relevant URIs first.`,
       inputSchema: {
         uri: z.string().describe('Knowledge URI to access (e.g., "knowledge://stacks/react-app")'),
       },
@@ -214,11 +138,19 @@ For most use cases, use 'search_knowledge' with keywords first to find relevant 
         };
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+
+        // 動態獲取可用 URI
+        const availableURIs = await searchService.getAvailableKnowledgeURIs();
+        const uriList =
+          availableURIs.length > 0
+            ? availableURIs.map((uri) => `• ${uri}`).join('\n')
+            : 'No knowledge documents available';
+
         return {
           content: [
             {
               type: 'text',
-              text: `❌ Error: ${errorMessage}\n\nAvailable knowledge URIs:\n• knowledge://stacks/react-app\n• knowledge://stacks/nextjs-app\n• knowledge://stacks/node-api\n• knowledge://data/sql\n• knowledge://guides/saas-template\n• knowledge://guides/tech-stack\n• knowledge://guides/ui-ux\n• knowledge://universal/security\n• knowledge://universal/performance\n• knowledge://universal/testing\n• knowledge://universal/deployment`,
+              text: `❌ Error: ${errorMessage}\n\nAvailable knowledge URIs:\n${uriList}`,
             },
           ],
           isError: true,

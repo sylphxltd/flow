@@ -64,8 +64,9 @@ export const searchStatusCommand = new Command('status')
         console.log('- sylphx search --knowledge <query> - Search knowledge base');
         console.log('- sylphx memory - Memory management');
         console.log('\n**Available MCP Tools:**');
-        console.log('- search_codebase - Search project files and code');
-        console.log('- search_knowledge - Search knowledge base and docs');
+        console.log('- codebase_search - Search project files and code');
+        console.log('- knowledge_search - Search knowledge base and docs');
+        console.log('- knowledge_get - Get specific knowledge document by URI');
         console.log('- memory_set - Store information');
         console.log('- memory_get - Retrieve information');
       } else {

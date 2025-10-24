@@ -267,7 +267,7 @@ export class UnifiedSearchService {
   }
 
   /**
-   * 格式化搜索結果為文本 - CLI 用
+   * 格式化搜索結果為 CLI 輸出 - CLI 用
    */
   formatResultsForCLI(results: SearchResult[], query: string, totalIndexed: number): string {
     if (results.length === 0) {
@@ -278,6 +278,17 @@ export class UnifiedSearchService {
     const formattedResults = results
       .map((result, i) => {
         let line = `${i + 1}. **${result.title}** (Score: ${result.score.toFixed(3)})`;
+
+        // 顯示完整 path 或 URI
+        if (result.uri.startsWith('file://')) {
+          const filePath = result.uri.replace('file://', '');
+          line += `\n   📁 Path: \`${filePath}\``;
+        } else if (result.uri.startsWith('knowledge://')) {
+          line += `\n   📚 Source: ${result.uri}`;
+        } else {
+          line += `\n   🔗 URI: ${result.uri}`;
+        }
+
         if (result.content) {
           line += `\n   \`\`\`\n${result.content}\n\`\`\``;
         }
@@ -298,10 +309,21 @@ export class UnifiedSearchService {
   ): {
     content: Array<{ type: 'text'; text: string }>;
   } {
-    const summary = `Found ${results.length} codebase result(s) for "${query}":\n\n`;
+    const summary = `Found ${results.length} result(s) for "${query}":\n\n`;
     const formattedResults = results
       .map((result, i) => {
         let line = `${i + 1}. **${result.title}** (Score: ${result.score.toFixed(3)})`;
+
+        // 包含 URI 方便 knowledge_get 使用
+        if (result.uri.startsWith('file://')) {
+          const filePath = result.uri.replace('file://', '');
+          line += `\n   📁 Path: \`${filePath}\``;
+        } else if (result.uri.startsWith('knowledge://')) {
+          line += `\n   📚 URI: ${result.uri}`;
+        } else {
+          line += `\n   🔗 URI: ${result.uri}`;
+        }
+
         if (result.content) {
           line += `\n\`\`\`\n${result.content}\n\`\`\``;
         }
@@ -317,6 +339,18 @@ export class UnifiedSearchService {
         },
       ],
     };
+  }
+
+  /**
+   * 獲取所有可用嘅 knowledge URIs - 動態生成，唔 hardcoded
+   */
+  async getAvailableKnowledgeURIs(): Promise<string[]> {
+    try {
+      const index = await this.knowledgeIndexer.loadIndex();
+      return index.documents.map((doc) => doc.uri);
+    } catch {
+      return [];
+    }
   }
 }
 
