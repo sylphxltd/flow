@@ -10,155 +10,84 @@
 
 用戶期望：
 - 選擇同設定一體化
-- 點擊就可以設定
-- 即時顯示 ✓ healthy status
-- 全部 OK 先可以 finish
+- 清晰知道進度
+- 流暢嘅操作體驗
 
 ## 解決方案
 
-### 繼續使用 React + Ink
-**理由：**
-- 已經有基礎 (現有代碼已用 Ink)
-- 唔需要重寫
-- Terminal UI 功能足夠
-- React state management 易用
+### 選擇：Pure Inquirer
 
-### 新 Component: `InteractiveMCPSetup`
+**決策原因：**
+- ✅ **Already works** - Target selection 已經用緊 inquirer
+- ✅ **Simple & reliable** - 唔需要 React/Ink dependencies
+- ✅ **Lower maintenance** - 一套 code，一個 library
+- ✅ **Better compatibility** - 唔需要 TTY raw mode
+- ❌ **Rejected React + Ink** - stdin.isTTY undefined，compatibility issues
 
-**位置：** `src/components/InteractiveMCPSetup.tsx`
+### 新實現：`interactiveMCPSetup()`
 
-**特色：**
-1. **雙 View 模式**
-   - Selection View: 選擇 + 狀態顯示
-   - Config View: 設定介面
+**位置：** `src/utils/interactive-mcp-setup.ts`
 
-2. **即時狀態反饋**
-   - `✓ OK` - 已設定好
-   - `⚙ Configure` - 需要設定
-   - `－` - 未選擇
-   - `(required)` - 必須安裝
+**Flow：**
+```
+1. 📦 Select MCP Tools
+   - Show required servers
+   - Checkbox 選擇 optional servers
 
-3. **Smart State Management**
-   ```typescript
-   interface MCPState {
-     id: MCPServerID;
-     selected: boolean;      // 是否選中
-     configured: boolean;    // 是否已設定
-     healthy: boolean;       // 設定是否 valid
-     fields: ConfigField[];  // 設定 fields
-     config: Record<string, string>; // 實際值
-   }
-   ```
+2. ⚙️ Configure Selected Tools
+   - 逐個設定每個 MCP
+   - 支援 input, password, list (dropdown)
+   - 自動 skip 無 config 嘅 tools
+   - 即時顯示 ✓ configured
 
-4. **流暢鍵盤操作**
-   - Selection: Space, ↑↓, Enter, Ctrl+S, Esc
-   - Config: ↑↓, Enter, Esc
-
-5. **Validation**
-   - Required fields 檢查
-   - 全部設定好先可以 finish
-   - 即時反饋
+3. Return configs
+   - selectedServers: MCPServerID[]
+   - configs: Record<MCPServerID, Record<string, string>>
+```
 
 ## 實現細節
 
-### 文件修改
+### 核心函數
 
-#### 1. **新增 Component**
-- `src/components/InteractiveMCPSetup.tsx` (全新)
+```typescript
+export async function interactiveMCPSetup(
+  availableServers: MCPServerID[]
+): Promise<MCPConfigResult> {
+  // 1. Show required servers
+  // 2. Checkbox for optional servers
+  // 3. Configure each selected server
+  // 4. Return { selectedServers, configs }
+}
+```
 
-#### 2. **更新 Init Command**
+### Input Types 支援
+
+1. **Text Input** - 普通文字
+2. **Password Input** - API keys (masked)
+3. **List (Dropdown)** - Model selection
+   - `EMBEDDING_MODEL` → OpenAI models
+   - `GEMINI_MODEL` → Gemini models
+
+### Validation
+
+- Required fields 會有 `(required)` 標記
+- Empty required fields 會顯示 error message
+- 自動 validate before accept
+
+## 文件修改
+
+### 1. **新增 Utility**
+- `src/utils/interactive-mcp-setup.ts` (全新)
+
+### 2. **更新 Init Command**
 - `src/commands/init-command.ts`
-- 整合 `InteractiveMCPSetup` component
-- 用 `render()` 創建 interactive UI
-- Promise-based flow control
+- 移除 Ink dependencies
+- 使用 `interactiveMCPSetup()`
+- 手動處理 config save
 
-#### 3. **Documentation**
-- `INTERACTIVE_MCP_SETUP.md` - 使用指南
-- `IMPLEMENTATION_SUMMARY.md` - 實現總結
-
-### 核心邏輯
-
-```typescript
-// 1. Render interactive UI
-const configs = await new Promise((resolve, reject) => {
-  const { waitUntilExit } = render(
-    React.createElement(InteractiveMCPSetup, {
-      availableServers,
-      existingConfigs: {},
-      onComplete: (configs) => {
-        resolve(configs);
-        waitUntilExit();
-      },
-      onCancel: () => {
-        reject(new Error('Setup cancelled'));
-        waitUntilExit();
-      },
-    })
-  );
-});
-
-// 2. Install selected servers
-const selectedServers = Object.keys(configs);
-// ... save to config file
-```
-
-### UI Flow
-
-```
-┌─────────────────────────────────────┐
-│ Selection View                      │
-├─────────────────────────────────────┤
-│ ◉ sylphx-flow (required)  [✓ OK]   │
-│ ◉ gpt-image           [⚙ Configure]│ ← Enter
-│ ◯ perplexity          [－]         │
-└─────────────────────────────────────┘
-         ↓ Press Enter
-┌─────────────────────────────────────┐
-│ Config View: gpt-image              │
-├─────────────────────────────────────┤
-│ ❯ OPENAI_API_KEY*  sk-...          │
-│   MODEL            gpt-4 ▼          │
-└─────────────────────────────────────┘
-         ↓ Press Enter to save
-┌─────────────────────────────────────┐
-│ Selection View                      │
-├─────────────────────────────────────┤
-│ ◉ sylphx-flow (required)  [✓ OK]   │
-│ ◉ gpt-image              [✓ OK]    │ ← Updated!
-│ ◯ perplexity             [－]      │
-└─────────────────────────────────────┘
-         ↓ Ctrl+S to finish
-```
-
-## 技術亮點
-
-### 1. **State Synchronization**
-- Selection 同 Config view 共享 state
-- 修改即時反映
-- No state loss on view switch
-
-### 2. **Keyboard Navigation**
-- `useInput` hook 處理所有 keyboard events
-- Context-aware key handlers
-- Intuitive controls
-
-### 3. **Field Type Support**
-- Text input
-- Secret input (masked)
-- Dropdown selector
-- Future: checkbox, radio, etc.
-
-### 4. **Validation Logic**
-```typescript
-const isConfigured = mcp.fields.every(
-  (f) => !f.required || (f.value && f.value.trim() !== '')
-);
-```
-
-### 5. **Error Handling**
-- Setup cancellation
-- Validation errors
-- Config save errors
+### 3. **刪除 Ink Components**
+- ~~`src/components/InteractiveMCPSetup.tsx`~~ (removed)
+- ~~`src/components/ModernInitUI.tsx`~~ (removed)
 
 ## 使用方法
 
@@ -169,85 +98,123 @@ bun dist/index.js init
 sylphx-flow init
 ```
 
-### Flow
-1. 選擇 target platform
-2. Interactive MCP setup (新!)
-   - 用 Space 選擇/取消選擇
-   - 用 Enter 進入設定
-   - 設定完自動返回 list
-   - 全部 OK → Ctrl+S finish
-3. Install agents
-4. Install rules
-5. ✓ Complete
+### Flow Example
+```
+▸ Sylphx Flow Setup
+
+✔ Select target platform: OpenCode
+
+📦 Select MCP Tools
+
+Required tools (will be installed automatically):
+  ✓ sylphx-flow - Sylphx Flow MCP server...
+
+? Select optional tools to install: (Press <space> to select)
+❯◉ gpt-image-1-mcp - GPT Image generation MCP server
+ ◉ perplexity-ask - Perplexity Ask MCP server...
+ ◉ context7 - Context7 HTTP MCP server...
+
+⚙️  Configure Selected Tools
+
+▸ sylphx-flow
+Sylphx Flow MCP server for agent coordination...
+
+? OPENAI_API_KEY: ••••••••
+? OPENAI_BASE_URL: https://api.openai.com/v1
+? EMBEDDING_MODEL: (Use arrow keys)
+❯ text-embedding-3-small
+  text-embedding-3-large
+  text-embedding-ada-002
+
+✓ Configured sylphx-flow
+
+▸ gpt-image-1-mcp
+...
+```
 
 ## 優勢對比
 
-| 舊 Flow | 新 Flow |
-|---------|---------|
-| 分離選擇同設定 | 一體化介面 |
-| 無狀態顯示 | 即時 ✓/⚙ 反饋 |
-| 唔知進度 | 清晰知道邊個 OK |
-| 逐個設定好煩 | 點擊即設定 |
-| 體驗唔流暢 | 鍵盤操作流暢 |
+| 舊 Flow (MCPService.installServers) | 新 Flow (interactiveMCPSetup) |
+|-------------------------------------|-------------------------------|
+| 分離選擇同設定 | ✨ 一體化介面 |
+| 用 MCPService + inquirer | ✨ Pure inquirer utility |
+| 複雜 state management | ✨ 簡單 Promise-based |
+| 依賴 Ink (unstable) | ✨ 只用 inquirer (stable) |
+| 難以 maintain | ✨ 易讀易改 |
 
-## 未來改進
+## 技術亮點
 
-### Phase 2
-- [ ] Health check API validation
-- [ ] Bulk config (same API key for multiple)
-- [ ] Import/Export configs
-- [ ] Config templates
+### 1. **Pure Inquirer**
+- 無 React/Ink overhead
+- Better terminal compatibility
+- Simpler code structure
 
-### Phase 3
-- [ ] Dependency auto-check
-- [ ] Smart defaults from env
-- [ ] Config migration
-- [ ] Multi-profile support
-
-## 測試
-
-### Manual Testing
-```bash
-# Run init
-bun dist/index.js init
-
-# Expected:
-1. Target selection (opencode)
-2. Interactive MCP setup appears
-3. Can navigate with arrows
-4. Can toggle with Space
-5. Can configure with Enter
-6. See ✓ OK after config
-7. Ctrl+S finishes when all OK
+### 2. **Smart Field Detection**
+```typescript
+if (key === 'EMBEDDING_MODEL') {
+  // Show dropdown with model choices
+} else if (config.secret) {
+  // Show password input
+} else {
+  // Show normal input
+}
 ```
 
-### 已測試功能
-- ✅ Selection navigation
-- ✅ Toggle selection
-- ✅ Enter config view
-- ✅ Field navigation
-- ✅ Text input
-- ✅ Dropdown selection
-- ✅ Secret masking
-- ✅ Save and return
-- ✅ Status updates
-- ✅ Finish setup
+### 3. **Progressive Configuration**
+- Skip servers without envVars
+- Show progress: "✓ Configured {server}"
+- Clear feedback at each step
+
+### 4. **Type Safety**
+```typescript
+interface MCPConfigResult {
+  selectedServers: MCPServerID[];
+  configs: Record<MCPServerID, Record<string, string>>;
+}
+```
+
+## Dependencies
+
+**Before:**
+```json
+{
+  "ink": "^6.3.1",
+  "ink-text-input": "^6.0.0",
+  "react": "^19.2.0",
+  "inquirer": "11"
+}
+```
+
+**After:**
+```json
+{
+  "inquirer": "11"  // Only this!
+}
+```
+
+**Savings:**
+- ❌ Removed: `ink`, `ink-text-input`, `react` (for init command)
+- ✅ Kept: `inquirer` (already used)
+- 📦 Smaller bundle size
+- 🚀 Faster build time
 
 ## 總結
 
-成功實現咗全新嘅 Interactive MCP Setup：
+成功簡化咗 MCP setup flow：
 
-✅ **自然流暢** - 一體化選擇 + 設定  
-✅ **即時反饋** - 清晰知道進度  
-✅ **鍵盤優先** - 快速高效操作  
-✅ **Smart Validation** - 確保 config 正確  
-✅ **保持一致** - 沿用 React + Ink  
+✅ **更簡單** - Pure inquirer，無 React overhead  
+✅ **更穩定** - 唔依賴 TTY raw mode  
+✅ **更易維護** - 一套 code，清晰邏輯  
+✅ **更好體驗** - 一體化選擇 + 設定  
+✅ **Zero breaking changes** - 完全向後兼容  
 
-用戶體驗大幅提升，唔需要學習新工具！
+**Decision:**  
+❌ React + Ink - 太複雜，compatibility 問題  
+✅ **Pure Inquirer** - 簡單、穩定、夠用  
 
 ---
 
-**實現時間**: ~1 hour  
-**代碼行數**: ~400 lines (InteractiveMCPSetup.tsx)  
-**依賴**: React + Ink (現有)  
-**Breaking Changes**: None (向後兼容)
+**實現時間**: ~30 min  
+**代碼行數**: ~140 lines (interactive-mcp-setup.ts)  
+**Dependencies 減少**: -3 (ink, ink-text-input, react for init)  
+**Breaking Changes**: None  
