@@ -15,38 +15,38 @@
 (Depend on Stage 1 - migrate CLI framework)
 - [x] TASK_7: Replace commander CLI setup with @effect/cli
 - [x] TASK_8: Migrate command definitions to Effect CLI patterns
-- [ ] TASK_9: Update command handlers to use Effect.gen
-- [ ] TASK_10: Replace CLI error handling with Effect error system
-- [ ] TASK_11: Update help system and command validation
-- [ ] TASK_12: Test CLI commands work with new framework
+- [x] TASK_9: Update command handlers to use Effect.gen
+- [x] TASK_10: Replace CLI error handling with Effect error system
+- [x] TASK_11: Update help system and command validation
+- [x] TASK_12: Test CLI commands work with new framework
 
 ## Stage 3: Database Migration
 (Depend on Stage 1 - migrate database layer)
 - [x] TASK_13: Replace @libsql/client with @effect/sql-libsql
 - [x] TASK_14: Update BaseDatabaseClient to use Effect patterns
-- [ ] TASK_15: Migrate MemoryDatabaseClient to Effect services
-- [ ] TASK_16: Update database queries to use tagged template literals
-- [ ] TASK_17: Replace Promise-based database operations with Effect
-- [ ] TASK_18: Update database error handling with Effect patterns
-- [ ] TASK_19: Test database operations with new client
+- [x] TASK_15: Migrate MemoryDatabaseClient to Effect services
+- [x] TASK_16: Update database queries to use tagged template literals
+- [x] TASK_17: Replace Promise-based database operations with Effect
+- [x] TASK_18: Update database error handling with Effect patterns
+- [x] TASK_19: Test database operations with new client
 
 ## Stage 4: Platform Integration
 (Depend on Stage 1 - migrate file system and platform operations)
 - [x] TASK_20: Replace Node fs operations with @effect/platform FileSystem
 - [x] TASK_21: Update path operations to use @effect/platform Path service
-- [ ] TASK_22: Migrate file-based configuration loading
+- [x] TASK_22: Migrate file-based configuration loading
 - [x] TASK_23: Replace console logging with @effect/log throughout codebase
-- [ ] TASK_24: Update template engine file operations
-- [ ] TASK_25: Test file operations and logging
+- [x] TASK_24: Update template engine file operations
+- [x] TASK_25: Test file operations and logging
 
 ## Stage 5: AI/MCP Migration
 (Depend on Stage 1 and Stage 4 - migrate AI integration)
 - [x] TASK_26: Replace @modelcontextprotocol/sdk with @effect/ai (NOTE: MCP and Effect AI serve different purposes - keeping MCP SDK)
-- [ ] TASK_27: Update MCP server to use Effect patterns
-- [ ] TASK_28: Migrate tool registrations to Effect services
-- [ ] TASK_29: Update AI error handling with Effect patterns
-- [ ] TASK_30: Replace Promise-based AI operations with Effect
-- [ ] TASK_31: Test MCP server functionality
+- [x] TASK_27: Update MCP server to use Effect patterns
+- [x] TASK_28: Migrate tool registrations to Effect services
+- [x] TASK_29: Update AI error handling with Effect patterns
+- [x] TASK_30: Replace Promise-based AI operations with Effect
+- [x] TASK_31: Test MCP server functionality
 
 ## Stage 6: Service Layer Migration
 (Depend on Stages 2-5 - migrate remaining application logic)

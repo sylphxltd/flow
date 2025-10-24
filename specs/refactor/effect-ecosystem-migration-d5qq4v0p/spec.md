@@ -21,7 +21,10 @@ Complete migration of core dependencies to Effect ecosystem without backward com
 ### Current → Effect Equivalents
 1. **Custom Error Handling** → `effect` (Effect error system with tagged errors)
 2. **commander** → `@effect/cli` (Declarative CLI with type safety)
-3. **@modelcontextprotocol/sdk** → `@effect/ai` (Provider-agnostic AI integration)
+3. **@modelcontextprotocol/sdk** → Keep MCP SDK (serves different purpose than @effect/ai)
+   - MCP SDK: Protocol for serving tools to AI agents
+   - @effect/ai: LLM interaction patterns
+   - Both serve different purposes in the architecture
 4. **@libsql/client** → `@effect/sql-libsql` (Type-safe SQL with libSQL)
 5. **console.log/error** → `@effect/log` (Structured logging with levels)
 6. **Node fs operations** → `@effect/platform` (Platform abstractions)
@@ -70,7 +73,7 @@ Complete migration of core dependencies to Effect ecosystem without backward com
 4. Update schema and migrations
 
 ### Phase 4: MCP Integration
-1. Replace @modelcontextprotocol/sdk with @effect/ai
+1. Update MCP server to use Effect patterns (keep @modelcontextprotocol/sdk)
 2. Update MCP server implementation
 3. Migrate tool registrations to Effect patterns
 4. Update error handling
