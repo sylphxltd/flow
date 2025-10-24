@@ -137,7 +137,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       },
     },
     category: 'ai',
-    defaultInInit: true,
+    defaultInInit: false,
   },
 
   perplexity: {
@@ -157,7 +157,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       },
     },
     category: 'ai',
-    defaultInInit: true,
+    defaultInInit: false,
   },
 
   context7: {
@@ -201,7 +201,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       },
     },
     category: 'ai',
-    defaultInInit: true,
+    defaultInInit: false,
   },
 
   grep: {
