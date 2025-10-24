@@ -14,4 +14,4 @@ memory.db-wal
 *.db-journal
 *.db-wal
 *.sqlite-journal
-*.sqlite-wal
+*.sqlite-walsettings.json

@@ -18,7 +18,7 @@ async function validateRunOptions(options: RunCommandOptions): Promise<void> {
 
   // Set default agent ONLY if no agent is specified
   if (!options.agent) {
-    options.agent = 'sparc-orchestrator';
+    options.agent = 'builder';
   }
 }
 

@@ -1,7 +1,5 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-
-import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { installAgents, installRules } from '../core/init.js';
@@ -9,6 +7,7 @@ import { targetManager } from '../core/target-manager.js';
 import { MCPService } from '../services/mcp-service.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
+import { projectSettings } from '../utils/settings.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { targetSupportsMCPServers, validateTarget } from '../utils/target-config.js';
 
@@ -188,6 +187,16 @@ export const initCommand: CommandConfig = {
     console.log('');
     console.log(chalk.green.bold('✓ Setup complete!'));
     console.log(chalk.gray('  Start coding with Sylphx Flow'));
+    console.log('');
+
+    // Save the selected target as project default
+    try {
+      await projectSettings.setDefaultTarget(targetId);
+      console.log(chalk.gray(`  Default target set to: ${targetManager.getTarget(targetId)?.name || targetId}`));
+    } catch (error) {
+      // Don't fail the entire setup if we can't save settings
+      console.warn(chalk.yellow(`  Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`));
+    }
     console.log('');
   },
 };

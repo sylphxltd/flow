@@ -106,3 +106,6 @@ export * from './target-config.js';
 
 // Time tools
 export * from '../tools/time-tools.js';
+
+// Settings utilities
+export * from './settings.js';

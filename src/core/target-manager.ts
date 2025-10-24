@@ -6,6 +6,7 @@ import {
   getTargetsWithMCPSupport,
   targetRegistry,
 } from '../config/targets.js';
+import { projectSettings } from '../utils/settings.js';
 
 /**
  * Simplified target manager that works with the new Target-based architecture
@@ -46,13 +47,23 @@ export class TargetManager {
       return options.target;
     }
 
+    // Try to use saved project default target first (user's choice should override environment detection)
+    try {
+      const savedDefaultTarget = await projectSettings.getDefaultTarget();
+      if (savedDefaultTarget && getTarget(savedDefaultTarget)) {
+        return savedDefaultTarget;
+      }
+    } catch (error) {
+      // Silently ignore errors reading project settings
+    }
+
     // Try to detect target from environment
     const detectedTarget = this.detectTargetFromEnvironment();
     if (detectedTarget) {
       return detectedTarget;
     }
 
-    // Fall back to default target
+    // Fall back to system default target
     const defaultTarget = getDefaultTarget();
     return defaultTarget;
   }
