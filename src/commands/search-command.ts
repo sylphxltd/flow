@@ -115,13 +115,11 @@ export const searchDirectCommand = new Command('search')
   .argument('<query>', 'Search query')
   .option('-l, --limit <number>', 'Maximum results to return', '10')
   .option('-k, --knowledge', 'Search knowledge base instead of codebase')
-  .option('--no-semantic', 'Disable semantic search (use TF-IDF only)')
-  .option('--min-score <number>', 'Minimum relevance score', '0.1')
+  .option('--no-content', 'Exclude content snippets (show file paths only)')
   .action(async (query, options) => {
     try {
       const limit = parseInt(options.limit);
-      const semantic = options.semantic !== false;
-      const minScore = parseFloat(options.min_score);
+      const includeContent = options.content !== false;
 
       if (options.knowledge) {
         console.log(`📚 Searching knowledge base for: "${query}"`);
