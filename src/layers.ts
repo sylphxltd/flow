@@ -6,7 +6,9 @@
 import { Context, Layer } from 'effect';
 import { Path } from '@effect/platform';
 import { SqlClient } from '@effect/sql';
-import { LibsqlClient } from '@effect/sql-libsql';
+import { NodeContext } from '@effect/platform-node';
+import { FileSystemLive } from './utils/file-system-effect.js';
+import { LoggingLive } from './utils/logging-effect.js';
 
 /**
  * Service tags for dependency injection
@@ -24,4 +26,10 @@ export const DatabaseLive = Layer.succeed(Database, SqlClient.SqlClient);
 /**
  * Combined service layer
  */
-export const ServicesLive = Layer.mergeAll(PathLive, DatabaseLive);
+export const ServicesLive = Layer.mergeAll(
+  PathLive,
+  DatabaseLive,
+  FileSystemLive,
+  LoggingLive,
+  NodeContext.layer
+);

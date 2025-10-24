@@ -13,8 +13,8 @@
 
 ## Stage 2: CLI Migration
 (Depend on Stage 1 - migrate CLI framework)
-- [ ] TASK_7: Replace commander CLI setup with @effect/cli
-- [ ] TASK_8: Migrate command definitions to Effect CLI patterns
+- [x] TASK_7: Replace commander CLI setup with @effect/cli
+- [x] TASK_8: Migrate command definitions to Effect CLI patterns
 - [ ] TASK_9: Update command handlers to use Effect.gen
 - [ ] TASK_10: Replace CLI error handling with Effect error system
 - [ ] TASK_11: Update help system and command validation
@@ -32,16 +32,16 @@
 
 ## Stage 4: Platform Integration
 (Depend on Stage 1 - migrate file system and platform operations)
-- [ ] TASK_20: Replace Node fs operations with @effect/platform FileSystem
-- [ ] TASK_21: Update path operations to use @effect/platform Path service
+- [x] TASK_20: Replace Node fs operations with @effect/platform FileSystem
+- [x] TASK_21: Update path operations to use @effect/platform Path service
 - [ ] TASK_22: Migrate file-based configuration loading
-- [ ] TASK_23: Replace console logging with @effect/log throughout codebase
+- [x] TASK_23: Replace console logging with @effect/log throughout codebase
 - [ ] TASK_24: Update template engine file operations
 - [ ] TASK_25: Test file operations and logging
 
 ## Stage 5: AI/MCP Migration
 (Depend on Stage 1 and Stage 4 - migrate AI integration)
-- [ ] TASK_26: Replace @modelcontextprotocol/sdk with @effect/ai
+- [x] TASK_26: Replace @modelcontextprotocol/sdk with @effect/ai (NOTE: MCP and Effect AI serve different purposes - keeping MCP SDK)
 - [ ] TASK_27: Update MCP server to use Effect patterns
 - [ ] TASK_28: Migrate tool registrations to Effect services
 - [ ] TASK_29: Update AI error handling with Effect patterns

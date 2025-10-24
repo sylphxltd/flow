@@ -308,8 +308,6 @@ async function memoryStats(): Promise<CallToolResult> {
             {
               total_entries: stats.totalEntries,
               namespaces: stats.namespaces,
-              oldest_entry: stats.oldestEntry,
-              newest_entry: stats.newestEntry,
               database_path: '.sylphx-flow/memory.db',
             },
             null,
