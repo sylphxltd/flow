@@ -16,9 +16,10 @@ const knowledgeIndexer = getKnowledgeIndexer();
  * Register knowledge search tool
  */
 export function registerKnowledgeSearchTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'search_knowledge',
-    `Search knowledge base, documentation, guides, and reference materials. Use this for domain knowledge, best practices, setup instructions, and conceptual information.
+    {
+      description: `Search knowledge base, documentation, guides, and reference materials. Use this for domain knowledge, best practices, setup instructions, and conceptual information.
 
 **IMPORTANT: Use this tool PROACTIVELY before starting work, not reactively when stuck.**
 
@@ -40,23 +41,52 @@ Available knowledge categories:
 The knowledge is curated for LLM code generation - includes decision trees, common bugs, and practical patterns.
 
 **Best Practice**: Check relevant knowledge BEFORE making decisions or writing code, not after encountering issues.`,
-    {
-      query: {
-        type: z.string(),
-        description: 'Search query - use natural language, technology names, or topic keywords',
-      },
-      limit: {
-        type: z.number().default(10).optional(),
-        description: 'Maximum number of results to return (default: 10)',
-      },
-      include_content: {
-        type: z.boolean().default(true).optional(),
-        description:
-          'Include full content in results (default: true). Use false to reduce context, then get_knowledge for specific docs',
+      inputSchema: {
+        query: z
+          .string()
+          .describe('Search query - use natural language, technology names, or topic keywords'),
+        limit: z
+          .number()
+          .default(10)
+          .optional()
+          .describe('Maximum number of results to return (default: 10)'),
+        include_content: z
+          .boolean()
+          .default(true)
+          .optional()
+          .describe(
+            'Include full content in results (default: true). Use false to reduce context, then get_knowledge for specific docs'
+          ),
       },
     },
     async ({ query, limit = 10, include_content = true }) => {
       try {
+        // Check indexing status first
+        const status = knowledgeIndexer.getStatus();
+
+        if (status.isIndexing) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `⏳ **Knowledge Indexing in Progress**\n\n- Progress: ${status.progress}%\n- Indexed: ${status.indexedItems}/${status.totalItems} files\n- Status: Building search index\n\n*This typically takes <1 second for knowledge base.*\n\n**Please wait a moment and try again.**`,
+              },
+            ],
+          };
+        }
+
+        if (status.error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `❌ **Knowledge Indexing Failed**\n\nError: ${status.error}\n\n**To fix:**\n- Check knowledge files in assets/knowledge/\n- Try restarting the MCP server\n- Use CLI: \`sylphx search status\` for details`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
         // Try semantic search first, fallback to TF-IDF
         let results;
         try {
@@ -70,6 +100,19 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
 
         // Load knowledge index and search with TF-IDF
         const index = await knowledgeIndexer.loadIndex();
+
+        // Check if index has any documents
+        if (index.totalDocuments === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `📭 **No Knowledge Documents Available**\n\nThe knowledge base appears to be empty or not properly initialized.\n\n**To fix:**\n- Check if knowledge files exist in assets/knowledge/\n- Try restarting the MCP server to trigger indexing\n- Use CLI: \`sylphx search status\` for diagnostics\n\n**Expected knowledge files:**\n- stacks/ (framework-specific patterns)\n- guides/ (architecture guidance)\n- universal/ (cross-cutting concerns)\n- data/ (database patterns)`,
+              },
+            ],
+          };
+        }
+
         results = await searchDocuments(query, index, {
           limit,
           minScore: 0.1, // Internal default
@@ -130,9 +173,10 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
  * Register get_knowledge tool (for retrieving specific knowledge documents)
  */
 export function registerGetKnowledgeTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'get_knowledge',
-    `Get knowledge resource by exact URI.
+    {
+      description: `Get knowledge resource by exact URI.
 
 **NOTE: Prefer using 'search_knowledge' with include_content=false first, then use this tool for specific documents.**
 
@@ -152,10 +196,8 @@ Available URIs:
 - knowledge://universal/deployment
 
 For most use cases, use 'search_knowledge' with keywords first to find relevant URIs.`,
-    {
-      uri: {
-        type: z.string(),
-        description: 'Knowledge URI to access (e.g., "knowledge://stacks/react-app")',
+      inputSchema: {
+        uri: z.string().describe('Knowledge URI to access (e.g., "knowledge://stacks/react-app")'),
       },
     },
     async ({ uri }) => {

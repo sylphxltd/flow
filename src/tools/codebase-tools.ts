@@ -16,9 +16,10 @@ const memoryStorage = new SeparatedMemoryStorage();
  * Register codebase search tool
  */
 export function registerCodebaseSearchTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'search_codebase',
-    `Search project source files, documentation, and code. Use this to find implementations, functions, classes, or any code-related content.
+    {
+      description: `Search project source files, documentation, and code. Use this to find implementations, functions, classes, or any code-related content.
 
 **IMPORTANT: Use this tool PROACTIVELY before starting work, not reactively when stuck.**
 
@@ -38,31 +39,34 @@ The search includes:
 - Build and deployment files
 
 **Best Practice**: Search the codebase BEFORE writing new code to avoid duplication and follow existing patterns.`,
-    {
-      query: {
-        type: z.string(),
-        description: 'Search query - use natural language, function names, or technical terms',
-      },
-      limit: {
-        type: z.number().default(10).optional(),
-        description: 'Maximum number of results to return (default: 10)',
-      },
-      include_content: {
-        type: z.boolean().default(true).optional(),
-        description: 'Include file content snippets in results (default: true)',
-      },
-      file_extensions: {
-        type: z.array(z.string()).optional(),
-        description: 'Filter by file extensions (e.g., [".ts", ".tsx", ".js"])',
-      },
-      path_filter: {
-        type: z.string().optional(),
-        description: 'Filter by path pattern (e.g., "src/components", "tests", "docs")',
-      },
-      exclude_paths: {
-        type: z.array(z.string()).optional(),
-        description:
-          'Exclude paths containing these patterns (e.g., ["node_modules", ".git", "dist"])',
+      inputSchema: {
+        query: z
+          .string()
+          .describe('Search query - use natural language, function names, or technical terms'),
+        limit: z
+          .number()
+          .default(10)
+          .optional()
+          .describe('Maximum number of results to return (default: 10)'),
+        include_content: z
+          .boolean()
+          .default(true)
+          .optional()
+          .describe('Include file content snippets in results (default: true)'),
+        file_extensions: z
+          .array(z.string())
+          .optional()
+          .describe('Filter by file extensions (e.g., [".ts", ".tsx", ".js"])'),
+        path_filter: z
+          .string()
+          .optional()
+          .describe('Filter by path pattern (e.g., "src/components", "tests", "docs")'),
+        exclude_paths: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Exclude paths containing these patterns (e.g., ["node_modules", ".git", "dist"])'
+          ),
       },
     },
     async ({
@@ -78,13 +82,47 @@ The search includes:
         await memoryStorage.initialize();
 
         // Get all codebase files and their TF-IDF data
-        let files = await memoryStorage.getAllCodebaseFiles();
+        const allFiles = await memoryStorage.getAllCodebaseFiles();
+
+        // Check if codebase is indexed at all
+        if (allFiles.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: '📭 No codebase files indexed yet. The codebase needs to be indexed first before searching.\n\n**To index the codebase:**\n- Use CLI: `sylphx search reindex`\n- Or check if indexing is in progress\n\n**Current Status:** Not indexed',
+              },
+            ],
+          };
+        }
 
         // Apply filters
+        let files = allFiles;
         if (file_extensions && file_extensions.length > 0) {
           files = files.filter((file) =>
             file_extensions.some((ext: string) => file.path.endsWith(ext))
           );
+        }
+
+        if (path_filter) {
+          files = files.filter((file) => file.path.includes(path_filter));
+        }
+
+        if (exclude_paths && exclude_paths.length > 0) {
+          files = files.filter(
+            (file) => !exclude_paths.some((exclude: string) => file.path.includes(exclude))
+          );
+        }
+
+        if (files.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `📭 No codebase files found matching the filters.\n\n**Total indexed files:** ${allFiles.length}\n**Applied filters:**\n${file_extensions ? `- File extensions: ${file_extensions.join(', ')}` : ''}\n${path_filter ? `- Path filter: "${path_filter}"` : ''}\n${exclude_paths ? `- Exclude paths: ${exclude_paths.join(', ')}` : ''}\n\n**Suggestions:**\n- Try broader filters or remove some restrictions\n- Check available files with: \`sylphx search status\``,
+              },
+            ],
+          };
         }
 
         if (path_filter) {
