@@ -46,7 +46,7 @@ async function memorySet(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error storing memory: ${errorMessage}`,
+          text: `✗ Error storing memory: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -68,7 +68,7 @@ async function memoryGet(args: {
         content: [
           {
             type: 'text',
-            text: `❌ Memory not found: ${namespace}:${key}`,
+            text: `✗ Memory not found: ${namespace}:${key}`,
           },
         ],
         isError: true,
@@ -105,7 +105,7 @@ async function memoryGet(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error retrieving memory: ${errorMessage}`,
+          text: `✗ Error retrieving memory: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -163,7 +163,7 @@ async function memorySearch(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error searching memory: ${errorMessage}`,
+          text: `✗ Error searching memory: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -209,7 +209,7 @@ async function memoryList(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error listing memory: ${errorMessage}`,
+          text: `✗ Error listing memory: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -231,7 +231,7 @@ async function memoryDelete(args: {
         content: [
           {
             type: 'text',
-            text: `❌ Memory not found: ${namespace}:${key}`,
+            text: `✗ Memory not found: ${namespace}:${key}`,
           },
         ],
         isError: true,
@@ -254,7 +254,7 @@ async function memoryDelete(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error deleting memory: ${errorMessage}`,
+          text: `✗ Error deleting memory: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -286,7 +286,7 @@ async function memoryClear(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error clearing memory: ${errorMessage}`,
+          text: `✗ Error clearing memory: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -325,7 +325,7 @@ async function memoryStats(): Promise<CallToolResult> {
       content: [
         {
           type: 'text',
-          text: `❌ Error getting memory stats: ${errorMessage}`,
+          text: `✗ Error getting memory stats: ${errorMessage}`,
         },
       ],
       isError: true,

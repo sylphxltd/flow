@@ -120,7 +120,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
     logger.info('System status:', status);
 
   } catch (error) {
-    console.error('❌ Failed to initialize plugin system:', error);
+    console.error('✗ Failed to initialize plugin system:', error);
     throw error;
   }
 
@@ -156,7 +156,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
           }
         } catch (error) {
           logger.error(`Failed to register tools from plugin: ${plugin.metadata.name}`, error);
-          console.error(`  ❌ ${plugin.metadata.name}: ${error instanceof Error ? error.message : String(error)}`);
+          console.error(`  ✗ ${plugin.metadata.name}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     }
@@ -209,7 +209,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
         const pluginList = plugins
           .sort((a, b) => a.metadata.priority - b.metadata.priority)
           .map(plugin => {
-            const status = plugin.metadata.enabled ? '✓' : '❌';
+            const status = plugin.metadata.enabled ? '✓' : '✗';
             return `${status} **${plugin.metadata.name}** v${plugin.metadata.version} (${plugin.metadata.category})`;
           })
           .join('\n');
@@ -231,7 +231,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
           content: [
             {
               type: 'text',
-              text: `❌ Failed to list plugins: ${error instanceof Error ? error.message : String(error)}`,
+              text: `✗ Failed to list plugins: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
         };
@@ -269,7 +269,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
           content: [
             {
               type: 'text',
-              text: `❌ Failed to enable plugin: ${error instanceof Error ? error.message : String(error)}`,
+              text: `✗ Failed to enable plugin: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
         };
@@ -307,7 +307,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
           content: [
             {
               type: 'text',
-              text: `❌ Failed to disable plugin: ${error instanceof Error ? error.message : String(error)}`,
+              text: `✗ Failed to disable plugin: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
         };
@@ -332,7 +332,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
 
         const healthSummary = Object.entries(health)
           .map(([name, result]) => {
-            const status = result.healthy ? '✓' : '❌';
+            const status = result.healthy ? '✓' : '✗';
             const error = result.error ? ` (${result.error})` : '';
             return `${status} ${name}${error}`;
           })
@@ -340,7 +340,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
 
         const statusText = [
           '🏥 **System Health**',
-          `Running: ${status.running ? '✓' : '❌'}`,
+          `Running: ${status.running ? '✓' : '✗'}`,
           `Services: ${status.services}`,
           '',
           '**Plugin Health:**',
@@ -356,7 +356,7 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
           content: [
             {
               type: 'text',
-              text: `❌ Failed to get system status: ${error instanceof Error ? error.message : String(error)}`,
+              text: `✗ Failed to get system status: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
         };
@@ -396,13 +396,13 @@ process.on('SIGTERM', async () => {
 
 // Handle uncaught errors
 process.on('uncaughtException', async (error) => {
-  console.error('❌ Uncaught error:', error);
+  console.error('✗ Uncaught error:', error);
   await cleanup();
   process.exit(1);
 });
 
 process.on('unhandledRejection', async (reason) => {
-  console.error('❌ Unhandled rejection:', reason);
+  console.error('✗ Unhandled rejection:', reason);
   await cleanup();
   process.exit(1);
 });
@@ -411,7 +411,7 @@ process.on('unhandledRejection', async (reason) => {
 if (require.main === module) {
   const config = parseArgs();
   startSylphxFlowMCPServer(config).catch((error) => {
-    console.error('❌ Failed to start server:', error);
+    console.error('✗ Failed to start server:', error);
     process.exit(1);
   });
 }

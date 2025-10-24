@@ -252,7 +252,7 @@ export async function projectStartupTool(args: ProjectStartupArgs): Promise<Call
           content: [
             {
               type: 'text',
-              text: `❌ Not on main branch. Current branch: ${currentBranch.output}. Please switch to main first.`,
+              text: `✗ Not on main branch. Current branch: ${currentBranch.output}. Please switch to main first.`,
             },
           ],
           isError: true,
@@ -266,7 +266,7 @@ export async function projectStartupTool(args: ProjectStartupArgs): Promise<Call
           content: [
             {
               type: 'text',
-              text: `❌ Failed to create branch "${branchName}": ${branchResult.error}`,
+              text: `✗ Failed to create branch "${branchName}": ${branchResult.error}`,
             },
           ],
           isError: true,
@@ -479,7 +479,7 @@ export async function projectStartupTool(args: ProjectStartupArgs): Promise<Call
       content: [
         {
           type: 'text',
-          text: `❌ Error initializing project: ${errorMessage}`,
+          text: `✗ Error initializing project: ${errorMessage}`,
         },
       ],
       isError: true,

@@ -221,7 +221,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
               content: [
                 {
                   type: 'text',
-                  text: `❌ ${result.error || 'Memory entry not found'}`,
+                  text: `✗ ${result.error || 'Memory entry not found'}`,
                 },
               ],
             };
@@ -259,7 +259,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
               content: [
                 {
                   type: 'text',
-                  text: `❌ ${result.error || 'Failed to delete memory'}`,
+                  text: `✗ ${result.error || 'Failed to delete memory'}`,
                 },
               ],
             };
@@ -297,7 +297,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
               content: [
                 {
                   type: 'text',
-                  text: `❌ ${result.error || 'Failed to list memory'}`,
+                  text: `✗ ${result.error || 'Failed to list memory'}`,
                 },
               ],
             };
@@ -361,7 +361,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
               content: [
                 {
                   type: 'text',
-                  text: `❌ ${result.error || 'Search failed'}`,
+                  text: `✗ ${result.error || 'Search failed'}`,
                 },
               ],
             };
@@ -431,7 +431,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
               content: [
                 {
                   type: 'text',
-                  text: `❌ ${result.error || 'Failed to clear memory'}`,
+                  text: `✗ ${result.error || 'Failed to clear memory'}`,
                 },
               ],
             };
@@ -468,7 +468,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
               content: [
                 {
                   type: 'text',
-                  text: `❌ ${result.error || 'Failed to get memory stats'}`,
+                  text: `✗ ${result.error || 'Failed to get memory stats'}`,
                 },
               ],
             };

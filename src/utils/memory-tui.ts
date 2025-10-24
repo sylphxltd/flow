@@ -76,7 +76,7 @@ export class MemoryTUI {
           choices: [
             { name: '➕ Add new entry', value: 'add' },
             { name: '🔄 Refresh entries', value: 'refresh' },
-            { name: '❌ Exit', value: 'exit' },
+            { name: '✗ Exit', value: 'exit' },
           ],
         },
       ]);
@@ -98,7 +98,7 @@ export class MemoryTUI {
       { name: '🗑️ Delete entry', value: 'delete', short: 'Delete' },
       { name: '🔍 Search entries', value: 'search', short: 'Search' },
       { name: '🔄 Refresh entries', value: 'refresh', short: 'Refresh' },
-      { name: '❌ Exit', value: 'exit', short: 'Exit' },
+      { name: '✗ Exit', value: 'exit', short: 'Exit' },
     ];
 
     const { action } = await inquirer.prompt([

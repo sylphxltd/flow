@@ -212,7 +212,7 @@ export async function configureMCPServerForTarget(
 
   const server = MCP_SERVER_REGISTRY[serverType];
   if (!server) {
-    console.error(`❌ Unknown MCP server: ${serverType}`);
+    console.error(`✗ Unknown MCP server: ${serverType}`);
     return false;
   }
 

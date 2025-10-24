@@ -107,7 +107,7 @@ const memoryDeleteHandler: CommandHandler = async (options) => {
   if (deleted) {
     console.log(`✓ Deleted memory entry: ${options.namespace || 'default'}:${options.key}`);
   } else {
-    console.log(`❌ Memory entry not found: ${options.namespace || 'default'}:${options.key}`);
+    console.log(`✗ Memory entry not found: ${options.namespace || 'default'}:${options.key}`);
   }
 };
 
@@ -171,7 +171,7 @@ const memoryGetHandler: CommandHandler = async (options) => {
     console.log(`Created: ${entry.created_at}`);
     console.log(`Updated: ${entry.updated_at}`);
   } else {
-    console.log(`❌ Memory entry not found: ${namespace}:${key}`);
+    console.log(`✗ Memory entry not found: ${namespace}:${key}`);
   }
 };
 

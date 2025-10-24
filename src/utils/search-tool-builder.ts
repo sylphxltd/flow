@@ -71,7 +71,7 @@ ${searchDescription}
             content: [
               {
                 type: 'text',
-                text: `❌ Indexing failed: ${status.error}\n\nPlease check the error and try again.`,
+                text: `✗ Indexing failed: ${status.error}\n\nPlease check the error and try again.`,
               },
             ],
             isError: true,
@@ -139,7 +139,7 @@ ${searchDescription}
           content: [
             {
               type: 'text',
-              text: `❌ Search error: ${errorMessage}`,
+              text: `✗ Search error: ${errorMessage}`,
             },
           ],
           isError: true,
@@ -181,7 +181,7 @@ Shows:
           content: [
             {
               type: 'text',
-              text: `❌ **Indexing Failed**\n\nError: ${status.error}`,
+              text: `✗ **Indexing Failed**\n\nError: ${status.error}`,
             },
           ],
           isError: true,

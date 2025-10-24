@@ -51,7 +51,7 @@ const LEVEL_SYMBOLS: Record<LogLevel, string> = {
   debug: '🔍',
   info: 'ℹ',
   warn: '⚠',
-  error: '❌',
+  error: '✗',
 };
 
 class Logger {

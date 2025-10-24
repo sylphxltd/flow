@@ -91,7 +91,7 @@ The search includes:
           content: [
             {
               type: 'text',
-              text: `❌ Codebase search error: ${(error as Error).message}`,
+              text: `✗ Codebase search error: ${(error as Error).message}`,
             },
           ],
         };

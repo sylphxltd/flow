@@ -97,7 +97,7 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
           content: [
             {
               type: 'text',
-              text: `❌ Knowledge search error: ${(error as Error).message}`,
+              text: `✗ Knowledge search error: ${(error as Error).message}`,
             },
           ],
         };
@@ -150,7 +150,7 @@ The available URIs are dynamically generated from the indexed knowledge base. Us
           content: [
             {
               type: 'text',
-              text: `❌ Error: ${errorMessage}\n\nAvailable knowledge URIs:\n${uriList}`,
+              text: `✗ Error: ${errorMessage}\n\nAvailable knowledge URIs:\n${uriList}`,
             },
           ],
           isError: true,

@@ -43,7 +43,7 @@ function getCurrentTime(args: {
         content: [
           {
             type: 'text',
-            text: `❌ Invalid timezone: ${timezone}. Please use a valid IANA timezone name (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo').`,
+            text: `✗ Invalid timezone: ${timezone}. Please use a valid IANA timezone name (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo').`,
           },
         ],
         isError: true,
@@ -109,7 +109,7 @@ function getCurrentTime(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error getting current time: ${errorMessage}`,
+          text: `✗ Error getting current time: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -132,7 +132,7 @@ function convertTime(args: {
         content: [
           {
             type: 'text',
-            text: `❌ Invalid source timezone: ${source_timezone}. Please use a valid IANA timezone name.`,
+            text: `✗ Invalid source timezone: ${source_timezone}. Please use a valid IANA timezone name.`,
           },
         ],
         isError: true,
@@ -144,7 +144,7 @@ function convertTime(args: {
         content: [
           {
             type: 'text',
-            text: `❌ Invalid target timezone: ${target_timezone}. Please use a valid IANA timezone name.`,
+            text: `✗ Invalid target timezone: ${target_timezone}. Please use a valid IANA timezone name.`,
           },
         ],
         isError: true,
@@ -157,7 +157,7 @@ function convertTime(args: {
         content: [
           {
             type: 'text',
-            text: `❌ Invalid time format: ${time}. Please use 24-hour format (HH:MM).`,
+            text: `✗ Invalid time format: ${time}. Please use 24-hour format (HH:MM).`,
           },
         ],
         isError: true,
@@ -255,7 +255,7 @@ function convertTime(args: {
       content: [
         {
           type: 'text',
-          text: `❌ Error converting time: ${errorMessage}`,
+          text: `✗ Error converting time: ${errorMessage}`,
         },
       ],
       isError: true,
