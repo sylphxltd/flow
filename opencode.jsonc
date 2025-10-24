@@ -11,7 +11,8 @@
         "-y",
         "github:sylphxltd/flow",
         "mcp",
-        "start"
+        "start",
+        "--disable-memory"
       ],
       "environment": {
         "OPENAI_API_KEY": "",

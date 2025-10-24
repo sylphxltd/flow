@@ -1,16 +1,38 @@
 import { targetManager } from '../core/target-manager.js';
+import { projectSettings } from '../utils/settings.js';
 import type { MCPServerConfigFlags } from '../types.js';
 
 /**
  * Get the current target's MCP server configuration
+ * Follows the same resolution pattern as targetManager.resolveTarget()
  * Returns undefined if no target is set or target has no mcpServerConfig
  */
-export function useTargetConfig(): MCPServerConfigFlags | undefined {
-  // For now, we need to get the current target somehow
-  // This could be enhanced later to have a proper context system
+export async function useTargetConfig(): Promise<MCPServerConfigFlags | undefined> {
+  // Follow the exact same resolution pattern as targetManager.resolveTarget()
+  let currentTargetId: string | undefined;
 
-  // Option 1: Try to get from environment or default target
-  const currentTargetId = process.env.SYPH_TARGET || 'claude-code'; // fallback
+  // 1. Check if target is set globally (would be set by command execution context)
+  // TODO: Implement proper context system when command execution context is available
+
+  // 2. Try saved project default target first
+  try {
+    const savedDefaultTarget = await projectSettings.getDefaultTarget();
+    if (savedDefaultTarget && targetManager.getTarget(savedDefaultTarget)) {
+      currentTargetId = savedDefaultTarget;
+    }
+  } catch {
+    // Silently ignore errors reading project settings
+  }
+
+  // 3. Fall back to system default target
+  if (!currentTargetId) {
+    try {
+      const { getDefaultTarget } = await import('../config/targets.js');
+      currentTargetId = getDefaultTarget();
+    } catch {
+      return undefined;
+    }
+  }
 
   try {
     const target = targetManager.getTarget(currentTargetId);

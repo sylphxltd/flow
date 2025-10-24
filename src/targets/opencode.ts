@@ -16,7 +16,14 @@ export const opencodeTarget: Target = {
   isImplemented: true,
   isDefault: true,
 
-  
+  mcpServerConfig: {
+    disableMemory: true, // OpenCode also doesn't need memory
+    disableTime: false,
+    disableProjectStartup: false,
+    disableKnowledge: false,
+    disableCodebase: false,
+  },
+
   config: {
     agentDir: '.opencode/agent',
     agentExtension: '.md',

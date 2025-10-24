@@ -36,9 +36,7 @@ export {
 } from './mcp-command';
 
 export {
-  manageMemory,
-  searchMemory,
-  clearMemory,
+  memoryCommand,
 } from './memory-command';
 
 export {

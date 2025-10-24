@@ -1,4 +1,4 @@
-import { useEnv, useRuntimeConfig, useTargetConfig } from '../composables/index.js';
+import { useEnv, useRuntimeConfig } from '../composables/index.js';
 import type { MCPServerConfigFlags, MCPServerConfigUnion } from '../types.js';
 import { envSecurity, securitySchemas } from '../utils/security.js';
 
@@ -52,8 +52,11 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     config: {
       type: 'stdio' as const,
       command: 'npx',
-      args: () => {
-        const targetConfig = useTargetConfig();
+      args: async () => {
+        // Get target config without creating circular dependency
+        // Use lazy import to break the cycle
+        const { useTargetConfig } = await import('../composables/useTargetConfig.js');
+        const targetConfig = await useTargetConfig();
 
         const args = ['-y', 'github:sylphxltd/flow', 'mcp', 'start'];
 

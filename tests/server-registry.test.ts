@@ -127,8 +127,8 @@ describe('Server Registry Tests', () => {
       expect(context7.id).toBe('context7');
       expect(context7.name).toBe('context7');
       expect(context7.description).toBe('Context7 HTTP MCP server for documentation retrieval');
-      expect(context7.config.type).toBe('remote');
-      if (context7.config.type === 'remote') {
+      expect(context7.config.type).toBe('http');
+      if (context7.config.type === 'http') {
         expect(context7.config.url).toBe('https://mcp.context7.com/mcp');
       }
       expect(context7.envVars).toEqual({
@@ -148,7 +148,7 @@ describe('Server Registry Tests', () => {
       expect(gptImage.id).toBe('gpt-image');
       expect(gptImage.name).toBe('gpt-image-1-mcp');
       expect(gptImage.description).toBe('GPT Image generation MCP server');
-      expect(gptImage.config.type).toBe('local');
+      expect(gptImage.config.type).toBe('stdio');
       expect(gptImage.envVars).toEqual({
         OPENAI_API_KEY: {
           description: 'OpenAI API key for image generation',
@@ -166,7 +166,7 @@ describe('Server Registry Tests', () => {
       expect(geminiSearch.id).toBe('gemini-search');
       expect(geminiSearch.name).toBe('gemini-google-search');
       expect(geminiSearch.description).toBe('Gemini Google Search MCP server');
-      expect(geminiSearch.config.type).toBe('local');
+      expect(geminiSearch.config.type).toBe('stdio');
       expect(geminiSearch.envVars).toEqual({
         GEMINI_API_KEY: {
           description: 'Google Gemini API key for search functionality',
@@ -189,7 +189,7 @@ describe('Server Registry Tests', () => {
       expect(grep.id).toBe('grep');
       expect(grep.name).toBe('grep');
       expect(grep.description).toBe('GitHub grep MCP server for searching GitHub repositories');
-      expect(grep.config.type).toBe('remote');
+      expect(grep.config.type).toBe('http');
       expect(grep.envVars).toBeUndefined();
       expect(grep.category).toBe('external');
       expect(grep.defaultInInit).toBe(true);

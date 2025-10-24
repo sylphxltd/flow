@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
 import type { MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
 import { commandSecurity, sanitize } from '../utils/security.js';
@@ -24,12 +24,11 @@ export const claudeCodeTarget: Target = {
   isDefault: false,
 
   mcpServerConfig: {
-    'sylphx-flow': {
-      disableMemory: true,
-      disableTime: false,
-      disableProjectStartup: false,
-      disableKnowledge: false,
-    },
+    disableMemory: true,
+    disableTime: false,
+    disableProjectStartup: false,
+    disableKnowledge: false,
+    disableCodebase: true,
   },
 
   config: {
@@ -248,10 +247,13 @@ Please begin your response with a comprehensive summary of all the instructions 
         const maxPromptLength = 8000; // Leave room for other args
 
         if (enhancedSystemPrompt.length > maxPromptLength) {
-          promptToUse = enhancedSystemPrompt.substring(0, maxPromptLength) +
+          promptToUse =
+            enhancedSystemPrompt.substring(0, maxPromptLength) +
             '\n\n[NOTE: Agent instructions were truncated due to length. Full instructions available in project documentation.]';
           if (options.verbose) {
-            console.warn(`⚠️  Warning: System prompt truncated from ${enhancedSystemPrompt.length} to ${maxPromptLength} characters`);
+            console.warn(
+              `⚠️  Warning: System prompt truncated from ${enhancedSystemPrompt.length} to ${maxPromptLength} characters`
+            );
           }
         }
 
@@ -263,7 +265,9 @@ Please begin your response with a comprehensive summary of all the instructions 
 
         if (options.verbose) {
           console.log(`🚀 Executing Claude Code with system prompt`);
-          console.log(`📝 System prompt length: ${promptToUse.length} characters${promptToUse.length < enhancedSystemPrompt.length ? ` (truncated from ${enhancedSystemPrompt.length})` : ''}`);
+          console.log(
+            `📝 System prompt length: ${promptToUse.length} characters${promptToUse.length < enhancedSystemPrompt.length ? ` (truncated from ${enhancedSystemPrompt.length})` : ''}`
+          );
           console.log(`📝 User prompt length: ${sanitizedUserPrompt.length} characters`);
         }
 
@@ -362,7 +366,9 @@ Please begin your response with a comprehensive summary of all the instructions 
       // Write updated settings
       await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf8');
     } catch (error) {
-      throw new Error(`Failed to approve MCP servers: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to approve MCP servers: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   },
 };

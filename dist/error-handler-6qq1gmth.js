@@ -1,0 +1,2 @@
+import{F as t}from"./index-ym2vpew4.js";function c(n,e){let o=n instanceof Error?n.message:String(n),r=e?` (${e})`:"";if(console.error(`✗ Error${r}: ${o}`),n instanceof s&&n.code)console.error(`   Code: ${n.code}`);process.exit(1)}function a(n,e){return async(o)=>{try{await n(o)}catch(r){c(r,e)}}}var s;var i=t(()=>{s=class s extends Error{code;constructor(n,e){super(n);this.code=e;this.name="CLIError"}}});i();export{c as handleError,a as createAsyncHandler,s as CLIError};
+export{s as c,a as d,i as e};
