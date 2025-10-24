@@ -7,6 +7,7 @@ import { Command } from 'commander';
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 import { getKnowledgeIndexer } from '../utils/knowledge-indexer.js';
 import { searchDocuments } from '../utils/tfidf.js';
+import { CodebaseIndexer } from '../utils/codebase-indexer.js';
 
 const memoryStorage = new SeparatedMemoryStorage();
 const knowledgeIndexer = getKnowledgeIndexer();
@@ -93,14 +94,28 @@ export const reindexCommand = new Command('reindex')
     try {
       console.log('🔄 Starting codebase reindexing...');
 
+      const indexer = new CodebaseIndexer();
+
       if (options.force) {
         console.log('🔥 Force reindex: clearing cache...');
-        // TODO: Clear cache
+        await indexer.clearCache();
       }
 
-      // TODO: Implement actual indexing logic
-      console.log('📝 Indexing functionality to be implemented');
-      console.log('💡 After indexing, use "sylphx search <query>" or MCP search tools');
+      console.log('📂 Scanning and indexing files...');
+      const result = await indexer.indexCodebase({ force: options.force });
+
+      console.log(`✅ Indexing complete!`);
+      console.log(`📊 Stats:`);
+      console.log(`   - Total files found: ${result.stats.totalFiles}`);
+      console.log(`   - Files indexed: ${result.stats.indexedFiles}`);
+      console.log(`   - Files skipped: ${result.stats.skippedFiles}`);
+      console.log(`   - Cache hit: ${result.stats.cacheHit ? 'Yes' : 'No'}`);
+
+      if (result.vectorStorage) {
+        console.log(`   - Vector embeddings: Generated`);
+      }
+
+      console.log('\n💡 Ready to search! Use "sylphx search <query>" or MCP search tools');
     } catch (error) {
       console.error(`❌ Reindexing error: ${(error as Error).message}`);
       process.exit(1);
@@ -159,7 +174,7 @@ export const searchDirectCommand = new Command('search')
           for (const file of files) {
             const tfidfDoc = await memoryStorage.getTFIDFDocument(file.path);
             if (tfidfDoc) {
-              const rawTerms = JSON.parse(tfidfDoc.rawTerms || '{}');
+              const rawTerms = tfidfDoc.rawTerms || {};
               const rawTermsMap = new Map<string, number>();
               for (const [term, freq] of Object.entries(rawTerms)) {
                 rawTermsMap.set(term, freq as number);
@@ -180,10 +195,17 @@ export const searchDirectCommand = new Command('search')
             return;
           }
 
+          // Load IDF values from database
+          const idfRecords = await memoryStorage.getIDFValues();
+          const idfMap = new Map<string, number>();
+          for (const [term, value] of Object.entries(idfRecords)) {
+            idfMap.set(term, value as number);
+          }
+
           // Create search index
           const index = {
             documents: searchDocs,
-            idf: new Map(),
+            idf: idfMap,
             totalDocuments: searchDocs.length,
             metadata: {
               generatedAt: new Date().toISOString(),

@@ -157,7 +157,7 @@ function scanCodebase(
     maxFiles?: number; // Stop after indexing this many files
   } = {}
 ): CodebaseFile[] {
-  const { maxFileSize = 1024 * 1024, maxFiles = 10000 } = options; // 1MB default
+  const { maxFileSize = 1024 * 1024, maxFiles = 50000 } = options; // 1MB default, increased limit
   const results: CodebaseFile[] = [];
 
   function scan(currentDir: string) {
@@ -238,7 +238,7 @@ export class CodebaseIndexer {
     this.options = { batchSize: 100, ...options };
     this.codebaseRoot = options.codebaseRoot || process.cwd();
     this.cacheDir = options.cacheDir || path.join(this.codebaseRoot, '.sylphx-flow', 'cache');
-    this.ig = ignore();
+    this.ig = loadGitignore(this.codebaseRoot);
     this.db = new SeparatedMemoryStorage();
   }
 
