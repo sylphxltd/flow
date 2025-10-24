@@ -324,6 +324,47 @@ Please begin your response with a comprehensive summary of all the instructions 
       return false;
     }
   },
+
+  /**
+   * Update .claude/settings.local.json to approve MCP servers
+   */
+  async approveMCPServers(cwd: string, serverNames: string[]): Promise<void> {
+    const settingsPath = path.join(cwd, '.claude', 'settings.local.json');
+
+    try {
+      // Read existing settings or create new
+      let settings: Record<string, unknown> = {};
+
+      try {
+        const content = await fs.readFile(settingsPath, 'utf8');
+        settings = JSON.parse(content);
+      } catch (error: any) {
+        if (error.code !== 'ENOENT') {
+          throw error;
+        }
+        // File doesn't exist, will create new
+      }
+
+      // Get existing approved servers
+      const existingServers = Array.isArray(settings.enabledMcpjsonServers)
+        ? settings.enabledMcpjsonServers
+        : [];
+
+      // Merge with new servers (deduplicate)
+      const allServers = [...new Set([...existingServers, ...serverNames])];
+
+      // Update settings
+      settings.enabledMcpjsonServers = allServers;
+
+      // Ensure .claude directory exists
+      await fs.mkdir(path.dirname(settingsPath), { recursive: true });
+
+      // Write updated settings
+      await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to approve MCP servers: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
 };
 
 /**

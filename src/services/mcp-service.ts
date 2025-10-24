@@ -234,6 +234,12 @@ export class MCPService {
       // Write updated config
       this.setNestedProperty(configData, mcpConfigPath, mcpSection);
       await this.target.writeConfig(process.cwd(), configData);
+
+      // Approve MCP servers if the target supports it
+      if (this.target.approveMCPServers) {
+        const serverNames = selectedServers.map((id) => this.getServerById(id).name);
+        await this.target.approveMCPServers(process.cwd(), serverNames);
+      }
     } catch (error) {
       throw new Error(`Failed to install MCP servers: ${error instanceof Error ? error.message : String(error)}`);
     }

@@ -203,6 +203,9 @@ export abstract class Target {
 
   /** Detect if this target is being used in the current environment (optional) */
   detectFromEnvironment?(): boolean;
+
+  /** Approve MCP servers in target-specific configuration (optional - only for targets that need approval) */
+  async approveMCPServers?(cwd: string, serverNames: string[]): Promise<void>;
 }
 
 export interface CommonOptions {
