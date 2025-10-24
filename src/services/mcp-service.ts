@@ -211,7 +211,7 @@ export class MCPService {
 
         // Handle dynamic command generation in the config itself
         if (server.config.type === 'local' && typeof server.config.command === 'function') {
-          const commandArray = await server.config.command();
+          const commandArray = await server.config.command({ targetId: this.target.id });
           configToTransform = {
             ...server.config,
             command: commandArray,

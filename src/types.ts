@@ -59,7 +59,7 @@ export interface MCPServerConfigHTTP {
 // Legacy OpenCode types (for backward compatibility)
 export interface MCPServerConfigLegacy {
   type: 'local';
-  command: string[] | (() => Promise<string[]>);
+  command: string[] | ((context?: { targetId?: string }) => Promise<string[]>);
   environment?: Record<string, string>;
 }
 

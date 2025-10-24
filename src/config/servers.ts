@@ -51,34 +51,18 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     description: 'Sylphx Flow MCP server for agent coordination and memory management',
     config: {
       type: 'local' as const,
-      command: async () => {
+      command: async (context?: { targetId?: string }) => {
         let finalCommand = ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'];
 
-        // For Claude Code target, disable memory by default
-        try {
-          const fs = await import('node:fs/promises');
-          const path = await import('node:path');
+        // Add flags based on target configuration
+        if (context?.targetId) {
+          const { targetManager } = await import('../core/target-manager.js');
+          const target = targetManager.getTarget(context.targetId);
 
-          // Check if we're in a Claude Code project
-          const mcpJsonPath = path.join(process.cwd(), '.mcp.json');
-          const claudeConfigPath = path.join(process.cwd(), '.claude', 'settings.local.json');
-
-          const [mcpExists, claudeExists] = await Promise.allSettled([
-            fs.access(mcpJsonPath).then(() => true).catch(() => false),
-            fs.access(claudeConfigPath).then(() => true).catch(() => false)
-          ]);
-
-          if (mcpExists.success || claudeExists.success) {
-            finalCommand.push('--disable-memory'); // Claude Code target detected
+          // Check target-specific MCP server configuration
+          if (target?.mcpServerConfig?.['sylphx-flow']?.disableMemory) {
+            finalCommand.push('--disable-memory');
           }
-
-          // Check OpenCode project
-          const opencodeConfigPath = path.join(process.cwd(), 'opencode.jsonc');
-          const opencodeExists = await fs.access(opencodeConfigPath).then(() => true).catch(() => false);
-
-          // For OpenCode, don't add any disable flags
-        } catch {
-          // If detection fails, don't disable memory
         }
 
         return finalCommand;
