@@ -1,0 +1,17 @@
+# Cache database files (temporary, should NOT be committed)
+cache.db*
+cache.db-*
+cache.db-shm
+cache.db-wal
+
+# Memory database temporary files (memory.db itself should be committed)
+memory.db-*
+memory.db.*
+memory.db-shm
+memory.db-wal
+
+# Database journal files
+*.db-journal
+*.db-wal
+*.sqlite-journal
+*.sqlite-wal

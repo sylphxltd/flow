@@ -53,8 +53,4 @@ src/utils/simple-vector-storage.ts
 hive-mind-prompt-*.txt
 .secrets/
 
-# Sylphx Flow Database Files (Auto-managed)
-# Ignore ALL cache database files (temporary)
-.sylphx-flow/cache.db*
-# Ignore memory database temporary files, but keep memory.db itself
-.sylphx-flow/memory.db-*
+

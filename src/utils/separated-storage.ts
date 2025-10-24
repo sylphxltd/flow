@@ -10,7 +10,6 @@ import { CacheDatabaseClient, type CacheDatabase } from '../db/cache-db.js';
 import * as memorySchema from '../db/memory-schema.js';
 import * as cacheSchema from '../db/cache-schema.js';
 import { ValidationError, executeOperation } from './database-errors.js';
-import { autoGitignore } from './auto-gitignore.js';
 
 // Memory entry interface (backward compatibility)
 export interface MemoryEntry {
@@ -37,9 +36,6 @@ export class SeparatedMemoryStorage {
   }
 
   async initialize(): Promise<void> {
-    // Auto-manage .gitignore rules
-    autoGitignore.initialize();
-
     await Promise.all([this.memoryDb.initialize(), this.cacheDb.initialize()]);
   }
 
