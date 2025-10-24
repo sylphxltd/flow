@@ -15,6 +15,8 @@ export interface EnvVarConfig {
   secret?: boolean;
   /** Async function to fetch choices for list inputs */
   fetchChoices?: () => Promise<string[]>;
+  /** Environment variables this field depends on */
+  dependsOn?: string[];
 }
 
 export interface MCPServerDefinition {
@@ -69,6 +71,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
         description: 'Embedding model to use for vector search',
         required: false,
         default: 'text-embedding-3-small',
+        dependsOn: ['OPENAI_API_KEY', 'OPENAI_BASE_URL'],
         fetchChoices: async () => {
           const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
           const apiKey = process.env.OPENAI_API_KEY;

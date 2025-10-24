@@ -53,6 +53,17 @@ async function configureMCPServer(
   console.log('');
 
   for (const [key, config] of Object.entries(server.envVars)) {
+    // Check dependencies
+    if (config.dependsOn) {
+      const missingDeps = config.dependsOn.filter(
+        (dep) => !(collectedEnv[dep] || process.env[dep])
+      );
+      if (missingDeps.length > 0) {
+        // Skip this field if dependencies not met
+        continue;
+      }
+    }
+
     let value: string;
 
     if (config.fetchChoices) {
