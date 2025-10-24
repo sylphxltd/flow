@@ -22,8 +22,8 @@
 
 ## Stage 3: Database Migration
 (Depend on Stage 1 - migrate database layer)
-- [ ] TASK_13: Replace @libsql/client with @effect/sql-libsql
-- [ ] TASK_14: Update BaseDatabaseClient to use Effect patterns
+- [x] TASK_13: Replace @libsql/client with @effect/sql-libsql
+- [x] TASK_14: Update BaseDatabaseClient to use Effect patterns
 - [ ] TASK_15: Migrate MemoryDatabaseClient to Effect services
 - [ ] TASK_16: Update database queries to use tagged template literals
 - [ ] TASK_17: Replace Promise-based database operations with Effect
