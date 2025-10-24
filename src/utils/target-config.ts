@@ -13,6 +13,7 @@ import {
   isValidServerID,
 } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
+import { resolveConfig, resolveConfigWithParams } from '../services/mcp-service.js';
 import type { MCPServerConfigUnion } from '../types.js';
 import { secretUtils } from './secret-utils.js';
 
@@ -61,25 +62,30 @@ export async function addMCPServersToTarget(
     } else {
       const transformedConfig = target.transformMCPConfig(server.config, server.id);
 
-      // Apply target-specific configuration for sylphx-flow
-      if (server.id === 'sylphx-flow' && target.mcpServerConfig?.['sylphx-flow']) {
-        const targetConfig = target.mcpServerConfig['sylphx-flow'];
-        const args: string[] = [];
+      // Apply dynamic command and args generation (only for CLI servers)
+      let resolvedCommand: unknown;
+      let resolvedArgs: unknown;
 
-        if (targetConfig.disableMemory) args.push('--disable-memory');
-        if (targetConfig.disableTime) args.push('--disable-time');
-        if (targetConfig.disableProjectStartup) args.push('--disable-project-startup');
-        if (targetConfig.disableKnowledge) args.push('--disable-knowledge');
-
-        // Update the command to include the configuration
-        if (transformedConfig.type === 'local') {
-          transformedConfig.command = [...transformedConfig.command, ...args];
-        } else if (transformedConfig.type === 'stdio') {
-          transformedConfig.args = [...(transformedConfig.args || []), ...args];
-        }
+      if (server.config.command || server.config.args) {
+        resolvedCommand = server.config.command
+          ? await resolveConfig(server.config.command)
+          : undefined;
+        resolvedArgs = server.config.args
+          ? await resolveConfig(server.config.args)
+          : [];
       }
 
-      mcpSection[server.name] = transformedConfig;
+      // Update the config with resolved values - target will handle format
+      const updatedConfig = {
+        ...server.config,
+        command: resolvedCommand,
+        args: resolvedArgs,
+      };
+
+      // Let target handle the transformation
+      const finalConfig = target.transformMCPConfig(updatedConfig, server.id);
+
+      mcpSection[server.name] = finalConfig;
       console.log(`📦 Added MCP server: ${server.name} (${server.description})`);
       addedCount++;
     }

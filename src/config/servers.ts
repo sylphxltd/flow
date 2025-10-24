@@ -1,4 +1,5 @@
-import type { MCPServerConfigUnion, ServerFlagConfig } from '../types.js';
+import { useEnv, useRuntimeConfig, useTargetConfig } from '../composables/index.js';
+import type { MCPServerConfigFlags, MCPServerConfigUnion } from '../types.js';
 import { envSecurity, securitySchemas } from '../utils/security.js';
 
 /**
@@ -39,7 +40,6 @@ export interface MCPServerDefinition {
   required?: boolean;
 }
 
-
 /**
  * Central registry of all available MCP servers
  * This replaces all hardcoded server lists throughout the codebase
@@ -50,24 +50,33 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     name: 'sylphx-flow',
     description: 'Sylphx Flow MCP server for agent coordination and memory management',
     config: {
-      type: 'local' as const,
-      command: async (context?: { targetId?: string }) => {
-        let finalCommand = ['npx', '-y', 'github:sylphxltd/flow', 'mcp', 'start'];
+      type: 'stdio' as const,
+      command: 'npx',
+      args: () => {
+        const targetConfig = useTargetConfig();
 
-        // Add flags based on target configuration
-        if (context?.targetId) {
-          const { targetManager } = await import('../core/target-manager.js');
-          const target = targetManager.getTarget(context.targetId);
+        const args = ['-y', 'github:sylphxltd/flow', 'mcp', 'start'];
 
-          // Check target-specific MCP server configuration
-          if (target?.mcpServerConfig?.['sylphx-flow']?.disableMemory) {
-            finalCommand.push('--disable-memory');
-          }
+        // Apply flags based on target configuration
+        if (targetConfig?.disableMemory) {
+          args.push('--disable-memory');
+        }
+        if (targetConfig?.disableTime) {
+          args.push('--disable-time');
+        }
+        if (targetConfig?.disableProjectStartup) {
+          args.push('--disable-project-startup');
+        }
+        if (targetConfig?.disableKnowledge) {
+          args.push('--disable-knowledge');
+        }
+        if (targetConfig?.disableCodebase) {
+          args.push('--disable-codebase');
         }
 
-        return finalCommand;
+        return args;
       },
-      environment: {
+      env: {
         OPENAI_API_KEY: '',
         OPENAI_BASE_URL: 'https://api.openai.com/v1',
         EMBEDDING_MODEL: 'text-embedding-3-small',
@@ -104,7 +113,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
           // Additional validation for API key format
           try {
             securitySchemas.apiKey.parse(validatedApiKey);
-          } catch (error) {
+          } catch (_error) {
             throw new Error('Invalid OPENAI_API_KEY format');
           }
 
@@ -119,8 +128,8 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
 
           const data = await response.json();
           const embeddingModels = data.data
-            .filter((m: any) => m.id.includes('embedding'))
-            .map((m: any) => m.id)
+            .filter((m: { id: string }) => m.id.includes('embedding'))
+            .map((m: { id: string }) => m.id)
             .sort();
 
           if (embeddingModels.length === 0) {
@@ -141,9 +150,10 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     name: 'gpt-image-1-mcp',
     description: 'GPT Image generation MCP server',
     config: {
-      type: 'local' as const,
-      command: ['npx', '@napolab/gpt-image-1-mcp'] as string[],
-      environment: { OPENAI_API_KEY: '' },
+      type: 'stdio' as const,
+      command: 'npx',
+      args: ['@napolab/gpt-image-1-mcp'],
+      env: { OPENAI_API_KEY: '' },
     },
     envVars: {
       OPENAI_API_KEY: {
@@ -161,9 +171,10 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     name: 'perplexity-ask',
     description: 'Perplexity Ask MCP server for search and queries',
     config: {
-      type: 'local' as const,
-      command: ['npx', '-y', 'server-perplexity-ask'] as string[],
-      environment: { PERPLEXITY_API_KEY: '' },
+      type: 'stdio' as const,
+      command: 'npx',
+      args: ['-y', 'server-perplexity-ask'],
+      env: { PERPLEXITY_API_KEY: '' },
     },
     envVars: {
       PERPLEXITY_API_KEY: {
@@ -181,7 +192,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     name: 'context7',
     description: 'Context7 HTTP MCP server for documentation retrieval',
     config: {
-      type: 'remote' as const,
+      type: 'http' as const,
       url: 'https://mcp.context7.com/mcp',
     },
     envVars: {
@@ -200,9 +211,10 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     name: 'gemini-google-search',
     description: 'Gemini Google Search MCP server',
     config: {
-      type: 'local' as const,
-      command: ['npx', '-y', 'mcp-gemini-google-search'] as string[],
-      environment: { GEMINI_API_KEY: '', GEMINI_MODEL: 'gemini-2.5-flash' },
+      type: 'stdio' as const,
+      command: 'npx',
+      args: ['-y', 'mcp-gemini-google-search'],
+      env: { GEMINI_API_KEY: '', GEMINI_MODEL: 'gemini-2.5-flash' },
     },
     envVars: {
       GEMINI_API_KEY: {
@@ -225,7 +237,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     name: 'grep',
     description: 'GitHub grep MCP server for searching GitHub repositories',
     config: {
-      type: 'remote' as const,
+      type: 'http' as const,
       url: 'https://mcp.grep.app',
     },
     category: 'external',

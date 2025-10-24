@@ -1,3 +1,5 @@
+import type { TargetConfigurationData } from './types/target-config.types.js';
+
 export interface CommandOptions {
   target?: string;
   verbose?: boolean;
@@ -40,32 +42,17 @@ export interface CommandArgument {
   required?: boolean;
 }
 
-
-
 export interface MCPServerConfig {
   // Common fields
   type: 'stdio';
-  command: string;
-  args?: string[];
+  command: Resolvable<string>;
+  args?: Resolvable<string[]>;
   env?: Record<string, string>;
 }
 
 export interface MCPServerConfigHTTP {
   type: 'http';
-  url: string;
-  headers?: Record<string, string>;
-}
-
-// Legacy OpenCode types (for backward compatibility)
-export interface MCPServerConfigLegacy {
-  type: 'local';
-  command: string[] | ((context?: { targetId?: string }) => Promise<string[]>);
-  environment?: Record<string, string>;
-}
-
-export interface MCPServerConfigHTTPLegacy {
-  type: 'remote';
-  url: string;
+  url: Resolvable<string>;
   headers?: Record<string, string>;
 }
 
@@ -74,27 +61,28 @@ export function isStdioConfig(config: MCPServerConfigUnion): config is MCPServer
   return config.type === 'stdio';
 }
 
-export function isLocalConfig(config: MCPServerConfigUnion): config is MCPServerConfigLegacy {
-  return config.type === 'local';
+export function isHttpConfig(config: MCPServerConfigUnion): config is MCPServerConfigHTTP {
+  return config.type === 'http';
 }
-
-export function isHttpConfig(config: MCPServerConfigUnion): config is MCPServerConfigHTTP | MCPServerConfigHTTPLegacy {
-  return config.type === 'http' || config.type === 'remote';
-}
-
-// Type for CLI-based servers that support command arguments
-export type CLICommandConfig = MCPServerConfig | MCPServerConfigLegacy;
 
 // Type guard for CLI servers
-export function isCLICommandConfig(config: MCPServerConfigUnion): config is CLICommandConfig {
-  return isStdioConfig(config) || isLocalConfig(config);
+export function isCLICommandConfig(config: MCPServerConfigUnion): config is MCPServerConfig {
+  return isStdioConfig(config);
 }
 
-export type MCPServerConfigUnion =
-  | MCPServerConfig
-  | MCPServerConfigHTTP
-  | MCPServerConfigLegacy
-  | MCPServerConfigHTTPLegacy;
+// Type for resolvable values - can be static, sync function, or async function
+export type Resolvable<T> = T | (() => Promise<T>) | (() => T);
+
+// Type for MCP server configuration flags (from Target.mcpServerConfig)
+export type MCPServerConfigFlags = {
+  disableMemory?: boolean;
+  disableTime?: boolean;
+  disableProjectStartup?: boolean;
+  disableKnowledge?: boolean;
+  disableCodebase?: boolean;
+};
+
+export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP;
 
 export interface OpenCodeConfig {
   $schema?: string;
@@ -154,12 +142,11 @@ export abstract class Target {
   public readonly isImplemented: boolean;
   /** MCP server configuration for this target */
   public readonly mcpServerConfig?: {
-    [serverId: string]: {
-      disableMemory?: boolean;
-      disableTime?: boolean;
-      disableProjectStartup?: boolean;
-      disableKnowledge?: boolean;
-    };
+    disableMemory?: boolean;
+    disableTime?: boolean;
+    disableProjectStartup?: boolean;
+    disableKnowledge?: boolean;
+    disableCodebase?: boolean;
   };
 
   constructor(

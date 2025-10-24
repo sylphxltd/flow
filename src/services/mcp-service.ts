@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
+import { type Resolvable, isCLICommandConfig } from '../types.js';
 import type { Target } from '../types.js';
 import type { TargetConfigurationData } from '../types/target-config.types.js';
 
@@ -16,6 +17,33 @@ export interface InstallOptions {
   skipValidation?: boolean;
   dryRun?: boolean;
 }
+
+/**
+ * Helper function to resolve static or dynamic configuration values
+ */
+function resolveConfig<T>(config: Resolvable<T>): Promise<T> {
+  if (typeof config === 'function') {
+    const result = (config as () => T | Promise<T>)();
+    return Promise.resolve(result);
+  }
+  return Promise.resolve(config);
+}
+
+/**
+ * Helper function to resolve static or dynamic configuration values with parameters
+ */
+export function resolveConfigWithParams<T, P>(
+  config: T | ((params: P) => Promise<T>) | ((params: P) => T),
+  params: P
+): Promise<T> {
+  if (typeof config === 'function') {
+    const result = (config as (params: P) => T | Promise<T>)(params);
+    return Promise.resolve(result);
+  }
+  return Promise.resolve(config);
+}
+
+export { resolveConfig };
 
 export class MCPService {
   private target: Target;
@@ -47,7 +75,7 @@ export class MCPService {
       return Object.values(MCP_SERVER_REGISTRY)
         .filter((server) => existingServerNames.includes(server.name))
         .map((server) => server.id);
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }
@@ -73,7 +101,6 @@ export class MCPService {
 
       if (config.required && (!value || value === '')) {
         missingRequired.push(key);
-        continue;
       }
 
       // Don't validate dependencies here - configureServer already handles them
@@ -94,7 +121,9 @@ export class MCPService {
     const server = MCP_SERVER_REGISTRY[serverId];
     const values: Record<string, string> = {};
 
-    if (!server.envVars) return values;
+    if (!server.envVars) {
+      return values;
+    }
 
     console.log('');
     console.log(chalk.cyan(`▸ ${server.name}`));
@@ -209,19 +238,34 @@ export class MCPService {
         // Prepare config with environment variables and dynamic command
         let configToTransform = { ...server.config };
 
-        // Handle dynamic command generation in the config itself
-        if (server.config.type === 'local' && typeof server.config.command === 'function') {
-          const commandArray = await server.config.command({ targetId: this.target.id });
+        // Resolve potentially dynamic command and args (only for CLI servers)
+        let resolvedCommand: unknown;
+        let resolvedArgs: unknown;
+
+        if (isCLICommandConfig(server.config)) {
+          resolvedCommand = server.config.command
+            ? await resolveConfig(server.config.command)
+            : undefined;
+          resolvedArgs = server.config.args ? await resolveConfig(server.config.args) : [];
+        }
+
+        // Update the config with resolved values (only for CLI servers)
+        if (isCLICommandConfig(server.config)) {
           configToTransform = {
             ...server.config,
-            command: commandArray,
+            command: resolvedCommand,
+            args: resolvedArgs,
           };
         }
 
         // If server has env vars and we have configured values, merge them
         if (Object.keys(configuredValues).length > 0) {
-          const serverConfigEnv = server.config.type === 'local' ? server.config.environment :
-                                server.config.type === 'stdio' ? server.config.env : {};
+          const serverConfigEnv =
+            server.config.type === 'local'
+              ? server.config.environment
+              : server.config.type === 'stdio'
+                ? server.config.env
+                : {};
           const updatedEnv = { ...serverConfigEnv };
 
           for (const [key, value] of Object.entries(configuredValues)) {
@@ -240,24 +284,6 @@ export class MCPService {
         // Transform config for target-specific format
         const transformedConfig = this.target.transformMCPConfig(configToTransform, serverId);
 
-        // Apply target-specific configuration for sylphx-flow
-        if (serverId === 'sylphx-flow' && this.target.mcpServerConfig?.['sylphx-flow']) {
-          const targetConfig = this.target.mcpServerConfig['sylphx-flow'];
-          const args: string[] = [];
-
-          if (targetConfig.disableMemory) args.push('--disable-memory');
-          if (targetConfig.disableTime) args.push('--disable-time');
-          if (targetConfig.disableProjectStartup) args.push('--disable-project-startup');
-          if (targetConfig.disableKnowledge) args.push('--disable-knowledge');
-
-          // Update the command to include the configuration
-          if (transformedConfig.type === 'local') {
-            transformedConfig.command = [...transformedConfig.command, ...args];
-          } else if (transformedConfig.type === 'stdio') {
-            transformedConfig.args = [...(transformedConfig.args || []), ...args];
-          }
-        }
-
         mcpSection[server.name] = transformedConfig;
       }
 
@@ -271,14 +297,16 @@ export class MCPService {
         await this.target.approveMCPServers(process.cwd(), serverNames);
       }
     } catch (error) {
-      throw new Error(`Failed to install MCP servers: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to install MCP servers: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   async readConfig(): Promise<TargetConfigurationData> {
     try {
       return (await this.target.readConfig(process.cwd())) as TargetConfigurationData;
-    } catch (error) {
+    } catch (_error) {
       return { settings: {} };
     }
   }
@@ -298,9 +326,15 @@ export class MCPService {
 
   private setNestedProperty(obj: TargetConfigurationData, path: string, value: unknown): void {
     const keys = path.split('.');
-    const lastKey = keys.pop()!;
+    const lastKey = keys.pop();
+    if (!lastKey) {
+      return;
+    }
+
     const target = keys.reduce((current, key) => {
-      if (!current[key]) current[key] = {};
+      if (!current[key]) {
+        current[key] = {};
+      }
       return current[key];
     }, obj);
     target[lastKey] = value;
