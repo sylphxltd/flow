@@ -159,7 +159,7 @@ export const initCommand: CommandConfig = {
           const spinner = ora('Installing MCP servers...').start();
           try {
             await mcpService.installServers(selectedServers);
-            spinner.succeed(chalk.green(`✓ ${selectedServers.length} MCP server(s) installed`));
+            spinner.succeed(chalk.green('✓ MCP servers installed'));
           } catch (error) {
             spinner.fail(chalk.red('Failed to install MCP servers'));
             throw error;
