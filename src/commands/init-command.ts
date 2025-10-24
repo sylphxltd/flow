@@ -1,24 +1,14 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import {
-  getDefaultServers,
-  getServersRequiringAPIKeys,
-  getServersWithOptionalAPIKeys,
-  MCP_SERVER_REGISTRY,
-  type MCPServerID,
-} from '../config/servers.js';
+import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
 import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { secretUtils } from '../utils/secret-utils.js';
-import {
-  targetSupportsMCPServers,
-  validateTarget,
-  getNestedProperty,
-  setNestedProperty,
-} from '../utils/target-config.js';
+import { targetSupportsMCPServers, validateTarget } from '../utils/target-config.js';
+import { MCPService } from '../services/mcp-service.js';
 
 async function validateInitOptions(options: CommandOptions): Promise<void> {
   const targetId = await targetManager.resolveTarget({ target: options.target });
@@ -36,98 +26,6 @@ async function validateInitOptions(options: CommandOptions): Promise<void> {
   if (options.merge) {
     throw new CLIError('The --merge option is not supported with init command.', 'INVALID_OPTION');
   }
-}
-
-async function configureMCPServer(
-  serverId: MCPServerID,
-  collectedEnv: Record<string, string> = {}
-): Promise<Record<string, string>> {
-  const server = MCP_SERVER_REGISTRY[serverId];
-  const values: Record<string, string> = {};
-
-  if (!server.envVars) return values;
-
-  console.log('');
-  console.log(chalk.cyan(`▸ ${server.name}`));
-  console.log(chalk.gray(server.description));
-  console.log('');
-
-  for (const [key, config] of Object.entries(server.envVars)) {
-    // Check dependencies
-    if (config.dependsOn) {
-      const missingDeps = config.dependsOn.filter(
-        (dep) => !(collectedEnv[dep] || process.env[dep])
-      );
-      if (missingDeps.length > 0) {
-        // Skip this field if dependencies not met
-        continue;
-      }
-    }
-
-    let value: string;
-
-    if (config.fetchChoices) {
-      const spinner = ora('Fetching options...').start();
-
-      for (const [envKey, envValue] of Object.entries(collectedEnv)) {
-        if (envValue) {
-          process.env[envKey] = envValue;
-        }
-      }
-
-      try {
-        const choices = await config.fetchChoices();
-        spinner.stop();
-
-        const answer = await inquirer.prompt({
-          type: 'list',
-          name: 'value',
-          message: `${key}${config.required ? ' *' : ''}`,
-          choices,
-          default: config.default || choices[0],
-        });
-        value = answer.value;
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        spinner.fail(chalk.red(`Failed to fetch options: ${errorMsg}`));
-
-        const answer = await inquirer.prompt({
-          type: 'input',
-          name: 'value',
-          message: `${key}${config.required ? ' *' : ''}`,
-          default: config.default,
-        });
-        value = answer.value;
-      }
-    } else if (key === 'GEMINI_MODEL') {
-      const answer = await inquirer.prompt({
-        type: 'list',
-        name: 'model',
-        message: `${key}${config.required ? ' *' : ''}`,
-        choices: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'],
-        default: config.default || 'gemini-2.5-flash',
-      });
-      value = answer.model;
-    } else {
-      const answer = await inquirer.prompt({
-        type: config.secret ? 'password' : 'input',
-        name: 'value',
-        message: `${key}${config.required ? ' *' : ''}`,
-        default: config.default,
-        mask: config.secret ? '•' : undefined,
-      });
-      value = answer.value;
-    }
-
-    if (value) {
-      values[key] = value;
-      collectedEnv[key] = value;
-    }
-  }
-
-  console.log(chalk.green('✓ Configured'));
-
-  return values;
 }
 
 export const initCommand: CommandConfig = {
@@ -184,9 +82,12 @@ export const initCommand: CommandConfig = {
       console.log(chalk.yellow('\n  Dry run mode - no changes will be made'));
 
       if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
-        const defaultServers = getDefaultServers();
+        const mcpService = new MCPService(targetId);
+        const availableServers = mcpService.getAvailableServers();
         console.log(chalk.cyan('\n▸ MCP Tools'));
-        defaultServers.forEach((s) => console.log(chalk.gray(`  • ${s}`)));
+        availableServers.forEach((s) =>
+          console.log(chalk.gray(`  • ${MCP_SERVER_REGISTRY[s].name}`))
+        );
       }
 
       console.log(chalk.cyan('\n▸ Agents'));
@@ -199,34 +100,10 @@ export const initCommand: CommandConfig = {
       return;
     }
 
-    // Get target and check existing config
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
-      throw new Error(`Target not found: ${targetId}`);
-    }
-
-    let configData: any;
-    try {
-      configData = await target.readConfig(process.cwd());
-    } catch (error) {
-      configData = {};
-    }
-
-    const mcpConfigPath = target.config.mcpConfigPath;
-    const existingMcpSection = getNestedProperty(configData, mcpConfigPath) || {};
-
-    // Find existing server IDs
-    const existingServerNames = Object.keys(existingMcpSection);
-    const existingServerIds = Object.values(MCP_SERVER_REGISTRY)
-      .filter((server) => existingServerNames.includes(server.name))
-      .map((server) => server.id);
-
     // Process MCP servers
-    const serverConfigs: Array<{ id: MCPServerID; values: Record<string, string> }> = [];
-
     if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
-      const allServerIds = Object.keys(MCP_SERVER_REGISTRY) as MCPServerID[];
-      const availableServers = allServerIds.filter((id) => !existingServerIds.includes(id));
+      const mcpService = new MCPService(targetId);
+      const availableServers = mcpService.getAvailableServers();
 
       console.log('');
       console.log(chalk.cyan.bold('▸ MCP Tools'));
@@ -267,57 +144,7 @@ export const initCommand: CommandConfig = {
       }
 
       if (newServers.length > 0) {
-        console.log('');
-        console.log(chalk.gray(`Installing: ${newServers.join(', ')}`));
-
-        const serversNeedingKeys = getServersRequiringAPIKeys();
-        const serversWithOptionalKeys = getServersWithOptionalAPIKeys();
-        const allNeedingConfig = [...serversNeedingKeys, ...serversWithOptionalKeys];
-        const newServersNeedingConfig = allNeedingConfig.filter((s) => newServers.includes(s));
-
-        if (newServersNeedingConfig.length > 0) {
-          const collectedEnv: Record<string, string> = {};
-          for (const serverId of newServersNeedingConfig) {
-            const values = await configureMCPServer(serverId, collectedEnv);
-            serverConfigs.push({ id: serverId, values });
-          }
-        }
-
-        const spinner = ora('Saving configuration...').start();
-
-        const mcpSection = { ...existingMcpSection };
-
-        // Add new configured servers
-        for (const { id: serverId, values } of serverConfigs) {
-          const server = MCP_SERVER_REGISTRY[serverId];
-          const serverConfig_env = server.config.type === 'local' ? server.config.environment : {};
-
-          const updatedEnv = { ...serverConfig_env };
-          for (const [key, value] of Object.entries(values)) {
-            if (value && value.trim() !== '') {
-              updatedEnv[key] = value;
-            }
-          }
-
-          mcpSection[server.name] = {
-            ...server.config,
-            environment: updatedEnv,
-          };
-        }
-
-        // Add new servers that don't need config
-        const newServersNotNeedingConfig = newServers.filter((s) => !allNeedingConfig.includes(s));
-        for (const serverId of newServersNotNeedingConfig) {
-          const server = MCP_SERVER_REGISTRY[serverId];
-          mcpSection[server.name] = server.config;
-        }
-
-        setNestedProperty(configData, mcpConfigPath, mcpSection);
-        await target.writeConfig(process.cwd(), configData);
-
-        spinner.succeed(
-          chalk.green(`✓ ${newServers.length} tool${newServers.length > 1 ? 's' : ''} installed`)
-        );
+        await mcpService.installServers(newServers);
       }
     }
 

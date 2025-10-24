@@ -1,22 +1,12 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import {
-  getAllServerIDs,
-  getServersRequiringAPIKeys,
-  MCP_SERVER_REGISTRY,
-  type MCPServerID,
-} from '../config/servers.js';
+import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandConfig, CommandHandler, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
-import {
-  addMCPServersToTarget,
-  listMCPServersForTarget,
-  targetSupportsMCPServers,
-  getNestedProperty,
-  setNestedProperty,
-} from '../utils/target-config.js';
+import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
+import { MCPService } from '../services/mcp-service.js';
 
 // MCP start handler (unchanged - doesn't need UI)
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
@@ -57,156 +47,47 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
           disableCodebaseSearch: true,
         });
         break;
-      default:
-        throw new CLIError(
-          `Unknown preset: ${options.preset}. Available: opencode, claude-code, minimal`,
-          'INVALID_PRESET'
-        );
+      case 'full':
+        Object.assign(config, {
+          disableMemory: false,
+          disableTime: false,
+          disableProjectStartup: false,
+          disableKnowledge: false,
+          disableCodebaseSearch: false,
+        });
+        break;
     }
   }
 
-  const { startSylphxFlowMCPServer } = await import('../servers/sylphx-flow-mcp-server.js');
-  await startSylphxFlowMCPServer(config);
-  process.stdin.resume();
-};
-
-// MCP install handler
-const mcpInstallHandler: CommandHandler = async (options: {
-  servers?: string[];
-  all?: boolean;
-  dryRun?: boolean;
-  target?: string;
-}) => {
   const targetId = await targetManager.resolveTarget({ target: options.target });
+  const target = targetManager.getTarget(targetId);
 
-  if (!targetSupportsMCPServers(targetId)) {
-    throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
+  if (!target) {
+    throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
   }
 
-  console.log('');
-  console.log(chalk.cyan.bold('▸ Install MCP Tools'));
-  console.log(chalk.gray(`  Target: ${targetId}`));
+  try {
+    const configData = await target.readConfig(process.cwd());
+    const mcpConfigPath = target.config.mcpConfigPath;
+    const mcpSection = configData?.mcp || {};
 
-  const servers = options.servers || [];
-
-  if (options.all) {
-    const allServers = getAllServerIDs();
-
-    if (options.dryRun) {
-      console.log(chalk.yellow('\n  Dry run - would install:'));
-      allServers.forEach((s) => console.log(chalk.gray(`    • ${s}`)));
-      return;
+    // Update sylphx-flow configuration
+    if (mcpSection['sylphx-flow']) {
+      mcpSection['sylphx-flow'].environment = {
+        ...mcpSection['sylphx-flow'].environment,
+        ...config,
+      };
     }
 
-    const serversNeedingKeys = getServersRequiringAPIKeys();
-    const serversWithKeys: string[] = [];
-    const serversWithoutKeys: string[] = [];
+    await target.writeConfig(process.cwd(), configData);
 
-    if (serversNeedingKeys.length > 0) {
-      console.log(chalk.cyan('\n▸ Configure Servers'));
-
-      for (const serverType of serversNeedingKeys) {
-        const server = MCP_SERVER_REGISTRY[serverType];
-        console.log(chalk.cyan(`\n  ${server.name}`));
-
-        if (!server.envVars) {
-          serversWithKeys.push(serverType);
-          continue;
-        }
-
-        const values: Record<string, string> = {};
-
-        for (const [key, config] of Object.entries(server.envVars)) {
-          const answer = await inquirer.prompt([
-            {
-              type: config.secret ? 'password' : 'input',
-              name: 'value',
-              message: `${key}${config.required ? ' *' : ''}`,
-              default: config.default,
-              mask: config.secret ? '•' : undefined,
-            },
-          ]);
-
-          if (answer.value) {
-            values[key] = answer.value;
-          }
-        }
-
-        const hasAllRequired = Object.entries(server.envVars)
-          .filter(([, cfg]) => cfg.required)
-          .every(([key]) => values[key]);
-
-        if (hasAllRequired) {
-          serversWithKeys.push(serverType);
-        } else {
-          serversWithoutKeys.push(serverType);
-        }
-      }
-    }
-
-    const serversNotNeedingKeys = allServers.filter((s) => !serversNeedingKeys.includes(s));
-    const serversToInstall = [...serversNotNeedingKeys, ...serversWithKeys];
-
-    if (serversToInstall.length > 0) {
-      const spinner = ora('Installing MCP tools...').start();
-      await addMCPServersToTarget(process.cwd(), targetId, serversToInstall as any);
-      spinner.succeed(chalk.green(`Installed: ${serversToInstall.join(', ')}`));
-    }
-
-    if (serversWithoutKeys.length > 0) {
-      console.log(chalk.yellow(`\n⚠ Skipped: ${serversWithoutKeys.join(', ')}`));
-      console.log(chalk.gray('  Configure later with: sylphx-flow mcp config <server>'));
-    }
-
-    console.log('');
-    return;
-  }
-
-  if (servers.length === 0) {
-    throw new CLIError('Please specify MCP tools to install or use --all', 'NO_SERVERS_SPECIFIED');
-  }
-
-  // Validate servers
-  const validServers: string[] = [];
-  for (const server of servers) {
-    if (getAllServerIDs().includes(server as any)) {
-      validServers.push(server);
-    } else {
-      console.log(chalk.yellow(`⚠ Unknown server: ${server}`));
-    }
-  }
-
-  if (validServers.length === 0) {
+    console.log(chalk.green('✓ Sylphx Flow MCP server configuration updated'));
+  } catch (error) {
     throw new CLIError(
-      `Invalid MCP tools. Available: ${getAllServerIDs().join(', ')}`,
-      'INVALID_MCP_SERVERS'
+      `Failed to update MCP configuration: ${error instanceof Error ? error.message : String(error)}`,
+      'MCP_CONFIG_ERROR'
     );
   }
-
-  if (options.dryRun) {
-    console.log(chalk.yellow('\n  Dry run - would install:'));
-    validServers.forEach((s) => console.log(chalk.gray(`    • ${s}`)));
-    console.log('');
-    return;
-  }
-
-  const spinner = ora('Installing MCP tools...').start();
-  await addMCPServersToTarget(process.cwd(), targetId, validServers as any);
-  spinner.succeed(chalk.green(`Installed: ${validServers.join(', ')}`));
-  console.log('');
-};
-
-// MCP list handler
-const mcpListHandler: CommandHandler = async (options) => {
-  const targetId = await targetManager.resolveTarget({ target: options?.target });
-
-  console.log('');
-  console.log(chalk.cyan.bold('▸ Configured MCP Tools'));
-  console.log(chalk.gray(`  Target: ${targetId}`));
-  console.log('');
-
-  await listMCPServersForTarget(process.cwd(), targetId);
-  console.log('');
 };
 
 // MCP config handler
@@ -222,6 +103,8 @@ const mcpConfigHandler: CommandHandler = async (options) => {
   console.log(chalk.cyan.bold('▸ Configure MCP Server'));
   console.log(chalk.gray(`  Target: ${targetId}`));
 
+  const mcpService = new MCPService(targetId);
+
   // If no server specified, show selection
   let selectedServerId: MCPServerID;
 
@@ -231,7 +114,7 @@ const mcpConfigHandler: CommandHandler = async (options) => {
         type: 'list',
         name: 'server',
         message: 'Select server to configure:',
-        choices: getAllServerIDs().map((id) => {
+        choices: mcpService.getAllServerIds().map((id) => {
           const srv = MCP_SERVER_REGISTRY[id];
           return {
             name: `${srv.name} - ${srv.description}`,
@@ -242,9 +125,9 @@ const mcpConfigHandler: CommandHandler = async (options) => {
     ]);
     selectedServerId = answer.server;
   } else {
-    if (!getAllServerIDs().includes(server as any)) {
+    if (!mcpService.getAllServerIds().includes(server as any)) {
       throw new CLIError(
-        `Invalid MCP server: ${server}. Available: ${getAllServerIDs().join(', ')}`,
+        `Invalid MCP server: ${server}. Available: ${mcpService.getAllServerIds().join(', ')}`,
         'INVALID_MCP_SERVER'
       );
     }
@@ -258,195 +141,173 @@ const mcpConfigHandler: CommandHandler = async (options) => {
 
   if (!serverDef.envVars) {
     console.log(chalk.gray('\n  No configuration needed'));
-    console.log('');
     return;
   }
 
-  // Get current values
-  const target = targetManager.getTarget(targetId);
-  if (!target) {
-    throw new Error(`Target not found: ${targetId}`);
-  }
-
-  const config = await target.readConfig(process.cwd());
-  const mcpConfigPath = target.config.mcpConfigPath;
-  const mcpSection = getNestedProperty(config, mcpConfigPath) || {};
-  const existingConfig = mcpSection[serverDef.name];
-  const existingEnv = existingConfig?.environment || {};
-
-  // Collect environment values that fetchChoices might need
-  const collectedEnv: Record<string, string> = {};
-
-  // Prompt for values
-  const values: Record<string, string> = {};
-
-  for (const [key, envConfig] of Object.entries(serverDef.envVars)) {
-    const currentValue = existingEnv[key] || process.env[key];
-
-    if (envConfig.fetchChoices) {
-      const spinner = ora(`Fetching ${key} options...`).start();
-
-      // Set environment variables for fetchChoices to use
-      for (const [envKey, envValue] of Object.entries(collectedEnv)) {
-        if (envValue) {
-          process.env[envKey] = envValue;
-        }
-      }
-
-      try {
-        const choices = await envConfig.fetchChoices();
-        spinner.stop();
-
-        const answer = await inquirer.prompt([
-          {
-            type: 'list',
-            name: 'value',
-            message: `${key}${envConfig.required ? ' *' : ''}`,
-            choices,
-            default: currentValue || envConfig.default || choices[0],
-          },
-        ]);
-        values[key] = answer.value;
-        collectedEnv[key] = answer.value;
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        spinner.fail(chalk.red(`Failed to fetch ${key} options: ${errorMsg}`));
-
-        // Fall back to manual input
-        const answer = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'value',
-            message: `${key}${envConfig.required ? ' *' : ''}${currentValue ? ' (press Enter to keep current)' : ''}`,
-            default: currentValue || envConfig.default,
-          },
-        ]);
-
-        if (answer.value) {
-          values[key] = answer.value;
-          collectedEnv[key] = answer.value;
-        } else if (currentValue) {
-          values[key] = currentValue;
-          collectedEnv[key] = currentValue;
-        }
-      }
-    } else {
-      // Regular input
-      const answer = await inquirer.prompt([
-        {
-          type: envConfig.secret ? 'password' : 'input',
-          name: 'value',
-          message: `${key}${envConfig.required ? ' *' : ''}${currentValue ? ' (press Enter to keep current)' : ''}`,
-          default: !envConfig.secret && currentValue ? currentValue : envConfig.default,
-          mask: envConfig.secret ? '•' : undefined,
-        },
-      ]);
-
-      if (answer.value) {
-        values[key] = answer.value;
-        collectedEnv[key] = answer.value;
-      } else if (currentValue) {
-        values[key] = currentValue;
-        collectedEnv[key] = currentValue;
-      }
-    }
-  }
-
-  // Check required fields
-  const missingRequired = Object.entries(serverDef.envVars || {})
-    .filter(([key, cfg]) => cfg.required && !values[key])
-    .map(([key]) => key);
-
-  if (missingRequired.length > 0) {
-    console.log(chalk.red(`\n✗ Missing required fields: ${missingRequired.join(', ')}`));
-    console.log('');
-    return;
-  }
+  // Configure server
+  const values = await mcpService.configureServer(selectedServerId);
 
   // Save configuration
   const spinner = ora('Saving configuration...').start();
 
-  const serverConfig_env = serverDef.config.type === 'local' ? serverDef.config.environment : {};
-  const updatedEnv = { ...serverConfig_env };
+  try {
+    await mcpService.installServers([selectedServerId]);
 
-  for (const [key, value] of Object.entries(values)) {
-    if (value && value.trim() !== '') {
-      updatedEnv[key] = value;
-    }
+    spinner.succeed(chalk.green('✓ Configuration saved'));
+  } catch (error) {
+    spinner.fail(chalk.red('Failed to save configuration'));
+    throw error;
+  }
+};
+
+// MCP list handler
+const mcpListHandler: CommandHandler = async (options: CommandOptions) => {
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+
+  if (!targetSupportsMCPServers(targetId)) {
+    throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
   }
 
-  mcpSection[serverDef.name] = {
-    ...serverDef.config,
-    environment: updatedEnv,
-  };
+  await listMCPServersForTarget(process.cwd(), targetId);
+};
 
-  setNestedProperty(config, mcpConfigPath, mcpSection);
-  await target.writeConfig(process.cwd(), config);
+// MCP add handler
+const mcpAddHandler: CommandHandler = async (options: CommandOptions) => {
+  const servers = options.servers as string[];
+  const targetId = await targetManager.resolveTarget({ target: options.target });
 
-  spinner.succeed(chalk.green('Configuration saved'));
-  console.log('');
+  if (!targetSupportsMCPServers(targetId)) {
+    throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
+  }
+
+  if (!servers || servers.length === 0) {
+    throw new CLIError(
+      'No servers specified. Use --servers <server1,server2,...>',
+      'NO_SERVERS_SPECIFIED'
+    );
+  }
+
+  // Parse comma-separated servers
+  const serverList = Array.isArray(servers) ? servers : [servers];
+
+  const mcpService = new MCPService(targetId);
+  const allServerIds = mcpService.getAllServerIds();
+
+  // Validate server names
+  const invalidServers = serverList.filter((s) => !allServerIds.includes(s as any));
+  if (invalidServers.length > 0) {
+    throw new CLIError(
+      `Invalid MCP servers: ${invalidServers.join(', ')}. Available: ${allServerIds.join(', ')}`,
+      'INVALID_MCP_SERVERS'
+    );
+  }
+
+  const serverIds = serverList as MCPServerID[];
+  await mcpService.installServers(serverIds);
+};
+
+// MCP remove handler
+const mcpRemoveHandler: CommandHandler = async (options: CommandOptions) => {
+  const servers = options.servers as string[];
+  const targetId = await targetManager.resolveTarget({ target: options.target });
+
+  if (!targetSupportsMCPServers(targetId)) {
+    throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
+  }
+
+  if (!servers || servers.length === 0) {
+    throw new CLIError(
+      'No servers specified. Use --servers <server1,server2,...>',
+      'NO_SERVERS_SPECIFIED'
+    );
+  }
+
+  const mcpService = new MCPService(targetId);
+  const installedServerIds = mcpService.getInstalledServerIds();
+
+  // Validate server names
+  const invalidServers = servers.filter((s) => !installedServerIds.includes(s as any));
+  if (invalidServers.length > 0) {
+    throw new CLIError(
+      `MCP servers not installed: ${invalidServers.join(', ')}. Installed: ${installedServerIds.join(', ')}`,
+      'SERVERS_NOT_INSTALLED'
+    );
+  }
+
+  // TODO: Implement remove functionality in MCPService
+  console.log(chalk.yellow('Remove functionality not yet implemented'));
 };
 
 export const mcpCommand: CommandConfig = {
   name: 'mcp',
-  description: 'Manage MCP (Model Context Protocol) tools and servers',
+  description: 'Manage MCP (Model Context Protocol) servers',
   options: [
     {
       flags: '--target <type>',
-      description: `Target platform (${targetManager.getImplementedTargets().join(', ')}, default: auto-detect)`,
+      description: `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: opencode)`,
     },
   ],
   subcommands: [
     {
       name: 'start',
-      description: 'Start the Sylphx Flow MCP server',
+      description: 'Start Sylphx Flow MCP server with specific configuration',
       options: [
         {
           flags: '--preset <type>',
-          description: 'Use preset configuration (opencode, claude-code, minimal)',
+          description: 'Use preset configuration (opencode, claude-code, minimal, full)',
         },
-        { flags: '--disable-memory', description: 'Disable memory tools' },
-        { flags: '--disable-time', description: 'Disable time tools' },
-        { flags: '--disable-project-startup', description: 'Disable project startup tools' },
-        { flags: '--disable-knowledge', description: 'Disable knowledge tools' },
-        { flags: '--disable-codebase-search', description: 'Disable codebase search tools' },
+        { flags: '--disable-memory', description: 'Disable memory functionality' },
+        { flags: '--disable-time', description: 'Disable time functionality' },
+        {
+          flags: '--disable-project-startup',
+          description: 'Disable project startup functionality',
+        },
+        { flags: '--disable-knowledge', description: 'Disable knowledge functionality' },
+        {
+          flags: '--disable-codebase-search',
+          description: 'Disable codebase search functionality',
+        },
       ],
       handler: mcpStartHandler,
     },
     {
-      name: 'install',
-      description: 'Install MCP tools for the target platform',
-      arguments: [
+      name: 'config',
+      description: 'Configure MCP server settings',
+      options: [
         {
-          name: 'servers',
-          description: `MCP tools to install (${getAllServerIDs().join(', ')})`,
-          required: false,
+          flags: '--server <name>',
+          description: 'Configure specific server (shows selection if not provided)',
         },
       ],
-      options: [
-        { flags: '--all', description: 'Install all available MCP tools' },
-        { flags: '--dry-run', description: 'Show what would be done without making changes' },
-      ],
-      handler: mcpInstallHandler,
+      handler: mcpConfigHandler,
     },
     {
       name: 'list',
-      description: 'List configured MCP tools for the target platform',
+      description: 'List installed MCP servers',
       options: [],
       handler: mcpListHandler,
     },
     {
-      name: 'config',
-      description: 'Configure API keys for MCP tools',
-      arguments: [
+      name: 'add',
+      description: 'Add MCP servers',
+      options: [
         {
-          name: 'server',
-          description: `MCP server to configure (${getServersRequiringAPIKeys().join(', ')}) - optional`,
-          required: false,
+          flags: '--servers <servers>',
+          description: 'Comma-separated list of server names to add',
         },
       ],
-      options: [],
-      handler: mcpConfigHandler,
+      handler: mcpAddHandler,
+    },
+    {
+      name: 'remove',
+      description: 'Remove MCP servers',
+      options: [
+        {
+          flags: '--servers <servers>',
+          description: 'Comma-separated list of server names to remove',
+        },
+      ],
+      handler: mcpRemoveHandler,
     },
   ],
 };
