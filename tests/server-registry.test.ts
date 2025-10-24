@@ -41,13 +41,14 @@ describe('Server Registry Tests', () => {
       const defaultServers = getDefaultServers();
 
       // Should include servers with defaultInInit: true
+      expect(defaultServers).toContain('sylphx-flow'); // required: true
       expect(defaultServers).toContain('context7');
-      expect(defaultServers).toContain('gpt-image');
-      expect(defaultServers).toContain('perplexity');
       expect(defaultServers).toContain('grep');
-      expect(defaultServers).toContain('gemini-search');
 
-      // Should not include servers with defaultInInit: false or undefined
+      // Should not include servers with defaultInInit: false
+      expect(defaultServers).not.toContain('gpt-image');
+      expect(defaultServers).not.toContain('perplexity');
+      expect(defaultServers).not.toContain('gemini-search');
       expect(defaultServers).not.toContain('filesystem');
       expect(defaultServers).not.toContain('brave-search');
     });
@@ -156,7 +157,7 @@ describe('Server Registry Tests', () => {
         },
       });
       expect(gptImage.category).toBe('ai');
-      expect(gptImage.defaultInInit).toBe(true);
+      expect(gptImage.defaultInInit).toBe(false);
     });
 
     it('should validate gemini-search server configuration', () => {
@@ -179,7 +180,7 @@ describe('Server Registry Tests', () => {
         },
       });
       expect(geminiSearch.category).toBe('ai');
-      expect(geminiSearch.defaultInInit).toBe(true);
+      expect(geminiSearch.defaultInInit).toBe(false);
     });
 
     it('should validate grep server configuration', () => {

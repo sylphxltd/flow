@@ -82,7 +82,7 @@ describe('MCP Configuration Tests', () => {
       );
 
       expect(result).toBe(false);
-      expect(console.error).toHaveBeenCalledWith('❌ Unknown MCP server: unknown-server');
+      expect(console.error).toHaveBeenCalledWith('✗ Unknown MCP server: unknown-server');
     });
 
     it('should return true for servers that require no keys', async () => {
