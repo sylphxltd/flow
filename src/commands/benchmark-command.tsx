@@ -185,41 +185,53 @@ async function runParallelAgents(
         monitor?.updateAgentStatus(agent, 'running');
       });
 
-      const promises = chunks[i].map(agent =>
-        AgentService.runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout)
-      );
+      // Helper function to write timing information
+      const writeTimingInfo = async (
+        agent: string,
+        startTime: number,
+        endTime: number,
+        status: 'completed' | 'failed'
+      ): Promise<void> => {
+        const duration = Math.floor((endTime - startTime) / 1000);
+        const statusText = status === 'completed' ? 'Completed' : 'Failed';
+        const statusNote = status === 'completed'
+          ? 'parallel execution'
+          : 'parallel execution - failed';
 
-      try {
-        await Promise.all(promises);
+        try {
+          await fs.writeFile(
+            path.join(outputDir, agent, 'execution-time.txt'),
+            `Started: ${new Date(startTime).toISOString()}\n${statusText}: ${new Date(endTime).toISOString()}\nDuration: ${duration} seconds (${statusNote})\n`
+          );
+        } catch (error) {
+          // Ignore timing write errors - they shouldn't fail the benchmark
+        }
+      };
 
-        // Mark all agents in this chunk as completed and record times
-        const chunkEndTime = Date.now();
-        chunks[i].forEach(agent => {
-          const startTime = chunkStartTimes[agent];
-          const duration = Math.floor((chunkEndTime - startTime) / 1000);
+      const promises = chunks[i].map(async agent => {
+        const startTime = chunkStartTimes[agent];
+        try {
+          await AgentService.runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
 
-          // Write timing info to agent directory
-          try {
-            fs.writeFile(
-              path.join(outputDir, agent, 'execution-time.txt'),
-              `Started: ${new Date(startTime).toISOString()}\nCompleted: ${new Date(chunkEndTime).toISOString()}\nDuration: ${duration} seconds (parallel execution)\n`
-            ).catch(() => {}); // Ignore errors
-          } catch (error) {
-            // Ignore timing write errors
-          }
+          // Record successful agent completion time
+          const endTime = Date.now();
+          await writeTimingInfo(agent, startTime, endTime, 'completed');
 
           monitor?.updateAgentStatus(agent, 'completed');
-        });
+          return { agent, success: true };
+        } catch (error) {
+          // Record failed agent completion time
+          const endTime = Date.now();
+          await writeTimingInfo(agent, startTime, endTime, 'failed');
 
-      } catch (error) {
-        // Mark all agents in this chunk as having errors
-        chunks[i].forEach(agent => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
           monitor?.updateAgentStatus(agent, 'error');
-          monitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
-        });
+          monitor?.addAgentOutput(agent, `❌ ERROR: ${errorMessage}`);
+          return { agent, success: false, error: errorMessage };
+        }
+      });
 
-        // Continue with next chunk
-      }
+      await Promise.allSettled(promises);
 
       // Add delay between chunks (except last one)
       if (i < chunks.length - 1) {
