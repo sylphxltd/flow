@@ -43,7 +43,7 @@ export class EvaluationService {
       }
     }
 
-    const evaluatorPrompt = this.buildEvaluationPrompt(agentTimings);
+    const evaluatorPrompt = await this.buildEvaluationPrompt(agentTimings);
 
     // Collect all agent work by reading their created files
     const agentWork: AgentWork = {};
@@ -164,23 +164,24 @@ export class EvaluationService {
           const tempSummaryPath = path.join(outputDir, 'summary.txt');
           await fs.writeFile(tempSummaryPath, summary);
 
-          // Show completion message and report preview in monitor
+          // Show completion message and display the full LLM output
           if (monitor) {
-            monitor?.addAgentOutput('evaluator', '📊 Evaluation completed successfully!');
+            monitor?.addAgentOutput('evaluator', '📊 Evaluation completed!');
             monitor?.addAgentOutput('evaluator', `📁 Report saved to: ${tempReportPath}`);
+            monitor?.addAgentOutput('evaluator', '');
+            monitor?.addAgentOutput('evaluator', '🏆 EVALUATION RESULTS:');
+            monitor?.addAgentOutput('evaluator', '');
 
-            // Show report preview (first few lines)
-            const reportLines = evaluationOutput.split('\n').slice(0, 10);
-            monitor?.addAgentOutput('evaluator', '📋 Report Preview:');
-            reportLines.forEach((line, index) => {
+            // Display the complete LLM evaluation output directly
+            const lines = evaluationOutput.split('\n');
+            lines.forEach((line, index) => {
               if (line.trim()) {
-                monitor?.addAgentOutput('evaluator', `${index + 1}. ${line}`);
+                monitor?.addAgentOutput('evaluator', line);
               }
             });
 
-            if (evaluationOutput.split('\n').length > 10) {
-              monitor?.addAgentOutput('evaluator', '... (full report available in file)');
-            }
+            monitor?.addAgentOutput('evaluator', '');
+            monitor?.addAgentOutput('evaluator', '✅ End of evaluation report');
           }
 
           // Clean up evaluation temp file
@@ -219,108 +220,39 @@ export class EvaluationService {
     });
   }
 
-  private static buildEvaluationPrompt(agentTimings: AgentTimings): string {
-    return `
-You are conducting a comprehensive technical evaluation of software engineering agents. You must analyze the actual code and implementations they created, not give generic assessments.
+  private static async buildEvaluationPrompt(agentTimings: AgentTimings): Promise<string> {
+    // Load template from file
+    const templatePath = path.join(process.cwd(), 'templates', 'evaluation-prompt.md');
+    let template: string;
 
-**CRITICAL REQUIREMENTS:**
-1. **EXAMINE ACTUAL CODE**: Read and analyze every file created by each agent
-2. **SPECIFIC ANALYSIS**: Reference actual implementations, files, and code patterns
-3. **CONCRETE EXAMPLES**: Quote actual code snippets and file contents in your analysis
-4. **NO GENERIC STATEMENTS**: Avoid vague praise like "comprehensive system" - be specific
+    try {
+      template = await fs.readFile(templatePath, 'utf-8');
+    } catch (error) {
+      // Fallback to basic prompt if template file is not found
+      template = `You are evaluating software engineering agents. Analyze their actual code implementations.
 
-**PERFORMANCE SCORING (CRITICAL):**
-${Object.entries(agentTimings).map(([agent, timing]) => {
-  const duration = timing.duration || 0;
-  const scoreRange = PERFORMANCE_SCORE_RANGES.find(range => duration <= range.max)!;
-  return `- ${agent}: ${duration}s (Performance Score: ${scoreRange.score}/10 - ${scoreRange.description})`;
-}).join('\n')}
+**Agent Performance Data:**
+{{AGENT_PERFORMANCE_DATA}}
 
-**DETAILED EVALUATION CRITERIA:**
+Provide a detailed technical evaluation for each agent, focusing on:
+1. Code quality and implementation
+2. Requirements compliance
+3. Architecture and design
+4. Testing and quality assurance
+5. Documentation and usability
+6. Performance and efficiency
 
-For each agent, provide:
+Score each area 1-10 points and provide specific examples from their code.`;
+    }
 
-1. **Code Implementation Analysis** (1-10):
-   - Actual file structure and organization
-   - Code quality and readability (show examples)
-   - Error handling implementation
-   - Security measures implemented
-   - Database design and queries
-   - API endpoint implementations
+    // Generate agent performance data section
+    const performanceData = Object.entries(agentTimings).map(([agent, timing]) => {
+      const duration = timing.duration || 0;
+      const scoreRange = PERFORMANCE_SCORE_RANGES.find(range => duration <= range.max)!;
+      return `- ${agent}: ${duration}s execution time (Performance: ${scoreRange.score}/10)`;
+    }).join('\n');
 
-2. **Feature Completeness** (1-10):
-   - Which specific requirements were met
-   - Missing features or incomplete implementations
-   - User management features implemented
-   - Authentication and authorization
-   - Database migrations and seeding
-
-3. **Testing Quality** (1-10):
-   - Actual test files created
-   - Test coverage areas
-   - Testing frameworks used
-   - Integration tests vs unit tests
-
-4. **Documentation Quality** (1-10):
-   - README content and setup instructions
-   - API documentation
-   - Code comments and inline documentation
-   - Installation and deployment guides
-
-5. **Architecture & Design** (1-10):
-   - Project structure and modularity
-   - Separation of concerns
-   - Design patterns used
-   - Scalability considerations
-
-**MANDATORY OUTPUT FORMAT:**
-
-# Agent Evaluation Report
-
-## Executive Summary
-[Brief overview of results, naming the winner and key performance insights]
-
-## Individual Agent Analysis
-
-### 1. [Agent Name] - Total Score: XX/50
-**Execution Time:** XXX seconds
-**Performance Score:** X/10
-
-#### Implementation Details:
-- **Files Created:** [List actual files]
-- **Key Features Implemented:** [Specific features with examples]
-- **Code Quality Examples:** [Show actual code snippets]
-- **Architecture Assessment:** [Specific analysis of structure]
-
-#### Scoring Breakdown:
-- Performance & Speed: X/10 - [Specific reasoning with time comparison]
-- Code Implementation: X/10 - [Specific code examples]
-- Feature Completeness: X/10 - [Which requirements met/missed]
-- Testing Quality: X/10 - [Actual test files analyzed]
-- Documentation: X/10 - [Documentation quality assessment]
-- Architecture Design: X/10 - [Design pattern analysis]
-
-#### Strengths:
-[List specific strengths with examples]
-
-#### Weaknesses:
-[List specific weaknesses with examples]
-
-[Repeat for all agents]
-
-## Comparative Analysis
-- **Performance Ranking:** [Order by speed]
-- **Quality Ranking:** [Order by implementation quality]
-- **Best for Speed:** [Agent name] with reasoning
-- **Best for Quality:** [Agent name] with reasoning
-- **Best Overall Value:** [Agent name] with reasoning
-
-## Final Recommendations
-- **Winner:** [Agent name] with score and reasoning
-- **Use Case Recommendations:** [When to use each agent]
-- **Key Insights:** [What we learned about each agent's approach]
-
-**REMEMBER: Base your analysis on ACTUAL CODE AND FILES, not generic statements. Be specific, detailed, and reference actual implementations.**
-`;
+    // Replace template variables
+    return template.replace('{{AGENT_PERFORMANCE_DATA}}', performanceData);
   }
 }
