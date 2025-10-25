@@ -121,10 +121,11 @@ const BenchmarkMonitor: React.FC<{
     return unsubscribe;
   }, [monitor]);
 
-  // Flashing effect for running status
+  // Flashing effect for running status + force frequent updates for real-time output
   React.useEffect(() => {
     const interval = setInterval(() => {
       setFlashState(prev => !prev);
+      setUpdateTrigger(prev => prev + 1); // Force update every 800ms to refresh output display
     }, 800); // Flash every 800ms for slow flashing
 
     return () => clearInterval(interval);
@@ -184,36 +185,17 @@ const BenchmarkMonitor: React.FC<{
         runtimeText = `${runtime}s`;
       }
 
-      // Get last meaningful output lines (show up to 5 most recent lines)
+      // Get last output lines (show up to 5 most recent lines)
       let lastOutputLines: string[] = [];
       if (agent.output.length > 0) {
-        // Get the last 10 lines and filter for meaningful content
-        const recentLines = agent.output.slice(-10);
+        // Get the last 5 lines - simpler filtering to ensure real-time output shows
+        const recentLines = agent.output.slice(-5);
         lastOutputLines = recentLines
           .filter(line => line && line.trim().length > 0)
-          // Prioritize actual work output over system messages
-          .filter(line => {
-            const cleanLine = line.trim();
-            // Filter out common noise but keep important messages
-            if (cleanLine.includes('⚠️') && cleanLine.includes('Pre-flight check')) {
-              return true; // Keep pre-flight warnings as they might be important
-            }
-            if (cleanLine.includes('✓') || cleanLine.includes('ERROR:') || cleanLine.includes('📝') || cleanLine.includes('🔧')) {
-              return true; // Keep status indicators
-            }
-            if (cleanLine.includes('function') || cleanLine.includes('class') || cleanLine.includes('import') || cleanLine.includes('export')) {
-              return true; // Keep code-related lines
-            }
-            if (cleanLine.length > 20) {
-              return true; // Keep substantial lines
-            }
-            return false;
-          })
           .map(line => {
             const cleanLine = line.trim();
-            return cleanLine.length > 120 ? cleanLine.substring(0, 120) + '...' : cleanLine;
-          })
-          .slice(-5); // Take last 5 meaningful lines
+            return cleanLine.length > 150 ? cleanLine.substring(0, 150) + '...' : cleanLine;
+          });
       }
 
       // Show placeholder text only if no actual output exists
@@ -594,9 +576,11 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           stdio: ['inherit', 'pipe', 'pipe'],
           env: {
             ...process.env,
-            // Disable any cursor control or progress indicators from child process
+            // Disable buffering and progress indicators for real-time output
             FORCE_NO_PROGRESS: '1',
-            CI: '1'
+            CI: '1',
+            PYTHONUNBUFFERED: '1',
+            NODE_OPTIONS: '--disable-warning'
           }
         });
 
@@ -615,6 +599,11 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
 
           // Add output to console monitor callback (cleaned)
           outputCallback?.(agentName, output);
+
+          // Force output buffer flush for real-time display
+          if (process.stdout && !process.stdout.destroyed) {
+            process.stdout.flush?.();
+          }
 
           // Don't output directly to console when using React+Ink monitor
           // The monitor will handle displaying relevant output
