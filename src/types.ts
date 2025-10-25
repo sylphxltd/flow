@@ -1,6 +1,9 @@
 import type { TargetConfigurationData } from './types/target-config.types.js';
+import type { Command } from 'commander';
 
+// Extend Commander's options with our application-specific options
 export interface CommandOptions {
+  // Common CLI options
   target?: string;
   verbose?: boolean;
   dryRun?: boolean;
@@ -9,18 +12,31 @@ export interface CommandOptions {
   servers?: string[];
   server?: string;
   all?: boolean;
+
   // Memory command options
   namespace?: string;
   limit?: number;
   pattern?: string;
   key?: string;
   confirm?: boolean;
+
+  // Benchmark-specific options
+  agents?: string;
+  task?: string;
+  output?: string;
+  context?: string;
+  evaluate?: boolean;
+  report?: string;
+  concurrency?: number;
+  delay?: number;
+
   // Dynamic argument properties - using safer unknown instead of any
   [key: string]: unknown;
 }
 
 export type CommandHandler = (options: CommandOptions) => Promise<void>;
 
+// Our application-specific command configuration that works with Commander.js
 export interface CommandConfig {
   name: string;
   description: string;
@@ -31,12 +47,14 @@ export interface CommandConfig {
   subcommands?: CommandConfig[];
 }
 
+// Compatible with Commander.js Option interface, but with our extensions
 export interface CommandOption {
   flags: string;
   description: string;
   defaultValue?: unknown;
 }
 
+// Command argument definition (Commander.js doesn't have a built-in type for this)
 export interface CommandArgument {
   name: string;
   description: string;

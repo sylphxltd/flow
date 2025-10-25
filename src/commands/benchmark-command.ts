@@ -480,17 +480,17 @@ export const benchmarkCommand: CommandConfig = {
   options: [
     {
       flags: '--agents <agents>',
-      description: 'Agents to test (comma-separated or "all", default: all)',
+      description: 'Agents to test (comma-separated or "all")',
       defaultValue: 'all'
     },
     {
       flags: '--task <file>',
-      description: 'Path to task definition file (default: examples/benchmark-tasks/user-management-system.md)',
+      description: 'Path to task definition file',
       defaultValue: 'examples/benchmark-tasks/user-management-system.md'
     },
     {
       flags: '--output <dir>',
-      description: 'Output directory for results (default: /tmp/agent-benchmark-TIMESTAMP)'
+      description: 'Output directory for results'
     },
     {
       flags: '--context <file>',
@@ -502,17 +502,17 @@ export const benchmarkCommand: CommandConfig = {
     },
     {
       flags: '--report <dir>',
-      description: 'Directory to save evaluation reports (default: benchmark-results)',
+      description: 'Directory to save evaluation reports',
       defaultValue: 'benchmark-results'
     },
     {
       flags: '--concurrency <number>',
-      description: 'Number of agents to run concurrently (default: 1)',
+      description: 'Number of agents to run concurrently',
       defaultValue: '1'
     },
     {
       flags: '--delay <seconds>',
-      description: 'Delay in seconds between agent executions (default: 2)',
+      description: 'Delay in seconds between agent executions',
       defaultValue: '2'
     }
   ],
