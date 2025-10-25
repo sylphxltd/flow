@@ -9,7 +9,6 @@ export * from './types';
 export * from './target-config.types';
 export * from './mcp-config.types';
 export * from './database.types';
-export * from './command.types';
 
 // API types - prefer organized version
 export * from './api/index.js';
@@ -20,11 +19,6 @@ export * from './api.types';
 // ============================================================================
 // LEGACY TYPE ALIASES FOR BACKWARD COMPATIBILITY
 // ============================================================================
-
-/**
- * @deprecated Use EnhancedCommandOptions instead
- */
-export type CommandOptions = import('./command.types').EnhancedCommandOptions;
 
 /**
  * @deprecated Use EnhancedMCPServerConfigUnion instead
