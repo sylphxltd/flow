@@ -146,7 +146,7 @@ export class CacheStorage {
    */
   async deleteCodebaseFile(path: string): Promise<boolean> {
     return executeOperation(`delete codebase file: ${path}`, async () => {
-      const result = await this.cache.delete(codebaseFiles).where(eq(codebaseFiles.path, path));
+      const _result = await this.cache.delete(codebaseFiles).where(eq(codebaseFiles.path, path));
 
       // For libSQL, we need to check if the deletion was successful
       // by trying to select the record afterwards
@@ -219,7 +219,7 @@ export class CacheStorage {
    */
   async deleteMetadata(key: string): Promise<boolean> {
     return executeOperation(`delete metadata: ${key}`, async () => {
-      const result = await this.cache.delete(codebaseMetadata).where(eq(codebaseMetadata.key, key));
+      const _result = await this.cache.delete(codebaseMetadata).where(eq(codebaseMetadata.key, key));
 
       // Check if deletion was successful
       const exists = await this.cache

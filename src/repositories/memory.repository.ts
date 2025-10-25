@@ -47,7 +47,7 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
   /**
    * Get a memory entry by key and namespace
    */
-  async getByKey(key: string, namespace: string = 'default'): Promise<MemoryEntry | null> {
+  async getByKey(key: string, namespace = 'default'): Promise<MemoryEntry | null> {
     try {
       const result = await this.db.execute(
         `SELECT * FROM ${this.tableName} WHERE key = ? AND namespace = ? LIMIT 1`,
@@ -100,7 +100,7 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
   /**
    * Delete a memory entry by key and namespace
    */
-  async deleteMemory(key: string, namespace: string = 'default'): Promise<boolean> {
+  async deleteMemory(key: string, namespace = 'default'): Promise<boolean> {
     try {
       const result = await this.db.execute(
         `DELETE FROM ${this.tableName} WHERE key = ? AND namespace = ?`,
@@ -117,7 +117,7 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
   /**
    * List all keys in a namespace
    */
-  async listKeys(namespace: string = 'default'): Promise<string[]> {
+  async listKeys(namespace = 'default'): Promise<string[]> {
     try {
       const result = await this.db.execute(
         `SELECT DISTINCT key FROM ${this.tableName} WHERE namespace = ? ORDER BY key`,
@@ -181,7 +181,7 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
       }
 
       // Add ordering and pagination
-      query += ` ORDER BY timestamp DESC, updated_at DESC LIMIT ? OFFSET ?`;
+      query += ' ORDER BY timestamp DESC, updated_at DESC LIMIT ? OFFSET ?';
       queryParams.push(limit, offset);
 
       const result = await this.db.execute(query, queryParams);
@@ -195,7 +195,7 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
   /**
    * Count memory entries in a namespace
    */
-  async countMemory(namespace: string = 'default'): Promise<number> {
+  async countMemory(namespace = 'default'): Promise<number> {
     try {
       const result = await this.db.execute(
         `SELECT COUNT(*) as count FROM ${this.tableName} WHERE namespace = ?`,
@@ -212,12 +212,11 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
   /**
    * Clear all memory entries in a namespace
    */
-  async clearNamespace(namespace: string = 'default'): Promise<number> {
+  async clearNamespace(namespace = 'default'): Promise<number> {
     try {
-      const result = await this.db.execute(
-        `DELETE FROM ${this.tableName} WHERE namespace = ?`,
-        [namespace]
-      );
+      const result = await this.db.execute(`DELETE FROM ${this.tableName} WHERE namespace = ?`, [
+        namespace,
+      ]);
 
       return result.rowsAffected;
     } catch (error) {
@@ -231,14 +230,17 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
    */
   async getStats(): Promise<{
     totalEntries: number;
-    namespaces: Array<{ name: string; count: number; oldestTimestamp?: number; newestTimestamp?: number }>;
+    namespaces: Array<{
+      name: string;
+      count: number;
+      oldestTimestamp?: number;
+      newestTimestamp?: number;
+    }>;
     totalSize: number;
   }> {
     try {
       // Get total entries
-      const totalResult = await this.db.execute(
-        `SELECT COUNT(*) as total FROM ${this.tableName}`
-      );
+      const totalResult = await this.db.execute(`SELECT COUNT(*) as total FROM ${this.tableName}`);
       const totalEntries = totalResult.rows[0].total;
 
       // Get namespace statistics
@@ -285,10 +287,9 @@ export class MemoryRepository extends BaseRepository<MemoryEntry> {
     try {
       const cutoffTimestamp = Date.now() - maxAge;
 
-      const result = await this.db.execute(
-        `DELETE FROM ${this.tableName} WHERE timestamp < ?`,
-        [cutoffTimestamp]
-      );
+      const result = await this.db.execute(`DELETE FROM ${this.tableName} WHERE timestamp < ?`, [
+        cutoffTimestamp,
+      ]);
 
       this.logger.info(`Cleaned up ${result.rowsAffected} old memory entries`);
       return result.rowsAffected;

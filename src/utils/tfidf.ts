@@ -52,7 +52,7 @@ export async function buildSearchIndexFromDB(
 
       if (filters.exclude_paths && filters.exclude_paths.length > 0) {
         files = files.filter(
-          (file) => !filters.exclude_paths!.some((exclude: string) => file.path.includes(exclude))
+          (file) => !filters.exclude_paths?.some((exclude: string) => file.path.includes(exclude))
         );
       }
     }

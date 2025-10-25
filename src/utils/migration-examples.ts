@@ -264,11 +264,11 @@ async function runMigrations(): Promise<void> {
   // Mock implementation
 }
 
-async function processData(data: any): Promise<void> {
+async function processData(_data: any): Promise<void> {
   // Mock implementation
 }
 
-async function processItem(item: any): Promise<void> {
+async function processItem(_item: any): Promise<void> {
   // Mock implementation
 }
 

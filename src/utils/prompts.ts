@@ -34,10 +34,10 @@ export async function askSecret(question: string): Promise<string> {
   return new Promise((resolve) => {
     // Hide input for secrets
     const stdin = process.stdin;
-    const onData = (char: Buffer) => {
+    const _onData = (char: Buffer) => {
       const str = char.toString('utf8');
       if (str === '\n' || str === '\r' || str === '\r\n') {
-        (stdin as any).removeListener('data', onData);
+        (stdin as any).removeListener('data', _onData);
         process.stdout.write('\n');
         rl.close();
       } else {
@@ -85,7 +85,7 @@ export async function select<T extends string>(question: string, choices: T[]): 
   });
 
   return new Promise((resolve) => {
-    rl.question(chalk.cyan('  Select (1-' + choices.length + '): '), (answer) => {
+    rl.question(chalk.cyan(`  Select (1-${choices.length}): `), (answer) => {
       rl.close();
       const index = Number.parseInt(answer.trim(), 10) - 1;
       if (index >= 0 && index < choices.length) {

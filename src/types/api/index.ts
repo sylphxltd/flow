@@ -31,13 +31,9 @@ export {
 } from './errors.js';
 
 // Request types
-export type {
-  HttpRequestConfig,
-} from './requests.js';
+export type { HttpRequestConfig } from './requests.js';
 
-export {
-  HttpRequestConfigSchema,
-} from './requests.js';
+export { HttpRequestConfigSchema } from './requests.js';
 
 // Batch operation types
 export type {

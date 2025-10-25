@@ -48,17 +48,17 @@ function parseArgs(): ServerConfig {
   const config: ServerConfig = {};
 
   // Handle disable flags (new approach)
-  if (args.includes('--disable-memory')) config.disableMemory = true;
-  if (args.includes('--disable-time')) config.disableTime = true;
-  if (args.includes('--disable-project-startup')) config.disableProjectStartup = true;
-  if (args.includes('--disable-knowledge')) config.disableKnowledge = true;
-  if (args.includes('--disable-codebase-search')) config.disableCodebaseSearch = true;
+  if (args.includes('--disable-memory')) { config.disableMemory = true; }
+  if (args.includes('--disable-time')) { config.disableTime = true; }
+  if (args.includes('--disable-project-startup')) { config.disableProjectStartup = true; }
+  if (args.includes('--disable-knowledge')) { config.disableKnowledge = true; }
+  if (args.includes('--disable-codebase-search')) { config.disableCodebaseSearch = true; }
 
   // Handle enable flags (backward compatibility)
-  if (args.includes('--enable-memory')) config.disableMemory = false;
-  if (args.includes('--enable-time')) config.disableTime = false;
-  if (args.includes('--enable-project-startup')) config.disableProjectStartup = false;
-  if (args.includes('--enable-knowledge')) config.disableKnowledge = false;
+  if (args.includes('--enable-memory')) { config.disableMemory = false; }
+  if (args.includes('--enable-time')) { config.disableTime = false; }
+  if (args.includes('--enable-project-startup')) { config.disableProjectStartup = false; }
+  if (args.includes('--enable-knowledge')) { config.disableKnowledge = false; }
 
   return config;
 }

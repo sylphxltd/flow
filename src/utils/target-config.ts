@@ -16,6 +16,7 @@ import { targetManager } from '../core/target-manager.js';
 import { resolveConfig, resolveConfigWithParams } from '../services/mcp-service.js';
 import type { MCPServerConfigUnion } from '../types.js';
 import { secretUtils } from './secret-utils.js';
+import { getNestedProperty, setNestedProperty, deleteNestedProperty } from './object-utils.js';
 
 /**
  * Target-specific MCP configuration utilities
@@ -60,7 +61,7 @@ export async function addMCPServersToTarget(
     if (mcpSection[server.name]) {
       console.log(`ℹ️  MCP server already exists: ${server.name}`);
     } else {
-      const transformedConfig = target.transformMCPConfig(server.config, server.id);
+      const _transformedConfig = target.transformMCPConfig(server.config, server.id);
 
       // Apply dynamic command and args generation (only for CLI servers)
       let resolvedCommand: unknown;
@@ -70,9 +71,7 @@ export async function addMCPServersToTarget(
         resolvedCommand = server.config.command
           ? await resolveConfig(server.config.command)
           : undefined;
-        resolvedArgs = server.config.args
-          ? await resolveConfig(server.config.args)
-          : [];
+        resolvedArgs = server.config.args ? await resolveConfig(server.config.args) : [];
       }
 
       // Update the config with resolved values - target will handle format
@@ -263,13 +262,13 @@ export async function configureMCPServerForTarget(
   }
 
   // If we have all required keys from environment, use them
-  const hasAllRequiredEnvKeys = requiredEnvVars.every(
+  const _hasAllRequiredEnvKeys = requiredEnvVars.every(
     (envVar) => envApiKeys[envVar] && envApiKeys[envVar].trim() !== ''
   );
 
   // mcp config is always for configuring - show UI with existing values
   console.log(
-    `✓ Found existing API keys, you can update them or press Enter to keep current values`
+    '✓ Found existing API keys, you can update them or press Enter to keep current values'
   );
   const apiKeys = await promptForAPIKeys([serverType], envApiKeys);
 
@@ -348,27 +347,26 @@ export async function configureMCPServerForTarget(
   let processedSecretApiKeys = secretApiKeys;
   const targetConfig = targetManager.getTarget(targetId);
 
-  console.log(`🔍 Debug: secretApiKeys =`, Object.keys(secretApiKeys));
+  console.log('🔍 Debug: secretApiKeys =', Object.keys(secretApiKeys));
   console.log(
-    `🔍 Debug: targetConfig.supportedMcpServers =`,
+    '🔍 Debug: targetConfig.supportedMcpServers =',
     targetConfig?.config.installation.supportedMcpServers
   );
   console.log(
-    `🔍 Debug: targetConfig.useSecretFiles =`,
+    '🔍 Debug: targetConfig.useSecretFiles =',
     targetConfig?.config.installation.useSecretFiles
   );
 
   if (
-    targetConfig &&
-    targetConfig.config.installation.supportedMcpServers &&
+    targetConfig?.config.installation.supportedMcpServers &&
     targetConfig.config.installation.useSecretFiles !== false &&
     Object.keys(secretApiKeys).length > 0
   ) {
-    console.log(`🔍 Debug: Converting secrets to file references...`);
+    console.log('🔍 Debug: Converting secrets to file references...');
     processedSecretApiKeys = await secretUtils.convertSecretsToFileReferences(cwd, secretApiKeys);
     await secretUtils.addToGitignore(cwd);
   } else {
-    console.log(`🔍 Debug: Skipping secret conversion`);
+    console.log('🔍 Debug: Skipping secret conversion');
   }
 
   // Combine processed secret keys with non-secret keys
@@ -462,44 +460,6 @@ export function getTargetsWithMCPSupport(): string[] {
   return targetManager.getTargetsWithMCPSupport();
 }
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Get nested property from object using dot notation
- */
-export function getNestedProperty(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
-}
-
-/**
- * Set nested property in object using dot notation
- */
-export function setNestedProperty(obj: any, path: string, value: any): void {
-  const keys = path.split('.');
-  const lastKey = keys.pop()!;
-  const target = keys.reduce((current, key) => {
-    if (!current[key] || typeof current[key] !== 'object') {
-      current[key] = {};
-    }
-    return current[key];
-  }, obj);
-  target[lastKey] = value;
-}
-
-/**
- * Delete nested property from object using dot notation
- */
-export function deleteNestedProperty(obj: any, path: string): void {
-  const keys = path.split('.');
-  const lastKey = keys.pop()!;
-  const target = keys.reduce((current, key) => current?.[key], obj);
-  if (target) {
-    delete target[lastKey];
-  }
-}
-
 /**
  * Prompt user for API keys interactively
  */
@@ -527,7 +487,7 @@ async function promptForAPIKeys(
 
     for (const envVar of allEnvVars) {
       const envConfig = server.envVars?.[envVar];
-      if (!envConfig) continue;
+      if (!envConfig) { continue; }
 
       const isRequired = envConfig.required;
       const hasDefault = envConfig.default !== undefined;
@@ -582,7 +542,7 @@ async function promptForAPIKeys(
     }
   }
 
-  console.log(`🔍 Debug: promptForAPIKeys returning apiKeys =`, apiKeys);
+  console.log('🔍 Debug: promptForAPIKeys returning apiKeys =', apiKeys);
   rl.close();
   return apiKeys;
 }

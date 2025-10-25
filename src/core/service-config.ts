@@ -3,7 +3,16 @@
  */
 
 import { container, SERVICE_TOKENS } from './di-container.js';
-import type { IConfiguration, ILogger, IDatabaseConnection, IStorage, ISearchService, ITargetManager, IEmbeddingProvider, IMCPService } from './interfaces.js';
+import type {
+  IConfiguration,
+  ILogger,
+  IDatabaseConnection,
+  IStorage,
+  ISearchService,
+  ITargetManager,
+  IEmbeddingProvider,
+  IMCPService,
+} from './interfaces.js';
 
 // Import concrete implementations (will be updated as we refactor)
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
@@ -18,11 +27,7 @@ import { MCPService } from '../services/mcp-service.js';
  */
 export async function configureServices(): Promise<void> {
   // Logger Service - Singleton
-  container.register<ILogger>(
-    SERVICE_TOKENS.LOGGER,
-    () => createLogger(),
-    'singleton'
-  );
+  container.register<ILogger>(SERVICE_TOKENS.LOGGER, () => createLogger(), 'singleton');
 
   // Configuration Service - Singleton
   container.register<IConfiguration>(
@@ -76,7 +81,7 @@ export async function configureServices(): Promise<void> {
     async () => {
       try {
         return await getDefaultEmbeddingProvider();
-      } catch (error) {
+      } catch (_error) {
         // Return a fallback provider that doesn't require external dependencies
         return createFallbackEmbeddingProvider();
       }
@@ -139,7 +144,7 @@ function createConfiguration(): IConfiguration {
     config.set('logLevel', process.env.LOG_LEVEL || 'info');
     config.set('databasePath', process.env.DATABASE_PATH || '.sylphx-flow/memory.db');
     config.set('embeddings.provider', process.env.EMBEDDINGS_PROVIDER || 'local');
-    config.set('embeddings.dimension', parseInt(process.env.EMBEDDINGS_DIMENSION || '384'));
+    config.set('embeddings.dimension', Number.parseInt(process.env.EMBEDDINGS_DIMENSION || '384'));
   };
 
   loadEnvConfig();
@@ -209,7 +214,7 @@ function simpleHash(str: string): number {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash &= hash; // Convert to 32-bit integer
   }
   return Math.abs(hash);
 }

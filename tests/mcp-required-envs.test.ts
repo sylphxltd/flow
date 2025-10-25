@@ -24,7 +24,7 @@ vi.mock('../src/utils/secret-utils.js', () => ({
 // Mock readline for user input
 vi.mock('node:readline', () => ({
   createInterface: vi.fn().mockReturnValue({
-    question: vi.fn((prompt, callback) => {
+    question: vi.fn((_prompt, callback) => {
       // Simulate user pressing Enter (no input)
       callback('');
     }),

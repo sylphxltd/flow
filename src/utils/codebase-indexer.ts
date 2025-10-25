@@ -10,6 +10,14 @@ import type { EmbeddingProvider } from './embeddings.js';
 import { SeparatedMemoryStorage } from './separated-storage.js';
 import { type SearchIndex, buildSearchIndex } from './tfidf.js';
 import { type VectorDocument, VectorStorage } from './vector-storage.js';
+import {
+  detectLanguage,
+  isTextFile,
+  loadGitignore,
+  scanFiles,
+  simpleHash,
+  type ScanResult,
+} from './codebase-helpers.js';
 
 export interface CodebaseFile {
   path: string; // Relative path from codebase root
@@ -34,193 +42,6 @@ export interface CodebaseIndexerOptions {
   codebaseRoot?: string;
   cacheDir?: string;
   batchSize?: number;
-}
-
-/**
- * Detect programming language from file extension
- */
-function detectLanguage(filePath: string): string | undefined {
-  const ext = path.extname(filePath).toLowerCase();
-  const languageMap: Record<string, string> = {
-    '.ts': 'TypeScript',
-    '.tsx': 'TSX',
-    '.js': 'JavaScript',
-    '.jsx': 'JSX',
-    '.py': 'Python',
-    '.java': 'Java',
-    '.go': 'Go',
-    '.rs': 'Rust',
-    '.c': 'C',
-    '.cpp': 'C++',
-    '.cs': 'C#',
-    '.rb': 'Ruby',
-    '.php': 'PHP',
-    '.swift': 'Swift',
-    '.kt': 'Kotlin',
-    '.md': 'Markdown',
-    '.json': 'JSON',
-    '.yaml': 'YAML',
-    '.yml': 'YAML',
-    '.toml': 'TOML',
-    '.sql': 'SQL',
-    '.sh': 'Shell',
-    '.bash': 'Bash',
-  };
-  return languageMap[ext];
-}
-
-/**
- * Check if file is text-based (not binary)
- */
-function isTextFile(filePath: string): boolean {
-  const textExtensions = new Set([
-    '.ts',
-    '.tsx',
-    '.js',
-    '.jsx',
-    '.py',
-    '.java',
-    '.go',
-    '.rs',
-    '.c',
-    '.cpp',
-    '.h',
-    '.hpp',
-    '.cs',
-    '.rb',
-    '.php',
-    '.swift',
-    '.kt',
-    '.md',
-    '.txt',
-    '.json',
-    '.yaml',
-    '.yml',
-    '.toml',
-    '.xml',
-    '.html',
-    '.css',
-    '.scss',
-    '.sass',
-    '.less',
-    '.sql',
-    '.sh',
-    '.bash',
-    '.env',
-    '.gitignore',
-    '.dockerignore',
-  ]);
-
-  const ext = path.extname(filePath).toLowerCase();
-  return textExtensions.has(ext) || !ext; // Files without extension might be text
-}
-
-/**
- * Load .gitignore patterns
- */
-function loadGitignore(codebaseRoot: string): Ignore {
-  const ig = ignore();
-
-  // Always ignore common patterns
-  ig.add([
-    'node_modules/',
-    '.git/',
-    'dist/',
-    'build/',
-    '.next/',
-    '.cache/',
-    'coverage/',
-    '*.log',
-    '.DS_Store',
-    'Thumbs.db',
-  ]);
-
-  // Load .gitignore if exists
-  const gitignorePath = path.join(codebaseRoot, '.gitignore');
-  if (fs.existsSync(gitignorePath)) {
-    const gitignoreContent = fs.readFileSync(gitignorePath, 'utf8');
-    ig.add(gitignoreContent);
-  }
-
-  return ig;
-}
-
-/**
- * Recursively scan codebase for text files
- */
-function scanCodebase(
-  dir: string,
-  codebaseRoot: string,
-  ig: Ignore,
-  options: {
-    maxFileSize?: number; // Skip files larger than this (bytes)
-    maxFiles?: number; // Stop after indexing this many files
-  } = {}
-): CodebaseFile[] {
-  const { maxFileSize = 1024 * 1024, maxFiles = 50000 } = options; // 1MB default, increased limit
-  const results: CodebaseFile[] = [];
-
-  function scan(currentDir: string) {
-    if (results.length >= maxFiles) return;
-
-    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      if (results.length >= maxFiles) break;
-
-      const absolutePath = path.join(currentDir, entry.name);
-      const relativePath = path.relative(codebaseRoot, absolutePath);
-
-      // Check .gitignore
-      if (ig.ignores(relativePath)) {
-        continue;
-      }
-
-      if (entry.isDirectory()) {
-        scan(absolutePath);
-      } else if (entry.isFile() && isTextFile(entry.name)) {
-        try {
-          const stats = fs.statSync(absolutePath);
-
-          // Skip large files
-          if (stats.size > maxFileSize) {
-            console.warn(`[WARN] Skipping large file: ${relativePath} (${stats.size} bytes)`);
-            continue;
-          }
-
-          const content = fs.readFileSync(absolutePath, 'utf8');
-          const language = detectLanguage(entry.name);
-
-          results.push({
-            path: relativePath,
-            absolutePath,
-            content,
-            language,
-            size: stats.size,
-            mtime: stats.mtimeMs,
-          });
-        } catch (error) {
-          console.warn(`[WARN] Failed to read file: ${relativePath}`, error);
-        }
-      }
-    }
-  }
-
-  scan(dir);
-  return results;
-}
-
-/**
- * Calculate simple hash for file content (for change detection)
- */
-function simpleHash(content: string): string {
-  let hash = 0;
-  for (let i = 0; i < content.length; i++) {
-    const char = content.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return hash.toString(36);
 }
 
 /**
@@ -437,7 +258,10 @@ export class CodebaseIndexer {
 
     // Scan codebase
     console.error('[INFO] Scanning codebase...');
-    const files = scanCodebase(this.codebaseRoot, this.codebaseRoot, this.ig);
+    const files = scanFiles(this.codebaseRoot, {
+      codebaseRoot: this.codebaseRoot,
+      ignoreFilter: this.ig,
+    });
     console.error(`[INFO] Found ${files.length} files`);
 
     // Validate cache (check if file count changed significantly)
@@ -593,8 +417,8 @@ export class CodebaseIndexer {
       await this.db.initialize();
       const stats = await this.db.getCodebaseIndexStats();
       return {
-        exists: stats.fileCount > 0,
-        fileCount: stats.fileCount,
+        exists: stats.totalFiles > 0,
+        fileCount: stats.totalFiles,
         indexedAt: stats.indexedAt,
       };
     } catch (error) {

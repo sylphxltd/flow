@@ -103,7 +103,7 @@ export class DIContainer {
         try {
           await descriptor.instance.dispose();
         } catch (error) {
-          console.error(`Error disposing service:`, error);
+          console.error('Error disposing service:', error);
         }
       }
     }

@@ -6,8 +6,13 @@
  */
 
 import type { ILogger, IStorage } from '../core/interfaces.js';
-import { MemoryRepository } from '../repositories/memory.repository.js';
-import type { MemoryEntry, CreateMemoryData, UpdateMemoryData, MemorySearchParams } from '../repositories/memory.repository.js';
+import type { MemoryRepository } from '../repositories/memory.repository.js';
+import type {
+  MemoryEntry,
+  CreateMemoryData,
+  UpdateMemoryData,
+  MemorySearchParams,
+} from '../repositories/memory.repository.js';
 
 export interface MemoryServiceConfig {
   defaultNamespace?: string;
@@ -47,7 +52,10 @@ export class MemoryService {
   /**
    * Get a memory value
    */
-  async get(key: string, namespace: string = this.config.defaultNamespace || 'default'): Promise<MemoryResult<string>> {
+  async get(
+    key: string,
+    namespace: string = this.config.defaultNamespace || 'default'
+  ): Promise<MemoryResult<string>> {
     try {
       // Check cache first if enabled
       if (this.config.enableCaching) {
@@ -157,7 +165,10 @@ export class MemoryService {
   /**
    * Delete a memory entry
    */
-  async delete(key: string, namespace: string = this.config.defaultNamespace || 'default'): Promise<MemoryResult<boolean>> {
+  async delete(
+    key: string,
+    namespace: string = this.config.defaultNamespace || 'default'
+  ): Promise<MemoryResult<boolean>> {
     try {
       const deleted = await this.repository.deleteMemory(key, namespace);
 
@@ -185,7 +196,9 @@ export class MemoryService {
   /**
    * List all keys in a namespace
    */
-  async list(namespace: string = this.config.defaultNamespace || 'default'): Promise<MemoryResult<string[]>> {
+  async list(
+    namespace: string = this.config.defaultNamespace || 'default'
+  ): Promise<MemoryResult<string[]>> {
     try {
       const keys = await this.repository.listKeys(namespace);
 
@@ -233,7 +246,9 @@ export class MemoryService {
   /**
    * Clear all entries in a namespace
    */
-  async clear(namespace: string = this.config.defaultNamespace || 'default'): Promise<MemoryResult<number>> {
+  async clear(
+    namespace: string = this.config.defaultNamespace || 'default'
+  ): Promise<MemoryResult<number>> {
     try {
       const deletedCount = await this.repository.clearNamespace(namespace);
 
@@ -385,7 +400,9 @@ export class MemoryService {
     if (this.config.retentionPolicy?.enabled && this.config.retentionPolicy.cleanupInterval) {
       this.cleanupTimer = setInterval(async () => {
         try {
-          const deletedCount = await this.repository.cleanupOldEntries(this.config.retentionPolicy!.maxAge);
+          const deletedCount = await this.repository.cleanupOldEntries(
+            this.config.retentionPolicy?.maxAge
+          );
           if (deletedCount > 0) {
             this.logger.info(`Automatic cleanup: removed ${deletedCount} old entries`);
           }

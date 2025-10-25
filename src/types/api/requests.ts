@@ -65,10 +65,12 @@ export const HttpRequestConfigSchema = z.object({
   userAgent: z.string().optional(),
   token: z.string().optional(),
   apiKey: z.string().optional(),
-  metadata: z.object({
-    source: z.string().optional(),
-    priority: z.enum(['low', 'normal', 'high']).optional(),
-    tags: z.array(z.string()).optional(),
-    data: z.record(z.unknown()).optional(),
-  }).optional(),
+  metadata: z
+    .object({
+      source: z.string().optional(),
+      priority: z.enum(['low', 'normal', 'high']).optional(),
+      tags: z.array(z.string()).optional(),
+      data: z.record(z.unknown()).optional(),
+    })
+    .optional(),
 });

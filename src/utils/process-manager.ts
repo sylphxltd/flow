@@ -14,8 +14,8 @@ export class ProcessManager {
   }
 
   private setupSignalHandlers() {
-    const shutdown = async (signal: string) => {
-      if (this.isShuttingDown) return;
+    const shutdown = async (_signal: string) => {
+      if (this.isShuttingDown) { return; }
       this.isShuttingDown = true;
 
       await this.killAllProcesses();
@@ -50,7 +50,7 @@ export class ProcessManager {
             }
           }, 2000);
         }
-      } catch (error) {
+      } catch (_error) {
         // Silently handle kill errors
       }
     });

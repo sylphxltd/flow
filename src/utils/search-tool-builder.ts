@@ -204,7 +204,7 @@ Shows:
         content: [
           {
             type: 'text',
-            text: `⚠️ **Not Indexed**\n\nIndexing will start automatically on first search.`,
+            text: '⚠️ **Not Indexed**\n\nIndexing will start automatically on first search.',
           },
         ],
       };

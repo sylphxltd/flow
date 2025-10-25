@@ -40,7 +40,7 @@ export function testErrorHandling() {
       value: 'invalid-email',
     });
 
-    const configError = new ConfigurationError('Missing required configuration', 'MISSING_CONFIG', {
+    const _configError = new ConfigurationError('Missing required configuration', 'MISSING_CONFIG', {
       requiredKey: 'API_KEY',
     });
 

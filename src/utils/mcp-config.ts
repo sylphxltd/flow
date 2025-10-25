@@ -76,10 +76,9 @@ export class MCPConfigurator {
     if (server.envVars && Object.keys(server.envVars).length > 0) {
       const values = await this.configureServer(server);
       return { values, serverId: this.serverId };
-    } else {
+    }
       console.log(chalk.gray('\n✓ No configuration required for this server'));
       return { values: {}, serverId: this.serverId };
-    }
   }
 
   private async selectServer(): Promise<MCPServerID> {
@@ -150,7 +149,7 @@ export class MCPConfigurator {
 
   private async configureField(field: ConfigField): Promise<string> {
     const currentValue = field.currentValue || field.defaultValue || '';
-    const isRequired = field.required && !currentValue;
+    const _isRequired = field.required && !currentValue;
 
     if (field.options) {
       // Use select input for options
@@ -167,7 +166,7 @@ export class MCPConfigurator {
 
       console.log(chalk.gray(`   ${field.description}`));
       return value;
-    } else if (field.secret) {
+    }if (field.secret) {
       // Use password input for secrets
       const { value } = await inquirer.prompt([
         {
@@ -187,7 +186,7 @@ export class MCPConfigurator {
 
       console.log(chalk.gray(`   ${field.description}`));
       return value;
-    } else {
+    }
       // Use regular input for regular fields
       const { value } = await inquirer.prompt([
         {
@@ -207,7 +206,6 @@ export class MCPConfigurator {
 
       console.log(chalk.gray(`   ${field.description}`));
       return value;
-    }
   }
 }
 

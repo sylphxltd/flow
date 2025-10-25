@@ -7,7 +7,11 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { initializePlugins, getPluginBootstrap, type PluginBootstrap } from '../plugins/plugin-bootstrap.js';
+import {
+  initializePlugins,
+  getPluginBootstrap,
+  type PluginBootstrap,
+} from '../plugins/plugin-bootstrap.js';
 import type { ILogger } from '../core/interfaces.js';
 import { container } from '../core/di-container.js';
 
@@ -47,11 +51,11 @@ function parseArgs(): ServerConfig {
         config.pluginDir = args[++i];
         break;
       case '--disable-plugin':
-        if (!config.disablePlugins) config.disablePlugins = [];
+        if (!config.disablePlugins) { config.disablePlugins = []; }
         config.disablePlugins.push(args[++i]);
         break;
       case '--enable-plugin':
-        if (!config.enablePlugins) config.enablePlugins = [];
+        if (!config.enablePlugins) { config.enablePlugins = []; }
         config.enablePlugins.push(args[++i]);
         break;
       case '--log-level':
@@ -118,7 +122,6 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
     // Get plugin statistics
     const status = await pluginBootstrap.getStatus();
     logger.info('System status:', status);
-
   } catch (error) {
     console.error('✗ Failed to initialize plugin system:', error);
     throw error;
@@ -151,12 +154,16 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
             const toolNames = mcpPlugin.getToolNames ? mcpPlugin.getToolNames() : [];
             totalTools += toolNames.length;
 
-            logger.info(`✓ Registered ${toolNames.length} tools from plugin: ${plugin.metadata.name}`);
+            logger.info(
+              `✓ Registered ${toolNames.length} tools from plugin: ${plugin.metadata.name}`
+            );
             console.log(`  ✓ ${plugin.metadata.name}: ${toolNames.length} tools`);
           }
         } catch (error) {
           logger.error(`Failed to register tools from plugin: ${plugin.metadata.name}`, error);
-          console.error(`  ✗ ${plugin.metadata.name}: ${error instanceof Error ? error.message : String(error)}`);
+          console.error(
+            `  ✗ ${plugin.metadata.name}: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
       }
     }
@@ -175,7 +182,6 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
     console.log('💡 Press Ctrl+C to stop the server');
 
     return server;
-
   } catch (error) {
     const logger = await container.resolve<ILogger>('logger');
     logger.error('Failed to start MCP server', error);
@@ -191,53 +197,48 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}): Promi
  */
 async function registerSystemTools(server: McpServer, logger: ILogger): Promise<void> {
   // Plugin management tools
-  server.tool(
-    'plugin_list',
-    'List all loaded plugins',
-    {},
-    async () => {
-      try {
-        const bootstrap = getPluginBootstrap();
-        if (!bootstrap) {
-          throw new Error('Plugin system not available');
-        }
-
-        const status = await bootstrap.getStatus();
-        const pluginManager = bootstrap.getPluginManager()!;
-        const plugins = pluginManager.getAllPlugins();
-
-        const pluginList = plugins
-          .sort((a, b) => a.metadata.priority - b.metadata.priority)
-          .map(plugin => {
-            const status = plugin.metadata.enabled ? '✓' : '✗';
-            return `${status} **${plugin.metadata.name}** v${plugin.metadata.version} (${plugin.metadata.category})`;
-          })
-          .join('\n');
-
-        const summary = [
-          `📊 **Plugin Status**`,
-          `Total: ${status.plugins.total} | Enabled: ${status.plugins.enabled} | Disabled: ${status.plugins.disabled}`,
-          '',
-          '**Plugins:**',
-          pluginList,
-        ].join('\n');
-
-        return {
-          content: [{ type: 'text', text: summary }],
-        };
-      } catch (error) {
-        logger.error('Failed to list plugins', error);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✗ Failed to list plugins: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-        };
+  server.tool('plugin_list', 'List all loaded plugins', {}, async () => {
+    try {
+      const bootstrap = getPluginBootstrap();
+      if (!bootstrap) {
+        throw new Error('Plugin system not available');
       }
+
+      const status = await bootstrap.getStatus();
+      const pluginManager = bootstrap.getPluginManager()!;
+      const plugins = pluginManager.getAllPlugins();
+
+      const pluginList = plugins
+        .sort((a, b) => a.metadata.priority - b.metadata.priority)
+        .map((plugin) => {
+          const status = plugin.metadata.enabled ? '✓' : '✗';
+          return `${status} **${plugin.metadata.name}** v${plugin.metadata.version} (${plugin.metadata.category})`;
+        })
+        .join('\n');
+
+      const summary = [
+        '📊 **Plugin Status**',
+        `Total: ${status.plugins.total} | Enabled: ${status.plugins.enabled} | Disabled: ${status.plugins.disabled}`,
+        '',
+        '**Plugins:**',
+        pluginList,
+      ].join('\n');
+
+      return {
+        content: [{ type: 'text', text: summary }],
+      };
+    } catch (error) {
+      logger.error('Failed to list plugins', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✗ Failed to list plugins: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+      };
     }
-  );
+  });
 
   server.tool(
     'plugin_enable',
@@ -316,53 +317,48 @@ async function registerSystemTools(server: McpServer, logger: ILogger): Promise<
   );
 
   // System status tool
-  server.tool(
-    'system_status',
-    'Get system status and health',
-    {},
-    async () => {
-      try {
-        const bootstrap = getPluginBootstrap();
-        if (!bootstrap) {
-          throw new Error('Plugin system not available');
-        }
-
-        const status = await bootstrap.getStatus();
-        const health = await bootstrap.getPluginManager()!.healthCheck();
-
-        const healthSummary = Object.entries(health)
-          .map(([name, result]) => {
-            const status = result.healthy ? '✓' : '✗';
-            const error = result.error ? ` (${result.error})` : '';
-            return `${status} ${name}${error}`;
-          })
-          .join('\n');
-
-        const statusText = [
-          '🏥 **System Health**',
-          `Running: ${status.running ? '✓' : '✗'}`,
-          `Services: ${status.services}`,
-          '',
-          '**Plugin Health:**',
-          healthSummary,
-        ].join('\n');
-
-        return {
-          content: [{ type: 'text', text: statusText }],
-        };
-      } catch (error) {
-        logger.error('Failed to get system status', error);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✗ Failed to get system status: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-        };
+  server.tool('system_status', 'Get system status and health', {}, async () => {
+    try {
+      const bootstrap = getPluginBootstrap();
+      if (!bootstrap) {
+        throw new Error('Plugin system not available');
       }
+
+      const status = await bootstrap.getStatus();
+      const health = await bootstrap.getPluginManager()?.healthCheck();
+
+      const healthSummary = Object.entries(health)
+        .map(([name, result]) => {
+          const status = result.healthy ? '✓' : '✗';
+          const error = result.error ? ` (${result.error})` : '';
+          return `${status} ${name}${error}`;
+        })
+        .join('\n');
+
+      const statusText = [
+        '🏥 **System Health**',
+        `Running: ${status.running ? '✓' : '✗'}`,
+        `Services: ${status.services}`,
+        '',
+        '**Plugin Health:**',
+        healthSummary,
+      ].join('\n');
+
+      return {
+        content: [{ type: 'text', text: statusText }],
+      };
+    } catch (error) {
+      logger.error('Failed to get system status', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✗ Failed to get system status: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+      };
     }
-  );
+  });
 
   logger.info('System tools registered');
 }

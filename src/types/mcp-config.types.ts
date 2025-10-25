@@ -423,7 +423,7 @@ export function validateMCPServerConfig(config: unknown): MCPServerValidationRes
         validatorVersion: '1.0.0',
       },
     };
-  } else {
+  }
     return {
       isValid: false,
       errors: result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
@@ -433,7 +433,6 @@ export function validateMCPServerConfig(config: unknown): MCPServerValidationRes
         validatorVersion: '1.0.0',
       },
     };
-  }
 }
 
 /**

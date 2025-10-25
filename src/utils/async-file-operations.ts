@@ -72,10 +72,7 @@ export class AsyncFileOperations {
     return this.withRetry(
       async () => {
         if (opts.timeout) {
-          return await this.withTimeout(
-            () => fs.readFile(filePath, opts.encoding),
-            opts.timeout
-          );
+          return await this.withTimeout(() => fs.readFile(filePath, opts.encoding), opts.timeout);
         }
         return await fs.readFile(filePath, opts.encoding);
       },
@@ -95,7 +92,7 @@ export class AsyncFileOperations {
     const opts = { ...this.defaultOptions, createBackup: true, ...options };
 
     // Create backup if requested and file exists
-    if (opts.createBackup && await this.exists(filePath)) {
+    if (opts.createBackup && (await this.exists(filePath))) {
       await this.createBackup(filePath);
     }
 
@@ -191,7 +188,10 @@ export class AsyncFileOperations {
   /**
    * Remove file or directory recursively
    */
-  async remove(targetPath: string, options: { recursive?: boolean; force?: boolean } = {}): Promise<void> {
+  async remove(
+    targetPath: string,
+    options: { recursive?: boolean; force?: boolean } = {}
+  ): Promise<void> {
     const { recursive = true, force = false } = options;
 
     try {
@@ -214,17 +214,8 @@ export class AsyncFileOperations {
   /**
    * Copy file or directory
    */
-  async copy(
-    source: string,
-    destination: string,
-    options: CopyOptions = {}
-  ): Promise<void> {
-    const {
-      overwrite = false,
-      preserveTimestamps = true,
-      filter,
-      concurrency = 10,
-    } = options;
+  async copy(source: string, destination: string, options: CopyOptions = {}): Promise<void> {
+    const { overwrite = false, preserveTimestamps = true, filter, concurrency = 10 } = options;
 
     const sourceStats = await fs.lstat(source);
 
@@ -247,11 +238,15 @@ export class AsyncFileOperations {
   /**
    * Move file or directory
    */
-  async move(source: string, destination: string, options: { overwrite?: boolean } = {}): Promise<void> {
+  async move(
+    source: string,
+    destination: string,
+    options: { overwrite?: boolean } = {}
+  ): Promise<void> {
     const { overwrite = false } = options;
 
     // Check if destination exists
-    if (await this.exists(destination) && !overwrite) {
+    if ((await this.exists(destination)) && !overwrite) {
       throw new Error(`Destination already exists: ${destination}`);
     }
 
@@ -283,7 +278,7 @@ export class AsyncFileOperations {
     const results: DirectoryEntry[] = [];
 
     const processDirectory = async (currentPath: string, currentDepth: number): Promise<void> => {
-      if (currentDepth > maxDepth) return;
+      if (currentDepth > maxDepth) { return; }
 
       try {
         const entries = await fs.readdir(currentPath, { withFileTypes });
@@ -300,7 +295,7 @@ export class AsyncFileOperations {
           if (includeStats) {
             try {
               directoryEntry.stats = await this.getStats(fullPath);
-            } catch (error) {
+            } catch (_error) {
               // Skip if stats can't be retrieved
             }
           }
@@ -331,9 +326,11 @@ export class AsyncFileOperations {
   /**
    * Calculate file hash
    */
-  async calculateHash(filePath: string, algorithm: string = 'sha256'): Promise<string> {
+  async calculateHash(filePath: string, algorithm = 'sha256'): Promise<string> {
     const content = await this.readFile(filePath);
-    return createHash(algorithm).update(content as Buffer).digest('hex');
+    return createHash(algorithm)
+      .update(content as Buffer)
+      .digest('hex');
   }
 
   /**
@@ -372,7 +369,11 @@ export class AsyncFileOperations {
   private async copyFile(
     source: string,
     destination: string,
-    options: { overwrite?: boolean; preserveTimestamps?: boolean; filter?: (source: string, dest: string) => boolean }
+    options: {
+      overwrite?: boolean;
+      preserveTimestamps?: boolean;
+      filter?: (source: string, dest: string) => boolean;
+    }
   ): Promise<void> {
     const { overwrite = false, preserveTimestamps = true, filter } = options;
 
@@ -382,7 +383,7 @@ export class AsyncFileOperations {
     }
 
     // Check if destination exists
-    if (await this.exists(destination) && !overwrite) {
+    if ((await this.exists(destination)) && !overwrite) {
       throw new Error(`Destination already exists: ${destination}`);
     }
 
@@ -405,7 +406,12 @@ export class AsyncFileOperations {
   private async copyDirectory(
     source: string,
     destination: string,
-    options: { overwrite?: boolean; preserveTimestamps?: boolean; filter?: (source: string, dest: string) => boolean; concurrency?: number }
+    options: {
+      overwrite?: boolean;
+      preserveTimestamps?: boolean;
+      filter?: (source: string, dest: string) => boolean;
+      concurrency?: number;
+    }
   ): Promise<void> {
     const { concurrency = 10 } = options;
 
@@ -451,7 +457,7 @@ export class AsyncFileOperations {
         lastError = error instanceof Error ? error : new Error(String(error));
 
         if (i < attempts - 1) {
-          await this.sleep(delay * Math.pow(2, i)); // Exponential backoff
+          await this.sleep(delay * 2 ** i); // Exponential backoff
         }
       }
     }
@@ -462,10 +468,7 @@ export class AsyncFileOperations {
   /**
    * Execute operation with timeout
    */
-  private async withTimeout<T>(
-    operation: () => Promise<T>,
-    timeoutMs: number
-  ): Promise<T> {
+  private async withTimeout<T>(operation: () => Promise<T>, timeoutMs: number): Promise<T> {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
     });
@@ -477,7 +480,7 @@ export class AsyncFileOperations {
    * Sleep utility
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -490,8 +493,11 @@ export const asyncFileOps = new AsyncFileOperations();
 export const readFile = (filePath: string, options?: FileOperationOptions) =>
   asyncFileOps.readFile(filePath, options);
 
-export const writeFile = (filePath: string, content: string | Buffer, options?: FileOperationOptions) =>
-  asyncFileOps.writeFile(filePath, content, options);
+export const writeFile = (
+  filePath: string,
+  content: string | Buffer,
+  options?: FileOperationOptions
+) => asyncFileOps.writeFile(filePath, content, options);
 
 export const exists = (filePath: string) => asyncFileOps.exists(filePath);
 

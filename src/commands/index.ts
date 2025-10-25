@@ -36,9 +36,7 @@ export {
   listMCPServers,
 } from './mcp-command';
 
-export {
-  memoryCommand,
-} from './memory-command';
+export { memoryCommand } from './memory-command';
 
 export {
   runWorkflow,

@@ -4,10 +4,10 @@
  * Example plugin that implements memory management tools for MCP
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { MCPToolPlugin } from '../interfaces.js';
-import { PluginMetadata } from '../plugin-manager.js';
+import type { PluginMetadata } from '../plugin-manager.js';
 import type { MemoryService } from '../../services/memory.service.js';
 
 const SetMemoryArgsSchema = z.object({
@@ -56,7 +56,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
     // Resolve memory service from container
     try {
       this.memoryService = await container.resolve('memoryService');
-    } catch (error) {
+    } catch (_error) {
       this.logger?.warn('Memory service not available in container');
     }
   }
@@ -95,7 +95,10 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
           properties: {
             key: { type: 'string', description: 'The memory key to store' },
             value: { type: 'string', description: 'The value to store' },
-            namespace: { type: 'string', description: 'Namespace for the memory (default: default)' },
+            namespace: {
+              type: 'string',
+              description: 'Namespace for the memory (default: default)',
+            },
           },
           required: ['key', 'value'],
         },
@@ -107,7 +110,10 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
           type: 'object',
           properties: {
             key: { type: 'string', description: 'The memory key to retrieve' },
-            namespace: { type: 'string', description: 'Namespace for the memory (default: default)' },
+            namespace: {
+              type: 'string',
+              description: 'Namespace for the memory (default: default)',
+            },
           },
           required: ['key'],
         },
@@ -119,7 +125,10 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
           type: 'object',
           properties: {
             key: { type: 'string', description: 'The memory key to delete' },
-            namespace: { type: 'string', description: 'Namespace for the memory (default: default)' },
+            namespace: {
+              type: 'string',
+              description: 'Namespace for the memory (default: default)',
+            },
           },
           required: ['key'],
         },
@@ -319,7 +328,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
             };
           }
 
-          const keyList = keys.map(key => `  • ${key}`).join('\n');
+          const keyList = keys.map((key) => `  • ${key}`).join('\n');
           return {
             content: [
               {
@@ -382,7 +391,9 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
           const searchResults = entries
             .slice(0, limit)
             .map((entry: any, index: number) => {
-              const preview = entry.value ? entry.value.substring(0, 100) + (entry.value.length > 100 ? '...' : '') : '';
+              const preview = entry.value
+                ? entry.value.substring(0, 100) + (entry.value.length > 100 ? '...' : '')
+                : '';
               return `${index + 1}. **${entry.key}** (${entry.namespace})\n   📝 ${preview}`;
             })
             .join('\n\n');
@@ -482,9 +493,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
             `**Total Size:** ${(stats.totalSize / 1024).toFixed(2)} KB`,
             '',
             '**Namespaces:**',
-            ...stats.namespaces.map((ns: any) =>
-              `  • **${ns.name}:** ${ns.count} entries`
-            ),
+            ...stats.namespaces.map((ns: any) => `  • **${ns.name}:** ${ns.count} entries`),
           ].join('\n');
 
           return {
@@ -510,7 +519,7 @@ export class MemoryMCPPlugin extends MCPToolPlugin {
 
     try {
       // Try a simple memory operation
-      const testResult = await this.memoryService.get('_health_check');
+      const _testResult = await this.memoryService.get('_health_check');
       return { healthy: true };
     } catch (error) {
       return {

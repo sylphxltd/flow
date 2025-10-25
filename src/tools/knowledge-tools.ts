@@ -78,7 +78,7 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
             content: [
               {
                 type: 'text',
-                text: `📭 **No Knowledge Documents Available**\n\nThe knowledge base appears to be empty or not properly initialized.\n\n**To fix:**\n- Check if knowledge files exist in assets/knowledge/\n- Try restarting the MCP server to trigger indexing\n- Use CLI: \`sylphx search status\` for diagnostics\n\n**Expected knowledge files:**\n- stacks/ (framework-specific patterns)\n- guides/ (architecture guidance)\n- universal/ (cross-cutting concerns)\n- data/ (database patterns)`,
+                text: '📭 **No Knowledge Documents Available**\n\nThe knowledge base appears to be empty or not properly initialized.\n\n**To fix:**\n- Check if knowledge files exist in assets/knowledge/\n- Try restarting the MCP server to trigger indexing\n- Use CLI: \`sylphx search status\` for diagnostics\n\n**Expected knowledge files:**\n- stacks/ (framework-specific patterns)\n- guides/ (architecture guidance)\n- universal/ (cross-cutting concerns)\n- data/ (database patterns)',
               },
             ],
           };

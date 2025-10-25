@@ -87,12 +87,12 @@ export class PorterStemmer {
    * Stem a single word
    */
   static stem(word: string): string {
-    if (word.length < 3) return word.toLowerCase();
+    if (word.length < 3) { return word.toLowerCase(); }
 
     let stemmed = word.toLowerCase();
 
     // Step 1a: plurals
-    for (const rule of this.step1aRules) {
+    for (const rule of PorterStemmer.step1aRules) {
       if (rule.pattern.test(stemmed)) {
         stemmed = stemmed.replace(rule.pattern, rule.replacement);
         break;
@@ -100,7 +100,7 @@ export class PorterStemmer {
     }
 
     // Step 1b: past tense
-    for (const rule of this.step1bRules) {
+    for (const rule of PorterStemmer.step1bRules) {
       if (rule.pattern.test(stemmed)) {
         stemmed = stemmed.replace(rule.pattern, rule.replacement);
         break;
@@ -108,7 +108,7 @@ export class PorterStemmer {
     }
 
     // Step 1c: y → i
-    for (const rule of this.step1cRules) {
+    for (const rule of PorterStemmer.step1cRules) {
       if (rule.pattern.test(stemmed) && stemmed.length > 2) {
         stemmed = stemmed.replace(rule.pattern, rule.replacement);
         break;
@@ -116,7 +116,7 @@ export class PorterStemmer {
     }
 
     // Step 2: double suffixes
-    for (const rule of this.step2Rules) {
+    for (const rule of PorterStemmer.step2Rules) {
       if (rule.pattern.test(stemmed)) {
         stemmed = stemmed.replace(rule.pattern, rule.replacement);
         break;
@@ -124,7 +124,7 @@ export class PorterStemmer {
     }
 
     // Step 3: more suffixes
-    for (const rule of this.step3Rules) {
+    for (const rule of PorterStemmer.step3Rules) {
       if (rule.pattern.test(stemmed)) {
         stemmed = stemmed.replace(rule.pattern, rule.replacement);
         break;
@@ -132,7 +132,7 @@ export class PorterStemmer {
     }
 
     // Step 4: remove suffixes
-    for (const rule of this.step4Rules) {
+    for (const rule of PorterStemmer.step4Rules) {
       if (rule.pattern.test(stemmed) && stemmed.length > 3) {
         stemmed = stemmed.replace(rule.pattern, rule.replacement);
         break;
@@ -140,7 +140,7 @@ export class PorterStemmer {
     }
 
     // Step 5: final cleanup
-    for (const rule of this.step5Rules) {
+    for (const rule of PorterStemmer.step5Rules) {
       if (rule.pattern.test(stemmed) && stemmed.length > 2) {
         stemmed = stemmed.replace(rule.pattern, rule.replacement);
         break;
@@ -157,7 +157,7 @@ export class PorterStemmer {
  */
 export function generateNGrams(text: string, n = 3): string[] {
   const normalized = text.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (normalized.length < n) return [normalized];
+  if (normalized.length < n) { return [normalized]; }
 
   const ngrams: string[] = [];
   for (let i = 0; i <= normalized.length - n; i++) {
@@ -224,7 +224,7 @@ export function cosineSimilarity(vec1: Map<string, number>, vec2: Map<string, nu
     mag2 += freq2 * freq2;
   }
 
-  if (mag1 === 0 || mag2 === 0) return 0;
+  if (mag1 === 0 || mag2 === 0) { return 0; }
 
   return dotProduct / (Math.sqrt(mag1) * Math.sqrt(mag2));
 }

@@ -30,7 +30,7 @@ export class InkMonitor {
   }
 
   private triggerUpdate() {
-    this.listeners.forEach(listener => listener());
+    this.listeners.forEach((listener) => listener());
   }
 
   // Getters for React component
@@ -65,7 +65,7 @@ export class InkMonitor {
         // Enable Ink's full-screen mode with proper terminal control
         debug: false,
         patchConsole: true, // Let Ink control console output
-        exitOnCtrlC: false // We'll handle CtrlC ourselves
+        exitOnCtrlC: false, // We'll handle CtrlC ourselves
       }
     );
 
@@ -80,7 +80,7 @@ export class InkMonitor {
     this.agents.set(name, {
       status: 'idle',
       output: [],
-      startTime: undefined
+      startTime: undefined,
     });
   }
 
@@ -111,7 +111,7 @@ export class InkMonitor {
     if (agent) {
       // Remove ANSI escape sequences that interfere with Ink
       const cleanedOutput = output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
-      const lines = cleanedOutput.split('\n').filter(line => line.trim());
+      const lines = cleanedOutput.split('\n').filter((line) => line.trim());
       agent.output = [...agent.output.slice(-20), ...lines]; // Keep last 20 lines
       // Trigger UI update through subscriber pattern
       this.triggerUpdate();
@@ -127,8 +127,8 @@ export class InkMonitor {
   }
 
   private setupSignalHandlers() {
-    const shutdown = async (signal: string) => {
-      if (!this.isRunning) return;
+    const shutdown = async (_signal: string) => {
+      if (!this.isRunning) { return; }
 
       this.stop();
       process.exit(0);
@@ -151,7 +151,7 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
   React.useEffect(() => {
     // Subscribe to the monitor's change notifications
     const unsubscribe = monitor.subscribe(() => {
-      setUpdateTrigger(prev => prev + 1);
+      setUpdateTrigger((prev) => prev + 1);
     });
 
     return unsubscribe;
@@ -160,8 +160,8 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
   // Flashing effect for running status + force frequent updates for real-time output
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setFlashState(prev => !prev);
-      setUpdateTrigger(prev => prev + 1); // Force update every 800ms to refresh output display
+      setFlashState((prev) => !prev);
+      setUpdateTrigger((prev) => prev + 1); // Force update every 800ms to refresh output display
     }, 800); // Flash every 800ms for slow flashing
 
     return () => clearInterval(interval);
@@ -171,7 +171,7 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
   React.useEffect(() => {
     const agents = monitor.getAgents();
     const allCompleted = Array.from(agents.values()).every(
-      agent => agent.status === 'completed' || agent.status === 'error'
+      (agent) => agent.status === 'completed' || agent.status === 'error'
     );
 
     if (allCompleted && agents.size > 0) {
@@ -225,10 +225,10 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
         // Get the last 5 lines - simpler filtering to ensure real-time output shows
         const recentLines = agent.output.slice(-5);
         lastOutputLines = recentLines
-          .filter(line => line && line.trim().length > 0)
-          .map(line => {
+          .filter((line) => line && line.trim().length > 0)
+          .map((line) => {
             const cleanLine = line.trim();
-            return cleanLine.length > 150 ? cleanLine.substring(0, 150) + '...' : cleanLine;
+            return cleanLine.length > 150 ? `${cleanLine.substring(0, 150)}...` : cleanLine;
           });
       }
 
@@ -248,7 +248,7 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
         status: agent.status.toUpperCase(),
         runtime: runtimeText,
         lastOutput: lastOutputLines,
-        pid: agent.pid
+        pid: agent.pid,
       };
     });
   }, [monitor, updateTrigger, flashState]);
@@ -258,7 +258,7 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
 
   // Create a mapping from agent name to workspace directory
   const agentWorkspaceMap = new Map<string, string>();
-  workspaceDirs.forEach(dir => {
+  workspaceDirs.forEach((dir) => {
     const agentName = path.basename(dir);
     agentWorkspaceMap.set(agentName, dir);
   });
@@ -268,12 +268,20 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
       {/* Initial Information Section */}
       <Box marginBottom={1} flexDirection="column">
         <Text bold>Agent Benchmark Monitor</Text>
-        {initialInfo && initialInfo.initialInfo && (
+        {initialInfo?.initialInfo && (
           <>
             <Text color="gray">Output: {initialInfo.initialInfo.outputDir}</Text>
-            <Text color="gray">Task: {initialInfo.initialInfo.taskFile ? path.basename(initialInfo.initialInfo.taskFile) : 'Unknown'}</Text>
+            <Text color="gray">
+              Task:{' '}
+              {initialInfo.initialInfo.taskFile
+                ? path.basename(initialInfo.initialInfo.taskFile)
+                : 'Unknown'}
+            </Text>
             <Text color="gray">Agents: {initialInfo.initialInfo.agentCount}</Text>
-            <Text color="gray">Concurrency: {initialInfo.initialInfo.concurrency}, Delay: {initialInfo.initialInfo.delay}s</Text>
+            <Text color="gray">
+              Concurrency: {initialInfo.initialInfo.concurrency}, Delay:{' '}
+              {initialInfo.initialInfo.delay}s
+            </Text>
           </>
         )}
         {(!initialInfo || !initialInfo.initialInfo) && (
@@ -286,7 +294,9 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
           <Box key={agent.name} marginBottom={1} flexDirection="column">
             <Box>
               <Text bold>
-                <Text color={agent.statusColor}>{agent.statusDisplay}</Text> {agent.name}{agent.runtime ? ` ${agent.runtime}` : ''}{agent.pid ? <Text color="gray"> (pid: {agent.pid})</Text> : ''}
+                <Text color={agent.statusColor}>{agent.statusDisplay}</Text> {agent.name}
+                {agent.runtime ? ` ${agent.runtime}` : ''}
+                {agent.pid ? <Text color="gray"> (pid: {agent.pid})</Text> : ''}
               </Text>
             </Box>
 
@@ -300,7 +310,9 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
             {agent.lastOutput && agent.lastOutput.length > 0 && (
               <Box paddingLeft={4} flexDirection="column" paddingBottom={1} marginTop={1}>
                 {agent.lastOutput.map((line, index) => (
-                  <Text key={index} color="gray">{line}</Text>
+                  <Text key={index} color="gray">
+                    {line}
+                  </Text>
                 ))}
               </Box>
             )}

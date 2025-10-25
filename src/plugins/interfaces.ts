@@ -5,7 +5,7 @@
 import type { DIContainer } from '../core/di-container.js';
 import type { ILogger } from '../core/interfaces.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { PluginMetadata } from './plugin-manager.js';
+import type { PluginMetadata } from './plugin-manager.js';
 
 /**
  * Base Plugin Class
@@ -167,7 +167,10 @@ export abstract class MCPToolPlugin extends BasePlugin implements IMCPToolPlugin
         const result = await Promise.race([
           handler(args),
           new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error(`Tool ${name} timed out after ${timeout}ms`)), timeout);
+            setTimeout(
+              () => reject(new Error(`Tool ${name} timed out after ${timeout}ms`)),
+              timeout
+            );
           }),
         ]);
 
@@ -333,12 +336,15 @@ export interface IUtilityPlugin {
   /**
    * Get utility metadata
    */
-  getUtilityMetadata(): Record<string, {
-    name: string;
-    description: string;
-    parameters?: any;
-    returnType?: any;
-  }>;
+  getUtilityMetadata(): Record<
+    string,
+    {
+      name: string;
+      description: string;
+      parameters?: any;
+      returnType?: any;
+    }
+  >;
 }
 
 /**
@@ -347,12 +353,15 @@ export interface IUtilityPlugin {
 export abstract class UtilityPlugin extends BasePlugin implements IUtilityPlugin {
   abstract getUtilities(): Record<string, Function>;
 
-  abstract getUtilityMetadata(): Record<string, {
-    name: string;
-    description: string;
-    parameters?: any;
-    returnType?: any;
-  }>;
+  abstract getUtilityMetadata(): Record<
+    string,
+    {
+      name: string;
+      description: string;
+      parameters?: any;
+      returnType?: any;
+    }
+  >;
 
   /**
    * Helper method to register utilities with the container

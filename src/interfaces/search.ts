@@ -85,7 +85,17 @@ export interface SearchFilter {
   /**
    * Filter operator
    */
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains' | 'startsWith' | 'endsWith';
+  operator:
+    | 'eq'
+    | 'ne'
+    | 'gt'
+    | 'gte'
+    | 'lt'
+    | 'lte'
+    | 'in'
+    | 'contains'
+    | 'startsWith'
+    | 'endsWith';
 
   /**
    * Filter value

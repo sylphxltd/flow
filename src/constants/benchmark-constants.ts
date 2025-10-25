@@ -1,5 +1,10 @@
 // Benchmark command constants
-export const DEFAULT_AGENTS = ['craftsman', 'practitioner', 'craftsman-reflective', 'practitioner-reflective'];
+export const DEFAULT_AGENTS = [
+  'craftsman',
+  'practitioner',
+  'craftsman-reflective',
+  'practitioner-reflective',
+];
 
 export const DEFAULT_TASK = 'examples/benchmark-tasks/user-management-system.md';
 
@@ -17,7 +22,7 @@ export const PERFORMANCE_SCORE_RANGES = [
   { max: 2400, score: 4, description: '30-40 minutes' },
   { max: 3600, score: 3, description: '40-60 minutes' },
   { max: 5400, score: 2, description: '60-90 minutes' },
-  { max: Infinity, score: 1, description: 'Over 90 minutes' }
+  { max: Number.POSITIVE_INFINITY, score: 1, description: 'Over 90 minutes' },
 ];
 
 export const EVALUATION_CRITERIA = {
@@ -25,12 +30,12 @@ export const EVALUATION_CRITERIA = {
   FEATURE_COMPLETENESS: 'Feature Completeness',
   TESTING_QUALITY: 'Testing Quality',
   DOCUMENTATION_QUALITY: 'Documentation Quality',
-  ARCHITECTURE_DESIGN: 'Architecture & Design'
+  ARCHITECTURE_DESIGN: 'Architecture & Design',
 } as const;
 
 export const AGENT_DESCRIPTIONS = {
   craftsman: 'Idealistic craftsman with principles-based approach',
   practitioner: 'Pragmatic practitioner with business-focused approach',
   'craftsman-reflective': 'Idealistic craftsman with reflective questioning',
-  'practitioner-reflective': 'Pragmatic practitioner with contextual decision-making'
+  'practitioner-reflective': 'Pragmatic practitioner with contextual decision-making',
 } as const;

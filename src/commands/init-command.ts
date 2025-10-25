@@ -100,55 +100,55 @@ export const initCommand: CommandConfig = {
           name: 'selectedServers',
           message: 'Select MCP tools to install:',
           choices: allServers.map((id) => {
-              const server = MCP_SERVER_REGISTRY[id];
-              const isInstalled = installedServers.includes(id);
-              return {
-                name: `${server.name} - ${server.description}`,
-                value: id,
-                checked: server.required || isInstalled || server.defaultInInit || false,
-                disabled: server.required ? '(required)' : false,
-              };
-            }),
-          },
-        ]);
-
-        let selectedServers = serverSelectionAnswer.selectedServers as MCPServerID[];
-
-        // Ensure all required servers are included
-        const requiredServers = allServers.filter((id) => MCP_SERVER_REGISTRY[id].required);
-        selectedServers = [...new Set([...requiredServers, ...selectedServers])];
-
-        if (selectedServers.length > 0) {
-          // Configure each selected server that needs configuration
-          const serversNeedingConfig = selectedServers.filter((id) => {
             const server = MCP_SERVER_REGISTRY[id];
-            return server.envVars && Object.keys(server.envVars).length > 0;
-          });
+            const isInstalled = installedServers.includes(id);
+            return {
+              name: `${server.name} - ${server.description}`,
+              value: id,
+              checked: server.required || isInstalled || server.defaultInInit || false,
+              disabled: server.required ? '(required)' : false,
+            };
+          }),
+        },
+      ]);
 
-          const serverConfigsMap: Record<MCPServerID, Record<string, string>> = {};
+      let selectedServers = serverSelectionAnswer.selectedServers as MCPServerID[];
 
-          if (serversNeedingConfig.length > 0) {
-            console.log('');
-            console.log(chalk.cyan.bold('▸ Configure selected MCP tools'));
+      // Ensure all required servers are included
+      const requiredServers = allServers.filter((id) => MCP_SERVER_REGISTRY[id].required);
+      selectedServers = [...new Set([...requiredServers, ...selectedServers])];
 
-            const collectedEnv: Record<string, string> = {};
-            for (const serverId of serversNeedingConfig) {
-              // configureServer will print the server name and description
-              const configValues = await mcpService.configureServer(serverId, collectedEnv);
-              serverConfigsMap[serverId] = configValues;
-            }
-          }
+      if (selectedServers.length > 0) {
+        // Configure each selected server that needs configuration
+        const serversNeedingConfig = selectedServers.filter((id) => {
+          const server = MCP_SERVER_REGISTRY[id];
+          return server.envVars && Object.keys(server.envVars).length > 0;
+        });
 
-          // Install all selected servers
-          const spinner = ora('Installing MCP servers...').start();
-          try {
-            await mcpService.installServers(selectedServers, serverConfigsMap);
-            spinner.succeed('MCP servers installed');
-          } catch (error) {
-            spinner.fail(chalk.red('Failed to install MCP servers'));
-            throw error;
+        const serverConfigsMap: Record<MCPServerID, Record<string, string>> = {};
+
+        if (serversNeedingConfig.length > 0) {
+          console.log('');
+          console.log(chalk.cyan.bold('▸ Configure selected MCP tools'));
+
+          const collectedEnv: Record<string, string> = {};
+          for (const serverId of serversNeedingConfig) {
+            // configureServer will print the server name and description
+            const configValues = await mcpService.configureServer(serverId, collectedEnv);
+            serverConfigsMap[serverId] = configValues;
           }
         }
+
+        // Install all selected servers
+        const spinner = ora('Installing MCP servers...').start();
+        try {
+          await mcpService.installServers(selectedServers, serverConfigsMap);
+          spinner.succeed('MCP servers installed');
+        } catch (error) {
+          spinner.fail(chalk.red('Failed to install MCP servers'));
+          throw error;
+        }
+      }
     }
 
     if (targetId === 'opencode') {
@@ -174,10 +174,18 @@ export const initCommand: CommandConfig = {
     // Save the selected target as project default
     try {
       await projectSettings.setDefaultTarget(targetId);
-      console.log(chalk.gray(`  Default target set to: ${targetManager.getTarget(targetId)?.name || targetId}`));
+      console.log(
+        chalk.gray(
+          `  Default target set to: ${targetManager.getTarget(targetId)?.name || targetId}`
+        )
+      );
     } catch (error) {
       // Don't fail the entire setup if we can't save settings
-      console.warn(chalk.yellow(`  Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`));
+      console.warn(
+        chalk.yellow(
+          `  Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`
+        )
+      );
     }
     console.log('');
   },

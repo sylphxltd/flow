@@ -104,7 +104,7 @@ export const TypeGuards = {
   isString: (value: unknown): value is string => typeof value === 'string',
 
   /** Check if value is a number */
-  isNumber: (value: unknown): value is number => typeof value === 'number' && !isNaN(value),
+  isNumber: (value: unknown): value is number => typeof value === 'number' && !Number.isNaN(value),
 
   /** Check if value is a boolean */
   isBoolean: (value: unknown): value is boolean => typeof value === 'boolean',
@@ -129,7 +129,7 @@ export const TypeGuards = {
 
   /** Check if value is a valid URL */
   isURL: (value: unknown): value is string => {
-    if (typeof value !== 'string') return false;
+    if (typeof value !== 'string') { return false; }
     try {
       new URL(value);
       return true;
@@ -140,14 +140,14 @@ export const TypeGuards = {
 
   /** Check if value is a valid email */
   isEmail: (value: unknown): value is string => {
-    if (typeof value !== 'string') return false;
+    if (typeof value !== 'string') { return false; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
   },
 
   /** Check if value is a valid UUID */
   isUUID: (value: unknown): value is string => {
-    if (typeof value !== 'string') return false;
+    if (typeof value !== 'string') { return false; }
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(value);
   },
@@ -192,7 +192,7 @@ export function validateObjectStructure<T extends Record<string, unknown>>(
   obj: unknown,
   requiredKeys: (keyof T)[]
 ): obj is T {
-  if (!TypeGuards.isObject(obj)) return false;
+  if (!TypeGuards.isObject(obj)) { return false; }
   return requiredKeys.every((key) => key in obj);
 }
 
@@ -231,12 +231,11 @@ export class MigrationHelper {
     try {
       if (validator(data)) {
         return { success: true, data };
-      } else {
+      }
         return {
           success: false,
           error: new Error(`Migration failed in ${context}: Invalid data structure`),
         };
-      }
     } catch (error) {
       return {
         success: false,
@@ -257,7 +256,7 @@ export class MigrationHelper {
     const failures: Array<{ index: number; error: Error }> = [];
 
     dataArray.forEach((item, index) => {
-      const result = this.migrateFromAny(item, validator, `${context}[${index}]`);
+      const result = MigrationHelper.migrateFromAny(item, validator, `${context}[${index}]`);
       if (result.success) {
         successes.push(result.data);
       } else {

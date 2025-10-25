@@ -150,14 +150,16 @@ export const ApiResponseSchema = z.object({
   success: z.boolean(),
   data: z.unknown().optional(),
   message: z.string().optional(),
-  metadata: z.object({
-    timestamp: z.string(),
-    requestId: z.string().optional(),
-    version: z.string().optional(),
-    responseTime: z.number().optional(),
-    pagination: PaginationInfoSchema.optional(),
-    rateLimit: RateLimitInfoSchema.optional(),
-  }).optional(),
+  metadata: z
+    .object({
+      timestamp: z.string(),
+      requestId: z.string().optional(),
+      version: z.string().optional(),
+      responseTime: z.number().optional(),
+      pagination: PaginationInfoSchema.optional(),
+      rateLimit: RateLimitInfoSchema.optional(),
+    })
+    .optional(),
   error: ApiErrorSchema.optional(),
 });
 
@@ -166,11 +168,13 @@ export const HttpResponseSchema = z.object({
   status: z.number(),
   statusText: z.string(),
   headers: z.record(z.string()),
-  metadata: z.object({
-    timestamp: z.string(),
-    requestId: z.string().optional(),
-    responseTime: z.number().optional(),
-    size: z.number().optional(),
-    fromCache: z.boolean().optional(),
-  }).optional(),
+  metadata: z
+    .object({
+      timestamp: z.string(),
+      requestId: z.string().optional(),
+      responseTime: z.number().optional(),
+      size: z.number().optional(),
+      fromCache: z.boolean().optional(),
+    })
+    .optional(),
 });

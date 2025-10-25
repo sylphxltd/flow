@@ -201,7 +201,7 @@ export class MemoryStorage {
     const errorMessage = `Failed to delete memory entry: ${namespace}:${key}`;
 
     try {
-      const result = await this.memory
+      const _result = await this.memory
         .delete(memory)
         .where(and(eq(memory.key, key), eq(memory.namespace, namespace)));
 

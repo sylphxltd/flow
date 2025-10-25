@@ -37,10 +37,9 @@ export abstract class BaseRepository<T> {
    */
   async findById(id: string | number): Promise<T | null> {
     try {
-      const result = await this.db.execute(
-        `SELECT * FROM ${this.tableName} WHERE id = ? LIMIT 1`,
-        [id]
-      );
+      const result = await this.db.execute(`SELECT * FROM ${this.tableName} WHERE id = ? LIMIT 1`, [
+        id,
+      ]);
 
       return result.rows[0] || null;
     } catch (error) {
@@ -84,11 +83,11 @@ export abstract class BaseRepository<T> {
 
       // Add LIMIT and OFFSET
       if (options.limit) {
-        query += ` LIMIT ?`;
+        query += ' LIMIT ?';
         params.push(options.limit);
 
         if (options.offset) {
-          query += ` OFFSET ?`;
+          query += ' OFFSET ?';
           params.push(options.offset);
         }
       }
@@ -109,8 +108,8 @@ export abstract class BaseRepository<T> {
    * Find records with pagination
    */
   async findPaginated(
-    page: number = 1,
-    pageSize: number = 10,
+    page = 1,
+    pageSize = 10,
     options: Omit<QueryOptions, 'limit' | 'offset'> = {}
   ): Promise<PaginatedResult<T>> {
     try {
@@ -153,14 +152,14 @@ export abstract class BaseRepository<T> {
    */
   async create(data: Partial<T>): Promise<T> {
     try {
-      const keys = Object.keys(data).filter(key => data[key as keyof T] !== undefined);
+      const keys = Object.keys(data).filter((key) => data[key as keyof T] !== undefined);
       if (keys.length === 0) {
         throw new Error('No data provided for creation');
       }
 
       const columns = keys.join(', ');
       const placeholders = keys.map(() => '?').join(', ');
-      const values = keys.map(key => data[key as keyof T]);
+      const values = keys.map((key) => data[key as keyof T]);
 
       const query = `INSERT INTO ${this.tableName} (${columns}) VALUES (${placeholders}) RETURNING *`;
       const result = await this.db.execute(query, values);
@@ -181,13 +180,13 @@ export abstract class BaseRepository<T> {
    */
   async update(id: string | number, data: Partial<T>): Promise<T | null> {
     try {
-      const keys = Object.keys(data).filter(key => data[key as keyof T] !== undefined);
+      const keys = Object.keys(data).filter((key) => data[key as keyof T] !== undefined);
       if (keys.length === 0) {
         throw new Error('No data provided for update');
       }
 
-      const setClause = keys.map(key => `${key} = ?`).join(', ');
-      const values = keys.map(key => data[key as keyof T]);
+      const setClause = keys.map((key) => `${key} = ?`).join(', ');
+      const values = keys.map((key) => data[key as keyof T]);
       values.push(id);
 
       const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ? RETURNING *`;
@@ -262,10 +261,9 @@ export abstract class BaseRepository<T> {
    */
   async exists(id: string | number): Promise<boolean> {
     try {
-      const result = await this.db.execute(
-        `SELECT 1 FROM ${this.tableName} WHERE id = ? LIMIT 1`,
-        [id]
-      );
+      const result = await this.db.execute(`SELECT 1 FROM ${this.tableName} WHERE id = ? LIMIT 1`, [
+        id,
+      ]);
 
       return result.rows.length > 0;
     } catch (error) {
@@ -288,7 +286,7 @@ export abstract class BaseRepository<T> {
     } catch (error) {
       this.logger.error(`Failed to execute custom query on ${this.tableName}`, error);
       throw new DatabaseError(
-        `Failed to execute custom query`,
+        'Failed to execute custom query',
         `${this.tableName}.executeQuery`,
         error as Error
       );

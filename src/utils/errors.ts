@@ -311,10 +311,10 @@ export class ErrorHandler {
    * Handle an error with logging and appropriate actions
    */
   static handle(error: unknown, context?: Record<string, unknown>): BaseError {
-    const standardError = this.standardizeError(error);
+    const standardError = ErrorHandler.standardizeError(error);
 
     if (standardError.shouldLog()) {
-      this.logger.error(
+      ErrorHandler.logger.error(
         `${standardError.category}: ${standardError.message}`,
         standardError instanceof Error ? standardError : undefined,
         {
@@ -333,10 +333,10 @@ export class ErrorHandler {
    * Handle an error and exit process if necessary
    */
   static handleAndExit(error: unknown, context?: Record<string, unknown>, exitCode = 1): never {
-    const standardError = this.handle(error, context);
+    const standardError = ErrorHandler.handle(error, context);
 
     if (standardError.shouldTerminate() || process.env.NODE_ENV === 'production') {
-      this.logger.error('Terminating process due to critical error', undefined, {
+      ErrorHandler.logger.error('Terminating process due to critical error', undefined, {
         errorId: standardError.id,
         exitCode,
       });
@@ -417,7 +417,7 @@ export class ErrorHandler {
       try {
         await handler(options);
       } catch (error) {
-        this.handleAndExit(error, { ...context, ...options });
+        ErrorHandler.handleAndExit(error, { ...context, ...options });
       }
     };
   }
@@ -433,7 +433,7 @@ export class ErrorHandler {
       try {
         handler(options);
       } catch (error) {
-        this.handleAndExit(error, { ...context, ...options });
+        ErrorHandler.handleAndExit(error, { ...context, ...options });
       }
     };
   }
@@ -449,7 +449,7 @@ export class ErrorHandler {
       try {
         return fn(...args);
       } catch (error) {
-        throw errorConverter ? errorConverter(error) : this.standardizeError(error);
+        throw errorConverter ? errorConverter(error) : ErrorHandler.standardizeError(error);
       }
     };
   }
@@ -465,7 +465,7 @@ export class ErrorHandler {
       try {
         return await fn(...args);
       } catch (error) {
-        throw errorConverter ? errorConverter(error) : this.standardizeError(error);
+        throw errorConverter ? errorConverter(error) : ErrorHandler.standardizeError(error);
       }
     };
   }

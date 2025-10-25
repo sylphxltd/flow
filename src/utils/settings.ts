@@ -55,7 +55,7 @@ export class ProjectSettings {
       // Write settings with proper formatting
       await fs.writeFile(
         this.settingsPath,
-        JSON.stringify(settingsWithVersion, null, 2) + '\n',
+        `${JSON.stringify(settingsWithVersion, null, 2)}\n`,
         'utf8'
       );
     } catch (error: any) {

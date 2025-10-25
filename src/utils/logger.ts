@@ -154,13 +154,12 @@ class Logger {
       case 'json':
         return JSON.stringify(entry);
 
-      case 'simple':
+      case 'simple': {
         const levelStr = entry.level.toUpperCase().padEnd(5);
         const moduleStr = entry.module ? `[${entry.module}] ` : '';
         return `${levelStr} ${moduleStr}${entry.message}`;
-
-      case 'pretty':
-      default:
+      }
+      default: {
         const parts: string[] = [];
 
         // Timestamp
@@ -193,21 +192,22 @@ class Logger {
         // Context
         if (entry.context && Object.keys(entry.context).length > 0) {
           const contextStr = JSON.stringify(entry.context, null, 2);
-          result += '\n' + chalk.gray('  Context: ') + chalk.gray(contextStr);
+          result += `\n${chalk.gray('  Context: ')}${chalk.gray(contextStr)}`;
         }
 
         // Error details
         if (entry.error) {
-          result += '\n' + chalk.red('  Error: ') + chalk.red(entry.error.message);
+          result += `\n${chalk.red('  Error: ')}${chalk.red(entry.error.message)}`;
           if (entry.error.code) {
-            result += '\n' + chalk.red('  Code: ') + chalk.red(entry.error.code);
+            result += `\n${chalk.red('  Code: ')}${chalk.red(entry.error.code)}`;
           }
           if (entry.error.stack) {
-            result += '\n' + chalk.gray(entry.error.stack);
+            result += `\n${chalk.gray(entry.error.stack)}`;
           }
         }
 
         return result;
+      }
     }
   }
 

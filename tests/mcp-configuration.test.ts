@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock readline at the top level
 const mockCreateInterface = vi.fn(() => ({
-  question: vi.fn((prompt: string, callback: (answer: string) => void) => {
+  question: vi.fn((_prompt: string, callback: (answer: string) => void) => {
     setImmediate(() => callback(''));
   }),
   close: vi.fn(),
@@ -34,7 +34,7 @@ const originalConsoleError = console.error;
 
 describe('MCP Configuration Tests', () => {
   let mockTargetDefinition: any;
-  let mockTransformer: any;
+  let _mockTransformer: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();

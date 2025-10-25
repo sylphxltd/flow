@@ -66,12 +66,11 @@ export class ConnectionPool<T> {
         connection.isInUse = true;
         connection.lastUsed = Date.now();
         return connection.instance;
-      } else {
+      }
         // Remove invalid connection
         this.connections.delete(connectionId);
         this.connectionCount--;
         await this.destroyConnection(connection.instance);
-      }
     }
 
     // Create new connection if under limit
@@ -104,9 +103,11 @@ export class ConnectionPool<T> {
    * Get pool statistics
    */
   getStats() {
-    const activeConnections = Array.from(this.connections.values()).filter(c => c.isInUse).length;
+    const activeConnections = Array.from(this.connections.values()).filter((c) => c.isInUse).length;
     const idleConnections = this.availableConnections.length;
-    const unhealthyConnections = Array.from(this.connections.values()).filter(c => !c.isHealthy).length;
+    const unhealthyConnections = Array.from(this.connections.values()).filter(
+      (c) => !c.isHealthy
+    ).length;
 
     return {
       totalConnections: this.connectionCount,
@@ -166,7 +167,9 @@ export class ConnectionPool<T> {
     this.connections.set(connection.id, connection);
     this.connectionCount++;
 
-    console.debug(`New connection created in ${createTime}ms, total connections: ${this.connectionCount}`);
+    console.debug(
+      `New connection created in ${createTime}ms, total connections: ${this.connectionCount}`
+    );
     return connectionInstance;
   }
 
@@ -239,13 +242,15 @@ export class ConnectionPool<T> {
     const interval = this.config.healthCheckInterval || 60000;
 
     this.healthCheckTimer = setInterval(async () => {
-      if (this.isDisposing) return;
+      if (this.isDisposing) { return; }
 
       for (const [id, connection] of this.connections) {
         try {
           const isHealthy = await this.healthCheck(connection.instance);
 
-          if (!isHealthy) {
+          if (isHealthy) {
+            connection.isHealthy = true;
+          } else {
             connection.isHealthy = false;
             console.warn(`Connection ${id} failed health check`);
 
@@ -259,8 +264,6 @@ export class ConnectionPool<T> {
               }
               await this.destroyConnection(connection.instance);
             }
-          } else {
-            connection.isHealthy = true;
           }
         } catch (error) {
           console.error(`Health check failed for connection ${id}:`, error);
@@ -283,8 +286,8 @@ export class ConnectionPool<T> {
     for (let i = 0; i < minConnections; i++) {
       promises.push(
         this.createNewConnection()
-          .then(connection => this.release(connection))
-          .catch(error => console.error('Failed to initialize minimum connection:', error))
+          .then((connection) => this.release(connection))
+          .catch((error) => console.error('Failed to initialize minimum connection:', error))
       );
     }
 
@@ -302,8 +305,8 @@ export class ConnectionPool<T> {
       const needed = minConnections - availableCount;
       for (let i = 0; i < needed; i++) {
         this.createNewConnection()
-          .then(connection => this.release(connection))
-          .catch(error => console.error('Failed to maintain minimum connection:', error));
+          .then((connection) => this.release(connection))
+          .catch((error) => console.error('Failed to maintain minimum connection:', error));
       }
     }
   }
@@ -325,10 +328,5 @@ export function createDatabaseConnectionPool(
   healthCheckFn: (connection: any) => Promise<boolean>,
   config?: ConnectionConfig
 ): ConnectionPool<any> {
-  return new ConnectionPool(
-    createDbConnection,
-    destroyDbConnection,
-    healthCheckFn,
-    config
-  );
+  return new ConnectionPool(createDbConnection, destroyDbConnection, healthCheckFn, config);
 }

@@ -187,7 +187,7 @@ export const commandSecurity = {
     const validatedArgs = args.map((arg) => {
       try {
         return securitySchemas.commandArg.parse(arg);
-      } catch (error) {
+      } catch (_error) {
         throw new Error(`Invalid command argument: ${arg}`);
       }
     });

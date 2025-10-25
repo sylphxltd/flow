@@ -76,7 +76,7 @@ export const claudeCodeTarget: Target = {
    * Transform MCP server configuration for Claude Code
    * Convert from various formats to Claude Code's optimal format
    */
-  transformMCPConfig(config: MCPServerConfigUnion, serverId?: string): Record<string, unknown> {
+  transformMCPConfig(config: MCPServerConfigUnion, _serverId?: string): Record<string, unknown> {
     // Handle legacy OpenCode 'local' type
     if (config.type === 'local') {
       // Convert OpenCode 'local' array command to Claude Code format
@@ -248,8 +248,7 @@ Please begin your response with a comprehensive summary of all the instructions 
 
         if (enhancedSystemPrompt.length > maxPromptLength) {
           promptToUse =
-            enhancedSystemPrompt.substring(0, maxPromptLength) +
-            '\n\n[NOTE: Agent instructions were truncated due to length. Full instructions available in project documentation.]';
+            `${enhancedSystemPrompt.substring(0, maxPromptLength)}\n\n[NOTE: Agent instructions were truncated due to length. Full instructions available in project documentation.]`;
           if (options.verbose) {
             console.warn(
               `⚠️  Warning: System prompt truncated from ${enhancedSystemPrompt.length} to ${maxPromptLength} characters`
@@ -264,7 +263,7 @@ Please begin your response with a comprehensive summary of all the instructions 
         }
 
         if (options.verbose) {
-          console.log(`🚀 Executing Claude Code with system prompt`);
+          console.log('🚀 Executing Claude Code with system prompt');
           console.log(
             `📝 System prompt length: ${promptToUse.length} characters${promptToUse.length < enhancedSystemPrompt.length ? ` (truncated from ${enhancedSystemPrompt.length})` : ''}`
           );
@@ -273,7 +272,7 @@ Please begin your response with a comprehensive summary of all the instructions 
 
         // Use child_process directly to bypass security validation for this specific case
         // This is safe because we're controlling the command and just passing the prompt as an argument
-        const { spawn } = await import('child_process');
+        const { spawn } = await import('node:child_process');
 
         await new Promise<void>((resolve, reject) => {
           const child = spawn('claude', args, {
@@ -309,11 +308,10 @@ Please begin your response with a comprehensive summary of all the instructions 
     } catch (error: any) {
       if (error.code === 'ENOENT') {
         throw new CLIError('Claude Code not found. Please install it first.', 'CLAUDE_NOT_FOUND');
-      } else if (error.code) {
+      }if (error.code) {
         throw new CLIError(`Claude Code exited with code ${error.code}`, 'CLAUDE_ERROR');
-      } else {
-        throw new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_ERROR');
       }
+        throw new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_ERROR');
     }
   },
 
@@ -364,7 +362,7 @@ Please begin your response with a comprehensive summary of all the instructions 
       await fs.mkdir(path.dirname(settingsPath), { recursive: true });
 
       // Write updated settings
-      await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf8');
+      await fs.writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, 'utf8');
     } catch (error) {
       throw new Error(
         `Failed to approve MCP servers: ${error instanceof Error ? error.message : String(error)}`

@@ -53,7 +53,7 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
     if (providedBaseURL) {
       try {
         this.baseURL = securitySchemas.url.parse(providedBaseURL);
-      } catch (error) {
+      } catch (_error) {
         console.warn('[WARN] Invalid OPENAI_BASE_URL format, using default');
         this.baseURL = 'https://api.openai.com/v1';
       }
@@ -72,7 +72,7 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       // Validate API key format
       try {
         securitySchemas.apiKey.parse(this.apiKey);
-      } catch (error) {
+      } catch (_error) {
         console.warn(
           '[WARN] Invalid OPENAI_API_KEY format. Embeddings will use mock implementation.'
         );
@@ -203,7 +203,7 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
     try {
       await this.listModels();
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -261,7 +261,7 @@ export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> 
   try {
     const { secretUtils } = await import('./secret-utils.js');
     secrets = await secretUtils.loadSecrets(process.cwd()).catch(() => ({}));
-  } catch (error) {
+  } catch (_error) {
     // Ignore if secretUtils is not available
   }
 
@@ -307,7 +307,7 @@ export function chunkText(
 
     // Move start position with overlap
     start = end - overlap;
-    if (start >= text.length) break;
+    if (start >= text.length) { break; }
   }
 
   return chunks;

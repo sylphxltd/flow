@@ -215,6 +215,4 @@ export { schema };
 //   clearMemory,
 // } from './memory-db';
 
-export {
-  isDatabaseError,
-} from '../utils/database-errors';
+export { isDatabaseError } from '../utils/database-errors';

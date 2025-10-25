@@ -6,14 +6,7 @@
   "mcp": {
     "sylphx-flow": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "github:sylphxltd/flow",
-        "mcp",
-        "start",
-        "--disable-memory"
-      ],
+      "command": ["npx", "-y", "github:sylphxltd/flow", "mcp", "start", "--disable-memory"],
       "environment": {
         "OPENAI_API_KEY": "",
         "OPENAI_BASE_URL": "https://api.openai.com/v1",

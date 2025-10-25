@@ -53,16 +53,12 @@ export class PluginBootstrap {
       this.logger = await container.resolve<ILogger>('logger');
 
       // Create plugin manager
-      this.pluginManager = new PluginManager(
-        this.logger,
-        container,
-        {
-          pluginDir: this.config.pluginDir,
-          autoLoad: this.config.autoStart,
-          enableHotReload: this.config.enableHotReload,
-          configPath: this.config.configFile,
-        }
-      );
+      this.pluginManager = new PluginManager(this.logger, container, {
+        pluginDir: this.config.pluginDir,
+        autoLoad: this.config.autoStart,
+        enableHotReload: this.config.enableHotReload,
+        configPath: this.config.configFile,
+      });
 
       // Initialize plugin manager
       await this.pluginManager.initialize();
@@ -156,10 +152,15 @@ export class PluginBootstrap {
 
     // Count registered services
     const serviceTokens = [
-      'logger', 'config', 'database', 'memoryStorage',
-      'searchService', 'targetManager', 'embeddingProvider'
+      'logger',
+      'config',
+      'database',
+      'memoryStorage',
+      'searchService',
+      'targetManager',
+      'embeddingProvider',
     ];
-    const serviceCount = serviceTokens.filter(token => container.isRegistered(token)).length;
+    const serviceCount = serviceTokens.filter((token) => container.isRegistered(token)).length;
 
     return {
       running: this.isStarted,
@@ -173,7 +174,7 @@ export class PluginBootstrap {
    * Register built-in plugins
    */
   private async registerBuiltinPlugins(): Promise<void> {
-    if (!this.pluginManager) return;
+    if (!this.pluginManager) { return; }
 
     try {
       // Import and register memory MCP plugin
@@ -191,14 +192,14 @@ export class PluginBootstrap {
    * Load external plugins
    */
   private async loadExternalPlugins(): Promise<void> {
-    if (!this.pluginManager) return;
+    if (!this.pluginManager) { return; }
 
     try {
       // Discover and load plugins from directory
       const results = await this.pluginManager.discoverAndLoadPlugins();
 
-      const successful = results.filter(r => r.success);
-      const failed = results.filter(r => !r.success);
+      const successful = results.filter((r) => r.success);
+      const failed = results.filter((r) => !r.success);
 
       if (successful.length > 0) {
         this.logger?.info(`Loaded ${successful.length} external plugins`);
@@ -206,7 +207,7 @@ export class PluginBootstrap {
 
       if (failed.length > 0) {
         this.logger?.warn(`${failed.length} plugins failed to load`, {
-          failed: failed.map(f => ({ path: f.error, error: f.error })),
+          failed: failed.map((f) => ({ path: f.error, error: f.error })),
         });
       }
     } catch (error) {
@@ -218,7 +219,7 @@ export class PluginBootstrap {
    * Configure plugins based on bootstrap config
    */
   private async configurePlugins(): Promise<void> {
-    if (!this.pluginManager) return;
+    if (!this.pluginManager) { return; }
 
     try {
       const { plugins: enabledPlugins, disabledPlugins } = this.config;

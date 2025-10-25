@@ -9,7 +9,7 @@ import {
   getFileInfo,
   readFileSafe,
   readDirectorySafe,
-  ensureDirectory
+  ensureDirectory,
 } from '../../utils/file-operations.js';
 import type { ProcessResult } from '../types/index.js';
 

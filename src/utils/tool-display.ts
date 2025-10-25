@@ -18,7 +18,7 @@ export function formatToolDisplay(toolName: string, params: any): string {
       paramString = params.command || '';
       // Limit bash command display length
       if (paramString.length > 60) {
-        paramString = paramString.substring(0, 57) + '...';
+        paramString = `${paramString.substring(0, 57)}...`;
       }
       break;
     case 'Grep':
@@ -30,21 +30,24 @@ export function formatToolDisplay(toolName: string, params: any): string {
     case 'Glob':
       paramString = params.pattern || '';
       break;
-    case 'TodoWrite':
+    case 'TodoWrite': {
       const todoCount = params.todos ? params.todos.length : 0;
-      const completedCount = params.todos ? params.todos.filter((t: any) => t.status === 'completed').length : 0;
+      const completedCount = params.todos
+        ? params.todos.filter((t: any) => t.status === 'completed').length
+        : 0;
       paramString = `${todoCount} todos (${completedCount} completed)`;
       break;
+    }
     default:
       // Generic parameter display for other tools
       if (params.file_path) {
         paramString = params.file_path.split('/').pop() || '';
       } else if (params.query) {
         paramString = params.query.substring(0, 40);
-        if (params.query.length > 40) paramString += '...';
+        if (params.query.length > 40) { paramString += '...'; }
       } else if (params.command) {
         paramString = params.command.substring(0, 40);
-        if (params.command.length > 40) paramString += '...';
+        if (params.command.length > 40) { paramString += '...'; }
       } else {
         paramString = JSON.stringify(params).substring(0, 40);
       }

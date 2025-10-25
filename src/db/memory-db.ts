@@ -31,7 +31,7 @@ export class MemoryDatabaseClient extends BaseDatabaseClient<typeof schema> {
       }
 
       // Run migrations
-      const migrationsPath = path.join(process.cwd(), 'drizzle', 'memory');
+      const _migrationsPath = path.join(process.cwd(), 'drizzle', 'memory');
 
       // For now, create tables directly since we don't have migration files yet
       await this.createTables();

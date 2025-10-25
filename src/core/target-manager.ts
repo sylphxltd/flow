@@ -79,7 +79,7 @@ export class TargetManager {
       if (savedDefaultTarget && getTarget(savedDefaultTarget)) {
         return savedDefaultTarget;
       }
-    } catch (error) {
+    } catch (_error) {
       // Silently ignore errors reading project settings
     }
 
@@ -113,7 +113,7 @@ export class TargetManager {
 
       // Check non-default targets first
       for (const target of nonDefaultTargets) {
-        const detected = target.detectFromEnvironment && target.detectFromEnvironment();
+        const detected = target.detectFromEnvironment?.();
         if (detected) {
           return target.id;
         }
@@ -121,7 +121,7 @@ export class TargetManager {
 
       // Then check default targets
       for (const target of defaultTargets) {
-        const detected = target.detectFromEnvironment && target.detectFromEnvironment();
+        const detected = target.detectFromEnvironment?.();
         if (detected) {
           return target.id;
         }

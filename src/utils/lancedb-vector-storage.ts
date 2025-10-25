@@ -15,7 +15,7 @@ export function generateMockEmbedding(text: string, dimensions = 1536): number[]
     let hash = 0;
     for (let i = 0; i < word.length; i++) {
       hash = (hash << 5) - hash + word.charCodeAt(i);
-      hash = hash & hash; // Convert to 32-bit integer
+      hash &= hash; // Convert to 32-bit integer
     }
 
     // Distribute hash across embedding dimensions
@@ -84,7 +84,7 @@ export class VectorStorage {
    * Initialize the database connection
    */
   async initialize(): Promise<void> {
-    if (this.db) return;
+    if (this.db) { return; }
 
     try {
       // Ensure directory exists
@@ -105,7 +105,7 @@ export class VectorStorage {
         try {
           this.metadata.count = await this.table.countRows();
           console.error(`[INFO] Loaded LanceDB table with ${this.metadata.count} vectors`);
-        } catch (e) {
+        } catch (_e) {
           this.metadata.count = 0;
         }
       } else {
@@ -195,7 +195,7 @@ export class VectorStorage {
    * Add multiple documents
    */
   async addDocuments(docs: VectorDocument[]): Promise<void> {
-    if (docs.length === 0) return;
+    if (docs.length === 0) { return; }
 
     // Validate all documents
     for (const doc of docs) {
@@ -265,7 +265,7 @@ export class VectorStorage {
       const results: VectorSearchResult[] = [];
 
       for (const doc of this.fallbackData.values()) {
-        if (filter && !filter(doc)) continue;
+        if (filter && !filter(doc)) { continue; }
 
         const similarity = this.cosineSimilarity(queryEmbedding, doc.embedding);
         results.push({ doc, similarity });
@@ -297,7 +297,7 @@ export class VectorStorage {
         };
 
         // Apply filter if provided
-        if (filter && !filter(doc)) continue;
+        if (filter && !filter(doc)) { continue; }
 
         // Convert distance to similarity
         const distance = result._distance || 0;
@@ -309,7 +309,7 @@ export class VectorStorage {
         });
 
         // Stop if we have enough results
-        if (filteredResults.length >= k) break;
+        if (filteredResults.length >= k) { break; }
       }
 
       return filteredResults;
@@ -335,7 +335,7 @@ export class VectorStorage {
       const results = await this.table.limit(1000).toArray();
       const result = results.find((r: any) => r.id === id);
 
-      if (!result) return undefined;
+      if (!result) { return undefined; }
 
       return {
         id: result.id,
@@ -457,7 +457,7 @@ export class VectorStorage {
    * Calculate cosine similarity
    */
   private cosineSimilarity(a: number[], b: number[]): number {
-    if (a.length !== b.length) return 0;
+    if (a.length !== b.length) { return 0; }
 
     let dotProduct = 0;
     let normA = 0;
@@ -469,7 +469,7 @@ export class VectorStorage {
       normB += b[i] * b[i];
     }
 
-    if (normA === 0 || normB === 0) return 0;
+    if (normA === 0 || normB === 0) { return 0; }
 
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }

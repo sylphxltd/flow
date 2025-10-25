@@ -182,7 +182,7 @@ export class LazyLoader<T = any> {
    * Check if cache entry is valid
    */
   private isCacheValid(cached: LoadResult<T>): boolean {
-    if (!this.options.ttl) return true;
+    if (!this.options.ttl) { return true; }
     return Date.now() - cached.timestamp < this.options.ttl;
   }
 
@@ -190,15 +190,17 @@ export class LazyLoader<T = any> {
    * Evict least used cache entries
    */
   private evictLeastUsed(): void {
-    if (this.cache.size === 0) return;
+    if (this.cache.size === 0) { return; }
 
     let leastUsedKey: string | null = null;
-    let leastUsedAccess = Infinity;
-    let leastUsedTime = Infinity;
+    let leastUsedAccess = Number.POSITIVE_INFINITY;
+    let leastUsedTime = Number.POSITIVE_INFINITY;
 
     for (const [key, value] of this.cache) {
-      if (value.accessCount < leastUsedAccess ||
-          (value.accessCount === leastUsedAccess && value.lastAccessed < leastUsedTime)) {
+      if (
+        value.accessCount < leastUsedAccess ||
+        (value.accessCount === leastUsedAccess && value.lastAccessed < leastUsedTime)
+      ) {
         leastUsedKey = key;
         leastUsedAccess = value.accessCount;
         leastUsedTime = value.lastAccessed;
@@ -214,7 +216,7 @@ export class LazyLoader<T = any> {
    * Start cleanup timer for expired entries
    */
   private startCleanupTimer(): void {
-    if (!this.options.cleanupInterval) return;
+    if (!this.options.cleanupInterval) { return; }
 
     this.cleanupTimer = setInterval(() => {
       this.cleanupExpired();
@@ -257,10 +259,7 @@ export function createLazyModuleLoader<T>(
 /**
  * Lazy load function for expensive operations
  */
-export function lazyLoad<T>(
-  loadFn: () => Promise<T>,
-  options?: LazyLoadOptions
-): () => Promise<T> {
+export function lazyLoad<T>(loadFn: () => Promise<T>, options?: LazyLoadOptions): () => Promise<T> {
   const loader = new LazyLoader(async () => await loadFn(), options);
 
   return () => loader.load('default');
@@ -343,7 +342,7 @@ export class BatchLoader<K, V> {
    * Load multiple keys
    */
   async loadMany(keys: K[]): Promise<Map<K, V>> {
-    const promises = keys.map(key => this.load(key).then(value => [key, value] as [K, V]));
+    const promises = keys.map((key) => this.load(key).then((value) => [key, value] as [K, V]));
     const results = await Promise.all(promises);
     return new Map(results);
   }
@@ -359,7 +358,7 @@ export class BatchLoader<K, V> {
    * Create load promise for key
    */
   private createLoadPromise(key: K): Promise<V> {
-    return new Promise((resolve, reject) => {
+    return new Promise((_resolve, _reject) => {
       this.pendingBatch.add(key);
 
       // Schedule batch processing
@@ -382,7 +381,7 @@ export class BatchLoader<K, V> {
    * Process pending batch
    */
   private async processBatch(): Promise<void> {
-    if (this.pendingBatch.size === 0) return;
+    if (this.pendingBatch.size === 0) { return; }
 
     const batch = Array.from(this.pendingBatch);
     this.pendingBatch.clear();

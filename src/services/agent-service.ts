@@ -14,7 +14,7 @@ export class AgentService {
       return DEFAULT_AGENTS;
     }
 
-    const selectedAgents = agentsOption.split(',').map(a => a.trim());
+    const selectedAgents = agentsOption.split(',').map((a) => a.trim());
 
     // Validate selected agents
     for (const agent of selectedAgents) {
@@ -32,8 +32,8 @@ export class AgentService {
     taskFile: string,
     contextFile: string | undefined,
     monitor?: InkMonitor,
-    maxRetries: number = 3,
-    timeout: number = 3600
+    _maxRetries = 3,
+    timeout = 3600
   ): Promise<void> {
     const agentWorkDir = path.join(outputDir, agentName);
     await fs.mkdir(agentWorkDir, { recursive: true });
@@ -53,7 +53,7 @@ export class AgentService {
         try {
           const contextContent = await fs.readFile(contextFile, 'utf-8');
           fullTask = `CONTEXT:\n${contextContent}\n\nTASK:\n${taskContent}`;
-        } catch (error) {
+        } catch (_error) {
           // Silently handle context file errors
         }
       }
@@ -62,8 +62,7 @@ export class AgentService {
       fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
 
       // Run Claude Code with the agent prompt
-      await this.runSingleAgent(agentName, agentPrompt, fullTask, agentWorkDir, monitor, timeout);
-
+      await AgentService.runSingleAgent(agentName, agentPrompt, fullTask, agentWorkDir, monitor, timeout);
     } catch (error) {
       throw new Error(`Failed to load agent ${agentName}: ${error}`);
     }
@@ -75,7 +74,7 @@ export class AgentService {
     fullTask: string,
     agentWorkDir: string,
     monitor?: InkMonitor,
-    timeout: number = 3600
+    timeout = 3600
   ): Promise<void> {
     // Write agent prompt to a temp file to avoid command line length limits
     const tempPromptFile = path.join(agentWorkDir, '.agent-prompt.md');
@@ -99,23 +98,29 @@ export class AgentService {
         reject(new Error(`Agent ${agentName} timed out after ${timeout} seconds`));
       }, timeout * 1000);
 
-      const claudeProcess = spawn('claude', [
-        '--system-prompt', `@${tempPromptFile}`,
-        '--dangerously-skip-permissions',
-        '--output-format', 'stream-json',
-        '--verbose',
-        fullTask
-      ], {
-        cwd: agentWorkDir,
-        stdio: ['inherit', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          // Disable buffering and progress indicators for real-time output
-          FORCE_NO_PROGRESS: '1',
-          CI: '1',
-          PYTHONUNBUFFERED: '1'
+      const claudeProcess = spawn(
+        'claude',
+        [
+          '--system-prompt',
+          `@${tempPromptFile}`,
+          '--dangerously-skip-permissions',
+          '--output-format',
+          'stream-json',
+          '--verbose',
+          fullTask,
+        ],
+        {
+          cwd: agentWorkDir,
+          stdio: ['inherit', 'pipe', 'pipe'],
+          env: {
+            ...process.env,
+            // Disable buffering and progress indicators for real-time output
+            FORCE_NO_PROGRESS: '1',
+            CI: '1',
+            PYTHONUNBUFFERED: '1',
+          },
         }
-      });
+      );
 
       // Set the process PID for debugging
       if (claudeProcess.pid) {
@@ -137,7 +142,7 @@ export class AgentService {
         stdoutBuffer = lines.pop() || ''; // Keep last incomplete line
 
         for (const line of lines) {
-          if (!line.trim()) continue;
+          if (!line.trim()) { continue; }
 
           try {
             const jsonData = JSON.parse(line);
@@ -159,7 +164,7 @@ export class AgentService {
                 }
               }
             }
-          } catch (e) {
+          } catch (_e) {
             // Skip invalid JSON (shouldn't happen with stream-json)
           }
         }
@@ -198,7 +203,7 @@ export class AgentService {
         // Clean up temp prompt file
         try {
           await fs.unlink(tempPromptFile);
-        } catch (error) {
+        } catch (_error) {
           // Ignore cleanup errors
         }
 
@@ -211,9 +216,12 @@ export class AgentService {
           endTime,
           exitCode: code,
           stdoutLength: stdoutBuffer.length,
-          stderrLength: stderr.length
+          stderrLength: stderr.length,
         };
-        await fs.writeFile(path.join(agentWorkDir, 'timing.json'), JSON.stringify(timingData, null, 2));
+        await fs.writeFile(
+          path.join(agentWorkDir, 'timing.json'),
+          JSON.stringify(timingData, null, 2)
+        );
 
         // Update agent status based on exit code
         if (code === 0) {

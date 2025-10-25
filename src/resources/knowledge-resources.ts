@@ -120,7 +120,7 @@ export function getKnowledgeContent(uri: string): string {
 
   // 呢度可以從實際檔案加載內容，而家為簡化返回基本資訊
   const category = uri.split('/')[2];
-  const name = uri.split('/').pop();
+  const _name = uri.split('/').pop();
 
   return `# ${resource.title}
 

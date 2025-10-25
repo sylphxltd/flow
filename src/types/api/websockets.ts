@@ -62,14 +62,16 @@ export const WebSocketMessageSchema = z.object({
   payload: z.unknown(),
   id: z.string().optional(),
   timestamp: z.string(),
-  metadata: z.object({
-    senderId: z.string().optional(),
-    recipientId: z.string().optional(),
-    room: z.string().optional(),
-    version: z.string().optional(),
-    requiresAck: z.boolean().optional(),
-    priority: z.enum(['low', 'normal', 'high']).optional(),
-  }).optional(),
+  metadata: z
+    .object({
+      senderId: z.string().optional(),
+      recipientId: z.string().optional(),
+      room: z.string().optional(),
+      version: z.string().optional(),
+      requiresAck: z.boolean().optional(),
+      priority: z.enum(['low', 'normal', 'high']).optional(),
+    })
+    .optional(),
 });
 
 export const WebSocketConnectionStatusSchema = z.object({

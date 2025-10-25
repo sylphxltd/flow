@@ -178,7 +178,7 @@ export class PluginManager {
         }
       }
 
-      this.logger.info(`Discovered and loaded ${results.filter(r => r.success).length} plugins`);
+      this.logger.info(`Discovered and loaded ${results.filter((r) => r.success).length} plugins`);
       return results;
     } catch (error) {
       this.logger.error('Failed to discover plugins', error);
@@ -240,7 +240,7 @@ export class PluginManager {
    */
   getPluginsByCategory(category: string): Plugin[] {
     return Array.from(this.plugins.values()).filter(
-      plugin => plugin.metadata.category === category
+      (plugin) => plugin.metadata.category === category
     );
   }
 
@@ -377,11 +377,14 @@ export class PluginManager {
    */
   getStats() {
     const plugins = Array.from(this.plugins.values());
-    const enabled = plugins.filter(p => p.metadata.enabled);
-    const byCategory = plugins.reduce((acc, plugin) => {
-      acc[plugin.metadata.category] = (acc[plugin.metadata.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const enabled = plugins.filter((p) => p.metadata.enabled);
+    const byCategory = plugins.reduce(
+      (acc, plugin) => {
+        acc[plugin.metadata.category] = (acc[plugin.metadata.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return {
       total: plugins.length,
@@ -465,7 +468,9 @@ export class PluginManager {
     // Log optional dependencies that are missing
     for (const dep of optionalDependencies) {
       if (!this.plugins.has(dep)) {
-        this.logger.warn(`Optional dependency not found: ${dep} for plugin: ${plugin.metadata.name}`);
+        this.logger.warn(
+          `Optional dependency not found: ${dep} for plugin: ${plugin.metadata.name}`
+        );
       }
     }
   }

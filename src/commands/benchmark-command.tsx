@@ -5,7 +5,13 @@ import React from 'react';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import type { BenchmarkCommandOptions, AgentData, InitialInfo } from '../types/benchmark.js';
-import { DEFAULT_TASK, DEFAULT_CONCURRENCY, DEFAULT_DELAY, DEFAULT_TIMEOUT, DEFAULT_REPORT_DIR } from '../constants/benchmark-constants.js';
+import {
+  DEFAULT_TASK,
+  DEFAULT_CONCURRENCY,
+  DEFAULT_DELAY,
+  DEFAULT_TIMEOUT,
+  DEFAULT_REPORT_DIR,
+} from '../constants/benchmark-constants.js';
 import { InkMonitor, type InkMonitorProps } from '../components/benchmark-monitor.js';
 import { AgentService } from '../services/agent-service.js';
 import { EvaluationService } from '../services/evaluation-service.js';
@@ -24,7 +30,7 @@ interface BenchmarkStatus {
 
 // Real-time monitor for agent outputs (interface compatibility)
 class AgentMonitor {
-  addOutput(agentName: string, output: string) {
+  addOutput(_agentName: string, _output: string) {
     // No-op - this is handled by InkMonitor now
   }
 }
@@ -87,7 +93,11 @@ async function createBenchmarkDirectory(outputDir: string): Promise<void> {
   }
 }
 
-async function copyTaskFiles(taskFile: string, contextFile: string | undefined, outputDir: string): Promise<void> {
+async function copyTaskFiles(
+  taskFile: string,
+  contextFile: string | undefined,
+  outputDir: string
+): Promise<void> {
   // Copy task definition
   const taskContent = await fs.readFile(taskFile, 'utf-8');
   await fs.writeFile(path.join(outputDir, 'task-definition.txt'), taskContent);
@@ -97,7 +107,7 @@ async function copyTaskFiles(taskFile: string, contextFile: string | undefined, 
     try {
       const contextContent = await fs.readFile(contextFile, 'utf-8');
       await fs.writeFile(path.join(outputDir, 'context-info.txt'), contextContent);
-    } catch (error) {
+    } catch (_error) {
       // Silently handle context file errors
     }
   }
@@ -111,28 +121,28 @@ async function runParallelAgents(
   concurrency: number,
   delay: number,
   timeout: number,
-  enableConsoleMonitor: boolean = false
+  _enableConsoleMonitor = false
 ): Promise<InkMonitor> {
   // We only use React+Ink InkMonitor - no fallback needed
   const monitor = new InkMonitor({
     initialInfo: {
       agentCount: agentList.length,
-      concurrency: parseInt(String(concurrency), 10),
-      delay: parseInt(String(delay), 10),
+      concurrency: Number.parseInt(String(concurrency), 10),
+      delay: Number.parseInt(String(delay), 10),
       taskFile,
-      outputDir
-    }
+      outputDir,
+    },
   });
 
   monitor.start();
 
   // Track workspace directories
-  const workspaceDirs = agentList.map(agent => path.join(outputDir, agent));
+  const workspaceDirs = agentList.map((agent) => path.join(outputDir, agent));
   monitor.setWorkspaceDirs(workspaceDirs);
 
   // Add all agents to the monitor
-  agentList.forEach(agent => {
-    monitor!.addAgent(agent);
+  agentList.forEach((agent) => {
+    monitor?.addAgent(agent);
   });
 
   if (concurrency <= 1) {
@@ -154,7 +164,7 @@ async function runParallelAgents(
             path.join(outputDir, agent, 'execution-time.txt'),
             `Started: ${new Date(startTime).toISOString()}\nCompleted: ${new Date(endTime).toISOString()}\nDuration: ${duration} seconds\n`
           );
-        } catch (error) {
+        } catch (_error) {
           // Ignore timing write errors
         }
 
@@ -162,7 +172,7 @@ async function runParallelAgents(
 
         // Add delay between agents (except last one)
         if (agent !== agentList[agentList.length - 1]) {
-          await new Promise(resolve => setTimeout(resolve, delay * 1000));
+          await new Promise((resolve) => setTimeout(resolve, delay * 1000));
         }
       } catch (error) {
         monitor?.updateAgentStatus(agent, 'error');
@@ -180,7 +190,7 @@ async function runParallelAgents(
     for (let i = 0; i < chunks.length; i++) {
       // Update status for all agents in this chunk and track start times
       const chunkStartTimes: { [agent: string]: number } = {};
-      chunks[i].forEach(agent => {
+      chunks[i].forEach((agent) => {
         chunkStartTimes[agent] = Date.now();
         monitor?.updateAgentStatus(agent, 'running');
       });
@@ -194,21 +204,20 @@ async function runParallelAgents(
       ): Promise<void> => {
         const duration = Math.floor((endTime - startTime) / 1000);
         const statusText = status === 'completed' ? 'Completed' : 'Failed';
-        const statusNote = status === 'completed'
-          ? 'parallel execution'
-          : 'parallel execution - failed';
+        const statusNote =
+          status === 'completed' ? 'parallel execution' : 'parallel execution - failed';
 
         try {
           await fs.writeFile(
             path.join(outputDir, agent, 'execution-time.txt'),
             `Started: ${new Date(startTime).toISOString()}\n${statusText}: ${new Date(endTime).toISOString()}\nDuration: ${duration} seconds (${statusNote})\n`
           );
-        } catch (error) {
+        } catch (_error) {
           // Ignore timing write errors - they shouldn't fail the benchmark
         }
       };
 
-      const promises = chunks[i].map(async agent => {
+      const promises = chunks[i].map(async (agent) => {
         const startTime = chunkStartTimes[agent];
         try {
           await AgentService.runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
@@ -235,7 +244,7 @@ async function runParallelAgents(
 
       // Add delay between chunks (except last one)
       if (i < chunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, delay * 1000));
+        await new Promise((resolve) => setTimeout(resolve, delay * 1000));
       }
     }
   }
@@ -252,49 +261,49 @@ export const benchmarkCommand: CommandConfig = {
     {
       flags: '--agents <agents>',
       description: 'Agents to test (comma-separated or "all")',
-      defaultValue: 'all'
+      defaultValue: 'all',
     },
     {
       flags: '--task <file>',
       description: 'Path to task definition file',
-      defaultValue: DEFAULT_TASK
+      defaultValue: DEFAULT_TASK,
     },
     {
       flags: '--output <dir>',
-      description: 'Output directory for results'
+      description: 'Output directory for results',
     },
     {
       flags: '--context <file>',
-      description: 'Path to context information file (optional)'
+      description: 'Path to context information file (optional)',
     },
     {
       flags: '--no-evaluate',
-      description: 'Skip LLM evaluation after agents complete'
+      description: 'Skip LLM evaluation after agents complete',
     },
     {
       flags: '--report <dir>',
       description: 'Directory to save evaluation reports',
-      defaultValue: DEFAULT_REPORT_DIR
+      defaultValue: DEFAULT_REPORT_DIR,
     },
     {
       flags: '--concurrency <number>',
       description: 'Number of agents to run concurrently',
-      defaultValue: '1'
+      defaultValue: '1',
     },
     {
       flags: '--delay <seconds>',
       description: 'Delay in seconds between agent executions',
-      defaultValue: '2'
+      defaultValue: '2',
     },
     {
       flags: '--timeout <seconds>',
       description: 'Timeout in seconds for each agent (default: 3600)',
-      defaultValue: '3600'
+      defaultValue: '3600',
     },
     {
       flags: '--quiet',
-      description: 'Disable real-time monitoring, show minimal output'
-    }
+      description: 'Disable real-time monitoring, show minimal output',
+    },
   ],
   handler: async (options: BenchmarkCommandOptions) => {
     let monitor: InkMonitor | undefined;
@@ -314,10 +323,28 @@ export const benchmarkCommand: CommandConfig = {
       // Run agents with concurrency control and React+Ink monitor (unless quiet mode)
       if (options.quiet) {
         // Quiet mode - run without React+Ink monitor
-        monitor = await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, options.timeout!, false);
+        monitor = await runParallelAgents(
+          agentList,
+          options.output!,
+          options.task!,
+          options.context,
+          options.concurrency!,
+          options.delay!,
+          options.timeout!,
+          false
+        );
       } else {
         // Normal mode - use React+Ink monitor
-        monitor = await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, options.timeout!, true);
+        monitor = await runParallelAgents(
+          agentList,
+          options.output!,
+          options.task!,
+          options.context,
+          options.concurrency!,
+          options.delay!,
+          options.timeout!,
+          true
+        );
       }
 
       // Evaluate results if requested
@@ -333,10 +360,9 @@ export const benchmarkCommand: CommandConfig = {
       // Only show completion message if monitor was disabled (quiet mode)
       if (options.quiet) {
         // These console.log statements are okay because they only appear in quiet mode
-        console.log(`🎉 Benchmark completed!`);
+        console.log('🎉 Benchmark completed!');
         console.log(`📁 Results saved to: ${options.output}`);
       }
-
     } catch (error) {
       // Clean up monitor on error
       if (monitor) {
@@ -344,5 +370,5 @@ export const benchmarkCommand: CommandConfig = {
       }
       throw new CLIError(`Benchmark failed: ${error}`);
     }
-  }
+  },
 };

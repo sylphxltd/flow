@@ -84,7 +84,7 @@ export const knowledgeListCommand = new Command('list')
       const grouped = filteredURIs.reduce(
         (acc, uri) => {
           const category = uri.split('/')[2] || 'unknown';
-          if (!acc[category]) acc[category] = [];
+          if (!acc[category]) { acc[category] = []; }
           acc[category].push(uri);
           return acc;
         },
@@ -101,8 +101,8 @@ export const knowledgeListCommand = new Command('list')
       });
 
       console.log('**Usage:**');
-      console.log(`• sylphx knowledge search <query> - Search knowledge base`);
-      console.log(`• sylphx knowledge get <uri> - Get specific document`);
+      console.log('• sylphx knowledge search <query> - Search knowledge base');
+      console.log('• sylphx knowledge get <uri> - Get specific document');
     } catch (error) {
       throw new CLIError(`Knowledge status failed: ${(error as Error).message}`);
     }
@@ -121,7 +121,7 @@ export const knowledgeStatusCommand = new Command('status')
       const status = await searchService.getStatus();
 
       if (status.knowledge.indexed) {
-        console.log(`**Status:** ✓ Ready`);
+        console.log('**Status:** ✓ Ready');
         console.log(`**Documents:** ${status.knowledge.documentCount} files`);
       } else if (status.knowledge.isIndexing) {
         console.log(`**Status:** 🔄 Building index (${status.knowledge.progress || 0}%)`);

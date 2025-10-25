@@ -6,7 +6,10 @@
  */
 
 import type { ILogger, IEmbeddingProvider } from '../core/interfaces.js';
-import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from '../utils/knowledge-indexer.js';
+import {
+  getKnowledgeIndexer,
+  getKnowledgeIndexerWithEmbeddings,
+} from '../utils/knowledge-indexer.js';
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 import { type SearchIndex, searchDocuments } from '../utils/tfidf.js';
 import type { SearchResult, SearchOptions } from '../utils/unified-search-service.js';
@@ -107,7 +110,12 @@ export class SearchService {
     try {
       // Check cache first
       if (this.config.enableCaching) {
-        const cacheKey = this.generateCacheKey(query, { types, limit, min_score, ...searchOptions });
+        const cacheKey = this.generateCacheKey(query, {
+          types,
+          limit,
+          min_score,
+          ...searchOptions,
+        });
         const cached = this.getFromCache(cacheKey);
         if (cached) {
           this.cacheHits++;
@@ -125,7 +133,11 @@ export class SearchService {
       // Search codebase
       if (types.includes('codebase')) {
         try {
-          const codebaseResults = await this.searchCodebase(query, { ...searchOptions, limit, min_score });
+          const codebaseResults = await this.searchCodebase(query, {
+            ...searchOptions,
+            limit,
+            min_score,
+          });
           allResults.push(...codebaseResults);
         } catch (error) {
           this.logger.warn('Codebase search failed:', error);
@@ -135,7 +147,11 @@ export class SearchService {
       // Search knowledge
       if (types.includes('knowledge')) {
         try {
-          const knowledgeResults = await this.searchKnowledge(query, { ...searchOptions, limit, min_score });
+          const knowledgeResults = await this.searchKnowledge(query, {
+            ...searchOptions,
+            limit,
+            min_score,
+          });
           allResults.push(...knowledgeResults);
         } catch (error) {
           this.logger.warn('Knowledge search failed:', error);
@@ -143,13 +159,16 @@ export class SearchService {
       }
 
       // Sort and limit results
-      const sortedResults = allResults
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit);
+      const sortedResults = allResults.sort((a, b) => b.score - a.score).slice(0, limit);
 
       // Cache results if enabled
       if (this.config.enableCaching) {
-        const cacheKey = this.generateCacheKey(query, { types, limit, min_score, ...searchOptions });
+        const cacheKey = this.generateCacheKey(query, {
+          types,
+          limit,
+          min_score,
+          ...searchOptions,
+        });
         this.setCache(cacheKey, sortedResults);
       }
 
@@ -200,7 +219,9 @@ export class SearchService {
         files = files.filter((file) => file.path.includes(path_filter));
       }
       if (exclude_paths?.length) {
-        files = files.filter((file) => !exclude_paths.some((exclude) => file.path.includes(exclude)));
+        files = files.filter(
+          (file) => !exclude_paths.some((exclude) => file.path.includes(exclude))
+        );
       }
 
       if (files.length === 0) {
@@ -223,12 +244,12 @@ export class SearchService {
       const results: SearchResultExtended[] = [];
       for (const result of searchResults) {
         const filename = result.uri?.replace('file://', '') || 'Unknown';
-        const file = files.find(f => f.path === filename);
+        const file = files.find((f) => f.path === filename);
 
         let content = '';
         if (include_content && file?.content) {
           content = file.content.substring(0, 500);
-          if (file.content.length > 500) content += '...';
+          if (file.content.length > 500) { content += '...'; }
         }
 
         results.push({
@@ -418,7 +439,7 @@ export class SearchService {
    */
   private getFromCache(key: string): SearchResultExtended[] | null {
     const cached = this.searchCache.get(key);
-    if (!cached) return null;
+    if (!cached) { return null; }
 
     const maxAge = this.config.cacheMaxAge || 300000; // 5 minutes default
     if (Date.now() - cached.timestamp > maxAge) {

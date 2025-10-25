@@ -140,7 +140,7 @@ export class MemoryTUI {
 
   private async selectEntry(message: string, allowEmpty = false): Promise<MemoryEntry | null> {
     if (this.entries.length === 0) {
-      if (allowEmpty) return null;
+      if (allowEmpty) { return null; }
       throw new Error('No entries available');
     }
 
@@ -169,7 +169,7 @@ export class MemoryTUI {
 
   private async showViewEntry(): Promise<void> {
     const entry = await this.selectEntry('Select entry to view:', true);
-    if (!entry) return;
+    if (!entry) { return; }
 
     console.clear();
     console.log(chalk.cyan.bold('📄 Entry Details'));
@@ -194,7 +194,7 @@ export class MemoryTUI {
 
   private async showEditEntry(): Promise<void> {
     const entry = await this.selectEntry('Select entry to edit:', true);
-    if (!entry) return;
+    if (!entry) { return; }
 
     console.clear();
     console.log(chalk.yellow.bold('✏️ Edit Entry'));
@@ -311,7 +311,7 @@ export class MemoryTUI {
 
   private async showDeleteEntry(): Promise<void> {
     const entry = await this.selectEntry('Select entry to delete:', true);
-    if (!entry) return;
+    if (!entry) { return; }
 
     console.clear();
     console.log(chalk.red.bold('🗑️ Delete Entry'));
@@ -320,7 +320,7 @@ export class MemoryTUI {
 
     const valuePreview = JSON.stringify(entry.value);
     const preview =
-      valuePreview.length > 100 ? valuePreview.substring(0, 100) + '...' : valuePreview;
+      valuePreview.length > 100 ? `${valuePreview.substring(0, 100)}...` : valuePreview;
     console.log(`${chalk.blue('Value:')} ${chalk.gray(preview)}`);
 
     const { confirmed } = await inquirer.prompt([
@@ -382,7 +382,7 @@ export class MemoryTUI {
       filteredEntries.forEach((entry, index) => {
         const valuePreview = JSON.stringify(entry.value);
         const preview =
-          valuePreview.length > 80 ? valuePreview.substring(0, 80) + '...' : valuePreview;
+          valuePreview.length > 80 ? `${valuePreview.substring(0, 80)}...` : valuePreview;
 
         console.log(
           `${chalk.cyan(`${index + 1}.`)} ${chalk.bold(entry.namespace)}:${chalk.bold(entry.key)}`

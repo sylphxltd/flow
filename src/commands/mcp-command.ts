@@ -4,14 +4,15 @@ import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import { MCPService } from '../services/mcp-service.js';
-import type { CommandConfig, CommandHandler, CommandOptions, CLICommandConfig, isCLICommandConfig } from '../types.js';
+import type {
+  CommandConfig,
+  CommandHandler,
+  CommandOptions,
+  CLICommandConfig,
+  isCLICommandConfig,
+} from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
-
-// Helper function to get nested property
-function getNestedProperty(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
-}
 
 // MCP start handler - purely starts the Sylphx Flow MCP server
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
@@ -31,7 +32,6 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
 
     // Start the server with the provided configuration
     await startSylphxFlowMCPServer(config);
-
   } catch (error) {
     throw new CLIError(
       `Failed to start MCP server: ${error instanceof Error ? error.message : String(error)}`,
@@ -40,11 +40,13 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
   }
 };
 
-
 // MCP config handler
 const mcpConfigHandler: CommandHandler = async (options) => {
   const server = options.server as string;
-  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
+  const targetId = await targetManager.resolveTarget({
+    target: options.target,
+    allowSelection: true,
+  });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
@@ -113,7 +115,10 @@ const mcpConfigHandler: CommandHandler = async (options) => {
 
 // MCP list handler
 const mcpListHandler: CommandHandler = async (options: CommandOptions) => {
-  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
+  const targetId = await targetManager.resolveTarget({
+    target: options.target,
+    allowSelection: true,
+  });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
@@ -125,7 +130,10 @@ const mcpListHandler: CommandHandler = async (options: CommandOptions) => {
 // MCP add handler
 const mcpAddHandler: CommandHandler = async (options: CommandOptions) => {
   const servers = options.servers as string[];
-  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
+  const targetId = await targetManager.resolveTarget({
+    target: options.target,
+    allowSelection: true,
+  });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');
@@ -160,7 +168,10 @@ const mcpAddHandler: CommandHandler = async (options: CommandOptions) => {
 // MCP remove handler
 const mcpRemoveHandler: CommandHandler = async (options: CommandOptions) => {
   const servers = options.servers as string[];
-  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
+  const targetId = await targetManager.resolveTarget({
+    target: options.target,
+    allowSelection: true,
+  });
 
   if (!targetSupportsMCPServers(targetId)) {
     throw new CLIError(`Target ${targetId} does not support MCP servers`, 'UNSUPPORTED_TARGET');

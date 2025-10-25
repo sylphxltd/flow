@@ -63,27 +63,29 @@ export const BatchOperationResultSchema = z.object({
   id: z.string(),
   success: z.boolean(),
   data: z.unknown().optional(),
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-    statusCode: z.number().optional(),
-    type: z.enum([
-      'validation',
-      'authentication',
-      'authorization',
-      'not_found',
-      'conflict',
-      'rate_limit',
-      'server_error',
-      'network',
-      'timeout',
-    ]),
-    description: z.string().optional(),
-    fieldErrors: z.record(z.array(z.string())).optional(),
-    stack: z.string().optional(),
-    context: z.record(z.unknown()).optional(),
-    suggestions: z.array(z.string()).optional(),
-  }).optional(),
+  error: z
+    .object({
+      code: z.string(),
+      message: z.string(),
+      statusCode: z.number().optional(),
+      type: z.enum([
+        'validation',
+        'authentication',
+        'authorization',
+        'not_found',
+        'conflict',
+        'rate_limit',
+        'server_error',
+        'network',
+        'timeout',
+      ]),
+      description: z.string().optional(),
+      fieldErrors: z.record(z.array(z.string())).optional(),
+      stack: z.string().optional(),
+      context: z.record(z.unknown()).optional(),
+      suggestions: z.array(z.string()).optional(),
+    })
+    .optional(),
   processingTime: z.number().min(0).optional(),
   retryCount: z.number().min(0).optional(),
 });
@@ -94,11 +96,13 @@ export const BatchApiResultSchema = z.object({
   successful: z.number().min(0),
   failed: z.number().min(0),
   results: z.array(BatchOperationResultSchema),
-  metadata: z.object({
-    startedAt: z.string(),
-    completedAt: z.string().optional(),
-    duration: z.number().min(0).optional(),
-    batchSize: z.number().positive().optional(),
-    concurrency: z.number().positive().optional(),
-  }).optional(),
+  metadata: z
+    .object({
+      startedAt: z.string(),
+      completedAt: z.string().optional(),
+      duration: z.number().min(0).optional(),
+      batchSize: z.number().positive().optional(),
+      concurrency: z.number().positive().optional(),
+    })
+    .optional(),
 });

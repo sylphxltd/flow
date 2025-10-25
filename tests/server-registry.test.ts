@@ -20,19 +20,19 @@ describe('Server Registry Tests', () => {
         'grep',
       ];
 
-      expectedServers.forEach((serverId) => {
+      for (const serverId of expectedServers) {
         expect(MCP_SERVER_REGISTRY[serverId as keyof typeof MCP_SERVER_REGISTRY]).toBeDefined();
-      });
+      }
     });
 
     it('should have proper server definitions with required fields', () => {
-      Object.values(MCP_SERVER_REGISTRY).forEach((server) => {
+      for (const server of Object.values(MCP_SERVER_REGISTRY)) {
         expect(server).toHaveProperty('id');
         expect(server).toHaveProperty('name');
         expect(server).toHaveProperty('description');
         expect(server).toHaveProperty('config');
         expect(server).toHaveProperty('category');
-      });
+      }
     });
   });
 
@@ -82,7 +82,7 @@ describe('Server Registry Tests', () => {
     });
 
     it('should throw for invalid IDs', () => {
-      expect(() => getServerDefinition('invalid-server' as any)).toThrow(
+      expect(() => getServerDefinition('invalid-server')).toThrow(
         'Unknown MCP server: invalid-server'
       );
     });
@@ -98,8 +98,8 @@ describe('Server Registry Tests', () => {
     it('should return false for invalid server IDs', () => {
       expect(isValidServerID('invalid-server')).toBe(false);
       expect(isValidServerID('')).toBe(false);
-      expect(isValidServerID(null as any)).toBe(false);
-      expect(isValidServerID(undefined as any)).toBe(false);
+      expect(isValidServerID(null)).toBe(false);
+      expect(isValidServerID(undefined)).toBe(false);
     });
   });
 

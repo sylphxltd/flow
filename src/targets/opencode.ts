@@ -73,7 +73,7 @@ export const opencodeTarget: Target = {
    * Transform MCP server configuration for OpenCode
    * Convert from Claude Code's optimal format to OpenCode's format
    */
-  transformMCPConfig(config: MCPServerConfigUnion, serverId?: string): Record<string, unknown> {
+  transformMCPConfig(config: MCPServerConfigUnion, _serverId?: string): Record<string, unknown> {
     // Handle new Claude Code stdio format
     if (config.type === 'stdio') {
       // Convert Claude Code format to OpenCode format
@@ -152,7 +152,7 @@ export const opencodeTarget: Target = {
           if (envVars && typeof envVars === 'object') {
             // Find the corresponding server definition to get secret env vars
             const serverDef = Object.values(MCP_SERVER_REGISTRY).find((s) => s.name === serverId);
-            if (serverDef && serverDef.envVars) {
+            if (serverDef?.envVars) {
               // Separate secret and non-secret variables
               const secretEnvVars: Record<string, string> = {};
               const nonSecretEnvVars: Record<string, string> = {};

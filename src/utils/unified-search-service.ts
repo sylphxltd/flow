@@ -172,7 +172,7 @@ export class UnifiedSearchService {
         const file = await this.memoryStorage.getCodebaseFile(filename);
         if (file?.content) {
           content = file.content.substring(0, 500);
-          if (file.content.length > 500) content += '...';
+          if (file.content.length > 500) { content += '...'; }
         }
       }
 

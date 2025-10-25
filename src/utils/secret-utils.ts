@@ -107,7 +107,7 @@ export const secretUtils = {
     for (const [key, value] of Object.entries(envVars)) {
       if (value && !secretUtils.isFileReference(value)) {
         // Write the secret to a file and create file reference
-        const secretFile = await secretUtils.writeSecret(cwd, key, value);
+        const _secretFile = await secretUtils.writeSecret(cwd, key, value);
         result[key] = secretUtils.toFileReference(key);
       } else {
         result[key] = value;
@@ -145,7 +145,7 @@ export const secretUtils = {
           secrets[file] = content.trim();
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Directory doesn't exist or can't be read
       // Return empty secrets object
     }
@@ -170,7 +170,7 @@ export const secretUtils = {
       const lines = gitignoreContent.split('\n').map((line) => line.trim());
       if (!lines.includes('.secrets') && !lines.includes('.secrets/')) {
         gitignoreContent +=
-          (gitignoreContent && !gitignoreContent.endsWith('\n') ? '\n' : '') + '.secrets/\n';
+          `${gitignoreContent && !gitignoreContent.endsWith('\n') ? '\n' : ''}.secrets/\n`;
         await fs.writeFile(gitignorePath, gitignoreContent, 'utf8');
       }
     } catch (error) {
