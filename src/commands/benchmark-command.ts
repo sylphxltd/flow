@@ -53,6 +53,7 @@ class AgentMonitor {
 const agents = ['craftsman', 'practitioner', 'craftsman-reflective', 'practitioner-reflective'];
 
 async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promise<void> {
+  console.log('DEBUG: Initial options.output =', options.output);
   if (!options.task) {
     throw new CLIError('Task file is required. Use --task <path-to-task-file>');
   }
@@ -68,6 +69,7 @@ async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promi
   if (!options.output) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     options.output = `/tmp/agent-benchmark-${timestamp}`;
+    console.log('DEBUG: Set default options.output =', options.output);
   }
 
   // Set default agents
@@ -169,19 +171,31 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
     fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
 
     console.log(`🚀 Running agent: ${agentName} in ${agentWorkDir}`);
+    console.log(`📝 Claude command: claude --system-prompt [${agentPrompt.length} chars] --dangerously-skip-permissions --print [${fullTask.length} chars]`);
 
     // Run Claude Code with the agent prompt
     const runSingleAgent = async (): Promise<void> => {
+      // Write agent prompt to a temp file to avoid command line length limits
+      const tempPromptFile = path.join(agentWorkDir, '.agent-prompt.md');
+      await fs.writeFile(tempPromptFile, agentPrompt);
+
       return new Promise((resolve, reject) => {
         const claudeProcess = spawn('claude', [
-          '--system-prompt', agentPrompt,
+          '--system-prompt', `@${tempPromptFile}`,
           '--dangerously-skip-permissions',
           '--print',
           fullTask
         ], {
           cwd: agentWorkDir,
-          stdio: ['pipe', 'pipe', 'pipe']
+          stdio: ['inherit', 'pipe', 'pipe']
         });
+
+        // Add timeout to prevent hanging
+        const timeout = setTimeout(() => {
+          console.log(`⏱️ Timeout reached for ${agentName}, terminating process...`);
+          claudeProcess.kill('SIGTERM');
+          reject(new Error(`Agent ${agentName} timed out after 60 seconds`));
+        }, 60000); // 60 second timeout
 
         let stdout = '';
         let stderr = '';
@@ -190,37 +204,34 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           const output = data.toString();
           stdout += output;
 
-          // Add to monitor and display
-          if (monitor) {
-            monitor.addOutput(agentName, output);
-            monitor.display();
-          } else {
-            // Fallback to simple output
-            process.stdout.write(`[${agentName}] ${output}`);
-          }
+          // Temporary disable monitor for debugging
+          process.stdout.write(`[${agentName}] ${output}`);
         });
 
         claudeProcess.stderr?.on('data', (data) => {
           const output = data.toString();
           stderr += output;
 
-          // Add to monitor and display
-          if (monitor) {
-            monitor.addOutput(`${agentName} (ERROR)`, output);
-            monitor.display();
-          } else {
-            // Fallback to simple output
-            process.stderr.write(`[${agentName} ERROR] ${output}`);
-          }
+          // Temporary disable monitor for debugging
+          process.stderr.write(`[${agentName} ERROR] ${output}`);
         });
 
-        claudeProcess.on('close', (code) => {
+        claudeProcess.on('close', async (code) => {
+          clearTimeout(timeout); // Clear timeout when process completes
+
+          // Clean up temp prompt file
+          try {
+            await fs.unlink(tempPromptFile);
+          } catch (error) {
+            // Ignore cleanup errors
+          }
+
           if (code === 0) {
-            fs.writeFile(path.join(agentWorkDir, 'execution-log.txt'), stdout);
+            await fs.writeFile(path.join(agentWorkDir, 'execution-log.txt'), stdout);
             console.log(`✅ Agent ${agentName} completed successfully`);
             resolve();
           } else {
-            fs.writeFile(path.join(agentWorkDir, 'execution-error.txt'), stderr);
+            await fs.writeFile(path.join(agentWorkDir, 'execution-error.txt'), stderr);
             reject(new Error(`Agent ${agentName} failed with code ${code}`));
           }
         });
@@ -326,13 +337,19 @@ Format your response as a structured evaluation report with clear sections for e
   const allWork = Object.values(agentWork).join('\n' + '='.repeat(80) + '\n');
   const fullInput = evaluatorPrompt + '\n\nAGENT WORK TO EVALUATE:\n' + allWork;
 
+  // Write evaluation prompt to temp file
+  const tempEvalFile = path.join(outputDir, '.evaluation-prompt.md');
+  await fs.writeFile(tempEvalFile, fullInput);
+
   // Run evaluation with Claude
   const evaluationProcess = spawn('claude', [
-    'run',
-    '--task', fullInput
+    '--system-prompt', `@${tempEvalFile}`,
+    '--dangerously-skip-permissions',
+    '--print',
+    'Please evaluate the agent work as described in the system prompt.'
   ], {
       cwd: outputDir,
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['inherit', 'pipe', 'pipe']
   });
 
   let evaluationOutput = '';
@@ -356,6 +373,13 @@ Format your response as a structured evaluation report with clear sections for e
 
         const tempSummaryPath = path.join(outputDir, 'summary.txt');
         await fs.writeFile(tempSummaryPath, summary);
+
+        // Clean up evaluation temp file
+        try {
+          await fs.unlink(tempEvalFile);
+        } catch (error) {
+          // Ignore cleanup errors
+        }
 
         console.log('📊 Evaluation completed');
         console.log(`📄 Report saved to: ${tempReportPath}`);
@@ -467,8 +491,7 @@ export const benchmarkCommand: CommandConfig = {
     },
     {
       flags: '--output <dir>',
-      description: 'Output directory for results (default: /tmp/agent-benchmark)',
-      defaultValue: '/tmp/agent-benchmark'
+      description: 'Output directory for results (default: /tmp/agent-benchmark-TIMESTAMP)',
     },
     {
       flags: '--context <file>',
