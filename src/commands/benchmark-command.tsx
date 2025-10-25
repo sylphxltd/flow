@@ -589,15 +589,18 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
 
         let stdout = '';
         let stderr = '';
+        let processedLines = 0; // Track how many lines we've processed
 
         claudeProcess.stdout?.on('data', (data) => {
           const output = data.toString();
           stdout += output;
 
-          // Parse stream-json output for display
-          const lines = output.split('\n').filter(line => line.trim());
+          // Parse stream-json output for display - only process new lines
+          const allLines = stdout.split('\n').filter(line => line.trim());
+          const newLines = allLines.slice(processedLines); // Only get new lines
+          processedLines = allLines.length;
 
-          for (const line of lines) {
+          for (const line of newLines) {
             try {
               const jsonData = JSON.parse(line);
 
