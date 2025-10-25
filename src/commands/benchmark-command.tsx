@@ -618,8 +618,9 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
                 for (const content of jsonData.message.content) {
                   if (content.type === 'tool_use') {
                     const toolName = content.name;
-                    monitor?.addOutput(agentName, `[Using: ${toolName}]`);
-                    outputCallback?.(agentName, `[Using: ${toolName}]`);
+                    const params = JSON.stringify(content.input || {}).substring(0, 100);
+                    monitor?.addOutput(agentName, `${toolName}(${params})`);
+                    outputCallback?.(agentName, `${toolName}(${params})`);
                   }
                 }
               }
