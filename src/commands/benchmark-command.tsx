@@ -733,61 +733,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
             clearTimeout(timeoutId);
           }
 
-          // Process any remaining data in buffer
-          if (stdoutBuffer.trim()) {
-            try {
-              const jsonData = JSON.parse(stdoutBuffer);
-              if (jsonData.type === 'assistant' && jsonData.message?.content) {
-                for (const content of jsonData.message.content) {
-                  if (content.type === 'text') {
-                    const textContent = content.text.trim();
-                    if (textContent) {
-                      // Split long text into multiple lines with proper indentation
-                      const maxLineLength = 80;
-                      const words = textContent.split(' ');
-                      let currentLine = '';
-                      const lines: string[] = [];
-
-                      for (const word of words) {
-                        if ((currentLine + ' ' + word).length <= maxLineLength) {
-                          currentLine += (currentLine ? ' ' : '') + word;
-                        } else {
-                          if (currentLine) {
-                            lines.push(currentLine);
-                            currentLine = word;
-                          } else {
-                            // Word is longer than max length, split it
-                            for (let i = 0; i < word.length; i += maxLineLength) {
-                              lines.push(word.substring(i, i + maxLineLength));
-                            }
-                          }
-                        }
-                      }
-                      if (currentLine) {
-                        lines.push(currentLine);
-                      }
-
-                      // Add each line with proper indentation
-                      lines.forEach((line, index) => {
-                        const formattedLine = index === 0 ? line : `  ${line}`;
-                        monitor?.addAgentOutput(agentName, formattedLine);
-                        outputCallback?.(agentName, formattedLine);
-                      });
-                    }
-                  } else if (content.type === 'tool_use') {
-                    const toolName = content.name;
-                    const params = content.input || {};
-                    const toolDisplay = formatToolDisplay(toolName, params);
-
-                    monitor?.addAgentOutput(agentName, toolDisplay);
-                    outputCallback?.(agentName, toolDisplay);
-                  }
-                }
-              }
-            } catch (e) {
-              // Skip invalid JSON
-            }
-          }
+          // All data should already be processed in stdout event handler
 
           // Clean up temp prompt file
           try {
