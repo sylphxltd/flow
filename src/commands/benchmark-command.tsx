@@ -262,7 +262,7 @@ const BenchmarkMonitor: React.FC<{
             )}
 
             {agent.lastOutput && agent.lastOutput.length > 0 && (
-              <Box paddingLeft={2}>
+              <Box paddingLeft={2} flexDirection="column">
                 {agent.lastOutput.map((line, index) => (
                   <Text key={index} color="gray">{line}</Text>
                 ))}
