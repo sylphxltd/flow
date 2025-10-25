@@ -579,8 +579,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
             // Disable buffering and progress indicators for real-time output
             FORCE_NO_PROGRESS: '1',
             CI: '1',
-            PYTHONUNBUFFERED: '1',
-            NODE_OPTIONS: '--disable-warning'
+            PYTHONUNBUFFERED: '1'
           }
         });
 
