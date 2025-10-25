@@ -18,7 +18,7 @@ async function validateRunOptions(options: RunCommandOptions): Promise<void> {
 
   // Set default agent ONLY if no agent is specified
   if (!options.agent) {
-    options.agent = 'builder';
+    options.agent = 'craftsman';
   }
 }
 
@@ -101,7 +101,7 @@ function getExecutableTargets(): string[] {
 export const runCommand: CommandConfig = {
   name: 'run',
   description:
-    'Run a prompt with a specific agent (default: sparc-orchestrator) using the detected or specified target',
+    'Run a prompt with a specific agent (default: craftsman) using the detected or specified target',
   options: [
     {
       flags: '--target <name>',
@@ -109,7 +109,7 @@ export const runCommand: CommandConfig = {
     },
     {
       flags: '--agent <name>',
-      description: 'Agent to use (default: sparc-orchestrator)',
+      description: 'Agent to use (default: craftsman)',
     },
     { flags: '--verbose', description: 'Show detailed output' },
     { flags: '--dry-run', description: 'Show what would be done without executing the command' },
