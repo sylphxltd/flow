@@ -207,16 +207,14 @@ export class DrizzleDatabase {
 export * from './schema.js';
 export { schema };
 
-// Re-export commonly used database functions
-export {
-  storeMemory,
-  retrieveMemory,
-  searchMemory,
-  clearMemory,
-} from './memory-db';
+// Re-export commonly used database functions (these will be added when memory-db is fully implemented)
+// export {
+//   storeMemory,
+//   retrieveMemory,
+//   searchMemory,
+//   clearMemory,
+// } from './memory-db';
 
 export {
-  handleDatabaseError,
   isDatabaseError,
-  createDatabaseError,
 } from '../utils/database-errors';
