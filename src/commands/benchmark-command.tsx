@@ -112,26 +112,19 @@ const BenchmarkMonitor: React.FC<{
   const { exit } = useApp();
 
   // Subscribe to monitor changes using proper React state
-  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+  const [updateTrigger, setUpdateTrigger] = React.useState(0);
 
   React.useEffect(() => {
     // Subscribe to the monitor's change notifications
     const unsubscribe = monitor.subscribe(() => {
-      forceUpdate();
+      setUpdateTrigger(prev => prev + 1);
     });
 
     return unsubscribe;
   }, [monitor]);
 
-  // Update times every second
-  const [currentTime, setCurrentTime] = React.useState(Date.now());
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // No automatic time updates - only update when agent data changes
+  // This prevents the entire screen from redrawing every second
 
   // Auto-exit when all agents complete
   React.useEffect(() => {
@@ -156,7 +149,8 @@ const BenchmarkMonitor: React.FC<{
         if (agent.endTime) {
           runtime = Math.floor((agent.endTime - agent.startTime) / 1000);
         } else if (agent.status === 'running') {
-          runtime = Math.floor((Date.now() - agent.startTime) / 1000);
+          // Don't calculate runtime dynamically - store it in the agent data
+          runtime = agent.startTime ? Math.floor((Date.now() - agent.startTime) / 1000) : 0;
         }
       }
 
@@ -164,7 +158,15 @@ const BenchmarkMonitor: React.FC<{
                         agent.status === 'running' ? '🔄' :
                         agent.status === 'error' ? '❌' : '⏸️';
 
-      const runtimeText = agent.startTime ? `${runtime}s` : 'pending';
+      // For running agents, show time since start without frequent updates
+      let runtimeText = 'running';
+      if (agent.startTime && agent.status === 'running') {
+        runtimeText = 'running...';
+      } else if (agent.startTime) {
+        runtimeText = `${runtime}s`;
+      } else {
+        runtimeText = 'pending';
+      }
 
       // Get last meaningful output
       let lastOutput = '';
@@ -290,6 +292,7 @@ class InkMonitor {
     this.listeners.forEach(listener => listener());
   }
 
+  
   // Getters for React component
   getAgents() {
     return this.agents;
@@ -306,6 +309,11 @@ class InkMonitor {
   start() {
     this.isRunning = true;
 
+    // Force Ink to work by ensuring proper terminal detection
+    const { exit } = process;
+    process.stdout.isTTY = true;
+    process.stderr.isTTY = true;
+
     const uiInstance = render(
       <BenchmarkMonitor
         monitor={this}
@@ -314,10 +322,10 @@ class InkMonitor {
         }}
       />,
       {
-        // Disable Ink's debug output to prevent interference
+        // Enable Ink's full-screen mode with proper terminal control
         debug: false,
-        // Ensure clean output without escape sequences
-        patchConsole: false
+        patchConsole: true, // Let Ink control console output
+        exitOnCtrlC: false // We'll handle CtrlC ourselves
       }
     );
 
