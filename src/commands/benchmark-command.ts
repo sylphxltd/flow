@@ -14,7 +14,7 @@ interface BenchmarkCommandOptions extends CommandOptions {
   report?: string;
   concurrency?: number;
   delay?: number;
-  ui?: boolean;
+  quiet?: boolean;
 }
 
 interface AgentStatus {
@@ -743,8 +743,8 @@ export const benchmarkCommand: CommandConfig = {
       defaultValue: '2'
     },
     {
-      flags: '--ui',
-      description: 'Enable enhanced terminal UI for real-time monitoring'
+      flags: '--quiet',
+      description: 'Disable real-time monitoring, show minimal output'
     }
   ],
   handler: async (options: BenchmarkCommandOptions) => {
@@ -764,8 +764,8 @@ export const benchmarkCommand: CommandConfig = {
       const agentList = await getAgentList(options.agents!);
       console.log(`🤖 Testing agents: ${agentList.join(', ')}`);
 
-      // Run agents with concurrency control and console monitor if UI is enabled
-      await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, options.ui === true);
+      // Run agents with concurrency control and console monitor (unless quiet mode)
+      await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, options.quiet !== true);
 
       // Evaluate results if requested
       if (options.evaluate) {
