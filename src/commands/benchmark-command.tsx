@@ -17,6 +17,7 @@ interface BenchmarkCommandOptions extends CommandOptions {
   report?: string;
   concurrency?: number;
   delay?: number;
+  timeout?: number;
   quiet?: boolean;
 }
 
@@ -186,14 +187,33 @@ const BenchmarkMonitor: React.FC<{
       // Get last meaningful output lines (show up to 5 most recent lines)
       let lastOutputLines: string[] = [];
       if (agent.output.length > 0) {
-        // Get the last 5 lines from output
-        const recentLines = agent.output.slice(-5);
+        // Get the last 10 lines and filter for meaningful content
+        const recentLines = agent.output.slice(-10);
         lastOutputLines = recentLines
           .filter(line => line && line.trim().length > 0)
+          // Prioritize actual work output over system messages
+          .filter(line => {
+            const cleanLine = line.trim();
+            // Filter out common noise but keep important messages
+            if (cleanLine.includes('⚠️') && cleanLine.includes('Pre-flight check')) {
+              return true; // Keep pre-flight warnings as they might be important
+            }
+            if (cleanLine.includes('✓') || cleanLine.includes('ERROR:') || cleanLine.includes('📝') || cleanLine.includes('🔧')) {
+              return true; // Keep status indicators
+            }
+            if (cleanLine.includes('function') || cleanLine.includes('class') || cleanLine.includes('import') || cleanLine.includes('export')) {
+              return true; // Keep code-related lines
+            }
+            if (cleanLine.length > 20) {
+              return true; // Keep substantial lines
+            }
+            return false;
+          })
           .map(line => {
             const cleanLine = line.trim();
-            return cleanLine.length > 80 ? cleanLine.substring(0, 80) + '...' : cleanLine;
-          });
+            return cleanLine.length > 120 ? cleanLine.substring(0, 120) + '...' : cleanLine;
+          })
+          .slice(-5); // Take last 5 meaningful lines
       }
 
       // Show placeholder text only if no actual output exists
@@ -467,6 +487,11 @@ async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promi
   if (!options.delay) {
     options.delay = 2; // 2 seconds between agents
   }
+
+  // Set default timeout
+  if (!options.timeout) {
+    options.timeout = 300; // 5 minutes default timeout
+  }
 }
 
 async function createBenchmarkDirectory(outputDir: string): Promise<void> {
@@ -510,7 +535,7 @@ async function getAgentList(agentsOption: string): Promise<string[]> {
   return selectedAgents;
 }
 
-async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: AgentMonitor, outputCallback?: (agentName: string, output: string) => void, maxRetries: number = 3): Promise<void> {
+async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: AgentMonitor, outputCallback?: (agentName: string, output: string) => void, maxRetries: number = 3, timeout: number = 300): Promise<void> {
   const agentWorkDir = path.join(outputDir, agentName);
   await fs.mkdir(agentWorkDir, { recursive: true });
 
@@ -544,6 +569,21 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
       await fs.writeFile(tempPromptFile, agentPrompt);
 
       return new Promise((resolve, reject) => {
+        let timeoutId: NodeJS.Timeout | undefined;
+        // Set up timeout
+        timeoutId = setTimeout(() => {
+          if (claudeProcess && !claudeProcess.killed) {
+            claudeProcess.kill('SIGTERM');
+            // Force kill if it doesn't stop after 5 seconds
+            setTimeout(() => {
+              if (!claudeProcess.killed) {
+                claudeProcess.kill('SIGKILL');
+              }
+            }, 5000);
+          }
+          reject(new Error(`Agent ${agentName} timed out after ${timeout} seconds`));
+        }, timeout * 1000);
+
         const claudeProcess = spawn('claude', [
           '--system-prompt', `@${tempPromptFile}`,
           '--dangerously-skip-permissions',
@@ -597,6 +637,11 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         claudeProcess.on('close', async (code) => {
           const endTime = Date.now();
 
+          // Clear timeout if process completed normally
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+
           // Clean up temp prompt file
           try {
             await fs.unlink(tempPromptFile);
@@ -626,6 +671,10 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         });
 
         claudeProcess.on('error', (error) => {
+          // Clear timeout on error
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
           reject(error);
         });
       });
@@ -823,7 +872,7 @@ Format your response as a structured evaluation report with clear sections for e
   });
 }
 
-async function runParallelAgents(agentList: string[], outputDir: string, taskFile: string, contextFile: string | undefined, concurrency: number, delay: number, enableConsoleMonitor: boolean = false): Promise<void> {
+async function runParallelAgents(agentList: string[], outputDir: string, taskFile: string, contextFile: string | undefined, concurrency: number, delay: number, timeout: number, enableConsoleMonitor: boolean = false): Promise<void> {
   // We only use React+Ink InkMonitor - no fallback needed
   const monitor = new InkMonitor({
     initialInfo: {
@@ -855,7 +904,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
 
         await runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
           monitor?.addAgentOutput(agentName, output);
-        });
+        }, 3, timeout);
 
         // Record the actual execution time
         const endTime = Date.now();
@@ -902,7 +951,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
       const promises = chunks[i].map(agent =>
         runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
           monitor?.addAgentOutput(agentName, output);
-        })
+        }, 3, timeout)
       );
 
       try {
@@ -999,6 +1048,11 @@ export const benchmarkCommand: CommandConfig = {
       defaultValue: '2'
     },
     {
+      flags: '--timeout <seconds>',
+      description: 'Timeout in seconds for each agent (default: 300)',
+      defaultValue: '300'
+    },
+    {
       flags: '--quiet',
       description: 'Disable real-time monitoring, show minimal output'
     }
@@ -1019,10 +1073,10 @@ export const benchmarkCommand: CommandConfig = {
       // Run agents with concurrency control and React+Ink monitor (unless quiet mode)
       if (options.quiet) {
         // Quiet mode - run without React+Ink monitor
-        await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, false);
+        await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, options.timeout!, false);
       } else {
         // Normal mode - use React+Ink monitor
-        await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, true);
+        await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, options.timeout!, true);
       }
 
       // Evaluate results if requested
