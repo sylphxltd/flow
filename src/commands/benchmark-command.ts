@@ -101,8 +101,8 @@ class ProcessManager {
   }
 }
 
-// Simple console monitor for real-time output
-class ConsoleMonitor {
+// Efficient console-based monitor with minimal updates
+class EfficientMonitor {
   private agents: Map<string, {
     status: 'idle' | 'running' | 'completed' | 'error';
     output: string[];
@@ -111,6 +111,8 @@ class ConsoleMonitor {
   }> = new Map();
   private updateInterval?: NodeJS.Timeout;
   private isRunning = false;
+  private lastDisplay = '';
+  private workspaceDirs: string[] = [];
 
   constructor() {
     this.setupSignalHandlers();
@@ -118,20 +120,38 @@ class ConsoleMonitor {
 
   start() {
     this.isRunning = true;
-    console.log('🎯 Agent Benchmark Monitor - Real-time Console Output\n');
+    this.showHeader();
 
-    // Update display every 500ms
+    // Update display every second (reduced frequency for better performance)
     this.updateInterval = setInterval(() => {
-      this.display();
-    }, 500);
+      this.displayIfNeeded();
+    }, 1000);
+  }
+
+  setWorkspaceDirs(dirs: string[]) {
+    this.workspaceDirs = dirs;
+  }
+
+  private showHeader() {
+    console.log('🎯 Agent Benchmark Monitor - Real-time Output');
+    console.log('💡 Workspaces: Each agent runs in its own temp directory');
+    if (this.workspaceDirs.length > 0) {
+      console.log('📁 Recent workspace dirs:');
+      this.workspaceDirs.slice(-3).forEach(dir => {
+        console.log(`   ${dir}`);
+      });
+    }
+    console.log('💡 Tip: You can open these directories in another terminal to see files in real-time');
+    console.log('');
   }
 
   addAgent(name: string) {
     this.agents.set(name, {
       status: 'idle',
       output: [],
-      startTime: undefined // Don't start timing until actually running
+      startTime: undefined
     });
+    this.displayIfNeeded(); // Immediate update
   }
 
   updateAgentStatus(name: string, status: 'idle' | 'running' | 'completed' | 'error') {
@@ -139,67 +159,80 @@ class ConsoleMonitor {
     if (agent) {
       agent.status = status;
       if (status === 'running' && !agent.startTime) {
-        // Start timing only when actually running
         agent.startTime = Date.now();
       } else if (status === 'completed' || status === 'error') {
         agent.endTime = Date.now();
       }
+      this.displayIfNeeded(); // Immediate update
     }
   }
 
   addAgentOutput(name: string, output: string) {
     const agent = this.agents.get(name);
     if (agent) {
-      // Split output into lines and keep last 5
       const lines = output.split('\n').filter(line => line.trim());
-      agent.output = [...agent.output.slice(-4), ...lines]; // Keep last 5
+      agent.output = [...agent.output.slice(-2), ...lines];
+      this.displayIfNeeded(); // Immediate update for new output
     }
   }
 
-  private display() {
-    // Clear screen and move cursor to top
-    process.stdout.write('\x1b[2J\x1b[H');
+  private displayIfNeeded() {
+    const currentDisplay = this.buildDisplayString();
 
-    console.log('🎯 Agent Benchmark Monitor - Real-time Console Output\n');
+    // Only update if the display actually changed (performance optimization)
+    if (currentDisplay !== this.lastDisplay) {
+      // Clear lines efficiently
+      if (this.lastDisplay) {
+        const lineCount = this.lastDisplay.split('\n').length;
+        process.stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+      }
+
+      process.stdout.write(currentDisplay);
+      this.lastDisplay = currentDisplay;
+    }
+  }
+
+  private buildDisplayString(): string {
+    const lines: string[] = [];
 
     for (const [name, agent] of this.agents) {
       let runtime = 0;
       if (agent.startTime) {
         if (agent.endTime) {
-          // Completed: show actual runtime
           runtime = Math.floor((agent.endTime - agent.startTime) / 1000);
         } else if (agent.status === 'running') {
-          // Currently running: show elapsed time
           runtime = Math.floor((Date.now() - agent.startTime) / 1000);
         }
       }
 
-      // Status icon
       const statusIcon = agent.status === 'completed' ? '✅' :
                         agent.status === 'running' ? '🔄' :
                         agent.status === 'error' ? '❌' : '⏸️';
 
-      // Main status line
       const runtimeText = agent.startTime ? `${runtime}s` : 'pending';
-      console.log(`${statusIcon} ${name} - ${agent.status.toUpperCase()} - Runtime: ${runtimeText}`);
 
-      // Show last 5 outputs if available
+      // Main status line
+      lines.push(`${statusIcon} ${name} - ${agent.status.toUpperCase()} - Runtime: ${runtimeText}`);
+
+      // Show last 3 outputs only (reduced for better performance)
       if (agent.output.length > 0) {
-        const recentOutputs = agent.output.slice(-5);
+        const recentOutputs = agent.output.slice(-3);
         recentOutputs.forEach(line => {
-          // Clean up the output and show meaningful lines only
           const cleanLine = line.trim();
-          if (cleanLine && !cleanLine.startsWith('[') && cleanLine.length > 5) {
-            console.log(`    ${cleanLine}`);
+          if (cleanLine && !cleanLine.startsWith('[') && cleanLine.length > 8) {
+            lines.push(`    ${cleanLine.substring(0, 80)}${cleanLine.length > 80 ? '...' : ''}`);
           }
         });
       } else if (agent.status === 'running') {
-        console.log('    (working...)');
+        lines.push('    (working...)');
       } else if (agent.status === 'idle') {
-        console.log('    (waiting to start...)');
+        lines.push('    (waiting to start...)');
       }
-      console.log(''); // Empty line between agents
+
+      lines.push(''); // Empty line between agents
     }
+
+    return lines.join('\n');
   }
 
   stop() {
@@ -207,6 +240,7 @@ class ConsoleMonitor {
     if (this.updateInterval) {
       clearInterval(this.updateInterval);
     }
+    console.log('\n✅ Monitor stopped');
   }
 
   private setupSignalHandlers() {
@@ -216,7 +250,6 @@ class ConsoleMonitor {
       console.log(`\n🛑 Received ${signal}, shutting down benchmark...`);
       this.stop();
 
-      // Kill all tracked processes via ProcessManager
       await ProcessManager.getInstance().killAllProcesses();
       process.exit(0);
     };
@@ -680,15 +713,19 @@ Format your response as a structured evaluation report with clear sections for e
 async function runParallelAgents(agentList: string[], outputDir: string, taskFile: string, contextFile: string | undefined, concurrency: number, delay: number, enableConsoleMonitor: boolean = false): Promise<void> {
   console.log(`🔄 Running ${agentList.length} agents with concurrency: ${concurrency}, delay: ${delay}s`);
 
-  // Create console monitor for real-time output if enabled
-  let consoleMonitor: ConsoleMonitor | undefined;
+  // Create efficient monitor for real-time output if enabled (optimised for performance)
+  let efficientMonitor: EfficientMonitor | undefined;
   if (enableConsoleMonitor) {
-    consoleMonitor = new ConsoleMonitor();
-    consoleMonitor.start();
+    efficientMonitor = new EfficientMonitor();
+    efficientMonitor.start();
+
+    // Track workspace directories
+    const workspaceDirs = agentList.map(agent => path.join(outputDir, agent));
+    efficientMonitor.setWorkspaceDirs(workspaceDirs);
 
     // Add all agents to the monitor
     agentList.forEach(agent => {
-      consoleMonitor!.addAgent(agent);
+      efficientMonitor!.addAgent(agent);
     });
   }
 
@@ -698,10 +735,10 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     for (const agent of agentList) {
       try {
         const startTime = Date.now();
-        consoleMonitor?.updateAgentStatus(agent, 'running');
+        efficientMonitor?.updateAgentStatus(agent, 'running');
 
         await runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
-          consoleMonitor?.addAgentOutput(agentName, output);
+          efficientMonitor?.addAgentOutput(agentName, output);
         });
 
         // Record the actual execution time
@@ -718,7 +755,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
           // Ignore timing write errors
         }
 
-        consoleMonitor?.updateAgentStatus(agent, 'completed');
+        efficientMonitor?.updateAgentStatus(agent, 'completed');
 
         // Add delay between agents (except last one)
         if (agent !== agentList[agentList.length - 1]) {
@@ -726,8 +763,8 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
           await new Promise(resolve => setTimeout(resolve, delay * 1000));
         }
       } catch (error) {
-        consoleMonitor?.updateAgentStatus(agent, 'error');
-        consoleMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
+        efficientMonitor?.updateAgentStatus(agent, 'error');
+        efficientMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
         console.error(`❌ Agent ${agent} failed:`, error);
         // Continue with other agents even if one fails
       }
@@ -746,12 +783,12 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
       const chunkStartTimes: { [agent: string]: number } = {};
       chunks[i].forEach(agent => {
         chunkStartTimes[agent] = Date.now();
-        consoleMonitor?.updateAgentStatus(agent, 'running');
+        efficientMonitor?.updateAgentStatus(agent, 'running');
       });
 
       const promises = chunks[i].map(agent =>
         runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
-          consoleMonitor?.addAgentOutput(agentName, output);
+          efficientMonitor?.addAgentOutput(agentName, output);
         })
       );
 
@@ -774,15 +811,15 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
             // Ignore timing write errors
           }
 
-          consoleMonitor?.updateAgentStatus(agent, 'completed');
+          efficientMonitor?.updateAgentStatus(agent, 'completed');
         });
 
         console.log(`✅ Chunk ${i + 1} completed`);
       } catch (error) {
         // Mark all agents in this chunk as having errors
         chunks[i].forEach(agent => {
-          consoleMonitor?.updateAgentStatus(agent, 'error');
-          consoleMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
+          efficientMonitor?.updateAgentStatus(agent, 'error');
+          efficientMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
         });
 
         console.error(`❌ Chunk ${i + 1} had failures:`, error);
@@ -797,9 +834,9 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     }
   }
 
-  // Stop the console monitor
-  if (consoleMonitor) {
-    consoleMonitor.stop();
+  // Stop the efficient monitor
+  if (efficientMonitor) {
+    efficientMonitor.stop();
   }
 
   console.log('✅ All agent executions completed');
