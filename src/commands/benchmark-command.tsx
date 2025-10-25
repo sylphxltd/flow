@@ -183,18 +183,21 @@ const BenchmarkMonitor: React.FC<{
         runtimeText = `${runtime}s`;
       }
 
-      // Get last meaningful output
-      let lastOutput = '';
+      // Get last meaningful output lines (show up to 5 most recent lines)
+      let lastOutputLines: string[] = [];
       if (agent.output.length > 0) {
-        const lastLine = agent.output[agent.output.length - 1];
-        if (lastLine && lastLine.trim().length > 8) {
-          const cleanLine = lastLine.trim();
-          lastOutput = cleanLine.length > 80 ? cleanLine.substring(0, 80) + '...' : cleanLine;
-        }
+        // Get the last 5 lines from output
+        const recentLines = agent.output.slice(-5);
+        lastOutputLines = recentLines
+          .filter(line => line && line.trim().length > 0)
+          .map(line => {
+            const cleanLine = line.trim();
+            return cleanLine.length > 80 ? cleanLine.substring(0, 80) + '...' : cleanLine;
+          });
       } else if (agent.status === 'running') {
-        lastOutput = '(working...)';
+        lastOutputLines.push('(working...)');
       } else if (agent.status === 'idle') {
-        lastOutput = '(waiting to start...)';
+        lastOutputLines.push('(waiting to start...)');
       }
 
       return {
@@ -203,7 +206,7 @@ const BenchmarkMonitor: React.FC<{
         statusColor,
         status: agent.status.toUpperCase(),
         runtime: runtimeText,
-        lastOutput
+        lastOutput: lastOutputLines
       };
     });
   }, [monitor, updateTrigger, flashState]);
@@ -251,9 +254,11 @@ const BenchmarkMonitor: React.FC<{
               </Box>
             )}
 
-            {agent.lastOutput && (
+            {agent.lastOutput && agent.lastOutput.length > 0 && (
               <Box paddingLeft={2}>
-                <Text color="gray">{agent.lastOutput}</Text>
+                {agent.lastOutput.map((line, index) => (
+                  <Text key={index} color="gray">{line}</Text>
+                ))}
               </Box>
             )}
           </Box>
