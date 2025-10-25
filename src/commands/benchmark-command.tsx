@@ -720,6 +720,12 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         claudeProcess.on('close', async (code) => {
           const endTime = Date.now();
 
+          // Update agent end time
+          const agent = monitor?.getAgents().get(agentName);
+          if (agent) {
+            agent.endTime = endTime;
+          }
+
           // Clear timeout if process completed normally
           if (timeoutId) {
             clearTimeout(timeoutId);
@@ -843,9 +849,12 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           };
           await fs.writeFile(path.join(agentWorkDir, 'timing.json'), JSON.stringify(timingData, null, 2));
 
+          // Update agent status based on exit code
           if (code === 0) {
+            monitor?.updateAgentStatus(agentName, 'completed');
             resolve();
           } else {
+            monitor?.updateAgentStatus(agentName, 'error');
             await fs.writeFile(path.join(agentWorkDir, 'execution-error.txt'), stderr);
             reject(new Error(`Agent ${agentName} failed with code ${code}`));
           }
@@ -856,6 +865,10 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           if (timeoutId) {
             clearTimeout(timeoutId);
           }
+
+          // Update agent status to error
+          monitor?.updateAgentStatus(agentName, 'error');
+
           reject(error);
         });
       });
