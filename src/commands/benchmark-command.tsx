@@ -194,10 +194,15 @@ const BenchmarkMonitor: React.FC<{
             const cleanLine = line.trim();
             return cleanLine.length > 80 ? cleanLine.substring(0, 80) + '...' : cleanLine;
           });
-      } else if (agent.status === 'running') {
-        lastOutputLines.push('(working...)');
-      } else if (agent.status === 'idle') {
-        lastOutputLines.push('(waiting to start...)');
+      }
+
+      // Show placeholder text only if no actual output exists
+      if (lastOutputLines.length === 0) {
+        if (agent.status === 'running') {
+          lastOutputLines.push('(working...)');
+        } else if (agent.status === 'idle') {
+          lastOutputLines.push('(waiting to start...)');
+        }
       }
 
       return {
@@ -384,7 +389,7 @@ class InkMonitor {
       // Remove ANSI escape sequences that interfere with Ink
       const cleanedOutput = output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
       const lines = cleanedOutput.split('\n').filter(line => line.trim());
-      agent.output = [...agent.output.slice(-3), ...lines];
+      agent.output = [...agent.output.slice(-20), ...lines]; // Keep last 20 lines instead of 3
       // Trigger UI update through subscriber pattern
       this.triggerUpdate();
     }
