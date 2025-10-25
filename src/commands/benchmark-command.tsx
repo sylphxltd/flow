@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import { render } from 'ink';
 import React from 'react';
 import { Box, Text, useApp } from 'ink';
@@ -139,35 +140,12 @@ const BenchmarkMonitor: React.FC<{
     );
 
     if (allCompleted && agents.size > 0) {
-      setTimeout(() => {
-        onComplete();
-        exit();
-      }, 2000);
+      onComplete();
+      exit();
     }
   }, [monitor, onComplete, exit]);
 
-  // Additional auto-exit trigger when agents are updated
-  React.useEffect(() => {
-    const checkAutoExit = () => {
-      const agents = monitor.getAgents();
-      const allCompleted = Array.from(agents.values()).every(
-        agent => agent.status === 'completed' || agent.status === 'error'
-      );
-
-      if (allCompleted && agents.size > 0) {
-        setTimeout(() => {
-          onComplete();
-          exit();
-        }, 2000);
-      }
-    };
-
-    // Listen for agent status changes by checking periodically
-    const interval = setInterval(checkAutoExit, 1000);
-
-    return () => clearInterval(interval);
-  }, [monitor, onComplete, exit]);
-
+  
   const status = React.useMemo(() => {
     const agents = monitor.getAgents();
     return Array.from(agents.entries()).map(([name, agent]) => {
@@ -549,6 +527,62 @@ async function getAgentList(agentsOption: string): Promise<string[]> {
   return selectedAgents;
 }
 
+// Helper function to format tool display for UI
+function formatToolDisplay(toolName: string, params: any): string {
+  let paramString = '';
+
+  switch (toolName) {
+    case 'Write':
+      paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+      if (params.content && params.content.length < 50) {
+        paramString += `: "${params.content.substring(0, 50)}${params.content.length > 50 ? '...' : ''}"`;
+      }
+      break;
+    case 'Read':
+      paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+      break;
+    case 'Edit':
+      paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+      break;
+    case 'Bash':
+      paramString = params.command || '';
+      // Limit bash command display length
+      if (paramString.length > 60) {
+        paramString = paramString.substring(0, 57) + '...';
+      }
+      break;
+    case 'Grep':
+      paramString = params.pattern || '';
+      if (params.file_path) {
+        paramString += ` in ${params.file_path.split('/').pop() || ''}`;
+      }
+      break;
+    case 'Glob':
+      paramString = params.pattern || '';
+      break;
+    case 'TodoWrite':
+      const todoCount = params.todos ? params.todos.length : 0;
+      const completedCount = params.todos ? params.todos.filter((t: any) => t.status === 'completed').length : 0;
+      paramString = `${todoCount} todos (${completedCount} completed)`;
+      break;
+    default:
+      // Generic parameter display for other tools
+      if (params.file_path) {
+        paramString = params.file_path.split('/').pop() || '';
+      } else if (params.query) {
+        paramString = params.query.substring(0, 40);
+        if (params.query.length > 40) paramString += '...';
+      } else if (params.command) {
+        paramString = params.command.substring(0, 40);
+        if (params.command.length > 40) paramString += '...';
+      } else {
+        paramString = JSON.stringify(params).substring(0, 40);
+      }
+  }
+
+  return `${toolName}(${paramString})`;
+}
+
 async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: InkMonitor, outputCallback?: (agentName: string, output: string) => void, maxRetries: number = 3, timeout: number = 3600): Promise<void> {
   const agentWorkDir = path.join(outputDir, agentName);
   await fs.mkdir(agentWorkDir, { recursive: true });
@@ -600,7 +634,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           reject(new Error(`Agent ${agentName} timed out after ${timeout} seconds`));
         }, timeout * 1000);
 
-        const claudeProcess = spawn('claude', [
+                const claudeProcess = spawn('claude', [
           '--system-prompt', `@${tempPromptFile}`,
           '--dangerously-skip-permissions',
           '--output-format', 'stream-json',
@@ -649,87 +683,16 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
                   if (content.type === 'text') {
                     const textContent = content.text.trim();
                     if (textContent) {
-                      // Split long text into multiple lines with proper indentation
-                      const maxLineLength = 80;
-                      const words = textContent.split(' ');
-                      let currentLine = '';
-                      const lines: string[] = [];
-
-                      for (const word of words) {
-                        if ((currentLine + ' ' + word).length <= maxLineLength) {
-                          currentLine += (currentLine ? ' ' : '') + word;
-                        } else {
-                          if (currentLine) {
-                            lines.push(currentLine);
-                            currentLine = word;
-                          } else {
-                            // Word is longer than max length, split it
-                            for (let i = 0; i < word.length; i += maxLineLength) {
-                              lines.push(word.substring(i, i + maxLineLength));
-                            }
-                          }
-                        }
-                      }
-                      if (currentLine) {
-                        lines.push(currentLine);
-                      }
-
-                      // Add each line with proper indentation
-                      lines.forEach((line, index) => {
-                        const formattedLine = index === 0 ? line : `  ${line}`;
-                        monitor?.addOutput(agentName, formattedLine);
-                        outputCallback?.(agentName, formattedLine);
-                      });
+                      monitor?.addAgentOutput(agentName, textContent);
+                      outputCallback?.(agentName, textContent);
                     }
                   } else if (content.type === 'tool_use') {
                     const toolName = content.name;
                     const params = content.input || {};
-                    let paramString = '';
+                    const toolDisplay = formatToolDisplay(toolName, params);
 
-                    // Tool-specific parameter display
-                    switch (toolName) {
-                      case 'Write':
-                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
-                        break;
-                      case 'Read':
-                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
-                        break;
-                      case 'Edit':
-                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
-                        break;
-                      case 'Bash':
-                        paramString = params.command || '';
-                        // Limit bash command display length
-                        if (paramString.length > 60) {
-                          paramString = paramString.substring(0, 57) + '...';
-                        }
-                        break;
-                      case 'Grep':
-                        paramString = params.pattern || '';
-                        if (params.file_path) {
-                          paramString += ` in ${params.file_path.split('/').pop() || ''}`;
-                        }
-                        break;
-                      case 'Glob':
-                        paramString = params.pattern || '';
-                        break;
-                      default:
-                        // Generic parameter display for other tools
-                        if (params.file_path) {
-                          paramString = params.file_path.split('/').pop() || '';
-                        } else if (params.query) {
-                          paramString = params.query.substring(0, 40);
-                          if (params.query.length > 40) paramString += '...';
-                        } else if (params.command) {
-                          paramString = params.command.substring(0, 40);
-                          if (params.command.length > 40) paramString += '...';
-                        } else {
-                          paramString = JSON.stringify(params).substring(0, 40);
-                        }
-                    }
-
-                    monitor?.addOutput(agentName, `  ${toolName}(${paramString})`);
-                    outputCallback?.(agentName, `  ${toolName}(${paramString})`);
+                    monitor?.addAgentOutput(agentName, toolDisplay);
+                    outputCallback?.(agentName, toolDisplay);
                   }
                 }
               }
@@ -747,7 +710,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           stderr += output;
 
           // Add error output to monitor (with ANSI cleaning)
-          monitor?.addOutput(agentName, `ERROR: ${output}`);
+          monitor?.addAgentOutput(agentName, `ERROR: ${output}`);
 
           // Add error output to console monitor callback (cleaned)
           outputCallback?.(agentName, `ERROR: ${output}`);
@@ -759,16 +722,10 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         claudeProcess.on('close', async (code) => {
           const endTime = Date.now();
 
-          // DEBUG: Log close event
-          console.error(`[DEBUG] Process close event triggered for agent ${agentName}, code: ${code}`);
-
           // Update agent end time
           const agent = monitor?.getAgents().get(agentName);
           if (agent) {
             agent.endTime = endTime;
-            console.error(`[DEBUG] Agent endTime set to: ${endTime}`);
-          } else {
-            console.error(`[DEBUG] Agent not found in monitor for ${agentName}`);
           }
 
           // Clear timeout if process completed normally
@@ -813,59 +770,17 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
                       // Add each line with proper indentation
                       lines.forEach((line, index) => {
                         const formattedLine = index === 0 ? line : `  ${line}`;
-                        monitor?.addOutput(agentName, formattedLine);
+                        monitor?.addAgentOutput(agentName, formattedLine);
                         outputCallback?.(agentName, formattedLine);
                       });
                     }
                   } else if (content.type === 'tool_use') {
                     const toolName = content.name;
                     const params = content.input || {};
-                    let paramString = '';
+                    const toolDisplay = formatToolDisplay(toolName, params);
 
-                    // Tool-specific parameter display
-                    switch (toolName) {
-                      case 'Write':
-                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
-                        break;
-                      case 'Read':
-                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
-                        break;
-                      case 'Edit':
-                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
-                        break;
-                      case 'Bash':
-                        paramString = params.command || '';
-                        // Limit bash command display length
-                        if (paramString.length > 60) {
-                          paramString = paramString.substring(0, 57) + '...';
-                        }
-                        break;
-                      case 'Grep':
-                        paramString = params.pattern || '';
-                        if (params.file_path) {
-                          paramString += ` in ${params.file_path.split('/').pop() || ''}`;
-                        }
-                        break;
-                      case 'Glob':
-                        paramString = params.pattern || '';
-                        break;
-                      default:
-                        // Generic parameter display for other tools
-                        if (params.file_path) {
-                          paramString = params.file_path.split('/').pop() || '';
-                        } else if (params.query) {
-                          paramString = params.query.substring(0, 40);
-                          if (params.query.length > 40) paramString += '...';
-                        } else if (params.command) {
-                          paramString = params.command.substring(0, 40);
-                          if (params.command.length > 40) paramString += '...';
-                        } else {
-                          paramString = JSON.stringify(params).substring(0, 40);
-                        }
-                    }
-
-                    monitor?.addOutput(agentName, `  ${toolName}(${paramString})`);
-                    outputCallback?.(agentName, `  ${toolName}(${paramString})`);
+                    monitor?.addAgentOutput(agentName, toolDisplay);
+                    outputCallback?.(agentName, toolDisplay);
                   }
                 }
               }
@@ -896,14 +811,12 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
 
           // Update agent status based on exit code
           if (code === 0) {
-            console.error(`[DEBUG] Updating agent ${agentName} status to 'completed'`);
             monitor?.updateAgentStatus(agentName, 'completed');
-            console.error(`[DEBUG] Agent status updated, calling resolve()`);
             resolve();
           } else {
-            console.error(`[DEBUG] Updating agent ${agentName} status to 'error' (code: ${code})`);
             monitor?.updateAgentStatus(agentName, 'error');
             await fs.writeFile(path.join(agentWorkDir, 'execution-error.txt'), stderr);
+
             reject(new Error(`Agent ${agentName} failed with code ${code}`));
           }
         });
