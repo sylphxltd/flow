@@ -789,7 +789,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
   }
 }
 
-async function evaluateResults(outputDir: string, reportDir?: string, options?: BenchmarkCommandOptions): Promise<void> {
+async function evaluateResults(outputDir: string, reportDir?: string, options?: BenchmarkCommandOptions, monitor?: InkMonitor): Promise<void> {
   // First, collect actual timing information for each agent
   const agentTimings: { [key: string]: { startTime?: number; endTime?: number; duration?: number } } = {};
 
@@ -822,54 +822,116 @@ async function evaluateResults(outputDir: string, reportDir?: string, options?: 
   }
 
   const evaluatorPrompt = `
-Please evaluate the code and solutions created by these software engineering agents. For each agent, analyze their work by examining the files they created in their respective directories.
+You are conducting a comprehensive technical evaluation of software engineering agents. You must analyze the actual code and implementations they created, not give generic assessments.
 
-**IMPORTANT: Performance and timing are critical evaluation factors.** Faster execution times that maintain quality are highly valued.
+**CRITICAL REQUIREMENTS:**
+1. **EXAMINE ACTUAL CODE**: Read and analyze every file created by each agent
+2. **SPECIFIC ANALYSIS**: Reference actual implementations, files, and code patterns
+3. **CONCRETE EXAMPLES**: Quote actual code snippets and file contents in your analysis
+4. **NO GENERIC STATEMENTS**: Avoid vague praise like "comprehensive system" - be specific
 
-For each agent, evaluate:
+**PERFORMANCE SCORING (CRITICAL):**
+${Object.entries(agentTimings).map(([agent, timing]) => {
+  const duration = timing.duration || 0;
+  let score = 1;
+  if (duration < 300) score = 9;  // Under 5 minutes
+  else if (duration < 600) score = 8;  // 5-10 minutes
+  else if (duration < 900) score = 7;  // 10-15 minutes
+  else if (duration < 1200) score = 6;  // 15-20 minutes
+  else if (duration < 1800) score = 5;  // 20-30 minutes
+  else if (duration < 2400) score = 4;  // 30-40 minutes
+  else if (duration < 3600) score = 3;  // 40-60 minutes
+  else if (duration < 5400) score = 2;  // 60-90 minutes
+  else score = 1;  // Over 90 minutes
 
-1. **Performance & Speed** (1-10): Execution time, efficiency, how quickly they completed the task
-2. **Code Quality** (1-10): Readability, structure, naming conventions, code organization
-3. **Architecture Design** (1-10): Modularity, scalability, separation of concerns, best practices
-4. **Functionality** (1-10): Requirements satisfaction, error handling, feature completeness
-5. **Testing Coverage** (1-10): Test quality, coverage, testing strategies used
-6. **Documentation** (1-10): Code comments, README files, API documentation, setup instructions
-7. **Business Value** (1-10): Practicality, maintainability, innovation, solution effectiveness
+  return `- ${agent}: ${duration}s (Performance Score: ${score}/10)`;
+}).join('\n')}
 
-**Scoring Guidelines for Performance:**
-- 9-10: Extremely fast (under 5 seconds), excellent efficiency
-- 7-8: Fast (5-10 seconds), good optimization
-- 5-6: Average (10-20 seconds), acceptable speed
-- 3-4: Slow (20-30 seconds), needs optimization
-- 1-2: Very slow (30+ seconds), significant performance issues
+**DETAILED EVALUATION CRITERIA:**
 
-**Approximate Timing Data:**
-${Object.entries(agentTimings).map(([agent, timing]) =>
-  `- ${agent}: ${timing.duration || 'unknown'} seconds`
-).join('\n')}
+For each agent, provide:
 
-Agents to evaluate:
-- craftsman: Idealistic craftsman with principles-based approach
-- practitioner: Pragmatic practitioner with business-focused approach
-- craftsman-reflective: Idealistic craftsman with reflective questioning
-- practitioner-reflective: Pragmatic practitioner with contextual decision-making
+1. **Code Implementation Analysis** (1-10):
+   - Actual file structure and organization
+   - Code quality and readability (show examples)
+   - Error handling implementation
+   - Security measures implemented
+   - Database design and queries
+   - API endpoint implementations
 
-For each agent, please:
-1. Examine all files they created in their directory
-2. Analyze the code quality and architecture
-3. Check if requirements were met
-4. **CRITICAL: Consider their execution speed and efficiency**
-5. Evaluate the overall solution quality
-6. Compare approaches between agents
+2. **Feature Completeness** (1-10):
+   - Which specific requirements were met
+   - Missing features or incomplete implementations
+   - User management features implemented
+   - Authentication and authorization
+   - Database migrations and seeding
 
-Please provide:
-1. Detailed scoring for each agent (1-10 scale) with special attention to performance
-2. Analysis of differences between approaches, including speed vs quality tradeoffs
-3. What each agent excels at (including speed advantages)
-4. Recommendations for different use cases (when speed matters vs when quality matters more)
-5. Overall comparison and insights with performance as a key factor
+3. **Testing Quality** (1-10):
+   - Actual test files created
+   - Test coverage areas
+   - Testing frameworks used
+   - Integration tests vs unit tests
 
-Format your response as a structured evaluation report with clear sections for each agent.
+4. **Documentation Quality** (1-10):
+   - README content and setup instructions
+   - API documentation
+   - Code comments and inline documentation
+   - Installation and deployment guides
+
+5. **Architecture & Design** (1-10):
+   - Project structure and modularity
+   - Separation of concerns
+   - Design patterns used
+   - Scalability considerations
+
+**MANDATORY OUTPUT FORMAT:**
+
+# Agent Evaluation Report
+
+## Executive Summary
+[Brief overview of results, naming the winner and key performance insights]
+
+## Individual Agent Analysis
+
+### 1. [Agent Name] - Total Score: XX/50
+**Execution Time:** XXX seconds
+**Performance Score:** X/10
+
+#### Implementation Details:
+- **Files Created:** [List actual files]
+- **Key Features Implemented:** [Specific features with examples]
+- **Code Quality Examples:** [Show actual code snippets]
+- **Architecture Assessment:** [Specific analysis of structure]
+
+#### Scoring Breakdown:
+- Performance & Speed: X/10 - [Specific reasoning with time comparison]
+- Code Implementation: X/10 - [Specific code examples]
+- Feature Completeness: X/10 - [Which requirements met/missed]
+- Testing Quality: X/10 - [Actual test files analyzed]
+- Documentation: X/10 - [Documentation quality assessment]
+- Architecture Design: X/10 - [Design pattern analysis]
+
+#### Strengths:
+[List specific strengths with examples]
+
+#### Weaknesses:
+[List specific weaknesses with examples]
+
+[Repeat for all agents]
+
+## Comparative Analysis
+- **Performance Ranking:** [Order by speed]
+- **Quality Ranking:** [Order by implementation quality]
+- **Best for Speed:** [Agent name] with reasoning
+- **Best for Quality:** [Agent name] with reasoning
+- **Best Overall Value:** [Agent name] with reasoning
+
+## Final Recommendations
+- **Winner:** [Agent name] with score and reasoning
+- **Use Case Recommendations:** [When to use each agent]
+- **Key Insights:** [What we learned about each agent's approach]
+
+**REMEMBER: Base your analysis on ACTUAL CODE AND FILES, not generic statements. Be specific, detailed, and reference actual implementations.**
 `;
 
   // Collect all agent work by reading their created files
@@ -906,28 +968,77 @@ Format your response as a structured evaluation report with clear sections for e
   const tempEvalFile = path.join(outputDir, '.evaluation-prompt.md');
   await fs.writeFile(tempEvalFile, fullInput);
 
+  // Add evaluation agent to monitor if available
+  if (monitor) {
+    monitor.addAgent('evaluator');
+    monitor.updateAgentStatus('evaluator', 'running');
+  }
+
   // Run evaluation with Claude
   const evaluationProcess = spawn('claude', [
     '--system-prompt', `@${tempEvalFile}`,
     '--dangerously-skip-permissions',
-    '--print',
+    '--output-format', 'stream-json',
+    '--verbose',
     'Please evaluate the agent work as described in the system prompt.'
   ], {
     cwd: outputDir,
-    stdio: ['inherit', 'pipe', 'pipe']
+    stdio: ['inherit', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      FORCE_NO_PROGRESS: '1',
+      CI: '1',
+      PYTHONUNBUFFERED: '1'
+    }
   });
 
   // Track evaluation process for cleanup
   ProcessManager.getInstance().trackChildProcess(evaluationProcess);
 
   let evaluationOutput = '';
+  let stdoutBuffer = '';
 
   evaluationProcess.stdout?.on('data', (data) => {
-    evaluationOutput += data.toString();
+    const output = data.toString();
+    stdoutBuffer += output;
+
+    // Process complete lines only - keep incomplete data in buffer
+    const lines = stdoutBuffer.split('\n');
+    stdoutBuffer = lines.pop() || ''; // Keep last incomplete line
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+
+      try {
+        const jsonData = JSON.parse(line);
+
+        if (jsonData.type === 'assistant' && jsonData.message?.content) {
+          // Extract text content from assistant message
+          for (const content of jsonData.message.content) {
+            if (content.type === 'text') {
+              const textContent = content.text.trim();
+              if (textContent) {
+                evaluationOutput += textContent + '\n';
+                // Add to monitor if available
+                monitor?.addAgentOutput('evaluator', textContent);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Skip invalid JSON (shouldn't happen with stream-json)
+        // For non-JSON output, add to evaluation output
+        evaluationOutput += line + '\n';
+        monitor?.addAgentOutput('evaluator', line);
+      }
+    }
   });
 
   return new Promise((resolve, reject) => {
     evaluationProcess.on('close', async (code) => {
+      // Update evaluator status
+      monitor?.updateAgentStatus('evaluator', code === 0 ? 'completed' : 'error');
+
       if (code === 0) {
         // Save report to both temp directory and optionally to project directory
         const tempReportPath = path.join(outputDir, 'evaluation-report.md');
@@ -941,6 +1052,25 @@ Format your response as a structured evaluation report with clear sections for e
 
         const tempSummaryPath = path.join(outputDir, 'summary.txt');
         await fs.writeFile(tempSummaryPath, summary);
+
+        // Show completion message and report preview in monitor
+        if (monitor) {
+          monitor?.addAgentOutput('evaluator', '📊 Evaluation completed successfully!');
+          monitor?.addAgentOutput('evaluator', `📁 Report saved to: ${tempReportPath}`);
+
+          // Show report preview (first few lines)
+          const reportLines = evaluationOutput.split('\n').slice(0, 10);
+          monitor?.addAgentOutput('evaluator', '📋 Report Preview:');
+          reportLines.forEach((line, index) => {
+            if (line.trim()) {
+              monitor?.addAgentOutput('evaluator', `${index + 1}. ${line}`);
+            }
+          });
+
+          if (evaluationOutput.split('\n').length > 10) {
+            monitor?.addAgentOutput('evaluator', '... (full report available in file)');
+          }
+        }
 
         // Clean up evaluation temp file
         try {
@@ -959,10 +1089,15 @@ Format your response as a structured evaluation report with clear sections for e
 
           await fs.writeFile(projectReportPath, evaluationOutput);
           await fs.writeFile(projectSummaryPath, summary);
+
+          if (monitor) {
+            monitor?.addAgentOutput('evaluator', `📁 Project report saved to: ${projectReportPath}`);
+          }
         }
 
         resolve();
       } else {
+        monitor?.addAgentOutput('evaluator', `❌ Evaluation failed with exit code ${code}`);
         reject(new Error(`Evaluation failed with code ${code}`));
       }
     });
@@ -1090,10 +1225,8 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     }
   }
 
-  // Stop the monitor
-  if (monitor) {
-    monitor.stop();
-  }
+  // Note: Don't stop monitor here - caller will handle stopping
+  // This allows evaluation to run with the same monitor
 }
 
 // Real-time monitor for agent outputs (interface compatibility)
@@ -1178,7 +1311,12 @@ export const benchmarkCommand: CommandConfig = {
 
       // Evaluate results if requested
       if (options.evaluate) {
-        await evaluateResults(options.output!, options.report, options);
+        await evaluateResults(options.output!, options.report, options, monitor);
+      }
+
+      // Stop the monitor after all agents and evaluation are complete
+      if (monitor) {
+        monitor.stop();
       }
 
       // Only show completion message if monitor was disabled (quiet mode)
