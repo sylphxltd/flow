@@ -34,6 +34,7 @@ export interface CommandConfig {
 export interface CommandOption {
   flags: string;
   description: string;
+  defaultValue?: unknown;
 }
 
 export interface CommandArgument {
