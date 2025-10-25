@@ -189,13 +189,6 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           stdio: ['inherit', 'pipe', 'pipe']
         });
 
-        // Add timeout to prevent hanging
-        const timeout = setTimeout(() => {
-          console.log(`⏱️ Timeout reached for ${agentName}, terminating process...`);
-          claudeProcess.kill('SIGTERM');
-          reject(new Error(`Agent ${agentName} timed out after 60 seconds`));
-        }, 60000); // 60 second timeout
-
         let stdout = '';
         let stderr = '';
 
@@ -203,7 +196,10 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           const output = data.toString();
           stdout += output;
 
-          // Temporary disable monitor for debugging
+          // Add output to monitor for real-time display
+          monitor?.addOutput(agentName, output);
+
+          // Also output to console for immediate feedback
           process.stdout.write(`[${agentName}] ${output}`);
         });
 
@@ -211,12 +207,14 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           const output = data.toString();
           stderr += output;
 
-          // Temporary disable monitor for debugging
+          // Add error output to monitor
+          monitor?.addOutput(agentName, `ERROR: ${output}`);
+
+          // Also output error to console
           process.stderr.write(`[${agentName} ERROR] ${output}`);
         });
 
         claudeProcess.on('close', async (code) => {
-          clearTimeout(timeout); // Clear timeout when process completes
 
           // Clean up temp prompt file
           try {
@@ -241,26 +239,8 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
       });
     };
 
-    // Implement retry logic
-    let lastError: Error | undefined;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await runSingleAgent();
-        return; // Success, exit retry loop
-      } catch (error) {
-        lastError = error as Error;
-        console.warn(`⚠️  Agent ${agentName} attempt ${attempt} failed: ${error}`);
-
-        if (attempt < maxRetries) {
-          const delayMs = Math.pow(2, attempt) * 2000; // Exponential backoff: 2s, 4s, 8s
-          console.log(`⏳ Waiting ${delayMs / 1000}s before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
-      }
-    }
-
-    // All retries failed
-    throw lastError || new Error(`Agent ${agentName} failed after ${maxRetries} attempts`);
+    // Run agent without timeout - let it complete naturally
+    await runSingleAgent();
 
   } catch (error) {
     throw new CLIError(`Failed to load agent ${agentName}: ${error}`);
