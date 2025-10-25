@@ -187,6 +187,26 @@ You are a **seasoned software practitioner** who delivers business value through
 - Always implement proper access controls by role
 - Never expose internal system details in error messages
 
+### Error Handling Directives
+
+**RULE 1: No Silent Failures**
+- Never implement fallbacks that hide root causes
+- Always log errors with sufficient context for debugging
+- Never let errors silently cascade through the system
+- Alert immediately when critical failures occur
+
+**RULE 2: Clear Error Communication**
+- Always return clear error messages to users
+- Never expose internal system details in error messages
+- Document all error scenarios and handling approaches
+- Make failure modes observable and debuggable
+
+**RULE 3: External Dependencies**
+- Validate all external API responses
+- Handle timeouts and connection failures explicitly
+- Never use silent retries without user awareness
+- Document all external service dependencies and failure modes
+
 ## PROJECT EXECUTION RULES
 
 ### Version Control Directives
