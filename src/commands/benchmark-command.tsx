@@ -569,7 +569,8 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         const claudeProcess = spawn('claude', [
           '--system-prompt', `@${tempPromptFile}`,
           '--dangerously-skip-permissions',
-          '--print',
+          '--output-format', 'stream-json',
+          '--verbose',
           fullTask
         ], {
           cwd: agentWorkDir,
@@ -593,15 +594,38 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           const output = data.toString();
           stdout += output;
 
-          // Add output to monitor for real-time display (with ANSI cleaning)
-          monitor?.addOutput(agentName, output);
+          // Parse stream-json output for display
+          const lines = output.split('\n').filter(line => line.trim());
 
-          // Add output to console monitor callback (cleaned)
-          outputCallback?.(agentName, output);
+          for (const line of lines) {
+            try {
+              const jsonData = JSON.parse(line);
 
-          // Force output buffer flush for real-time display
-          if (process.stdout && !process.stdout.destroyed) {
-            process.stdout.flush?.();
+              if (jsonData.type === 'assistant' && jsonData.message?.content) {
+                // Extract only text content from assistant message
+                for (const content of jsonData.message.content) {
+                  if (content.type === 'text') {
+                    const textContent = content.text.trim();
+                    if (textContent) {
+                      // Add each assistant message as a separate line
+                      monitor?.addOutput(agentName, textContent);
+                      outputCallback?.(agentName, textContent);
+                    }
+                  }
+                }
+              } else if (jsonData.type === 'assistant' && jsonData.message?.content) {
+                // Check for tool uses in assistant messages
+                for (const content of jsonData.message.content) {
+                  if (content.type === 'tool_use') {
+                    const toolName = content.name;
+                    monitor?.addOutput(agentName, `[Using: ${toolName}]`);
+                    outputCallback?.(agentName, `[Using: ${toolName}]`);
+                  }
+                }
+              }
+            } catch (e) {
+              // If not valid JSON, ignore it (likely incomplete JSON chunk)
+            }
           }
 
           // Don't output directly to console when using React+Ink monitor
