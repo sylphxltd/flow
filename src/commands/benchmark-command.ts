@@ -53,9 +53,9 @@ class AgentMonitor {
 const agents = ['craftsman', 'practitioner', 'craftsman-reflective', 'practitioner-reflective'];
 
 async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promise<void> {
-  console.log('DEBUG: Initial options.output =', options.output);
+  // Use default task if not provided
   if (!options.task) {
-    throw new CLIError('Task file is required. Use --task <path-to-task-file>');
+    options.task = 'examples/benchmark-tasks/user-management-system.md';
   }
 
   // Validate task file exists
@@ -69,7 +69,6 @@ async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promi
   if (!options.output) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     options.output = `/tmp/agent-benchmark-${timestamp}`;
-    console.log('DEBUG: Set default options.output =', options.output);
   }
 
   // Set default agents
@@ -94,7 +93,7 @@ async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promi
 
   // Set default delay between agents
   if (!options.delay) {
-    options.delay = 5; // 5 seconds between agents
+    options.delay = 2; // 2 seconds between agents
   }
 }
 
@@ -481,17 +480,15 @@ export const benchmarkCommand: CommandConfig = {
   options: [
     {
       flags: '--agents <agents>',
-      description: 'Agents to test (comma-separated or "all", default: all)',
-      defaultValue: 'all'
+      description: 'Agents to test (comma-separated or "all", default: all)'
     },
     {
       flags: '--task <file>',
-      description: 'Path to task definition file',
-      required: true
+      description: 'Path to task definition file (default: examples/benchmark-tasks/user-management-system.md)'
     },
     {
       flags: '--output <dir>',
-      description: 'Output directory for results (default: /tmp/agent-benchmark-TIMESTAMP)',
+      description: 'Output directory for results (default: /tmp/agent-benchmark-TIMESTAMP)'
     },
     {
       flags: '--context <file>',
@@ -503,17 +500,15 @@ export const benchmarkCommand: CommandConfig = {
     },
     {
       flags: '--report <dir>',
-      description: 'Directory to save evaluation reports (in addition to /tmp output)'
+      description: 'Directory to save evaluation reports (default: benchmark-results)'
     },
     {
       flags: '--concurrency <number>',
-      description: 'Number of agents to run concurrently (default: 1)',
-      defaultValue: '1'
+      description: 'Number of agents to run concurrently (default: 1)'
     },
     {
       flags: '--delay <seconds>',
-      description: 'Delay in seconds between agent executions (default: 5)',
-      defaultValue: '5'
+      description: 'Delay in seconds between agent executions (default: 2)'
     }
   ],
   handler: async (options: BenchmarkCommandOptions) => {
