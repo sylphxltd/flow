@@ -13,7 +13,7 @@ function getNestedProperty(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 }
 
-// MCP start handler - simplified and targeted
+// MCP start handler - purely starts the Sylphx Flow MCP server
 const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
   const config = {
     disableMemory: options.disableMemory === true,
@@ -23,63 +23,23 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     disableCodebaseSearch: options.disableCodebaseSearch === true,
   };
 
-  
-  
-  const targetId = await targetManager.resolveTarget({ target: options.target, allowSelection: true });
-  const target = targetManager.getTarget(targetId);
-
-  if (!target) {
-    throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
-  }
-
   try {
-    const configData = await target.readConfig(process.cwd());
-    const mcpConfigPath = target.config.mcpConfigPath || 'mcp';
-    const mcpSection = getNestedProperty(configData, mcpConfigPath) || {};
+    console.log(chalk.blue('🚀 Starting Sylphx Flow MCP Server...'));
 
-    // Update MCP server configurations with disable flags
-    const disableFlags = ['--disable-memory', '--disable-time', '--disable-project-startup', '--disable-knowledge', '--disable-codebase-search'];
-    const requestedFlags: string[] = [];
+    // Import and start the MCP server
+    const { startSylphxFlowMCPServer } = await import('../servers/sylphx-flow-mcp-server.js');
 
-    // Build requested flags from config
-    if (config.disableMemory) requestedFlags.push('--disable-memory');
-    if (config.disableTime) requestedFlags.push('--disable-time');
-    if (config.disableProjectStartup) requestedFlags.push('--disable-project-startup');
-    if (config.disableKnowledge) requestedFlags.push('--disable-knowledge');
-    if (config.disableCodebaseSearch) requestedFlags.push('--disable-codebase-search');
+    // Start the server with the provided configuration
+    await startSylphxFlowMCPServer(config);
 
-    // Apply flags to all configured servers
-    for (const [serverName, serverConfig] of Object.entries(mcpSection)) {
-      if (!serverConfig || typeof serverConfig !== 'object') continue;
-
-      // Simply add flags to the command, regardless of format
-      if (serverConfig.type === 'stdio') {
-        // Claude Code format: has args array
-        if (!serverConfig.args) {
-          serverConfig.args = [];
-        }
-        serverConfig.args.push(...requestedFlags);
-
-      } else if (serverConfig.type === 'local' && Array.isArray(serverConfig.command)) {
-        // OpenCode format: has command array
-        serverConfig.command.push(...requestedFlags);
-
-      } else if (serverConfig.type === 'http' || serverConfig.type === 'remote') {
-        // HTTP/remote servers don't use command args - ignore
-        continue;
-      }
-    }
-
-    await target.writeConfig(process.cwd(), configData);
-
-    console.log(chalk.green('✓ Sylphx Flow MCP server configuration updated'));
   } catch (error) {
     throw new CLIError(
-      `Failed to update MCP configuration: ${error instanceof Error ? error.message : String(error)}`,
-      'MCP_CONFIG_ERROR'
+      `Failed to start MCP server: ${error instanceof Error ? error.message : String(error)}`,
+      'MCP_START_ERROR'
     );
   }
 };
+
 
 // MCP config handler
 const mcpConfigHandler: CommandHandler = async (options) => {
