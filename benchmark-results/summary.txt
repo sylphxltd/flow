@@ -1,4 +1,4 @@
 craftsman: 12 files created
-practitioner: 14 files created
-craftsman-reflective: 11 files created
-practitioner-reflective: 16 files created
+practitioner: 11 files created
+craftsman-reflective: 12 files created
+practitioner-reflective: 12 files created
