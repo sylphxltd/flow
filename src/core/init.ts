@@ -202,7 +202,7 @@ export async function installRules(options: CommonOptions): Promise<void> {
   const mergedContent = ruleContent;
 
   // Rules files are installed in the project root
-  const rulesDestPath = path.join(cwd, target.config.rulesFile!);
+  const rulesDestPath = path.join(cwd, target.config.rulesFile);
 
   // Check if rules file already exists and is up to date
   const localInfo = await getLocalFileInfo(rulesDestPath);

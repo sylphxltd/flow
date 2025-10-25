@@ -164,7 +164,7 @@ export function scanFiles(
       const relativePath = path.relative(codebaseRoot, fullPath);
 
       // Skip ignored files
-      if (ignoreFilter && ignoreFilter.ignores(relativePath)) {
+      if (ignoreFilter?.ignores(relativePath)) {
         continue;
       }
 
@@ -173,7 +173,7 @@ export function scanFiles(
       } else if (entry.isFile()) {
         try {
           const stats = fs.statSync(fullPath);
-          const ext = path.extname(fullPath);
+          const _ext = path.extname(fullPath);
 
           // Only process text files
           if (!isTextFile(fullPath)) {

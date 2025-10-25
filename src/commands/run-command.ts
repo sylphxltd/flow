@@ -144,7 +144,7 @@ export const runCommand: CommandConfig = {
     }
 
     // Load agent content
-    const agentContent = await loadAgentContent(agent!);
+    const agentContent = await loadAgentContent(agent);
     const agentInstructions = extractAgentInstructions(agentContent);
 
     // Create system prompt with agent instructions (no override notice - let target handle it)
@@ -176,6 +176,6 @@ ${agentInstructions}`;
     }
 
     // Execute command with the resolved target
-    await executeTargetCommand(options.target!, systemPrompt, userPrompt, options);
+    await executeTargetCommand(options.target, systemPrompt, userPrompt, options);
   },
 };

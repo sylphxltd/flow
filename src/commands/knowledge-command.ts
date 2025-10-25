@@ -51,7 +51,9 @@ export const knowledgeGetCommand = new Command('get')
       const availableURIs = await searchService.getAvailableKnowledgeURIs();
       if (availableURIs.length > 0) {
         console.log('\n**Available knowledge URIs:**');
-        availableURIs.forEach((uri) => console.log(`• ${uri}`));
+        for (const uri of availableURIs) {
+          console.log(`• ${uri}`);
+        }
       }
       throw new CLIError(errorMessage);
     }
@@ -91,14 +93,14 @@ export const knowledgeListCommand = new Command('list')
         {} as Record<string, string[]>
       );
 
-      Object.entries(grouped).forEach(([category, uris]) => {
+      for (const [category, uris] of Object.entries(grouped)) {
         console.log(`### ${category.charAt(0).toUpperCase() + category.slice(1)}`);
-        uris.forEach((uri) => {
+        for (const uri of uris) {
           const name = uri.split('/').pop() || 'Unknown';
           console.log(`• ${name} - ${uri}`);
-        });
+        }
         console.log('');
-      });
+      }
 
       console.log('**Usage:**');
       console.log('• sylphx knowledge search <query> - Search knowledge base');

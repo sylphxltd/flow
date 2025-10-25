@@ -4,19 +4,19 @@
 
 // Logger interface
 export interface ILogger {
-  info(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  error(message: string, error?: Error | unknown, ...args: any[]): void;
-  debug(message: string, ...args: any[]): void;
-  success(message: string, ...args: any[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, error?: Error | unknown, ...args: unknown[]): void;
+  debug(message: string, ...args: unknown[]): void;
+  success(message: string, ...args: unknown[]): void;
 }
 
 // Configuration interface
 export interface IConfiguration {
-  get<T = any>(key: string, defaultValue?: T): T;
-  getRequired<T = any>(key: string): T;
+  get<T = unknown>(key: string, defaultValue?: T): T;
+  getRequired<T = unknown>(key: string): T;
   has(key: string): boolean;
-  set(key: string, value: any): void;
+  set(key: string, value: unknown): void;
   reload(): Promise<void>;
 }
 
@@ -25,14 +25,14 @@ export interface IDatabaseConnection {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   healthCheck(): Promise<{ healthy: boolean; error?: string }>;
-  execute(sql: string, params?: any[]): Promise<any>;
+  execute(sql: string, params?: unknown[]): Promise<unknown>;
 }
 
 // Storage interface for memory and cache
-export interface IStorage {
+export interface IStorage<T = unknown> {
   initialize(): Promise<void>;
-  get(key: string, namespace?: string): Promise<any>;
-  set(key: string, value: any, namespace?: string): Promise<void>;
+  get(key: string, namespace?: string): Promise<T | null>;
+  set(key: string, value: T, namespace?: string): Promise<void>;
   delete(key: string, namespace?: string): Promise<void>;
   clear(namespace?: string): Promise<void>;
   list(namespace?: string): Promise<string[]>;
@@ -42,9 +42,9 @@ export interface IStorage {
 // Search service interface
 export interface ISearchService {
   initialize(): Promise<void>;
-  searchCodebase(query: string, options?: any): Promise<any>;
-  searchKnowledge(query: string, options?: any): Promise<any>;
-  getStatus(): Promise<any>;
+  searchCodebase(query: string, options?: unknown): Promise<unknown>;
+  searchKnowledge(query: string, options?: unknown): Promise<unknown>;
+  getStatus(): Promise<unknown>;
 }
 
 // Target manager interface

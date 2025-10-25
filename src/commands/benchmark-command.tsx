@@ -17,24 +17,6 @@ import { AgentService } from '../services/agent-service.js';
 import { EvaluationService } from '../services/evaluation-service.js';
 import { ProcessManager } from '../utils/process-manager.js';
 
-// Legacy compatibility interface
-interface BenchmarkStatus {
-  agents: AgentData[];
-  totalAgents: number;
-  completedAgents: number;
-  outputDir: string;
-  startTime: Date;
-  task: string;
-  concurrency: number;
-}
-
-// Real-time monitor for agent outputs (interface compatibility)
-class AgentMonitor {
-  addOutput(_agentName: string, _output: string) {
-    // No-op - this is handled by InkMonitor now
-  }
-}
-
 async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promise<void> {
   // Use default task if not provided
   if (!options.task) {
@@ -141,9 +123,9 @@ async function runParallelAgents(
   monitor.setWorkspaceDirs(workspaceDirs);
 
   // Add all agents to the monitor
-  agentList.forEach((agent) => {
+  for (const agent of agentList) {
     monitor?.addAgent(agent);
-  });
+  }
 
   if (concurrency <= 1) {
     // Sequential execution
@@ -190,10 +172,10 @@ async function runParallelAgents(
     for (let i = 0; i < chunks.length; i++) {
       // Update status for all agents in this chunk and track start times
       const chunkStartTimes: { [agent: string]: number } = {};
-      chunks[i].forEach((agent) => {
+      for (const agent of chunks[i]) {
         chunkStartTimes[agent] = Date.now();
         monitor?.updateAgentStatus(agent, 'running');
-      });
+      }
 
       // Helper function to write timing information
       const writeTimingInfo = async (
@@ -312,44 +294,44 @@ export const benchmarkCommand: CommandConfig = {
       await validateBenchmarkOptions(options);
 
       // Create benchmark directory
-      await createBenchmarkDirectory(options.output!);
+      await createBenchmarkDirectory(options.output);
 
       // Copy task files
-      await copyTaskFiles(options.task!, options.context, options.output!);
+      await copyTaskFiles(options.task, options.context, options.output);
 
       // Get agent list
-      const agentList = await AgentService.getAgentList(options.agents!);
+      const agentList = await AgentService.getAgentList(options.agents);
 
       // Run agents with concurrency control and React+Ink monitor (unless quiet mode)
       if (options.quiet) {
         // Quiet mode - run without React+Ink monitor
         monitor = await runParallelAgents(
           agentList,
-          options.output!,
-          options.task!,
+          options.output,
+          options.task,
           options.context,
-          options.concurrency!,
-          options.delay!,
-          options.timeout!,
+          options.concurrency,
+          options.delay,
+          options.timeout,
           false
         );
       } else {
         // Normal mode - use React+Ink monitor
         monitor = await runParallelAgents(
           agentList,
-          options.output!,
-          options.task!,
+          options.output,
+          options.task,
           options.context,
-          options.concurrency!,
-          options.delay!,
-          options.timeout!,
+          options.concurrency,
+          options.delay,
+          options.timeout,
           true
         );
       }
 
       // Evaluate results if requested
       if (options.evaluate) {
-        await EvaluationService.evaluateResults(options.output!, options.report, monitor);
+        await EvaluationService.evaluateResults(options.output, options.report, monitor);
       }
 
       // Stop the monitor after all agents and evaluation are complete

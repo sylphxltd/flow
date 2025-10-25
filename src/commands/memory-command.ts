@@ -141,9 +141,9 @@ const memoryStatsHandler: CommandHandler = async () => {
 
   if (stats.namespaces.length > 0) {
     console.log('Namespaces:');
-    stats.namespaces.forEach((ns) => {
+    for (const ns of stats.namespaces) {
       console.log(`  • ${ns}`);
-    });
+    }
     console.log('');
   }
 

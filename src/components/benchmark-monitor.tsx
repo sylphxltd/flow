@@ -30,7 +30,9 @@ export class InkMonitor {
   }
 
   private triggerUpdate() {
-    this.listeners.forEach((listener) => listener());
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 
   // Getters for React component
@@ -50,7 +52,6 @@ export class InkMonitor {
     this.isRunning = true;
 
     // Force Ink to work by ensuring proper terminal detection
-    const { exit } = process;
     process.stdout.isTTY = true;
     process.stderr.isTTY = true;
 
@@ -258,10 +259,10 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
 
   // Create a mapping from agent name to workspace directory
   const agentWorkspaceMap = new Map<string, string>();
-  workspaceDirs.forEach((dir) => {
+  for (const dir of workspaceDirs) {
     const agentName = path.basename(dir);
     agentWorkspaceMap.set(agentName, dir);
-  });
+  }
 
   return (
     <Box flexDirection="column" padding={1}>
