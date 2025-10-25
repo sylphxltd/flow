@@ -221,38 +221,24 @@ export class EvaluationService {
   }
 
   private static async buildEvaluationPrompt(agentTimings: AgentTimings): Promise<string> {
-    // Load template from file
+    // Load template from file - required file, no fallback
     const templatePath = path.join(process.cwd(), 'templates', 'evaluation-prompt.md');
-    let template: string;
 
     try {
-      template = await fs.readFile(templatePath, 'utf-8');
+      const template = await fs.readFile(templatePath, 'utf-8');
+
+      // Generate agent performance data section
+      const performanceData = Object.entries(agentTimings).map(([agent, timing]) => {
+        const duration = timing.duration || 0;
+        const scoreRange = PERFORMANCE_SCORE_RANGES.find(range => duration <= range.max)!;
+        return `- ${agent}: ${duration}s execution time (Performance: ${scoreRange.score}/10)`;
+      }).join('\n');
+
+      // Replace template variables
+      return template.replace('{{AGENT_PERFORMANCE_DATA}}', performanceData);
     } catch (error) {
-      // Fallback to basic prompt if template file is not found
-      template = `You are evaluating software engineering agents. Analyze their actual code implementations.
-
-**Agent Performance Data:**
-{{AGENT_PERFORMANCE_DATA}}
-
-Provide a detailed technical evaluation for each agent, focusing on:
-1. Code quality and implementation
-2. Requirements compliance
-3. Architecture and design
-4. Testing and quality assurance
-5. Documentation and usability
-6. Performance and efficiency
-
-Score each area 1-10 points and provide specific examples from their code.`;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to load evaluation template from ${templatePath}. Error: ${errorMessage}\n\nPlease ensure:\n1. The file exists at: ${templatePath}\n2. The file is readable (check permissions)\n3. The file contains valid markdown content`);
     }
-
-    // Generate agent performance data section
-    const performanceData = Object.entries(agentTimings).map(([agent, timing]) => {
-      const duration = timing.duration || 0;
-      const scoreRange = PERFORMANCE_SCORE_RANGES.find(range => duration <= range.max)!;
-      return `- ${agent}: ${duration}s execution time (Performance: ${scoreRange.score}/10)`;
-    }).join('\n');
-
-    // Replace template variables
-    return template.replace('{{AGENT_PERFORMANCE_DATA}}', performanceData);
   }
 }
