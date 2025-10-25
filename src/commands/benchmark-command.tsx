@@ -1003,9 +1003,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
         const startTime = Date.now();
         monitor?.updateAgentStatus(agent, 'running');
 
-        await runAgent(agent, outputDir, taskFile, contextFile, monitor, (agentName, output) => {
-          monitor?.addAgentOutput(agentName, output);
-        }, 3, timeout);
+        await runAgent(agent, outputDir, taskFile, contextFile, monitor, undefined, 3, timeout);
 
         // Record the actual execution time
         const endTime = Date.now();
@@ -1050,9 +1048,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
       });
 
       const promises = chunks[i].map(agent =>
-        runAgent(agent, outputDir, taskFile, contextFile, monitor, (agentName, output) => {
-          monitor?.addAgentOutput(agentName, output);
-        }, 3, timeout)
+        runAgent(agent, outputDir, taskFile, contextFile, monitor, undefined, 3, timeout)
       );
 
       try {
