@@ -610,31 +610,87 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
                   if (content.type === 'text') {
                     const textContent = content.text.trim();
                     if (textContent) {
-                      monitor?.addOutput(agentName, textContent);
-                      outputCallback?.(agentName, textContent);
+                      // Split long text into multiple lines with proper indentation
+                      const maxLineLength = 80;
+                      const words = textContent.split(' ');
+                      let currentLine = '';
+                      const lines: string[] = [];
+
+                      for (const word of words) {
+                        if ((currentLine + ' ' + word).length <= maxLineLength) {
+                          currentLine += (currentLine ? ' ' : '') + word;
+                        } else {
+                          if (currentLine) {
+                            lines.push(currentLine);
+                            currentLine = word;
+                          } else {
+                            // Word is longer than max length, split it
+                            for (let i = 0; i < word.length; i += maxLineLength) {
+                              lines.push(word.substring(i, i + maxLineLength));
+                            }
+                          }
+                        }
+                      }
+                      if (currentLine) {
+                        lines.push(currentLine);
+                      }
+
+                      // Add each line with proper indentation
+                      lines.forEach((line, index) => {
+                        const formattedLine = index === 0 ? line : `  ${line}`;
+                        monitor?.addOutput(agentName, formattedLine);
+                        outputCallback?.(agentName, formattedLine);
+                      });
                     }
                   } else if (content.type === 'tool_use') {
                     const toolName = content.name;
                     const params = content.input || {};
                     let paramString = '';
 
-                    // Create a compact parameter string
-                    if (params.file_path) {
-                      paramString = params.file_path.split('/').pop() || '';
-                      if (params.content && params.content.length < 50) {
-                        paramString += `: "${params.content.substring(0, 50)}${params.content.length > 50 ? '...' : ''}"`;
-                      } else if (params.query) {
-                        paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
-                      }
-                    } else if (params.query) {
-                      paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
-                    } else {
-                      // Generic parameter display
-                      paramString = JSON.stringify(params).substring(0, 80);
+                    // Tool-specific parameter display
+                    switch (toolName) {
+                      case 'Write':
+                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+                        break;
+                      case 'Read':
+                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+                        break;
+                      case 'Edit':
+                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+                        break;
+                      case 'Bash':
+                        paramString = params.command || '';
+                        // Limit bash command display length
+                        if (paramString.length > 60) {
+                          paramString = paramString.substring(0, 57) + '...';
+                        }
+                        break;
+                      case 'Grep':
+                        paramString = params.pattern || '';
+                        if (params.file_path) {
+                          paramString += ` in ${params.file_path.split('/').pop() || ''}`;
+                        }
+                        break;
+                      case 'Glob':
+                        paramString = params.pattern || '';
+                        break;
+                      default:
+                        // Generic parameter display for other tools
+                        if (params.file_path) {
+                          paramString = params.file_path.split('/').pop() || '';
+                        } else if (params.query) {
+                          paramString = params.query.substring(0, 40);
+                          if (params.query.length > 40) paramString += '...';
+                        } else if (params.command) {
+                          paramString = params.command.substring(0, 40);
+                          if (params.command.length > 40) paramString += '...';
+                        } else {
+                          paramString = JSON.stringify(params).substring(0, 40);
+                        }
                     }
 
-                    monitor?.addOutput(agentName, `${toolName}(${paramString})`);
-                    outputCallback?.(agentName, `${toolName}(${paramString})`);
+                    monitor?.addOutput(agentName, `  ${toolName}(${paramString})`);
+                    outputCallback?.(agentName, `  ${toolName}(${paramString})`);
                   }
                 }
               }
@@ -678,31 +734,87 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
                   if (content.type === 'text') {
                     const textContent = content.text.trim();
                     if (textContent) {
-                      monitor?.addOutput(agentName, textContent);
-                      outputCallback?.(agentName, textContent);
+                      // Split long text into multiple lines with proper indentation
+                      const maxLineLength = 80;
+                      const words = textContent.split(' ');
+                      let currentLine = '';
+                      const lines: string[] = [];
+
+                      for (const word of words) {
+                        if ((currentLine + ' ' + word).length <= maxLineLength) {
+                          currentLine += (currentLine ? ' ' : '') + word;
+                        } else {
+                          if (currentLine) {
+                            lines.push(currentLine);
+                            currentLine = word;
+                          } else {
+                            // Word is longer than max length, split it
+                            for (let i = 0; i < word.length; i += maxLineLength) {
+                              lines.push(word.substring(i, i + maxLineLength));
+                            }
+                          }
+                        }
+                      }
+                      if (currentLine) {
+                        lines.push(currentLine);
+                      }
+
+                      // Add each line with proper indentation
+                      lines.forEach((line, index) => {
+                        const formattedLine = index === 0 ? line : `  ${line}`;
+                        monitor?.addOutput(agentName, formattedLine);
+                        outputCallback?.(agentName, formattedLine);
+                      });
                     }
                   } else if (content.type === 'tool_use') {
                     const toolName = content.name;
                     const params = content.input || {};
                     let paramString = '';
 
-                    // Create a compact parameter string
-                    if (params.file_path) {
-                      paramString = params.file_path.split('/').pop() || '';
-                      if (params.content && params.content.length < 50) {
-                        paramString += `: "${params.content.substring(0, 50)}${params.content.length > 50 ? '...' : ''}"`;
-                      } else if (params.query) {
-                        paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
-                      }
-                    } else if (params.query) {
-                      paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
-                    } else {
-                      // Generic parameter display
-                      paramString = JSON.stringify(params).substring(0, 80);
+                    // Tool-specific parameter display
+                    switch (toolName) {
+                      case 'Write':
+                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+                        break;
+                      case 'Read':
+                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+                        break;
+                      case 'Edit':
+                        paramString = params.file_path ? params.file_path.split('/').pop() || '' : '';
+                        break;
+                      case 'Bash':
+                        paramString = params.command || '';
+                        // Limit bash command display length
+                        if (paramString.length > 60) {
+                          paramString = paramString.substring(0, 57) + '...';
+                        }
+                        break;
+                      case 'Grep':
+                        paramString = params.pattern || '';
+                        if (params.file_path) {
+                          paramString += ` in ${params.file_path.split('/').pop() || ''}`;
+                        }
+                        break;
+                      case 'Glob':
+                        paramString = params.pattern || '';
+                        break;
+                      default:
+                        // Generic parameter display for other tools
+                        if (params.file_path) {
+                          paramString = params.file_path.split('/').pop() || '';
+                        } else if (params.query) {
+                          paramString = params.query.substring(0, 40);
+                          if (params.query.length > 40) paramString += '...';
+                        } else if (params.command) {
+                          paramString = params.command.substring(0, 40);
+                          if (params.command.length > 40) paramString += '...';
+                        } else {
+                          paramString = JSON.stringify(params).substring(0, 40);
+                        }
                     }
 
-                    monitor?.addOutput(agentName, `${toolName}(${paramString})`);
-                    outputCallback?.(agentName, `${toolName}(${paramString})`);
+                    monitor?.addOutput(agentName, `  ${toolName}(${paramString})`);
+                    outputCallback?.(agentName, `  ${toolName}(${paramString})`);
                   }
                 }
               }
