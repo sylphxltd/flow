@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import chalk from 'chalk';
+import inquirer from 'inquirer';
 import { type CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { getAgentsDir } from '../utils/paths.js';
@@ -101,31 +103,31 @@ class ProcessManager {
   }
 }
 
-// Efficient console-based monitor with minimal updates
-class EfficientMonitor {
+// Inquirer-based monitor for reliable interactive terminal UI
+class InquirerMonitor {
   private agents: Map<string, {
     status: 'idle' | 'running' | 'completed' | 'error';
     output: string[];
     startTime?: number;
     endTime?: number;
   }> = new Map();
-  private updateInterval?: NodeJS.Timeout;
   private isRunning = false;
-  private lastDisplay = '';
   private workspaceDirs: string[] = [];
+  private updateInterval?: NodeJS.Timeout;
+  private shouldExit = false;
 
   constructor() {
     this.setupSignalHandlers();
   }
 
-  start() {
+  async start() {
     this.isRunning = true;
+
+    // Show initial header
     this.showHeader();
 
-    // Update display every second (reduced frequency for better performance)
-    this.updateInterval = setInterval(() => {
-      this.displayIfNeeded();
-    }, 1000);
+    // Start the inquirer UI
+    this.startInquirerUI();
   }
 
   setWorkspaceDirs(dirs: string[]) {
@@ -133,66 +135,62 @@ class EfficientMonitor {
   }
 
   private showHeader() {
-    console.log('🎯 Agent Benchmark Monitor - Real-time Output');
-    console.log('💡 Workspaces: Each agent runs in its own temp directory');
+    console.log(chalk.cyan.bold('🎯 Agent Benchmark Monitor - Interactive'));
+    console.log(chalk.gray('─'.repeat(50)));
+    console.log(chalk.yellow('💡 Workspaces: Each agent runs in its own temp directory'));
     if (this.workspaceDirs.length > 0) {
-      console.log('📁 Recent workspace dirs:');
+      console.log(chalk.blue('📁 Recent workspace dirs:'));
       this.workspaceDirs.slice(-3).forEach(dir => {
-        console.log(`   ${dir}`);
+        console.log(chalk.gray(`   ${dir}`));
       });
     }
-    console.log('💡 Tip: You can open these directories in another terminal to see files in real-time');
-    console.log('');
+    console.log(chalk.yellow('💡 Tip: Open these directories in another terminal to see files in real-time'));
+    console.log(chalk.gray('─'.repeat(50)));
   }
 
-  addAgent(name: string) {
-    this.agents.set(name, {
-      status: 'idle',
-      output: [],
-      startTime: undefined
-    });
-    this.displayIfNeeded(); // Immediate update
-  }
+  private async startInquirerUI() {
+    const self = this;
 
-  updateAgentStatus(name: string, status: 'idle' | 'running' | 'completed' | 'error') {
-    const agent = this.agents.get(name);
-    if (agent) {
-      agent.status = status;
-      if (status === 'running' && !agent.startTime) {
-        agent.startTime = Date.now();
-      } else if (status === 'completed' || status === 'error') {
-        agent.endTime = Date.now();
-      }
-      this.displayIfNeeded(); // Immediate update
-    }
-  }
+    // Update display every second
+    this.updateInterval = setInterval(() => {
+      this.displayStatus();
+    }, 1000);
 
-  addAgentOutput(name: string, output: string) {
-    const agent = this.agents.get(name);
-    if (agent) {
-      const lines = output.split('\n').filter(line => line.trim());
-      agent.output = [...agent.output.slice(-2), ...lines];
-      this.displayIfNeeded(); // Immediate update for new output
-    }
-  }
-
-  private displayIfNeeded() {
-    const currentDisplay = this.buildDisplayString();
-
-    // Only update if the display actually changed (performance optimization)
-    if (currentDisplay !== this.lastDisplay) {
-      // Clear lines efficiently
-      if (this.lastDisplay) {
-        const lineCount = this.lastDisplay.split('\n').length;
-        process.stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+    // Keep the process running with a simple prompt
+    while (this.isRunning && !this.shouldExit) {
+      try {
+        await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'continue',
+            message: chalk.gray('Press Ctrl+C to exit the benchmark...'),
+            default: '',
+            transformer: () => {
+              // Transform the prompt to show live status
+              return this.getLiveStatusDisplay();
+            }
+          }
+        ]);
+      } catch (error) {
+        // Handle Ctrl+C gracefully
+        break;
       }
 
-      process.stdout.write(currentDisplay);
-      this.lastDisplay = currentDisplay;
+      // Check if all agents are completed
+      const allCompleted = Array.from(this.agents.values()).every(
+        agent => agent.status === 'completed' || agent.status === 'error'
+      );
+
+      if (allCompleted && this.agents.size > 0) {
+        this.shouldExit = true;
+        break;
+      }
     }
+
+    this.stop();
   }
 
-  private buildDisplayString(): string {
+  private getLiveStatusDisplay(): string {
     const lines: string[] = [];
 
     for (const [name, agent] of this.agents) {
@@ -205,34 +203,65 @@ class EfficientMonitor {
         }
       }
 
-      const statusIcon = agent.status === 'completed' ? '✅' :
-                        agent.status === 'running' ? '🔄' :
-                        agent.status === 'error' ? '❌' : '⏸️';
+      const statusIcon = agent.status === 'completed' ? chalk.green('✅') :
+                        agent.status === 'running' ? chalk.yellow('🔄') :
+                        agent.status === 'error' ? chalk.red('❌') : chalk.gray('⏸️');
 
       const runtimeText = agent.startTime ? `${runtime}s` : 'pending';
 
       // Main status line
-      lines.push(`${statusIcon} ${name} - ${agent.status.toUpperCase()} - Runtime: ${runtimeText}`);
+      lines.push(`${statusIcon} ${chalk.bold(name)} - ${agent.status.toUpperCase()} - Runtime: ${runtimeText}`);
 
-      // Show last 3 outputs only (reduced for better performance)
+      // Show last output if available
       if (agent.output.length > 0) {
-        const recentOutputs = agent.output.slice(-3);
-        recentOutputs.forEach(line => {
-          const cleanLine = line.trim();
-          if (cleanLine && !cleanLine.startsWith('[') && cleanLine.length > 8) {
-            lines.push(`    ${cleanLine.substring(0, 80)}${cleanLine.length > 80 ? '...' : ''}`);
-          }
-        });
+        const lastLine = agent.output[agent.output.length - 1];
+        if (lastLine && lastLine.trim().length > 8) {
+          const cleanLine = lastLine.trim();
+          const truncatedLine = cleanLine.length > 60 ? cleanLine.substring(0, 60) + '...' : cleanLine;
+          lines.push(`    ${chalk.gray(truncatedLine)}`);
+        }
       } else if (agent.status === 'running') {
-        lines.push('    (working...)');
+        lines.push(`    ${chalk.gray('(working...)')}`);
       } else if (agent.status === 'idle') {
-        lines.push('    (waiting to start...)');
+        lines.push(`    ${chalk.gray('(waiting to start...)')}`);
       }
 
       lines.push(''); // Empty line between agents
     }
 
-    return lines.join('\n');
+    return '\n' + lines.join('\n');
+  }
+
+  private displayStatus() {
+    // This is handled by the transformer in the prompt
+  }
+
+  addAgent(name: string) {
+    this.agents.set(name, {
+      status: 'idle',
+      output: [],
+      startTime: undefined
+    });
+  }
+
+  updateAgentStatus(name: string, status: 'idle' | 'running' | 'completed' | 'error') {
+    const agent = this.agents.get(name);
+    if (agent) {
+      agent.status = status;
+      if (status === 'running' && !agent.startTime) {
+        agent.startTime = Date.now();
+      } else if (status === 'completed' || status === 'error') {
+        agent.endTime = Date.now();
+      }
+    }
+  }
+
+  addAgentOutput(name: string, output: string) {
+    const agent = this.agents.get(name);
+    if (agent) {
+      const lines = output.split('\n').filter(line => line.trim());
+      agent.output = [...agent.output.slice(-3), ...lines];
+    }
   }
 
   stop() {
@@ -240,14 +269,14 @@ class EfficientMonitor {
     if (this.updateInterval) {
       clearInterval(this.updateInterval);
     }
-    console.log('\n✅ Monitor stopped');
+    console.log(chalk.green('\n✅ Benchmark completed!'));
   }
 
   private setupSignalHandlers() {
     const shutdown = async (signal: string) => {
       if (!this.isRunning) return;
 
-      console.log(`\n🛑 Received ${signal}, shutting down benchmark...`);
+      console.log(chalk.yellow(`\n🛑 Received ${signal}, shutting down benchmark...`));
       this.stop();
 
       await ProcessManager.getInstance().killAllProcesses();
@@ -713,19 +742,19 @@ Format your response as a structured evaluation report with clear sections for e
 async function runParallelAgents(agentList: string[], outputDir: string, taskFile: string, contextFile: string | undefined, concurrency: number, delay: number, enableConsoleMonitor: boolean = false): Promise<void> {
   console.log(`🔄 Running ${agentList.length} agents with concurrency: ${concurrency}, delay: ${delay}s`);
 
-  // Create efficient monitor for real-time output if enabled (optimised for performance)
-  let efficientMonitor: EfficientMonitor | undefined;
+  // Create Inquirer monitor for reliable real-time output if enabled
+  let inquirerMonitor: InquirerMonitor | undefined;
   if (enableConsoleMonitor) {
-    efficientMonitor = new EfficientMonitor();
-    efficientMonitor.start();
+    inquirerMonitor = new InquirerMonitor();
+    await inquirerMonitor.start();
 
     // Track workspace directories
     const workspaceDirs = agentList.map(agent => path.join(outputDir, agent));
-    efficientMonitor.setWorkspaceDirs(workspaceDirs);
+    inquirerMonitor.setWorkspaceDirs(workspaceDirs);
 
     // Add all agents to the monitor
     agentList.forEach(agent => {
-      efficientMonitor!.addAgent(agent);
+      inquirerMonitor!.addAgent(agent);
     });
   }
 
@@ -735,10 +764,10 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     for (const agent of agentList) {
       try {
         const startTime = Date.now();
-        efficientMonitor?.updateAgentStatus(agent, 'running');
+        inquirerMonitor?.updateAgentStatus(agent, 'running');
 
         await runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
-          efficientMonitor?.addAgentOutput(agentName, output);
+          inquirerMonitor?.addAgentOutput(agentName, output);
         });
 
         // Record the actual execution time
@@ -755,7 +784,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
           // Ignore timing write errors
         }
 
-        efficientMonitor?.updateAgentStatus(agent, 'completed');
+        inquirerMonitor?.updateAgentStatus(agent, 'completed');
 
         // Add delay between agents (except last one)
         if (agent !== agentList[agentList.length - 1]) {
@@ -763,8 +792,8 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
           await new Promise(resolve => setTimeout(resolve, delay * 1000));
         }
       } catch (error) {
-        efficientMonitor?.updateAgentStatus(agent, 'error');
-        efficientMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
+        inquirerMonitor?.updateAgentStatus(agent, 'error');
+        inquirerMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
         console.error(`❌ Agent ${agent} failed:`, error);
         // Continue with other agents even if one fails
       }
@@ -783,12 +812,12 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
       const chunkStartTimes: { [agent: string]: number } = {};
       chunks[i].forEach(agent => {
         chunkStartTimes[agent] = Date.now();
-        efficientMonitor?.updateAgentStatus(agent, 'running');
+        inquirerMonitor?.updateAgentStatus(agent, 'running');
       });
 
       const promises = chunks[i].map(agent =>
         runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
-          efficientMonitor?.addAgentOutput(agentName, output);
+          inquirerMonitor?.addAgentOutput(agentName, output);
         })
       );
 
@@ -811,15 +840,15 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
             // Ignore timing write errors
           }
 
-          efficientMonitor?.updateAgentStatus(agent, 'completed');
+          inquirerMonitor?.updateAgentStatus(agent, 'completed');
         });
 
         console.log(`✅ Chunk ${i + 1} completed`);
       } catch (error) {
         // Mark all agents in this chunk as having errors
         chunks[i].forEach(agent => {
-          efficientMonitor?.updateAgentStatus(agent, 'error');
-          efficientMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
+          inquirerMonitor?.updateAgentStatus(agent, 'error');
+          inquirerMonitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
         });
 
         console.error(`❌ Chunk ${i + 1} had failures:`, error);
@@ -834,9 +863,9 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     }
   }
 
-  // Stop the efficient monitor
-  if (efficientMonitor) {
-    efficientMonitor.stop();
+  // Stop the Ink monitor
+  if (inquirerMonitor) {
+    inquirerMonitor.stop();
   }
 
   console.log('✅ All agent executions completed');
