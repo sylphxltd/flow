@@ -58,7 +58,6 @@ class ProcessManager {
       if (this.isShuttingDown) return;
       this.isShuttingDown = true;
 
-      console.log(`\n🛑 Received ${signal}, shutting down benchmark...`);
       await this.killAllProcesses();
       process.exit(0);
     };
@@ -79,8 +78,6 @@ class ProcessManager {
   }
 
   async killAllProcesses() {
-    console.log('🔄 Terminating all running processes...');
-
     const killPromises = Array.from(this.childProcesses).map(async (childProcess) => {
       try {
         if (childProcess && !childProcess.killed) {
@@ -94,13 +91,12 @@ class ProcessManager {
           }, 2000);
         }
       } catch (error) {
-        console.warn('⚠️ Error killing child process:', error);
+        // Silently handle kill errors
       }
     });
 
     await Promise.all(killPromises);
     this.childProcesses.clear();
-    console.log('✅ All processes terminated');
   }
 }
 
@@ -113,6 +109,7 @@ const BenchmarkMonitor: React.FC<{
 
   // Subscribe to monitor changes using proper React state
   const [updateTrigger, setUpdateTrigger] = React.useState(0);
+  const [flashState, setFlashState] = React.useState(true);
 
   React.useEffect(() => {
     // Subscribe to the monitor's change notifications
@@ -123,8 +120,14 @@ const BenchmarkMonitor: React.FC<{
     return unsubscribe;
   }, [monitor]);
 
-  // No automatic time updates - only update when agent data changes
-  // This prevents the entire screen from redrawing every second
+  // Flashing effect for running status
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setFlashState(prev => !prev);
+    }, 800); // Flash every 800ms for slow flashing
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-exit when all agents complete
   React.useEffect(() => {
@@ -141,7 +144,7 @@ const BenchmarkMonitor: React.FC<{
     }
   }, [monitor, onComplete, exit]);
 
-  const getCurrentStatus = () => {
+  const status = React.useMemo(() => {
     const agents = monitor.getAgents();
     return Array.from(agents.entries()).map(([name, agent]) => {
       let runtime = 0;
@@ -154,18 +157,30 @@ const BenchmarkMonitor: React.FC<{
         }
       }
 
-      const statusIcon = agent.status === 'completed' ? '✅' :
-                        agent.status === 'running' ? '🔄' :
-                        agent.status === 'error' ? '❌' : '⏸️';
+      // Determine status display with flashing green dot for running
+      let statusDisplay = '';
+      let statusColor = '';
 
-      // For running agents, show time since start without frequent updates
-      let runtimeText = 'running';
+      if (agent.status === 'running') {
+        statusDisplay = flashState ? '●' : ' ';
+        statusColor = 'green';
+      } else if (agent.status === 'completed') {
+        statusDisplay = '✓';
+        statusColor = 'green';
+      } else if (agent.status === 'error') {
+        statusDisplay = '✗';
+        statusColor = 'red';
+      } else {
+        statusDisplay = '◯';
+        statusColor = 'gray';
+      }
+
+      // Show actual runtime for agents
+      let runtimeText = '';
       if (agent.startTime && agent.status === 'running') {
-        runtimeText = 'running...';
+        runtimeText = `${runtime}s`;
       } else if (agent.startTime) {
         runtimeText = `${runtime}s`;
-      } else {
-        runtimeText = 'pending';
       }
 
       // Get last meaningful output
@@ -184,58 +199,58 @@ const BenchmarkMonitor: React.FC<{
 
       return {
         name,
-        statusIcon,
+        statusDisplay,
+        statusColor,
         status: agent.status.toUpperCase(),
         runtime: runtimeText,
         lastOutput
       };
     });
-  };
-
-  const status = getCurrentStatus();
+  }, [monitor, updateTrigger, flashState]);
   const workspaceDirs = monitor.getWorkspaceDirs();
   const initialInfo = monitor.getInitialInfo();
+
+  // Create a mapping from agent name to workspace directory
+  const agentWorkspaceMap = new Map<string, string>();
+  workspaceDirs.forEach(dir => {
+    const agentName = path.basename(dir);
+    agentWorkspaceMap.set(agentName, dir);
+  });
 
   return (
     <Box flexDirection="column" padding={1}>
       {/* Initial Information Section */}
       <Box marginBottom={1} flexDirection="column">
-        <Text bold color="cyan">🎯 Agent Benchmark Monitor - Real-time Updates</Text>
-        {initialInfo && (
+        <Text bold>Agent Benchmark Monitor</Text>
+        {initialInfo && initialInfo.initialInfo && (
           <>
-            <Text color="gray">📁 Output: {initialInfo.outputDir}</Text>
-            <Text color="gray">📋 Task: {initialInfo.taskFile ? path.basename(initialInfo.taskFile) : 'Unknown'}</Text>
-            <Text color="gray">🤖 Agents: {initialInfo.agentCount}</Text>
-            <Text color="gray">⚙️ Concurrency: {initialInfo.concurrency}, Delay: {initialInfo.delay}s</Text>
+            <Text color="gray">Output: {initialInfo.initialInfo.outputDir}</Text>
+            <Text color="gray">Task: {initialInfo.initialInfo.taskFile ? path.basename(initialInfo.initialInfo.taskFile) : 'Unknown'}</Text>
+            <Text color="gray">Agents: {initialInfo.initialInfo.agentCount}</Text>
+            <Text color="gray">Concurrency: {initialInfo.initialInfo.concurrency}, Delay: {initialInfo.initialInfo.delay}s</Text>
           </>
         )}
-        {!initialInfo && (
-          <Text color="gray">⏳ Initializing benchmark...</Text>
+        {(!initialInfo || !initialInfo.initialInfo) && (
+          <Text color="gray">Initializing benchmark...</Text>
         )}
       </Box>
-
-      <Box marginBottom={1}>
-        <Text color="yellow">💡 Workspaces: Each agent runs in its own temp directory</Text>
-      </Box>
-
-      {workspaceDirs.length > 0 && (
-        <Box marginBottom={1}>
-          <Text color="blue">📁 Recent workspace dirs:</Text>
-          {workspaceDirs.slice(-3).map((dir, i) => (
-            <Text key={i} color="gray">{`   ${dir}`}</Text>
-          ))}
-          <Text color="yellow">💡 Tip: Open these directories in another terminal to see files in real-time</Text>
-        </Box>
-      )}
 
       <Box flexDirection="column">
         {status.map((agent) => (
           <Box key={agent.name} marginBottom={1} flexDirection="column">
             <Box>
               <Text bold>
-                {agent.statusIcon} {agent.name} - {agent.status} - Runtime: {agent.runtime}
+                <Text color={agent.statusColor}>{agent.statusDisplay}</Text> {agent.name}{agent.runtime ? ` ${agent.runtime}` : ''}
               </Text>
             </Box>
+
+            {/* Show workspace directory under each agent */}
+            {agentWorkspaceMap.has(agent.name) && (
+              <Box paddingLeft={2}>
+                <Text color="gray">{agentWorkspaceMap.get(agent.name)}</Text>
+              </Box>
+            )}
+
             {agent.lastOutput && (
               <Box paddingLeft={2}>
                 <Text color="gray">{agent.lastOutput}</Text>
@@ -246,7 +261,7 @@ const BenchmarkMonitor: React.FC<{
       </Box>
 
       <Box marginTop={1}>
-        <Text color="gray">💡 Press Ctrl+C to exit</Text>
+        <Text color="gray">Press Ctrl+C to exit</Text>
       </Box>
     </Box>
   );
@@ -292,7 +307,7 @@ class InkMonitor {
     this.listeners.forEach(listener => listener());
   }
 
-  
+
   // Getters for React component
   getAgents() {
     return this.agents;
@@ -382,7 +397,6 @@ class InkMonitor {
     const shutdown = async (signal: string) => {
       if (!this.isRunning) return;
 
-      console.log(`\n🛑 Received ${signal}, shutting down benchmark...`);
       this.stop();
 
       await ProcessManager.getInstance().killAllProcesses();
@@ -396,146 +410,7 @@ class InkMonitor {
 }
 
 
-// Detect if terminal supports ANSI escape codes
-function supportsAnsiEscapeCodes(): boolean {
-  // More permissive detection - Ink can work even when stdout.isTTY is undefined
-  // Only disable in obvious CI environments or dumb terminals
-  const isCI = process.env.CI === '1' || process.env.CONTINUOUS_INTEGRATION === '1';
-  const isDumbTerminal = process.env.TERM === 'dumb';
-
-  // Allow Ink to work in most cases - it has better compatibility checks
-  return !isCI && !isDumbTerminal;
-}
-
-// Simple text-based monitor for environments that don't support ANSI codes
-class SimpleTextMonitor {
-  private agents: Map<string, {
-    status: 'idle' | 'running' | 'completed' | 'error';
-    output: string[];
-    startTime?: number;
-    endTime?: number;
-  }> = new Map();
-  private isRunning = false;
-  private workspaceDirs: string[] = [];
-  private updateInterval?: NodeJS.Timeout;
-  private initialInfo: InitialInfo;
-
-  constructor(initialInfo: InitialInfo) {
-    this.initialInfo = initialInfo;
-    this.setupSignalHandlers();
-  }
-
-  start() {
-    this.isRunning = true;
-
-    // Update every 5 seconds to avoid spam
-    this.updateInterval = setInterval(() => {
-      this.displayStatus();
-    }, 5000);
-
-    // Initial status display
-    this.displayStatus();
-  }
-
-  setWorkspaceDirs(dirs: string[]) {
-    this.workspaceDirs = dirs;
-  }
-
-  addAgent(name: string) {
-    this.agents.set(name, {
-      status: 'idle',
-      output: [],
-      startTime: undefined
-    });
-  }
-
-  updateAgentStatus(name: string, status: 'idle' | 'running' | 'completed' | 'error') {
-    const agent = this.agents.get(name);
-    if (agent) {
-      agent.status = status;
-      if (status === 'running' && !agent.startTime) {
-        agent.startTime = Date.now();
-      } else if (status === 'completed' || status === 'error') {
-        agent.endTime = Date.now();
-      }
-      this.displayStatus();
-    }
-  }
-
-  addAgentOutput(name: string, output: string) {
-    const agent = this.agents.get(name);
-    if (agent) {
-      const lines = output.split('\n').filter(line => line.trim());
-      agent.output = [...agent.output.slice(-2), ...lines]; // Keep only last 2 lines
-    }
-  }
-
-  displayStatus() {
-    if (!this.isRunning) return;
-
-    // Only show header on first display
-    if (this.agents.size > 0 && Array.from(this.agents.values()).every(agent => agent.status === 'idle')) {
-      console.log('\n🎯 Agent Benchmark Monitor - Text Mode (ANSI not supported)');
-      console.log('💡 Tip: Your terminal doesn\'t support ANSI escape codes, using simple text output');
-      console.log(`📁 Output: ${this.initialInfo?.outputDir || 'Not set'}`);
-      console.log(`📋 Task: ${this.initialInfo?.taskFile ? path.basename(this.initialInfo.taskFile) : 'Unknown'}`);
-      console.log(`🤖 Agents: ${this.initialInfo?.agentCount || 0}`);
-      console.log(`⚙️ Concurrency: ${this.initialInfo?.concurrency || 0}, Delay: ${this.initialInfo?.delay || 0}s\n`);
-    }
-
-    console.log('--- Agent Status Update ---');
-
-    for (const [name, agent] of this.agents) {
-      let runtime = 0;
-      if (agent.startTime) {
-        if (agent.endTime) {
-          runtime = Math.floor((agent.endTime - agent.startTime) / 1000);
-        } else if (agent.status === 'running') {
-          runtime = Math.floor((Date.now() - agent.startTime) / 1000);
-        }
-      }
-
-      const statusIcon = agent.status === 'completed' ? '✅' :
-                        agent.status === 'running' ? '🔄' :
-                        agent.status === 'error' ? '❌' : '⏸️';
-
-      console.log(`${statusIcon} ${name} - ${agent.status.toUpperCase()} - Runtime: ${runtime}s`);
-
-      if (agent.output.length > 0) {
-        const lastOutput = agent.output[agent.output.length - 1];
-        if (lastOutput && lastOutput.trim().length > 0) {
-          console.log(`   Latest: ${lastOutput.substring(0, 100)}${lastOutput.length > 100 ? '...' : ''}`);
-        }
-      }
-    }
-
-    console.log('------------------------\n');
-  }
-
-  stop() {
-    this.isRunning = false;
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
-      this.updateInterval = undefined;
-    }
-    console.log('🏁 Benchmark monitor stopped');
-  }
-
-  
-  private setupSignalHandlers() {
-    const shutdown = async (signal: string) => {
-      if (!this.isRunning) return;
-      console.log(`\n🛑 Received ${signal}, shutting down benchmark...`);
-      this.stop();
-      await ProcessManager.getInstance().killAllProcesses();
-      process.exit(0);
-    };
-
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGHUP', () => shutdown('SIGHUP'));
-  }
-}
+// We only use React+Ink - no fallback needed
 
 const agents = ['craftsman', 'practitioner', 'craftsman-reflective', 'practitioner-reflective'];
 
@@ -603,7 +478,7 @@ async function copyTaskFiles(taskFile: string, contextFile: string | undefined, 
       const contextContent = await fs.readFile(contextFile, 'utf-8');
       await fs.writeFile(path.join(outputDir, 'context-info.txt'), contextContent);
     } catch (error) {
-      console.warn(`⚠️  Warning: Could not read context file: ${error}`);
+      // Silently handle context file errors
     }
   }
 }
@@ -645,7 +520,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         const contextContent = await fs.readFile(contextFile, 'utf-8');
         fullTask = `CONTEXT:\n${contextContent}\n\nTASK:\n${taskContent}`;
       } catch (error) {
-        console.warn(`⚠️  Warning: Could not read context file: ${error}`);
+        // Silently handle context file errors
       }
     }
 
@@ -755,8 +630,6 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
 }
 
 async function evaluateResults(outputDir: string, reportDir?: string, options?: BenchmarkCommandOptions): Promise<void> {
-  console.log('🔍 Evaluating code created by agents...');
-
   // First, collect actual timing information for each agent
   const agentTimings: { [key: string]: { startTime?: number; endTime?: number; duration?: number } } = {};
 
@@ -880,8 +753,8 @@ Format your response as a structured evaluation report with clear sections for e
     '--print',
     'Please evaluate the agent work as described in the system prompt.'
   ], {
-      cwd: outputDir,
-      stdio: ['inherit', 'pipe', 'pipe']
+    cwd: outputDir,
+    stdio: ['inherit', 'pipe', 'pipe']
   });
 
   // Track evaluation process for cleanup
@@ -916,9 +789,6 @@ Format your response as a structured evaluation report with clear sections for e
           // Ignore cleanup errors
         }
 
-        console.log('📊 Evaluation completed');
-        console.log(`📄 Report saved to: ${tempReportPath}`);
-
         // Also save to project directory if report option is provided
         if (reportDir) {
           const projectReportPath = path.join(process.cwd(), reportDir, 'evaluation-report.md');
@@ -929,11 +799,7 @@ Format your response as a structured evaluation report with clear sections for e
 
           await fs.writeFile(projectReportPath, evaluationOutput);
           await fs.writeFile(projectSummaryPath, summary);
-
-          console.log(`📄 Report also saved to: ${projectReportPath}`);
         }
-
-        console.log('📋 Summary of created files saved');
 
         resolve();
       } else {
@@ -948,45 +814,27 @@ Format your response as a structured evaluation report with clear sections for e
 }
 
 async function runParallelAgents(agentList: string[], outputDir: string, taskFile: string, contextFile: string | undefined, concurrency: number, delay: number, enableConsoleMonitor: boolean = false): Promise<void> {
-  // Choose appropriate monitor based on terminal capabilities
-  let monitor: InkMonitor | SimpleTextMonitor | undefined;
-  if (enableConsoleMonitor) {
-    if (supportsAnsiEscapeCodes()) {
-      monitor = new InkMonitor({
-        initialInfo: {
-          agentCount: agentList.length,
-          concurrency,
-          delay,
-          taskFile,
-          outputDir
-        }
-      });
-    } else {
-      monitor = new SimpleTextMonitor({
-        initialInfo: {
-          agentCount: agentList.length,
-          concurrency,
-          delay,
-          taskFile,
-          outputDir
-        }
-      });
+  // We only use React+Ink InkMonitor - no fallback needed
+  const monitor = new InkMonitor({
+    initialInfo: {
+      agentCount: agentList.length,
+      concurrency: parseInt(String(concurrency), 10),
+      delay: parseInt(String(delay), 10),
+      taskFile,
+      outputDir
     }
+  });
 
-    monitor.start();
+  monitor.start();
 
-    // Track workspace directories
-    const workspaceDirs = agentList.map(agent => path.join(outputDir, agent));
-    monitor.setWorkspaceDirs(workspaceDirs);
+  // Track workspace directories
+  const workspaceDirs = agentList.map(agent => path.join(outputDir, agent));
+  monitor.setWorkspaceDirs(workspaceDirs);
 
-    // Add all agents to the monitor
-    agentList.forEach(agent => {
-      monitor!.addAgent(agent);
-    });
-  } else {
-    // If monitor is disabled, still show basic info
-    console.log(`🔄 Running ${agentList.length} agents with concurrency: ${concurrency}, delay: ${delay}s`);
-  }
+  // Add all agents to the monitor
+  agentList.forEach(agent => {
+    monitor!.addAgent(agent);
+  });
 
   if (concurrency <= 1) {
     // Sequential execution
@@ -1069,7 +917,6 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
           monitor?.updateAgentStatus(agent, 'completed');
         });
 
-        console.log(`✅ Chunk ${i + 1} completed`);
       } catch (error) {
         // Mark all agents in this chunk as having errors
         chunks[i].forEach(agent => {
@@ -1077,13 +924,11 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
           monitor?.addAgentOutput(agent, `❌ ERROR: ${error}`);
         });
 
-        console.error(`❌ Chunk ${i + 1} had failures:`, error);
         // Continue with next chunk
       }
 
       // Add delay between chunks (except last one)
       if (i < chunks.length - 1) {
-        console.log(`⏳ Waiting ${delay}s before next chunk...`);
         await new Promise(resolve => setTimeout(resolve, delay * 1000));
       }
     }
@@ -1093,8 +938,13 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
   if (monitor) {
     monitor.stop();
   }
+}
 
-  console.log('✅ All agent executions completed');
+// Real-time monitor for agent outputs (interface compatibility)
+class AgentMonitor {
+  addOutput(agentName: string, output: string) {
+    // No-op - this is handled by InkMonitor now
+  }
 }
 
 export const benchmarkCommand: CommandConfig = {
@@ -1156,8 +1006,14 @@ export const benchmarkCommand: CommandConfig = {
       // Get agent list
       const agentList = await getAgentList(options.agents!);
 
-      // Run agents with concurrency control and console monitor (unless quiet mode)
-      await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, options.quiet !== true);
+      // Run agents with concurrency control and React+Ink monitor (unless quiet mode)
+      if (options.quiet) {
+        // Quiet mode - run without React+Ink monitor
+        await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, false);
+      } else {
+        // Normal mode - use React+Ink monitor
+        await runParallelAgents(agentList, options.output!, options.task!, options.context, options.concurrency!, options.delay!, true);
+      }
 
       // Evaluate results if requested
       if (options.evaluate) {
@@ -1166,6 +1022,7 @@ export const benchmarkCommand: CommandConfig = {
 
       // Only show completion message if monitor was disabled (quiet mode)
       if (options.quiet) {
+        // These console.log statements are okay because they only appear in quiet mode
         console.log(`🎉 Benchmark completed!`);
         console.log(`📁 Results saved to: ${options.output}`);
       }
