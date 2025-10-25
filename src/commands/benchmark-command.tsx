@@ -146,6 +146,28 @@ const BenchmarkMonitor: React.FC<{
     }
   }, [monitor, onComplete, exit]);
 
+  // Additional auto-exit trigger when agents are updated
+  React.useEffect(() => {
+    const checkAutoExit = () => {
+      const agents = monitor.getAgents();
+      const allCompleted = Array.from(agents.values()).every(
+        agent => agent.status === 'completed' || agent.status === 'error'
+      );
+
+      if (allCompleted && agents.size > 0) {
+        setTimeout(() => {
+          onComplete();
+          exit();
+        }, 2000);
+      }
+    };
+
+    // Listen for agent status changes by checking periodically
+    const interval = setInterval(checkAutoExit, 1000);
+
+    return () => clearInterval(interval);
+  }, [monitor, onComplete, exit]);
+
   const status = React.useMemo(() => {
     const agents = monitor.getAgents();
     return Array.from(agents.entries()).map(([name, agent]) => {
@@ -527,7 +549,7 @@ async function getAgentList(agentsOption: string): Promise<string[]> {
   return selectedAgents;
 }
 
-async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: AgentMonitor, outputCallback?: (agentName: string, output: string) => void, maxRetries: number = 3, timeout: number = 3600): Promise<void> {
+async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: InkMonitor, outputCallback?: (agentName: string, output: string) => void, maxRetries: number = 3, timeout: number = 3600): Promise<void> {
   const agentWorkDir = path.join(outputDir, agentName);
   await fs.mkdir(agentWorkDir, { recursive: true });
 
@@ -737,10 +759,16 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         claudeProcess.on('close', async (code) => {
           const endTime = Date.now();
 
+          // DEBUG: Log close event
+          console.error(`[DEBUG] Process close event triggered for agent ${agentName}, code: ${code}`);
+
           // Update agent end time
           const agent = monitor?.getAgents().get(agentName);
           if (agent) {
             agent.endTime = endTime;
+            console.error(`[DEBUG] Agent endTime set to: ${endTime}`);
+          } else {
+            console.error(`[DEBUG] Agent not found in monitor for ${agentName}`);
           }
 
           // Clear timeout if process completed normally
@@ -868,9 +896,12 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
 
           // Update agent status based on exit code
           if (code === 0) {
+            console.error(`[DEBUG] Updating agent ${agentName} status to 'completed'`);
             monitor?.updateAgentStatus(agentName, 'completed');
+            console.error(`[DEBUG] Agent status updated, calling resolve()`);
             resolve();
           } else {
+            console.error(`[DEBUG] Updating agent ${agentName} status to 'error' (code: ${code})`);
             monitor?.updateAgentStatus(agentName, 'error');
             await fs.writeFile(path.join(agentWorkDir, 'execution-error.txt'), stderr);
             reject(new Error(`Agent ${agentName} failed with code ${code}`));
@@ -1113,7 +1144,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
         const startTime = Date.now();
         monitor?.updateAgentStatus(agent, 'running');
 
-        await runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
+        await runAgent(agent, outputDir, taskFile, contextFile, monitor, (agentName, output) => {
           monitor?.addAgentOutput(agentName, output);
         }, 3, timeout);
 
@@ -1160,7 +1191,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
       });
 
       const promises = chunks[i].map(agent =>
-        runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
+        runAgent(agent, outputDir, taskFile, contextFile, monitor, (agentName, output) => {
           monitor?.addAgentOutput(agentName, output);
         }, 3, timeout)
       );
