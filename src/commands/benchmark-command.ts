@@ -19,7 +19,6 @@ interface BenchmarkCommandOptions extends CommandOptions {
 const agents = ['craftsman', 'practitioner', 'craftsman-reflective', 'practitioner-reflective'];
 
 async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promise<void> {
-  console.log('🔍 Validating benchmark options...', options);
   if (!options.task) {
     throw new CLIError('Task file is required. Use --task <path-to-task-file>');
   }
@@ -132,7 +131,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
     }
 
     // Add instruction to work in the temp directory
-    fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
+    fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.\n\nPlease use the Write tool to create the required files. You should write actual code files that can be executed.`;
 
     console.log(`🚀 Running agent: ${agentName} in ${agentWorkDir}`);
 
@@ -140,9 +139,10 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
     const runSingleAgent = async (): Promise<void> => {
       return new Promise((resolve, reject) => {
         const claudeProcess = spawn('claude', [
-          'run',
           '--system-prompt', agentPrompt,
-          '--task', fullTask
+          '--permission-mode', 'bypassPermissions',
+          '--print',
+          fullTask
         ], {
           cwd: agentWorkDir,
           stdio: ['pipe', 'pipe', 'pipe']
@@ -428,8 +428,7 @@ export const benchmarkCommand: CommandConfig = {
       defaultValue: '5'
     }
   ],
-  action: async (options: BenchmarkCommandOptions) => {
-    console.log('🚀 Benchmark command starting...', options);
+  handler: async (options: BenchmarkCommandOptions) => {
     try {
       await validateBenchmarkOptions(options);
 
