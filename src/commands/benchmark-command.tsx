@@ -213,7 +213,8 @@ const BenchmarkMonitor: React.FC<{
         statusColor,
         status: agent.status.toUpperCase(),
         runtime: runtimeText,
-        lastOutput: lastOutputLines
+        lastOutput: lastOutputLines,
+        pid: agent.pid
       };
     });
   }, [monitor, updateTrigger, flashState]);
@@ -250,7 +251,7 @@ const BenchmarkMonitor: React.FC<{
           <Box key={agent.name} marginBottom={1} flexDirection="column">
             <Box>
               <Text bold>
-                <Text color={agent.statusColor}>{agent.statusDisplay}</Text> {agent.name}{agent.runtime ? ` ${agent.runtime}` : ''}
+                <Text color={agent.statusColor}>{agent.statusDisplay}</Text> {agent.name}{agent.runtime ? ` ${agent.runtime}` : ''}{agent.pid ? <Text color="gray"> (pid: {agent.pid})</Text> : ''}
               </Text>
             </Box>
 
@@ -295,6 +296,7 @@ class InkMonitor {
     output: string[];
     startTime?: number;
     endTime?: number;
+    pid?: number;
   }> = new Map();
   private isRunning = false;
   private workspaceDirs: string[] = [];
@@ -381,6 +383,14 @@ class InkMonitor {
         agent.endTime = Date.now();
       }
       // Trigger UI update through subscriber pattern
+      this.triggerUpdate();
+    }
+  }
+
+  setAgentPid(name: string, pid: number) {
+    const agent = this.agents.get(name);
+    if (agent) {
+      agent.pid = pid;
       this.triggerUpdate();
     }
   }
@@ -583,6 +593,11 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
             PYTHONUNBUFFERED: '1'
           }
         });
+
+        // Set the process PID for debugging
+        if (claudeProcess.pid) {
+          monitor?.setAgentPid(agentName, claudeProcess.pid);
+        }
 
         // Track this child process for cleanup
         ProcessManager.getInstance().trackChildProcess(claudeProcess);
