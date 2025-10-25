@@ -7,7 +7,11 @@
   "bin": {
     "sylphx-flow": "dist/index.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/sylphxltd/flow.git"
@@ -64,8 +68,10 @@
     "drizzle-orm": "^0.44.7",
     "figlet": "^1.9.3",
     "ignore": "^7.0.5",
+    "ink": "^6.3.1",
     "inquirer": "^11.1.0",
     "ora": "^9.0.0",
+    "react": "^19.2.0",
     "yaml": "^2.8.1",
     "zod": "^3.25.76"
   },
