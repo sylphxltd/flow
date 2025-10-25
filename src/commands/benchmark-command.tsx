@@ -589,37 +589,33 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
 
         let stdout = '';
         let stderr = '';
-        let processedLines = 0; // Track how many lines we've processed
+        let processedLines = 0;
 
         claudeProcess.stdout?.on('data', (data) => {
           const output = data.toString();
           stdout += output;
 
-          // Parse stream-json output for display - only process new lines
-          const allLines = stdout.split('\n').filter(line => line.trim());
-          const newLines = allLines.slice(processedLines); // Only get new lines
-          processedLines = allLines.length;
+          // Process each line - Claude stream-json ensures complete JSON objects
+          const lines = stdout.split('\n');
+          const newLines = lines.slice(processedLines);
+          processedLines = lines.length;
 
           for (const line of newLines) {
+            if (!line.trim()) continue;
+
             try {
               const jsonData = JSON.parse(line);
 
               if (jsonData.type === 'assistant' && jsonData.message?.content) {
-                // Extract only text content from assistant message
+                // Extract text content and tool uses from assistant message
                 for (const content of jsonData.message.content) {
                   if (content.type === 'text') {
                     const textContent = content.text.trim();
                     if (textContent) {
-                      // Add each assistant message as a separate line
                       monitor?.addOutput(agentName, textContent);
                       outputCallback?.(agentName, textContent);
                     }
-                  }
-                }
-              } else if (jsonData.type === 'assistant' && jsonData.message?.content) {
-                // Check for tool uses in assistant messages
-                for (const content of jsonData.message.content) {
-                  if (content.type === 'tool_use') {
+                  } else if (content.type === 'tool_use') {
                     const toolName = content.name;
                     const params = JSON.stringify(content.input || {}).substring(0, 100);
                     monitor?.addOutput(agentName, `${toolName}(${params})`);
@@ -628,7 +624,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
                 }
               }
             } catch (e) {
-              // If not valid JSON, ignore it (likely incomplete JSON chunk)
+              // Skip invalid JSON (shouldn't happen with stream-json)
             }
           }
 
