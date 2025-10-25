@@ -16,6 +16,40 @@ interface BenchmarkCommandOptions extends CommandOptions {
   delay?: number;
 }
 
+// Real-time monitor for agent outputs
+class AgentMonitor {
+  private outputs: Map<string, string[]> = new Map();
+  private maxLines = 5;
+
+  addOutput(agentName: string, output: string) {
+    if (!this.outputs.has(agentName)) {
+      this.outputs.set(agentName, []);
+    }
+
+    const lines = this.outputs.get(agentName)!;
+    lines.push(...output.split('\n').filter(line => line.trim()));
+
+    // Keep only last maxLines
+    if (lines.length > this.maxLines) {
+      lines.splice(0, lines.length - this.maxLines);
+    }
+  }
+
+  display() {
+    // Clear screen and show latest outputs
+    console.clear();
+    console.log('🤖 Agent Monitor - Real-time Output\n');
+
+    for (const [agentName, lines] of this.outputs) {
+      if (lines.length > 0) {
+        console.log(`📋 ${agentName}:`);
+        lines.forEach(line => console.log(`   ${line}`));
+        console.log('');
+      }
+    }
+  }
+}
+
 const agents = ['craftsman', 'practitioner', 'craftsman-reflective', 'practitioner-reflective'];
 
 async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promise<void> {
@@ -30,9 +64,10 @@ async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promi
     throw new CLIError(`Task file not found: ${options.task}`);
   }
 
-  // Set default output directory
+  // Set default output directory with timestamp
   if (!options.output) {
-    options.output = '/tmp/agent-benchmark';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    options.output = `/tmp/agent-benchmark-${timestamp}`;
   }
 
   // Set default agents
@@ -106,7 +141,7 @@ async function getAgentList(agentsOption: string): Promise<string[]> {
   return selectedAgents;
 }
 
-async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, maxRetries: number = 3): Promise<void> {
+async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: AgentMonitor, maxRetries: number = 3): Promise<void> {
   const agentWorkDir = path.join(outputDir, agentName);
   await fs.mkdir(agentWorkDir, { recursive: true });
 
@@ -131,7 +166,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
     }
 
     // Add instruction to work in the temp directory
-    fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.\n\nPlease use the Write tool to create the required files. You should write actual code files that can be executed.`;
+    fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
 
     console.log(`🚀 Running agent: ${agentName} in ${agentWorkDir}`);
 
@@ -140,7 +175,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
       return new Promise((resolve, reject) => {
         const claudeProcess = spawn('claude', [
           '--system-prompt', agentPrompt,
-          '--permission-mode', 'bypassPermissions',
+          '--dangerously-skip-permissions',
           '--print',
           fullTask
         ], {
@@ -152,11 +187,31 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         let stderr = '';
 
         claudeProcess.stdout?.on('data', (data) => {
-          stdout += data.toString();
+          const output = data.toString();
+          stdout += output;
+
+          // Add to monitor and display
+          if (monitor) {
+            monitor.addOutput(agentName, output);
+            monitor.display();
+          } else {
+            // Fallback to simple output
+            process.stdout.write(`[${agentName}] ${output}`);
+          }
         });
 
         claudeProcess.stderr?.on('data', (data) => {
-          stderr += data.toString();
+          const output = data.toString();
+          stderr += output;
+
+          // Add to monitor and display
+          if (monitor) {
+            monitor.addOutput(`${agentName} (ERROR)`, output);
+            monitor.display();
+          } else {
+            // Fallback to simple output
+            process.stderr.write(`[${agentName} ERROR] ${output}`);
+          }
         });
 
         claudeProcess.on('close', (code) => {
@@ -336,19 +391,25 @@ Format your response as a structured evaluation report with clear sections for e
 async function runParallelAgents(agentList: string[], outputDir: string, taskFile: string, contextFile: string | undefined, concurrency: number, delay: number): Promise<void> {
   console.log(`🔄 Running ${agentList.length} agents with concurrency: ${concurrency}, delay: ${delay}s`);
 
+  // Create monitor for real-time output
+  const monitor = new AgentMonitor();
+
   if (concurrency <= 1) {
     // Sequential execution
     console.log('📝 Running agents sequentially...');
     for (const agent of agentList) {
       try {
-        await runAgent(agent, outputDir, taskFile, contextFile);
+        await runAgent(agent, outputDir, taskFile, contextFile, monitor);
 
         // Add delay between agents (except last one)
         if (agent !== agentList[agentList.length - 1]) {
+          monitor.display();
           console.log(`⏳ Waiting ${delay}s before next agent...`);
           await new Promise(resolve => setTimeout(resolve, delay * 1000));
         }
       } catch (error) {
+        monitor.addOutput(agent, `❌ ERROR: ${error}`);
+        monitor.display();
         console.error(`❌ Agent ${agent} failed:`, error);
         // Continue with other agents even if one fails
       }
@@ -364,13 +425,16 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
       console.log(`🔄 Running chunk ${i + 1}/${chunks.length} (${chunks[i].length} agents)...`);
 
       const promises = chunks[i].map(agent =>
-        runAgent(agent, outputDir, taskFile, contextFile)
+        runAgent(agent, outputDir, taskFile, contextFile, monitor)
       );
 
       try {
         await Promise.all(promises);
+        monitor.display();
         console.log(`✅ Chunk ${i + 1} completed`);
       } catch (error) {
+        monitor.addOutput(`Chunk ${i + 1}`, `❌ ERROR: ${error}`);
+        monitor.display();
         console.error(`❌ Chunk ${i + 1} had failures:`, error);
         // Continue with next chunk
       }
@@ -383,6 +447,7 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     }
   }
 
+  monitor.display();
   console.log('✅ All agent executions completed');
 }
 
