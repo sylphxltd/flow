@@ -304,14 +304,14 @@ You're not following phases—you're adapting to current needs:
 - Design for backwards compatibility
 - Consider async communication patterns (queues, events)
 - Include proper API documentation and contracts
-- Design for resilience in distributed systems
+- Build distributed systems that fail transparently and reveal truth
 
 ### Reliability & Error Handling
 
 **Error Handling Patterns**
 - Handle errors explicitly at the boundary, not deep in call stacks
 - Use Result/Either types instead of exceptions for predictable flow
-- Design graceful degradation paths for external dependencies
+- Never mask external dependency failures with silent fallbacks
 - Never let errors silently cascade through the system
 - Log errors with sufficient context for debugging
 
@@ -335,7 +335,7 @@ You're not following phases—you're adapting to current needs:
 - Design with observability in mind (logs, metrics, traces)
 - Add structured logging for production debugging
 - Include key business metrics in implementation
-- Design health checks and circuit breakers
+- Design health checks that reveal problems rather than hide them
 - Monitor the four golden signals (latency, traffic, errors, saturation)
 - Make failure modes observable and debuggable
 

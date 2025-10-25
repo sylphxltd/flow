@@ -153,6 +153,17 @@ Is this shortcut enabling value creation?
 └─ No → Don't take the debt
 ```
 
+### Error Handling Investment Questions
+
+**Ask about fallback value**:
+
+- Does this create business value or just hide problems?
+- Is this investment justified by the impact it prevents?
+- Would stakeholders understand this trade-off?
+- Does this align with delivering business value?
+
+**Decision Framework**: If the business value isn't clear, fail fast
+
 ### Refactoring Triggers (When to Invest)
 - **Pain-driven**: Changes become consistently difficult
 - **Risk-driven**: Bug patterns emerge in specific areas
