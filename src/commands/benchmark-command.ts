@@ -130,7 +130,7 @@ class ConsoleMonitor {
     this.agents.set(name, {
       status: 'idle',
       output: [],
-      startTime: Date.now()
+      startTime: undefined // Don't start timing until actually running
     });
   }
 
@@ -138,7 +138,10 @@ class ConsoleMonitor {
     const agent = this.agents.get(name);
     if (agent) {
       agent.status = status;
-      if (status === 'completed' || status === 'error') {
+      if (status === 'running' && !agent.startTime) {
+        // Start timing only when actually running
+        agent.startTime = Date.now();
+      } else if (status === 'completed' || status === 'error') {
         agent.endTime = Date.now();
       }
     }
@@ -160,8 +163,16 @@ class ConsoleMonitor {
     console.log('🎯 Agent Benchmark Monitor - Real-time Console Output\n');
 
     for (const [name, agent] of this.agents) {
-      const elapsed = agent.startTime ? Math.floor((Date.now() - agent.startTime) / 1000) : 0;
-      const runtime = agent.endTime ? Math.floor((agent.endTime - agent.startTime!) / 1000) : elapsed;
+      let runtime = 0;
+      if (agent.startTime) {
+        if (agent.endTime) {
+          // Completed: show actual runtime
+          runtime = Math.floor((agent.endTime - agent.startTime) / 1000);
+        } else if (agent.status === 'running') {
+          // Currently running: show elapsed time
+          runtime = Math.floor((Date.now() - agent.startTime) / 1000);
+        }
+      }
 
       // Status icon
       const statusIcon = agent.status === 'completed' ? '✅' :
@@ -169,7 +180,8 @@ class ConsoleMonitor {
                         agent.status === 'error' ? '❌' : '⏸️';
 
       // Main status line
-      console.log(`${statusIcon} ${name} - ${agent.status.toUpperCase()} - Runtime: ${runtime}s`);
+      const runtimeText = agent.startTime ? `${runtime}s` : 'pending';
+      console.log(`${statusIcon} ${name} - ${agent.status.toUpperCase()} - Runtime: ${runtimeText}`);
 
       // Show last 5 outputs if available
       if (agent.output.length > 0) {
@@ -183,6 +195,8 @@ class ConsoleMonitor {
         });
       } else if (agent.status === 'running') {
         console.log('    (working...)');
+      } else if (agent.status === 'idle') {
+        console.log('    (waiting to start...)');
       }
       console.log(''); // Empty line between agents
     }
@@ -425,6 +439,7 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         });
 
         claudeProcess.on('close', async (code) => {
+          const endTime = Date.now();
 
           // Clean up temp prompt file
           try {
@@ -433,8 +448,20 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
             // Ignore cleanup errors
           }
 
+          // Write execution log with timing information
+          const executionLog = `Execution completed at: ${new Date(endTime).toISOString()}\nExit code: ${code}\n\n=== STDOUT ===\n${stdout}\n\n=== STDERR ===\n${stderr}\n`;
+          await fs.writeFile(path.join(agentWorkDir, 'execution-log.txt'), executionLog);
+
+          // Write timing metadata
+          const timingData = {
+            endTime,
+            exitCode: code,
+            stdoutLength: stdout.length,
+            stderrLength: stderr.length
+          };
+          await fs.writeFile(path.join(agentWorkDir, 'timing.json'), JSON.stringify(timingData, null, 2));
+
           if (code === 0) {
-            await fs.writeFile(path.join(agentWorkDir, 'execution-log.txt'), stdout);
             console.log(`✅ Agent ${agentName} completed successfully`);
             resolve();
           } else {
@@ -460,17 +487,63 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
 async function evaluateResults(outputDir: string, reportDir?: string, options?: BenchmarkCommandOptions): Promise<void> {
   console.log('🔍 Evaluating code created by agents...');
 
+  // First, collect actual timing information for each agent
+  const agentTimings: { [key: string]: { startTime?: number; endTime?: number; duration?: number } } = {};
+
+  const agentDirs = agents.map(agent => path.join(outputDir, agent));
+  for (const agentDir of agentDirs) {
+    const agentName = path.basename(agentDir);
+    try {
+      // Try to read the execution-time.txt file first
+      const timingFile = path.join(agentDir, 'execution-time.txt');
+      const timingContent = await fs.readFile(timingFile, 'utf-8');
+
+      // Parse the timing information
+      const durationMatch = timingContent.match(/Duration:\s*(\d+)\s*seconds/);
+      const duration = durationMatch ? parseInt(durationMatch[1]) : 0;
+
+      agentTimings[agentName] = { duration };
+    } catch (error) {
+      // Fallback: try to read from timing.json
+      try {
+        const timingJsonFile = path.join(agentDir, 'timing.json');
+        const timingContent = await fs.readFile(timingJsonFile, 'utf-8');
+        const timingData = JSON.parse(timingContent);
+
+        // If we have timing data but no duration, estimate it
+        agentTimings[agentName] = { duration: 0 }; // Unknown duration
+      } catch (fallbackError) {
+        agentTimings[agentName] = { duration: 0 }; // No timing data available
+      }
+    }
+  }
+
   const evaluatorPrompt = `
-Please evaluate the code and solutions created by these four software engineering agents. For each agent, analyze their work by examining the files they created in their respective directories.
+Please evaluate the code and solutions created by these software engineering agents. For each agent, analyze their work by examining the files they created in their respective directories.
+
+**IMPORTANT: Performance and timing are critical evaluation factors.** Faster execution times that maintain quality are highly valued.
 
 For each agent, evaluate:
 
-1. **Code Quality** (1-10): Readability, structure, naming conventions, code organization
-2. **Architecture Design** (1-10): Modularity, scalability, separation of concerns, best practices
-3. **Functionality** (1-10): Requirements satisfaction, error handling, feature completeness
-4. **Testing Coverage** (1-10): Test quality, coverage, testing strategies used
-5. **Documentation** (1-10): Code comments, README files, API documentation, setup instructions
-6. **Business Value** (1-10): Practicality, maintainability, innovation, solution effectiveness
+1. **Performance & Speed** (1-10): Execution time, efficiency, how quickly they completed the task
+2. **Code Quality** (1-10): Readability, structure, naming conventions, code organization
+3. **Architecture Design** (1-10): Modularity, scalability, separation of concerns, best practices
+4. **Functionality** (1-10): Requirements satisfaction, error handling, feature completeness
+5. **Testing Coverage** (1-10): Test quality, coverage, testing strategies used
+6. **Documentation** (1-10): Code comments, README files, API documentation, setup instructions
+7. **Business Value** (1-10): Practicality, maintainability, innovation, solution effectiveness
+
+**Scoring Guidelines for Performance:**
+- 9-10: Extremely fast (under 5 seconds), excellent efficiency
+- 7-8: Fast (5-10 seconds), good optimization
+- 5-6: Average (10-20 seconds), acceptable speed
+- 3-4: Slow (20-30 seconds), needs optimization
+- 1-2: Very slow (30+ seconds), significant performance issues
+
+**Approximate Timing Data:**
+${Object.entries(agentTimings).map(([agent, timing]) =>
+  `- ${agent}: ${timing.duration || 'unknown'} seconds`
+).join('\n')}
 
 Agents to evaluate:
 - craftsman: Idealistic craftsman with principles-based approach
@@ -482,21 +555,21 @@ For each agent, please:
 1. Examine all files they created in their directory
 2. Analyze the code quality and architecture
 3. Check if requirements were met
-4. Evaluate the overall solution quality
-5. Compare approaches between agents
+4. **CRITICAL: Consider their execution speed and efficiency**
+5. Evaluate the overall solution quality
+6. Compare approaches between agents
 
 Please provide:
-1. Detailed scoring for each agent (1-10 scale)
-2. Analysis of differences between approaches
-3. What each agent excels at
-4. Recommendations for different use cases
-5. Overall comparison and insights
+1. Detailed scoring for each agent (1-10 scale) with special attention to performance
+2. Analysis of differences between approaches, including speed vs quality tradeoffs
+3. What each agent excels at (including speed advantages)
+4. Recommendations for different use cases (when speed matters vs when quality matters more)
+5. Overall comparison and insights with performance as a key factor
 
 Format your response as a structured evaluation report with clear sections for each agent.
 `;
 
   // Collect all agent work by reading their created files
-  const agentDirs = agents.map(agent => path.join(outputDir, agent));
   const agentWork: { [key: string]: string } = {};
 
   for (const agentDir of agentDirs) {
@@ -624,11 +697,26 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     console.log('📝 Running agents sequentially...');
     for (const agent of agentList) {
       try {
+        const startTime = Date.now();
         consoleMonitor?.updateAgentStatus(agent, 'running');
 
         await runAgent(agent, outputDir, taskFile, contextFile, undefined, (agentName, output) => {
           consoleMonitor?.addAgentOutput(agentName, output);
         });
+
+        // Record the actual execution time
+        const endTime = Date.now();
+        const duration = Math.floor((endTime - startTime) / 1000);
+
+        // Write timing info to agent directory
+        try {
+          await fs.writeFile(
+            path.join(outputDir, agent, 'execution-time.txt'),
+            `Started: ${new Date(startTime).toISOString()}\nCompleted: ${new Date(endTime).toISOString()}\nDuration: ${duration} seconds\n`
+          );
+        } catch (error) {
+          // Ignore timing write errors
+        }
 
         consoleMonitor?.updateAgentStatus(agent, 'completed');
 
@@ -654,8 +742,10 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
     for (let i = 0; i < chunks.length; i++) {
       console.log(`🔄 Running chunk ${i + 1}/${chunks.length} (${chunks[i].length} agents)...`);
 
-      // Update status for all agents in this chunk
+      // Update status for all agents in this chunk and track start times
+      const chunkStartTimes: { [agent: string]: number } = {};
       chunks[i].forEach(agent => {
+        chunkStartTimes[agent] = Date.now();
         consoleMonitor?.updateAgentStatus(agent, 'running');
       });
 
@@ -668,8 +758,22 @@ async function runParallelAgents(agentList: string[], outputDir: string, taskFil
       try {
         await Promise.all(promises);
 
-        // Mark all agents in this chunk as completed
+        // Mark all agents in this chunk as completed and record times
+        const chunkEndTime = Date.now();
         chunks[i].forEach(agent => {
+          const startTime = chunkStartTimes[agent];
+          const duration = Math.floor((chunkEndTime - startTime) / 1000);
+
+          // Write timing info to agent directory
+          try {
+            fs.writeFile(
+              path.join(outputDir, agent, 'execution-time.txt'),
+              `Started: ${new Date(startTime).toISOString()}\nCompleted: ${new Date(chunkEndTime).toISOString()}\nDuration: ${duration} seconds (parallel execution)\n`
+            ).catch(() => {}); // Ignore errors
+          } catch (error) {
+            // Ignore timing write errors
+          }
+
           consoleMonitor?.updateAgentStatus(agent, 'completed');
         });
 
