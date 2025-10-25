@@ -490,7 +490,7 @@ async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promi
 
   // Set default timeout
   if (!options.timeout) {
-    options.timeout = 900; // 15 minutes default timeout for complex tasks
+    options.timeout = 3600; // 1 hour default timeout for complex tasks
   }
 }
 
@@ -535,7 +535,7 @@ async function getAgentList(agentsOption: string): Promise<string[]> {
   return selectedAgents;
 }
 
-async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: AgentMonitor, outputCallback?: (agentName: string, output: string) => void, maxRetries: number = 3, timeout: number = 900): Promise<void> {
+async function runAgent(agentName: string, outputDir: string, taskFile: string, contextFile: string | undefined, monitor?: AgentMonitor, outputCallback?: (agentName: string, output: string) => void, maxRetries: number = 3, timeout: number = 3600): Promise<void> {
   const agentWorkDir = path.join(outputDir, agentName);
   await fs.mkdir(agentWorkDir, { recursive: true });
 
@@ -1049,8 +1049,8 @@ export const benchmarkCommand: CommandConfig = {
     },
     {
       flags: '--timeout <seconds>',
-      description: 'Timeout in seconds for each agent (default: 900)',
-      defaultValue: '900'
+      description: 'Timeout in seconds for each agent (default: 3600)',
+      defaultValue: '3600'
     },
     {
       flags: '--quiet',
