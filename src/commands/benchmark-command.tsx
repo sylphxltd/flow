@@ -573,6 +573,8 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
               }
             }, 5000);
           }
+          // Update agent status to error due to timeout
+          monitor?.updateAgentStatus(agentName, 'error');
           reject(new Error(`Agent ${agentName} timed out after ${timeout} seconds`));
         }, timeout * 1000);
 
