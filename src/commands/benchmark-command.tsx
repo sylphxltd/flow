@@ -106,31 +106,28 @@ class ProcessManager {
 
 // React Ink component for efficient real-time monitoring
 const BenchmarkMonitor: React.FC<{
-  agents: Map<string, {
-    status: 'idle' | 'running' | 'completed' | 'error';
-    output: string[];
-    startTime?: number;
-    endTime?: number;
-  }>;
-  workspaceDirs: string[];
-  initialInfo: InitialInfo;
+  monitor: InkMonitor;
   onComplete: () => void;
-  onForceUpdate: (callback: () => void) => void;
-}> = ({ agents, workspaceDirs, initialInfo, onComplete, onForceUpdate }) => {
+}> = ({ monitor, onComplete }) => {
   const { exit } = useApp();
+
+  // Subscribe to monitor changes using proper React state
   const [, forceUpdate] = React.useReducer(x => x + 1, 0);
 
-  // Register force update callback
   React.useEffect(() => {
-    onForceUpdate(() => {
+    // Subscribe to the monitor's change notifications
+    const unsubscribe = monitor.subscribe(() => {
       forceUpdate();
     });
-  }, [onForceUpdate]);
 
-  // Update every second
+    return unsubscribe;
+  }, [monitor]);
+
+  // Update times every second
+  const [currentTime, setCurrentTime] = React.useState(Date.now());
   React.useEffect(() => {
     const interval = setInterval(() => {
-      forceUpdate(); // Trigger re-render to update times and check completion
+      setCurrentTime(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
@@ -138,6 +135,7 @@ const BenchmarkMonitor: React.FC<{
 
   // Auto-exit when all agents complete
   React.useEffect(() => {
+    const agents = monitor.getAgents();
     const allCompleted = Array.from(agents.values()).every(
       agent => agent.status === 'completed' || agent.status === 'error'
     );
@@ -148,9 +146,10 @@ const BenchmarkMonitor: React.FC<{
         exit();
       }, 2000);
     }
-  }, [agents, onComplete, exit]);
+  }, [monitor, onComplete, exit]);
 
   const getCurrentStatus = () => {
+    const agents = monitor.getAgents();
     return Array.from(agents.entries()).map(([name, agent]) => {
       let runtime = 0;
       if (agent.startTime) {
@@ -192,6 +191,8 @@ const BenchmarkMonitor: React.FC<{
   };
 
   const status = getCurrentStatus();
+  const workspaceDirs = monitor.getWorkspaceDirs();
+  const initialInfo = monitor.getInitialInfo();
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -269,7 +270,7 @@ class InkMonitor {
   private isRunning = false;
   private workspaceDirs: string[] = [];
   private uiInstance?: any;
-  private forceUpdateCallback?: () => void;
+  private listeners = new Set<() => void>();
   private initialInfo: InitialInfo;
 
   constructor(initialInfo: InitialInfo) {
@@ -277,19 +278,39 @@ class InkMonitor {
     this.setupSignalHandlers();
   }
 
+  // Subscribe to changes - proper React pattern
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private triggerUpdate() {
+    this.listeners.forEach(listener => listener());
+  }
+
+  // Getters for React component
+  getAgents() {
+    return this.agents;
+  }
+
+  getWorkspaceDirs() {
+    return this.workspaceDirs;
+  }
+
+  getInitialInfo() {
+    return this.initialInfo;
+  }
+
   start() {
     this.isRunning = true;
 
     const uiInstance = render(
       <BenchmarkMonitor
-        agents={this.agents}
-        workspaceDirs={this.workspaceDirs}
-        initialInfo={this.initialInfo}
+        monitor={this}
         onComplete={() => {
           this.stop();
-        }}
-        onForceUpdate={(callback) => {
-          this.forceUpdateCallback = callback;
         }}
       />,
       {
@@ -324,8 +345,8 @@ class InkMonitor {
       } else if (status === 'completed' || status === 'error') {
         agent.endTime = Date.now();
       }
-      // Trigger UI update
-      this.forceUpdateCallback?.();
+      // Trigger UI update through subscriber pattern
+      this.triggerUpdate();
     }
   }
 
@@ -336,8 +357,8 @@ class InkMonitor {
       const cleanedOutput = output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
       const lines = cleanedOutput.split('\n').filter(line => line.trim());
       agent.output = [...agent.output.slice(-3), ...lines];
-      // Trigger UI update
-      this.forceUpdateCallback?.();
+      // Trigger UI update through subscriber pattern
+      this.triggerUpdate();
     }
   }
 
