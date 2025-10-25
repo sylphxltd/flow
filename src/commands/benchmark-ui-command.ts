@@ -40,6 +40,8 @@ interface BenchmarkStatus {
 class BenchmarkUIMonitor {
   private status: BenchmarkStatus;
   private uiProcess?: any;
+  private childProcesses: Set<any> = new Set();
+  private isShuttingDown = false;
 
   constructor(
     totalAgents: number,
@@ -56,6 +58,9 @@ class BenchmarkUIMonitor {
       task,
       concurrency
     };
+
+    // Setup signal handlers for graceful shutdown
+    this.setupSignalHandlers();
   }
 
   async startUI() {
@@ -144,6 +149,9 @@ class BenchmarkUIMonitor {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
+    // Track UI process for cleanup
+    this.trackChildProcess(this.uiProcess);
+
     // Forward status updates to the UI
     this.sendStatus();
   }
@@ -187,12 +195,79 @@ class BenchmarkUIMonitor {
     this.sendStatus();
   }
 
-  async stop() {
-    if (this.uiProcess) {
-      this.uiProcess.kill('SIGTERM');
-      // Wait a bit for graceful shutdown
-      await new Promise(resolve => setTimeout(resolve, 500));
+  private setupSignalHandlers() {
+    const shutdown = async (signal: string) => {
+      if (this.isShuttingDown) return;
+      this.isShuttingDown = true;
+
+      console.log(`\n🛑 Received ${signal}, shutting down benchmark...`);
+      await this.killAllProcesses();
+      process.exit(0);
+    };
+
+    // Handle termination signals
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGHUP', () => shutdown('SIGHUP'));
+  }
+
+  trackChildProcess(childProcess: any) {
+    this.childProcesses.add(childProcess);
+
+    // Remove from tracking when process exits
+    childProcess.on('exit', () => {
+      this.childProcesses.delete(childProcess);
+    });
+  }
+
+  async killAllProcesses() {
+    console.log('🔄 Terminating all running processes...');
+
+    // Kill all child processes first
+    const killPromises = Array.from(this.childProcesses).map(async (childProcess) => {
+      try {
+        if (childProcess && !childProcess.killed) {
+          // Try graceful shutdown first
+          childProcess.kill('SIGTERM');
+
+          // Force kill if it doesn't stop after 2 seconds
+          setTimeout(() => {
+            if (!childProcess.killed) {
+              childProcess.kill('SIGKILL');
+            }
+          }, 2000);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error killing child process:', error);
+      }
+    });
+
+    // Wait for all child processes to be killed
+    await Promise.all(killPromises);
+
+    // Kill UI process
+    if (this.uiProcess && !this.uiProcess.killed) {
+      try {
+        this.uiProcess.kill('SIGTERM');
+
+        // Force kill if it doesn't stop after 1 second
+        setTimeout(() => {
+          if (!this.uiProcess.killed) {
+            this.uiProcess.kill('SIGKILL');
+          }
+        }, 1000);
+      } catch (error) {
+        console.warn('⚠️ Error killing UI process:', error);
+      }
     }
+
+    // Clear the child processes set
+    this.childProcesses.clear();
+    console.log('✅ All processes terminated');
+  }
+
+  async stop() {
+    await this.killAllProcesses();
   }
 }
 
@@ -375,6 +450,9 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           cwd: agentWorkDir,
           stdio: ['inherit', 'pipe', 'pipe']
         });
+
+        // Track this child process for cleanup
+        uiMonitor?.trackChildProcess(claudeProcess);
 
         let stdout = '';
         let stderr = '';

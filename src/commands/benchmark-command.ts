@@ -16,6 +16,71 @@ interface BenchmarkCommandOptions extends CommandOptions {
   delay?: number;
 }
 
+// Simple process manager for cleanup
+class ProcessManager {
+  private static instance: ProcessManager;
+  private childProcesses: Set<any> = new Set();
+  private isShuttingDown = false;
+
+  static getInstance(): ProcessManager {
+    if (!ProcessManager.instance) {
+      ProcessManager.instance = new ProcessManager();
+      ProcessManager.instance.setupSignalHandlers();
+    }
+    return ProcessManager.instance;
+  }
+
+  private setupSignalHandlers() {
+    const shutdown = async (signal: string) => {
+      if (this.isShuttingDown) return;
+      this.isShuttingDown = true;
+
+      console.log(`\n🛑 Received ${signal}, shutting down benchmark...`);
+      await this.killAllProcesses();
+      process.exit(0);
+    };
+
+    // Handle termination signals
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGHUP', () => shutdown('SIGHUP'));
+  }
+
+  trackChildProcess(childProcess: any) {
+    this.childProcesses.add(childProcess);
+
+    // Remove from tracking when process exits
+    childProcess.on('exit', () => {
+      this.childProcesses.delete(childProcess);
+    });
+  }
+
+  async killAllProcesses() {
+    console.log('🔄 Terminating all running processes...');
+
+    const killPromises = Array.from(this.childProcesses).map(async (childProcess) => {
+      try {
+        if (childProcess && !childProcess.killed) {
+          childProcess.kill('SIGTERM');
+
+          // Force kill if it doesn't stop after 2 seconds
+          setTimeout(() => {
+            if (!childProcess.killed) {
+              childProcess.kill('SIGKILL');
+            }
+          }, 2000);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error killing child process:', error);
+      }
+    });
+
+    await Promise.all(killPromises);
+    this.childProcesses.clear();
+    console.log('✅ All processes terminated');
+  }
+}
+
 // Real-time monitor for agent outputs
 class AgentMonitor {
   private outputs: Map<string, string[]> = new Map();
@@ -189,6 +254,9 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           stdio: ['inherit', 'pipe', 'pipe']
         });
 
+        // Track this child process for cleanup
+        ProcessManager.getInstance().trackChildProcess(claudeProcess);
+
         let stdout = '';
         let stderr = '';
 
@@ -330,6 +398,9 @@ Format your response as a structured evaluation report with clear sections for e
       cwd: outputDir,
       stdio: ['inherit', 'pipe', 'pipe']
   });
+
+  // Track evaluation process for cleanup
+  ProcessManager.getInstance().trackChildProcess(evaluationProcess);
 
   let evaluationOutput = '';
 
