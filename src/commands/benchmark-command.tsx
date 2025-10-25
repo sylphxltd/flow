@@ -587,20 +587,18 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
         // Track this child process for cleanup
         ProcessManager.getInstance().trackChildProcess(claudeProcess);
 
-        let stdout = '';
+        let stdoutBuffer = '';
         let stderr = '';
-        let processedLines = 0;
 
         claudeProcess.stdout?.on('data', (data) => {
           const output = data.toString();
-          stdout += output;
+          stdoutBuffer += output;
 
-          // Process each line - Claude stream-json ensures complete JSON objects
-          const lines = stdout.split('\n');
-          const newLines = lines.slice(processedLines);
-          processedLines = lines.length;
+          // Process complete lines only - keep incomplete data in buffer
+          const lines = stdoutBuffer.split('\n');
+          stdoutBuffer = lines.pop() || ''; // Keep last incomplete line
 
-          for (const line of newLines) {
+          for (const line of lines) {
             if (!line.trim()) continue;
 
             try {
@@ -617,9 +615,26 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
                     }
                   } else if (content.type === 'tool_use') {
                     const toolName = content.name;
-                    const params = JSON.stringify(content.input || {}).substring(0, 100);
-                    monitor?.addOutput(agentName, `${toolName}(${params})`);
-                    outputCallback?.(agentName, `${toolName}(${params})`);
+                    const params = content.input || {};
+                    let paramString = '';
+
+                    // Create a compact parameter string
+                    if (params.file_path) {
+                      paramString = params.file_path.split('/').pop() || '';
+                      if (params.content && params.content.length < 50) {
+                        paramString += `: "${params.content.substring(0, 50)}${params.content.length > 50 ? '...' : ''}"`;
+                      } else if (params.query) {
+                        paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
+                      }
+                    } else if (params.query) {
+                      paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
+                    } else {
+                      // Generic parameter display
+                      paramString = JSON.stringify(params).substring(0, 80);
+                    }
+
+                    monitor?.addOutput(agentName, `${toolName}(${paramString})`);
+                    outputCallback?.(agentName, `${toolName}(${paramString})`);
                   }
                 }
               }
@@ -654,6 +669,48 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
             clearTimeout(timeoutId);
           }
 
+          // Process any remaining data in buffer
+          if (stdoutBuffer.trim()) {
+            try {
+              const jsonData = JSON.parse(stdoutBuffer);
+              if (jsonData.type === 'assistant' && jsonData.message?.content) {
+                for (const content of jsonData.message.content) {
+                  if (content.type === 'text') {
+                    const textContent = content.text.trim();
+                    if (textContent) {
+                      monitor?.addOutput(agentName, textContent);
+                      outputCallback?.(agentName, textContent);
+                    }
+                  } else if (content.type === 'tool_use') {
+                    const toolName = content.name;
+                    const params = content.input || {};
+                    let paramString = '';
+
+                    // Create a compact parameter string
+                    if (params.file_path) {
+                      paramString = params.file_path.split('/').pop() || '';
+                      if (params.content && params.content.length < 50) {
+                        paramString += `: "${params.content.substring(0, 50)}${params.content.length > 50 ? '...' : ''}"`;
+                      } else if (params.query) {
+                        paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
+                      }
+                    } else if (params.query) {
+                      paramString = `"${params.query.substring(0, 50)}${params.query.length > 50 ? '...' : ''}"`;
+                    } else {
+                      // Generic parameter display
+                      paramString = JSON.stringify(params).substring(0, 80);
+                    }
+
+                    monitor?.addOutput(agentName, `${toolName}(${paramString})`);
+                    outputCallback?.(agentName, `${toolName}(${paramString})`);
+                  }
+                }
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+
           // Clean up temp prompt file
           try {
             await fs.unlink(tempPromptFile);
@@ -662,14 +719,14 @@ async function runAgent(agentName: string, outputDir: string, taskFile: string, 
           }
 
           // Write execution log with timing information
-          const executionLog = `Execution completed at: ${new Date(endTime).toISOString()}\nExit code: ${code}\n\n=== STDOUT ===\n${stdout}\n\n=== STDERR ===\n${stderr}\n`;
+          const executionLog = `Execution completed at: ${new Date(endTime).toISOString()}\nExit code: ${code}\n\n=== STDOUT ===\n${stdoutBuffer}\n\n=== STDERR ===\n${stderr}\n`;
           await fs.writeFile(path.join(agentWorkDir, 'execution-log.txt'), executionLog);
 
           // Write timing metadata
           const timingData = {
             endTime,
             exitCode: code,
-            stdoutLength: stdout.length,
+            stdoutLength: stdoutBuffer.length,
             stderrLength: stderr.length
           };
           await fs.writeFile(path.join(agentWorkDir, 'timing.json'), JSON.stringify(timingData, null, 2));
