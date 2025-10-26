@@ -21,7 +21,7 @@ const mcpStartHandler: CommandHandler = async (options: CommandOptions) => {
     disableTime: options.disableTime === true,
     disableProjectStartup: options.disableProjectStartup === true,
     disableKnowledge: options.disableKnowledge === true,
-    disableCodebaseSearch: options.disableCodebaseSearch === true,
+    disableCodebase: options.disableCodebase === true,
   };
 
   try {
@@ -222,7 +222,7 @@ export const mcpCommand: CommandConfig = {
         },
         { flags: '--disable-knowledge', description: 'Disable knowledge functionality' },
         {
-          flags: '--disable-codebase-search',
+          flags: '--disable-codebase',
           description: 'Disable codebase search functionality',
         },
       ],

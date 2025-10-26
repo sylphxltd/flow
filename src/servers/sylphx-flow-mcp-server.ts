@@ -27,7 +27,7 @@ interface ServerConfig {
   disableTime?: boolean;
   disableProjectStartup?: boolean;
   disableKnowledge?: boolean;
-  disableCodebaseSearch?: boolean;
+  disableCodebase?: boolean;
 }
 
 // Logger utility
@@ -52,7 +52,7 @@ function parseArgs(): ServerConfig {
   if (args.includes('--disable-time')) { config.disableTime = true; }
   if (args.includes('--disable-project-startup')) { config.disableProjectStartup = true; }
   if (args.includes('--disable-knowledge')) { config.disableKnowledge = true; }
-  if (args.includes('--disable-codebase-search')) { config.disableCodebaseSearch = true; }
+  if (args.includes('--disable-codebase')) { config.disableCodebase = true; }
 
   // Handle enable flags (backward compatibility)
   if (args.includes('--enable-memory')) { config.disableMemory = false; }
@@ -120,7 +120,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   }
 
   // Codebase tools (enabled by default)
-  if (!config.disableCodebaseSearch) {
+  if (!config.disableCodebase) {
     Logger.info('🔍 Registering codebase tools');
     registerCodebaseTools(server);
     enabledTools.push('codebase_search');
