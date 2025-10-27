@@ -40,6 +40,18 @@ export class TargetManager {
   async promptForTargetSelection(): Promise<string> {
     const availableTargets = this.getImplementedTargetIDs();
 
+    // Try to get saved default target for default selection
+    let defaultTarget = getDefaultTarget();
+    try {
+      const { projectSettings } = await import('../utils/settings.js');
+      const savedDefaultTarget = await projectSettings.getDefaultTarget();
+      if (savedDefaultTarget && this.getTarget(savedDefaultTarget)) {
+        defaultTarget = savedDefaultTarget;
+      }
+    } catch {
+      // Silently ignore errors reading project settings
+    }
+
     const answer = await inquirer.prompt([
       {
         type: 'list',
@@ -52,7 +64,7 @@ export class TargetManager {
             value: id,
           };
         }),
-        default: getDefaultTarget(),
+        default: defaultTarget,
       },
     ]);
 

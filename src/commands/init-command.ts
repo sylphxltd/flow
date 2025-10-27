@@ -11,9 +11,15 @@ import { projectSettings } from '../utils/settings.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { targetSupportsMCPServers, validateTarget } from '../utils/target-config.js';
 
-async function validateInitOptions(options: CommandOptions): Promise<void> {
-  const targetId = await targetManager.resolveTarget({ target: options.target });
-  options.target = targetId;
+function validateInitOptions(options: CommandOptions): Promise<void> {
+  // Don't resolve target again - it's already been determined either from:
+  // 1. Command line option (--target)
+  // 2. User selection (promptForTargetSelection)
+  const targetId = options.target;
+
+  if (!targetId) {
+    throw new Error('Target ID is required');
+  }
 
   try {
     validateTarget(targetId);

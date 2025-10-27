@@ -1,4 +1,4 @@
 {
-  "defaultTarget": "claude-code",
+  "defaultTarget": "opencode",
   "version": "1.0.0"
 }

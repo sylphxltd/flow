@@ -1,4 +1,5 @@
-import fs from 'node:fs/promises';
+import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { MCPServerConfigUnion, Target } from '../types.js';
@@ -233,11 +234,11 @@ Please begin your response with a comprehensive summary of all the instructions 
 
     try {
       // Create a temporary file for the system prompt
-      const tempFile = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-system-prompt-'));
+      const tempFile = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'claude-system-prompt-'));
       const tempPromptFile = path.join(tempFile, 'system-prompt.txt');
 
       try {
-        await fs.writeFile(tempPromptFile, enhancedSystemPrompt, 'utf8');
+        await fsPromises.writeFile(tempPromptFile, enhancedSystemPrompt, 'utf8');
 
         // Build arguments - we need to pass the prompt content directly but truncate it if too long
         const args = ['--dangerously-skip-permissions'];
@@ -247,8 +248,7 @@ Please begin your response with a comprehensive summary of all the instructions 
         const maxPromptLength = 8000; // Leave room for other args
 
         if (enhancedSystemPrompt.length > maxPromptLength) {
-          promptToUse =
-            `${enhancedSystemPrompt.substring(0, maxPromptLength)}\n\n[NOTE: Agent instructions were truncated due to length. Full instructions available in project documentation.]`;
+          promptToUse = `${enhancedSystemPrompt.substring(0, maxPromptLength)}\n\n[NOTE: Agent instructions were truncated due to length. Full instructions available in project documentation.]`;
           if (options.verbose) {
             console.warn(
               `⚠️  Warning: System prompt truncated from ${enhancedSystemPrompt.length} to ${maxPromptLength} characters`
@@ -297,7 +297,7 @@ Please begin your response with a comprehensive summary of all the instructions 
       } finally {
         // Clean up temporary file
         try {
-          await fs.rm(tempFile, { recursive: true, force: true });
+          await fsPromises.rm(tempFile, { recursive: true, force: true });
         } catch (cleanupError) {
           // Ignore cleanup errors
           if (options.verbose) {
@@ -308,10 +308,11 @@ Please begin your response with a comprehensive summary of all the instructions 
     } catch (error: any) {
       if (error.code === 'ENOENT') {
         throw new CLIError('Claude Code not found. Please install it first.', 'CLAUDE_NOT_FOUND');
-      }if (error.code) {
+      }
+      if (error.code) {
         throw new CLIError(`Claude Code exited with code ${error.code}`, 'CLAUDE_ERROR');
       }
-        throw new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_ERROR');
+      throw new CLIError(`Failed to execute Claude Code: ${error.message}`, 'CLAUDE_ERROR');
     }
   },
 
@@ -338,7 +339,7 @@ Please begin your response with a comprehensive summary of all the instructions 
       let settings: Record<string, unknown> = {};
 
       try {
-        const content = await fs.readFile(settingsPath, 'utf8');
+        const content = await fsPromises.readFile(settingsPath, 'utf8');
         settings = JSON.parse(content);
       } catch (error: any) {
         if (error.code !== 'ENOENT') {
@@ -359,10 +360,10 @@ Please begin your response with a comprehensive summary of all the instructions 
       settings.enabledMcpjsonServers = allServers;
 
       // Ensure .claude directory exists
-      await fs.mkdir(path.dirname(settingsPath), { recursive: true });
+      await fsPromises.mkdir(path.dirname(settingsPath), { recursive: true });
 
       // Write updated settings
-      await fs.writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, 'utf8');
+      await fsPromises.writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, 'utf8');
     } catch (error) {
       throw new Error(
         `Failed to approve MCP servers: ${error instanceof Error ? error.message : String(error)}`
