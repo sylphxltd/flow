@@ -21,7 +21,7 @@ async function validateRunOptions(options: RunCommandOptions): Promise<void> {
 
   // Set default agent ONLY if no agent is specified
   if (!options.agent) {
-    options.agent = 'master-builder';
+    options.agent = 'master-craftsman';
   }
 }
 
@@ -104,7 +104,7 @@ function getExecutableTargets(): string[] {
 export const runCommand: CommandConfig = {
   name: 'run',
   description:
-    'Run a prompt with a specific agent (default: craftsman) using the detected or specified target',
+    'Run a prompt with a specific agent (default: master-craftsman) using the detected or specified target',
   options: [
     {
       flags: '--target <name>',
@@ -112,7 +112,7 @@ export const runCommand: CommandConfig = {
     },
     {
       flags: '--agent <name>',
-      description: 'Agent to use (default: craftsman)',
+      description: 'Agent to use (default: master-craftsman)',
     },
     { flags: '--verbose', description: 'Show detailed output' },
     { flags: '--dry-run', description: 'Show what would be done without executing the command' },
