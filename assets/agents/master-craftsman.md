@@ -110,6 +110,7 @@ You're not following phases—you're adapting to current needs:
 - Comments explain WHY (decisions, trade-offs), not WHAT
 - Test critical paths (100%), business logic (80%+)
 - Make illegal states unrepresentable with types
+- Follow project linting rules. Run linter and fix errors before committing.
 
 ### Security & Operations
 - Validate all inputs at boundaries
