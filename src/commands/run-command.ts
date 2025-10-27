@@ -1,29 +1,11 @@
+import { Command } from 'commander';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { targetManager } from '../core/target-manager.js';
-import type { CommandConfig, CommandOptions } from '../types.js';
+import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { getAgentsDir } from '../utils/paths.js';
 
-interface RunCommandOptions extends CommandOptions {
-  target?: string;
-  agent?: string;
-  prompt?: string;
-  dryRun?: boolean;
-}
-
-async function validateRunOptions(options: RunCommandOptions): Promise<void> {
-  // Resolve target using targetManager (with detection, fallback, and selection)
-  options.target = await targetManager.resolveTarget({
-    target: options.target,
-    allowSelection: true,
-  });
-
-  // Set default agent ONLY if no agent is specified
-  if (!options.agent) {
-    options.agent = 'master-craftsman';
-  }
-}
 
 async function loadAgentContent(agentName: string): Promise<string> {
   try {
@@ -101,40 +83,36 @@ function getExecutableTargets(): string[] {
   });
 }
 
-export const runCommand: CommandConfig = {
-  name: 'run',
-  description:
-    'Run a prompt with a specific agent (default: master-craftsman) using the detected or specified target',
-  options: [
-    {
-      flags: '--target <name>',
-      description: `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`,
-    },
-    {
-      flags: '--agent <name>',
-      description: 'Agent to use (default: master-craftsman)',
-    },
-    { flags: '--verbose', description: 'Show detailed output' },
-    { flags: '--dry-run', description: 'Show what would be done without executing the command' },
-  ],
-  arguments: [
-    {
-      name: 'prompt',
-      description:
-        'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)',
-      required: false,
-    },
-  ],
-  handler: async (options: RunCommandOptions) => {
-    await validateRunOptions(options);
+// Create the run command
+export const runCommand = new Command('run')
+  .description('Run a prompt with a specific agent (default: master-craftsman) using the detected or specified target')
+  .option('--target <name>', `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`)
+  .option('--agent <name>', 'Agent to use (default: master-craftsman)')
+  .option('--verbose', 'Show detailed output')
+  .option('--dry-run', 'Show what would be done without executing the command')
+  .argument('[prompt]', 'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)')
+  .action(async (prompt, options) => {
+    // Set prompt in options
+    options.prompt = prompt;
 
-    const { prompt, agent, verbose } = options;
+    // Set default agent
+    if (!options.agent) {
+      options.agent = 'master-craftsman';
+    }
+
+    // Resolve target
+    options.target = await targetManager.resolveTarget({
+      target: options.target,
+      allowSelection: true,
+    });
+
+    const { verbose } = options;
 
     if (verbose) {
       console.log('🚀 Sylphx Flow Run');
       console.log('====================');
       console.log(`🎯 Target: ${options.target}`);
-      console.log(`🤖 Agent: ${agent}`);
+      console.log(`🤖 Agent: ${options.agent}`);
       if (prompt) {
         console.log(`💬 Prompt: ${prompt}`);
       } else {
@@ -144,7 +122,7 @@ export const runCommand: CommandConfig = {
     }
 
     // Load agent content
-    const agentContent = await loadAgentContent(agent);
+    const agentContent = await loadAgentContent(options.agent);
     const agentInstructions = extractAgentInstructions(agentContent);
 
     // Create system prompt with agent instructions (no override notice - let target handle it)
@@ -177,5 +155,4 @@ ${agentInstructions}`;
 
     // Execute command with the resolved target
     await executeTargetCommand(options.target, systemPrompt, userPrompt, options);
-  },
-};
+  });

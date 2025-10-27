@@ -1,10 +1,15 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-interface TemplateData {
+// Simple template data interface
+export interface TemplateData {
   [key: string]: string | number | boolean | string[];
 }
 
+/**
+ * Simple template engine for basic variable replacement
+ * For complex templates, consider using Handlebars or Mustache
+ */
 export class TemplateEngine {
   private templatesDir: string;
   private mode: 'coordinator' | 'implementer';
@@ -14,8 +19,11 @@ export class TemplateEngine {
     this.mode = mode;
   }
 
+  /**
+   * Load template from file system
+   */
   private loadTemplate(templateName: string): string {
-    // Shared templates (spec, plan, validation, reviews) are in shared folder
+    // Shared templates are in shared folder
     const sharedTemplates = ['spec', 'plan', 'validation', 'reviews'];
 
     if (sharedTemplates.includes(templateName)) {
@@ -23,11 +31,22 @@ export class TemplateEngine {
       return readFileSync(templatePath, 'utf8');
     }
 
-    // Mode-specific templates (tasks, progress) are in mode folder
+    // Mode-specific templates are in mode folder
     const templatePath = join(this.templatesDir, this.mode, `${templateName}-template.md`);
     return readFileSync(templatePath, 'utf8');
   }
 
+  /**
+   * Render template with data - simple variable replacement only
+   */
+  render(templateName: string, data: TemplateData): string {
+    const template = this.loadTemplate(templateName);
+    return this.replaceVariables(template, data);
+  }
+
+  /**
+   * Replace simple variables {{VARIABLE}}
+   */
   private replaceVariables(template: string, data: TemplateData): string {
     let result = template;
 
@@ -37,86 +56,37 @@ export class TemplateEngine {
       result = result.replace(regex, String(value));
     }
 
-    // Handle conditional blocks {{#if CONDITION}} ... {{/if}}
+    // Handle simple conditionals {{#if CONDITION}} ... {{/if}}
     result = result.replace(/{{#if (\w+)}}([\s\S]*?){{\/if}}/g, (_, condition, content) => {
       const value = data[condition];
       return value && value !== 'false' && value !== '0' && value !== '' ? content : '';
     });
 
-    // Handle loops {{#each ARRAY}} ... {{/each}}
+    // Handle simple loops {{#each ARRAY}} ... {{/each}}
     result = result.replace(/{{#each (\w+)}}([\s\S]*?){{\/each}}/g, (_, arrayName, content) => {
       const array = data[arrayName];
       if (!Array.isArray(array)) {
         return '';
       }
 
-      return array
-        .map((item, index) => {
-          let itemContent = content;
-          itemContent = itemContent.replace(/{{this}}/g, String(item));
-          itemContent = itemContent.replace(/{{@index}}/g, String(index));
-          return itemContent;
-        })
-        .join('\n');
+      return array.map((item) => {
+        const itemData = { item: String(item) };
+        let itemResult = content;
+        for (const [key, value] of Object.entries(itemData)) {
+          const regex = new RegExp(`{{${key}}}`, 'g');
+          itemResult = itemResult.replace(regex, value);
+        }
+        return itemResult;
+      }).join('\n');
     });
 
     return result;
   }
 
-  generateTemplate(templateName: string, data: TemplateData): string {
-    const template = this.loadTemplate(templateName);
+  /**
+   * Render template string directly (without loading from file)
+   */
+  renderString(template: string, data: TemplateData): string {
     return this.replaceVariables(template, data);
   }
-
-  createFile(templateName: string, data: TemplateData, outputPath: string): void {
-    const content = this.generateTemplate(templateName, data);
-    writeFileSync(outputPath, content, 'utf8');
-  }
-
-  generateAllProjectTemplates(projectData: ProjectData): { [key: string]: string } {
-    const templates: { [key: string]: string } = {};
-
-    const templateNames = ['spec', 'progress', 'plan', 'tasks', 'validation', 'reviews'];
-
-    for (const templateName of templateNames) {
-      templates[templateName] = this.generateTemplate(templateName, projectData);
-    }
-
-    return templates;
-  }
-}
-
-export interface ProjectData extends TemplateData {
-  PROJECT_NAME: string;
-  PROJECT_TYPE: string;
-  DESCRIPTION: string;
-  REQUIREMENTS: string[];
-  TIMESTAMP: string;
-  BRANCH_NAME: string;
-  PROJECT_ID: string;
-
-  // Progress specific
-  CURRENT_PHASE: string;
-  NEXT_ACTION: string;
-  STATUS: string;
-
-  // Plan specific
-  OBJECTIVE: string;
-  SCOPE: string;
-
-  // Tasks specific
-  CRITICAL_PATH: string;
-  PARALLEL_OPPORTUNITIES: string;
-  RESOURCE_CONFLICTS: string;
-  INTEGRATION_POINTS: string;
-
-  // Validation specific
-  VALIDATED_BY: string;
-  VALIDATION_DATE: string;
-  OVERALL_STATUS: string;
-
-  // Reviews specific
-  REVIEW_PERIOD: string;
-  TOTAL_REVIEWS: string;
-  QUALITY_SCORE: string;
 }

@@ -5,6 +5,7 @@ import { knowledgeCommand } from './commands/knowledge-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
 import { memoryCommand } from './commands/memory-command.js';
 import { handleMemoryTuiCommand } from './commands/memory-tui-command.js';
+import { runCommand } from './commands/run-command.js';
 
 import { showDefaultHelp } from './utils/help.js';
 
@@ -35,6 +36,7 @@ export function createCLI(): Command {
   program.addCommand(initCommand);
   program.addCommand(mcpCommand);
   program.addCommand(memoryCommand);
+  program.addCommand(runCommand);
   program.addCommand(codebaseCommand);
   program.addCommand(knowledgeCommand);
 
