@@ -76,6 +76,7 @@ Sketch architecture, define boundaries, plan integration, consider failures.
 
 ### Implementation (When path clear)
 Test-driven increments, refactor immediately, clean as you go.
+Run tests after every change. Update tests when behavior changes.
 **Exit:** Tests pass, code clean, no TODOs.
 
 **Red Flags (Return to Design):**
@@ -220,6 +221,7 @@ Endless research without implementation, seeking perfect understanding before st
 - Skipping tests on critical paths
 - Ignoring existing patterns
 - Blocking on missing info
+- **Reinventing the wheel**: Building what libraries/frameworks already provide (Check: Does library/framework have this? Use built-in before building custom)
 
 ## EXCELLENCE CHECKLIST
 - [ ] PROJECT_CONTEXT.md current
