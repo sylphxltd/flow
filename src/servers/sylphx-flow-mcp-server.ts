@@ -22,7 +22,7 @@ const DEFAULT_CONFIG = {
 };
 
 // Server configuration interface
-interface ServerConfig {
+export interface ServerConfig {
   disableMemory?: boolean;
   disableTime?: boolean;
   disableProjectStartup?: boolean;
@@ -42,53 +42,11 @@ const Logger = {
   },
 };
 
-// Parse command line arguments for backward compatibility
-function parseArgs(): ServerConfig {
-  const args = process.argv.slice(2);
-  const config: ServerConfig = {};
-
-  // Handle disable flags (new approach)
-  if (args.includes('--disable-memory')) {
-    config.disableMemory = true;
-  }
-  if (args.includes('--disable-time')) {
-    config.disableTime = true;
-  }
-  if (args.includes('--disable-project-startup')) {
-    config.disableProjectStartup = true;
-  }
-  if (args.includes('--disable-knowledge')) {
-    config.disableKnowledge = true;
-  }
-  if (args.includes('--disable-codebase')) {
-    config.disableCodebase = true;
-  }
-
-  // Handle enable flags (backward compatibility)
-  if (args.includes('--enable-memory')) {
-    config.disableMemory = false;
-  }
-  if (args.includes('--enable-time')) {
-    config.disableTime = false;
-  }
-  if (args.includes('--enable-project-startup')) {
-    config.disableProjectStartup = false;
-  }
-  if (args.includes('--enable-knowledge')) {
-    config.disableKnowledge = false;
-  }
-
-  return config;
-}
-
 // Main server function
 export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
-  // If no config provided, try to parse from command line arguments
-  if (Object.keys(config).length === 0) {
-    config = parseArgs();
-  }
+  // Config should be provided by the caller - no command line parsing here
+  // This is a library, not a standalone application
 
-  console.error('Debug: Final config =', config);
   console.log('🚀 Starting Sylphx Flow MCP Server...');
   console.log('📍 Database: .sylphx-flow/memory.db');
 
@@ -175,13 +133,5 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-  Logger.info('🛑 Shutting down MCP server...');
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  Logger.info('🛑 Shutting down MCP server...');
-  process.exit(0);
-});
+// Note: Process signal handling should be managed by the main application
+// This library focuses only on MCP server functionality
