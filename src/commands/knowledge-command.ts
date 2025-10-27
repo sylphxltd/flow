@@ -86,7 +86,9 @@ export const knowledgeListCommand = new Command('list')
       const grouped = filteredURIs.reduce(
         (acc, uri) => {
           const category = uri.split('/')[2] || 'unknown';
-          if (!acc[category]) { acc[category] = []; }
+          if (!acc[category]) {
+            acc[category] = [];
+          }
           acc[category].push(uri);
           return acc;
         },

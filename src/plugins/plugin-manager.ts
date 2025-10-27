@@ -5,8 +5,8 @@
  * with dependency injection and hot reloading support
  */
 
-import type { ILogger } from '../core/interfaces.js';
 import type { DIContainer } from '../core/di-container.js';
+import type { ILogger } from '../core/interfaces.js';
 
 export interface PluginMetadata {
   name: string;

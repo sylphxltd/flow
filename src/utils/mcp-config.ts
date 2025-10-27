@@ -77,8 +77,8 @@ export class MCPConfigurator {
       const values = await this.configureServer(server);
       return { values, serverId: this.serverId };
     }
-      console.log(chalk.gray('\n✓ No configuration required for this server'));
-      return { values: {}, serverId: this.serverId };
+    console.log(chalk.gray('\n✓ No configuration required for this server'));
+    return { values: {}, serverId: this.serverId };
   }
 
   private async selectServer(): Promise<MCPServerID> {
@@ -166,7 +166,8 @@ export class MCPConfigurator {
 
       console.log(chalk.gray(`   ${field.description}`));
       return value;
-    }if (field.secret) {
+    }
+    if (field.secret) {
       // Use password input for secrets
       const { value } = await inquirer.prompt([
         {
@@ -187,25 +188,25 @@ export class MCPConfigurator {
       console.log(chalk.gray(`   ${field.description}`));
       return value;
     }
-      // Use regular input for regular fields
-      const { value } = await inquirer.prompt([
-        {
-          type: 'input',
-          name: 'value',
-          message: `${field.name}${field.required ? chalk.red('*') : ''}:`,
-          default: currentValue,
-          when: () => true,
-          validate: (input) => {
-            if (field.required && !input.trim()) {
-              return `${field.name} is required`;
-            }
-            return true;
-          },
+    // Use regular input for regular fields
+    const { value } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'value',
+        message: `${field.name}${field.required ? chalk.red('*') : ''}:`,
+        default: currentValue,
+        when: () => true,
+        validate: (input) => {
+          if (field.required && !input.trim()) {
+            return `${field.name} is required`;
+          }
+          return true;
         },
-      ]);
+      },
+    ]);
 
-      console.log(chalk.gray(`   ${field.description}`));
-      return value;
+    console.log(chalk.gray(`   ${field.description}`));
+    return value;
   }
 }
 

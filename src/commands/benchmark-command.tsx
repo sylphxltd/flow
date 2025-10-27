@@ -2,19 +2,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { render } from 'ink';
 import React from 'react';
-import type { CommandConfig, CommandOptions } from '../types.js';
-import { CLIError } from '../utils/error-handler.js';
-import type { BenchmarkCommandOptions, AgentData, InitialInfo } from '../types/benchmark.js';
+import { InkMonitor, type InkMonitorProps } from '../components/benchmark-monitor.js';
 import {
-  DEFAULT_TASK,
   DEFAULT_CONCURRENCY,
   DEFAULT_DELAY,
-  DEFAULT_TIMEOUT,
   DEFAULT_REPORT_DIR,
+  DEFAULT_TASK,
+  DEFAULT_TIMEOUT,
 } from '../constants/benchmark-constants.js';
-import { InkMonitor, type InkMonitorProps } from '../components/benchmark-monitor.js';
 import { AgentService } from '../services/agent-service.js';
 import { EvaluationService } from '../services/evaluation-service.js';
+import type { CommandConfig, CommandOptions } from '../types.js';
+import type { AgentData, BenchmarkCommandOptions, InitialInfo } from '../types/benchmark.js';
+import { CLIError } from '../utils/error-handler.js';
 import { ProcessManager } from '../utils/process-manager.js';
 
 async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promise<void> {

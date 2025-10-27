@@ -17,7 +17,7 @@ export function getNestedProperty(obj: Record<string, unknown>, path: string): u
 export function setNestedProperty(
   obj: Record<string, unknown>,
   path: string,
-  value: unknown,
+  value: unknown
 ): void {
   const keys = path.split('.');
   const lastKey = keys.pop()!;

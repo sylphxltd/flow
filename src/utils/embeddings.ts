@@ -307,7 +307,9 @@ export function chunkText(
 
     // Move start position with overlap
     start = end - overlap;
-    if (start >= text.length) { break; }
+    if (start >= text.length) {
+      break;
+    }
   }
 
   return chunks;

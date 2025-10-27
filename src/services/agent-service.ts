@@ -1,12 +1,12 @@
+import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
-import type { TimingData } from '../types/benchmark.js';
+import type { InkMonitor } from '../components/benchmark-monitor.js';
 import { DEFAULT_AGENTS } from '../constants/benchmark-constants.js';
+import type { TimingData } from '../types/benchmark.js';
+import { getAgentsDir } from '../utils/paths.js';
 import { ProcessManager } from '../utils/process-manager.js';
 import { formatToolDisplay } from '../utils/tool-display.js';
-import type { InkMonitor } from '../components/benchmark-monitor.js';
-import { getAgentsDir } from '../utils/paths.js';
 
 export class AgentService {
   static async getAgentList(agentsOption: string): Promise<string[]> {
@@ -62,7 +62,14 @@ export class AgentService {
       fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
 
       // Run Claude Code with the agent prompt
-      await AgentService.runSingleAgent(agentName, agentPrompt, fullTask, agentWorkDir, monitor, timeout);
+      await AgentService.runSingleAgent(
+        agentName,
+        agentPrompt,
+        fullTask,
+        agentWorkDir,
+        monitor,
+        timeout
+      );
     } catch (error) {
       throw new Error(`Failed to load agent ${agentName}: ${error}`);
     }
@@ -142,7 +149,9 @@ export class AgentService {
         stdoutBuffer = lines.pop() || ''; // Keep last incomplete line
 
         for (const line of lines) {
-          if (!line.trim()) { continue; }
+          if (!line.trim()) {
+            continue;
+          }
 
           try {
             const jsonData = JSON.parse(line);

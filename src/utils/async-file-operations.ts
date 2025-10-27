@@ -5,11 +5,11 @@
  * concurrency control, and performance optimizations
  */
 
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { createHash } from 'node:crypto';
-import { pipeline } from 'node:stream/promises';
 import type { Readable, Writable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 export interface FileOperationOptions {
   encoding?: BufferEncoding;
@@ -278,7 +278,9 @@ export class AsyncFileOperations {
     const results: DirectoryEntry[] = [];
 
     const processDirectory = async (currentPath: string, currentDepth: number): Promise<void> => {
-      if (currentDepth > maxDepth) { return; }
+      if (currentDepth > maxDepth) {
+        return;
+      }
 
       try {
         const entries = await fs.readdir(currentPath, { withFileTypes });

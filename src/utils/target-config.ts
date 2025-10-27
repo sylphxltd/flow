@@ -15,8 +15,8 @@ import {
 import { targetManager } from '../core/target-manager.js';
 import { resolveConfig, resolveConfigWithParams } from '../services/mcp-service.js';
 import type { MCPServerConfigUnion } from '../types.js';
+import { deleteNestedProperty, getNestedProperty, setNestedProperty } from './object-utils.js';
 import { secretUtils } from './secret-utils.js';
-import { getNestedProperty, setNestedProperty, deleteNestedProperty } from './object-utils.js';
 
 /**
  * Target-specific MCP configuration utilities
@@ -487,7 +487,9 @@ async function promptForAPIKeys(
 
     for (const envVar of allEnvVars) {
       const envConfig = server.envVars?.[envVar];
-      if (!envConfig) { continue; }
+      if (!envConfig) {
+        continue;
+      }
 
       const isRequired = envConfig.required;
       const hasDefault = envConfig.default !== undefined;

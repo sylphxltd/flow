@@ -67,10 +67,10 @@ export class ConnectionPool<T> {
         connection.lastUsed = Date.now();
         return connection.instance;
       }
-        // Remove invalid connection
-        this.connections.delete(connectionId);
-        this.connectionCount--;
-        await this.destroyConnection(connection.instance);
+      // Remove invalid connection
+      this.connections.delete(connectionId);
+      this.connectionCount--;
+      await this.destroyConnection(connection.instance);
     }
 
     // Create new connection if under limit
@@ -242,7 +242,9 @@ export class ConnectionPool<T> {
     const interval = this.config.healthCheckInterval || 60000;
 
     this.healthCheckTimer = setInterval(async () => {
-      if (this.isDisposing) { return; }
+      if (this.isDisposing) {
+        return;
+      }
 
       for (const [id, connection] of this.connections) {
         try {

@@ -87,7 +87,9 @@ export class PorterStemmer {
    * Stem a single word
    */
   static stem(word: string): string {
-    if (word.length < 3) { return word.toLowerCase(); }
+    if (word.length < 3) {
+      return word.toLowerCase();
+    }
 
     let stemmed = word.toLowerCase();
 
@@ -157,7 +159,9 @@ export class PorterStemmer {
  */
 export function generateNGrams(text: string, n = 3): string[] {
   const normalized = text.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (normalized.length < n) { return [normalized]; }
+  if (normalized.length < n) {
+    return [normalized];
+  }
 
   const ngrams: string[] = [];
   for (let i = 0; i <= normalized.length - n; i++) {
@@ -224,7 +228,9 @@ export function cosineSimilarity(vec1: Map<string, number>, vec2: Map<string, nu
     mag2 += freq2 * freq2;
   }
 
-  if (mag1 === 0 || mag2 === 0) { return 0; }
+  if (mag1 === 0 || mag2 === 0) {
+    return 0;
+  }
 
   return dotProduct / (Math.sqrt(mag1) * Math.sqrt(mag2));
 }

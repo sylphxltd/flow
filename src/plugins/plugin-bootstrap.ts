@@ -5,11 +5,11 @@
  * and provides a unified interface for plugin management
  */
 
-import { PluginManager } from './plugin-manager.js';
-import { configureServices } from '../core/service-config.js';
 import type { DIContainer } from '../core/di-container.js';
-import type { ILogger } from '../core/interfaces.js';
 import { container } from '../core/di-container.js';
+import type { ILogger } from '../core/interfaces.js';
+import { configureServices } from '../core/service-config.js';
+import { PluginManager } from './plugin-manager.js';
 
 export interface PluginBootstrapConfig {
   pluginDir?: string;
@@ -174,7 +174,9 @@ export class PluginBootstrap {
    * Register built-in plugins
    */
   private async registerBuiltinPlugins(): Promise<void> {
-    if (!this.pluginManager) { return; }
+    if (!this.pluginManager) {
+      return;
+    }
 
     try {
       // Import and register memory MCP plugin
@@ -192,7 +194,9 @@ export class PluginBootstrap {
    * Load external plugins
    */
   private async loadExternalPlugins(): Promise<void> {
-    if (!this.pluginManager) { return; }
+    if (!this.pluginManager) {
+      return;
+    }
 
     try {
       // Discover and load plugins from directory
@@ -219,7 +223,9 @@ export class PluginBootstrap {
    * Configure plugins based on bootstrap config
    */
   private async configurePlugins(): Promise<void> {
-    if (!this.pluginManager) { return; }
+    if (!this.pluginManager) {
+      return;
+    }
 
     try {
       const { plugins: enabledPlugins, disabledPlugins } = this.config;

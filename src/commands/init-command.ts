@@ -7,8 +7,8 @@ import { targetManager } from '../core/target-manager.js';
 import { MCPService } from '../services/mcp-service.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
-import { projectSettings } from '../utils/settings.js';
 import { secretUtils } from '../utils/secret-utils.js';
+import { projectSettings } from '../utils/settings.js';
 import { targetSupportsMCPServers, validateTarget } from '../utils/target-config.js';
 
 function validateInitOptions(options: CommandOptions): Promise<void> {

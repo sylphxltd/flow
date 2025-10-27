@@ -219,7 +219,9 @@ export class CacheStorage {
    */
   async deleteMetadata(key: string): Promise<boolean> {
     return executeOperation(`delete metadata: ${key}`, async () => {
-      const _result = await this.cache.delete(codebaseMetadata).where(eq(codebaseMetadata.key, key));
+      const _result = await this.cache
+        .delete(codebaseMetadata)
+        .where(eq(codebaseMetadata.key, key));
 
       // Check if deletion was successful
       const exists = await this.cache

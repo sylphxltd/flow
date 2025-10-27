@@ -44,10 +44,14 @@ export function formatToolDisplay(toolName: string, params: any): string {
         paramString = params.file_path.split('/').pop() || '';
       } else if (params.query) {
         paramString = params.query.substring(0, 40);
-        if (params.query.length > 40) { paramString += '...'; }
+        if (params.query.length > 40) {
+          paramString += '...';
+        }
       } else if (params.command) {
         paramString = params.command.substring(0, 40);
-        if (params.command.length > 40) { paramString += '...'; }
+        if (params.command.length > 40) {
+          paramString += '...';
+        }
       } else {
         paramString = JSON.stringify(params).substring(0, 40);
       }

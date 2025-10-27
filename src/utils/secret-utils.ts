@@ -169,8 +169,7 @@ export const secretUtils = {
 
       const lines = gitignoreContent.split('\n').map((line) => line.trim());
       if (!lines.includes('.secrets') && !lines.includes('.secrets/')) {
-        gitignoreContent +=
-          `${gitignoreContent && !gitignoreContent.endsWith('\n') ? '\n' : ''}.secrets/\n`;
+        gitignoreContent += `${gitignoreContent && !gitignoreContent.endsWith('\n') ? '\n' : ''}.secrets/\n`;
         await fs.writeFile(gitignorePath, gitignoreContent, 'utf8');
       }
     } catch (error) {

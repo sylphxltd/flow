@@ -148,10 +148,7 @@ export interface ScanResult {
 /**
  * Scan files in directory with .gitignore support
  */
-export function scanFiles(
-  dir: string,
-  options: ScanOptions = {},
-): ScanResult[] {
+export function scanFiles(dir: string, options: ScanOptions = {}): ScanResult[] {
   const results: ScanResult[] = [];
   const ignoreFilter = options.ignoreFilter;
   const codebaseRoot = options.codebaseRoot || dir;

@@ -233,7 +233,9 @@ export const pathUtils = {
   },
 
   extractNameFromPath(sourcePath: string): string | null {
-    if (!sourcePath) { return null; }
+    if (!sourcePath) {
+      return null;
+    }
 
     const pathWithoutExt = sourcePath.replace(/\.md$/, '');
     const filename = pathWithoutExt.split('/').pop() || pathWithoutExt;
@@ -267,7 +269,9 @@ export const pathUtils = {
     };
 
     for (const [pattern, result] of Object.entries(patterns)) {
-      if (kebabName.includes(pattern)) { return result; }
+      if (kebabName.includes(pattern)) {
+        return result;
+      }
     }
 
     return kebabName || null;
@@ -277,7 +281,9 @@ export const pathUtils = {
     // Try to extract from file path first
     if (sourcePath) {
       const pathName = pathUtils.extractNameFromPath(sourcePath);
-      if (pathName) { return pathName; }
+      if (pathName) {
+        return pathName;
+      }
     }
 
     // Try to extract from content title
@@ -302,7 +308,9 @@ export const pathUtils = {
       };
 
       for (const [pattern, result] of Object.entries(descPatterns)) {
-        if (desc.includes(pattern)) { return result; }
+        if (desc.includes(pattern)) {
+          return result;
+        }
       }
     }
 

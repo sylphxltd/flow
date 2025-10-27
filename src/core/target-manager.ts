@@ -1,3 +1,4 @@
+import inquirer from 'inquirer';
 import {
   getAllTargetIDs,
   getDefaultTarget,
@@ -7,7 +8,6 @@ import {
   targetRegistry,
 } from '../config/targets.js';
 import { projectSettings } from '../utils/settings.js';
-import inquirer from 'inquirer';
 
 /**
  * Simplified target manager that works with the new Target-based architecture

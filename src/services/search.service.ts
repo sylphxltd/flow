@@ -5,14 +5,14 @@
  * Handles unified search across codebase and knowledge with caching and optimization
  */
 
-import type { ILogger, IEmbeddingProvider } from '../core/interfaces.js';
+import type { IEmbeddingProvider, ILogger } from '../core/interfaces.js';
 import {
   getKnowledgeIndexer,
   getKnowledgeIndexerWithEmbeddings,
 } from '../utils/knowledge-indexer.js';
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 import { type SearchIndex, searchDocuments } from '../utils/tfidf.js';
-import type { SearchResult, SearchOptions } from '../utils/unified-search-service.js';
+import type { SearchOptions, SearchResult } from '../utils/unified-search-service.js';
 
 export interface SearchServiceConfig {
   enableCaching?: boolean;
@@ -249,7 +249,9 @@ export class SearchService {
         let content = '';
         if (include_content && file?.content) {
           content = file.content.substring(0, 500);
-          if (file.content.length > 500) { content += '...'; }
+          if (file.content.length > 500) {
+            content += '...';
+          }
         }
 
         results.push({
@@ -439,7 +441,9 @@ export class SearchService {
    */
   private getFromCache(key: string): SearchResultExtended[] | null {
     const cached = this.searchCache.get(key);
-    if (!cached) { return null; }
+    if (!cached) {
+      return null;
+    }
 
     const maxAge = this.config.cacheMaxAge || 300000; // 5 minutes default
     if (Date.now() - cached.timestamp > maxAge) {

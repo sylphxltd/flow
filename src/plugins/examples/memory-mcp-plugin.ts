@@ -6,9 +6,9 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import type { MemoryService } from '../../services/memory.service.js';
 import { MCPToolPlugin } from '../interfaces.js';
 import type { PluginMetadata } from '../plugin-manager.js';
-import type { MemoryService } from '../../services/memory.service.js';
 
 const SetMemoryArgsSchema = z.object({
   key: z.string().describe('The memory key to store'),

@@ -140,7 +140,9 @@ export class MemoryTUI {
 
   private async selectEntry(message: string, allowEmpty = false): Promise<MemoryEntry | null> {
     if (this.entries.length === 0) {
-      if (allowEmpty) { return null; }
+      if (allowEmpty) {
+        return null;
+      }
       throw new Error('No entries available');
     }
 
@@ -169,7 +171,9 @@ export class MemoryTUI {
 
   private async showViewEntry(): Promise<void> {
     const entry = await this.selectEntry('Select entry to view:', true);
-    if (!entry) { return; }
+    if (!entry) {
+      return;
+    }
 
     console.clear();
     console.log(chalk.cyan.bold('📄 Entry Details'));
@@ -194,7 +198,9 @@ export class MemoryTUI {
 
   private async showEditEntry(): Promise<void> {
     const entry = await this.selectEntry('Select entry to edit:', true);
-    if (!entry) { return; }
+    if (!entry) {
+      return;
+    }
 
     console.clear();
     console.log(chalk.yellow.bold('✏️ Edit Entry'));
@@ -311,7 +317,9 @@ export class MemoryTUI {
 
   private async showDeleteEntry(): Promise<void> {
     const entry = await this.selectEntry('Select entry to delete:', true);
-    if (!entry) { return; }
+    if (!entry) {
+      return;
+    }
 
     console.clear();
     console.log(chalk.red.bold('🗑️ Delete Entry'));

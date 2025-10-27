@@ -7,13 +7,13 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  initializePlugins,
-  getPluginBootstrap,
-  type PluginBootstrap,
-} from '../plugins/plugin-bootstrap.js';
-import type { ILogger } from '../core/interfaces.js';
 import { container } from '../core/di-container.js';
+import type { ILogger } from '../core/interfaces.js';
+import {
+  type PluginBootstrap,
+  getPluginBootstrap,
+  initializePlugins,
+} from '../plugins/plugin-bootstrap.js';
 
 // Server configuration
 interface ServerConfig {
@@ -51,11 +51,15 @@ function parseArgs(): ServerConfig {
         config.pluginDir = args[++i];
         break;
       case '--disable-plugin':
-        if (!config.disablePlugins) { config.disablePlugins = []; }
+        if (!config.disablePlugins) {
+          config.disablePlugins = [];
+        }
         config.disablePlugins.push(args[++i]);
         break;
       case '--enable-plugin':
-        if (!config.enablePlugins) { config.enablePlugins = []; }
+        if (!config.enablePlugins) {
+          config.enablePlugins = [];
+        }
         config.enablePlugins.push(args[++i]);
         break;
       case '--log-level':

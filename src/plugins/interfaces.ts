@@ -2,9 +2,9 @@
  * Plugin Interfaces and Base Classes
  */
 
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { DIContainer } from '../core/di-container.js';
 import type { ILogger } from '../core/interfaces.js';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { PluginMetadata } from './plugin-manager.js';
 
 /**

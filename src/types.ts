@@ -1,5 +1,5 @@
-import type { TargetConfigurationData } from './types/target-config.types.js';
 import type { Command } from 'commander';
+import type { TargetConfigurationData } from './types/target-config.types.js';
 
 // Extend Commander's options with our application-specific options
 export interface CommandOptions {

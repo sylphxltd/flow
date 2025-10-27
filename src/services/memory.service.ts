@@ -8,10 +8,10 @@
 import type { ILogger, IStorage } from '../core/interfaces.js';
 import type { MemoryRepository } from '../repositories/memory.repository.js';
 import type {
-  MemoryEntry,
   CreateMemoryData,
-  UpdateMemoryData,
+  MemoryEntry,
   MemorySearchParams,
+  UpdateMemoryData,
 } from '../repositories/memory.repository.js';
 
 export interface MemoryServiceConfig {

@@ -424,15 +424,15 @@ export function validateMCPServerConfig(config: unknown): MCPServerValidationRes
       },
     };
   }
-    return {
-      isValid: false,
-      errors: result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
-      warnings: [],
-      metadata: {
-        validatedAt: new Date().toISOString(),
-        validatorVersion: '1.0.0',
-      },
-    };
+  return {
+    isValid: false,
+    errors: result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+    warnings: [],
+    metadata: {
+      validatedAt: new Date().toISOString(),
+      validatorVersion: '1.0.0',
+    },
+  };
 }
 
 /**

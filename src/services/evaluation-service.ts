@@ -1,15 +1,15 @@
+import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
-import type { AgentWork, AgentTimings, TimingData } from '../types/benchmark.js';
-import {
-  DEFAULT_AGENTS,
-  PERFORMANCE_SCORE_RANGES,
-  EVALUATION_CRITERIA,
-  AGENT_DESCRIPTIONS,
-} from '../constants/benchmark-constants.js';
-import { ProcessManager } from '../utils/process-manager.js';
 import type { InkMonitor } from '../components/benchmark-monitor.js';
+import {
+  AGENT_DESCRIPTIONS,
+  DEFAULT_AGENTS,
+  EVALUATION_CRITERIA,
+  PERFORMANCE_SCORE_RANGES,
+} from '../constants/benchmark-constants.js';
+import type { AgentTimings, AgentWork, TimingData } from '../types/benchmark.js';
+import { ProcessManager } from '../utils/process-manager.js';
 
 export class EvaluationService {
   static async evaluateResults(
@@ -130,7 +130,9 @@ export class EvaluationService {
       stdoutBuffer = lines.pop() || ''; // Keep last incomplete line
 
       for (const line of lines) {
-        if (!line.trim()) { continue; }
+        if (!line.trim()) {
+          continue;
+        }
 
         try {
           const jsonData = JSON.parse(line);

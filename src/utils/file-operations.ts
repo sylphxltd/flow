@@ -220,14 +220,18 @@ export async function readDirectorySafe(
 
     return results;
   }
-    const items = await fs.readdir(dirPath, { withFileTypes: true });
-    return items
-      .filter((item) => {
-        if (item.isFile() && includeFiles) { return true; }
-        if (item.isDirectory() && includeDirectories) { return true; }
-        return false;
-      })
-      .map((item) => path.join(dirPath, item.name));
+  const items = await fs.readdir(dirPath, { withFileTypes: true });
+  return items
+    .filter((item) => {
+      if (item.isFile() && includeFiles) {
+        return true;
+      }
+      if (item.isDirectory() && includeDirectories) {
+        return true;
+      }
+      return false;
+    })
+    .map((item) => path.join(dirPath, item.name));
 }
 
 /**

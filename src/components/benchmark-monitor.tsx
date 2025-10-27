@@ -1,6 +1,6 @@
-import React from 'react';
-import { Box, Text, useApp, render } from 'ink';
 import path from 'node:path';
+import { Box, Text, render, useApp } from 'ink';
+import React from 'react';
 import type { AgentData, InitialInfo } from '../types/benchmark.js';
 
 export interface InkMonitorProps {
@@ -129,7 +129,9 @@ export class InkMonitor {
 
   private setupSignalHandlers() {
     const shutdown = async (_signal: string) => {
-      if (!this.isRunning) { return; }
+      if (!this.isRunning) {
+        return;
+      }
 
       this.stop();
       process.exit(0);

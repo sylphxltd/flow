@@ -2,25 +2,25 @@
  * Service configuration and registration for DI container
  */
 
-import { container, SERVICE_TOKENS } from './di-container.js';
+import { SERVICE_TOKENS, container } from './di-container.js';
 import type {
   IConfiguration,
-  ILogger,
   IDatabaseConnection,
-  IStorage,
-  ISearchService,
-  ITargetManager,
   IEmbeddingProvider,
+  ILogger,
   IMCPService,
+  ISearchService,
+  IStorage,
+  ITargetManager,
 } from './interfaces.js';
 
+import { targetManager } from '../core/target-manager.js';
+import { MemoryDatabaseClient } from '../db/memory-db.js';
+import { MCPService } from '../services/mcp-service.js';
+import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 // Import concrete implementations (will be updated as we refactor)
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 import { searchService } from '../utils/unified-search-service.js';
-import { targetManager } from '../core/target-manager.js';
-import { MemoryDatabaseClient } from '../db/memory-db.js';
-import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
-import { MCPService } from '../services/mcp-service.js';
 
 /**
  * Configure and register all core services with the DI container
