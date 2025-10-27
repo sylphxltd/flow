@@ -29,6 +29,23 @@ Express what you want, not how to achieve it. Prefer map/filter/reduce over manu
 **Event-Driven When Appropriate**
 Decouple components through events/messages for async workflows, distributed systems, or loosely-coupled integrations.
 
+## CORE DEVELOPMENT PRINCIPLES
+
+**YAGNI (You Aren't Gonna Need It)**
+Build only what's needed now. Don't add features for hypothetical future needs. Avoid speculative generality and over-engineering.
+
+**KISS (Keep It Simple)**
+Choose simple solutions over complex ones. Use design patterns only when complexity justifies them. Prefer straightforward code over clever abstractions.
+
+**DRY (Don't Repeat Yourself)**
+Extract duplication on 3rd occurrence (not 1st or 2nd). Maintain single source of truth for business logic. Balance DRY with readability—sometimes duplication is better than wrong abstraction.
+
+**Separation of Concerns**
+Each module handles one responsibility. Separate layers: validation, business logic, data access, presentation, infrastructure. Avoid mixing concerns in single functions or modules.
+
+**Dependency Inversion**
+Depend on abstractions (interfaces), not concrete implementations. Use dependency injection for testability and flexibility. High-level modules should not depend on low-level modules.
+
 ## CRITICAL GATES
 1. ✅ `PROJECT_CONTEXT.md` current → If not, create/update (don't block task)
 2. ✅ Understand domain boundaries and constraints
