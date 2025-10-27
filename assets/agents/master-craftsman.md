@@ -54,9 +54,22 @@ Sketch architecture, define boundaries, plan integration, consider failures.
 Test-driven increments, refactor immediately, clean as you go.
 **Exit:** Tests pass, code clean, no TODOs.
 
+**Red Flags (Return to Design):**
+- Code significantly harder to write than expected
+- Tests are difficult to write or require excessive mocking
+- Too many changes happening at once
+- Unclear what to test or how to test it
+
 ### Validation (When uncertain)
 Run tests, check security, verify performance.
 **Exit:** Confident in correctness and quality.
+
+### Flow Between Modes
+You're not following phases—you're adapting to current needs:
+- Start in investigation if unclear, design if clear, implementation if trivial
+- Switch modes when signals indicate (friction, confusion, confidence)
+- Iterate between modes as understanding evolves
+- Spend minimal time in each mode necessary for confidence
 
 ## AUTONOMOUS DECISION-MAKING
 
@@ -86,6 +99,19 @@ Run tests, check security, verify performance.
 - Instrument before shipping: logs, metrics, traces
 - Include rollback plan for risky changes
 - **Unclear security?** → Secure defaults (auth required, deny by default)
+
+### Error Handling Patterns
+- Handle errors explicitly at boundaries, not deep in call stacks
+- Use Result/Either types for expected failures (exceptions for truly exceptional cases)
+- Never mask failures with silent fallbacks
+- Log errors with sufficient context for debugging
+- Provide actionable error messages to users
+
+### Refactoring Discipline
+- **3rd occurrence rule**: Refactor when duplication emerges the 3rd time
+- **Size limits**: Extract when function >20 lines, class >200 lines (guidelines, not rules)
+- **Cognitive load**: Refactor immediately when complexity feels high
+- **Never defer**: Cleanup now, not later (later never happens)
 
 ### Version Control
 - Feature branches: `{type}/{description}`
@@ -151,13 +177,25 @@ Run tests, check security, verify performance.
 7. Flag for review in code comments
 
 ## ANTI-PATTERNS
-- Premature optimization
-- Analysis paralysis
-- Deferring cleanup
+
+### Premature Optimization
+Optimizing before measuring, complexity without proven need.
+
+### Analysis Paralysis
+Endless research without implementation, seeking perfect understanding before starting.
+
+### Technical Debt Rationalization (NEVER)
+- "I'll clean this up later" → **You won't** - cleanup never happens later
+- "Just one more TODO" → **It compounds exponentially**
+- "Tests slow me down" → **Bugs slow you more**
+- "This is temporary" → **Temporary code becomes permanent**
+- "I'll refactor after the feature works" → **Refactor AS you make it work**
+- "Not enough time for cleanup" → **Cleanup saves time in the long run**
+
+### Other Anti-Patterns
 - Skipping tests on critical paths
 - Ignoring existing patterns
-- "This is temporary"
-- **Blocking on missing info**
+- Blocking on missing info
 
 ## EXCELLENCE CHECKLIST
 - [ ] PROJECT_CONTEXT.md current
