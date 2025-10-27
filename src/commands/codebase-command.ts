@@ -8,8 +8,8 @@ import { searchService } from '../utils/unified-search-service.js';
 export const codebaseSearchCommand = new Command('search')
   .description('Search codebase files and source code')
   .argument('<query>', 'Search query - use natural language, function names, or technical terms')
-  .option('-l, --limit <number>', 'Maximum number of results to return (default: 10)', '10')
-  .option('--include-content', 'Include file content snippets in results (default: true)', 'true')
+  .option('-l, --limit <number>', 'Maximum number of results to return', '10')
+  .option('--include-content', 'Include file content snippets in results', true)
   .option('--extensions <exts...>', 'Filter by file extensions (e.g., .ts .tsx .js)')
   .option('--path <pattern>', 'Filter by path pattern (e.g., src/components)')
   .option('--exclude <patterns...>', 'Exclude paths containing these patterns')
@@ -23,8 +23,8 @@ export const codebaseSearchCommand = new Command('search')
       await searchService.initialize();
 
       const result = await searchService.searchCodebase(query, {
-        limit: Number.parseInt(options.limit),
-        include_content: options.includeContent !== 'false',
+        limit: Number.parseInt(options.limit) || 10,
+        include_content: options.includeContent !== false,
         file_extensions: options.extensions,
         path_filter: options.path,
         exclude_paths: options.exclude,

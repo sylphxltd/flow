@@ -14,8 +14,8 @@ import { searchService } from '../utils/unified-search-service.js';
 export const knowledgeSearchCommand = new Command('search')
   .description('Search knowledge base, documentation, and guides')
   .argument('<query>', 'Search query - use natural language, technology names, or topic keywords')
-  .option('-l, --limit <number>', 'Maximum number of results to return (default: 10)', '10')
-  .option('--include-content', 'Include full content in results (default: true)', 'true')
+  .option('-l, --limit <number>', 'Maximum number of results to return', '10')
+  .option('--include-content', 'Include full content in results', true)
   .action(async (query, options) => {
     try {
       console.log(`📚 Searching knowledge base for: "${query}"`);
@@ -23,8 +23,8 @@ export const knowledgeSearchCommand = new Command('search')
       await searchService.initialize();
 
       const result = await searchService.searchKnowledge(query, {
-        limit: Number.parseInt(options.limit),
-        include_content: options.includeContent !== 'false',
+        limit: Number.parseInt(options.limit) || 10,
+        include_content: options.includeContent !== false,
       });
 
       const output = searchService.formatResultsForCLI(result.results, query, result.totalIndexed);

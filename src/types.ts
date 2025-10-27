@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import type { TargetConfigurationData } from './types/target-config.types.js';
 
-// Extend Commander's options with our application-specific options
+// Application-specific options that extend Commander's built-in parsing
 export interface CommandOptions {
   // Common CLI options
   target?: string;
@@ -30,36 +30,22 @@ export interface CommandOptions {
   concurrency?: number;
   delay?: number;
 
-  // Dynamic argument properties - using safer unknown instead of any
+  // Codebase command options
+  includeContent?: boolean;
+  extensions?: string[];
+  path?: string;
+  exclude?: string[];
+  query?: string;
+
+  // Knowledge command options
+  category?: string;
+  uri?: string;
+
+  // Allow dynamic properties - Commander.js already handles this
   [key: string]: unknown;
 }
 
 export type CommandHandler = (options: CommandOptions) => Promise<void>;
-
-// Our application-specific command configuration that works with Commander.js
-export interface CommandConfig {
-  name: string;
-  description: string;
-  options: CommandOption[];
-  arguments?: CommandArgument[];
-  handler?: CommandHandler;
-  validator?: (options: CommandOptions) => void;
-  subcommands?: CommandConfig[];
-}
-
-// Compatible with Commander.js Option interface, but with our extensions
-export interface CommandOption {
-  flags: string;
-  description: string;
-  defaultValue?: unknown;
-}
-
-// Command argument definition (Commander.js doesn't have a built-in type for this)
-export interface CommandArgument {
-  name: string;
-  description: string;
-  required?: boolean;
-}
 
 export interface MCPServerConfig {
   // Common fields

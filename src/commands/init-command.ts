@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
@@ -5,50 +6,21 @@ import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { installAgents, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
 import { MCPService } from '../services/mcp-service.js';
-import type { CommandConfig, CommandOptions } from '../types.js';
+import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { projectSettings } from '../utils/settings.js';
 import { targetSupportsMCPServers, validateTarget } from '../utils/target-config.js';
 
-function validateInitOptions(options: CommandOptions): Promise<void> {
-  // Don't resolve target again - it's already been determined either from:
-  // 1. Command line option (--target)
-  // 2. User selection (promptForTargetSelection)
-  const targetId = options.target;
-
-  if (!targetId) {
-    throw new Error('Target ID is required');
-  }
-
-  try {
-    validateTarget(targetId);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new CLIError(error.message, 'UNSUPPORTED_TARGET');
-    }
-    throw error;
-  }
-
-  if (options.merge) {
-    throw new CLIError('The --merge option is not supported with init command.', 'INVALID_OPTION');
-  }
-}
-
-export const initCommand: CommandConfig = {
-  name: 'init',
-  description: 'Initialize project with Sylphx Flow development agents and MCP tools',
-  options: [
-    {
-      flags: '--target <type>',
-      description: `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: opencode)`,
-    },
-    { flags: '--verbose', description: 'Show detailed output' },
-    { flags: '--dry-run', description: 'Show what would be done without making changes' },
-    { flags: '--clear', description: 'Clear obsolete items before processing' },
-    { flags: '--no-mcp', description: 'Skip MCP tools installation' },
-  ],
-  handler: async (options: CommandOptions) => {
+// Create the init command
+export const initCommand = new Command('init')
+  .description('Initialize project with Sylphx Flow development agents and MCP tools')
+  .option('--target <type>', `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`)
+  .option('--verbose', 'Show detailed output')
+  .option('--dry-run', 'Show what would be done without making changes')
+  .option('--clear', 'Clear obsolete items before processing')
+  .option('--no-mcp', 'Skip MCP tools installation')
+  .action(async (options) => {
     let targetId = options.target;
 
     console.log('');
@@ -60,7 +32,21 @@ export const initCommand: CommandConfig = {
       options.target = targetId;
     }
 
-    await validateInitOptions(options);
+    // Validate target
+    if (targetId) {
+      try {
+        validateTarget(targetId);
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new CLIError(error.message, 'UNSUPPORTED_TARGET');
+        }
+        throw error;
+      }
+
+      if (options.merge) {
+        throw new CLIError('The --merge option is not supported with init command.', 'INVALID_OPTION');
+      }
+    }
 
     if (!targetId) {
       throw new Error('Target ID not set');
@@ -194,5 +180,4 @@ export const initCommand: CommandConfig = {
       );
     }
     console.log('');
-  },
-};
+  });
