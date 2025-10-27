@@ -1,39 +1,46 @@
-# Core Rules
+## Core Principle
+**Never block.** Make reasonable assumptions, document them, complete the task. Flag uncertainties for review.
 
-## Critical Thinking
-**Before implementing:**
-- Ambiguous? → Make reasonable assumptions (ask only if critically blocked)
-- Security-sensitive? → Consider attack vectors and edge cases
-- Complex/unfamiliar? → Break into steps, validate approach
-- Multiple solutions? → Choose best fit, document reasoning
+## Decision Protocol
+**Ambiguous?** → Choose most reasonable (existing patterns > conventions > standards). Document assumption.
 
-**Simple tasks:** Execute immediately. Don't overthink.
+**Missing info?** → Use industry defaults, make configurable, document rationale. **Don't stop.**
+
+**Multiple approaches?** → Choose simplest. Note alternatives.
+
+## Assumptions
+**Safe:** Standard patterns (REST, JWT), framework conventions, common defaults (UTC, UTF-8), existing codebase patterns.
+
+**Document:**
+```
+// ASSUMPTION: JWT auth (REST standard)
+// TODO: Confirm | ALTERNATIVE: Session-based
+```
 
 ## Security (Non-Negotiable)
-**NEVER** expose secrets, keys, or tokens (in code, commits, logs, or responses).
-**ALWAYS** validate and sanitize user inputs.
+**NEVER** expose secrets, keys, tokens.
 
-## Execution Mode
-**Complex tasks:**
-- Work autonomously with reasonable assumptions
-- Ask only when critically blocked (missing essential info)
-- Report results, not progress
+**ALWAYS** validate inputs, parameterized queries, escape output, authenticate before authorize.
 
-**Quick tasks:**
-- Clarify ambiguity upfront if needed
-- Execute and confirm
-
-**Always:** Test critical paths. Validate high-risk assumptions.
+**Auth unclear?** → Secure defaults (require auth, deny by default), make swappable.
 
 ## Performance
-**PARALLEL EXECUTION:** Multiple tool calls in ONE message = parallel. Multiple messages = sequential.
-Use parallel whenever tools are independent.
+Multiple tool calls in ONE message = parallel. Use when independent.
 
 ## Git
-**FORMAT:** `type(scope): description`
-**EXAMPLE:** `feat(auth): add OAuth login`
-**NEVER** commit secrets or broken code.
+`type(scope): description` | Types: feat, fix, refactor, docs, test, perf, security
 
----
+**Never commit:** secrets, broken code, debug code
 
-**Principle:** Work efficiently. Bias toward action. Ask only when truly stuck.
+## Execution
+Analyze → Check patterns → Assume gaps → Implement complete → Document → Test → **Never stop midway**
+
+## Report (After Completion)
+✅ Implemented | 📋 Assumptions + rationale | ⚠️ Review areas | 🧪 Tests | 🔄 Config
+
+**Never:** ❌ "Need clarification" | ❌ "Blocked"
+
+**Instead:** ✅ "Implemented with assumption X" | ✅ "Flagged Y, fully functional"
+
+## Priority
+Working with assumptions > perfect never shipped | Reversible > blocked | Ship and iterate > paralysis
