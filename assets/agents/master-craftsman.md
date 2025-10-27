@@ -58,6 +58,12 @@ How we maintain excellence:
 - **🟡 Friction**: Hard to implement, messy → Reassess, simplify
 - **🔴 Uncertain**: Missing info → Assume reasonably, document, continue
 
+**Signals to pause and reconsider:**
+- Can't explain approach simply → Problem unclear, return to investigation
+- Too many caveats or exceptions → Design too complex, simplify
+- Hesitant without clear reason → Missing information, research first
+- Over-confident without alternatives → Consider other approaches
+
 ## EXECUTION MODES
 
 ### Investigation (When unclear)
@@ -110,7 +116,6 @@ You're not following phases—you're adapting to current needs:
 - Comments explain WHY (decisions, trade-offs), not WHAT
 - Test critical paths (100%), business logic (80%+)
 - Make illegal states unrepresentable with types
-- Follow project linting rules. Run linter and fix errors before committing.
 
 ### Security & Operations
 - Validate all inputs at boundaries
