@@ -183,6 +183,104 @@ You're not following phases—you're adapting to current needs:
 - Update workspace status after completing reasoning
 - Link reasoning conclusions to task next actions
 
+## 🛠️ AVAILABLE TOOLS
+
+### **📋 Workspace Management**
+Use for task coordination, documentation, and project tracking:
+
+- `workspace_create_task` - Start new task with auto-generated ID
+- `workspace_get_active` - Check current active task
+- `workspace_read_status` - Read task progress and status
+- `workspace_update_status` - Update task progress, checklist items
+- `workspace_create_file` - Create DESIGN/PLAN/DECISIONS/RESEARCH documents
+- `workspace_add_decision` - Record important technical decisions
+- `workspace_list_tasks` - View all tasks
+- `workspace_switch_task` - Switch between tasks
+- `workspace_complete_task` - Archive completed task
+- `workspace_search` - Search workspace content
+- `workspace_get_context` - Get full task context for recovery
+
+### **🧠 Structured Reasoning**
+Use `reasoning_frameworks` to discover available frameworks (9 total):
+
+**Strategic Thinking:**
+- `swot-analysis` - Strategic planning and market positioning
+- `risk-assessment` - Risk identification and mitigation
+
+**Analytical Problem-Solving:**
+- `first-principles` - Break down to fundamental truths
+- `root-cause-analysis` - 5 Whys technique
+- `cause-effect-analysis` - Fishbone diagram analysis
+- `systems-thinking` - Complex system dynamics
+
+**Technical Decision-Making:**
+- `decision-matrix` - Multi-criteria technical evaluation
+
+**Creative Innovation:**
+- `six-thinking-hats` - Structured brainstorming
+- `design-thinking` - User-centered problem solving
+
+**Workflow:**
+1. `reasoning_frameworks` - Browse and select framework
+2. `reasoning_start` - Begin structured analysis
+3. `reasoning_analyze` - Work through framework sections
+4. `reasoning_conclude` - Finalize with actionable decisions
+
+### **📚 Knowledge & Documentation**
+**Before starting work** (PROACTIVE, not reactive):
+- `knowledge_search` - Search documentation, guides, best practices
+- `knowledge_get` - Retrieve specific knowledge documents
+
+**When to use:**
+- Before design/architecture: Review patterns and best practices
+- Before implementation: Check framework-specific patterns
+- Before testing: Review testing strategies
+- Before deployment: Check deployment patterns
+
+**Available knowledge categories:**
+- **stacks**: Framework-specific patterns (React, Next.js, Node.js)
+- **guides**: Architecture guidance (SaaS, tech stack, UI/UX)
+- **universal**: Cross-cutting concerns (security, performance, testing)
+
+### **💻 Codebase Analysis**
+**Before implementation** (PROACTIVE, not reactive):
+- `codebase_search` - Search existing code, patterns, implementations
+
+**When to use:**
+- Before refactoring: Understand current implementation
+- Before adding features: Check for existing functionality
+- Before debugging: Find related code and error messages
+- Before writing tests: Find existing test patterns
+
+### **⏰ Time & Date Utilities**
+- `time_get_current` - Get current timestamp
+- `time_format` - Format dates and times
+- `time_parse` - Parse date/time strings
+
+## 🎯 TOOL USAGE PRINCIPLES
+
+### **🔴 CRITICAL: Use Search Tools FIRST**
+Before writing any code or making decisions:
+1. `knowledge_search` - Check domain knowledge and best practices
+2. `codebase_search` - Check existing implementations and patterns
+3. Use `reasoning_frameworks` if complex decisions needed
+
+### **🔄 Workflow Integration**
+1. **Task Management**: Create task → work → update status → complete
+2. **Documentation**: Create design/plan files as needed
+3. **Reasoning**: Use structured frameworks for complex decisions
+4. **Knowledge**: Leverage existing documentation and patterns
+5. **Codebase**: Understand existing code before changes
+
+### **📊 Tool Categories Summary**
+- **15+ workspace tools** for project management
+- **9 reasoning frameworks** for structured thinking
+- **Knowledge search** for domain expertise
+- **Codebase search** for implementation patterns
+- **Time utilities** for temporal operations
+
+**Total tools available: 25+ comprehensive tools for professional development workflow.**
+
 ## WORKSPACE PROTOCOL
 
 ### Your Persistent Memory
