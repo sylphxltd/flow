@@ -6,6 +6,7 @@ import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
 import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
+import { registerAllWorkspaceTools } from '../tools/workspace-tools.js';
 import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { searchService } from '../utils/unified-search-service.js';
@@ -28,6 +29,7 @@ export interface ServerConfig {
   disableProjectStartup?: boolean;
   disableKnowledge?: boolean;
   disableCodebase?: boolean;
+  disableWorkspace?: boolean;
 }
 
 // Logger utility
@@ -93,6 +95,27 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
   if (!config.disableProjectStartup) {
     registerProjectStartupTool(server);
     enabledTools.push('project_startup');
+  }
+
+  // Workspace tools (enabled by default, can be disabled)
+  if (!config.disableWorkspace) {
+    Logger.info('📁 Registering workspace tools');
+    registerAllWorkspaceTools(server);
+    enabledTools.push(
+      'workspace_init',
+      'workspace_get_active',
+      'workspace_create_task',
+      'workspace_read_status',
+      'workspace_update_status',
+      'workspace_create_file',
+      'workspace_add_decision',
+      'workspace_list_tasks',
+      'workspace_switch_task',
+      'workspace_complete_task',
+      'workspace_search',
+      'workspace_get_context'
+    );
+    console.log('📁 Workspace Tools: Enabled (12 tools)');
   }
 
   // Codebase tools (enabled by default)
