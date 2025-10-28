@@ -213,8 +213,23 @@ export const claudeCodeTarget: Target = {
     userPrompt: string,
     options: { verbose?: boolean; dryRun?: boolean } = {}
   ): Promise<void> {
+    // Handle @file syntax for system prompt
+    let resolvedSystemPrompt = systemPrompt;
+    if (systemPrompt.startsWith('@')) {
+      const filePath = systemPrompt.substring(1);
+      try {
+        resolvedSystemPrompt = await fsPromises.readFile(filePath, 'utf8');
+        if (options.verbose) {
+          console.log(`📖 Read system prompt from file: ${filePath}`);
+          console.log(`📝 File content length: ${resolvedSystemPrompt.length} characters`);
+        }
+      } catch (error) {
+        throw new CLIError(`Failed to read system prompt file: ${filePath}`, 'FILE_READ_ERROR');
+      }
+    }
+
     // Sanitize and validate inputs
-    const sanitizedSystemPrompt = sanitize.yamlContent(systemPrompt);
+    const sanitizedSystemPrompt = sanitize.yamlContent(resolvedSystemPrompt);
     const sanitizedUserPrompt = sanitize.string(userPrompt, 10000);
 
     // Add summary request to system prompt
@@ -235,38 +250,28 @@ Please begin your response with a comprehensive summary of all the instructions 
     try {
       // Create a temporary file for the system prompt
       const tempFile = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'claude-system-prompt-'));
-      const tempPromptFile = path.join(tempFile, 'system-prompt.txt');
+      const promptFile = path.join(tempFile, 'system-prompt.txt');
 
       try {
-        await fsPromises.writeFile(tempPromptFile, enhancedSystemPrompt, 'utf8');
+        await fsPromises.writeFile(promptFile, enhancedSystemPrompt, 'utf8');
 
-        // Build arguments - we need to pass the prompt content directly but truncate it if too long
+        // Build arguments - use file-based system prompt to avoid command line length limits
         const args = ['--dangerously-skip-permissions'];
 
-        // If the prompt is too long for command line, truncate it with a note
-        let promptToUse = enhancedSystemPrompt;
-        const maxPromptLength = 8000; // Leave room for other args
-
-        if (enhancedSystemPrompt.length > maxPromptLength) {
-          promptToUse = `${enhancedSystemPrompt.substring(0, maxPromptLength)}\n\n[NOTE: Agent instructions were truncated due to length. Full instructions available in project documentation.]`;
-          if (options.verbose) {
-            console.warn(
-              `⚠️  Warning: System prompt truncated from ${enhancedSystemPrompt.length} to ${maxPromptLength} characters`
-            );
-          }
+        // Always use @file syntax for better reliability and no length limits
+        args.push('--system-prompt', `@${promptFile}`);
+        if (options.verbose) {
+          console.log('🚀 Executing Claude Code with file-based system prompt');
+          console.log(`📝 System prompt length: ${enhancedSystemPrompt.length} characters`);
+          console.log(`📝 System prompt saved to: ${promptFile}`);
         }
 
-        args.push('--system-prompt', promptToUse);
-
+        
         if (sanitizedUserPrompt.trim() !== '') {
           args.push(sanitizedUserPrompt);
         }
 
         if (options.verbose) {
-          console.log('🚀 Executing Claude Code with system prompt');
-          console.log(
-            `📝 System prompt length: ${promptToUse.length} characters${promptToUse.length < enhancedSystemPrompt.length ? ` (truncated from ${enhancedSystemPrompt.length})` : ''}`
-          );
           console.log(`📝 User prompt length: ${sanitizedUserPrompt.length} characters`);
         }
 
