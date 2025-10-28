@@ -1,0 +1,97 @@
+{
+  "id": "first-principles",
+  "name": "First Principles Thinking",
+  "description": "Break down complex problems into their most fundamental truths and reason up from there. Essential for innovative problem-solving and avoiding assumptions.",
+  "category": "analytical",
+  "subcategory": "foundational-reasoning",
+  "difficulty": "intermediate",
+  "estimated_time": "30-45 minutes",
+  "structure": [
+    {
+      "name": "Problem Deconstruction",
+      "description": "Break the problem into its smallest, most fundamental components",
+      "required": true
+    },
+    {
+      "name": "Assumption Identification",
+      "description": "List all assumptions and beliefs about the problem/domain",
+      "required": true
+    },
+    {
+      "name": "Fundamental Truths",
+      "description": "Identify what is absolutely true and cannot be broken down further",
+      "required": true
+    },
+    {
+      "name": "Reconstruction",
+      "description": "Build solutions back up from fundamental truths",
+      "required": true
+    },
+    {
+      "name": "Validation",
+      "description": "Test the reconstructed solution against original problem",
+      "required": true
+    }
+  ],
+  "prompts": [
+    "What are we trying to solve? Break it down to its core components.",
+    "What assumptions am I making about this problem/domain?",
+    "What do I know to be absolutely true? What cannot be questioned?",
+    "If I started from scratch, how would I solve this using only fundamental truths?",
+    "How does this solution compare to existing approaches? What advantages does it have?"
+  ],
+  "when_to_use": [
+    "When facing complex, ambiguous problems with many existing solutions",
+    "When challenging industry norms or established practices",
+    "When seeking breakthrough innovations rather than incremental improvements",
+    "When existing solutions seem unnecessarily complex or expensive",
+    "When you need to justify decisions from fundamental logic"
+  ],
+  "when_not_to_use": [
+    "When time is critical and quick decisions are needed",
+    "When dealing with simple, well-understood problems",
+    "When extensive domain expertise already exists and is reliable",
+    " When the cost of getting wrong is very high"
+  ],
+  "examples": [
+    {
+      "title": "SpaceX Cost Reduction",
+      "description": "Elon Musk applied first principles to rocketry: 'What are rockets made of? Aerospace-grade aluminum alloys, fuel, etc. What's the cost of those materials? Only 2% of total rocket cost.' This led to building rockets in-house."
+    },
+    {
+      "title": "Online Education Platform",
+      "description": "Instead of digitizing traditional education, asked: What is learning fundamentally? Knowledge transfer + skill practice + feedback. Built platform around these core elements."
+    }
+  ],
+  "tags": ["fundamental", "innovation", "problem-solving", "analysis", "logic", "breakthrough"],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "Aristotle (ancient origins), popularized by Elon Musk",
+    "quality_level": "core",
+    "created_date": "2025-10-28T17:35:00.000Z",
+    "last_updated": "2025-10-28T17:35:00.000Z",
+    "validation_status": {
+      "validated_by": "reasoning-system",
+      "validation_date": "2025-10-28T17:35:00.000Z",
+      "validation_notes": "Core analytical framework - fundamental for systematic innovation",
+      "effectiveness_rating": 9
+    },
+    "usage_stats": {
+      "total_uses": 0,
+      "success_rate": null,
+      "average_time_spent": null,
+      "user_satisfaction": null
+    },
+    "dependencies": {
+      "required_frameworks": [],
+      "complementary_frameworks": ["systems-thinking", "root-cause-analysis"],
+      "prerequisite_skills": ["critical-thinking", "logical-analysis"]
+    },
+    "implementation": {
+      "complexity": "moderate",
+      "flexibility": "high",
+      "research_backed": true,
+      "industry_validated": true
+    }
+  }
+}

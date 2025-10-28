@@ -70,8 +70,8 @@ All frameworks have been validated for:
 ## Adding New Frameworks
 
 To add new frameworks (developer action):
-1. Create JSON file in `src/frameworks/definitions/[category]/` (source code)
-2. Follow schema defined in `framework.schema.json`
+1. Create JSON file in `src/domains/workspace/frameworks/[category]/` (source code)
+2. Follow schema defined in `src/domains/workspace/reasoning/framework.schema.json`
 3. Include all required fields and metadata
 4. System automatically loads and validates frameworks at runtime
 

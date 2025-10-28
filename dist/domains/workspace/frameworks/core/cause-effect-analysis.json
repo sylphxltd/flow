@@ -1,0 +1,111 @@
+{
+  "id": "cause-effect-analysis",
+  "name": "Cause and Effect Analysis (Fishbone/Ishikawa)",
+  "description": "Systematically identify and explore all possible causes of a specific problem. Visual framework for comprehensive root cause analysis when multiple factors contribute.",
+  "category": "analytical",
+  "subcategory": "problem-solving",
+  "difficulty": "intermediate",
+  "estimated_time": "45-60 minutes",
+  "structure": [
+    {
+      "name": "Problem Statement",
+      "description": "Clearly define the specific problem to be analyzed (the 'effect')",
+      "required": true
+    },
+    {
+      "name": "Category Identification",
+      "description": "Select major cause categories (typically: People, Process, Materials, Equipment, Environment, Management)",
+      "required": true
+    },
+    {
+      "name": "Brainstorming Causes",
+      "description": "For each category, brainstorm all possible contributing factors",
+      "required": true
+    },
+    {
+      "name": "Sub-Cause Analysis",
+      "description": "Drill down into each identified cause to find more specific sub-causes",
+      "required": true
+    },
+    {
+      "name": "Relationship Mapping",
+      "description": "Identify relationships and interdependencies between different causes",
+      "required": true
+    },
+    {
+      "name": "Prioritization",
+      "description": "Identify most likely root causes based on evidence and impact",
+      "required": true
+    },
+    {
+      "name": "Solution Planning",
+      "description": "Develop targeted solutions for prioritized root causes",
+      "required": false
+    }
+  ],
+  "prompts": [
+    "What specific problem are we trying to solve? Define it clearly.",
+    "What are the major categories of causes we should consider? (People, Process, Materials, etc.)",
+    "Within [category], what specific factors could contribute to this problem?",
+    "For each cause identified, what are the underlying sub-causes?",
+    "How do these different causes relate to and influence each other?",
+    "Which causes are most likely to be the root causes? What evidence supports this?",
+    "What solutions can address each prioritized root cause?",
+    "How can we verify that we've found the true root causes?"
+  ],
+  "when_to_use": [
+    "When complex problems have multiple potential causes",
+    "When team-based problem solving is needed",
+    "When quality issues require systematic investigation",
+    "When previous attempts to solve problems have failed",
+    "When analyzing process failures or systemic issues",
+    "When visual documentation of causes is helpful"
+  ],
+  "when_not_to_use": [
+    "For simple problems with obvious single causes",
+    "When quick decisions are needed and time is limited",
+    "When working alone without diverse perspectives",
+    "When problems are urgent and require immediate action"
+  ],
+  "examples": [
+    {
+      "title": "Software Quality Issues",
+      "description": "Problem: High bug rate. Categories: People (skill gaps), Process (inadequate testing), Equipment (slow computers), Materials (poor requirements), Environment (tight deadlines). Identified root cause: Process - insufficient automated testing."
+    },
+    {
+      "title": "Customer Service Complaints",
+      "description": "Problem: Long response times. Categories: People (training), Process (workflow), Materials (information systems), Environment (staffing levels). Found multiple contributing causes requiring coordinated solutions."
+    }
+  ],
+  "tags": ["problem-solving", "root-cause", "analysis", "fishbone", "ishikawa", "quality"],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "Kaoru Ishikawa (1960s)",
+    "quality_level": "core",
+    "created_date": "2025-10-28T17:35:00.000Z",
+    "last_updated": "2025-10-28T17:35:00.000Z",
+    "validation_status": {
+      "validated_by": "reasoning-system",
+      "validation_date": "2025-10-28T17:35:00.000Z",
+      "validation_notes": "Widely used quality management tool for systematic problem analysis",
+      "effectiveness_rating": 8
+    },
+    "usage_stats": {
+      "total_uses": 0,
+      "success_rate": null,
+      "average_time_spent": null,
+      "user_satisfaction": null
+    },
+    "dependencies": {
+      "required_frameworks": [],
+      "complementary_frameworks": ["root-cause-analysis", "systems-thinking"],
+      "prerequisite_skills": ["brainstorming", "categorization", "systems-thinking"]
+    },
+    "implementation": {
+      "complexity": "moderate",
+      "flexibility": "high",
+      "research_backed": true,
+      "industry_validated": true
+    }
+  }
+}

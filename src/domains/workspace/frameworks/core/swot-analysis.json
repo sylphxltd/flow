@@ -1,0 +1,103 @@
+{
+  "id": "swot-analysis",
+  "name": "SWOT Analysis",
+  "description": "Strategic planning tool to analyze Strengths, Weaknesses, Opportunities, and Threats in making business decisions",
+  "category": "strategic",
+  "subcategory": "competitive-analysis",
+  "difficulty": "beginner",
+  "estimated_time": "30-60 minutes",
+  "structure": [
+    {
+      "name": "Strengths",
+      "description": "Internal advantages and capabilities that give competitive edge"
+    },
+    {
+      "name": "Weaknesses",
+      "description": "Internal limitations and vulnerabilities that need improvement"
+    },
+    {
+      "name": "Opportunities",
+      "description": "External factors that could be advantageous for growth"
+    },
+    {
+      "name": "Threats",
+      "description": "External factors that could cause problems or hinder success"
+    },
+    {
+      "name": "Strategic Implications",
+      "description": "Analysis of how SWOT factors interact and what they mean for strategy"
+    }
+  ],
+  "prompts": [
+    "What are our key internal strengths and competitive advantages?",
+    "What are our main weaknesses or areas needing improvement?",
+    "What external opportunities exist in our market or industry?",
+    "What external threats or challenges do we face?",
+    "How should we leverage our strengths to address threats and seize opportunities?",
+    "What strategic priorities emerge from this SWOT analysis?"
+  ],
+  "when_to_use": [
+    "Strategic planning and business development",
+    "Market analysis and competitive positioning",
+    "Product or service launch decisions",
+    "Team or organizational assessment",
+    "Annual business reviews and goal setting",
+    "Investment decisions and resource allocation"
+  ],
+  "when_not_to_use": [
+    "Highly technical or engineering decisions with clear parameters",
+    "Urgent operational decisions requiring immediate action",
+    "Simple choices with minimal strategic implications",
+    "Decisions requiring detailed quantitative analysis"
+  ],
+  "examples": [
+    {
+      "title": "New Market Entry Strategy",
+      "description": "Using SWOT to evaluate entering a new geographical market with existing products"
+    },
+    {
+      "title": "Product Line Expansion",
+      "description": "Analyzing strengths and opportunities before launching new product categories"
+    },
+    {
+      "title": "Competitive Response Strategy",
+      "description": "Assessing competitive threats and opportunities when a rival launches new features"
+    }
+  ],
+  "tags": [
+    "strategy",
+    "planning",
+    "business",
+    "competitive",
+    "analysis"
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "Stanford Research Institute (1960s)",
+    "quality_level": "core",
+    "created_date": "2024-01-01T00:00:00Z",
+    "last_updated": "2024-01-01T00:00:00Z",
+    "validation_status": {
+      "validated_by": "Business Strategy Expert",
+      "validation_date": "2024-01-01T00:00:00Z",
+      "validation_notes": "Widely validated strategic planning tool used globally for decades",
+      "effectiveness_rating": 5
+    },
+    "usage_stats": {
+      "total_uses": 0,
+      "user_satisfaction": 0,
+      "completion_rate": 0
+    }
+  },
+  "prerequisites": [
+    "Basic understanding of your organization's capabilities",
+    "Awareness of market and competitive landscape",
+    "Clear strategic question or decision to be made"
+  ],
+  "related_frameworks": [
+    "pest-analysis",
+    "blue-ocean-strategy",
+    "competitive-analysis",
+    "strategic-positioning"
+  ]
+}
