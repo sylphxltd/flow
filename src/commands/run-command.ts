@@ -7,8 +7,14 @@ import { CLIError } from '../utils/error-handler.js';
 import { getAgentsDir } from '../utils/paths.js';
 
 
-async function loadAgentContent(agentName: string): Promise<string> {
+async function loadAgentContent(agentName: string, agentFilePath?: string): Promise<string> {
   try {
+    // If specific file path provided, load from there
+    if (agentFilePath) {
+      const content = await fs.readFile(path.resolve(agentFilePath), 'utf-8');
+      return content;
+    }
+
     // First try to load from local agents directory (for user-defined agents)
     const localAgentPath = path.join(process.cwd(), 'agents', `${agentName}.md`);
 
@@ -24,7 +30,7 @@ async function loadAgentContent(agentName: string): Promise<string> {
       return content;
     }
   } catch (_error) {
-    throw new CLIError(`Agent '${agentName}' not found`, 'AGENT_NOT_FOUND');
+    throw new CLIError(`Agent '${agentName}' not found${agentFilePath ? ` at ${agentFilePath}` : ''}`, 'AGENT_NOT_FOUND');
   }
 }
 
@@ -88,6 +94,8 @@ export const runCommand = new Command('run')
   .description('Run a prompt with a specific agent (default: master-craftsman) using the detected or specified target')
   .option('--target <name>', `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`)
   .option('--agent <name>', 'Agent to use (default: master-craftsman)')
+  .option('--agent-file <path>', 'Load agent from specific file path (overrides --agent)')
+  .option('--system-prompt <text>', 'Custom system prompt (overrides agent content)')
   .option('--verbose', 'Show detailed output')
   .option('--dry-run', 'Show what would be done without executing the command')
   .argument('[prompt]', 'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)')
@@ -121,13 +129,30 @@ export const runCommand = new Command('run')
       console.log('');
     }
 
-    // Load agent content
-    const agentContent = await loadAgentContent(options.agent);
-    const agentInstructions = extractAgentInstructions(agentContent);
+    // Handle custom system prompt or load agent content
+    let systemPrompt: string;
 
-    // Create system prompt with agent instructions (no override notice - let target handle it)
-    const systemPrompt = `AGENT INSTRUCTIONS:
+    if (options.systemPrompt) {
+      // Use custom system prompt directly
+      systemPrompt = options.systemPrompt;
+
+      if (verbose) {
+        console.log(`📝 Using custom system prompt (${options.systemPrompt.length} chars)`);
+      }
+    } else {
+      // Load agent content and extract instructions
+      const agentContent = await loadAgentContent(options.agent, options.agentFile);
+      const agentInstructions = extractAgentInstructions(agentContent);
+
+      // Create system prompt with agent instructions
+      systemPrompt = `AGENT INSTRUCTIONS:
 ${agentInstructions}`;
+
+      if (verbose) {
+        const source = options.agentFile ? `file: ${options.agentFile}` : `agent: ${options.agent}`;
+        console.log(`📝 Using agent content from ${source} (${systemPrompt.length} chars)`);
+      }
+    }
 
     // Prepare user prompt
     let userPrompt = '';
