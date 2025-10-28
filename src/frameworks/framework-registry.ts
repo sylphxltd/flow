@@ -3,7 +3,7 @@ import { join } from 'path';
 import { z } from 'zod';
 
 // Framework directories
-const FRAMEWORKS_DIR = '.sylphx-flow/frameworks';
+const FRAMEWORKS_DIR = 'src/frameworks/definitions';
 const CORE_DIR = join(FRAMEWORKS_DIR, 'core');
 const STRATEGIC_DIR = join(FRAMEWORKS_DIR, 'strategic');
 const TECHNICAL_DIR = join(FRAMEWORKS_DIR, 'technical');
