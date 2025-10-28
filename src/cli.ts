@@ -3,8 +3,6 @@ import { codebaseCommand } from './commands/codebase-command.js';
 import { initCommand } from './commands/init-command.js';
 import { knowledgeCommand } from './commands/knowledge-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
-import { memoryCommand } from './commands/memory-command.js';
-import { handleMemoryTuiCommand } from './commands/memory-tui-command.js';
 import { runCommand } from './commands/run-command.js';
 
 import { showDefaultHelp } from './utils/help.js';
@@ -35,17 +33,9 @@ export function createCLI(): Command {
   // Add all commands directly using Commander.js
   program.addCommand(initCommand);
   program.addCommand(mcpCommand);
-  program.addCommand(memoryCommand);
   program.addCommand(runCommand);
   program.addCommand(codebaseCommand);
   program.addCommand(knowledgeCommand);
-
-  // Add TUI command separately since it has special handler
-  program
-    .command('tui')
-    .description('Launch interactive Sylphx Flow TUI')
-    .option('--target <type>', 'Target platform (opencode, default: auto-detect)')
-    .action(handleMemoryTuiCommand);
 
   // Default action when no command is provided
   program.action(() => {

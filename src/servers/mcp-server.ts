@@ -54,10 +54,6 @@ search-cache/
 cache/
 sessions/
 coordination/
-memory/
-!memory/README.md
-!memory/agents/README.md
-!memory/sessions/README.md
 `;
 
     // Check if .gitignore already exists

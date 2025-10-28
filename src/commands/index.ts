@@ -8,7 +8,6 @@ export { default as codebaseCommand } from './codebase-command';
 export { default as initCommand } from './init-command';
 export { default as knowledgeCommand } from './knowledge-command';
 export { default as mcpCommand } from './mcp-command';
-export { default as memoryCommand } from './memory-command';
 export { default as runCommand } from './run-command';
 
 // Re-export commonly used command functions
@@ -36,7 +35,6 @@ export {
   listMCPServers,
 } from './mcp-command';
 
-export { memoryCommand } from './memory-command';
 
 export {
   runWorkflow,
