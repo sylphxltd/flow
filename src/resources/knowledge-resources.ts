@@ -73,6 +73,13 @@ export function getAllKnowledgeResources(): KnowledgeResource[] {
       content: '',
       category: 'guides',
     },
+    {
+      uri: 'knowledge://guides/system-prompt',
+      title: 'System Prompt Writing Guide',
+      description: 'How to write system prompts that LLMs actually follow, including core principles, structure design, language techniques, and real-world examples',
+      content: '',
+      category: 'guides',
+    },
 
     // Universal concerns
     {
