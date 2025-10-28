@@ -213,23 +213,8 @@ export const claudeCodeTarget: Target = {
     userPrompt: string,
     options: { verbose?: boolean; dryRun?: boolean } = {}
   ): Promise<void> {
-    // Handle @file syntax for system prompt
-    let resolvedSystemPrompt = systemPrompt;
-    if (systemPrompt.startsWith('@')) {
-      const filePath = systemPrompt.substring(1);
-      try {
-        resolvedSystemPrompt = await fsPromises.readFile(filePath, 'utf8');
-        if (options.verbose) {
-          console.log(`📖 Read system prompt from file: ${filePath}`);
-          console.log(`📝 File content length: ${resolvedSystemPrompt.length} characters`);
-        }
-      } catch (error) {
-        throw new CLIError(`Failed to read system prompt file: ${filePath}`, 'FILE_READ_ERROR');
-      }
-    }
-
     // Sanitize and validate inputs
-    const sanitizedSystemPrompt = sanitize.yamlContent(resolvedSystemPrompt);
+    const sanitizedSystemPrompt = sanitize.yamlContent(systemPrompt);
     const sanitizedUserPrompt = sanitize.string(userPrompt, 10000);
 
     // Add summary request to system prompt

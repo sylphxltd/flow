@@ -95,7 +95,6 @@ export const runCommand = new Command('run')
   .option('--target <name>', `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`)
   .option('--agent <name>', 'Agent to use (default: master-craftsman)')
   .option('--agent-file <path>', 'Load agent from specific file path (overrides --agent)')
-  .option('--system-prompt <text>', 'Custom system prompt (overrides agent content). Use @file.txt to load from file.')
   .option('--verbose', 'Show detailed output')
   .option('--dry-run', 'Show what would be done without executing the command')
   .argument('[prompt]', 'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)')
@@ -129,29 +128,17 @@ export const runCommand = new Command('run')
       console.log('');
     }
 
-    // Handle custom system prompt or load agent content
-    let systemPrompt: string;
+    // Load agent content and extract instructions
+    const agentContent = await loadAgentContent(options.agent, options.agentFile);
+    const agentInstructions = extractAgentInstructions(agentContent);
 
-    if (options.systemPrompt) {
-      // Use custom system prompt directly
-      systemPrompt = options.systemPrompt;
-
-      if (verbose) {
-        console.log(`📝 Using custom system prompt (${options.systemPrompt.length} chars)`);
-      }
-    } else {
-      // Load agent content and extract instructions
-      const agentContent = await loadAgentContent(options.agent, options.agentFile);
-      const agentInstructions = extractAgentInstructions(agentContent);
-
-      // Create system prompt with agent instructions
-      systemPrompt = `AGENT INSTRUCTIONS:
+    // Create system prompt with agent instructions
+    const systemPrompt = `AGENT INSTRUCTIONS:
 ${agentInstructions}`;
 
-      if (verbose) {
-        const source = options.agentFile ? `file: ${options.agentFile}` : `agent: ${options.agent}`;
-        console.log(`📝 Using agent content from ${source} (${systemPrompt.length} chars)`);
-      }
+    if (verbose) {
+      const source = options.agentFile ? `file: ${options.agentFile}` : `agent: ${options.agent}`;
+      console.log(`📝 Using agent content from ${source} (${systemPrompt.length} chars)`);
     }
 
     // Prepare user prompt
