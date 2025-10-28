@@ -21,33 +21,14 @@ export * from './api/index.js';
 export * from './api.types';
 
 // ============================================================================
-// LEGACY TYPE ALIASES FOR BACKWARD COMPATIBILITY
+// LEGACY TYPE ALIASES - REMOVED
 // ============================================================================
-
-/**
- * @deprecated Use EnhancedMCPServerConfigUnion instead
- */
-export type MCPServerConfigUnion = EnhancedMCPServerConfigUnion;
-
-/**
- * @deprecated Use AgentMetadata instead
- */
-export type AgentConfig = AgentMetadata;
-
-/**
- * @deprecated Use DatabaseHealthCheckResult instead
- */
-export type HealthCheckResult = DatabaseHealthCheckResult;
-
-/**
- * @deprecated Use ApiResponse instead
- */
-export type APIResponse<T = unknown> = ApiResponse<T>;
-
-/**
- * @deprecated Use EnhancedError instead
- */
-export type SystemError = EnhancedError;
+// Deprecated type aliases removed - use the primary types directly:
+// - EnhancedMCPServerConfigUnion (not MCPServerConfigUnion)
+// - AgentMetadata (not AgentConfig)
+// - DatabaseHealthCheckResult (not HealthCheckResult)
+// - ApiResponse (not APIResponse)
+// - EnhancedError (not SystemError)
 
 // ============================================================================
 // SIMPLE UTILITY TYPES

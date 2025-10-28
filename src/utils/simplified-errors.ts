@@ -211,7 +211,7 @@ export class FilesystemError extends AppError {
  * Authentication Error - For auth failures
  */
 export class AuthenticationError extends AppError {
-  constructor(message: string = 'Authentication failed') {
+  constructor(message = 'Authentication failed') {
     super(message, 'AUTH_ERROR', ErrorCategory.AUTHENTICATION, ErrorSeverity.HIGH);
     this.name = 'AuthenticationError';
   }
@@ -395,8 +395,7 @@ export const createNetworkError = (message: string, url?: string, statusCode?: n
 export const createFilesystemError = (message: string, path?: string, operation?: string) =>
   ErrorFactory.filesystem(message, path, operation);
 
-export const createAuthenticationError = (message?: string) =>
-  ErrorFactory.authentication(message);
+export const createAuthenticationError = (message?: string) => ErrorFactory.authentication(message);
 
 export const createError = (
   message: string,

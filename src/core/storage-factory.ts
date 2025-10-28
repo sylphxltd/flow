@@ -3,12 +3,16 @@
  * Creates and manages storage adapters with proper registration
  */
 
-import type { StorageFactory, StorageConfig, StorageAdapter } from '../interfaces/unified-storage.js';
-import { DefaultStorageFactory } from './unified-storage-manager.js';
-import { MemoryStorageAdapter } from '../adapters/memory-storage-adapter.js';
 import { CacheStorageAdapter } from '../adapters/cache-storage-adapter.js';
+import { MemoryStorageAdapter } from '../adapters/memory-storage-adapter.js';
 import { VectorStorageAdapter } from '../adapters/vector-storage-adapter.js';
+import type {
+  StorageAdapter,
+  StorageConfig,
+  StorageFactory,
+} from '../interfaces/unified-storage.js';
 import { logger } from '../utils/logger.js';
+import { DefaultStorageFactory } from './unified-storage-manager.js';
 
 /**
  * Enhanced storage factory with all adapters pre-registered
@@ -36,7 +40,7 @@ export class StorageFactoryImpl extends DefaultStorageFactory {
     // this.register('drizzle', DrizzleStorageAdapter);
 
     logger.info('All builtin storage adapters registered', {
-      types: this.getAvailableTypes()
+      types: this.getAvailableTypes(),
     });
   }
 }
@@ -110,7 +114,9 @@ export const storageFactory = new StorageFactoryImpl();
 /**
  * Convenience functions for creating storage adapters
  */
-export async function createMemoryStorage(config?: Partial<StorageConfig>): Promise<StorageAdapter> {
+export async function createMemoryStorage(
+  config?: Partial<StorageConfig>
+): Promise<StorageAdapter> {
   const finalConfig = StorageConfigBuilder.memory(config);
   return storageFactory.create(finalConfig);
 }
@@ -168,18 +174,18 @@ export function createConfigFromEnv(type: string): StorageConfig {
 
   const defaultTTL = process.env.CACHE_DEFAULT_TTL;
   if (defaultTTL) {
-    config.defaultTTL = parseInt(defaultTTL, 10);
+    config.defaultTTL = Number.parseInt(defaultTTL, 10);
   }
 
   const maxCacheSize = process.env.CACHE_MAX_SIZE;
   if (maxCacheSize) {
-    config.maxCacheSize = parseInt(maxCacheSize, 10);
+    config.maxCacheSize = Number.parseInt(maxCacheSize, 10);
   }
 
   const vectorDimensions = process.env.VECTOR_DIMENSIONS;
   if (vectorDimensions) {
-    config.vectorDimensions = parseInt(vectorDimensions, 10);
+    config.vectorDimensions = Number.parseInt(vectorDimensions, 10);
   }
 
   return config;
-};
+}

@@ -65,14 +65,7 @@
       "description": "Developing new collaboration features through iterative testing with remote teams"
     }
   ],
-  "tags": [
-    "design",
-    "innovation",
-    "user-centered",
-    "creativity",
-    "prototyping",
-    "empathy"
-  ],
+  "tags": ["design", "innovation", "user-centered", "creativity", "prototyping", "empathy"],
   "metadata": {
     "version": "1.0.0",
     "author": "IDEO and Stanford d.school",

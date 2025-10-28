@@ -5,7 +5,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { searchService } from '../../utils/unified-search-service.js';
+import { searchService } from '../../services/search/unified-search-service.js';
 
 /**
  * Register codebase search tool

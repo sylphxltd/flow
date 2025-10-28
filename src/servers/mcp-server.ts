@@ -1,15 +1,15 @@
+import path from 'path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import path from 'path';
 import fs from 'fs/promises';
 
-import { registerCodebaseTools } from '../tools/codebase-tools.js';
-import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
-import { registerTimeTools } from '../tools/time-tools.js';
-import { registerWorkspaceTools } from '../tools/workspace-tools.js';
-import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
+import { registerCodebaseTools } from '../domains/codebase/tools.js';
+import { registerKnowledgeTools } from '../domains/knowledge/tools.js';
+import { registerTimeTools } from '../domains/utilities/time/tools.js';
+import { registerWorkspaceTools } from '../domains/workspace/tasks/tools.js';
+import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
+import { searchService } from '../services/search/unified-search-service.js';
 import { secretUtils } from '../utils/secret-utils.js';
-import { searchService } from '../utils/unified-search-service.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -69,7 +69,6 @@ coordination/
 
     await fs.writeFile(gitignorePath, gitignoreContent, 'utf8');
     Logger.info(`✓ Created ${path.join(SYLPHX_FLOW_DIR, '.gitignore')}`);
-
   } catch (error) {
     Logger.error('Failed to initialize .sylphx-flow directory', error);
     // Don't throw error, server can still function
@@ -144,7 +143,6 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     registerTimeTools(server);
     enabledTools.push('time_get_current, time_format, time_parse');
   }
-
 
   // Workspace tools (enabled by default, can be disabled)
   if (!config.disableWorkspace) {

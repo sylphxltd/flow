@@ -20,8 +20,8 @@ vi.mock('../src/core/target-manager.js', () => ({
   },
 }));
 
-import { configureMCPServerForTarget } from '../src/utils/target-config.js';
 import { targetManager } from '../src/core/target-manager.js';
+import { configureMCPServerForTarget } from '../src/utils/target-config.js';
 
 const mockGetTarget = targetManager.getTarget as ReturnType<typeof vi.fn>;
 const mockGetAllTargets = targetManager.getAllTargets as ReturnType<typeof vi.fn>;
@@ -74,7 +74,6 @@ describe('MCP Configuration Tests', () => {
 
   describe('configureMCPServerForTarget', () => {
     it('should return false for unknown server', async () => {
-      
       const result = await configureMCPServerForTarget(
         '/test/cwd',
         'test-target',
@@ -86,7 +85,6 @@ describe('MCP Configuration Tests', () => {
     });
 
     it('should return true for servers that require no keys', async () => {
-      
       // Mock no existing server
       mockTargetDefinition.readConfig.mockResolvedValue({});
 
@@ -97,7 +95,6 @@ describe('MCP Configuration Tests', () => {
     });
 
     it('should install servers with only optional keys even when no keys provided', async () => {
-      
       // Mock no existing server
       mockTargetDefinition.readConfig.mockResolvedValue({});
 

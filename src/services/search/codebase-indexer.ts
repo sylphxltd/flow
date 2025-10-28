@@ -13,11 +13,11 @@ import {
   loadGitignore,
   scanFiles,
   simpleHash,
-} from './codebase-helpers.js';
+} from '../../utils/codebase-helpers.js';
+import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
+import { type VectorDocument, VectorStorage } from '../storage/vector-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
-import { SeparatedMemoryStorage } from './separated-storage.js';
 import { type SearchIndex, buildSearchIndex } from './tfidf.js';
-import { type VectorDocument, VectorStorage } from './vector-storage.js';
 
 export interface CodebaseFile {
   path: string; // Relative path from codebase root

@@ -1,9 +1,16 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { cryptoUtils } from '../utils/security.js';
+import { cryptoUtils } from '../../../utils/security.js';
 
 // ============================================================================
 // STATELESS WORKSPACE TOOLS
@@ -150,7 +157,7 @@ function parseStatusFile(taskId: string, archived = false): TaskState | null {
   // Discover files in task directory
   const taskDir = join(dir, taskId);
   if (existsSync(taskDir)) {
-    result.files = readdirSync(taskDir).filter(f => f !== 'STATUS.md');
+    result.files = readdirSync(taskDir).filter((f) => f !== 'STATUS.md');
   }
 
   return result;
@@ -175,7 +182,10 @@ export function registerWorkspaceCreateTask(server: McpServer) {
       inputSchema: {
         name: z.string().describe('Task name'),
         goal: z.string().describe('Clear goal statement'),
-        priority: z.enum(['high', 'medium', 'low']).optional().describe('Task priority (default: medium)'),
+        priority: z
+          .enum(['high', 'medium', 'low'])
+          .optional()
+          .describe('Task priority (default: medium)'),
       },
     },
     (args: WorkspaceCreateTaskArgs): CallToolResult => {
@@ -375,10 +385,7 @@ export function registerWorkspaceUpdateTask(server: McpServer) {
           const noteEntry = `\n### ${timestamp}\n${updates.notes}\n`;
 
           if (content.includes('## Notes')) {
-            content = content.replace(
-              /## Notes\n([\s\S]*?)(?=\n##|$)/,
-              `## Notes\n$1${noteEntry}`
-            );
+            content = content.replace(/## Notes\n([\s\S]*?)(?=\n##|$)/, `## Notes\n$1${noteEntry}`);
           } else {
             content += `\n## Notes\n${noteEntry}`;
           }
@@ -430,7 +437,10 @@ export function registerWorkspaceListTasks(server: McpServer) {
     {
       description: 'List/discover all tasks (used for finding existing work)',
       inputSchema: {
-        status: z.enum(['active', 'completed', 'all']).optional().describe('Filter by status (default: active)'),
+        status: z
+          .enum(['active', 'completed', 'all'])
+          .optional()
+          .describe('Filter by status (default: active)'),
         limit: z.number().optional().describe('Limit number of results'),
       },
     },

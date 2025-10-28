@@ -80,7 +80,7 @@ class KnowledgeScanner {
       });
 
       const categoryResults = await Promise.all(scanPromises);
-      categoryResults.forEach(categoryResources => {
+      categoryResults.forEach((categoryResources) => {
         resources.push(...categoryResources);
       });
 
@@ -112,9 +112,9 @@ class KnowledgeScanner {
     try {
       const entries = await fs.readdir(this.config.knowledgeDir, { withFileTypes: true });
       return entries
-        .filter(entry => entry.isDirectory())
-        .map(entry => entry.name)
-        .filter(name => !name.startsWith('.')); // 忽略隱藏文件夾
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .filter((name) => !name.startsWith('.')); // 忽略隱藏文件夾
     } catch (error) {
       logger.warn('Failed to read knowledge directory', {
         error: (error as Error).message,
@@ -133,8 +133,8 @@ class KnowledgeScanner {
 
     try {
       const files = await fs.readdir(categoryPath);
-      const markdownFiles = files.filter(file =>
-        this.config.supportedExtensions.some(ext => file.endsWith(ext))
+      const markdownFiles = files.filter((file) =>
+        this.config.supportedExtensions.some((ext) => file.endsWith(ext))
       );
 
       // 並行處理所有文件
@@ -234,7 +234,7 @@ class KnowledgeScanner {
       const frontmatter: Partial<KnowledgeFrontmatter> = {};
 
       // 解析 key: value 格式
-      frontmatterText.split('\n').forEach(line => {
+      frontmatterText.split('\n').forEach((line) => {
         const colonIndex = line.indexOf(':');
         if (colonIndex > 0) {
           const key = line.substring(0, colonIndex).trim();
@@ -278,13 +278,13 @@ class KnowledgeScanner {
    */
   private mapCategory(folderName: string): 'stacks' | 'guides' | 'universal' | 'data' {
     const categoryMap: Record<string, 'stacks' | 'guides' | 'universal' | 'data'> = {
-      'stacks': 'stacks',
-      'guides': 'guides',
-      'universal': 'universal',
-      'data': 'data',
-      'database': 'data',
-      'architecture': 'guides',
-      'patterns': 'guides',
+      stacks: 'stacks',
+      guides: 'guides',
+      universal: 'universal',
+      data: 'data',
+      database: 'data',
+      architecture: 'guides',
+      patterns: 'guides',
     };
 
     return categoryMap[folderName.toLowerCase()] || 'guides';
@@ -296,7 +296,7 @@ class KnowledgeScanner {
   async getKnowledgeContent(uri: string): Promise<string> {
     try {
       const resources = await this.scanKnowledgeResources();
-      const resource = resources.find(r => r.uri === uri);
+      const resource = resources.find((r) => r.uri === uri);
 
       if (!resource) {
         throw new Error(`Knowledge resource not found: ${uri}`);
@@ -353,7 +353,7 @@ export async function getKnowledgeResourcesByCategory(
   category: 'stacks' | 'guides' | 'universal' | 'data'
 ): Promise<KnowledgeResource[]> {
   const allResources = await getAllKnowledgeResources();
-  return allResources.filter(resource => resource.category === category);
+  return allResources.filter((resource) => resource.category === category);
 }
 
 /**
@@ -369,15 +369,16 @@ export async function searchKnowledgeResources(
   const allResources = await getAllKnowledgeResources();
   const queryLower = query.toLowerCase();
 
-  let filtered = allResources.filter(resource =>
-    resource.title.toLowerCase().includes(queryLower) ||
-    resource.description.toLowerCase().includes(queryLower) ||
-    resource.content.toLowerCase().includes(queryLower)
+  let filtered = allResources.filter(
+    (resource) =>
+      resource.title.toLowerCase().includes(queryLower) ||
+      resource.description.toLowerCase().includes(queryLower) ||
+      resource.content.toLowerCase().includes(queryLower)
   );
 
   // 按類別過濾
   if (options?.category) {
-    filtered = filtered.filter(resource => resource.category === options.category);
+    filtered = filtered.filter((resource) => resource.category === options.category);
   }
 
   // 限制結果數量
@@ -419,16 +420,20 @@ export function registerKnowledgeTools(server: McpServer): void {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                total: resources.length,
-                resources: resources.map(r => ({
-                  uri: r.uri,
-                  title: r.title,
-                  description: r.description,
-                  category: r.category,
-                  lastModified: r.lastModified,
-                })),
-              }, null, 2),
+              text: JSON.stringify(
+                {
+                  total: resources.length,
+                  resources: resources.map((r) => ({
+                    uri: r.uri,
+                    title: r.title,
+                    description: r.description,
+                    category: r.category,
+                    lastModified: r.lastModified,
+                  })),
+                },
+                null,
+                2
+              ),
             },
           ],
         };
@@ -499,16 +504,20 @@ export function registerKnowledgeTools(server: McpServer): void {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                query,
-                total: results.length,
-                results: results.map(r => ({
-                  uri: r.uri,
-                  title: r.title,
-                  description: r.description,
-                  category: r.category,
-                })),
-              }, null, 2),
+              text: JSON.stringify(
+                {
+                  query,
+                  total: results.length,
+                  results: results.map((r) => ({
+                    uri: r.uri,
+                    title: r.title,
+                    description: r.description,
+                    category: r.category,
+                  })),
+                },
+                null,
+                2
+              ),
             },
           ],
         };

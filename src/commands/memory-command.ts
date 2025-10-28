@@ -2,9 +2,9 @@
 import { Command } from 'commander';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandOptions } from '../types.js';
+import { cli } from '../utils/cli-output.js';
 import { CLIError } from '../utils/error-handler.js';
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
-import { cli } from '../utils/cli-output.js';
 
 // Create the main memory command
 export const memoryCommand = new Command('memory')
@@ -63,7 +63,11 @@ memoryCommand
     const memory = new SeparatedMemoryStorage();
     const results = await memory.search(pattern, options.namespace);
 
-    cli.searchSummary(pattern, results.length, options.namespace !== 'all' ? options.namespace : undefined);
+    cli.searchSummary(
+      pattern,
+      results.length,
+      options.namespace !== 'all' ? options.namespace : undefined
+    );
 
     if (results.length === 0) {
       cli.emptyState('results');

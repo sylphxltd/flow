@@ -5,9 +5,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { type SearchIndex, buildSearchIndex } from '../../utils/tfidf.js';
-import { VectorStorage } from '../../utils/lancedb-vector-storage.js';
 import type { EmbeddingProvider } from '../../utils/embeddings.js';
+import { VectorStorage } from '../../utils/lancedb-vector-storage.js';
+import { type SearchIndex, buildSearchIndex } from '../../utils/tfidf.js';
 import type { ContentMetadata } from './search-service.js';
 
 export interface IndexingOptions {
@@ -65,7 +65,7 @@ export class IndexerService {
    * 報告進度
    */
   private reportProgress(progress: IndexingProgress): void {
-    this.progressCallbacks.forEach(callback => callback(progress));
+    this.progressCallbacks.forEach((callback) => callback(progress));
   }
 
   /**
@@ -215,16 +215,9 @@ export class IndexerService {
     }
 
     // 初始化向量存儲
-    const vectorPath = path.join(
-      process.cwd(),
-      '.sylphx-flow',
-      `${domain}-vectors.hnsw`
-    );
+    const vectorPath = path.join(process.cwd(), '.sylphx-flow', `${domain}-vectors.hnsw`);
 
-    const vectorStorage = new VectorStorage(
-      vectorPath,
-      this.embeddingProvider.dimensions || 1536
-    );
+    const vectorStorage = new VectorStorage(vectorPath, this.embeddingProvider.dimensions || 1536);
     await vectorStorage.initialize();
 
     this.vectorStorages.set(domain, vectorStorage);
@@ -233,7 +226,7 @@ export class IndexerService {
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
       const embeddings = await this.embeddingProvider.generateEmbeddings(
-        batch.map(file => file.content)
+        batch.map((file) => file.content)
       );
 
       for (let j = 0; j < batch.length; j++) {

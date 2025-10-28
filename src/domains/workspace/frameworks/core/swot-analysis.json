@@ -64,13 +64,7 @@
       "description": "Assessing competitive threats and opportunities when a rival launches new features"
     }
   ],
-  "tags": [
-    "strategy",
-    "planning",
-    "business",
-    "competitive",
-    "analysis"
-  ],
+  "tags": ["strategy", "planning", "business", "competitive", "analysis"],
   "metadata": {
     "version": "1.0.0",
     "author": "Stanford Research Institute (1960s)",

@@ -124,29 +124,27 @@ export class CLIOutput implements ICLIOutput {
 
     // Simple table formatting
     const headers = Object.keys(data[0]);
-    const columnWidths = headers.map(header =>
-      Math.max(header.length, ...data.map(row => String(row[header] || '').length))
+    const columnWidths = headers.map((header) =>
+      Math.max(header.length, ...data.map((row) => String(row[header] || '').length))
     );
 
     // Print header
-    const headerRow = headers.map((header, i) =>
-      header.padEnd(columnWidths[i])
-    ).join(' | ');
+    const headerRow = headers.map((header, i) => header.padEnd(columnWidths[i])).join(' | ');
     console.log(this.colors.bright + headerRow + this.colors.reset);
     console.log('-'.repeat(headerRow.length));
 
     // Print rows
-    data.forEach(row => {
-      const rowStr = headers.map((header, i) =>
-        String(row[header] || '').padEnd(columnWidths[i])
-      ).join(' | ');
+    data.forEach((row) => {
+      const rowStr = headers
+        .map((header, i) => String(row[header] || '').padEnd(columnWidths[i]))
+        .join(' | ');
       console.log(rowStr);
     });
 
     logger.debug('CLI table output', {
       headers,
       rowCount: data.length,
-      columnWidths
+      columnWidths,
     });
   }
 
@@ -166,19 +164,22 @@ export class CLIOutput implements ICLIOutput {
     logger.debug('CLI list output', {
       itemCount: items.length,
       numbered,
-      bullet
+      bullet,
     });
   }
 
   /**
    * Print formatted memory entry
    */
-  memoryEntry(entry: {
-    namespace: string;
-    key: string;
-    value: unknown;
-    updated_at: string;
-  }, index?: number): void {
+  memoryEntry(
+    entry: {
+      namespace: string;
+      key: string;
+      value: unknown;
+      updated_at: string;
+    },
+    index?: number
+  ): void {
     const prefix = index !== undefined ? `${index + 1}.` : '•';
     const safeValue = entry.value || '';
     const value =
@@ -194,7 +195,7 @@ export class CLIOutput implements ICLIOutput {
     logger.debug('CLI memory entry output', {
       namespace: entry.namespace,
       key: entry.key,
-      valueLength: String(entry.value || '').length
+      valueLength: String(entry.value || '').length,
     });
   }
 
@@ -218,10 +219,14 @@ export class CLIOutput implements ICLIOutput {
    */
   listSummary(namespace: string, count: number, total?: number): void {
     if (namespace && namespace !== 'all') {
-      console.log(`${this.colors.cyan}📋 Memory entries in namespace: ${namespace}${this.colors.reset}`);
+      console.log(
+        `${this.colors.cyan}📋 Memory entries in namespace: ${namespace}${this.colors.reset}`
+      );
       console.log(`${this.colors.bright}Total: ${count} entries${this.colors.reset}\n`);
     } else if (total) {
-      console.log(`${this.colors.cyan}📋 All memory entries (showing first ${count})${this.colors.reset}`);
+      console.log(
+        `${this.colors.cyan}📋 All memory entries (showing first ${count})${this.colors.reset}`
+      );
       console.log(`${this.colors.bright}Total: ${total} entries${this.colors.reset}\n`);
     }
 
@@ -235,7 +240,7 @@ export class CLIOutput implements ICLIOutput {
     const messages = {
       entries: 'No entries found',
       results: 'No matching entries found',
-      data: 'No data to display'
+      data: 'No data to display',
     };
 
     let message = messages[type];

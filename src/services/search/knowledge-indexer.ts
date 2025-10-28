@@ -5,11 +5,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { getKnowledgeDir } from '../../utils/paths.js';
+import { VectorStorage } from '../storage/lancedb-vector-storage.js';
 import { BaseIndexer } from './base-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
-import { VectorStorage } from './lancedb-vector-storage.js';
-import { getKnowledgeDir } from './paths.js';
 import { type SearchIndex, buildSearchIndex } from './tfidf.js';
 
 /**
@@ -140,6 +140,6 @@ export function getKnowledgeIndexer(embeddingProvider?: EmbeddingProvider): Know
 }
 
 export async function getKnowledgeIndexerWithEmbeddings(): Promise<KnowledgeIndexer> {
-    const embeddingProvider = await getDefaultEmbeddingProvider();
+  const embeddingProvider = await getDefaultEmbeddingProvider();
   return getKnowledgeIndexer(embeddingProvider);
 }

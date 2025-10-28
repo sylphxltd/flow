@@ -8,7 +8,7 @@ export { IndexerService, getIndexerService } from './indexer.js';
 export {
   EmbeddingsProviderService,
   defaultEmbeddingsProvider,
-  createEmbeddingsProvider
+  createEmbeddingsProvider,
 } from './embeddings-provider.js';
 
 export type {
@@ -31,7 +31,7 @@ export type {
 export async function quickSearch(
   query: string,
   domain: 'codebase' | 'knowledge' | 'workspace' | 'all' = 'all',
-  limit: number = 10
+  limit = 10
 ) {
   const searchService = getSearchService();
   return await searchService.search(query, { domain, limit });
@@ -44,12 +44,12 @@ export async function quickIndex(
 ) {
   const indexerService = getIndexerService();
   const results = await Promise.allSettled(
-    domains.map(domain => indexerService.buildIndex(domain, options))
+    domains.map((domain) => indexerService.buildIndex(domain, options))
   );
 
   return {
     results,
-    successful: results.filter(r => r.status === 'fulfilled').length,
-    failed: results.filter(r => r.status === 'rejected').length,
+    successful: results.filter((r) => r.status === 'fulfilled').length,
+    failed: results.filter((r) => r.status === 'rejected').length,
   };
 }

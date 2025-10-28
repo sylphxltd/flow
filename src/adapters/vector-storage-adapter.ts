@@ -3,14 +3,14 @@
  * Wraps the existing vector storage functionality with the unified interface
  */
 
+import { StorageUtils } from '../core/unified-storage-manager.js';
 import type {
-  VectorStorageAdapter,
   StorageConfig,
   StorageResult,
   VectorDocument,
   VectorSearchResult,
+  VectorStorageAdapter,
 } from '../interfaces/unified-storage.js';
-import { StorageUtils } from '../core/unified-storage-manager.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -34,190 +34,154 @@ export class VectorStorageAdapter implements VectorStorageAdapter {
       return;
     }
 
-    await StorageUtils.executeOperation(
-      async () => {
-        // Initialize vector database connection here
-        this.initialized = true;
-        logger.info('Vector storage adapter initialized', {
-          config: this.config,
-          vectorDimensions: this.vectorDimensions
-        });
-      },
-      'vector.initialize'
-    );
+    await StorageUtils.executeOperation(async () => {
+      // Initialize vector database connection here
+      this.initialized = true;
+      logger.info('Vector storage adapter initialized', {
+        config: this.config,
+        vectorDimensions: this.vectorDimensions,
+      });
+    }, 'vector.initialize');
   }
 
   async close(): Promise<void> {
-    await StorageUtils.executeOperation(
-      async () => {
-        this.documents.clear();
-        this.initialized = false;
-        logger.debug('Vector storage adapter closed');
-      },
-      'vector.close'
-    );
+    await StorageUtils.executeOperation(async () => {
+      this.documents.clear();
+      this.initialized = false;
+      logger.debug('Vector storage adapter closed');
+    }, 'vector.close');
   }
 
   async getStats(): Promise<Record<string, unknown>> {
-    return StorageUtils.executeOperation(
-      async () => {
-        const documents = Array.from(this.documents.values());
-        const typeCount = documents.reduce((acc, doc) => {
+    return StorageUtils.executeOperation(async () => {
+      const documents = Array.from(this.documents.values());
+      const typeCount = documents.reduce(
+        (acc, doc) => {
           const type = doc.metadata?.type || 'unknown';
           acc[type] = (acc[type] || 0) + 1;
           return acc;
-        }, {} as Record<string, number>);
+        },
+        {} as Record<string, number>
+      );
 
-        return {
-          type: this.type,
-          documentCount: this.documents.size,
-          vectorDimensions: this.vectorDimensions,
-          initialized: this.initialized,
-          config: this.config,
-          typeDistribution: typeCount,
-        };
-      },
-      'vector.getStats'
-    );
+      return {
+        type: this.type,
+        documentCount: this.documents.size,
+        vectorDimensions: this.vectorDimensions,
+        initialized: this.initialized,
+        config: this.config,
+        typeDistribution: typeCount,
+      };
+    }, 'vector.getStats');
   }
 
   async get(key: string): Promise<VectorDocument | null> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        const result = this.documents.get(key) || null;
-        logger.debug('Vector get operation', { key, found: result !== null });
-        return result;
-      },
-      'vector.get'
-    );
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      const result = this.documents.get(key) || null;
+      logger.debug('Vector get operation', { key, found: result !== null });
+      return result;
+    }, 'vector.get');
   }
 
   async set(key: string, value: VectorDocument): Promise<void> {
-    await StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        // For vector storage, we use the document ID as the key
-        const document = { ...value, id: key };
-        await this.add(document);
-        logger.debug('Vector set operation', { key, id: document.id });
-      },
-      'vector.set'
-    );
+    await StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      // For vector storage, we use the document ID as the key
+      const document = { ...value, id: key };
+      await this.add(document);
+      logger.debug('Vector set operation', { key, id: document.id });
+    }, 'vector.set');
   }
 
   async delete(key: string): Promise<boolean> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        const result = await this.deleteDocument(key);
-        logger.debug('Vector delete operation', { key, deleted: result });
-        return result;
-      },
-      'vector.delete'
-    );
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      const result = await this.deleteDocument(key);
+      logger.debug('Vector delete operation', { key, deleted: result });
+      return result;
+    }, 'vector.delete');
   }
 
   async exists(key: string): Promise<boolean> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        return this.documents.has(key);
-      },
-      'vector.exists'
-    );
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      return this.documents.has(key);
+    }, 'vector.exists');
   }
 
   async keys(): Promise<string[]> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        const keys = Array.from(this.documents.keys());
-        logger.debug('Vector keys operation', { count: keys.length });
-        return keys;
-      },
-      'vector.keys'
-    );
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      const keys = Array.from(this.documents.keys());
+      logger.debug('Vector keys operation', { count: keys.length });
+      return keys;
+    }, 'vector.keys');
   }
 
   async size(): Promise<number> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        return this.documents.size;
-      },
-      'vector.size'
-    );
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      return this.documents.size;
+    }, 'vector.size');
   }
 
   async clear(): Promise<void> {
-    await StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        this.documents.clear();
-        logger.debug('Vector clear operation');
-      },
-      'vector.clear'
-    );
+    await StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      this.documents.clear();
+      logger.debug('Vector clear operation');
+    }, 'vector.clear');
   }
 
   async add(document: VectorDocument): Promise<void> {
-    await StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
+    await StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
 
-        // Validate document
-        this.validateDocument(document);
+      // Validate document
+      this.validateDocument(document);
 
-        this.documents.set(document.id, document);
-        logger.debug('Vector document added', {
-          id: document.id,
-          type: document.metadata?.type,
-          contentLength: document.content.length
-        });
-      },
-      'vector.add'
-    );
+      this.documents.set(document.id, document);
+      logger.debug('Vector document added', {
+        id: document.id,
+        type: document.metadata?.type,
+        contentLength: document.content.length,
+      });
+    }, 'vector.add');
   }
 
   async addBatch(documents: VectorDocument[]): Promise<void> {
-    await StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
+    await StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
 
-        // Validate all documents first
-        documents.forEach(doc => this.validateDocument(doc));
+      // Validate all documents first
+      documents.forEach((doc) => this.validateDocument(doc));
 
-        // Add all documents
-        documents.forEach(doc => {
-          this.documents.set(doc.id, doc);
-        });
+      // Add all documents
+      documents.forEach((doc) => {
+        this.documents.set(doc.id, doc);
+      });
 
-        logger.debug('Vector batch add', { count: documents.length });
-      },
-      'vector.addBatch'
-    );
+      logger.debug('Vector batch add', { count: documents.length });
+    }, 'vector.addBatch');
   }
 
   async search(query: number[], limit = 10): Promise<VectorSearchResult[]> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
 
-        const documents = Array.from(this.documents.values());
-        const results = this.performVectorSearch(query, documents, limit);
+      const documents = Array.from(this.documents.values());
+      const results = this.performVectorSearch(query, documents, limit);
 
-        logger.debug('Vector search', {
-          queryDimensions: query.length,
-          totalDocuments: documents.length,
-          resultsCount: results.length,
-          limit
-        });
+      logger.debug('Vector search', {
+        queryDimensions: query.length,
+        totalDocuments: documents.length,
+        resultsCount: results.length,
+        limit,
+      });
 
-        return results;
-      },
-      'vector.search'
-    );
+      return results;
+    }, 'vector.search');
   }
 
   async searchWithFilters(
@@ -225,106 +189,90 @@ export class VectorStorageAdapter implements VectorStorageAdapter {
     filters?: Record<string, unknown>,
     limit = 10
   ): Promise<VectorSearchResult[]> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
 
-        let documents = Array.from(this.documents.values());
+      let documents = Array.from(this.documents.values());
 
-        // Apply filters
-        if (filters) {
-          documents = documents.filter(doc =>
-            this.matchesFilters(doc, filters)
-          );
-        }
+      // Apply filters
+      if (filters) {
+        documents = documents.filter((doc) => this.matchesFilters(doc, filters));
+      }
 
-        const results = this.performVectorSearch(query, documents, limit);
+      const results = this.performVectorSearch(query, documents, limit);
 
-        logger.debug('Vector search with filters', {
-          queryDimensions: query.length,
-          filteredDocuments: documents.length,
-          totalDocuments: this.documents.size,
-          resultsCount: results.length,
-          filters
-        });
+      logger.debug('Vector search with filters', {
+        queryDimensions: query.length,
+        filteredDocuments: documents.length,
+        totalDocuments: this.documents.size,
+        resultsCount: results.length,
+        filters,
+      });
 
-        return results;
-      },
-      'vector.searchWithFilters'
-    );
+      return results;
+    }, 'vector.searchWithFilters');
   }
 
   async deleteDocument(id: string): Promise<boolean> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
-        const existed = this.documents.has(id);
-        this.documents.delete(id);
-        logger.debug('Vector document deleted', { id, existed });
-        return existed;
-      },
-      'vector.deleteDocument'
-    );
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
+      const existed = this.documents.has(id);
+      this.documents.delete(id);
+      logger.debug('Vector document deleted', { id, existed });
+      return existed;
+    }, 'vector.deleteDocument');
   }
 
   async update(id: string, document: VectorDocument): Promise<void> {
-    await StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
+    await StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
 
-        if (!this.documents.has(id)) {
-          throw new Error(`Document with id ${id} not found`);
-        }
+      if (!this.documents.has(id)) {
+        throw new Error(`Document with id ${id} not found`);
+      }
 
-        this.validateDocument(document);
-        this.documents.set(id, document);
+      this.validateDocument(document);
+      this.documents.set(id, document);
 
-        logger.debug('Vector document updated', { id });
-      },
-      'vector.update'
-    );
+      logger.debug('Vector document updated', { id });
+    }, 'vector.update');
   }
 
   async updateMetadata(id: string, metadata: Record<string, unknown>): Promise<void> {
-    await StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
+    await StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
 
-        const document = this.documents.get(id);
-        if (!document) {
-          throw new Error(`Document with id ${id} not found`);
-        }
+      const document = this.documents.get(id);
+      if (!document) {
+        throw new Error(`Document with id ${id} not found`);
+      }
 
-        const updatedDocument = {
-          ...document,
-          metadata: { ...document.metadata, ...metadata }
-        };
+      const updatedDocument = {
+        ...document,
+        metadata: { ...document.metadata, ...metadata },
+      };
 
-        this.documents.set(id, updatedDocument);
+      this.documents.set(id, updatedDocument);
 
-        logger.debug('Vector document metadata updated', { id });
-      },
-      'vector.updateMetadata'
-    );
+      logger.debug('Vector document metadata updated', { id });
+    }, 'vector.updateMetadata');
   }
 
   async getByMetadata(metadata: Record<string, unknown>): Promise<VectorDocument[]> {
-    return StorageUtils.executeOperation(
-      async () => {
-        this.ensureInitialized();
+    return StorageUtils.executeOperation(async () => {
+      this.ensureInitialized();
 
-        const documents = Array.from(this.documents.values())
-          .filter(doc => this.matchesFilters(doc, metadata));
+      const documents = Array.from(this.documents.values()).filter((doc) =>
+        this.matchesFilters(doc, metadata)
+      );
 
-        logger.debug('Vector search by metadata', {
-          metadata,
-          resultsCount: documents.length
-        });
+      logger.debug('Vector search by metadata', {
+        metadata,
+        resultsCount: documents.length,
+      });
 
-        return documents;
-      },
-      'vector.getByMetadata'
-    );
+      return documents;
+    }, 'vector.getByMetadata');
   }
 
   /**
@@ -349,9 +297,7 @@ export class VectorStorageAdapter implements VectorStorageAdapter {
     }
 
     // Sort by similarity (descending) and take top results
-    return results
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
   /**

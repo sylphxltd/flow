@@ -65,14 +65,7 @@
       "description": "Mapping how technology changes create feedback loops affecting business processes and customer behavior"
     }
   ],
-  "tags": [
-    "complexity",
-    "holistic",
-    "interconnections",
-    "patterns",
-    "feedback",
-    "ecosystem"
-  ],
+  "tags": ["complexity", "holistic", "interconnections", "patterns", "feedback", "ecosystem"],
   "metadata": {
     "version": "1.0.0",
     "author": "Peter Senge and Systems Thinking Community",

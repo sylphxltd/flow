@@ -3,8 +3,8 @@
  * Provides utilities for executing async operations in parallel with proper error handling and resource management
  */
 
-import { ErrorHandler } from './simplified-errors.js';
 import { logger } from './logger.js';
+import { ErrorHandler } from './simplified-errors.js';
 
 /**
  * Configuration for parallel operations
@@ -59,18 +59,13 @@ export async function parallel<T>(
   options: ParallelOptions = {}
 ): Promise<ParallelResult<T>> {
   const startTime = Date.now();
-  const {
-    concurrency = 10,
-    continueOnError = true,
-    timeout = 30000,
-    onProgress
-  } = options;
+  const { concurrency = 10, continueOnError = true, timeout = 30000, onProgress } = options;
 
   logger.debug('Starting parallel operations', {
     itemCount: items.length,
     concurrency,
     continueOnError,
-    timeout
+    timeout,
   });
 
   const results: ParallelResult<T> = {
@@ -79,7 +74,7 @@ export async function parallel<T>(
     total: items.length,
     successCount: 0,
     failureCount: 0,
-    duration: 0
+    duration: 0,
   };
 
   // Process items in batches based on concurrency limit
@@ -100,7 +95,7 @@ export async function parallel<T>(
         results.successful.push({
           index: globalIndex,
           result,
-          item
+          item,
         });
 
         // Report progress
@@ -115,13 +110,13 @@ export async function parallel<T>(
         results.failed.push({
           index: globalIndex,
           error: errorObj,
-          item
+          item,
         });
 
         logger.warn('Parallel operation failed', {
           index: globalIndex,
           error: errorObj.message,
-          item: typeof item === 'object' ? JSON.stringify(item) : item
+          item: typeof item === 'object' ? JSON.stringify(item) : item,
         });
 
         // Re-throw if not continuing on error
@@ -138,7 +133,7 @@ export async function parallel<T>(
 
     // Add delay between batches if specified
     if (options.batchDelay && i + concurrency < items.length) {
-      await new Promise(resolve => setTimeout(resolve, options.batchDelay));
+      await new Promise((resolve) => setTimeout(resolve, options.batchDelay));
     }
   }
 
@@ -151,7 +146,7 @@ export async function parallel<T>(
     successCount: results.successCount,
     failureCount: results.failureCount,
     duration: results.duration,
-    successRate: `${((results.successCount / results.total) * 100).toFixed(1)}%`
+    successRate: `${((results.successCount / results.total) * 100).toFixed(1)}%`,
   });
 
   return results;
@@ -167,22 +162,22 @@ export async function parallelWithRetry<T>(
 ): Promise<ParallelResult<T>> {
   const { maxRetries = 3, retryDelay = 1000, ...parallelOptions } = options;
 
-  let result = await parallel(items, operation, parallelOptions);
+  const result = await parallel(items, operation, parallelOptions);
 
   // Retry failed operations
   for (let attempt = 1; attempt <= maxRetries && result.failed.length > 0; attempt++) {
     logger.info(`Retrying failed operations (attempt ${attempt}/${maxRetries})`, {
       failedCount: result.failed.length,
-      retryDelay
+      retryDelay,
     });
 
     // Wait before retry
     if (retryDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
 
     // Retry only failed items
-    const failedItems = result.failed.map(f => f.item);
+    const failedItems = result.failed.map((f) => f.item);
     const retryResult = await parallel(failedItems, operation, parallelOptions);
 
     // Merge results
@@ -203,12 +198,7 @@ export async function batchParallel<T, R>(
   processor: (batch: T[], batchIndex: number) => Promise<R[]>,
   options: BatchOptions<T> = {}
 ): Promise<R[]> {
-  const {
-    batchSize = 50,
-    concurrency = 3,
-    continueOnError = true,
-    onProgress
-  } = options;
+  const { batchSize = 50, concurrency = 3, continueOnError = true, onProgress } = options;
 
   const batches: T[][] = [];
   for (let i = 0; i < items.length; i += batchSize) {
@@ -219,7 +209,7 @@ export async function batchParallel<T, R>(
     totalItems: items.length,
     batchSize,
     batchCount: batches.length,
-    concurrency
+    concurrency,
   });
 
   const processBatch = async (batch: T[], batchIndex: number): Promise<R[]> => {
@@ -235,7 +225,7 @@ export async function batchParallel<T, R>(
       logger.error('Batch processing failed', {
         batchIndex,
         batchSize: batch.length,
-        error: (error as Error).message
+        error: (error as Error).message,
       });
 
       if (!continueOnError) {
@@ -247,14 +237,14 @@ export async function batchParallel<T, R>(
   };
 
   // Process batches in parallel
-  const results = await parallel(
-    batches,
-    (batch, index) => processBatch(batch as T[], index),
-    { concurrency, continueOnError, onProgress }
-  );
+  const results = await parallel(batches, (batch, index) => processBatch(batch as T[], index), {
+    concurrency,
+    continueOnError,
+    onProgress,
+  });
 
   // Flatten successful results
-  return results.successful.flatMap(r => r.result as R[]);
+  return results.successful.flatMap((r) => r.result as R[]);
 }
 
 /**
@@ -270,7 +260,7 @@ export async function parallelMap<T, R>(
   if (result.failureCount > 0) {
     logger.warn('parallelMap had failures', {
       total: result.total,
-      failures: result.failureCount
+      failures: result.failureCount,
     });
   }
 
@@ -295,12 +285,12 @@ export async function parallelFilter<T>(
     items,
     async (item, index) => ({
       item,
-      passes: await predicate(item, index)
+      passes: await predicate(item, index),
     }),
     options
   );
 
-  return results.filter(r => r.passes).map(r => r.item);
+  return results.filter((r) => r.passes).map((r) => r.item);
 }
 
 /**
@@ -358,7 +348,7 @@ export async function parallelReduce<T>(
  * Execute multiple async operations in parallel and return all results
  */
 export async function all<T>(operations: Array<() => Promise<T>>): Promise<T[]> {
-  const promises = operations.map(op => op());
+  const promises = operations.map((op) => op());
   return Promise.all(promises);
 }
 
@@ -375,14 +365,14 @@ export async function any<T>(operations: Array<() => Promise<T>>): Promise<T> {
   });
 
   const results = await Promise.all(promises);
-  const successful = results.find(r => r.success);
+  const successful = results.find((r) => r.success);
 
   if (successful) {
     return successful.result as T;
   }
 
   // If none succeeded, throw the first error
-  const firstFailure = results.find(r => !r.success);
+  const firstFailure = results.find((r) => !r.success);
   if (firstFailure) {
     throw firstFailure.error;
   }
@@ -394,7 +384,11 @@ export async function any<T>(operations: Array<() => Promise<T>>): Promise<T> {
  * Create a parallel execution queue with controlled concurrency
  */
 export class ParallelQueue<T> {
-  private queue: Array<{ item: T; resolve: (value: unknown) => void; reject: (error: Error) => void }> = [];
+  private queue: Array<{
+    item: T;
+    resolve: (value: unknown) => void;
+    reject: (error: Error) => void;
+  }> = [];
   private running = 0;
   private concurrency: number;
   private processor: (item: T) => Promise<unknown>;

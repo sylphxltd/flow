@@ -1,10 +1,10 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { CodebaseIndexer } from '../utils/codebase-indexer.js';
+import { CodebaseIndexer } from '../services/search/codebase-indexer.js';
+import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
+import { searchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
-import { searchService } from '../utils/unified-search-service.js';
-import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 
 export const codebaseSearchCommand = new Command('search')
   .description('Search codebase files and source code')

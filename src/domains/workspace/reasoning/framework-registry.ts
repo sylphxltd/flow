@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { z } from 'zod';
 
@@ -38,7 +38,14 @@ export interface ReasoningFramework {
   id: string;
   name: string;
   description: string;
-  category: 'strategic' | 'analytical' | 'technical' | 'user-centric' | 'operational' | 'creative' | 'risk';
+  category:
+    | 'strategic'
+    | 'analytical'
+    | 'technical'
+    | 'user-centric'
+    | 'operational'
+    | 'creative'
+    | 'risk';
   subcategory?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   estimated_time: string;
@@ -99,7 +106,9 @@ export class FrameworkRegistry {
 
   private async loadFrameworksFromDirectory(directory: string): Promise<void> {
     if (!existsSync(directory)) {
-      console.warn(`Warning: Framework directory '${directory}' not found. This may indicate a development setup issue.`);
+      console.warn(
+        `Warning: Framework directory '${directory}' not found. This may indicate a development setup issue.`
+      );
       return;
     }
 
@@ -143,7 +152,9 @@ export class FrameworkRegistry {
     }
 
     if (!Array.isArray(framework.structure) || framework.structure.length < 2) {
-      throw new Error(`Framework structure must be an array with at least 2 sections: ${framework.id}`);
+      throw new Error(
+        `Framework structure must be an array with at least 2 sections: ${framework.id}`
+      );
     }
 
     if (!Array.isArray(framework.prompts) || framework.prompts.length < 2) {
@@ -172,22 +183,25 @@ export class FrameworkRegistry {
     if (!this.initialized) {
       throw new Error('Framework registry not initialized. Call initialize() first.');
     }
-    return this.getAll().filter(f => f.category === category);
+    return this.getAll().filter((f) => f.category === category);
   }
 
   getByQualityLevel(quality: string): ReasoningFramework[] {
     if (!this.initialized) {
       throw new Error('Framework registry not initialized. Call initialize() first.');
     }
-    return this.getAll().filter(f => f.metadata.quality_level === quality);
+    return this.getAll().filter((f) => f.metadata.quality_level === quality);
   }
 
-  search(query: string, filters?: {
-    category?: string;
-    difficulty?: string;
-    quality_level?: string;
-    tags?: string[];
-  }): ReasoningFramework[] {
+  search(
+    query: string,
+    filters?: {
+      category?: string;
+      difficulty?: string;
+      quality_level?: string;
+      tags?: string[];
+    }
+  ): ReasoningFramework[] {
     if (!this.initialized) {
       throw new Error('Framework registry not initialized. Call initialize() first.');
     }
@@ -197,36 +211,38 @@ export class FrameworkRegistry {
     // Text search
     if (query) {
       const lowerQuery = query.toLowerCase();
-      results = results.filter(f =>
-        f.name.toLowerCase().includes(lowerQuery) ||
-        f.description.toLowerCase().includes(lowerQuery) ||
-        f.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+      results = results.filter(
+        (f) =>
+          f.name.toLowerCase().includes(lowerQuery) ||
+          f.description.toLowerCase().includes(lowerQuery) ||
+          f.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
       );
     }
 
     // Apply filters
     if (filters?.category) {
-      results = results.filter(f => f.category === filters.category);
+      results = results.filter((f) => f.category === filters.category);
     }
 
     if (filters?.difficulty) {
-      results = results.filter(f => f.difficulty === filters.difficulty);
+      results = results.filter((f) => f.difficulty === filters.difficulty);
     }
 
     if (filters?.quality_level) {
-      results = results.filter(f => f.metadata.quality_level === filters.quality_level);
+      results = results.filter((f) => f.metadata.quality_level === filters.quality_level);
     }
 
     if (filters?.tags && filters.tags.length > 0) {
-      results = results.filter(f =>
-        filters.tags.some(tag => f.tags.includes(tag))
-      );
+      results = results.filter((f) => filters.tags.some((tag) => f.tags.includes(tag)));
     }
 
     return results;
   }
 
-  getRecommendationsForSituation(situation: string, context?: string): Array<{
+  getRecommendationsForSituation(
+    situation: string,
+    context?: string
+  ): Array<{
     framework: ReasoningFramework;
     confidence: number;
     reason: string;
@@ -251,7 +267,8 @@ export class FrameworkRegistry {
       let reason = '';
 
       // Check if situation keywords match framework description or when_to_use
-      const searchText = `${framework.description} ${framework.when_to_use.join(' ')} ${framework.tags.join(' ')}`.toLowerCase();
+      const searchText =
+        `${framework.description} ${framework.when_to_use.join(' ')} ${framework.tags.join(' ')}`.toLowerCase();
 
       if (searchText.includes('strategic') && situationLower.includes('strategy')) {
         score += 3;
@@ -277,14 +294,12 @@ export class FrameworkRegistry {
         recommendations.push({
           framework,
           confidence: Math.min(score / 3, 1), // Normalize to 0-1
-          reason
+          reason,
         });
       }
     }
 
-    return recommendations
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 3); // Top 3 recommendations
+    return recommendations.sort((a, b) => b.confidence - a.confidence).slice(0, 3); // Top 3 recommendations
   }
 
   // Get statistics about frameworks
@@ -302,18 +317,27 @@ export class FrameworkRegistry {
 
     return {
       total: frameworks.length,
-      byCategory: frameworks.reduce((acc, f) => {
-        acc[f.category] = (acc[f.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      byQuality: frameworks.reduce((acc, f) => {
-        acc[f.metadata.quality_level] = (acc[f.metadata.quality_level] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      byDifficulty: frameworks.reduce((acc, f) => {
-        acc[f.difficulty] = (acc[f.difficulty] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
+      byCategory: frameworks.reduce(
+        (acc, f) => {
+          acc[f.category] = (acc[f.category] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+      byQuality: frameworks.reduce(
+        (acc, f) => {
+          acc[f.metadata.quality_level] = (acc[f.metadata.quality_level] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+      byDifficulty: frameworks.reduce(
+        (acc, f) => {
+          acc[f.difficulty] = (acc[f.difficulty] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
     };
   }
 }

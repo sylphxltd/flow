@@ -4,15 +4,15 @@
  */
 
 import type {
+  BatchOperation,
+  BatchResult,
+  CacheStorageAdapter,
+  MemoryStorageAdapter,
   StorageAdapter,
   StorageConfig,
   StorageFactory,
   StorageManager,
   StorageResult,
-  BatchOperation,
-  BatchResult,
-  MemoryStorageAdapter,
-  CacheStorageAdapter,
   VectorStorageAdapter,
 } from '../interfaces/unified-storage.js';
 import { logger } from '../utils/logger.js';
@@ -107,19 +107,17 @@ export class DefaultStorageManager implements StorageManager {
   }
 
   async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.adapters.entries()).map(
-      async ([name, adapter]) => {
-        try {
-          await adapter.close();
-          logger.info('Storage adapter closed', { name });
-        } catch (error) {
-          logger.error('Error closing storage adapter', {
-            name,
-            error: (error as Error).message,
-          });
-        }
+    const closePromises = Array.from(this.adapters.entries()).map(async ([name, adapter]) => {
+      try {
+        await adapter.close();
+        logger.info('Storage adapter closed', { name });
+      } catch (error) {
+        logger.error('Error closing storage adapter', {
+          name,
+          error: (error as Error).message,
+        });
       }
-    );
+    });
 
     await Promise.allSettled(closePromises);
     this.adapters.clear();
@@ -275,17 +273,17 @@ export class StorageUtils {
 
     const defaultTTL = process.env.CACHE_DEFAULT_TTL;
     if (defaultTTL) {
-      config.defaultTTL = parseInt(defaultTTL, 10);
+      config.defaultTTL = Number.parseInt(defaultTTL, 10);
     }
 
     const maxCacheSize = process.env.CACHE_MAX_SIZE;
     if (maxCacheSize) {
-      config.maxCacheSize = parseInt(maxCacheSize, 10);
+      config.maxCacheSize = Number.parseInt(maxCacheSize, 10);
     }
 
     const vectorDimensions = process.env.VECTOR_DIMENSIONS;
     if (vectorDimensions) {
-      config.vectorDimensions = parseInt(vectorDimensions, 10);
+      config.vectorDimensions = Number.parseInt(vectorDimensions, 10);
     }
 
     return config;

@@ -1,5 +1,5 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
@@ -15,7 +15,10 @@ import { targetSupportsMCPServers, validateTarget } from '../utils/target-config
 // Create the init command
 export const initCommand = new Command('init')
   .description('Initialize project with Sylphx Flow development agents and MCP tools')
-  .option('--target <type>', `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`)
+  .option(
+    '--target <type>',
+    `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`
+  )
   .option('--verbose', 'Show detailed output')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('--clear', 'Clear obsolete items before processing')
@@ -44,7 +47,10 @@ export const initCommand = new Command('init')
       }
 
       if (options.merge) {
-        throw new CLIError('The --merge option is not supported with init command.', 'INVALID_OPTION');
+        throw new CLIError(
+          'The --merge option is not supported with init command.',
+          'INVALID_OPTION'
+        );
       }
     }
 

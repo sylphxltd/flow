@@ -6,6 +6,7 @@
  */
 
 import type { IEmbeddingProvider, ILogger } from '../core/interfaces.js';
+import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 import {
   getKnowledgeIndexer,
   getKnowledgeIndexerWithEmbeddings,
@@ -13,7 +14,6 @@ import {
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 import { type SearchIndex, searchDocuments } from '../utils/tfidf.js';
 import type { SearchOptions, SearchResult } from '../utils/unified-search-service.js';
-import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 
 export interface SearchServiceConfig {
   enableCaching?: boolean;

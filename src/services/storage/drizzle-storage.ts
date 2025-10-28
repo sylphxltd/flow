@@ -4,21 +4,21 @@
  */
 
 import { and, count, desc, eq, like } from 'drizzle-orm';
-import { type Database, DrizzleDatabase } from '../db/index.js';
-import * as schema from '../db/schema.js';
+import { type Database, DrizzleDatabase } from '../../db/index.js';
+import * as schema from '../../db/schema.js';
 import type {
   CodebaseFile,
   NewMemory,
   NewTfidfIdf,
   NewTfidfTerm,
   TfidfDocument,
-} from '../db/schema.js';
+} from '../../db/schema.js';
 import {
   DatabaseError,
   ValidationError,
   executeOperation,
   isDatabaseError,
-} from './database-errors.js';
+} from '../../utils/database-errors.js';
 
 // Memory entry interface (backward compatibility)
 export interface MemoryEntry {

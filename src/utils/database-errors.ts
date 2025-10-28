@@ -4,13 +4,13 @@
  */
 
 import {
+  AppError,
+  ErrorCategory,
+  ErrorHandler,
   DatabaseError as SimplifiedDatabaseError,
   ValidationError as SimplifiedValidationError,
   createDatabaseError,
   createValidationError,
-  ErrorHandler,
-  AppError,
-  ErrorCategory
 } from './simplified-errors.js';
 
 /**
@@ -35,12 +35,7 @@ export class DatabaseError extends SimplifiedDatabaseError {
  * Database-specific validation error
  */
 export class ValidationError extends SimplifiedValidationError {
-  constructor(
-    message: string,
-    field: string,
-    value?: unknown,
-    cause?: Error
-  ) {
+  constructor(message: string, field: string, value?: unknown, cause?: Error) {
     super(message, field, value);
     this.cause = cause;
   }
@@ -50,11 +45,7 @@ export class ValidationError extends SimplifiedValidationError {
  * Database connection error
  */
 export class ConnectionError extends AppError {
-  constructor(
-    message: string,
-    connectionDetails?: Record<string, unknown>,
-    cause?: Error
-  ) {
+  constructor(message: string, connectionDetails?: Record<string, unknown>, cause?: Error) {
     super(
       message,
       'CONNECTION_ERROR',
@@ -73,11 +64,7 @@ export class ConnectionError extends AppError {
 export class MigrationError extends AppError {
   public readonly migrationName?: string;
 
-  constructor(
-    message: string,
-    migrationName?: string,
-    cause?: Error
-  ) {
+  constructor(message: string, migrationName?: string, cause?: Error) {
     super(
       message,
       'MIGRATION_ERROR',
@@ -111,11 +98,7 @@ export async function executeOperation<T>(
   }
 
   // Unknown error - wrap in DatabaseError
-  throw createDatabaseError(
-    result.error.message,
-    operation,
-    context?.query as string
-  );
+  throw createDatabaseError(result.error.message, operation, context?.query as string);
 }
 
 /**
@@ -153,9 +136,4 @@ export const createConnectionError = (
 ): ConnectionError => new ConnectionError(message, connectionDetails, cause);
 
 // Re-export for backward compatibility
-export {
-  createDatabaseError,
-  createValidationError,
-  ErrorHandler,
-  AppError
-};
+export { createDatabaseError, createValidationError, ErrorHandler, AppError };

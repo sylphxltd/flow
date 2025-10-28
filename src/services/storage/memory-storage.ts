@@ -4,8 +4,8 @@
  */
 
 import { and, count, desc, eq, like, or } from 'drizzle-orm';
-import { type MemoryDatabase, MemoryDatabaseClient } from '../db/memory-db.js';
-import { memory } from '../db/memory-schema.js';
+import { type MemoryDatabase, MemoryDatabaseClient } from '../../db/memory-db.js';
+import { memory } from '../../db/memory-schema.js';
 
 // Memory entry interface
 export interface MemoryEntry {

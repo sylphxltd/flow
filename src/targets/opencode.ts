@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 import type { MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
-import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 
 /**
  * OpenCode target - composition approach with all original functionality
@@ -143,7 +143,6 @@ export const opencodeTarget: Target = {
 
     // Convert secrets to file references if secret files are enabled
     if (opencodeTarget.config.installation?.useSecretFiles) {
-      
       // Process each MCP server's environment variables
       for (const [serverId, serverConfig] of Object.entries(config.mcp || {})) {
         if (serverConfig && typeof serverConfig === 'object' && 'environment' in serverConfig) {

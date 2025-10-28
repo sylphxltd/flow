@@ -3,11 +3,11 @@
  * All tools for structured reasoning and decision-making
  */
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { frameworkRegistry } from './framework-registry.js';
 
 // ============================================================================
@@ -81,8 +81,12 @@ export function registerReasoningStart(server: McpServer): void {
       description: 'Start a structured reasoning session using a specific framework',
       inputSchema: {
         title: z.string().describe('Title for this reasoning session'),
-        framework: z.string().describe('Framework ID (use reasoning_frameworks to see available options)'),
-        problem_description: z.string().describe('Clear description of the problem or question to analyze'),
+        framework: z
+          .string()
+          .describe('Framework ID (use reasoning_frameworks to see available options)'),
+        problem_description: z
+          .string()
+          .describe('Clear description of the problem or question to analyze'),
         context: z.string().optional().describe('Additional context or background information'),
       },
     },
@@ -97,10 +101,15 @@ export function registerReasoningStart(server: McpServer): void {
 
         if (!frameworkInfo) {
           return {
-            content: [{
-              type: 'text',
-              text: `Framework '${framework}' not found. Available frameworks:\n${frameworkRegistry.getAll().map(f => `• ${f.id} - ${f.name}`).join('\n')}\n\nUse reasoning_frameworks to see all options with descriptions.`
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `Framework '${framework}' not found. Available frameworks:\n${frameworkRegistry
+                  .getAll()
+                  .map((f) => `• ${f.id} - ${f.name}`)
+                  .join('\n')}\n\nUse reasoning_frameworks to see all options with descriptions.`,
+              },
+            ],
             isError: true,
           };
         }
@@ -114,13 +123,13 @@ export function registerReasoningStart(server: McpServer): void {
           context: context || '',
           created_at: new Date().toISOString(),
           status: 'in_progress',
-          sections: frameworkInfo.structure.map(section => ({
+          sections: frameworkInfo.structure.map((section) => ({
             name: section.name,
             description: section.description,
             completed: false,
             analysis: '',
-            insights: []
-          }))
+            insights: [],
+          })),
         };
 
         const reasoningDir = ensureReasoningDir();
@@ -131,10 +140,12 @@ export function registerReasoningStart(server: McpServer): void {
         writeFileSync(reasoningPath, content, 'utf8');
 
         return {
-          content: [{
-            type: 'text',
-            text: `✅ Started reasoning session: ${reasoningId}\n\n📋 **Framework:** ${frameworkInfo.name}\n🎯 **Problem:** ${problem_description}\n\n**Next Steps:**\n1. Use \`reasoning_analyze\` to work through each section\n2. Use \`reasoning_conclude\` to finalize conclusions\n\n📁 **File saved to:** ${reasoningPath}`
-          }],
+          content: [
+            {
+              type: 'text',
+              text: `✅ Started reasoning session: ${reasoningId}\n\n📋 **Framework:** ${frameworkInfo.name}\n🎯 **Problem:** ${problem_description}\n\n**Next Steps:**\n1. Use \`reasoning_analyze\` to work through each section\n2. Use \`reasoning_conclude\` to finalize conclusions\n\n📁 **File saved to:** ${reasoningPath}`,
+            },
+          ],
         };
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -159,7 +170,10 @@ export function registerReasoningAnalyze(server: McpServer): void {
         reasoning_id: z.string().optional().describe('Reasoning session ID (default: most recent)'),
         section: z.string().describe('Section name to analyze'),
         analysis: z.string().describe('Your detailed analysis for this section'),
-        insights: z.array(z.string()).optional().describe('Key insights discovered during analysis'),
+        insights: z
+          .array(z.string())
+          .optional()
+          .describe('Key insights discovered during analysis'),
       },
     },
     async (args: ReasoningAnalyzeArgs): Promise<CallToolResult> => {
@@ -173,7 +187,7 @@ export function registerReasoningAnalyze(server: McpServer): void {
         } else {
           // Find most recent reasoning file
           const files = readFileSync(ensureReasoningDir(), { withFileTypes: true })
-            .filter(file => file.isFile() && file.name.endsWith('.md'))
+            .filter((file) => file.isFile() && file.name.endsWith('.md'))
             .sort((a, b) => {
               const statA = a.statSync();
               const statB = b.statSync();
@@ -182,7 +196,12 @@ export function registerReasoningAnalyze(server: McpServer): void {
 
           if (files.length === 0) {
             return {
-              content: [{ type: 'text', text: 'No reasoning sessions found. Use reasoning_start to begin.' }],
+              content: [
+                {
+                  type: 'text',
+                  text: 'No reasoning sessions found. Use reasoning_start to begin.',
+                },
+              ],
               isError: true,
             };
           }
@@ -191,7 +210,9 @@ export function registerReasoningAnalyze(server: McpServer): void {
 
         if (!existsSync(reasoningFile)) {
           return {
-            content: [{ type: 'text', text: `Reasoning session not found: ${reasoning_id || 'latest'}` }],
+            content: [
+              { type: 'text', text: `Reasoning session not found: ${reasoning_id || 'latest'}` },
+            ],
             isError: true,
           };
         }
@@ -202,10 +223,18 @@ export function registerReasoningAnalyze(server: McpServer): void {
         writeFileSync(reasoningFile, updatedContent, 'utf8');
 
         return {
-          content: [{
-            type: 'text',
-            text: `✅ Added analysis to section: **${section}**\n\n**Key Analysis Points:**\n${analysis.split('\n').slice(0, 3).map(point => `• ${point}`).join('\n')}\n\n${insights && insights.length > 0 ? `**Key Insights:**\n${insights.map(insight => `💡 ${insight}`).join('\n')}` : ''}\n\n*Continue with \`reasoning_analyze\` for other sections or use \`reasoning_conclude\` to finalize.*`
-          }],
+          content: [
+            {
+              type: 'text',
+              text: `✅ Added analysis to section: **${section}**\n\n**Key Analysis Points:**\n${analysis
+                .split('\n')
+                .slice(0, 3)
+                .map((point) => `• ${point}`)
+                .join(
+                  '\n'
+                )}\n\n${insights && insights.length > 0 ? `**Key Insights:**\n${insights.map((insight) => `💡 ${insight}`).join('\n')}` : ''}\n\n*Continue with \`reasoning_analyze\` for other sections or use \`reasoning_conclude\` to finalize.*`,
+            },
+          ],
         };
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -227,10 +256,21 @@ export function registerReasoningFrameworks(server: McpServer): void {
     {
       description: 'Browse and discover available reasoning frameworks',
       inputSchema: {
-        category: z.string().optional().describe('Filter by category (strategic, analytical, technical, user-centric, operational, creative, risk)'),
-        difficulty: z.string().optional().describe('Filter by difficulty level (beginner, intermediate, advanced)'),
+        category: z
+          .string()
+          .optional()
+          .describe(
+            'Filter by category (strategic, analytical, technical, user-centric, operational, creative, risk)'
+          ),
+        difficulty: z
+          .string()
+          .optional()
+          .describe('Filter by difficulty level (beginner, intermediate, advanced)'),
         search: z.string().optional().describe('Search in names and descriptions'),
-        quality_level: z.string().optional().describe('Filter by quality level (core, extended, experimental, custom)'),
+        quality_level: z
+          .string()
+          .optional()
+          .describe('Filter by quality level (core, extended, experimental, custom)'),
       },
     },
     async (args: ReasoningFrameworksArgs): Promise<CallToolResult> => {
@@ -239,21 +279,32 @@ export function registerReasoningFrameworks(server: McpServer): void {
         const frameworks = frameworkRegistry.search(args.search || '', {
           category: args.category,
           difficulty: args.difficulty,
-          quality_level: args.quality_level
+          quality_level: args.quality_level,
         });
         const stats = frameworkRegistry.getStats();
 
-        const frameworkText = frameworks.map(f =>
-          `**${f.name}** (\`${f.id}\`)\n${f.description}\n- **Category:** ${f.category} | **Difficulty:** ${f.difficulty} | **Time:** ${f.estimated_time}\n- **When to use:** ${f.when_to_use.slice(0, 2).join(', ')}\n`
-        ).join('\n');
+        const frameworkText = frameworks
+          .map(
+            (f) =>
+              `**${f.name}** (\`${f.id}\`)\n${f.description}\n- **Category:** ${f.category} | **Difficulty:** ${f.difficulty} | **Time:** ${f.estimated_time}\n- **When to use:** ${f.when_to_use.slice(0, 2).join(', ')}\n`
+          )
+          .join('\n');
 
-        const statsText = `**Available:** ${stats.total} frameworks | **By category:** ${Object.entries(stats.byCategory).map(([cat, count]) => `${cat}: ${count}`).join(', ')} | By difficulty: ${Object.entries(stats.byDifficulty).map(([diff, count]) => `${diff}: ${count}`).join(', ')}`;
+        const statsText = `**Available:** ${stats.total} frameworks | **By category:** ${Object.entries(
+          stats.byCategory
+        )
+          .map(([cat, count]) => `${cat}: ${count}`)
+          .join(', ')} | By difficulty: ${Object.entries(stats.byDifficulty)
+          .map(([diff, count]) => `${diff}: ${count}`)
+          .join(', ')}`;
 
         return {
-          content: [{
-            type: 'text',
-            text: `# Available Reasoning Frameworks\n\n${frameworkText}\n\n${statsText}\n\n**Usage:**\n1. Start with \`reasoning_start\` using a framework ID\n2. Work through sections with \`reasoning_analyze\`\n3. Conclude with \`reasoning_conclude\`\n\n**Tip:** Use specific framework IDs like 'swot-analysis' or 'design-thinking'.`
-          }],
+          content: [
+            {
+              type: 'text',
+              text: `# Available Reasoning Frameworks\n\n${frameworkText}\n\n${statsText}\n\n**Usage:**\n1. Start with \`reasoning_start\` using a framework ID\n2. Work through sections with \`reasoning_analyze\`\n3. Conclude with \`reasoning_conclude\`\n\n**Tip:** Use specific framework IDs like 'swot-analysis' or 'design-thinking'.`,
+            },
+          ],
         };
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -278,8 +329,13 @@ export function registerReasoningConclude(server: McpServer): void {
         reasoning_id: z.string().optional().describe('Reasoning session ID (default: most recent)'),
         conclusions: z.string().describe('Main conclusions from your analysis'),
         recommendations: z.array(z.string()).describe('Specific, actionable recommendations'),
-        confidence_level: z.enum(['low', 'medium', 'high']).describe('Confidence level in conclusions'),
-        next_steps: z.array(z.string()).optional().describe('Next steps to implement recommendations'),
+        confidence_level: z
+          .enum(['low', 'medium', 'high'])
+          .describe('Confidence level in conclusions'),
+        next_steps: z
+          .array(z.string())
+          .optional()
+          .describe('Next steps to implement recommendations'),
       },
     },
     async (args: ReasoningConcludeArgs): Promise<CallToolResult> => {
@@ -292,7 +348,7 @@ export function registerReasoningConclude(server: McpServer): void {
           reasoningFile = join(ensureReasoningDir(), `${reasoning_id}.md`);
         } else {
           const files = readFileSync(ensureReasoningDir(), { withFileTypes: true })
-            .filter(file => file.isFile() && file.name.endsWith('.md'))
+            .filter((file) => file.isFile() && file.name.endsWith('.md'))
             .sort((a, b) => {
               const statA = a.statSync();
               const statB = b.statSync();
@@ -301,7 +357,12 @@ export function registerReasoningConclude(server: McpServer): void {
 
           if (files.length === 0) {
             return {
-              content: [{ type: 'text', text: 'No reasoning sessions found. Use reasoning_start to begin.' }],
+              content: [
+                {
+                  type: 'text',
+                  text: 'No reasoning sessions found. Use reasoning_start to begin.',
+                },
+              ],
               isError: true,
             };
           }
@@ -310,24 +371,34 @@ export function registerReasoningConclude(server: McpServer): void {
 
         if (!existsSync(reasoningFile)) {
           return {
-            content: [{ type: 'text', text: `Reasoning session not found: ${reasoning_id || 'latest'}` }],
+            content: [
+              { type: 'text', text: `Reasoning session not found: ${reasoning_id || 'latest'}` },
+            ],
             isError: true,
           };
         }
 
         // Add conclusions to the file
         const content = readFileSync(reasoningFile, 'utf8');
-        const conclusionSection = generateConclusionSection(conclusions, recommendations, confidence_level, next_steps || []);
+        const conclusionSection = generateConclusionSection(
+          conclusions,
+          recommendations,
+          confidence_level,
+          next_steps || []
+        );
         const updatedContent = content + '\n\n' + conclusionSection;
         writeFileSync(reasoningFile, updatedContent, 'utf8');
 
-        const confidenceEmoji = confidence_level === 'high' ? '🟢' : confidence_level === 'medium' ? '🟡' : '🔴';
+        const confidenceEmoji =
+          confidence_level === 'high' ? '🟢' : confidence_level === 'medium' ? '🟡' : '🔴';
 
         return {
-          content: [{
-            type: 'text',
-            text: `🎉 **Reasoning Session Complete** ${confidenceEmoji}\n\n**Conclusions:**\n${conclusions}\n\n**Recommendations:**\n${recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}\n\n**Confidence Level:** ${confidence_level.toUpperCase()}\n\n${next_steps && next_steps.length > 0 ? `**Next Steps:**\n${next_steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}` : ''}\n\n*Reasoning session saved and ready for reference.*`
-          }],
+          content: [
+            {
+              type: 'text',
+              text: `🎉 **Reasoning Session Complete** ${confidenceEmoji}\n\n**Conclusions:**\n${conclusions}\n\n**Recommendations:**\n${recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}\n\n**Confidence Level:** ${confidence_level.toUpperCase()}\n\n${next_steps && next_steps.length > 0 ? `**Next Steps:**\n${next_steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}` : ''}\n\n*Reasoning session saved and ready for reference.*`,
+            },
+          ],
         };
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -356,13 +427,17 @@ function generateReasoningMarkdown(data: any, framework: any): string {
 
 ## 📋 Framework Structure
 
-${framework.structure.map((section: any, index: number) => `
+${framework.structure
+  .map(
+    (section: any, index: number) => `
 ### ${index + 1}. ${section.name} ${section.required ? '*' : ''}
 
 ${section.description}
 
 *Status:* ⏳ Not started
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 ---
 
@@ -372,16 +447,29 @@ ${section.description}
 2. Provide detailed analysis for each section
 3. Use \`reasoning_conclude\` when all sections are complete
 
-*Required sections are marked with asterisks (*)`
+*Required sections are marked with asterisks (*)`;
 }
 
-function addAnalysisToSection(content: string, sectionName: string, analysis: string, insights: string[]): string {
+function addAnalysisToSection(
+  content: string,
+  sectionName: string,
+  analysis: string,
+  insights: string[]
+): string {
   // This is a simplified version - in a real implementation, you'd parse the markdown
   // and update the specific section
-  return content + `\n\n## Analysis: ${sectionName}\n\n${analysis}\n\n${insights.length > 0 ? `**Insights:**\n${insights.map(insight => `• ${insight}`).join('\n')}` : ''}`;
+  return (
+    content +
+    `\n\n## Analysis: ${sectionName}\n\n${analysis}\n\n${insights.length > 0 ? `**Insights:**\n${insights.map((insight) => `• ${insight}`).join('\n')}` : ''}`
+  );
 }
 
-function generateConclusionSection(conclusions: string, recommendations: string[], confidence: string, nextSteps: string[]): string {
+function generateConclusionSection(
+  conclusions: string,
+  recommendations: string[],
+  confidence: string,
+  nextSteps: string[]
+): string {
   return `---
 
 ## 🎯 Conclusions
@@ -396,11 +484,15 @@ ${recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}
 
 **${confidence.toUpperCase()}** ${confidence === 'high' ? '🟢' : confidence === 'medium' ? '🟡' : '🔴'}
 
-${nextSteps.length > 0 ? `
+${
+  nextSteps.length > 0
+    ? `
 ## 🚀 Next Steps
 
 ${nextSteps.map((step, i) => `${i + 1}. ${step}`).join('\n')}
-` : ''}
+`
+    : ''
+}
 
 ---
 

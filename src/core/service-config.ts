@@ -17,10 +17,10 @@ import type {
 import { targetManager } from '../core/target-manager.js';
 import { MemoryDatabaseClient } from '../db/memory-db.js';
 import { MCPService } from '../services/mcp-service.js';
-import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
+import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
+import { searchService } from '../services/search/unified-search-service.js';
 // Import concrete implementations (will be updated as we refactor)
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
-import { searchService } from '../utils/unified-search-service.js';
 
 /**
  * Configure and register all core services with the DI container

@@ -160,7 +160,6 @@ export class PluginManager {
     const results: PluginLoadResult[] = [];
 
     try {
-      
       // Check if plugin directory exists
       if (!(await asyncFileOps.exists(pluginDir))) {
         this.logger.warn(`Plugin directory not found: ${pluginDir}`);
@@ -491,7 +490,6 @@ export class PluginManager {
     const configPath = this.config.configPath || './plugins/config.json';
 
     try {
-      
       if (await asyncFileOps.exists(configPath)) {
         const configContent = await asyncFileOps.readFile(configPath);
         const configs = JSON.parse(configContent as string);

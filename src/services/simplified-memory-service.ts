@@ -6,8 +6,12 @@
  */
 
 import type { StorageAdapter } from '../interfaces/unified-storage.js';
-import { createValidationError, createDatabaseError, ErrorHandler } from '../utils/simplified-errors.js';
 import { logger } from '../utils/logger.js';
+import {
+  ErrorHandler,
+  createDatabaseError,
+  createValidationError,
+} from '../utils/simplified-errors.js';
 
 /**
  * Memory entry interface
@@ -66,10 +70,13 @@ export class SimplifiedMemoryService {
   async get(key: string, namespace?: string): Promise<MemoryEntry | null> {
     const fullKey = this.getFullKey(key, namespace);
 
-    const result = await ErrorHandler.execute(async () => {
-      const entry = await this.storage.get(fullKey);
-      return entry as MemoryEntry | null;
-    }, { operation: 'memory.get', key: fullKey });
+    const result = await ErrorHandler.execute(
+      async () => {
+        const entry = await this.storage.get(fullKey);
+        return entry as MemoryEntry | null;
+      },
+      { operation: 'memory.get', key: fullKey }
+    );
 
     if (result.success) {
       logger.debug('Memory entry retrieved', { key: fullKey });
@@ -77,7 +84,7 @@ export class SimplifiedMemoryService {
     } else {
       logger.warn('Failed to retrieve memory entry', {
         key: fullKey,
-        error: result.error.message
+        error: result.error.message,
       });
       return null;
     }
@@ -86,11 +93,7 @@ export class SimplifiedMemoryService {
   /**
    * Set a memory entry
    */
-  async set(
-    key: string,
-    value: unknown,
-    namespace?: string
-  ): Promise<void> {
+  async set(key: string, value: unknown, namespace?: string): Promise<void> {
     // Validate input
     this.validateKey(key);
     this.validateValue(value);
@@ -103,9 +106,12 @@ export class SimplifiedMemoryService {
       timestamp: Date.now(),
     };
 
-    const result = await ErrorHandler.execute(async () => {
-      await this.storage.set(fullKey, entry);
-    }, { operation: 'memory.set', key: fullKey });
+    const result = await ErrorHandler.execute(
+      async () => {
+        await this.storage.set(fullKey, entry);
+      },
+      { operation: 'memory.set', key: fullKey }
+    );
 
     if (result.success) {
       logger.debug('Memory entry stored', { key: fullKey });
@@ -124,9 +130,12 @@ export class SimplifiedMemoryService {
   async delete(key: string, namespace?: string): Promise<boolean> {
     const fullKey = this.getFullKey(key, namespace);
 
-    const result = await ErrorHandler.execute(async () => {
-      return await this.storage.delete(fullKey);
-    }, { operation: 'memory.delete', key: fullKey });
+    const result = await ErrorHandler.execute(
+      async () => {
+        return await this.storage.delete(fullKey);
+      },
+      { operation: 'memory.delete', key: fullKey }
+    );
 
     if (result.success) {
       logger.debug('Memory entry deleted', { key: fullKey, deleted: result.data });
@@ -134,7 +143,7 @@ export class SimplifiedMemoryService {
     } else {
       logger.warn('Failed to delete memory entry', {
         key: fullKey,
-        error: result.error.message
+        error: result.error.message,
       });
       return false;
     }
@@ -146,36 +155,32 @@ export class SimplifiedMemoryService {
   async list(namespace?: string, limit?: number): Promise<MemoryEntry[]> {
     const targetNamespace = namespace || this.config.defaultNamespace;
 
-    const result = await ErrorHandler.execute(async () => {
-      const keys = await this.storage.keys();
-      const namespaceKeys = keys.filter(key =>
-        key.startsWith(`${targetNamespace}:`)
-      );
+    const result = await ErrorHandler.execute(
+      async () => {
+        const keys = await this.storage.keys();
+        const namespaceKeys = keys.filter((key) => key.startsWith(`${targetNamespace}:`));
 
-      // Get entries in parallel
-      const entries = await Promise.all(
-        namespaceKeys.map(async (key) => {
-          const entry = await this.storage.get(key);
-          return entry as MemoryEntry | null;
-        })
-      );
+        // Get entries in parallel
+        const entries = await Promise.all(
+          namespaceKeys.map(async (key) => {
+            const entry = await this.storage.get(key);
+            return entry as MemoryEntry | null;
+          })
+        );
 
-      return entries
-        .filter((entry): entry is MemoryEntry => entry !== null)
-        .slice(0, limit);
-    }, { operation: 'memory.list', namespace: targetNamespace });
+        return entries.filter((entry): entry is MemoryEntry => entry !== null).slice(0, limit);
+      },
+      { operation: 'memory.list', namespace: targetNamespace }
+    );
 
     if (result.success) {
       logger.debug('Memory entries listed', {
         namespace: targetNamespace,
-        count: result.data.length
+        count: result.data.length,
       });
       return result.data;
     } else {
-      throw createDatabaseError(
-        `Failed to list memory entries: ${result.error.message}`,
-        'list'
-      );
+      throw createDatabaseError(`Failed to list memory entries: ${result.error.message}`, 'list');
     }
   }
 
@@ -186,44 +191,46 @@ export class SimplifiedMemoryService {
     const { query, namespace, limit } = params;
     const targetNamespace = namespace || this.config.defaultNamespace;
 
-    const result = await ErrorHandler.execute(async () => {
-      const entries = await this.list(targetNamespace);
+    const result = await ErrorHandler.execute(
+      async () => {
+        const entries = await this.list(targetNamespace);
 
-      // Simple text search (can be enhanced later)
-      const searchLower = query.toLowerCase();
-      const filtered = entries.filter(entry => {
-        // Search in key
-        if (entry.key.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-
-        // Search in value (if string)
-        if (typeof entry.value === 'string' &&
-            entry.value.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-
-        // Search in serialized value
-        try {
-          const serialized = JSON.stringify(entry.value).toLowerCase();
-          if (serialized.includes(searchLower)) {
+        // Simple text search (can be enhanced later)
+        const searchLower = query.toLowerCase();
+        const filtered = entries.filter((entry) => {
+          // Search in key
+          if (entry.key.toLowerCase().includes(searchLower)) {
             return true;
           }
-        } catch {
-          // Ignore serialization errors
-        }
 
-        return false;
-      });
+          // Search in value (if string)
+          if (typeof entry.value === 'string' && entry.value.toLowerCase().includes(searchLower)) {
+            return true;
+          }
 
-      return filtered.slice(0, limit);
-    }, { operation: 'memory.search', query, namespace: targetNamespace });
+          // Search in serialized value
+          try {
+            const serialized = JSON.stringify(entry.value).toLowerCase();
+            if (serialized.includes(searchLower)) {
+              return true;
+            }
+          } catch {
+            // Ignore serialization errors
+          }
+
+          return false;
+        });
+
+        return filtered.slice(0, limit);
+      },
+      { operation: 'memory.search', query, namespace: targetNamespace }
+    );
 
     if (result.success) {
       logger.debug('Memory search completed', {
         query,
         namespace: targetNamespace,
-        results: result.data.length
+        results: result.data.length,
       });
       return result.data;
     } else {
@@ -240,17 +247,16 @@ export class SimplifiedMemoryService {
   async clear(namespace?: string): Promise<void> {
     const targetNamespace = namespace || this.config.defaultNamespace;
 
-    const result = await ErrorHandler.execute(async () => {
-      const keys = await this.storage.keys();
-      const namespaceKeys = keys.filter(key =>
-        key.startsWith(`${targetNamespace}:`)
-      );
+    const result = await ErrorHandler.execute(
+      async () => {
+        const keys = await this.storage.keys();
+        const namespaceKeys = keys.filter((key) => key.startsWith(`${targetNamespace}:`));
 
-      // Delete in parallel
-      await Promise.all(
-        namespaceKeys.map(key => this.storage.delete(key))
-      );
-    }, { operation: 'memory.clear', namespace: targetNamespace });
+        // Delete in parallel
+        await Promise.all(namespaceKeys.map((key) => this.storage.delete(key)));
+      },
+      { operation: 'memory.clear', namespace: targetNamespace }
+    );
 
     if (result.success) {
       logger.info('Memory namespace cleared', { namespace: targetNamespace });
@@ -272,40 +278,38 @@ export class SimplifiedMemoryService {
   }> {
     const targetNamespace = namespace;
 
-    const result = await ErrorHandler.execute(async () => {
-      const keys = await this.storage.keys();
-      const namespaces = new Set<string>();
+    const result = await ErrorHandler.execute(
+      async () => {
+        const keys = await this.storage.keys();
+        const namespaces = new Set<string>();
 
-      keys.forEach(key => {
-        const parts = key.split(':');
-        if (parts.length >= 2) {
-          namespaces.add(parts[0]);
+        keys.forEach((key) => {
+          const parts = key.split(':');
+          if (parts.length >= 2) {
+            namespaces.add(parts[0]);
+          }
+        });
+
+        if (targetNamespace) {
+          const namespaceKeys = keys.filter((key) => key.startsWith(`${targetNamespace}:`));
+          return {
+            totalEntries: namespaceKeys.length,
+            namespaces: Array.from(namespaces),
+          };
         }
-      });
 
-      if (targetNamespace) {
-        const namespaceKeys = keys.filter(key =>
-          key.startsWith(`${targetNamespace}:`)
-        );
         return {
-          totalEntries: namespaceKeys.length,
+          totalEntries: keys.length,
           namespaces: Array.from(namespaces),
         };
-      }
-
-      return {
-        totalEntries: keys.length,
-        namespaces: Array.from(namespaces),
-      };
-    }, { operation: 'memory.stats', namespace: targetNamespace });
+      },
+      { operation: 'memory.stats', namespace: targetNamespace }
+    );
 
     if (result.success) {
       return result.data;
     } else {
-      throw createDatabaseError(
-        `Failed to get memory stats: ${result.error.message}`,
-        'stats'
-      );
+      throw createDatabaseError(`Failed to get memory stats: ${result.error.message}`, 'stats');
     }
   }
 
@@ -372,11 +376,7 @@ export class SimplifiedMemoryService {
         );
       }
     } catch (error) {
-      throw createValidationError(
-        'Value must be JSON serializable',
-        'value',
-        value
-      );
+      throw createValidationError('Value must be JSON serializable', 'value', value);
     }
   }
 }

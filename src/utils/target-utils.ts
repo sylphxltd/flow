@@ -2,8 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import type { MCPServerConfigUnion, TargetConfig } from '../types.js';
-import { pathSecurity, sanitize } from './security.js';
 import { readJSONCFile, writeJSONCFile } from './jsonc.js';
+import { pathSecurity, sanitize } from './security.js';
 
 /**
  * File system utilities for targets
@@ -27,7 +27,7 @@ export const fileUtils = {
     }
 
     if (config.configFile.endsWith('.jsonc')) {
-        return readJSONCFile(configPath);
+      return readJSONCFile(configPath);
     }
     if (config.configFile.endsWith('.json')) {
       const content = await fs.readFile(configPath, 'utf8');

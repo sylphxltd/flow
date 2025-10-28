@@ -3,10 +3,10 @@
  * 所有搜索功能（CLI、MCP、API）都使用相同的核心邏輯
  */
 
+import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
-import { SeparatedMemoryStorage } from './separated-storage.js';
 import { type SearchIndex, searchDocuments } from './tfidf.js';
 
 export interface SearchResult {

@@ -1,11 +1,11 @@
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import type { MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
-import { commandSecurity, sanitize } from '../utils/security.js';
 import { CLIError } from '../utils/error-handler.js';
+import { commandSecurity, sanitize } from '../utils/security.js';
 import {
   fileUtils,
   generateHelpText,
@@ -232,7 +232,6 @@ Please begin your response with a comprehensive summary of all the instructions 
       return;
     }
 
-    
     try {
       // Build arguments
       const args = ['--dangerously-skip-permissions'];
@@ -243,38 +242,37 @@ Please begin your response with a comprehensive summary of all the instructions 
         console.log(`📝 System prompt length: ${enhancedSystemPrompt.length} characters`);
       }
 
-        
-        if (sanitizedUserPrompt.trim() !== '') {
-          args.push(sanitizedUserPrompt);
-        }
+      if (sanitizedUserPrompt.trim() !== '') {
+        args.push(sanitizedUserPrompt);
+      }
 
-        if (options.verbose) {
-          console.log(`📝 User prompt length: ${sanitizedUserPrompt.length} characters`);
-        }
+      if (options.verbose) {
+        console.log(`📝 User prompt length: ${sanitizedUserPrompt.length} characters`);
+      }
 
-        // Use child_process directly to bypass security validation for this specific case
-        // This is safe because we're controlling the command and just passing the prompt as an argument
-  
-        await new Promise<void>((resolve, reject) => {
-          const child = spawn('claude', args, {
-            stdio: 'inherit',
-            shell: false,
-          });
+      // Use child_process directly to bypass security validation for this specific case
+      // This is safe because we're controlling the command and just passing the prompt as an argument
 
-          child.on('close', (code) => {
-            if (code === 0) {
-              resolve();
-            } else {
-              const error = new Error(`Claude Code exited with code ${code}`) as any;
-              error.code = code;
-              reject(error);
-            }
-          });
-
-          child.on('error', (error) => {
-            reject(error);
-          });
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn('claude', args, {
+          stdio: 'inherit',
+          shell: false,
         });
+
+        child.on('close', (code) => {
+          if (code === 0) {
+            resolve();
+          } else {
+            const error = new Error(`Claude Code exited with code ${code}`) as any;
+            error.code = code;
+            reject(error);
+          }
+        });
+
+        child.on('error', (error) => {
+          reject(error);
+        });
+      });
     } catch (error: any) {
       if (error.code === 'ENOENT') {
         throw new CLIError('Claude Code not found. Please install it first.', 'CLAUDE_NOT_FOUND');

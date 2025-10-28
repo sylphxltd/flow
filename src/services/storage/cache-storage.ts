@@ -4,7 +4,7 @@
  */
 
 import { count, desc, eq } from 'drizzle-orm';
-import { type CacheDatabase, CacheDatabaseClient } from '../db/cache-db.js';
+import { type CacheDatabase, CacheDatabaseClient } from '../../db/cache-db.js';
 import {
   type NewCodebaseFile,
   type NewCodebaseMetadata,
@@ -16,8 +16,8 @@ import {
   tfidfDocuments,
   tfidfIdf,
   tfidfTerms,
-} from '../db/cache-schema.js';
-import { executeOperation } from './database-errors.js';
+} from '../../db/cache-schema.js';
+import { executeOperation } from '../../utils/database-errors.js';
 
 // Codebase file entry interface
 export interface CodebaseFileEntry {

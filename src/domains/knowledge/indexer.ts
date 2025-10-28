@@ -140,6 +140,6 @@ export function getKnowledgeIndexer(embeddingProvider?: EmbeddingProvider): Know
 }
 
 export async function getKnowledgeIndexerWithEmbeddings(): Promise<KnowledgeIndexer> {
-    const embeddingProvider = await getDefaultEmbeddingProvider();
+  const embeddingProvider = await getDefaultEmbeddingProvider();
   return getKnowledgeIndexer(embeddingProvider);
 }

@@ -4,12 +4,12 @@
  */
 
 import type {
-  Storage,
-  VectorStorage,
+  CacheStats,
   CacheStorage,
+  Storage,
   VectorDocument,
   VectorSearchResult,
-  CacheStats,
+  VectorStorage,
 } from '../interfaces/storage.js';
 
 /**

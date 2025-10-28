@@ -69,15 +69,17 @@ export class TemplateEngine {
         return '';
       }
 
-      return array.map((item) => {
-        const itemData = { item: String(item) };
-        let itemResult = content;
-        for (const [key, value] of Object.entries(itemData)) {
-          const regex = new RegExp(`{{${key}}}`, 'g');
-          itemResult = itemResult.replace(regex, value);
-        }
-        return itemResult;
-      }).join('\n');
+      return array
+        .map((item) => {
+          const itemData = { item: String(item) };
+          let itemResult = content;
+          for (const [key, value] of Object.entries(itemData)) {
+            const regex = new RegExp(`{{${key}}}`, 'g');
+            itemResult = itemResult.replace(regex, value);
+          }
+          return itemResult;
+        })
+        .join('\n');
     });
 
     return result;

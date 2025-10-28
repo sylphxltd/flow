@@ -69,14 +69,7 @@
       "description": "Evaluating office locations using cost, accessibility, talent pool, and company culture fit criteria"
     }
   ],
-  "tags": [
-    "decision",
-    "analysis",
-    "comparison",
-    "weighted",
-    "criteria",
-    "data-driven"
-  ],
+  "tags": ["decision", "analysis", "comparison", "weighted", "criteria", "data-driven"],
   "metadata": {
     "version": "1.0.0",
     "author": "Decision Science Community",

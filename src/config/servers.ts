@@ -1,7 +1,7 @@
 import { useEnv, useRuntimeConfig } from '../composables/index.js';
+import { useTargetConfig } from '../composables/useTargetConfig.js';
 import type { MCPServerConfigFlags, MCPServerConfigUnion } from '../types.js';
 import { envSecurity, securitySchemas } from '../utils/security.js';
-import { useTargetConfig } from '../composables/useTargetConfig.js';
 
 /**
  * Central MCP server registry for Sylphx Flow

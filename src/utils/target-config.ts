@@ -468,7 +468,7 @@ async function promptForAPIKeys(
   serverTypes: MCPServerID[],
   existingKeys: Record<string, string> = {}
 ): Promise<Record<string, string>> {
-    const rl = createInterface({
+  const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
   });

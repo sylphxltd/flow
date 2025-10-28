@@ -1,19 +1,22 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
+import { startSylphxFlowMCPServer } from '../servers/mcp-server.js';
 import { MCPService } from '../services/mcp-service.js';
 import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
-import { startSylphxFlowMCPServer } from '../servers/mcp-server.js';
 
 // Create the main MCP command
 export const mcpCommand = new Command('mcp')
   .description('Manage MCP (Model Context Protocol) servers')
-  .option('--target <type>', `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`);
+  .option(
+    '--target <type>',
+    `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`
+  );
 
 // MCP start subcommand
 mcpCommand
@@ -168,8 +171,8 @@ mcpCommand
 
     // Flatten and filter server list (can be comma-separated or space-separated)
     const serverList = servers
-      .flatMap(s => s.split(','))
-      .map(s => s.trim())
+      .flatMap((s) => s.split(','))
+      .map((s) => s.trim())
       .filter(Boolean);
 
     const mcpService = new MCPService(targetId);
@@ -212,8 +215,8 @@ mcpCommand
 
     // Flatten and filter server list (can be comma-separated or space-separated)
     const serverList = servers
-      .flatMap(s => s.split(','))
-      .map(s => s.trim())
+      .flatMap((s) => s.split(','))
+      .map((s) => s.trim())
       .filter(Boolean);
 
     const mcpService = new MCPService(targetId);

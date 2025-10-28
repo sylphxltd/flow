@@ -1,11 +1,10 @@
-import { Command } from 'commander';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { Command } from 'commander';
 import { targetManager } from '../core/target-manager.js';
 import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { getAgentsDir } from '../utils/paths.js';
-
 
 async function loadAgentContent(agentName: string, agentFilePath?: string): Promise<string> {
   try {
@@ -30,7 +29,10 @@ async function loadAgentContent(agentName: string, agentFilePath?: string): Prom
       return content;
     }
   } catch (_error) {
-    throw new CLIError(`Agent '${agentName}' not found${agentFilePath ? ` at ${agentFilePath}` : ''}`, 'AGENT_NOT_FOUND');
+    throw new CLIError(
+      `Agent '${agentName}' not found${agentFilePath ? ` at ${agentFilePath}` : ''}`,
+      'AGENT_NOT_FOUND'
+    );
   }
 }
 
@@ -91,13 +93,21 @@ function getExecutableTargets(): string[] {
 
 // Create the run command
 export const runCommand = new Command('run')
-  .description('Run a prompt with a specific agent (default: master-craftsman) using the detected or specified target')
-  .option('--target <name>', `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`)
+  .description(
+    'Run a prompt with a specific agent (default: master-craftsman) using the detected or specified target'
+  )
+  .option(
+    '--target <name>',
+    `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`
+  )
   .option('--agent <name>', 'Agent to use (default: master-craftsman)')
   .option('--agent-file <path>', 'Load agent from specific file path (overrides --agent)')
   .option('--verbose', 'Show detailed output')
   .option('--dry-run', 'Show what would be done without executing the command')
-  .argument('[prompt]', 'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)')
+  .argument(
+    '[prompt]',
+    'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)'
+  )
   .action(async (prompt, options) => {
     // Set prompt in options
     options.prompt = prompt;

@@ -3,11 +3,11 @@
  * 提供跨domain嘅搜索功能：workspace, codebase, knowledge
  */
 
-import type { EmbeddingProvider } from '../../utils/embeddings.js';
-import { getDefaultEmbeddingProvider } from '../../utils/embeddings.js';
-import { VectorStorage } from '../../utils/lancedb-vector-storage.js';
-import { type SearchIndex, searchDocuments, buildSearchIndex } from '../../utils/tfidf.js';
-import { SeparatedMemoryStorage } from '../../utils/separated-storage.js';
+import type { VectorStorage } from '../storage/lancedb-vector-storage.js';
+import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
+import type { EmbeddingProvider } from './embeddings.js';
+import { getDefaultEmbeddingProvider } from './embeddings.js';
+import { type SearchIndex, buildSearchIndex, searchDocuments } from './tfidf.js';
 
 export interface SearchResult {
   uri: string;
@@ -78,24 +78,31 @@ export class SemanticSearchService {
 
     // 根據domain搜索
     if (domain === 'all' || domain === 'knowledge') {
-      const knowledgeResults = await this.searchKnowledge(query, { limit: Math.ceil(limit / 3), include_content });
+      const knowledgeResults = await this.searchKnowledge(query, {
+        limit: Math.ceil(limit / 3),
+        include_content,
+      });
       results.push(...knowledgeResults);
     }
 
     if (domain === 'all' || domain === 'codebase') {
-      const codebaseResults = await this.searchCodebase(query, { limit: Math.ceil(limit / 3), include_content });
+      const codebaseResults = await this.searchCodebase(query, {
+        limit: Math.ceil(limit / 3),
+        include_content,
+      });
       results.push(...codebaseResults);
     }
 
     if (domain === 'all' || domain === 'workspace') {
-      const workspaceResults = await this.searchWorkspace(query, { limit: Math.ceil(limit / 3), include_content });
+      const workspaceResults = await this.searchWorkspace(query, {
+        limit: Math.ceil(limit / 3),
+        include_content,
+      });
       results.push(...workspaceResults);
     }
 
     // 按score排序並限制結果數量
-    return results
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
   /**
@@ -113,7 +120,7 @@ export class SemanticSearchService {
       minScore: options.min_score || 0.1,
     });
 
-    return searchResults.map(result => ({
+    return searchResults.map((result) => ({
       ...result,
       metadata: {
         type: 'knowledge' as const,
@@ -138,7 +145,7 @@ export class SemanticSearchService {
       minScore: options.min_score || 0.1,
     });
 
-    return searchResults.map(result => ({
+    return searchResults.map((result) => ({
       ...result,
       metadata: {
         type: 'codebase' as const,
@@ -163,7 +170,7 @@ export class SemanticSearchService {
       minScore: options.min_score || 0.1,
     });
 
-    return searchResults.map(result => ({
+    return searchResults.map((result) => ({
       ...result,
       metadata: {
         type: 'workspace' as const,

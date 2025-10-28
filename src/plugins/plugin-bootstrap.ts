@@ -8,8 +8,8 @@
 import type { DIContainer } from '../core/di-container.js';
 import { container } from '../core/di-container.js';
 import type { ILogger } from '../core/interfaces.js';
-import { MemoryMCPPlugin } from './examples/memory-mcp-plugin.js';
 import { configureServices } from '../core/service-config.js';
+import { MemoryMCPPlugin } from './examples/memory-mcp-plugin.js';
 import { PluginManager } from './plugin-manager.js';
 
 export interface PluginBootstrapConfig {

@@ -75,7 +75,7 @@ export class EmbeddingsProviderService {
     }
 
     // 檢查文本長度
-    const filteredTexts = texts.filter(text => text.trim().length > 0);
+    const filteredTexts = texts.filter((text) => text.trim().length > 0);
     if (filteredTexts.length === 0) {
       return [];
     }
@@ -164,21 +164,21 @@ export class EmbeddingsProviderService {
       return '';
     }
 
-    return text
-      .trim()
-      // 移除多餘嘅空白字符
-      .replace(/\s+/g, ' ')
-      // 截斷過長嘅文本
-      .slice(0, (this.config.maxTokens || 8000) * 4);
+    return (
+      text
+        .trim()
+        // 移除多餘嘅空白字符
+        .replace(/\s+/g, ' ')
+        // 截斷過長嘅文本
+        .slice(0, (this.config.maxTokens || 8000) * 4)
+    );
   }
 
   /**
    * 批量預處理文本
    */
   preprocessTexts(texts: string[]): string[] {
-    return texts
-      .filter(text => this.isValidText(text))
-      .map(text => this.preprocessText(text));
+    return texts.filter((text) => this.isValidText(text)).map((text) => this.preprocessText(text));
   }
 
   /**

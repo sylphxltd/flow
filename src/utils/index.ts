@@ -4,11 +4,11 @@
  */
 
 // ============================================================================
-// FEATURE-BASED ORGANIZATION (Preferred)
+// FEATURE-BASED ORGANIZATION (Removed - migrated to domains/ and services/)
 // ============================================================================
-// Import from feature-based modules for better organization
-
-export * from './features/index.js';
+// Features now organized in:
+// - src/domains/ for domain-specific logic
+// - src/services/ for shared infrastructure
 
 // ============================================================================
 // LEGACY ORGANIZATION (Backward Compatibility)
@@ -42,10 +42,7 @@ export * from './drizzle-storage.js';
 export * from './memory-storage.js';
 export * from './cache-storage.js';
 
-// Search and indexing
-export * from './semantic-search.js';
-export * from './codebase-indexer.js';
-export * from './knowledge-indexer.js';
+// Search and indexing - moved to services/search/
 
 // Console UI utilities
 export * from './console-ui.js';
@@ -65,11 +62,7 @@ export * from './command-builder.js';
 // Secret utilities
 export * from './secret-utils.js';
 
-// Embeddings utilities
-export * from './embeddings.js';
-
-// TF-IDF utilities
-export * from './tfidf.js';
+// Embeddings and TF-IDF - moved to services/search/
 
 // Help utilities
 export * from './help.js';
@@ -77,17 +70,13 @@ export * from './help.js';
 // Target utilities
 export * from './target-utils.js';
 
-// Migration examples
-export * from './migration-examples.js';
-
-// Test utilities
-export * from './test-utilities.js';
+// Migration examples - removed (obsolete)
+// Test utilities - removed (obsolete)
 
 // Shared utilities
 export * from '../shared.js';
 
-// Base indexer
-export * from './base-indexer.js';
+// Base indexer - moved to services/search/
 
 // Vector storage
 export * from './vector-storage.js';
@@ -103,9 +92,6 @@ export * from './unified-search-service.js';
 
 // Target config types
 export * from './target-config.js';
-
-// Time tools
-export * from '../tools/time-tools.js';
 
 // Settings utilities
 export * from './settings.js';

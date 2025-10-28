@@ -82,7 +82,14 @@
       "description": "Problem: Late deliveries. Why? Shipping delays. Why? Inadequate packaging time. Why? Staff shortage. Why: High turnover. Why: Poor compensation. Solution: Review compensation and retention strategies."
     }
   ],
-  "tags": ["problem-solving", "troubleshooting", "analysis", "quality", "continuous-improvement", "5-whys"],
+  "tags": [
+    "problem-solving",
+    "troubleshooting",
+    "analysis",
+    "quality",
+    "continuous-improvement",
+    "5-whys"
+  ],
   "metadata": {
     "version": "1.0.0",
     "author": "Toyota Production System (Sakichi Toyoda)",

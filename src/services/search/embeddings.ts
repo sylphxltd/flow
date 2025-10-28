@@ -3,9 +3,9 @@
  * Supports OpenAI embeddings (with fallback to mock embeddings)
  */
 
-import { envSecurity, securitySchemas } from './security.js';
-import { generateMockEmbedding } from './vector-storage.js';
-import { secretUtils } from './secret-utils.js';
+import { secretUtils } from '../../utils/secret-utils.js';
+import { envSecurity, securitySchemas } from '../../utils/security.js';
+import { generateMockEmbedding } from '../storage/vector-storage.js';
 
 export interface ModelInfo {
   id: string;

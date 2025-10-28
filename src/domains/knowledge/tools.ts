@@ -5,7 +5,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { searchService } from '../../utils/unified-search-service.js';
+import { searchService } from '../../services/search/unified-search-service.js';
 import { getKnowledgeContent } from './resources.js';
 
 /**
@@ -127,7 +127,7 @@ The available URIs are dynamically generated from the indexed knowledge base. Us
     },
     async ({ uri }) => {
       try {
-                const content = await getKnowledgeContent(uri);
+        const content = await getKnowledgeContent(uri);
         return {
           content: [
             {

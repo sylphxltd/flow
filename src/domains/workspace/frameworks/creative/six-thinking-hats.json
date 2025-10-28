@@ -70,7 +70,14 @@
       "description": "Company restructuring analysis. White: financial data, Red: employee concerns, Black: disruption risks, Yellow: efficiency gains, Green: alternative structures, Blue: implementation timeline."
     }
   ],
-  "tags": ["creativity", "decision-making", "brainstorming", "team-collaboration", "perspectives", "structured-thinking"],
+  "tags": [
+    "creativity",
+    "decision-making",
+    "brainstorming",
+    "team-collaboration",
+    "perspectives",
+    "structured-thinking"
+  ],
   "metadata": {
     "version": "1.0.0",
     "author": "Edward de Bono (1985)",
