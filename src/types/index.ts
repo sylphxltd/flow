@@ -9,6 +9,10 @@ export * from './types';
 export * from './target-config.types';
 export * from './mcp-config.types';
 export * from './database.types';
+export type { EnhancedMCPServerConfigUnion } from './mcp-config.types';
+export type { AgentMetadata } from './target-config.types';
+export type { DatabaseHealthCheckResult } from './database.types';
+export type { ApiResponse, EnhancedError } from './api.types';
 
 // API types - prefer organized version
 export * from './api/index.js';
@@ -23,27 +27,27 @@ export * from './api.types';
 /**
  * @deprecated Use EnhancedMCPServerConfigUnion instead
  */
-export type MCPServerConfigUnion = import('./mcp-config.types').EnhancedMCPServerConfigUnion;
+export type MCPServerConfigUnion = EnhancedMCPServerConfigUnion;
 
 /**
  * @deprecated Use AgentMetadata instead
  */
-export type AgentConfig = import('./target-config.types').AgentMetadata;
+export type AgentConfig = AgentMetadata;
 
 /**
  * @deprecated Use DatabaseHealthCheckResult instead
  */
-export type HealthCheckResult = import('./database.types').DatabaseHealthCheckResult;
+export type HealthCheckResult = DatabaseHealthCheckResult;
 
 /**
  * @deprecated Use ApiResponse instead
  */
-export type APIResponse<T = unknown> = import('./api.types').ApiResponse<T>;
+export type APIResponse<T = unknown> = ApiResponse<T>;
 
 /**
  * @deprecated Use EnhancedError instead
  */
-export type SystemError = import('./api.types').EnhancedError;
+export type SystemError = EnhancedError;
 
 // ============================================================================
 // SIMPLE UTILITY TYPES

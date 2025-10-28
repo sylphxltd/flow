@@ -4,6 +4,7 @@ import ora from 'ora';
 import { CodebaseIndexer } from '../utils/codebase-indexer.js';
 import { CLIError } from '../utils/error-handler.js';
 import { searchService } from '../utils/unified-search-service.js';
+import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 
 export const codebaseSearchCommand = new Command('search')
   .description('Search codebase files and source code')
@@ -51,9 +52,7 @@ export const codebaseReindexCommand = new Command('reindex')
       const spinner = ora('Scanning and indexing files...').start();
 
       const indexer = new CodebaseIndexer();
-      const embeddingProvider = await (
-        await import('../utils/embeddings.js')
-      ).getDefaultEmbeddingProvider();
+      const embeddingProvider = await getDefaultEmbeddingProvider();
 
       await indexer.indexCodebase({ embeddingProvider });
 

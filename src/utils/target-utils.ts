@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import type { MCPServerConfigUnion, TargetConfig } from '../types.js';
 import { pathSecurity, sanitize } from './security.js';
+import { readJSONCFile, writeJSONCFile } from './jsonc.js';
 
 /**
  * File system utilities for targets
@@ -26,8 +27,7 @@ export const fileUtils = {
     }
 
     if (config.configFile.endsWith('.jsonc')) {
-      const { readJSONCFile } = await import('./jsonc.js');
-      return readJSONCFile(configPath);
+        return readJSONCFile(configPath);
     }
     if (config.configFile.endsWith('.json')) {
       const content = await fs.readFile(configPath, 'utf8');
@@ -46,7 +46,6 @@ export const fileUtils = {
     await fs.mkdir(path.dirname(configPath), { recursive: true });
 
     if (config.configFile.endsWith('.jsonc')) {
-      const { writeJSONCFile } = await import('./jsonc.js');
       await writeJSONCFile(configPath, data, config.configSchema || undefined);
     } else if (config.configFile.endsWith('.json')) {
       const content = JSON.stringify(data, null, 2);

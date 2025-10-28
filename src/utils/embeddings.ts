@@ -5,6 +5,7 @@
 
 import { envSecurity, securitySchemas } from './security.js';
 import { generateMockEmbedding } from './vector-storage.js';
+import { secretUtils } from './secret-utils.js';
 
 export interface ModelInfo {
   id: string;
@@ -259,7 +260,6 @@ export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> 
   // Try to load from secrets first
   let secrets: Record<string, string> = {};
   try {
-    const { secretUtils } = await import('./secret-utils.js');
     secrets = await secretUtils.loadSecrets(process.cwd()).catch(() => ({}));
   } catch (_error) {
     // Ignore if secretUtils is not available

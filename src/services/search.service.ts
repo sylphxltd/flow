@@ -13,6 +13,7 @@ import {
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 import { type SearchIndex, searchDocuments } from '../utils/tfidf.js';
 import type { SearchOptions, SearchResult } from '../utils/unified-search-service.js';
+import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 
 export interface SearchServiceConfig {
   enableCaching?: boolean;
@@ -73,9 +74,7 @@ export class SearchService {
       // Initialize embedding provider if enabled
       if (this.config.enableEmbeddings) {
         try {
-          this.embeddingProvider = await (
-            await import('../utils/embeddings.js')
-          ).getDefaultEmbeddingProvider();
+          this.embeddingProvider = await getDefaultEmbeddingProvider();
           this.logger.info(`Embedding provider initialized: ${this.embeddingProvider.name}`);
 
           // Reinitialize knowledge indexer with embedding provider

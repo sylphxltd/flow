@@ -4,6 +4,7 @@
  */
 
 import type { EmbeddingProvider } from './embeddings.js';
+import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
 import { SeparatedMemoryStorage } from './separated-storage.js';
 import { type SearchIndex, searchDocuments } from './tfidf.js';
@@ -59,9 +60,7 @@ export class UnifiedSearchService {
 
     // Initialize embedding provider if not already done
     if (!this.embeddingProvider) {
-      this.embeddingProvider = await (
-        await import('./embeddings.js')
-      ).getDefaultEmbeddingProvider();
+      this.embeddingProvider = await getDefaultEmbeddingProvider();
     }
 
     // Reinitialize knowledge indexer with embedding provider

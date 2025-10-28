@@ -43,7 +43,6 @@ export class TargetManager {
     // Try to get saved default target for default selection
     let defaultTarget = getDefaultTarget();
     try {
-      const { projectSettings } = await import('../utils/settings.js');
       const savedDefaultTarget = await projectSettings.getDefaultTarget();
       if (savedDefaultTarget && this.getTarget(savedDefaultTarget)) {
         defaultTarget = savedDefaultTarget;

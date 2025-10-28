@@ -11,14 +11,14 @@ import {
   log,
 } from '../shared.js';
 import { targetManager } from './target-manager.js';
+import { getAgentsDir } from '../utils/paths.js';
 
 // ============================================================================
 // AGENT FILE FUNCTIONS
 // ============================================================================
 
 async function getAgentFiles(): Promise<string[]> {
-  const { getAgentsDir } = await import('../utils/paths.js');
-  const agentsDir = getAgentsDir();
+    const agentsDir = getAgentsDir();
 
   if (!fs.existsSync(agentsDir)) {
     throw new Error(`Could not find agents directory at: ${agentsDir}`);
@@ -126,8 +126,7 @@ export async function installAgents(options: CommonOptions): Promise<void> {
   }
 
   // Process files individually - create both sdd/ and core/ subdirectory structures
-  const { getAgentsDir } = await import('../utils/paths.js');
-  const agentsSourceDir = getAgentsDir();
+    const agentsSourceDir = getAgentsDir();
 
   // Process files in parallel for better performance
   const processPromises = agentFiles.map(async (agentFile) => {

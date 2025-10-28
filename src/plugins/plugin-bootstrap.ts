@@ -8,6 +8,7 @@
 import type { DIContainer } from '../core/di-container.js';
 import { container } from '../core/di-container.js';
 import type { ILogger } from '../core/interfaces.js';
+import { MemoryMCPPlugin } from './examples/memory-mcp-plugin.js';
 import { configureServices } from '../core/service-config.js';
 import { PluginManager } from './plugin-manager.js';
 
@@ -180,7 +181,6 @@ export class PluginBootstrap {
 
     try {
       // Import and register memory MCP plugin
-      const { MemoryMCPPlugin } = await import('./examples/memory-mcp-plugin.js');
       const memoryPlugin = new MemoryMCPPlugin();
       await this.pluginManager.registerPlugin(memoryPlugin);
 

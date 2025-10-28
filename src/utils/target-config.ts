@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { createInterface } from 'node:readline';
 import {
   type MCPServerID,
   MCP_SERVER_REGISTRY,
@@ -467,8 +468,7 @@ async function promptForAPIKeys(
   serverTypes: MCPServerID[],
   existingKeys: Record<string, string> = {}
 ): Promise<Record<string, string>> {
-  const { createInterface } = await import('node:readline');
-  const rl = createInterface({
+    const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
   });

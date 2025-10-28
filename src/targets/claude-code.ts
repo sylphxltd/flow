@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import type { MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
 import { commandSecurity, sanitize } from '../utils/security.js';
+import { CLIError } from '../utils/error-handler.js';
 import {
   fileUtils,
   generateHelpText,
@@ -229,8 +231,7 @@ Please begin your response with a comprehensive summary of all the instructions 
       return;
     }
 
-    const { CLIError } = await import('../utils/error-handler.js');
-
+    
     try {
       // Build arguments
       const args = ['--dangerously-skip-permissions'];
@@ -252,8 +253,7 @@ Please begin your response with a comprehensive summary of all the instructions 
 
         // Use child_process directly to bypass security validation for this specific case
         // This is safe because we're controlling the command and just passing the prompt as an argument
-        const { spawn } = await import('node:child_process');
-
+  
         await new Promise<void>((resolve, reject) => {
           const child = spawn('claude', args, {
             stdio: 'inherit',

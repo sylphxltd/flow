@@ -3,6 +3,8 @@
  * Provides functions to parse and stringify JSONC files while preserving comments
  */
 
+import { readFile, writeFile } from 'node:fs/promises';
+
 /**
  * Parse JSONC content (JSON with Comments)
  * @param content - The JSONC string to parse
@@ -134,8 +136,7 @@ $1"mcp": {`
  * @returns The parsed object
  */
 export async function readJSONCFile(filePath: string): Promise<any> {
-  const fs = await import('node:fs/promises');
-  const content = await fs.readFile(filePath, 'utf8');
+  const content = await readFile(filePath, 'utf8');
   return parseJSONC(content);
 }
 
@@ -152,7 +153,6 @@ export async function writeJSONCFile(
   schema?: string,
   indent = 2
 ): Promise<void> {
-  const fs = await import('node:fs/promises');
   const content = stringifyJSONC(obj, schema, indent);
-  await fs.writeFile(filePath, content, 'utf8');
+  await writeFile(filePath, content, 'utf8');
 }

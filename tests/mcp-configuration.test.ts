@@ -1,31 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock readline at the top level
-const mockCreateInterface = vi.fn(() => ({
-  question: vi.fn((_prompt: string, callback: (answer: string) => void) => {
-    setImmediate(() => callback(''));
-  }),
-  close: vi.fn(),
-}));
-
+// Mock readline before importing the module that uses it
 vi.mock('node:readline', () => ({
-  createInterface: mockCreateInterface,
+  createInterface: vi.fn(() => ({
+    question: vi.fn((_prompt: string, callback: (answer: string) => void) => {
+      setImmediate(() => callback(''));
+    }),
+    close: vi.fn(),
+  })),
 }));
 
 // Mock the target manager module
-const mockGetTarget = vi.fn();
-const mockGetAllTargets = vi.fn();
-const mockGetImplementedTargets = vi.fn();
-const mockResolveTarget = vi.fn();
-
 vi.mock('../src/core/target-manager.js', () => ({
   targetManager: {
-    getTarget: mockGetTarget,
-    getAllTargets: mockGetAllTargets,
-    getImplementedTargets: mockGetImplementedTargets,
-    resolveTarget: mockResolveTarget,
+    getTarget: vi.fn(),
+    getAllTargets: vi.fn(),
+    getImplementedTargets: vi.fn(),
+    resolveTarget: vi.fn(),
   },
 }));
+
+import { configureMCPServerForTarget } from '../src/utils/target-config.js';
+import { targetManager } from '../src/core/target-manager.js';
+
+const mockGetTarget = targetManager.getTarget as ReturnType<typeof vi.fn>;
+const mockGetAllTargets = targetManager.getAllTargets as ReturnType<typeof vi.fn>;
+const mockGetImplementedTargets = targetManager.getImplementedTargets as ReturnType<typeof vi.fn>;
+const mockResolveTarget = targetManager.resolveTarget as ReturnType<typeof vi.fn>;
 
 // Mock console methods to avoid noise in tests
 const originalConsoleLog = console.log;
@@ -73,8 +74,7 @@ describe('MCP Configuration Tests', () => {
 
   describe('configureMCPServerForTarget', () => {
     it('should return false for unknown server', async () => {
-      const { configureMCPServerForTarget } = await import('../src/utils/target-config.js');
-
+      
       const result = await configureMCPServerForTarget(
         '/test/cwd',
         'test-target',
@@ -86,8 +86,7 @@ describe('MCP Configuration Tests', () => {
     });
 
     it('should return true for servers that require no keys', async () => {
-      const { configureMCPServerForTarget } = await import('../src/utils/target-config.js');
-
+      
       // Mock no existing server
       mockTargetDefinition.readConfig.mockResolvedValue({});
 
@@ -98,8 +97,7 @@ describe('MCP Configuration Tests', () => {
     });
 
     it('should install servers with only optional keys even when no keys provided', async () => {
-      const { configureMCPServerForTarget } = await import('../src/utils/target-config.js');
-
+      
       // Mock no existing server
       mockTargetDefinition.readConfig.mockResolvedValue({});
 

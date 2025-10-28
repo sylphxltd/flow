@@ -8,6 +8,7 @@ import { MCPService } from '../services/mcp-service.js';
 import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
+import { startSylphxFlowMCPServer } from '../servers/mcp-server.js';
 
 // Create the main MCP command
 export const mcpCommand = new Command('mcp')
@@ -36,7 +37,6 @@ mcpCommand
       console.log(chalk.blue('🚀 Starting Sylphx Flow MCP Server...'));
 
       // Import and start the MCP server
-      const { startSylphxFlowMCPServer } = await import('../servers/mcp-server.js');
 
       // Start the server with the provided configuration
       await startSylphxFlowMCPServer(config);

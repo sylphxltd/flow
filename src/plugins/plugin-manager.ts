@@ -7,6 +7,7 @@
 
 import type { DIContainer } from '../core/di-container.js';
 import type { ILogger } from '../core/interfaces.js';
+import { asyncFileOps } from '../utils/async-file-operations.js';
 
 export interface PluginMetadata {
   name: string;
@@ -159,8 +160,7 @@ export class PluginManager {
     const results: PluginLoadResult[] = [];
 
     try {
-      const { asyncFileOps } = await import('../utils/async-file-operations.js');
-
+      
       // Check if plugin directory exists
       if (!(await asyncFileOps.exists(pluginDir))) {
         this.logger.warn(`Plugin directory not found: ${pluginDir}`);
@@ -491,8 +491,7 @@ export class PluginManager {
     const configPath = this.config.configPath || './plugins/config.json';
 
     try {
-      const { asyncFileOps } = await import('../utils/async-file-operations.js');
-
+      
       if (await asyncFileOps.exists(configPath)) {
         const configContent = await asyncFileOps.readFile(configPath);
         const configs = JSON.parse(configContent as string);
