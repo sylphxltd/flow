@@ -1,5 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import path from 'path';
+import fs from 'fs/promises';
 
 import { registerCodebaseTools } from '../tools/codebase-tools.js';
 import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
@@ -13,6 +15,71 @@ import { searchService } from '../utils/unified-search-service.js';
 // ============================================================================
 // CONFIGURATION AND SETUP
 // ============================================================================
+
+const SYLPHX_FLOW_DIR = '.sylphx-flow';
+
+/**
+ * Initialize .sylphx-flow directory with proper .gitignore
+ */
+async function initializeSylphxFlowDirectory(cwd: string = process.cwd()): Promise<void> {
+  const sylphxFlowPath = path.join(cwd, SYLPHX_FLOW_DIR);
+
+  try {
+    // Ensure .sylphx-flow directory exists
+    await fs.mkdir(sylphxFlowPath, { recursive: true });
+
+    // Create .gitignore inside .sylphx-flow directory
+    const gitignorePath = path.join(sylphxFlowPath, '.gitignore');
+    const gitignoreContent = `# Sylphx Flow Runtime Files
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# Workspace management
+workspace/
+!workspace/README.md
+
+# Search cache and indexes
+search-cache/
+*.hnsw
+*.meta.json
+
+# Temporary files
+*.tmp
+*.log
+*.lock
+*.pid
+
+# MCP server artifacts
+cache/
+sessions/
+coordination/
+memory/
+!memory/README.md
+!memory/agents/README.md
+!memory/sessions/README.md
+`;
+
+    // Check if .gitignore already exists
+    try {
+      const existingContent = await fs.readFile(gitignorePath, 'utf8');
+      if (existingContent.trim() === gitignoreContent.trim()) {
+        // Same content, no need to update
+        return;
+      }
+    } catch {
+      // File doesn't exist, create it
+    }
+
+    await fs.writeFile(gitignorePath, gitignoreContent, 'utf8');
+    Logger.info(`✓ Created ${path.join(SYLPHX_FLOW_DIR, '.gitignore')}`);
+
+  } catch (error) {
+    Logger.error('Failed to initialize .sylphx-flow directory', error);
+    // Don't throw error, server can still function
+  }
+}
 
 const DEFAULT_CONFIG = {
   name: 'sylphx-flow',
@@ -49,6 +116,9 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
 
   console.log('🚀 Starting Sylphx Flow MCP Server...');
   console.log('📍 Database: .sylphx-flow/memory.db');
+
+  // Initialize .sylphx-flow directory with proper .gitignore
+  await initializeSylphxFlowDirectory();
 
   // Initialize embedding provider for vector search
   console.log('🔍 Initializing embedding provider...');
