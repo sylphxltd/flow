@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 import { registerCodebaseTools } from '../tools/codebase-tools.js';
 import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
 import { registerTimeTools } from '../tools/time-tools.js';
-import { registerAllWorkspaceTools } from '../tools/workspace-tools.js';
+import { registerWorkspaceTools } from '../tools/workspace-tools.js';
 import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { searchService } from '../utils/unified-search-service.js';
@@ -145,29 +145,19 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('time_get_current, time_format, time_parse');
   }
 
-  
+
   // Workspace tools (enabled by default, can be disabled)
   if (!config.disableWorkspace) {
-    Logger.info('📁 Registering workspace tools');
-    registerAllWorkspaceTools(server);
+    Logger.info('📁 Registering workspace tools (stateless)');
+    registerWorkspaceTools(server);
     enabledTools.push(
-      'workspace_init',
-      'workspace_get_active',
       'workspace_create_task',
-      'workspace_read_status',
-      'workspace_update_status',
-      'workspace_create_file',
-      'workspace_add_decision',
+      'workspace_read_task',
+      'workspace_update_task',
       'workspace_list_tasks',
-      'workspace_switch_task',
-      'workspace_complete_task',
-      'workspace_search',
-      'workspace_get_context',
-      'reasoning_start',
-      'reasoning_analyze',
-      'reasoning_conclude'
+      'workspace_complete_task'
     );
-    console.log('📁 Workspace Tools: Enabled (15 tools)');
+    console.log('📁 Workspace Tools: Enabled (5 stateless tools)');
   }
 
   // Codebase tools (enabled by default)
