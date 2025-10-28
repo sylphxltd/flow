@@ -1,6 +1,4 @@
 import fs from 'node:fs';
-import fsPromises from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import type { MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
@@ -215,7 +213,8 @@ export const claudeCodeTarget: Target = {
   ): Promise<void> {
     // Sanitize and validate inputs
     const sanitizedSystemPrompt = sanitize.yamlContent(systemPrompt);
-    const sanitizedUserPrompt = sanitize.string(userPrompt, 10000);
+    // Remove dangerous control characters but don't limit length for user prompts
+    const sanitizedUserPrompt = userPrompt.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
     // Add summary request to system prompt
     const enhancedSystemPrompt = `${sanitizedSystemPrompt}
@@ -233,23 +232,14 @@ Please begin your response with a comprehensive summary of all the instructions 
     const { CLIError } = await import('../utils/error-handler.js');
 
     try {
-      // Create a temporary file for the system prompt
-      const tempFile = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'claude-system-prompt-'));
-      const promptFile = path.join(tempFile, 'system-prompt.txt');
+      // Build arguments
+      const args = ['--dangerously-skip-permissions'];
 
-      try {
-        await fsPromises.writeFile(promptFile, enhancedSystemPrompt, 'utf8');
-
-        // Build arguments - use file-based system prompt to avoid command line length limits
-        const args = ['--dangerously-skip-permissions'];
-
-        // Always use @file syntax for better reliability and no length limits
-        args.push('--system-prompt', `@${promptFile}`);
-        if (options.verbose) {
-          console.log('🚀 Executing Claude Code with file-based system prompt');
-          console.log(`📝 System prompt length: ${enhancedSystemPrompt.length} characters`);
-          console.log(`📝 System prompt saved to: ${promptFile}`);
-        }
+      args.push('--system-prompt', enhancedSystemPrompt);
+      if (options.verbose) {
+        console.log('🚀 Executing Claude Code');
+        console.log(`📝 System prompt length: ${enhancedSystemPrompt.length} characters`);
+      }
 
         
         if (sanitizedUserPrompt.trim() !== '') {
@@ -284,17 +274,6 @@ Please begin your response with a comprehensive summary of all the instructions 
             reject(error);
           });
         });
-      } finally {
-        // Clean up temporary file
-        try {
-          await fsPromises.rm(tempFile, { recursive: true, force: true });
-        } catch (cleanupError) {
-          // Ignore cleanup errors
-          if (options.verbose) {
-            console.warn('⚠️  Warning: Failed to clean up temporary file:', cleanupError);
-          }
-        }
-      }
     } catch (error: any) {
       if (error.code === 'ENOENT') {
         throw new CLIError('Claude Code not found. Please install it first.', 'CLAUDE_NOT_FOUND');
