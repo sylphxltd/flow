@@ -4,30 +4,12 @@ import { z } from 'zod';
 
 // Framework directories
 const FRAMEWORKS_DIR = 'src/frameworks/definitions';
-const CORE_DIR = join(FRAMEWORKS_DIR, 'core');
-const STRATEGIC_DIR = join(FRAMEWORKS_DIR, 'strategic');
-const TECHNICAL_DIR = join(FRAMEWORKS_DIR, 'technical');
-const USER_CENTRIC_DIR = join(FRAMEWORKS_DIR, 'user-centric');
-const OPERATIONAL_DIR = join(FRAMEWORKS_DIR, 'operational');
-const CUSTOM_DIR = join(FRAMEWORKS_DIR, 'custom');
 
-// Ensure framework directories exist
-function ensureFrameworkDirectories(): void {
-  const dirs = [
-    FRAMEWORKS_DIR,
-    CORE_DIR,
-    STRATEGIC_DIR,
-    TECHNICAL_DIR,
-    USER_CENTRIC_DIR,
-    OPERATIONAL_DIR,
-    CUSTOM_DIR
-  ];
-
-  dirs.forEach(dir => {
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-  });
+// Ensure framework directory exists
+function ensureFrameworkDirectory(): void {
+  if (!existsSync(FRAMEWORKS_DIR)) {
+    mkdirSync(FRAMEWORKS_DIR, { recursive: true });
+  }
 }
 
 // Framework type definition
@@ -80,19 +62,14 @@ export class FrameworkRegistry {
   private initialized = false;
 
   constructor() {
-    ensureFrameworkDirectories();
+    ensureFrameworkDirectory();
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // Load all frameworks from directories
-    await this.loadFrameworksFromDirectory(CORE_DIR);
-    await this.loadFrameworksFromDirectory(STRATEGIC_DIR);
-    await this.loadFrameworksFromDirectory(TECHNICAL_DIR);
-    await this.loadFrameworksFromDirectory(USER_CENTRIC_DIR);
-    await this.loadFrameworksFromDirectory(OPERATIONAL_DIR);
-    await this.loadFrameworksFromDirectory(CUSTOM_DIR);
+    // Load all frameworks from definitions directory
+    await this.loadFrameworksFromDirectory(FRAMEWORKS_DIR);
 
     this.initialized = true;
     console.log(`Framework registry initialized with ${this.frameworks.size} frameworks`);
@@ -101,11 +78,26 @@ export class FrameworkRegistry {
   private async loadFrameworksFromDirectory(directory: string): Promise<void> {
     if (!existsSync(directory)) return;
 
-    const files = readdirSync(directory).filter(file => file.endsWith('.json'));
+    // Recursively find all JSON files in subdirectories
+    function findJsonFiles(dir: string): string[] {
+      const files: string[] = [];
+      const items = readdirSync(dir, { withFileTypes: true });
 
-    for (const file of files) {
+      for (const item of items) {
+        const fullPath = join(dir, item.name);
+        if (item.isDirectory()) {
+          files.push(...findJsonFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.json')) {
+          files.push(fullPath);
+        }
+      }
+      return files;
+    }
+
+    const files = findJsonFiles(directory);
+
+    for (const filePath of files) {
       try {
-        const filePath = join(directory, file);
         const content = readFileSync(filePath, 'utf8');
         const framework = JSON.parse(content) as ReasoningFramework;
 
@@ -114,7 +106,7 @@ export class FrameworkRegistry {
 
         this.frameworks.set(framework.id, framework);
       } catch (error) {
-        console.error(`Error loading framework from ${file}:`, error);
+        console.error(`Error loading framework from ${filePath}:`, error);
       }
     }
   }
@@ -134,15 +126,8 @@ export class FrameworkRegistry {
     }
   }
 
-  register(framework: ReasoningFramework): void {
-    this.validateFramework(framework);
-    this.frameworks.set(framework.id, framework);
-
-    // Save to appropriate directory based on category
-    const directory = this.getDirectoryForCategory(framework.category);
-    const filePath = join(directory, `${framework.id}.json`);
-    writeFileSync(filePath, JSON.stringify(framework, null, 2), 'utf8');
-  }
+  // Note: register method removed since we don't support custom frameworks
+  // All frameworks are predefined in src/frameworks/definitions/
 
   get(id: string): ReasoningFramework | undefined {
     if (!this.initialized) {
@@ -275,16 +260,6 @@ export class FrameworkRegistry {
     return recommendations
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, 3); // Top 3 recommendations
-  }
-
-  private getDirectoryForCategory(category: string): string {
-    switch (category) {
-      case 'strategic': return STRATEGIC_DIR;
-      case 'technical': return TECHNICAL_DIR;
-      case 'user-centric': return USER_CENTRIC_DIR;
-      case 'operational': return OPERATIONAL_DIR;
-      default: return CUSTOM_DIR;
-    }
   }
 
   // Get statistics about frameworks
