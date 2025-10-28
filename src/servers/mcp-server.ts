@@ -5,7 +5,6 @@ import fs from 'fs/promises';
 
 import { registerCodebaseTools } from '../tools/codebase-tools.js';
 import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
-import { registerMemoryTools } from '../tools/memory-tools.js';
 import { registerTimeTools } from '../tools/time-tools.js';
 import { registerAllWorkspaceTools } from '../tools/workspace-tools.js';
 import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
@@ -90,7 +89,6 @@ const DEFAULT_CONFIG = {
 
 // Server configuration interface
 export interface ServerConfig {
-  disableMemory?: boolean;
   disableTime?: boolean;
   disableKnowledge?: boolean;
   disableCodebase?: boolean;
@@ -144,14 +142,6 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
 
   // Register all tool categories by default (whitelist approach)
   const enabledTools: string[] = [];
-
-  // Memory tools (enabled by default, can be disabled)
-  if (!config.disableMemory) {
-    registerMemoryTools(server);
-    enabledTools.push(
-      'memory_set, memory_get, memory_search, memory_list, memory_delete, memory_clear, memory_stats'
-    );
-  }
 
   // Time tools (enabled by default, can be disabled)
   if (!config.disableTime) {

@@ -5,7 +5,6 @@
 
 export { default as codebaseTools } from './codebase-tools';
 export { default as knowledgeTools } from './knowledge-tools';
-export { default as memoryTools } from './memory-tools';
 export { default as projectStartupTools } from './project-startup-tools';
 export { default as timeTools } from './time-tools';
 
@@ -22,11 +21,6 @@ export {
   createKnowledgeManageTool,
 } from './knowledge-tools';
 
-export {
-  createMemoryStoreTool,
-  createMemoryRetrieveTool,
-  createMemoryClearTool,
-} from './memory-tools';
 
 export {
   createProjectSetupTool,
