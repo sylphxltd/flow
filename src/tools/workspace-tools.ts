@@ -4,6 +4,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { cryptoUtils } from '../utils/security.js';
+import { frameworkRegistry, type ReasoningFramework } from '../frameworks/framework-registry.js';
 
 // ============================================================================
 // CONSTANTS & TYPES
@@ -1313,53 +1314,44 @@ export function registerWorkspaceGetContext(server: McpServer) {
 // REASONING TOOLS - Advanced Cognitive Workflows
 // ============================================================================
 
-// Reasoning frameworks configuration
-const REASONING_FRAMEWORKS = {
-  'first-principles': {
-    name: 'First Principles Thinking',
-    description: 'Break down complex problems into fundamental truths and build up from there',
-    structure: ['Fundamental Truth', 'Assumptions', 'Logical Deduction', 'Conclusion'],
-    prompts: [
-      'What are the absolute, undeniable facts?',
-      'What assumptions am I making?',
-      'If I remove all assumptions, what remains?',
-      'What can I build from first principles?'
-    ]
-  },
-  'pros-cons': {
-    name: 'Pros and Cons Analysis',
-    description: 'Systematic evaluation of advantages and disadvantages',
-    structure: ['Pros', 'Cons', 'Weighting', 'Decision'],
-    prompts: [
-      'What are all the benefits?',
-      'What are all the drawbacks?',
-      'How important is each factor?',
-      'What is the final judgment?'
-    ]
-  },
-  'root-cause': {
-    name: 'Root Cause Analysis (5 Whys)',
-    description: 'Identify the underlying causes of problems by repeatedly asking "why"',
-    structure: ['Problem Statement', 'Why Chain', 'Root Cause', 'Solution Strategy'],
-    prompts: [
-      'What is the specific problem?',
-      'Why does this problem exist? (ask 5 times)',
-      'What is the fundamental root cause?',
-      'How can we address the root cause?'
-    ]
-  },
-  'risk-assessment': {
-    name: 'Risk Assessment',
-    description: 'Identify, analyze, and mitigate potential risks',
-    structure: ['Risk Identification', 'Probability Analysis', 'Impact Assessment', 'Mitigation Strategy'],
-    prompts: [
-      'What could go wrong?',
-      'How likely is each risk?',
-      'What would be the impact?',
-      'How can we prevent or mitigate?'
-    ]
+// Helper functions for modular framework system
+async function ensureFrameworkRegistryInitialized(): Promise<void> {
+  if (!frameworkRegistry['initialized']) {
+    await frameworkRegistry.initialize();
   }
-};
+}
+
+function formatFrameworkMarkdown(framework: ReasoningFramework, reasoningData: any): string {
+  return `# ${reasoningData.title}
+
+**Framework:** ${framework.name}
+**Category:** ${framework.category}
+**Difficulty:** ${framework.difficulty}
+**Created:** ${reasoningData.created_at}
+**Status:** ${reasoningData.status}
+
+## Problem Statement
+${reasoningData.problem_description}
+
+${reasoningData.context ? `## Context\n${reasoningData.context}\n` : ''}
+
+## Framework Structure
+${framework.structure.map((section) => `### ${section.name}\n*${section.description}*`).join('\n\n')}
+
+## Guiding Questions
+${framework.prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
+
+## When to Use This Framework
+${framework.when_to_use.map((usage, index) => `${index + 1}. ${usage}`).join('\n')}
+
+${framework.when_not_to_use ? `## When Not to Use\n${framework.when_not_to_use.map((usage, index) => `${index + 1}. ${usage}`).join('\n')}\n` : ''}
+
+## Analysis Progress
+*Sections will be populated as you work through the analysis...*
+
+---
+*Reasoning ID: ${reasoningData.id} | Framework: ${framework.id}*`;
+}
 
 // Generate unique reasoning ID
 function generateReasoningId(): string {
@@ -1393,12 +1385,12 @@ export function registerReasoningStart(server: McpServer) {
       description: 'Start a structured reasoning session using a specific framework',
       inputSchema: {
         title: z.string().describe('Title for this reasoning session'),
-        framework: z.enum(Object.keys(REASONING_FRAMEWORKS) as [keyof typeof REASONING_FRAMEWORKS]).describe('Reasoning framework to use'),
+        framework: z.string().describe('Framework ID (use reasoning_frameworks to see available options)'),
         problem_description: z.string().describe('Clear description of the problem or question to analyze'),
         context: z.string().optional().describe('Additional context or background information'),
       },
     },
-    (args: ReasoningStartArgs): CallToolResult => {
+    async (args: ReasoningStartArgs): Promise<CallToolResult> => {
       try {
         ensureWorkspaceExists();
 
@@ -1412,7 +1404,20 @@ export function registerReasoningStart(server: McpServer) {
 
         const { title, framework, problem_description, context } = args;
         const reasoningId = generateReasoningId();
-        const frameworkInfo = REASONING_FRAMEWORKS[framework];
+
+        // Get framework from registry
+        await ensureFrameworkRegistryInitialized();
+        const frameworkInfo = frameworkRegistry.get(framework);
+
+        if (!frameworkInfo) {
+          return {
+            content: [{
+              type: 'text',
+              text: `Framework '${framework}' not found. Available frameworks:\n${frameworkRegistry.getAll().map(f => `• ${f.id} - ${f.name}`).join('\n')}\n\nUse reasoning_frameworks to see all options with descriptions.`
+            }],
+            isError: true,
+          };
+        }
 
         const reasoningData = {
           id: reasoningId,
@@ -1422,37 +1427,14 @@ export function registerReasoningStart(server: McpServer) {
           problem_description,
           context: context || '',
           created_at: new Date().toISOString(),
-          status: 'in_progress',
-          structure: frameworkInfo.structure,
-          prompts: frameworkInfo.prompts
+          status: 'in_progress'
         };
 
         const reasoningDir = getReasoningDir(activeId);
         const reasoningPath = join(reasoningDir, `${reasoningId}.md`);
 
-        // Create markdown file
-        const markdown = `# ${title}
-
-**Framework:** ${frameworkInfo.name}
-**Created:** ${reasoningData.created_at}
-**Status:** ${reasoningData.status}
-
-## Problem Statement
-${problem_description}
-
-${context ? `## Context\n${context}\n` : ''}
-
-## Framework Structure
-${frameworkInfo.structure.map((section: string) => `### ${section}\n*Your analysis will appear here...*`).join('\n\n')}
-
-## Guiding Questions
-${frameworkInfo.prompts.map((prompt: string, index: number) => `${index + 1}. ${prompt}`).join('\n')}
-
-## Analysis Progress
-*Sections will be populated as you work through the analysis...*
-
----
-*Reasoning ID: ${reasoningId} | Framework: ${framework}*`;
+        // Create markdown file using modular framework formatter
+        const markdown = formatFrameworkMarkdown(frameworkInfo, reasoningData);
 
         writeFileSync(reasoningPath, markdown, 'utf8');
 
@@ -1565,6 +1547,72 @@ export function registerReasoningAnalyze(server: McpServer) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return {
           content: [{ type: 'text', text: `Error analyzing reasoning: ${errorMessage}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+}
+
+// Tool 13: reasoning_frameworks
+interface ReasoningFrameworksArgs {
+  category?: string;
+  difficulty?: string;
+  search?: string;
+  quality_level?: string;
+}
+
+export function registerReasoningFrameworks(server: McpServer) {
+  server.registerTool(
+    'reasoning_frameworks',
+    {
+      description: 'Browse and discover available reasoning frameworks',
+      inputSchema: {
+        category: z.string().optional().describe('Filter by category (strategic, analytical, technical, user-centric, operational, creative, risk)'),
+        difficulty: z.string().optional().describe('Filter by difficulty level (beginner, intermediate, advanced)'),
+        search: z.string().optional().describe('Search in names and descriptions'),
+        quality_level: z.string().optional().describe('Filter by quality level (core, extended, experimental, custom)'),
+      },
+    },
+    async (args: ReasoningFrameworksArgs): Promise<CallToolResult> => {
+      try {
+        await ensureFrameworkRegistryInitialized();
+
+        const frameworks = frameworkRegistry.search(args.search || '', {
+          category: args.category,
+          difficulty: args.difficulty,
+          quality_level: args.quality_level
+        });
+
+        const stats = frameworkRegistry.getStats();
+
+        const frameworkText = frameworks.map(fw =>
+`**${fw.name}** (${fw.id})
+- **Category:** ${fw.category} | **Difficulty:** ${fw.difficulty} | **Quality:** ${fw.metadata.quality_level}
+- **Description:** ${fw.description}
+- **When to use:** ${fw.when_to_use.slice(0, 2).join(', ')}
+- **Time estimate:** ${fw.estimated_time}
+${fw.tags.length > 0 ? `- **Tags:** ${fw.tags.join(', ')}` : ''}
+`
+        ).join('\n\n');
+
+        const statsText = `
+**Framework Statistics:**
+- Total frameworks: ${stats.total}
+- By category: ${Object.entries(stats.byCategory).map(([cat, count]) => `${cat}: ${count}`).join(', ')}
+- By quality: ${Object.entries(stats.byQuality).map(([qual, count]) => `${qual}: ${count}`).join(', ')}
+- By difficulty: ${Object.entries(stats.byDifficulty).map(([diff, count]) => `${diff}: ${count}`).join(', ')}`;
+
+        return {
+          content: [{
+            type: 'text',
+            text: `# Available Reasoning Frameworks\n\n${frameworkText}\n\n${statsText}\n\n**Usage:**\n1. Start with \`reasoning_start\` using a framework ID\n2. Work through sections with \`reasoning_analyze\`\n3. Conclude with \`reasoning_conclude\`\n\n**Tip:** Use specific framework IDs like 'swot-analysis' or 'design-thinking'.`
+          }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: 'text', text: `Error listing frameworks: ${errorMessage}` }],
           isError: true,
         };
       }
@@ -1704,6 +1752,7 @@ export function registerAllWorkspaceTools(server: McpServer) {
 
   // Phase 5: Reasoning tools (高级认知工作流)
   registerReasoningStart(server);
+  registerReasoningFrameworks(server);
   registerReasoningAnalyze(server);
   registerReasoningConclude(server);
 }
