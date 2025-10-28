@@ -41,7 +41,6 @@ claude-flow
 .sylphx-flow/search-cache/
 
 ## Build artifacts and temporary files
-dist/lancedb.*.node
 package-lock.json
 *.tgz
 
@@ -52,7 +51,3 @@ src/utils/simple-vector-storage.ts
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
 .secrets/
-
-
-
-dist/
