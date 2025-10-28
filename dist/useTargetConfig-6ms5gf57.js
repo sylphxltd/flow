@@ -1,1 +1,0 @@
-import{H as h}from"./index-0ktgw5xs.js";import"./secret-utils-qftcc4hh.js";import"./index-fgf3ne5w.js";import"./index-b8xrx8ea.js";async function w(){let k=await h.resolveTarget({allowSelection:!1});try{return h.getTarget(k)?.mcpServerConfig}catch{return}}function x(k){try{return h.getTarget(k)?.mcpServerConfig}catch{return}}export{x as useTargetConfigById,w as useTargetConfig};

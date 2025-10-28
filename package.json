@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/sylphxltd/flow#readme",
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --minify --splitting && cp -r src/assets dist/assets",
+    "build": "bun build src/index.ts --outdir dist --target node --minify --splitting && rm -rf dist/assets && cp -r src/assets dist/assets",
     "dev": "bun src/index.ts",
     "start": "bun dist/index.js",
     "start:node": "node dist/index.js",
