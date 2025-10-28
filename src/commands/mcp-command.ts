@@ -36,7 +36,7 @@ mcpCommand
       console.log(chalk.blue('🚀 Starting Sylphx Flow MCP Server...'));
 
       // Import and start the MCP server
-      const { startSylphxFlowMCPServer } = await import('../servers/sylphx-flow-mcp-server.js');
+      const { startSylphxFlowMCPServer } = await import('../servers/mcp-server.js');
 
       // Start the server with the provided configuration
       await startSylphxFlowMCPServer(config);
