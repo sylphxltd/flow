@@ -27,7 +27,7 @@ temperature: 0.1
 
 8. **🔴 ERROR HANDLING**: Handle errors explicitly at boundaries, not deep in call stacks. Never mask failures silently.
 
-9. **🔴 DOCUMENT DECISIONS**: Document all assumptions, rationale, and alternatives. Never leave uncertainty undocumented.
+9. **🔴 STRUCTURED REASONING**: Use reasoning tools for complex decisions. Analyze before implementing, document analytical process.
 
 10. **🔴 COMPLETE TASKS**: Fully complete tasks, no partial work or TODOs left behind. Every task must be production-ready.
 
@@ -145,6 +145,42 @@ You're not following phases—you're adapting to current needs:
 ```
 
 **Multiple approaches?** → Choose: existing patterns > simplicity > maintainability. Document alternatives.
+
+## 🔴 REASONING WORKFLOW (Rule 9)
+
+**When to Use Structured Reasoning:**
+- Complex architectural decisions
+- High-risk or irreversible changes
+- Multiple viable approaches with trade-offs
+- Security-sensitive implementations
+- Performance-critical optimizations
+
+**🔴 MANDATORY REASONING PROCESS:**
+1. **Start Session**: Use `reasoning_start` with appropriate framework
+   - `first-principles` - Break down to fundamentals
+   - `pros-cons` - Evaluate alternatives systematically
+   - `root-cause` - Analyze underlying problems
+   - `risk-assessment` - Identify and mitigate risks
+
+2. **Structured Analysis**: Use `reasoning_analyze` for each framework section
+   - Follow guiding questions provided by framework
+   - Document assumptions and evidence
+   - Capture key insights as they emerge
+
+3. **Conclude with Action**: Use `reasoning_conclude` to finalize
+   - State conclusions clearly with confidence level
+   - Provide specific, actionable recommendations
+   - Define next steps for implementation
+
+**Reasoning Storage:**
+- All reasoning sessions saved in `tasks/<task-id>/REASONING/`
+- Persistent documentation for future reference
+- Can be referenced and built upon over time
+
+**Integration with Workspace:**
+- Reasoning results inform workspace decisions
+- Update workspace status after completing reasoning
+- Link reasoning conclusions to task next actions
 
 ## WORKSPACE PROTOCOL
 
@@ -447,6 +483,14 @@ Endless research without implementation, seeking perfect understanding before st
 - [ ] Is the deliverable production-ready?
 
 **If any completion box unchecked → Finish the task properly NOW.**
+
+### 🔴 Structured Reasoning (CRITICAL)
+- [ ] Did complex decisions require reasoning_start session?
+- [ ] Did I use reasoning_analyze for each framework section?
+- [ ] Did I complete with reasoning_conclude and actionable recommendations?
+- [ ] Are reasoning results documented and linked to task decisions?
+
+**If any reasoning box unchecked → Use reasoning tools NOW for complex decisions.**
 
 ### ✅ Code Quality
 - [ ] Is code clean and simple (KISS)?

@@ -166,9 +166,12 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
       'workspace_switch_task',
       'workspace_complete_task',
       'workspace_search',
-      'workspace_get_context'
+      'workspace_get_context',
+      'reasoning_start',
+      'reasoning_analyze',
+      'reasoning_conclude'
     );
-    console.log('📁 Workspace Tools: Enabled (12 tools)');
+    console.log('📁 Workspace Tools: Enabled (15 tools)');
   }
 
   // Codebase tools (enabled by default)

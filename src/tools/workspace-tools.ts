@@ -1310,6 +1310,374 @@ export function registerWorkspaceGetContext(server: McpServer) {
 }
 
 // ============================================================================
+// REASONING TOOLS - Advanced Cognitive Workflows
+// ============================================================================
+
+// Reasoning frameworks configuration
+const REASONING_FRAMEWORKS = {
+  'first-principles': {
+    name: 'First Principles Thinking',
+    description: 'Break down complex problems into fundamental truths and build up from there',
+    structure: ['Fundamental Truth', 'Assumptions', 'Logical Deduction', 'Conclusion'],
+    prompts: [
+      'What are the absolute, undeniable facts?',
+      'What assumptions am I making?',
+      'If I remove all assumptions, what remains?',
+      'What can I build from first principles?'
+    ]
+  },
+  'pros-cons': {
+    name: 'Pros and Cons Analysis',
+    description: 'Systematic evaluation of advantages and disadvantages',
+    structure: ['Pros', 'Cons', 'Weighting', 'Decision'],
+    prompts: [
+      'What are all the benefits?',
+      'What are all the drawbacks?',
+      'How important is each factor?',
+      'What is the final judgment?'
+    ]
+  },
+  'root-cause': {
+    name: 'Root Cause Analysis (5 Whys)',
+    description: 'Identify the underlying causes of problems by repeatedly asking "why"',
+    structure: ['Problem Statement', 'Why Chain', 'Root Cause', 'Solution Strategy'],
+    prompts: [
+      'What is the specific problem?',
+      'Why does this problem exist? (ask 5 times)',
+      'What is the fundamental root cause?',
+      'How can we address the root cause?'
+    ]
+  },
+  'risk-assessment': {
+    name: 'Risk Assessment',
+    description: 'Identify, analyze, and mitigate potential risks',
+    structure: ['Risk Identification', 'Probability Analysis', 'Impact Assessment', 'Mitigation Strategy'],
+    prompts: [
+      'What could go wrong?',
+      'How likely is each risk?',
+      'What would be the impact?',
+      'How can we prevent or mitigate?'
+    ]
+  }
+};
+
+// Generate unique reasoning ID
+function generateReasoningId(): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `reasoning-${timestamp}-${random}`;
+}
+
+// Get reasoning directory path
+function getReasoningDir(taskId: string): string {
+  const taskDir = join(TASKS_DIR, taskId);
+  const reasoningDir = join(taskDir, 'REASONING');
+  if (!existsSync(reasoningDir)) {
+    mkdirSync(reasoningDir, { recursive: true });
+  }
+  return reasoningDir;
+}
+
+// Tool 13: reasoning_start
+interface ReasoningStartArgs {
+  title: string;
+  framework: keyof typeof REASONING_FRAMEWORKS;
+  problem_description: string;
+  context?: string;
+}
+
+export function registerReasoningStart(server: McpServer) {
+  server.registerTool(
+    'reasoning_start',
+    {
+      description: 'Start a structured reasoning session using a specific framework',
+      inputSchema: {
+        title: z.string().describe('Title for this reasoning session'),
+        framework: z.enum(Object.keys(REASONING_FRAMEWORKS) as [keyof typeof REASONING_FRAMEWORKS]).describe('Reasoning framework to use'),
+        problem_description: z.string().describe('Clear description of the problem or question to analyze'),
+        context: z.string().optional().describe('Additional context or background information'),
+      },
+    },
+    (args: ReasoningStartArgs): CallToolResult => {
+      try {
+        ensureWorkspaceExists();
+
+        const activeId = getActiveTaskId();
+        if (!activeId) {
+          return {
+            content: [{ type: 'text', text: 'No active task. Use workspace_create_task to begin.' }],
+            isError: true,
+          };
+        }
+
+        const { title, framework, problem_description, context } = args;
+        const reasoningId = generateReasoningId();
+        const frameworkInfo = REASONING_FRAMEWORKS[framework];
+
+        const reasoningData = {
+          id: reasoningId,
+          title,
+          framework,
+          framework_name: frameworkInfo.name,
+          problem_description,
+          context: context || '',
+          created_at: new Date().toISOString(),
+          status: 'in_progress',
+          structure: frameworkInfo.structure,
+          prompts: frameworkInfo.prompts
+        };
+
+        const reasoningDir = getReasoningDir(activeId);
+        const reasoningPath = join(reasoningDir, `${reasoningId}.md`);
+
+        // Create markdown file
+        const markdown = `# ${title}
+
+**Framework:** ${frameworkInfo.name}
+**Created:** ${reasoningData.created_at}
+**Status:** ${reasoningData.status}
+
+## Problem Statement
+${problem_description}
+
+${context ? `## Context\n${context}\n` : ''}
+
+## Framework Structure
+${frameworkInfo.structure.map((section: string) => `### ${section}\n*Your analysis will appear here...*`).join('\n\n')}
+
+## Guiding Questions
+${frameworkInfo.prompts.map((prompt: string, index: number) => `${index + 1}. ${prompt}`).join('\n')}
+
+## Analysis Progress
+*Sections will be populated as you work through the analysis...*
+
+---
+*Reasoning ID: ${reasoningId} | Framework: ${framework}*`;
+
+        writeFileSync(reasoningPath, markdown, 'utf8');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✅ Started reasoning session: ${reasoningId}\n\n📋 **Framework:** ${frameworkInfo.name}\n🎯 **Problem:** ${problem_description}\n\n**Next Steps:**\n1. Use \`reasoning_analyze\` to work through each section\n2. Use \`reasoning_conclude\` to finalize conclusions\n\n📁 **File saved to:** ${reasoningPath}`,
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: 'text', text: `Error starting reasoning session: ${errorMessage}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+}
+
+// Tool 14: reasoning_analyze
+interface ReasoningAnalyzeArgs {
+  reasoning_id?: string;
+  section: string;
+  analysis: string;
+  insights?: string[];
+}
+
+export function registerReasoningAnalyze(server: McpServer) {
+  server.registerTool(
+    'reasoning_analyze',
+    {
+      description: 'Add structured analysis to a specific section of your reasoning',
+      inputSchema: {
+        reasoning_id: z.string().optional().describe('Reasoning session ID (default: most recent)'),
+        section: z.string().describe('Section name to analyze (from framework structure)'),
+        analysis: z.string().describe('Your detailed analysis for this section'),
+        insights: z.array(z.string()).optional().describe('Key insights or discoveries from this analysis'),
+      },
+    },
+    (args: ReasoningAnalyzeArgs): CallToolResult => {
+      try {
+        ensureWorkspaceExists();
+
+        const activeId = getActiveTaskId();
+        if (!activeId) {
+          return {
+            content: [{ type: 'text', text: 'No active task. Use workspace_create_task to begin.' }],
+            isError: true,
+          };
+        }
+
+        const { reasoning_id, section, analysis, insights } = args;
+        const reasoningDir = getReasoningDir(activeId);
+
+        // Find reasoning file
+        let reasoningFile = '';
+        if (reasoning_id) {
+          reasoningFile = join(reasoningDir, `${reasoning_id}.md`);
+        } else {
+          // Find most recent reasoning file
+          const files = readdirSync(reasoningDir)
+            .filter((f: string) => f.endsWith('.md'))
+            .sort((a, b) => {
+              const statA = require('fs').statSync(join(reasoningDir, a));
+              const statB = require('fs').statSync(join(reasoningDir, b));
+              return statB.mtime.getTime() - statA.mtime.getTime();
+            });
+
+          if (files.length === 0) {
+            return {
+              content: [{ type: 'text', text: 'No reasoning sessions found. Use reasoning_start to begin.' }],
+              isError: true,
+            };
+          }
+          reasoningFile = join(reasoningDir, files[0]);
+        }
+
+        if (!existsSync(reasoningFile)) {
+          return {
+            content: [{ type: 'text', text: `Reasoning session not found: ${reasoning_id || 'latest'}` }],
+            isError: true,
+          };
+        }
+
+        // Read and update reasoning file
+        const content = readFileSync(reasoningFile, 'utf8');
+        const sectionPattern = new RegExp(`(### ${section})([\\s\\S]*?)(?=### |## |$)`, 'm');
+
+        const newSectionContent = `### ${section}\n\n${analysis}\n${
+          insights && insights.length > 0
+            ? `\n**Key Insights:**\n${insights.map(insight => `💡 ${insight}`).join('\n')}\n`
+            : ''
+        }`;
+
+        const updatedContent = content.replace(sectionPattern, newSectionContent);
+        writeFileSync(reasoningFile, updatedContent, 'utf8');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✅ Added analysis to section: **${section}**\n\n**Key Analysis Points:**\n${analysis.split('\n').slice(0, 3).map(point => `• ${point}`).join('\n')}\n\n${insights && insights.length > 0 ? `**Key Insights:**\n${insights.map(insight => `💡 ${insight}`).join('\n')}` : ''}\n\n*Continue with \`reasoning_analyze\` for other sections or use \`reasoning_conclude\` to finalize.*`,
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: 'text', text: `Error analyzing reasoning: ${errorMessage}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+}
+
+// Tool 15: reasoning_conclude
+interface ReasoningConcludeArgs {
+  reasoning_id?: string;
+  conclusions: string;
+  recommendations: string[];
+  confidence_level: 'low' | 'medium' | 'high';
+  next_steps: string[];
+}
+
+export function registerReasoningConclude(server: McpServer) {
+  server.registerTool(
+    'reasoning_conclude',
+    {
+      description: 'Finalize reasoning session with conclusions and actionable recommendations',
+      inputSchema: {
+        reasoning_id: z.string().optional().describe('Reasoning session ID (default: most recent)'),
+        conclusions: z.string().describe('Main conclusions from your analysis'),
+        recommendations: z.array(z.string()).describe('Actionable recommendations based on conclusions'),
+        confidence_level: z.enum(['low', 'medium', 'high']).describe('Confidence level in conclusions'),
+        next_steps: z.array(z.string()).describe('Specific next steps to implement recommendations'),
+      },
+    },
+    (args: ReasoningConcludeArgs): CallToolResult => {
+      try {
+        ensureWorkspaceExists();
+
+        const activeId = getActiveTaskId();
+        if (!activeId) {
+          return {
+            content: [{ type: 'text', text: 'No active task. Use workspace_create_task to begin.' }],
+            isError: true,
+          };
+        }
+
+        const { reasoning_id, conclusions, recommendations, confidence_level, next_steps } = args;
+        const reasoningDir = getReasoningDir(activeId);
+
+        // Find reasoning file (similar logic to reasoning_analyze)
+        let reasoningFile = '';
+        if (reasoning_id) {
+          reasoningFile = join(reasoningDir, `${reasoning_id}.md`);
+        } else {
+          const files = readdirSync(reasoningDir)
+            .filter((f: string) => f.endsWith('.md'))
+            .sort((a, b) => {
+              const statA = require('fs').statSync(join(reasoningDir, a));
+              const statB = require('fs').statSync(join(reasoningDir, b));
+              return statB.mtime.getTime() - statA.mtime.getTime();
+            });
+
+          if (files.length === 0) {
+            return {
+              content: [{ type: 'text', text: 'No reasoning sessions found. Use reasoning_start to begin.' }],
+              isError: true,
+            };
+          }
+          reasoningFile = join(reasoningDir, files[0]);
+        }
+
+        const content = readFileSync(reasoningFile, 'utf8');
+        const timestamp = new Date().toISOString();
+
+        const conclusionSection = `
+## 🎯 Conclusions & Recommendations
+**Completed:** ${timestamp}
+**Confidence Level:** ${confidence_level.toUpperCase()}
+
+### Main Conclusions
+${conclusions}
+
+### Recommendations
+${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
+
+### Next Steps
+${next_steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}
+
+### Decision
+Based on this reasoning, the recommended approach is ready for implementation.
+
+---
+*Reasoning session completed and saved to workspace.*
+`;
+
+        const finalContent = content.replace('**Status:** in_progress', '**Status:** completed') + conclusionSection;
+        writeFileSync(reasoningFile, finalContent, 'utf8');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✅ **Reasoning Session Completed**\n\n**Confidence:** ${confidence_level.toUpperCase()}\n**Conclusions:** ${conclusions}\n\n**Recommendations:**\n${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}\n\n**Next Steps:**\n${next_steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}\n\n*This reasoning is now documented in your workspace for future reference.*`,
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: 'text', text: `Error concluding reasoning: ${errorMessage}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+}
+
+// ============================================================================
 // REGISTRATION
 // ============================================================================
 
@@ -1333,4 +1701,9 @@ export function registerAllWorkspaceTools(server: McpServer) {
   // Phase 4: Advanced features (可选)
   registerWorkspaceSearch(server);
   registerWorkspaceGetContext(server);
+
+  // Phase 5: Reasoning tools (高级认知工作流)
+  registerReasoningStart(server);
+  registerReasoningAnalyze(server);
+  registerReasoningConclude(server);
 }
