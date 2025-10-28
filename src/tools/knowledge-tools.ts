@@ -127,7 +127,7 @@ The available URIs are dynamically generated from the indexed knowledge base. Us
     },
     async ({ uri }) => {
       try {
-                const content = getKnowledgeContent(uri);
+                const content = await getKnowledgeContent(uri);
         return {
           content: [
             {

@@ -42,7 +42,7 @@ export const knowledgeGetCommand = new Command('get')
   .argument('<uri>', 'Knowledge URI to access (e.g., "knowledge://stacks/react-app")')
   .action(async (uri) => {
     try {
-      const content = getKnowledgeContent(uri);
+      const content = await getKnowledgeContent(uri);
       console.log(content);
     } catch (error) {
       const errorMessage = `Knowledge get failed: ${(error as Error).message}`;
