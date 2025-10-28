@@ -2,12 +2,12 @@
  * Centralized path resolution for all static assets
  *
  * Structure:
- *   assets/agents/     -> copied to dist/assets/agents/
- *   assets/templates/  -> copied to dist/assets/templates/
- *   assets/rules/      -> copied to dist/assets/rules/
+ *   src/assets/agents/     -> copied to dist/assets/agents/
+ *   src/assets/templates/  -> copied to dist/assets/templates/
+ *   src/assets/rules/      -> copied to dist/assets/rules/
  *
  * Assets are always in dist/assets/ when published.
- * During development, we reference from project root.
+ * During development, we reference from src/.
  */
 
 import fs from 'node:fs';
