@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/74</span>
+                <span class='fraction'>0/78</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/74</span>
+                <span class='fraction'>0/78</span>
             </div>
         
             
@@ -353,7 +353,12 @@
 <a name='L288'></a><a href='#L288'>288</a>
 <a name='L289'></a><a href='#L289'>289</a>
 <a name='L290'></a><a href='#L290'>290</a>
-<a name='L291'></a><a href='#L291'>291</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a>
+<a name='L293'></a><a href='#L293'>293</a>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -528,6 +533,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -564,6 +571,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -603,6 +612,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -808,16 +818,18 @@ export interface ClaudeCodeMetadata {
 /**
  * Zod schema for FrontMatterMetadata
  */
-<span class="cstat-no" title="statement not covered" >export const FrontMatterMetadataSchema = z.object({</span>
-<span class="cstat-no" title="statement not covered" >  title: z.string().optional(),</span>
-<span class="cstat-no" title="statement not covered" >  description: z.string().optional(),</span>
-<span class="cstat-no" title="statement not covered" >  tags: z.array(z.string()).optional(),</span>
-<span class="cstat-no" title="statement not covered" >  author: z.string().optional(),</span>
-<span class="cstat-no" title="statement not covered" >  date: z.string().optional(),</span>
-<span class="cstat-no" title="statement not covered" >  modified: z.string().optional(),</span>
-<span class="cstat-no" title="statement not covered" >  status: z.enum(['draft', 'published', 'archived']).optional(),</span>
-<span class="cstat-no" title="statement not covered" >  category: z.string().optional(),</span>
-<span class="cstat-no" title="statement not covered" >}).catchall(z.unknown());</span>
+<span class="cstat-no" title="statement not covered" >export const FrontMatterMetadataSchema = z</span>
+<span class="cstat-no" title="statement not covered" >  .object({</span>
+<span class="cstat-no" title="statement not covered" >    title: z.string().optional(),</span>
+<span class="cstat-no" title="statement not covered" >    description: z.string().optional(),</span>
+<span class="cstat-no" title="statement not covered" >    tags: z.array(z.string()).optional(),</span>
+<span class="cstat-no" title="statement not covered" >    author: z.string().optional(),</span>
+<span class="cstat-no" title="statement not covered" >    date: z.string().optional(),</span>
+<span class="cstat-no" title="statement not covered" >    modified: z.string().optional(),</span>
+<span class="cstat-no" title="statement not covered" >    status: z.enum(['draft', 'published', 'archived']).optional(),</span>
+<span class="cstat-no" title="statement not covered" >    category: z.string().optional(),</span>
+<span class="cstat-no" title="statement not covered" >  })</span>
+<span class="cstat-no" title="statement not covered" >  .catchall(z.unknown());</span>
 &nbsp;
 /**
  * Zod schema for OpenCodeMetadata
@@ -846,11 +858,13 @@ export interface ClaudeCodeMetadata {
 <span class="cstat-no" title="statement not covered" >  instructions: z.string().optional(),</span>
 <span class="cstat-no" title="statement not covered" >  capabilities: z.array(z.string()).optional(),</span>
 <span class="cstat-no" title="statement not covered" >  tools: z.array(z.string()).optional(),</span>
-<span class="cstat-no" title="statement not covered" >  model: z.object({</span>
-<span class="cstat-no" title="statement not covered" >    name: z.string().optional(),</span>
-<span class="cstat-no" title="statement not covered" >    temperature: z.number().optional(),</span>
-<span class="cstat-no" title="statement not covered" >    maxTokens: z.number().optional(),</span>
-<span class="cstat-no" title="statement not covered" >  }).optional(),</span>
+<span class="cstat-no" title="statement not covered" >  model: z</span>
+<span class="cstat-no" title="statement not covered" >    .object({</span>
+<span class="cstat-no" title="statement not covered" >      name: z.string().optional(),</span>
+<span class="cstat-no" title="statement not covered" >      temperature: z.number().optional(),</span>
+<span class="cstat-no" title="statement not covered" >      maxTokens: z.number().optional(),</span>
+<span class="cstat-no" title="statement not covered" >    })</span>
+<span class="cstat-no" title="statement not covered" >    .optional(),</span>
 <span class="cstat-no" title="statement not covered" >  constraints: z.array(z.string()).optional(),</span>
 <span class="cstat-no" title="statement not covered" >  metadata: z.record(z.unknown()).optional(),</span>
 <span class="cstat-no" title="statement not covered" >});</span>
@@ -933,14 +947,15 @@ export interface OperationResult&lt;T = unknown, M = Record&lt;string, unknown&g
   metadata?: M;
   error?: string;
   timestamp: string;
-}</pre></td></tr></table></pre>
+}
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-24T18:07:14.738Z
+                at 2025-10-28T23:42:09.826Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

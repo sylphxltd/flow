@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>18/18</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>0/0</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>18/18</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -97,26 +97,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">113x</span>
+<span class="cline-any cline-yes">113x</span>
+<span class="cline-any cline-yes">113x</span>
+<span class="cline-any cline-yes">113x</span>
+<span class="cline-any cline-yes">113x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -126,26 +126,26 @@
  * 包含用戶記憶、協調數據等需要持久化的信息
  */
 &nbsp;
-<span class="cstat-no" title="statement not covered" >import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';</span>
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 &nbsp;
 // Memory table for persistent storage (永久記憶)
-<span class="cstat-no" title="statement not covered" >export const memory = sqliteTable(</span>
-<span class="cstat-no" title="statement not covered" >  'memory_table',</span>
-<span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    key: text('key').notNull(),</span>
-<span class="cstat-no" title="statement not covered" >    namespace: text('namespace').notNull().default('default'),</span>
-<span class="cstat-no" title="statement not covered" >    value: text('value').notNull(),</span>
-<span class="cstat-no" title="statement not covered" >    timestamp: integer('timestamp').notNull(),</span>
-<span class="cstat-no" title="statement not covered" >    created_at: text('created_at').notNull(),</span>
-<span class="cstat-no" title="statement not covered" >    updated_at: text('updated_at').notNull(),</span>
-<span class="cstat-no" title="statement not covered" >  },</span>
-<span class="cstat-no" title="statement not covered" >  (table) =&gt; [</span>
-<span class="cstat-no" title="statement not covered" >    primaryKey({ columns: [table.key, table.namespace] }),</span>
-<span class="cstat-no" title="statement not covered" >    index('idx_memory_namespace').on(table.namespace),</span>
-<span class="cstat-no" title="statement not covered" >    index('idx_memory_timestamp').on(table.timestamp),</span>
-<span class="cstat-no" title="statement not covered" >    index('idx_memory_key').on(table.key),</span>
-<span class="cstat-no" title="statement not covered" >  ]</span>
-<span class="cstat-no" title="statement not covered" >);</span>
+export const memory = sqliteTable(
+  'memory_table',
+  {
+    key: text('key').notNull(),
+    namespace: text('namespace').notNull().default('default'),
+    value: text('value').notNull(),
+    timestamp: integer('timestamp').notNull(),
+    created_at: text('created_at').notNull(),
+    updated_at: text('updated_at').notNull(),
+  },
+  (table) =&gt; [
+    primaryKey({ columns: [table.key, table.namespace] }),
+    index('idx_memory_namespace').on(table.namespace),
+    index('idx_memory_timestamp').on(table.timestamp),
+    index('idx_memory_key').on(table.key),
+  ]
+);
 &nbsp;
 // Types for memory database
 export type Memory = typeof memory.$inferSelect;
@@ -157,7 +157,7 @@ export type NewMemory = typeof memory.$inferInsert;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-24T18:07:14.738Z
+                at 2025-10-28T23:42:09.826Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
