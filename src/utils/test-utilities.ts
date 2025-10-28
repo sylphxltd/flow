@@ -2,7 +2,7 @@
  * Simple test to verify the new logging and error handling utilities work correctly
  */
 
-import { ConfigurationError, ErrorHandler, ValidationError, createError } from './errors';
+import { ConfigurationError, ErrorHandler, ValidationError, createError } from './simplified-errors';
 import { log, logger } from './logger';
 
 // Test logging functionality

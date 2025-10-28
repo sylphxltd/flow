@@ -24,7 +24,7 @@ import {
 export interface MemoryEntry {
   key: string;
   namespace: string;
-  value: any;
+  value: unknown;
   timestamp: number;
   created_at: string;
   updated_at: string;

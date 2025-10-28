@@ -1,105 +1,128 @@
 /**
- * Custom error classes for database operations
- * Provides better error handling and debugging capabilities
+ * Database Error Handling - Simplified System
+ * Replaces complex error hierarchy with simplified database-specific errors
  */
 
-export class DatabaseError extends Error {
+import {
+  DatabaseError as SimplifiedDatabaseError,
+  ValidationError as SimplifiedValidationError,
+  createDatabaseError,
+  createValidationError,
+  ErrorHandler,
+  AppError,
+  ErrorCategory
+} from './simplified-errors.js';
+
+/**
+ * Simplified Database Error with additional database context
+ */
+export class DatabaseError extends SimplifiedDatabaseError {
   constructor(
     message: string,
-    public readonly operation: string,
-    public readonly cause?: Error,
-    public readonly context?: Record<string, any>
+    operation?: string,
+    cause?: Error,
+    context?: Record<string, unknown>
   ) {
-    super(message);
-    this.name = 'DatabaseError';
-
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, DatabaseError);
+    super(message, operation, context?.query as string);
+    this.cause = cause;
+    if (context) {
+      this.context = { ...this.context, ...context };
     }
   }
+}
 
-  toJSON() {
-    return {
-      name: this.name,
-      message: this.message,
-      operation: this.operation,
-      context: this.context,
-      cause: this.cause?.message,
-      stack: this.stack,
-    };
+/**
+ * Database-specific validation error
+ */
+export class ValidationError extends SimplifiedValidationError {
+  constructor(
+    message: string,
+    field: string,
+    value?: unknown,
+    cause?: Error
+  ) {
+    super(message, field, value);
+    this.cause = cause;
   }
 }
 
-export class MigrationError extends DatabaseError {
+/**
+ * Database connection error
+ */
+export class ConnectionError extends AppError {
   constructor(
     message: string,
-    public readonly migrationName?: string,
+    connectionDetails?: Record<string, unknown>,
     cause?: Error
   ) {
-    super(message, 'migration', cause, { migrationName });
-    this.name = 'MigrationError';
-  }
-}
-
-export class ValidationError extends DatabaseError {
-  constructor(
-    message: string,
-    public readonly field: string,
-    public readonly value: any,
-    cause?: Error
-  ) {
-    super(message, 'validation', cause, { field, value });
-    this.name = 'ValidationError';
-  }
-}
-
-export class ConnectionError extends DatabaseError {
-  constructor(
-    message: string,
-    public readonly connectionDetails?: Record<string, any>,
-    cause?: Error
-  ) {
-    super(message, 'connection', cause, connectionDetails);
+    super(
+      message,
+      'CONNECTION_ERROR',
+      ErrorCategory.NETWORK,
+      ErrorSeverity.HIGH,
+      connectionDetails,
+      cause
+    );
     this.name = 'ConnectionError';
   }
 }
 
 /**
- * Utility function to wrap database operations with consistent error handling
+ * Database migration error
  */
-export async function executeOperation<T>(
-  operation: string,
-  fn: () => Promise<T>,
-  context?: Record<string, any>
-): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    if (error instanceof DatabaseError) {
-      // Re-throw existing database errors
-      throw error;
-    }
+export class MigrationError extends AppError {
+  public readonly migrationName?: string;
 
-    // Wrap other errors in DatabaseError
-    throw new DatabaseError(
-      `Database operation failed: ${operation}`,
-      operation,
-      error as Error,
-      context
+  constructor(
+    message: string,
+    migrationName?: string,
+    cause?: Error
+  ) {
+    super(
+      message,
+      'MIGRATION_ERROR',
+      ErrorCategory.DATABASE,
+      ErrorSeverity.HIGH,
+      { migrationName },
+      cause
     );
+    this.migrationName = migrationName;
+    this.name = 'MigrationError';
   }
 }
 
 /**
- * Type guard to check if an error is a specific database error type
+ * Execute database operation with comprehensive error handling
+ */
+export async function executeOperation<T>(
+  operation: string,
+  fn: () => Promise<T>,
+  context?: Record<string, unknown>
+): Promise<T> {
+  const result = await ErrorHandler.execute(fn, { operation, ...context });
+
+  if (result.success) {
+    return result.data;
+  }
+
+  // Convert to appropriate database error type
+  if (result.error instanceof AppError) {
+    throw result.error;
+  }
+
+  // Unknown error - wrap in DatabaseError
+  throw createDatabaseError(
+    result.error.message,
+    operation,
+    context?.query as string
+  );
+}
+
+/**
+ * Type guard functions for database errors
  */
 export function isDatabaseError(error: unknown): error is DatabaseError {
   return error instanceof DatabaseError;
-}
-
-export function isMigrationError(error: unknown): error is MigrationError {
-  return error instanceof MigrationError;
 }
 
 export function isValidationError(error: unknown): error is ValidationError {
@@ -109,3 +132,30 @@ export function isValidationError(error: unknown): error is ValidationError {
 export function isConnectionError(error: unknown): error is ConnectionError {
   return error instanceof ConnectionError;
 }
+
+export function isMigrationError(error: unknown): error is MigrationError {
+  return error instanceof MigrationError;
+}
+
+/**
+ * Convenience functions for creating database errors
+ */
+export const createMigrationError = (
+  message: string,
+  migrationName?: string,
+  cause?: Error
+): MigrationError => new MigrationError(message, migrationName, cause);
+
+export const createConnectionError = (
+  message: string,
+  connectionDetails?: Record<string, unknown>,
+  cause?: Error
+): ConnectionError => new ConnectionError(message, connectionDetails, cause);
+
+// Re-export for backward compatibility
+export {
+  createDatabaseError,
+  createValidationError,
+  ErrorHandler,
+  AppError
+};

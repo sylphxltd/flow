@@ -3,7 +3,7 @@
  * This file serves as documentation and examples for refactoring the remaining 356 console statements
  */
 
-import { ErrorHandler, createError } from './errors';
+import { ErrorHandler, createError } from './simplified-errors';
 import { log, logger } from './logger';
 
 // Example 1: Simple console.log replacement
@@ -272,5 +272,5 @@ async function processItem(_item: any): Promise<void> {
   // Mock implementation
 }
 
-// Import required for BaseError reference
-import { BaseError } from './errors';
+// Import required for BaseError reference (now aliased from AppError)
+import { BaseError } from './simplified-errors';

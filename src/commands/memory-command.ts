@@ -4,6 +4,7 @@ import { targetManager } from '../core/target-manager.js';
 import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
+import { cli } from '../utils/cli-output.js';
 
 // Create the main memory command
 export const memoryCommand = new Command('memory')
@@ -22,11 +23,10 @@ memoryCommand
 
     if (options.namespace && options.namespace !== 'all') {
       const filtered = entries.filter((entry) => entry.namespace === options.namespace);
-      console.log(`📋 Memory entries in namespace: ${options.namespace}`);
-      console.log(`Total: ${filtered.length} entries\n`);
+      cli.listSummary(options.namespace, filtered.length);
 
       if (filtered.length === 0) {
-        console.log('No entries found in this namespace.');
+        cli.emptyState('entries', `namespace ${options.namespace}`);
         return;
       }
 
@@ -34,40 +34,21 @@ memoryCommand
       const display = filtered.slice(0, limit);
 
       display.forEach((entry, index) => {
-        const safeValue = entry.value || '';
-        const value =
-          typeof safeValue === 'string'
-            ? safeValue.substring(0, 50) + (safeValue.length > 50 ? '...' : '')
-            : `${JSON.stringify(safeValue).substring(0, 50)}...`;
-
-        console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
-        console.log(`   Value: ${value}`);
-        console.log(`   Updated: ${entry.updated_at}`);
-        console.log('');
+        cli.memoryEntry(entry, index);
       });
     } else {
       const limit = Number.parseInt(options.limit) || 50;
-      console.log(`📋 All memory entries (showing first ${limit}):`);
-      console.log(`Total: ${entries.length} entries\n`);
+      cli.listSummary('all', Math.min(limit, entries.length), entries.length);
 
       if (entries.length === 0) {
-        console.log('No memory entries found.');
+        cli.emptyState('entries');
         return;
       }
 
       const display = entries.slice(0, limit);
 
       display.forEach((entry, index) => {
-        const safeValue = entry.value || '';
-        const value =
-          typeof safeValue === 'string'
-            ? safeValue.substring(0, 50) + (safeValue.length > 50 ? '...' : '')
-            : `${JSON.stringify(safeValue).substring(0, 50)}...`;
-
-        console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
-        console.log(`   Value: ${value}`);
-        console.log(`   Updated: ${entry.updated_at}`);
-        console.log('');
+        cli.memoryEntry(entry, index);
       });
     }
   });
@@ -82,28 +63,15 @@ memoryCommand
     const memory = new SeparatedMemoryStorage();
     const results = await memory.search(pattern, options.namespace);
 
-    console.log(`🔍 Search results for pattern: ${pattern}`);
-    if (options.namespace && options.namespace !== 'all') {
-      console.log(`Namespace: ${options.namespace}`);
-    }
-    console.log(`Found: ${results.length} results\n`);
+    cli.searchSummary(pattern, results.length, options.namespace !== 'all' ? options.namespace : undefined);
 
     if (results.length === 0) {
-      console.log('No matching entries found.');
+      cli.emptyState('results');
       return;
     }
 
     results.forEach((entry, index) => {
-      const safeValue = entry.value || '';
-      const value =
-        typeof safeValue === 'string'
-          ? safeValue.substring(0, 50) + (safeValue.length > 50 ? '...' : '')
-          : `${JSON.stringify(safeValue).substring(0, 50)}...`;
-
-      console.log(`${index + 1}. ${entry.namespace}:${entry.key}`);
-      console.log(`   Value: ${value}`);
-      console.log(`   Updated: ${entry.updated_at}`);
-      console.log('');
+      cli.memoryEntry(entry, index);
     });
   });
 
@@ -118,9 +86,9 @@ memoryCommand
     const deleted = await memory.delete(key, options.namespace);
 
     if (deleted) {
-      console.log(`✓ Deleted memory entry: ${options.namespace}:${key}`);
+      cli.success(`Deleted memory entry: ${options.namespace}:${key}`);
     } else {
-      console.log(`✗ Memory entry not found: ${options.namespace}:${key}`);
+      cli.error(`Memory entry not found: ${options.namespace}:${key}`);
     }
   });
 
@@ -139,10 +107,10 @@ memoryCommand
 
     if (options.namespace) {
       await memory.clear(options.namespace);
-      console.log(`✓ Cleared all memory entries in namespace: ${options.namespace}`);
+      cli.success(`Cleared all memory entries in namespace: ${options.namespace}`);
     } else {
       await memory.clear();
-      console.log('✓ Cleared all memory entries');
+      cli.success('Cleared all memory entries');
     }
   });
 
@@ -155,21 +123,19 @@ memoryCommand
     const memory = new SeparatedMemoryStorage();
     const stats = await memory.getStats();
 
-    console.log('📊 Memory Statistics');
+    cli.info('📊 Memory Statistics');
     console.log('==================');
-    console.log(`Total Entries: ${stats.totalEntries}`);
-    console.log(`Namespaces: ${stats.namespaces.length}`);
+    cli.info(`Total Entries: ${stats.totalEntries}`);
+    cli.info(`Namespaces: ${stats.namespaces.length}`);
     console.log('');
 
     if (stats.namespaces.length > 0) {
-      console.log('Namespaces:');
-      for (const ns of stats.namespaces) {
-        console.log(`  • ${ns}`);
-      }
+      cli.info('Namespaces:');
+      cli.list(stats.namespaces, { bullet: '  •' });
       console.log('');
     }
 
-    console.log('📍 Database: .sylphx-flow/memory.db');
+    cli.info('📍 Database: .sylphx-flow/memory.db');
   });
 
 // Memory get subcommand

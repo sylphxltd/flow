@@ -8,15 +8,137 @@ import type { ILogger } from '../core/interfaces.js';
 import type { PluginMetadata } from './plugin-manager.js';
 
 /**
+ * Plugin configuration interface
+ */
+export interface PluginConfig {
+  [key: string]: unknown;
+}
+
+/**
+ * Storage plugin interface
+ */
+export interface IStoragePlugin {
+  /**
+   * Initialize storage
+   */
+  initializeStorage(): Promise<void>;
+
+  /**
+   * Get storage capabilities
+   */
+  getCapabilities(): {
+    supportsNamespaces: boolean;
+    supportsVersioning: boolean;
+    supportsEncryption: boolean;
+    maxSize?: number;
+    supportedFormats?: string[];
+  };
+
+  /**
+   * Store data
+   */
+  store(key: string, value: unknown, options?: StorageOptions): Promise<void>;
+
+  /**
+   * Retrieve data
+   */
+  retrieve(key: string, options?: StorageOptions): Promise<unknown>;
+
+  /**
+   * Delete data
+   */
+  delete(key: string, options?: StorageOptions): Promise<void>;
+
+  /**
+   * List keys
+   */
+  list(options?: StorageOptions): Promise<string[]>;
+}
+
+/**
+ * Storage options
+ */
+export interface StorageOptions {
+  namespace?: string;
+  version?: string;
+  encrypt?: boolean;
+  format?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Search content interface
+ */
+export interface SearchContent {
+  id: string;
+  text: string;
+  type: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Search result interface
+ */
+export interface SearchResultItem {
+  id: string;
+  content: string;
+  score: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Search options interface
+ */
+export interface SearchOptions {
+  limit?: number;
+  offset?: number;
+  filters?: Record<string, unknown>;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  fuzzy?: boolean;
+  semantic?: boolean;
+}
+
+/**
+ * Search plugin interface
+ */
+export interface ISearchPlugin {
+  /**
+   * Initialize search engine
+   */
+  initializeSearch(): Promise<void>;
+
+  /**
+   * Index content
+   */
+  index(content: SearchContent, metadata?: Record<string, unknown>): Promise<void>;
+
+  /**
+   * Search content
+   */
+  search(query: string, options?: SearchOptions): Promise<SearchResultItem[]>;
+
+  /**
+   * Get search capabilities
+   */
+  getCapabilities(): {
+    supportedContentTypes: string[];
+    supportsFuzzySearch: boolean;
+    supportsSemanticSearch: boolean;
+    maxResults?: number;
+  };
+}
+
+/**
  * Base Plugin Class
  *
  * All plugins should extend this class
  */
 export abstract class BasePlugin {
   protected logger?: ILogger;
-  protected config: any;
+  protected config: PluginConfig;
 
-  constructor(config: any = {}) {
+  constructor(config: PluginConfig = {}) {
     this.config = config;
   }
 
@@ -90,7 +212,7 @@ export abstract class BasePlugin {
   /**
    * Handle configuration changes
    */
-  async onConfigChange(config: any): Promise<void> {
+  async onConfigChange(config: PluginConfig): Promise<void> {
     this.config = { ...this.config, ...config };
     await this.onConfigurationChanged();
   }
@@ -205,47 +327,6 @@ export abstract class MCPToolPlugin extends BasePlugin implements IMCPToolPlugin
 }
 
 /**
- * Storage Plugin Interface
- */
-export interface IStoragePlugin {
-  /**
-   * Initialize storage
-   */
-  initializeStorage(): Promise<void>;
-
-  /**
-   * Get storage capabilities
-   */
-  getCapabilities(): {
-    supportsNamespaces: boolean;
-    supportsVersioning: boolean;
-    supportsEncryption: boolean;
-    maxSize?: number;
-    supportedFormats?: string[];
-  };
-
-  /**
-   * Store data
-   */
-  store(key: string, value: any, options?: any): Promise<void>;
-
-  /**
-   * Retrieve data
-   */
-  retrieve(key: string, options?: any): Promise<any>;
-
-  /**
-   * Delete data
-   */
-  delete(key: string, options?: any): Promise<void>;
-
-  /**
-   * List keys
-   */
-  list(options?: any): Promise<string[]>;
-}
-
-/**
  * Storage Plugin Base Class
  */
 export abstract class StoragePlugin extends BasePlugin implements IStoragePlugin {
@@ -259,47 +340,17 @@ export abstract class StoragePlugin extends BasePlugin implements IStoragePlugin
     supportedFormats?: string[];
   };
 
-  abstract store(key: string, value: any, options?: any): Promise<void>;
+  abstract store(key: string, value: unknown, options?: StorageOptions): Promise<void>;
 
-  abstract retrieve(key: string, options?: any): Promise<any>;
+  abstract retrieve(key: string, options?: StorageOptions): Promise<unknown>;
 
-  abstract delete(key: string, options?: any): Promise<void>;
+  abstract delete(key: string, options?: StorageOptions): Promise<void>;
 
-  abstract list(options?: any): Promise<string[]>;
+  abstract list(options?: StorageOptions): Promise<string[]>;
 
   protected async onInitialize(): Promise<void> {
     await this.initializeStorage();
   }
-}
-
-/**
- * Search Plugin Interface
- */
-export interface ISearchPlugin {
-  /**
-   * Initialize search engine
-   */
-  initializeSearch(): Promise<void>;
-
-  /**
-   * Index content
-   */
-  index(content: any, metadata?: any): Promise<void>;
-
-  /**
-   * Search content
-   */
-  search(query: string, options?: any): Promise<any[]>;
-
-  /**
-   * Get search capabilities
-   */
-  getCapabilities(): {
-    supportedContentTypes: string[];
-    supportsFuzzySearch: boolean;
-    supportsSemanticSearch: boolean;
-    maxResults?: number;
-  };
 }
 
 /**
@@ -308,9 +359,9 @@ export interface ISearchPlugin {
 export abstract class SearchPlugin extends BasePlugin implements ISearchPlugin {
   abstract initializeSearch(): Promise<void>;
 
-  abstract index(content: any, metadata?: any): Promise<void>;
+  abstract index(content: SearchContent, metadata?: Record<string, unknown>): Promise<void>;
 
-  abstract search(query: string, options?: any): Promise<any[]>;
+  abstract search(query: string, options?: SearchOptions): Promise<SearchResultItem[]>;
 
   abstract getCapabilities(): {
     supportedContentTypes: string[];
@@ -325,6 +376,27 @@ export abstract class SearchPlugin extends BasePlugin implements ISearchPlugin {
 }
 
 /**
+ * Function parameter interface
+ */
+export interface FunctionParameter {
+  name: string;
+  type: string;
+  description?: string;
+  required?: boolean;
+  default?: unknown;
+}
+
+/**
+ * Utility function metadata
+ */
+export interface UtilityFunctionMetadata {
+  name: string;
+  description: string;
+  parameters?: FunctionParameter[];
+  returnType?: string;
+}
+
+/**
  * Utility Plugin Interface
  */
 export interface IUtilityPlugin {
@@ -336,15 +408,7 @@ export interface IUtilityPlugin {
   /**
    * Get utility metadata
    */
-  getUtilityMetadata(): Record<
-    string,
-    {
-      name: string;
-      description: string;
-      parameters?: any;
-      returnType?: any;
-    }
-  >;
+  getUtilityMetadata(): Record<string, UtilityFunctionMetadata>;
 }
 
 /**
@@ -353,15 +417,7 @@ export interface IUtilityPlugin {
 export abstract class UtilityPlugin extends BasePlugin implements IUtilityPlugin {
   abstract getUtilities(): Record<string, Function>;
 
-  abstract getUtilityMetadata(): Record<
-    string,
-    {
-      name: string;
-      description: string;
-      parameters?: any;
-      returnType?: any;
-    }
-  >;
+  abstract getUtilityMetadata(): Record<string, UtilityFunctionMetadata>;
 
   /**
    * Helper method to register utilities with the container
@@ -384,7 +440,7 @@ export abstract class UtilityPlugin extends BasePlugin implements IUtilityPlugin
  * Plugin factory for creating typed plugins
  */
 export abstract class PluginFactory<T extends BasePlugin = BasePlugin> {
-  abstract create(config?: any): T;
+  abstract create(config?: PluginConfig): T;
 
   /**
    * Get plugin metadata
@@ -400,5 +456,5 @@ export interface PluginRegistryEntry {
   instance?: BasePlugin;
   loaded: boolean;
   enabled: boolean;
-  config?: any;
+  config?: PluginConfig;
 }
