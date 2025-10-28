@@ -157,10 +157,11 @@ You're not following phases—you're adapting to current needs:
 
 **🔴 MANDATORY REASONING PROCESS:**
 1. **Start Session**: Use `reasoning_start` with appropriate framework
-   - `first-principles` - Break down to fundamentals
-   - `pros-cons` - Evaluate alternatives systematically
-   - `root-cause` - Analyze underlying problems
-   - `risk-assessment` - Identify and mitigate risks
+   - **Discovery**: Use `reasoning_frameworks` to browse all available frameworks (9 total)
+   - **Strategic**: `swot-analysis`, `risk-assessment` - For business/strategic decisions
+   - **Analytical**: `first-principles`, `root-cause-analysis`, `cause-effect-analysis`, `systems-thinking` - For problem breakdown
+   - **Technical**: `decision-matrix` - For multi-criteria technical choices
+   - **Creative**: `six-thinking-hats`, `design-thinking` - For innovation and user-centered solutions
 
 2. **Structured Analysis**: Use `reasoning_analyze` for each framework section
    - Follow guiding questions provided by framework

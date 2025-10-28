@@ -1,0 +1,104 @@
+{
+  "id": "six-thinking-hats",
+  "name": "Six Thinking Hats",
+  "description": "Structured brainstorming method that encourages parallel thinking by examining issues from six different perspectives. Excellent for comprehensive decision-making and creative problem-solving.",
+  "category": "creative",
+  "subcategory": "brainstorming",
+  "difficulty": "beginner",
+  "estimated_time": "30-45 minutes",
+  "structure": [
+    {
+      "name": "White Hat (Facts)",
+      "description": "Focus on available data, facts, and information. What do we know? What do we need to know?",
+      "required": true
+    },
+    {
+      "name": "Red Hat (Emotions)",
+      "description": "Express feelings, intuition, and emotional reactions without justification",
+      "required": true
+    },
+    {
+      "name": "Black Hat (Risks)",
+      "description": "Identify potential problems, risks, and negative consequences. Exercise caution",
+      "required": true
+    },
+    {
+      "name": "Yellow Hat (Benefits)",
+      "description": "Focus on positives, benefits, and optimistic outcomes. Identify opportunities",
+      "required": true
+    },
+    {
+      "name": "Green Hat (Creativity)",
+      "description": "Explore alternatives, generate new ideas, and consider innovative solutions",
+      "required": true
+    },
+    {
+      "name": "Blue Hat (Process)",
+      "description": "Manage the thinking process, summarize findings, and plan next steps",
+      "required": true
+    }
+  ],
+  "prompts": [
+    "WHITE HAT: What are the facts? What information do we have? What do we need to know?",
+    "RED HAT: How do I feel about this? What's my gut reaction? What emotions come up?",
+    "BLACK HAT: What could go wrong? What are the risks and potential problems? What are the weaknesses?",
+    "YELLOW HAT: What are the benefits? What are the opportunities? What's the best-case scenario?",
+    "GREEN HAT: What new approaches could we try? What alternatives exist? How else could we solve this?",
+    "BLUE HAT: What have we learned so far? What's our next step? How should we proceed?"
+  ],
+  "when_to_use": [
+    "When teams need to consider all perspectives before making decisions",
+    "When brainstorming needs structure and direction",
+    "When analyzing complex situations with multiple stakeholders",
+    "When conflict arises from different viewpoints",
+    "When creative thinking needs to be combined with analytical rigor",
+    "When facilitating group discussions and workshops"
+  ],
+  "when_not_to_use": [
+    "When quick, spontaneous decisions are needed",
+    "When working alone on simple problems",
+    "When time is extremely limited (minimum 30 minutes needed)",
+    "When the group is not receptive to structured thinking"
+  ],
+  "examples": [
+    {
+      "title": "Product Feature Decision",
+      "description": "Team used Six Hats to decide on adding AI features. White: market data, Red: excitement about innovation, Black: implementation risks, Yellow: competitive advantage, Green: alternative approaches, Blue: action plan."
+    },
+    {
+      "title": "Organizational Change",
+      "description": "Company restructuring analysis. White: financial data, Red: employee concerns, Black: disruption risks, Yellow: efficiency gains, Green: alternative structures, Blue: implementation timeline."
+    }
+  ],
+  "tags": ["creativity", "decision-making", "brainstorming", "team-collaboration", "perspectives", "structured-thinking"],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "Edward de Bono (1985)",
+    "quality_level": "core",
+    "created_date": "2025-10-28T17:35:00.000Z",
+    "last_updated": "2025-10-28T17:35:00.000Z",
+    "validation_status": {
+      "validated_by": "reasoning-system",
+      "validation_date": "2025-10-28T17:35:00.000Z",
+      "validation_notes": "Widely adopted creative thinking and decision-making framework",
+      "effectiveness_rating": 9
+    },
+    "usage_stats": {
+      "total_uses": 0,
+      "success_rate": null,
+      "average_time_spent": null,
+      "user_satisfaction": null
+    },
+    "dependencies": {
+      "required_frameworks": [],
+      "complementary_frameworks": ["swot-analysis", "decision-matrix"],
+      "prerequisite_skills": ["open-mindedness", "structured-thinking", "collaboration"]
+    },
+    "implementation": {
+      "complexity": "low",
+      "flexibility": "high",
+      "research_backed": true,
+      "industry_validated": true
+    }
+  }
+}

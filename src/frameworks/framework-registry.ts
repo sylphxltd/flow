@@ -2,15 +2,26 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 
 import { join } from 'path';
 import { z } from 'zod';
 
-// Framework directories
-const FRAMEWORKS_DIR = 'src/frameworks/definitions';
-
-// Ensure framework directory exists
-function ensureFrameworkDirectory(): void {
-  if (!existsSync(FRAMEWORKS_DIR)) {
-    mkdirSync(FRAMEWORKS_DIR, { recursive: true });
+// Framework directories - automatically detect correct path
+function getFrameworksDir(): string {
+  // Try development path first
+  if (existsSync('src/frameworks/definitions')) {
+    return 'src/frameworks/definitions';
   }
+  // Fall back to production path (frameworks copied to dist/)
+  if (existsSync('frameworks/definitions')) {
+    return 'frameworks/definitions';
+  }
+  // Try dist/frameworks (when running from project root)
+  if (existsSync('dist/frameworks/definitions')) {
+    return 'dist/frameworks/definitions';
+  }
+  // Default to development path (will show warning if not found)
+  return 'src/frameworks/definitions';
 }
+
+// Note: Framework definitions are static source files managed by developers
+// Do not auto-create framework directories - frameworks should be explicitly added
 
 // Framework type definition
 export interface ReasoningFramework {
@@ -62,21 +73,25 @@ export class FrameworkRegistry {
   private initialized = false;
 
   constructor() {
-    ensureFrameworkDirectory();
+    // Framework definitions are static source files - no auto-creation needed
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // Load all frameworks from definitions directory
-    await this.loadFrameworksFromDirectory(FRAMEWORKS_DIR);
+    // Load all frameworks from source definitions directory
+    const frameworksDir = getFrameworksDir();
+    await this.loadFrameworksFromDirectory(frameworksDir);
 
     this.initialized = true;
     console.log(`Framework registry initialized with ${this.frameworks.size} frameworks`);
   }
 
   private async loadFrameworksFromDirectory(directory: string): Promise<void> {
-    if (!existsSync(directory)) return;
+    if (!existsSync(directory)) {
+      console.warn(`Warning: Framework directory '${directory}' not found. This may indicate a development setup issue.`);
+      return;
+    }
 
     // Recursively find all JSON files in subdirectories
     function findJsonFiles(dir: string): string[] {
