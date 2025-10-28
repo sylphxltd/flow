@@ -7,6 +7,7 @@ import {
   AppError,
   ErrorCategory,
   ErrorHandler,
+  ErrorSeverity,
   DatabaseError as SimplifiedDatabaseError,
   ValidationError as SimplifiedValidationError,
   createDatabaseError,
