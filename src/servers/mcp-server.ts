@@ -4,7 +4,6 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerCodebaseTools } from '../tools/codebase-tools.js';
 import { registerKnowledgeTools } from '../tools/knowledge-tools.js';
 import { registerMemoryTools } from '../tools/memory-tools.js';
-import { registerProjectStartupTool } from '../tools/project-startup-tool.js';
 import { registerTimeTools } from '../tools/time-tools.js';
 import { registerAllWorkspaceTools } from '../tools/workspace-tools.js';
 import { getDefaultEmbeddingProvider } from '../utils/embeddings.js';
@@ -26,7 +25,6 @@ const DEFAULT_CONFIG = {
 export interface ServerConfig {
   disableMemory?: boolean;
   disableTime?: boolean;
-  disableProjectStartup?: boolean;
   disableKnowledge?: boolean;
   disableCodebase?: boolean;
   disableWorkspace?: boolean;
@@ -91,12 +89,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('time_get_current, time_format, time_parse');
   }
 
-  // Project startup tools (enabled by default, can be disabled)
-  if (!config.disableProjectStartup) {
-    registerProjectStartupTool(server);
-    enabledTools.push('project_startup');
-  }
-
+  
   // Workspace tools (enabled by default, can be disabled)
   if (!config.disableWorkspace) {
     Logger.info('📁 Registering workspace tools');
