@@ -45,16 +45,31 @@ export interface SearchStatus {
 }
 
 /**
+ * Dependencies for UnifiedSearchService
+ * Allows dependency injection for testing and flexibility
+ */
+export interface SearchServiceDependencies {
+  readonly memoryStorage?: SeparatedMemoryStorage;
+  readonly knowledgeIndexer?: ReturnType<typeof getKnowledgeIndexer>;
+  readonly codebaseIndexer?: CodebaseIndexer;
+  readonly embeddingProvider?: EmbeddingProvider;
+}
+
+/**
  * Unified Search Service - shared by CLI and MCP
  */
 export class UnifiedSearchService {
   private memoryStorage: SeparatedMemoryStorage;
-  private knowledgeIndexer = getKnowledgeIndexer();
+  private knowledgeIndexer: ReturnType<typeof getKnowledgeIndexer>;
   private codebaseIndexer?: CodebaseIndexer;
   private embeddingProvider?: EmbeddingProvider;
 
-  constructor() {
-    this.memoryStorage = new SeparatedMemoryStorage();
+  constructor(dependencies: SearchServiceDependencies = {}) {
+    // Use provided dependencies or create defaults
+    this.memoryStorage = dependencies.memoryStorage || new SeparatedMemoryStorage();
+    this.knowledgeIndexer = dependencies.knowledgeIndexer || getKnowledgeIndexer();
+    this.codebaseIndexer = dependencies.codebaseIndexer;
+    this.embeddingProvider = dependencies.embeddingProvider;
   }
 
   /**
@@ -413,5 +428,56 @@ export class UnifiedSearchService {
   }
 }
 
-// Singleton pattern - ensure all places use the same instance
-export const searchService = new UnifiedSearchService();
+// ============================================================================
+// FACTORY PATTERN & DEPENDENCY INJECTION
+// ============================================================================
+
+/**
+ * Create search service with custom dependencies
+ * Useful for testing and custom configurations
+ *
+ * @example
+ * // Custom service for testing
+ * const testService = createSearchService({
+ *   memoryStorage: mockStorage,
+ *   knowledgeIndexer: mockKnowledgeIndexer,
+ * });
+ *
+ * // Custom service with specific configuration
+ * const customService = createSearchService({
+ *   embeddingProvider: myEmbeddingProvider,
+ * });
+ */
+export const createSearchService = (
+  dependencies?: SearchServiceDependencies
+): UnifiedSearchService => {
+  return new UnifiedSearchService(dependencies);
+};
+
+/**
+ * Default search service instance (singleton)
+ * Used by CLI and MCP for standard operation
+ *
+ * This maintains backward compatibility with existing code.
+ */
+export const searchService = createSearchService();
+
+/**
+ * Create test search service with mock dependencies
+ * Convenience function for testing
+ *
+ * @example
+ * const testService = createTestSearchService({
+ *   memoryStorage: mockStorage,
+ * });
+ */
+export const createTestSearchService = (
+  mockDependencies: Partial<SearchServiceDependencies> = {}
+): UnifiedSearchService => {
+  return createSearchService({
+    memoryStorage: mockDependencies.memoryStorage,
+    knowledgeIndexer: mockDependencies.knowledgeIndexer,
+    codebaseIndexer: mockDependencies.codebaseIndexer,
+    embeddingProvider: mockDependencies.embeddingProvider,
+  });
+};
