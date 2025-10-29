@@ -120,7 +120,7 @@ export class UnifiedSearchService {
       file_extensions,
       path_filter,
       exclude_paths,
-      min_score = 0.0, // Keep the fix for min_score
+      min_score = 0.001, // Default: filter out zero-score results
     } = options;
 
     // Check if codebase is indexed
@@ -237,10 +237,9 @@ export class UnifiedSearchService {
       });
     }
 
-    // Sort by score (descending), filter by min_score (default 0.001 to exclude 0 scores), and limit results
-    const effectiveMinScore = min_score > 0 ? min_score : 0.001; // Filter out zero scores
+    // Sort by score (descending), filter by min_score, and limit results
     const filteredResults = results
-      .filter((r) => r.score >= effectiveMinScore)
+      .filter((r) => r.score >= min_score)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
