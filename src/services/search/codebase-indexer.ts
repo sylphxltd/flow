@@ -75,11 +75,25 @@ export class CodebaseIndexer {
       for (const file of dbFiles) {
         const tfidfDoc = await this.db.getTFIDFDocument(file.path);
         if (tfidfDoc) {
-          const rawTerms = tfidfDoc.rawTerms || {};
+          // Parse rawTerms from JSON string to object
+          let rawTermsObj = {};
+          if (tfidfDoc.rawTerms) {
+            if (typeof tfidfDoc.rawTerms === 'string') {
+              try {
+                rawTermsObj = JSON.parse(tfidfDoc.rawTerms);
+              } catch (error) {
+                console.warn(`[WARN] Failed to parse rawTerms for ${file.path}:`, error);
+                rawTermsObj = {};
+              }
+            } else if (typeof tfidfDoc.rawTerms === 'object') {
+              rawTermsObj = tfidfDoc.rawTerms;
+            }
+          }
+
           const terms = new Map<string, number>();
           const rawTermsMap = new Map<string, number>();
 
-          for (const [term, freq] of Object.entries(rawTerms)) {
+          for (const [term, freq] of Object.entries(rawTermsObj)) {
             terms.set(term, freq as number);
             rawTermsMap.set(term, freq as number);
           }
