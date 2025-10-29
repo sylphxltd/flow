@@ -330,6 +330,20 @@ export class CodebaseIndexer {
 
     console.error(`[INFO] Indexing ${changedFiles.length} changed files...`);
 
+    // Store files in database for content retrieval
+    await this.db.initialize();
+    for (const file of files) {
+      await this.db.upsertCodebaseFile({
+        path: file.path,
+        mtime: file.mtime,
+        hash: simpleHash(file.content),
+        content: file.content,
+        language: file.language,
+        size: file.size,
+        indexedAt: new Date().toISOString(),
+      });
+    }
+
     // Build TF-IDF index
     const documents = files.map((file) => ({
       uri: `file://${file.path}`,
@@ -428,6 +442,64 @@ export class CodebaseIndexer {
         fileCount: 0,
       };
     }
+  }
+
+  /**
+   * Search codebase using TF-IDF
+   */
+  async search(
+    query: string,
+    options: {
+      limit?: number;
+      minScore?: number;
+      includeContent?: boolean;
+    } = {}
+  ): Promise<Array<{
+    path: string;
+    score: number;
+    content?: string;
+    language?: string;
+  }>> {
+    const { limit = 10, minScore = 0, includeContent = true } = options;
+
+    // Load TF-IDF index from cache
+    const index = await this.buildTFIDFIndexFromDB();
+    if (!index) {
+      throw new Error('No search index available. Please run indexCodebase first.');
+    }
+
+    // Import search function
+    const { searchDocuments } = await import('./tfidf.js');
+
+    // Perform search
+    const searchResults = searchDocuments(query, index, {
+      limit,
+      minScore,
+    });
+
+    // Convert results and optionally include content
+    const results = [];
+    for (const result of searchResults) {
+      const filePath = result.uri?.replace('file://', '') || '';
+      let content: string | undefined;
+
+      if (includeContent) {
+        try {
+          const file = await this.db.getCodebaseFile(filePath);
+          content = file?.content;
+        } catch {
+          // Fallback: don't include content if unable to retrieve
+        }
+      }
+
+      results.push({
+        path: filePath,
+        score: result.score || 0,
+        content,
+      });
+    }
+
+    return results;
   }
 
   /**
