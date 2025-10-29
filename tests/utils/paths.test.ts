@@ -3,7 +3,9 @@
  * Tests for centralized path resolution
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   getAgentsDir,
   getTemplatesDir,
@@ -325,6 +327,125 @@ describe('Paths', () => {
       const agentsIndex = info.agents.indexOf('agents');
       const assetsIndex = info.agents.indexOf('assets');
       expect(assetsIndex).toBeLessThan(agentsIndex);
+    });
+  });
+
+  describe('Edge Cases - Uncovered Lines', () => {
+    describe('getRuleFile success case (lines 106-107)', () => {
+      let originalFsExistsSync: typeof fs.existsSync;
+      let mockExistsSync: ReturnType<typeof vi.fn>;
+
+      beforeEach(() => {
+        // Store original fs.existsSync
+        originalFsExistsSync = fs.existsSync;
+        mockExistsSync = vi.fn();
+        fs.existsSync = mockExistsSync;
+      });
+
+      afterEach(() => {
+        // Restore original fs.existsSync
+        fs.existsSync = originalFsExistsSync;
+      });
+
+      it('should return file path when rule file exists', () => {
+        const testFilename = 'test-rule.md';
+        const rulesDir = getRulesDir();
+        const expectedPath = path.join(rulesDir, testFilename);
+
+        // Mock fs.existsSync to return true for our test file
+        mockExistsSync.mockImplementation((filePath: string) => {
+          return filePath === expectedPath;
+        });
+
+        // Test that getRuleFile returns the path when file exists
+        // This will test lines 106-107 (the success return)
+        const result = getRuleFile(testFilename);
+        expect(result).toBe(expectedPath);
+      });
+
+      it('should validate and return correct path for valid existing filename', () => {
+        const testFilename = 'valid-rule-name.json';
+        const rulesDir = getRulesDir();
+        const expectedPath = path.join(rulesDir, testFilename);
+
+        // Mock fs.existsSync to return true for our test file
+        mockExistsSync.mockImplementation((filePath: string) => {
+          return filePath === expectedPath;
+        });
+
+        const result = getRuleFile(testFilename);
+        expect(result).toBe(expectedPath);
+        expect(result).toContain(rulesDir);
+        expect(result).toContain(testFilename);
+      });
+
+      it('should handle complex but valid filenames when file exists', () => {
+        const validFilenames = [
+          'complex.rule.name.v2.json',
+          'rule-with-many-hyphens.md',
+          'rule_with_many_underscores.txt',
+          'rule123.test456.ext789'
+        ];
+
+        for (const filename of validFilenames) {
+          const rulesDir = getRulesDir();
+          const expectedPath = path.join(rulesDir, filename);
+
+          // Mock file exists
+          mockExistsSync.mockImplementation((filePath: string) => {
+            return filePath === expectedPath;
+          });
+
+          const result = getRuleFile(filename);
+          expect(result).toBe(expectedPath);
+        }
+      });
+
+      it('should return correct path structure for existing files', () => {
+        const testCases = [
+          { filename: 'simple.md', expectedExtension: 'simple.md' },
+          { filename: 'rule.v1.json', expectedExtension: 'rule.v1.json' },
+          { filename: 'test_rule_file.txt', expectedExtension: 'test_rule_file.txt' }
+        ];
+
+        for (const testCase of testCases) {
+          const rulesDir = getRulesDir();
+          const expectedPath = path.join(rulesDir, testCase.filename);
+
+          mockExistsSync.mockImplementation((filePath: string) => {
+            return filePath === expectedPath;
+          });
+
+          const result = getRuleFile(testCase.filename);
+          expect(result).toBe(expectedPath);
+          expect(result.endsWith(testCase.expectedExtension)).toBe(true);
+        }
+      });
+    });
+
+    describe('getDistDir development scenarios (lines 40-47)', () => {
+      it('should handle module evaluation without mocking', () => {
+        // Since the module is already loaded, we verify the current state
+        // Lines 40-47 are the fallback when dist doesn't exist but we're in src
+        // This is tested by the fact that the module loads successfully
+        const info = getPathsInfo();
+        expect(info.assetsRoot).toBeTruthy();
+        expect(typeof info.assetsRoot).toBe('string');
+        expect(info.assetsRoot.length).toBeGreaterThan(0);
+      });
+
+      it('should provide consistent path resolution', () => {
+        // Test that the paths module works consistently
+        // This indirectly tests that getDistDir worked correctly
+        const agents1 = getAgentsDir();
+        const agents2 = getAgentsDir();
+        const rules1 = getRulesDir();
+        const rules2 = getRulesDir();
+
+        expect(agents1).toBe(agents2);
+        expect(rules1).toBe(rules2);
+        expect(agents1).not.toBe(rules1);
+      });
     });
   });
 });

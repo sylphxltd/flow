@@ -146,6 +146,20 @@ describe('JSONC', () => {
       expect(() => parseJSONC(invalid)).toThrow('Failed to parse JSONC');
     });
 
+    it('should handle non-Error instances in JSON.parse errors', () => {
+      // Mock JSON.parse to throw a non-Error object
+      const originalParse = JSON.parse;
+      JSON.parse = () => {
+        throw 'String error'; // Throw a string instead of Error
+      };
+
+      try {
+        expect(() => parseJSONC('{}')).toThrow('Failed to parse JSONC: Unknown error');
+      } finally {
+        JSON.parse = originalParse; // Restore original JSON.parse
+      }
+    });
+
     it('should handle comments at end of file', () => {
       const jsonc = `{
         "name": "John"

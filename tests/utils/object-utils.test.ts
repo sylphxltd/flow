@@ -82,6 +82,34 @@ describe('Object Utils', () => {
       expect(getNestedProperty(obj, 'user-name')).toBe('John');
       expect(getNestedProperty(obj, 'user_id')).toBe(123);
     });
+
+    it('should handle paths with only dots', () => {
+      const obj = { '': { '': 'value' } };
+      // Empty string path accesses obj[''], which returns the nested object
+      expect(getNestedProperty(obj, '')).toEqual({ '': 'value' });
+    });
+
+    it('should handle numeric paths', () => {
+      const obj = { '0': 'zero', '1': 'one' };
+      expect(getNestedProperty(obj, '0')).toBe('zero');
+      expect(getNestedProperty(obj, '1')).toBe('one');
+    });
+
+    it('should handle whitespace paths', () => {
+      const obj = { ' ': 'space', '\t': 'tab' };
+      expect(getNestedProperty(obj, ' ')).toBe('space');
+      expect(getNestedProperty(obj, '\t')).toBe('tab');
+    });
+
+    it('should handle very deep nesting', () => {
+      const obj = {};
+      let deepPath = '';
+      for (let i = 0; i < 50; i++) {
+        deepPath += (i === 0 ? '' : '.') + 'level' + i;
+      }
+      setNestedProperty(obj, deepPath, 'deep value');
+      expect(getNestedProperty(obj, deepPath)).toBe('deep value');
+    });
   });
 
   describe('setNestedProperty', () => {
@@ -168,6 +196,64 @@ describe('Object Utils', () => {
       setNestedProperty(obj, 'user.name', 'John');
       expect(obj).toEqual({ user: { name: 'John' } });
     });
+
+    it('should handle setting empty string path', () => {
+      const obj = { name: 'John' };
+      setNestedProperty(obj, '', 'empty key value');
+      expect(obj).toEqual({ name: 'John', '': 'empty key value' });
+    });
+
+    it('should handle setting paths with only dots', () => {
+      const obj = {};
+      setNestedProperty(obj, '.', 'dot value');
+      expect(obj).toEqual({ '': { '': 'dot value' } });
+
+      setNestedProperty(obj, '..', 'double dot value');
+      expect(obj).toEqual({ '': { '': { '': 'double dot value' } } });
+    });
+
+    it('should handle setting paths with leading/trailing dots', () => {
+      const obj = {};
+      setNestedProperty(obj, '.a', 'leading dot');
+      expect(obj).toEqual({ '': { a: 'leading dot' } });
+
+      setNestedProperty(obj, 'a.', 'trailing dot');
+      expect(obj).toEqual({ '': { a: 'leading dot' }, a: { '': 'trailing dot' } });
+    });
+
+    it('should handle setting numeric paths', () => {
+      const obj = {};
+      setNestedProperty(obj, '0', 'zero');
+      setNestedProperty(obj, '1', 'one');
+      expect(obj).toEqual({ '0': 'zero', '1': 'one' });
+    });
+
+    it('should handle setting paths with special characters', () => {
+      const obj = {};
+      setNestedProperty(obj, 'a-b', 'dash');
+      setNestedProperty(obj, 'a_b', 'underscore');
+      setNestedProperty(obj, 'a$b', 'dollar');
+      setNestedProperty(obj, 'a@b', 'at');
+      expect(obj).toEqual({ 'a-b': 'dash', a_b: 'underscore', a$b: 'dollar', 'a@b': 'at' });
+    });
+
+    it('should handle setting whitespace paths', () => {
+      const obj = {};
+      setNestedProperty(obj, ' ', 'space');
+      setNestedProperty(obj, '\t', 'tab');
+      setNestedProperty(obj, '\n', 'newline');
+      expect(obj).toEqual({ ' ': 'space', '\t': 'tab', '\n': 'newline' });
+    });
+
+    it('should handle setting very deep nesting', () => {
+      const obj = {};
+      let deepPath = '';
+      for (let i = 0; i < 50; i++) {
+        deepPath += (i === 0 ? '' : '.') + 'level' + i;
+      }
+      setNestedProperty(obj, deepPath, 'deep value');
+      expect(getNestedProperty(obj, deepPath)).toBe('deep value');
+    });
   });
 
   describe('deleteNestedProperty', () => {
@@ -223,6 +309,65 @@ describe('Object Utils', () => {
       const obj = { user: 'string' };
       deleteNestedProperty(obj, 'user.name');
       expect(obj).toEqual({ user: {} });
+    });
+
+    it('should handle deleting empty string path', () => {
+      const obj = { name: 'John', '': 'empty value' };
+      deleteNestedProperty(obj, '');
+      expect(obj).toEqual({ name: 'John' });
+    });
+
+    it('should handle deleting paths with only dots', () => {
+      const obj = { '': { '': { '': 'value' } } };
+      deleteNestedProperty(obj, '..');
+      expect(obj).toEqual({ '': { '': {} } });
+    });
+
+    it('should handle deleting paths with leading/trailing dots', () => {
+      const obj = { '': { a: 'leading' }, a: { '': 'trailing' } };
+      deleteNestedProperty(obj, '.a');
+      deleteNestedProperty(obj, 'a.');
+      expect(obj).toEqual({ '': {}, a: {} });
+    });
+
+    it('should handle deleting numeric paths', () => {
+      const obj = { '0': 'zero', '1': 'one', '2': 'two' };
+      deleteNestedProperty(obj, '0');
+      deleteNestedProperty(obj, '2');
+      expect(obj).toEqual({ '1': 'one' });
+    });
+
+    it('should handle deleting paths with special characters', () => {
+      const obj = { 'a-b': 'dash', 'a_b': 'underscore', 'a$b': 'dollar' };
+      deleteNestedProperty(obj, 'a-b');
+      deleteNestedProperty(obj, 'a$b');
+      expect(obj).toEqual({ a_b: 'underscore' });
+    });
+
+    it('should handle deleting whitespace paths', () => {
+      const obj = { ' ': 'space', '\t': 'tab', '\n': 'newline' };
+      deleteNestedProperty(obj, ' ');
+      deleteNestedProperty(obj, '\t');
+      expect(obj).toEqual({ '\n': 'newline' });
+    });
+
+    it('should handle deleting very deep nesting', () => {
+      const obj = {};
+      let deepPath = '';
+      for (let i = 0; i < 10; i++) {
+        deepPath += (i === 0 ? '' : '.') + 'level' + i;
+      }
+      setNestedProperty(obj, deepPath, 'deep value');
+      expect(getNestedProperty(obj, deepPath)).toBe('deep value');
+
+      deleteNestedProperty(obj, deepPath);
+      expect(getNestedProperty(obj, deepPath)).toBeUndefined();
+    });
+
+    it('should handle deleting from empty objects created during traversal', () => {
+      const obj = {};
+      deleteNestedProperty(obj, 'a.b.c');
+      expect(obj).toEqual({ a: { b: {} } });
     });
   });
 
