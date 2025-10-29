@@ -1,13 +1,11 @@
 /**
- * Codebase tools - 代碼庫工具
+ * Codebase tools
  * All tools for working with project source code and files
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { UnifiedSearchService } from '../../services/search/unified-search-service.js';
-import { CodebaseIndexer } from '../../services/search/codebase-indexer.js';
-import { getDefaultEmbeddingProvider } from '../../services/search/embeddings.js';
+import { searchService } from '../../services/search/unified-search-service.js';
 
 /**
  * Register codebase search tool
@@ -75,57 +73,34 @@ The search includes:
       exclude_paths,
     }) => {
       try {
-        // 直接使用 CodebaseIndexer - 與 CLI 相同的邏輯
-        const codebaseIndexer = new CodebaseIndexer();
-        const embeddingProvider = await getDefaultEmbeddingProvider();
+        // Use UnifiedSearchService - same logic as CLI
+        await searchService.initialize();
 
-        // 確保已索引
-        try {
-          const stats = await codebaseIndexer.getCacheStats();
-          if (stats.fileCount === 0) {
-            await codebaseIndexer.indexCodebase({ embeddingProvider });
-          }
-        } catch {
-          // 如果檢查失敗，直接索引
-          await codebaseIndexer.indexCodebase({ embeddingProvider });
+        // Check codebase status
+        const status = await searchService.getStatus();
+
+        if (!status.codebase.indexed) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `📭 **Codebase Not Indexed**\n\nThe codebase has not been indexed yet.\n\n**To fix:**\n- Run: \`sylphx codebase reindex\` from the command line\n- This will create a search index for all source files\n\n**Why this is needed:**\nThe first time you use codebase search, you need to build an index of all files. This only needs to be done once (or when files change significantly).`,
+              },
+            ],
+          };
         }
 
-        // 執行搜索
-        const searchResults = await codebaseIndexer.search(query, {
+        // Perform search using unified service
+        const result = await searchService.searchCodebase(query, {
           limit,
-          minScore: 0.0, // 設置為 0 確保有結果
-          includeContent: include_content,
+          include_content,
+          file_extensions,
+          path_filter,
+          exclude_paths,
         });
 
-        // 格式化結果為 MCP 格式
-        const formattedResults = searchResults.map((result, index) => ({
-          uri: `file://${result.path}`,
-          score: result.score || 0,
-          title: result.path.split('/').pop() || result.path,
-          content: include_content && result.content ?
-            (result.content.length > 500 ? result.content.substring(0, 500) + '...' : result.content) :
-            undefined,
-        }));
-
-        // 構建回應文本
-        let responseText = `Found ${searchResults.length} result(s) for "${query}":\n\n`;
-        formattedResults.forEach((result, index) => {
-          responseText += `${index + 1}. **${result.title}** (Score: ${result.score.toFixed(3)})\n`;
-          responseText += `   📁 Path: \`${result.uri.replace('file://', '')}\`\n`;
-          if (result.content) {
-            responseText += `   📄 Content: ${result.content}\n`;
-          }
-          responseText += '\n';
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: responseText,
-            },
-          ],
-        };
+        // Return MCP-formatted results
+        return searchService.formatResultsForMCP(result.results, query, result.totalIndexed);
       } catch (error) {
         return {
           content: [

@@ -1,5 +1,5 @@
 /**
- * Knowledge tools - 知識庫工具
+ * Knowledge tools
  * All tools for working with knowledge base, documentation, and guides
  */
 
@@ -57,10 +57,10 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
     },
     async ({ query, limit = 10, include_content = true }) => {
       try {
-        // 使用統一搜索服務 - 同 CLI 用相同邏輯
+        // Use unified search service - same logic as CLI
         await searchService.initialize();
 
-        // 檢查知識庫狀態
+        // Check knowledge base status
         const status = await searchService.getStatus();
 
         if (status.knowledge.isIndexing) {
@@ -85,13 +85,13 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
           };
         }
 
-        // 使用統一搜索服務搜索知識庫
+        // Search knowledge base using unified service
         const result = await searchService.searchKnowledge(query, {
           limit,
           include_content,
         });
 
-        // 返回 MCP 格式 - 使用統一服務嘅格式化方法
+        // Return MCP format using unified service formatter
         return searchService.formatResultsForMCP(result.results, query, result.totalIndexed);
       } catch (error) {
         return {
@@ -139,7 +139,7 @@ The available URIs are dynamically generated from the indexed knowledge base. Us
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
-        // 動態獲取可用 URI
+        // Dynamically get available URIs
         const availableURIs = await searchService.getAvailableKnowledgeURIs();
         const uriList =
           availableURIs.length > 0

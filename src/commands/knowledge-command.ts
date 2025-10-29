@@ -1,5 +1,5 @@
 /**
- * Knowledge CLI commands - 知識庫 CLI 命令
+ * Knowledge CLI commands
  * Knowledge base search and management functionality
  */
 

@@ -1,6 +1,6 @@
 /**
- * Unified Search Service - 統一搜索服務
- * 所有搜索功能（CLI、MCP、API）都使用相同的核心邏輯
+ * Unified Search Service
+ * Shared search logic for CLI, MCP, and API
  */
 
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
@@ -41,7 +41,7 @@ export interface SearchStatus {
 }
 
 /**
- * 統一搜索服務 - CLI 同 MCP 都用呢個
+ * Unified Search Service - shared by CLI and MCP
  */
 export class UnifiedSearchService {
   private memoryStorage: SeparatedMemoryStorage;
@@ -53,7 +53,7 @@ export class UnifiedSearchService {
   }
 
   /**
-   * 初始化搜索服務
+   * Initialize search service
    */
   async initialize(): Promise<void> {
     await this.memoryStorage.initialize();
@@ -68,7 +68,7 @@ export class UnifiedSearchService {
   }
 
   /**
-   * 獲取搜索狀態
+   * Get search status
    */
   async getStatus(): Promise<SearchStatus> {
     // Codebase status
@@ -104,7 +104,7 @@ export class UnifiedSearchService {
   }
 
   /**
-   * 搜索代碼庫 - CLI 同 MCP 都用呢個方法
+   * Search codebase - shared by CLI and MCP
    */
   async searchCodebase(
     query: string,
@@ -123,13 +123,13 @@ export class UnifiedSearchService {
       min_score = 0.0, // Keep the fix for min_score
     } = options;
 
-    // 檢查是否已索引
+    // Check if codebase is indexed
     const allFiles = await this.memoryStorage.getAllCodebaseFiles();
     if (allFiles.length === 0) {
       throw new Error('Codebase not indexed yet. Run "sylphx search reindex" first.');
     }
 
-    // 應用過濾器
+    // Apply filters
     let files = allFiles;
     if (file_extensions?.length) {
       files = files.filter((file) => file_extensions.some((ext) => file.path.endsWith(ext)));
@@ -149,7 +149,7 @@ export class UnifiedSearchService {
       };
     }
 
-  // 使用資料庫中嘅 TF-IDF 索引，避免重新建立
+    // Use TF-IDF index from database to avoid rebuilding
     const { buildSearchIndexFromDB } = await import('./tfidf.js');
     const index = await buildSearchIndexFromDB(this.memoryStorage, {
       file_extensions,
@@ -161,23 +161,23 @@ export class UnifiedSearchService {
       throw new Error('No searchable content found');
     }
 
-    // 處理 query TF-IDF 向量 - 使用數據庫中嘅值，避免重新計算
+    // Process query TF-IDF vector using database values
     const { processQuery } = await import('./tfidf.js');
     const queryVector = await processQuery(query, index.idf);
 
-    // 計算 query magnitude
+    // Calculate query magnitude
     let queryMagnitude = 0;
     for (const value of queryVector.values()) {
       queryMagnitude += value * value;
     }
     queryMagnitude = Math.sqrt(queryMagnitude);
 
-    // 手動計算相似度（唔使用 searchDocuments 函數，因為佢會重新處理 query）
+    // Calculate similarity manually (don't use searchDocuments to avoid reprocessing query)
     const searchResults = index.documents.map((doc) => {
       let dotProduct = 0;
       const matchedTerms: string[] = [];
 
-      // 計算點積
+      // Calculate dot product
       for (const [term, queryScore] of queryVector.entries()) {
         const docScore = doc.terms.get(term) || 0;
         if (docScore > 0) {
@@ -186,14 +186,14 @@ export class UnifiedSearchService {
         }
       }
 
-      // 計算餘弦相似度
+      // Calculate cosine similarity
       let similarity = 0;
       if (queryMagnitude > 0 && doc.magnitude > 0) {
         similarity = dotProduct / (queryMagnitude * doc.magnitude);
       }
 
-      // 使用純粹嘅 TF-IDF 分數，唔做多餘嘅增強計算
-      // StarCoder2 已經提供最好嘅 tokenization，我哋完全信任佢
+      // Use pure TF-IDF score without extra boosting
+      // StarCoder2 tokenization is already optimal
       let finalScore = similarity;
 
       return {
@@ -203,7 +203,7 @@ export class UnifiedSearchService {
       };
     });
 
-    // 轉換結果格式
+    // Convert result format
     const results: SearchResult[] = [];
     for (const result of searchResults) {
       const filename = result.uri?.replace('file://', '') || 'Unknown';
@@ -253,7 +253,7 @@ export class UnifiedSearchService {
 
   
   /**
-   * 搜索知識庫 - CLI 同 MCP 都用呢個方法
+   * Search knowledge base - shared by CLI and MCP
    */
   async searchKnowledge(
     query: string,
@@ -296,7 +296,7 @@ export class UnifiedSearchService {
 
   
   /**
-   * 格式化搜索結果為 CLI 輸出 - CLI 用
+   * Format search results for CLI output
    */
   formatResultsForCLI(results: SearchResult[], query: string, totalIndexed: number): string {
     if (results.length === 0) {
@@ -308,7 +308,7 @@ export class UnifiedSearchService {
       .map((result, i) => {
         let line = `${i + 1}. **${result.title}** (Score: ${result.score.toFixed(3)})`;
 
-        // 顯示完整 path 或 URI
+        // Display full path or URI
         if (result.uri.startsWith('file://')) {
           const filePath = result.uri.replace('file://', '');
           line += `\n   📁 Path: \`${filePath}\``;
@@ -329,7 +329,7 @@ export class UnifiedSearchService {
   }
 
   /**
-   * 格式化搜索結果為 MCP 回應 - MCP 用
+   * Format search results for MCP response
    */
   formatResultsForMCP(
     results: SearchResult[],
@@ -343,7 +343,7 @@ export class UnifiedSearchService {
       .map((result, i) => {
         let line = `${i + 1}. **${result.title}** (Score: ${result.score.toFixed(3)})`;
 
-        // 包含 URI 方便 knowledge_get 使用
+        // Include URI for knowledge_get tool
         if (result.uri.startsWith('file://')) {
           const filePath = result.uri.replace('file://', '');
           line += `\n   📁 Path: \`${filePath}\``;
@@ -371,7 +371,7 @@ export class UnifiedSearchService {
   }
 
   /**
-   * 獲取所有可用嘅 knowledge URIs - 動態生成，唔 hardcoded
+   * Get all available knowledge URIs - dynamically generated
    */
   async getAvailableKnowledgeURIs(): Promise<string[]> {
     try {
@@ -383,5 +383,5 @@ export class UnifiedSearchService {
   }
 }
 
-// 單例模式 - 確保所有地方都用同一個實例
+// Singleton pattern - ensure all places use the same instance
 export const searchService = new UnifiedSearchService();
