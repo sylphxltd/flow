@@ -62,7 +62,7 @@ describe('TF-IDF Search Service', () => {
       expect(index.documents).toHaveLength(4);
       expect(index.totalDocuments).toBe(4);
       expect(index.idf.size).toBeGreaterThan(0);
-      expect(index.metadata.version).toBe('1.0.0');
+      expect(index.metadata.version).toBe('2.0.0');
       expect(index.metadata.generatedAt).toBeDefined();
     });
 

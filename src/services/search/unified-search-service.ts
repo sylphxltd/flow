@@ -155,10 +155,16 @@ export class UnifiedSearchService {
       throw new Error('No searchable content found');
     }
 
-    // 執行搜索
+    // 執行搜索 with enhanced boost factors for professional tokenizer
     const searchResults = await searchDocuments(query, index, {
       limit,
       minScore: min_score,
+      boostFactors: {
+        exactMatch: 1.5,
+        phraseMatch: 2.0,
+        technicalMatch: 1.8, // Enhanced boost for technical terms
+        identifierMatch: 1.3, // Boost for code identifiers
+      },
     });
 
     // 轉換結果格式
@@ -208,7 +214,15 @@ export class UnifiedSearchService {
 
     try {
       const index = await this.knowledgeIndexer.loadIndex();
-      const searchResults = await searchDocuments(query, index, { limit });
+      const searchResults = await searchDocuments(query, index, {
+        limit,
+        boostFactors: {
+          exactMatch: 1.5,
+          phraseMatch: 2.0,
+          technicalMatch: 1.8, // Enhanced boost for technical terms
+          identifierMatch: 1.3, // Boost for code identifiers
+        },
+      });
 
       const results: SearchResult[] = searchResults.map((result) => ({
         uri: result.uri,

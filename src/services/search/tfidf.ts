@@ -3,7 +3,8 @@
  * Used for ranking document relevance in semantic search
  */
 
-import { extractTerms, filterStopWords, tokenize } from '../../utils/text-processing.js';
+import { filterStopWords } from '../../utils/text-processing.js';
+import { ProfessionalTokenizer, type Token } from '../../utils/professional-tokenizer.js';
 import type { SeparatedMemoryStorage } from './separated-storage.js';
 
 export interface DocumentVector {
@@ -178,13 +179,68 @@ function calculateMagnitude(vector: Map<string, number>): number {
 }
 
 /**
+ * Extract terms using professional tokenizer
+ */
+function extractProfessionalTerms(content: string): Map<string, number> {
+  const tokenizer = new ProfessionalTokenizer({
+    language: 'en',
+    extractCamelCase: true,
+    extractTechnicalTerms: true,
+    useNgrams: true,
+    extractCompoundWords: true,
+    useContextualScoring: true,
+    codeAware: true,
+  });
+
+  const tokens = tokenizer.tokenize(content);
+  const terms = new Map<string, number>();
+
+  // Group tokens by text and sum their scores
+  for (const token of tokens) {
+    const term = token.text.toLowerCase();
+    const currentScore = terms.get(term) || 0;
+    terms.set(term, currentScore + token.score);
+  }
+
+  return terms;
+}
+
+/**
+ * Extract simple tokens for query processing (using optimized tokenizer)
+ */
+function extractQueryTokens(query: string): string[] {
+  const tokenizer = new ProfessionalTokenizer({
+    language: 'en',
+    extractCamelCase: true,
+    extractTechnicalTerms: true,
+    useNgrams: false, // Disable n-grams for queries to keep them precise
+    extractCompoundWords: false, // Disable compound words for queries
+    useContextualScoring: false, // Disable contextual scoring for queries
+    codeAware: true,
+  });
+
+  const tokens = tokenizer.tokenize(query);
+
+  // Return unique tokens, sorted by score (highest first)
+  const uniqueTokens = new Map<string, string>();
+  for (const token of tokens) {
+    const lowerText = token.text.toLowerCase();
+    if (!uniqueTokens.has(lowerText) || token.score > 0.8) {
+      uniqueTokens.set(lowerText, token.text);
+    }
+  }
+
+  return Array.from(uniqueTokens.values());
+}
+
+/**
  * Build TF-IDF search index from documents
  */
 export function buildSearchIndex(documents: Array<{ uri: string; content: string }>): SearchIndex {
-  // Extract terms from all documents
+  // Extract terms from all documents using professional tokenizer
   const documentTerms = documents.map((doc) => ({
     uri: doc.uri,
-    terms: extractTerms(doc.content),
+    terms: extractProfessionalTerms(doc.content),
   }));
 
   // Calculate IDF scores
@@ -213,7 +269,7 @@ export function buildSearchIndex(documents: Array<{ uri: string; content: string
     totalDocuments: documents.length,
     metadata: {
       generatedAt: new Date().toISOString(),
-      version: '1.0.0',
+      version: '2.0.0', // Updated version for professional tokenizer
     },
   };
 }
@@ -244,16 +300,16 @@ export function calculateCosineSimilarity(
 }
 
 /**
- * Process query into TF-IDF vector
+ * Process query into TF-IDF vector using professional tokenizer
  */
 export function processQuery(query: string, idf: Map<string, number>): Map<string, number> {
-  const terms = extractTerms(query);
+  const terms = extractProfessionalTerms(query);
   const tf = calculateTF(terms);
   return calculateTFIDF(tf, idf);
 }
 
 /**
- * Search documents using TF-IDF and cosine similarity
+ * Search documents using TF-IDF and cosine similarity with professional tokenizer
  */
 export function searchDocuments(
   query: string,
@@ -264,32 +320,57 @@ export function searchDocuments(
     boostFactors?: {
       exactMatch?: number; // Boost for exact term matches
       phraseMatch?: number; // Boost for phrase matches
+      technicalMatch?: number; // Boost for technical term matches
+      identifierMatch?: number; // Boost for identifier matches
     };
   } = {}
 ): Array<{ uri: string; score: number; matchedTerms: string[] }> {
   const { limit = 10, minScore = 0, boostFactors = {} } = options;
-  const { exactMatch = 1.5, phraseMatch = 2.0 } = boostFactors;
+  const {
+    exactMatch = 1.5,
+    phraseMatch = 2.0,
+    technicalMatch = 1.8,
+    identifierMatch = 1.3
+  } = boostFactors;
 
-  // Process query
+  // Process query using professional tokenizer
   const queryVector = processQuery(query, index.idf);
-  const queryTokens = filterStopWords(tokenize(query));
+  const queryTokens = extractQueryTokens(query).map(t => t.toLowerCase());
 
   // Calculate similarity for each document
   const results = index.documents.map((doc) => {
     let score = calculateCosineSimilarity(queryVector, doc);
 
-    // Boost for exact term matches
+    // Boost for exact term matches with enhanced scoring
     const matchedTerms: string[] = [];
     for (const token of queryTokens) {
       if (doc.rawTerms.has(token)) {
-        score *= exactMatch;
+        // Apply different boost factors based on term characteristics
+        let boostFactor = exactMatch;
+
+        // Additional boost for technical terms
+        if (isTechnicalTerm(token)) {
+          boostFactor = Math.max(boostFactor, technicalMatch);
+        }
+
+        // Additional boost for identifiers
+        if (isIdentifier(token)) {
+          boostFactor = Math.max(boostFactor, identifierMatch);
+        }
+
+        score *= boostFactor;
         matchedTerms.push(token);
       }
     }
 
-    // Boost for phrase matches (all query terms appear in document)
+    // Enhanced phrase match detection (all query terms appear in document)
     if (matchedTerms.length === queryTokens.length && queryTokens.length > 1) {
       score *= phraseMatch;
+    }
+
+    // Contextual relevance boost for longer queries
+    if (queryTokens.length > 3 && matchedTerms.length >= queryTokens.length * 0.7) {
+      score *= 1.2; // Boost for partial matches on complex queries
     }
 
     return {
@@ -304,6 +385,30 @@ export function searchDocuments(
     .filter((result) => result.score >= minScore)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
+}
+
+/**
+ * Check if a term is likely a technical term
+ */
+function isTechnicalTerm(term: string): boolean {
+  const technicalPatterns = [
+    /\b[A-Z]{2,}\b/, // Acronyms like HTTP, API, JSON
+    /\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b/, // PascalCase like ComponentName
+    /\b[a-z]+[A-Z][a-z]*\b/, // camelCase like functionName
+    /\b\w+(?:Dir|Config|File|Path|Data|Service|Manager|Handler)\b/, // Common suffixes
+    /\b(?:get|set|is|has|can|should|will|do)[A-Z]\w*\b/, // Common prefixes
+    /\b(?:http|https|json|xml|yaml|sql|api|url|uri)\b/, // Technical keywords
+  ];
+
+  return technicalPatterns.some(pattern => pattern.test(term));
+}
+
+/**
+ * Check if a term is likely an identifier
+ */
+function isIdentifier(term: string): boolean {
+  // Identifiers typically contain letters and numbers, maybe underscores
+  return /^[a-zA-Z][a-zA-Z0-9_]*$/.test(term) && term.length > 1;
 }
 
 /**
