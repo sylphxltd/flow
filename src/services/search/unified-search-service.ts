@@ -9,6 +9,7 @@ import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
 import { type SearchIndex, searchDocuments, buildSearchIndex } from './tfidf.js';
+import { pipe, filter, map, sortBy, take } from '../../utils/functional.js';
 
 export interface SearchResult {
   uri: string;
@@ -425,6 +426,255 @@ export class UnifiedSearchService {
     if (this.codebaseIndexer) {
       this.codebaseIndexer.stopWatching();
     }
+  }
+}
+
+// ============================================================================
+// FUNCTIONAL SEARCH PIPELINES (Pure Functions)
+// ============================================================================
+
+/**
+ * Pure function: Apply file extension filter
+ */
+const filterByExtensions = (extensions?: string[]) =>
+  filter((file: any) =>
+    !extensions?.length || extensions.some((ext) => file.path.endsWith(ext))
+  );
+
+/**
+ * Pure function: Apply path filter
+ */
+const filterByPath = (pathFilter?: string) =>
+  filter((file: any) => !pathFilter || file.path.includes(pathFilter));
+
+/**
+ * Pure function: Apply exclude paths filter
+ */
+const filterByExcludePaths = (excludePaths?: string[]) =>
+  filter((file: any) =>
+    !excludePaths?.length || !excludePaths.some((exclude) => file.path.includes(exclude))
+  );
+
+/**
+ * Pure function: Calculate cosine similarity between query and document
+ */
+const calculateSimilarity = (queryVector: Map<string, number>, queryMagnitude: number) =>
+  (doc: any) => {
+    let dotProduct = 0;
+    const matchedTerms: string[] = [];
+
+    // Calculate dot product
+    for (const [term, queryScore] of queryVector.entries()) {
+      const docScore = doc.terms.get(term) || 0;
+      if (docScore > 0) {
+        dotProduct += queryScore * docScore;
+        matchedTerms.push(term);
+      }
+    }
+
+    // Calculate cosine similarity
+    let similarity = 0;
+    if (queryMagnitude > 0 && doc.magnitude > 0) {
+      similarity = dotProduct / (queryMagnitude * doc.magnitude);
+    }
+
+    return {
+      uri: doc.uri,
+      score: similarity,
+      matchedTerms,
+    };
+  };
+
+/**
+ * Pure function: Extract matched lines from content
+ */
+const extractMatchedLines = (content: string, matchedTerms: string[], maxLines = 3, maxLineLength = 100): string => {
+  const lines = content.split('\n');
+  const matchedLines: string[] = [];
+
+  for (let i = 0; i < lines.length && matchedLines.length < maxLines; i++) {
+    const line = lines[i].toLowerCase();
+    if (matchedTerms.some((term) => line.includes(term.toLowerCase()))) {
+      matchedLines.push(lines[i].substring(0, maxLineLength));
+    }
+  }
+
+  return matchedLines.join('\n');
+};
+
+/**
+ * Pure function: Convert search result to SearchResult format
+ */
+const toSearchResult = (includeContent: boolean) =>
+  (result: { uri: string; score: number; matchedTerms: string[]; content?: string }): SearchResult => {
+    const filename = result.uri?.replace('file://', '') || 'Unknown';
+    return {
+      uri: result.uri,
+      score: result.score || 0,
+      title: filename.split('/').pop() || filename,
+      content: includeContent && result.content ? result.content : undefined,
+    };
+  };
+
+/**
+ * Pure function: Filter by minimum score
+ */
+const filterByMinScore = (minScore: number) =>
+  filter((result: SearchResult) => result.score >= minScore);
+
+/**
+ * Functional searchCodebase implementation
+ * Uses pure functions and pipelines instead of imperative code
+ *
+ * @example
+ * const results = await searchCodebaseFunctional(storage, 'authentication', { limit: 5 });
+ */
+export async function searchCodebaseFunctional(
+  storage: SeparatedMemoryStorage,
+  query: string,
+  options: SearchOptions = {}
+): Promise<{
+  results: SearchResult[];
+  totalIndexed: number;
+  query: string;
+}> {
+  const {
+    limit = 10,
+    include_content = true,
+    file_extensions,
+    path_filter,
+    exclude_paths,
+    min_score = 0.001,
+  } = options;
+
+  // Get all files
+  const allFiles = await storage.getAllCodebaseFiles();
+  if (allFiles.length === 0) {
+    throw new Error('Codebase not indexed yet. Run "sylphx search reindex" first.');
+  }
+
+  // Apply filters using functional pipeline
+  const files = pipe(
+    allFiles,
+    filterByExtensions(file_extensions),
+    filterByPath(path_filter),
+    filterByExcludePaths(exclude_paths)
+  );
+
+  if (files.length === 0) {
+    return {
+      results: [],
+      totalIndexed: allFiles.length,
+      query,
+    };
+  }
+
+  // Build index
+  const { buildSearchIndexFromDB } = await import('./tfidf.js');
+  const index = await buildSearchIndexFromDB(storage, {
+    file_extensions,
+    path_filter,
+    exclude_paths,
+  });
+
+  if (!index) {
+    throw new Error('No searchable content found');
+  }
+
+  // Process query
+  const { processQuery } = await import('./tfidf.js');
+  const queryVector = await processQuery(query, index.idf);
+
+  // Calculate query magnitude
+  const queryMagnitude = Math.sqrt(
+    Array.from(queryVector.values()).reduce((sum, val) => sum + val * val, 0)
+  );
+
+  // Calculate similarities using functional pipeline
+  const searchResults = pipe(
+    index.documents,
+    map(calculateSimilarity(queryVector, queryMagnitude))
+  );
+
+  // Extract content for results with matched terms (async operation)
+  const resultsWithContent = await Promise.all(
+    searchResults.map(async (result) => {
+      if (include_content && result.matchedTerms.length > 0) {
+        const filename = result.uri?.replace('file://', '') || '';
+        const file = await storage.getCodebaseFile(filename);
+        const content = file?.content
+          ? extractMatchedLines(file.content, result.matchedTerms)
+          : '';
+        return { ...result, content };
+      }
+      return { ...result, content: '' };
+    })
+  );
+
+  // Final pipeline: convert format, filter, sort, limit
+  const filteredResults = pipe(
+    resultsWithContent,
+    map(toSearchResult(include_content)),
+    filterByMinScore(min_score),
+    (results) => results.sort((a, b) => b.score - a.score),
+    take(limit)
+  );
+
+  return {
+    results: filteredResults,
+    totalIndexed: allFiles.length,
+    query,
+  };
+}
+
+/**
+ * Functional searchKnowledge implementation
+ * Simplified version using functional pipeline
+ *
+ * @example
+ * const results = await searchKnowledgeFunctional(indexer, 'react hooks', { limit: 10 });
+ */
+export async function searchKnowledgeFunctional(
+  knowledgeIndexer: ReturnType<typeof getKnowledgeIndexer>,
+  query: string,
+  options: SearchOptions = {}
+): Promise<{
+  results: SearchResult[];
+  totalIndexed: number;
+  query: string;
+}> {
+  const { limit = 10, include_content = true } = options;
+
+  try {
+    const index = await knowledgeIndexer.loadIndex();
+    const searchResults = await searchDocuments(query, index, {
+      limit,
+      boostFactors: {
+        exactMatch: 1.5,
+        phraseMatch: 2.0,
+        technicalMatch: 1.8,
+        identifierMatch: 1.3,
+      },
+    });
+
+    // Functional pipeline: map to SearchResult format
+    const results = pipe(
+      searchResults,
+      map((result: any) => ({
+        uri: result.uri,
+        score: result.score || 0,
+        title: result.uri?.split('/').pop() || 'Unknown',
+        content: include_content ? '' : undefined,
+      }))
+    );
+
+    return {
+      results,
+      totalIndexed: index.totalDocuments,
+      query,
+    };
+  } catch {
+    throw new Error('Knowledge base not indexed yet');
   }
 }
 
