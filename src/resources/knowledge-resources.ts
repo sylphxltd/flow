@@ -8,6 +8,7 @@ import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { logger } from '../utils/logger.js';
+import { getKnowledgeDir } from '../utils/paths.js';
 
 export interface KnowledgeResource {
   uri: string;
@@ -38,7 +39,7 @@ interface KnowledgeConfig {
 }
 
 const DEFAULT_CONFIG: KnowledgeConfig = {
-  knowledgeDir: './assets/knowledge',
+  knowledgeDir: getKnowledgeDir(),
   supportedExtensions: ['.md'],
   cacheTimeout: 5 * 60 * 1000, // 5 minutes
 };
