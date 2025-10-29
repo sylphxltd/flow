@@ -7,7 +7,7 @@ import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
-import { type SearchIndex, searchDocuments } from './tfidf.js';
+import { type SearchIndex, searchDocuments, buildDirectStarCoder2Index } from './tfidf.js';
 
 export interface SearchResult {
   uri: string;
@@ -246,52 +246,35 @@ export class UnifiedSearchService {
    */
   private async buildSearchIndex(files: any[]): Promise<SearchIndex | null> {
     try {
+      console.log('🚀 Building Direct StarCoder2 search index for CLI...');
+
+      // 構建文檔數組以供 Direct StarCoder2 使用
       const documents = [];
       for (const file of files) {
-        const tfidfDoc = await this.memoryStorage.getTFIDFDocument(file.path);
-        if (tfidfDoc) {
-          const rawTerms = tfidfDoc.rawTerms || {};
-          const terms = new Map<string, number>();
-          const rawTermsMap = new Map<string, number>();
-
-          for (const [term, freq] of Object.entries(rawTerms)) {
-            terms.set(term, freq as number);
-            rawTermsMap.set(term, freq as number);
-          }
-
+        // 直接從文件系統讀取內容
+        const fileContent = await this.memoryStorage.getCodebaseFile(file.path);
+        if (fileContent?.content) {
           documents.push({
             uri: `file://${file.path}`,
-            terms,
-            rawTerms: rawTermsMap,
-            magnitude: tfidfDoc.magnitude,
+            content: fileContent.content
           });
         }
       }
 
       if (documents.length === 0) {
+        console.log('⚠️  No documents found for Direct StarCoder2 indexing');
         return null;
       }
 
-      // 獲取 IDF 值
-      const idfRecords = await this.memoryStorage.getIDFValues();
-      const idf = new Map<string, number>();
-      for (const entry of idfRecords as any[]) {
-        if (entry.term && entry.idfValue !== undefined) {
-          idf.set(entry.term, entry.idfValue);
-        }
-      }
+      // 使用 Direct StarCoder2 建立索引
+      const index = await buildDirectStarCoder2Index(documents);
 
-      return {
-        documents,
-        idf,
-        totalDocuments: documents.length,
-        metadata: {
-          generatedAt: new Date().toISOString(),
-          version: '1.0.0',
-        },
-      };
+      console.log(`✅ Direct StarCoder2 CLI index built with ${index.totalDocuments} documents`);
+      console.log(`🔤 Total unique terms: ${index.idf.size}`);
+
+      return index;
     } catch (error) {
-      console.error('[ERROR] Failed to build search index:', error);
+      console.error('[ERROR] Failed to build Direct StarCoder2 search index:', error);
       return null;
     }
   }

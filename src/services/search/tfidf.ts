@@ -178,15 +178,33 @@ function calculateMagnitude(vector: Map<string, number>): number {
 }
 
 
+// Global Direct StarCoder2 tokenizer instance for performance
+let globalDirectStarCoder2Tokenizer: DirectStarCoder2Tokenizer | null = null;
+let tokenizerInitialized = false;
+
+/**
+ * Get or create the global Direct StarCoder2 tokenizer
+ */
+async function getDirectStarCoder2Tokenizer(): Promise<DirectStarCoder2Tokenizer> {
+  if (!globalDirectStarCoder2Tokenizer) {
+    globalDirectStarCoder2Tokenizer = new DirectStarCoder2Tokenizer({
+      modelPath: './models/starcoder2'
+    });
+  }
+
+  if (!tokenizerInitialized) {
+    await globalDirectStarCoder2Tokenizer.initialize();
+    tokenizerInitialized = true;
+  }
+
+  return globalDirectStarCoder2Tokenizer;
+}
+
 /**
  * Extract terms using Direct StarCoder2 (直接用 StarCoder2)
  */
 async function extractDirectStarCoder2Terms(content: string): Promise<Map<string, number>> {
-  const tokenizer = new DirectStarCoder2Tokenizer({
-    modelPath: './models/starcoder2'
-  });
-
-  await tokenizer.initialize();
+  const tokenizer = await getDirectStarCoder2Tokenizer();
   const result = await tokenizer.tokenize(content);
   const terms = new Map<string, number>();
 
@@ -205,11 +223,7 @@ async function extractDirectStarCoder2Terms(content: string): Promise<Map<string
  * Extract simple tokens for query processing using Direct StarCoder2
  */
 async function extractQueryTokens(query: string): Promise<string[]> {
-  const tokenizer = new DirectStarCoder2Tokenizer({
-    modelPath: './models/starcoder2'
-  });
-
-  await tokenizer.initialize();
+  const tokenizer = await getDirectStarCoder2Tokenizer();
   const result = await tokenizer.tokenize(query);
 
   // Return unique tokens, sorted by score (highest first)
