@@ -1,8 +1,14 @@
 /**
  * Codebase indexing with .gitignore support
  * Runtime indexing with intelligent caching
+ *
+ * Features:
+ * - Optional file watching for automatic re-indexing (controlled by MCP server)
+ * - Respects .gitignore patterns
+ * - Debounced re-indexing (5 seconds after last change)
  */
 
+import chokidar from 'chokidar';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore, { type Ignore } from 'ignore';
@@ -54,6 +60,8 @@ export class CodebaseIndexer {
   private ig: Ignore;
   private db: SeparatedMemoryStorage;
   private options: CodebaseIndexerOptions;
+  private watcher?: chokidar.FSWatcher;
+  private reindexTimer?: NodeJS.Timeout;
 
   constructor(options: CodebaseIndexerOptions = {}) {
     this.options = { batchSize: 100, ...options };
@@ -500,9 +508,99 @@ export class CodebaseIndexer {
   }
 
   /**
+   * Start watching codebase directory for changes
+   * OPTIONAL: Only started when codebase tools are enabled in MCP server
+   */
+  startWatching(): void {
+    if (this.watcher) {
+      console.error('[INFO] Codebase watcher already running');
+      return;
+    }
+
+    try {
+      // Watch all files in codebase root, respecting .gitignore
+      this.watcher = chokidar.watch(this.codebaseRoot, {
+        ignored: [
+          /(^|[\/\\])\../, // Ignore dotfiles
+          /node_modules/, // Ignore node_modules
+          /\.git\//, // Ignore .git
+          /\.sylphx-flow\//, // Ignore our own directory
+          '**/dist/**',
+          '**/build/**',
+          '**/coverage/**',
+        ],
+        persistent: true,
+        ignoreInitial: true,
+        awaitWriteFinish: {
+          stabilityThreshold: 500,
+          pollInterval: 100,
+        },
+      });
+
+      this.watcher.on('all', (event, filePath) => {
+        // Only process text files
+        if (!isTextFile(filePath)) {
+          return;
+        }
+
+        // Check against .gitignore
+        const relativePath = path.relative(this.codebaseRoot, filePath);
+        if (this.ig.ignores(relativePath)) {
+          return;
+        }
+
+        console.error(`[INFO] Codebase file ${event}: ${path.basename(filePath)}`);
+
+        // Debounce: Wait 5 seconds after last change before re-indexing
+        // (Longer than knowledge because code files save more frequently)
+        if (this.reindexTimer) {
+          clearTimeout(this.reindexTimer);
+        }
+
+        this.reindexTimer = setTimeout(async () => {
+          console.error('[INFO] Re-indexing codebase due to file changes...');
+          try {
+            await this.index();
+            console.error('[INFO] Codebase re-indexing complete');
+          } catch (error) {
+            console.error('[ERROR] Codebase re-indexing failed:', error);
+          }
+        }, 5000);
+      });
+
+      console.error(`[INFO] Watching codebase directory for changes: ${this.codebaseRoot}`);
+    } catch (error) {
+      console.error('[ERROR] Failed to start codebase file watching:', error);
+      // Don't throw - indexing can still work without watching
+    }
+  }
+
+  /**
+   * Stop watching (for cleanup)
+   */
+  stopWatching(): void {
+    if (this.reindexTimer) {
+      clearTimeout(this.reindexTimer);
+      this.reindexTimer = undefined;
+    }
+
+    if (this.watcher) {
+      this.watcher.close();
+      this.watcher = undefined;
+      console.error('[INFO] Stopped watching codebase directory');
+    }
+  }
+
+  /**
    * Clear cache
    */
   async clearCache(): Promise<void> {
+    // Stop any pending reindex
+    if (this.reindexTimer) {
+      clearTimeout(this.reindexTimer);
+      this.reindexTimer = undefined;
+    }
+
     try {
       // Clear database tables
       await this.db.initialize();

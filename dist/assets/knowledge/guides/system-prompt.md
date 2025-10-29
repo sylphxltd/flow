@@ -29,6 +29,27 @@ End (5%)         | ⭐⭐⭐⭐   | Remembered clearly
 Solution: Put important rules at beginning and end, repeat middle content
 ```
 
+**⚠️ Important Note: Modern LLMs (200K-2M Context)**
+
+Even though modern LLMs (Claude 3.5, GPT-4, Gemini) support massive context windows (200K-2M tokens), the "lost in the middle" problem **still exists**:
+
+```
+Research shows (Liu et al. 2023 - "Lost in the Middle"):
+- LLMs perform best when relevant info is at START or END
+- Performance degrades significantly for info in the MIDDLE
+- This happens regardless of context window size
+- Longer context = worse middle performance
+
+Conclusion: Even with 2M context, attention bias remains.
+Position strategy is STILL critical for prompt effectiveness.
+```
+
+**Why this matters:**
+- ✅ You CAN write longer, more detailed prompts (500-1000 lines OK)
+- ❌ You CANNOT rely on middle content being remembered
+- ✅ STILL use 3x repetition for critical rules
+- ✅ STILL put important content at beginning/end
+
 ### Problem 3: Abstract vs Concrete
 ```
 ❌ Abstract (LLM easy to ignore):
@@ -494,7 +515,7 @@ Before every response, verify...
 - [ ] **MANDATORY CHECKLIST at end?**
 - [ ] **Critical rules repeated 3 times?** (beginning, middle, end)
 - [ ] **Clear section hierarchy?** (use ##, ### markers)
-- [ ] **Reasonable length?** (200-500 lines, 3K-6K tokens)
+- [ ] **Reasonable length?** (200-1000 lines, 3K-15K tokens for modern LLMs)
 
 ### Content Check
 
@@ -612,11 +633,14 @@ End: ⚠️ MANDATORY CHECKLIST ← High attention
 ❌ Too short (<100 lines):
 Not specific enough, LLM doesn't know what to do
 
-❌ Too long (>1000 lines):
-Severe attention dilution
+❌ Too long (>2000 lines):
+Even modern LLMs struggle, processing cost too high
 
-✅ Just right (200-500 lines, 3K-6K tokens):
-Specific enough, attention won't be too diluted
+✅ Just right (200-1000 lines, 3K-15K tokens):
+- Modern LLMs (200K+ context): Can handle detailed prompts
+- STILL follow position strategy (critical rules at beginning/end)
+- More room for examples, workflows, edge cases
+- Balance: Detailed enough without information overload
 ```
 
 ## Real-World Cases: Comparison
@@ -743,7 +767,7 @@ When writing System Prompts, ensure:
 - [ ] MANDATORY CHECKLIST at end
 - [ ] Critical rules repeated 3 times
 - [ ] Clear section hierarchy (##, ###)
-- [ ] Reasonable length (200-500 lines)
+- [ ] Reasonable length (200-1000 lines for modern LLMs)
 
 ### Content ✓
 - [ ] Identity clear
@@ -810,7 +834,7 @@ Position 3 - End CHECKLIST:
 
 ### Golden Rules for Writing System Prompts:
 
-1. **Concise but complete**: 200-500 lines, not too long or too short
+1. **Detailed but focused**: 200-1000 lines for modern LLMs (200K+ context)
 2. **Repeat key content**: Most important 5-10 rules repeated 3 times
 3. **Position strategy**: Important content at beginning and end
 4. **Strong language**: MUST, NEVER, ALWAYS, MANDATORY

@@ -16,11 +16,13 @@ export interface IndexingStatus {
 
 export interface IndexerConfig {
   name: string; // 'knowledge' or 'codebase'
-  autoStart?: boolean; // Start indexing on initialization
 }
 
 /**
  * Base class for indexers with common functionality
+ *
+ * IMPORTANT: Indexing always starts automatically on initialization.
+ * This is mandatory - without indexing, search cannot work and stale data misleads users.
  */
 export abstract class BaseIndexer {
   protected cachedIndex: SearchIndex | null = null;
@@ -33,7 +35,11 @@ export abstract class BaseIndexer {
     startTime: 0,
   };
 
-  constructor(protected config: IndexerConfig) {}
+  constructor(protected config: IndexerConfig) {
+    // MANDATORY: Start background indexing immediately
+    // Without indexing, search won't work. Stale data misleads users.
+    setTimeout(() => this.startBackgroundIndexing(), 0);
+  }
 
   /**
    * Abstract method: Build index (implemented by subclasses)

@@ -1,8 +1,14 @@
 /**
  * Knowledge indexer implementation
  * Extends BaseIndexer for knowledge base indexing
+ *
+ * Features:
+ * - Auto-indexing on startup (mandatory)
+ * - File watching for automatic re-indexing on changes
+ * - Debounced re-indexing (2 seconds after last change)
  */
 
+import chokidar from 'chokidar';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getKnowledgeDir } from '../../utils/paths.js';
@@ -18,10 +24,16 @@ import { type SearchIndex, buildSearchIndex } from './tfidf.js';
 class KnowledgeIndexer extends BaseIndexer {
   private embeddingProvider?: EmbeddingProvider;
   private vectorStorage?: VectorStorage;
+  private watcher?: chokidar.FSWatcher;
+  private reindexTimer?: NodeJS.Timeout;
 
   constructor(embeddingProvider?: EmbeddingProvider) {
-    super({ name: 'knowledge', autoStart: true });
+    super({ name: 'knowledge' });
     this.embeddingProvider = embeddingProvider;
+
+    // MANDATORY: Start file watching immediately
+    // Stale knowledge base data misleads users - must stay up-to-date
+    this.startWatching();
   }
 
   /**
@@ -126,6 +138,78 @@ class KnowledgeIndexer extends BaseIndexer {
     }
 
     return index;
+  }
+
+  /**
+   * Start watching knowledge directory for changes
+   * MANDATORY: Auto-enabled to prevent stale data from misleading users
+   */
+  private startWatching(): void {
+    const knowledgeDir = getKnowledgeDir();
+
+    if (!fs.existsSync(knowledgeDir)) {
+      console.error(`[WARN] Knowledge directory not found: ${knowledgeDir}`);
+      return;
+    }
+
+    try {
+      this.watcher = chokidar.watch(`${knowledgeDir}/**/*.md`, {
+        ignored: /(^|[\/\\])\../, // Ignore dotfiles
+        persistent: true,
+        ignoreInitial: true, // Don't trigger on initial scan
+        awaitWriteFinish: {
+          stabilityThreshold: 300,
+          pollInterval: 100,
+        },
+      });
+
+      this.watcher.on('all', (event, filePath) => {
+        console.error(`[INFO] Knowledge file ${event}: ${path.basename(filePath)}`);
+
+        // Debounce: Wait 2 seconds after last change before re-indexing
+        if (this.reindexTimer) {
+          clearTimeout(this.reindexTimer);
+        }
+
+        this.reindexTimer = setTimeout(() => {
+          console.error('[INFO] Re-indexing knowledge base due to file changes...');
+          this.clearCache();
+          this.startBackgroundIndexing();
+        }, 2000);
+      });
+
+      console.error(`[INFO] Watching knowledge directory for changes: ${knowledgeDir}`);
+    } catch (error) {
+      console.error('[ERROR] Failed to start file watching:', error);
+      // Don't throw - indexing can still work without watching
+    }
+  }
+
+  /**
+   * Stop watching (for cleanup)
+   */
+  stopWatching(): void {
+    if (this.reindexTimer) {
+      clearTimeout(this.reindexTimer);
+      this.reindexTimer = undefined;
+    }
+
+    if (this.watcher) {
+      this.watcher.close();
+      this.watcher = undefined;
+      console.error('[INFO] Stopped watching knowledge directory');
+    }
+  }
+
+  /**
+   * Override clearCache to also stop any pending reindex
+   */
+  clearCache(): void {
+    if (this.reindexTimer) {
+      clearTimeout(this.reindexTimer);
+      this.reindexTimer = undefined;
+    }
+    super.clearCache();
   }
 }
 

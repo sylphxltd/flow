@@ -3,6 +3,7 @@
  * Shared search logic for CLI, MCP, and API
  */
 
+import { CodebaseIndexer } from './codebase-indexer.js';
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
@@ -46,6 +47,7 @@ export interface SearchStatus {
 export class UnifiedSearchService {
   private memoryStorage: SeparatedMemoryStorage;
   private knowledgeIndexer = getKnowledgeIndexer();
+  private codebaseIndexer?: CodebaseIndexer;
   private embeddingProvider?: EmbeddingProvider;
 
   constructor() {
@@ -378,6 +380,28 @@ export class UnifiedSearchService {
       return index.documents.map((doc) => doc.uri);
     } catch {
       return [];
+    }
+  }
+
+  /**
+   * Start codebase file watching
+   * IMPORTANT: Only call when codebase tools are enabled in MCP server
+   * Prevents stale codebase data from misleading users
+   */
+  startCodebaseWatching(): void {
+    if (!this.codebaseIndexer) {
+      this.codebaseIndexer = new CodebaseIndexer();
+    }
+    this.codebaseIndexer.startWatching();
+  }
+
+  /**
+   * Stop codebase file watching
+   * Called when codebase tools are disabled or MCP server shuts down
+   */
+  stopCodebaseWatching(): void {
+    if (this.codebaseIndexer) {
+      this.codebaseIndexer.stopWatching();
     }
   }
 }

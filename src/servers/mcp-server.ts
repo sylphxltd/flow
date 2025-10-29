@@ -163,7 +163,10 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     Logger.info('🔍 Registering codebase tools');
     registerCodebaseTools(server);
     enabledTools.push('codebase_search');
-    console.log('🔍 Codebase Tools: Enabled');
+
+    // IMPORTANT: Enable file watching to prevent stale data from misleading users
+    searchService.startCodebaseWatching();
+    console.log('🔍 Codebase Tools: Enabled (with file watching)');
   }
 
   // Knowledge tools (enabled by default)
