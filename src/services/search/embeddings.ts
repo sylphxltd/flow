@@ -272,7 +272,6 @@ export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> 
   const model = secrets.EMBEDDING_MODEL || envSecurity.getEnvVar('EMBEDDING_MODEL');
 
   if (apiKey) {
-    console.error(`[INFO] Using OpenAI embeddings (${model || 'text-embedding-3-small'})`);
     return new OpenAIEmbeddingProvider({
       apiKey,
       baseURL,
@@ -280,7 +279,7 @@ export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> 
     });
   }
 
-  console.error('[INFO] Using mock embeddings (no OPENAI_API_KEY)');
+  // Return mock embeddings silently
   return new MockEmbeddingProvider();
 }
 

@@ -58,12 +58,12 @@ export class UnifiedSearchService {
   async initialize(): Promise<void> {
     await this.memoryStorage.initialize();
 
-    // Initialize embedding provider if not already done
-    if (!this.embeddingProvider) {
+    // Initialize embedding provider only if API key exists
+    if (!this.embeddingProvider && process.env.OPENAI_API_KEY) {
       this.embeddingProvider = await getDefaultEmbeddingProvider();
     }
 
-    // Reinitialize knowledge indexer with embedding provider
+    // Reinitialize knowledge indexer with embedding provider (or undefined)
     this.knowledgeIndexer = getKnowledgeIndexer(this.embeddingProvider);
   }
 
@@ -209,12 +209,22 @@ export class UnifiedSearchService {
       const filename = result.uri?.replace('file://', '') || 'Unknown';
       let content = '';
 
-      if (include_content) {
+      if (include_content && result.matchedTerms.length > 0) {
         const file = await this.memoryStorage.getCodebaseFile(filename);
         if (file?.content) {
-          content = file.content.substring(0, 500);
-          if (file.content.length > 500) {
-            content += '...';
+          // Find lines containing matched terms (show context)
+          const lines = file.content.split('\n');
+          const matchedLines: string[] = [];
+
+          for (let i = 0; i < lines.length && matchedLines.length < 3; i++) {
+            const line = lines[i].toLowerCase();
+            if (result.matchedTerms.some((term) => line.includes(term.toLowerCase()))) {
+              matchedLines.push(lines[i].substring(0, 100)); // Limit line length
+            }
+          }
+
+          if (matchedLines.length > 0) {
+            content = matchedLines.join('\n');
           }
         }
       }
@@ -223,12 +233,19 @@ export class UnifiedSearchService {
         uri: result.uri,
         score: result.score || 0,
         title: filename.split('/').pop() || filename,
-        content: include_content ? content : undefined,
+        content: include_content && content ? content : undefined,
       });
     }
 
+    // Sort by score (descending), filter by min_score (default 0.001 to exclude 0 scores), and limit results
+    const effectiveMinScore = min_score > 0 ? min_score : 0.001; // Filter out zero scores
+    const filteredResults = results
+      .filter((r) => r.score >= effectiveMinScore)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+
     return {
-      results,
+      results: filteredResults,
       totalIndexed: allFiles.length,
       query,
     };

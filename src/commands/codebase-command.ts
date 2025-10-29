@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
 import { CodebaseIndexer } from '../services/search/codebase-indexer.js';
+import { ReindexMonitor } from '../components/reindex-progress.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { searchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
@@ -46,18 +47,79 @@ export const codebaseReindexCommand = new Command('reindex')
   .description('Reindex all codebase files')
   .action(async () => {
     try {
-      console.log('');
-      console.log(chalk.cyan.bold('▸ Reindex Codebase'));
-
-      const spinner = ora('Scanning and indexing files...').start();
-
       const indexer = new CodebaseIndexer();
-      const embeddingProvider = await getDefaultEmbeddingProvider();
 
-      await indexer.indexCodebase({ embeddingProvider });
+      // Check if API key exists - only use embeddings if key is present
+      const hasApiKey = !!process.env.OPENAI_API_KEY;
+      const embeddingProvider = hasApiKey ? await getDefaultEmbeddingProvider() : undefined;
+      const mode: 'tfidf-only' | 'semantic' = hasApiKey ? 'semantic' : 'tfidf-only';
 
-      spinner.succeed(chalk.green('Indexing complete'));
-      console.log('');
+      // Create monitor for progress display
+      const monitor = new ReindexMonitor();
+
+      // Start the UI
+      monitor.start(0); // Will update total when we know file count
+
+      let totalFiles = 0;
+      let phase: 'tokenizing' | 'calculating' | 'completed' = 'tokenizing';
+
+      // Set initial mode
+      monitor.updateProgress({ mode });
+
+      const result = await indexer.indexCodebase({
+        force: true, // Reindex should always force rebuild
+        embeddingProvider,
+        onProgress: (progress) => {
+          // Track total files on first progress update
+          if (totalFiles === 0 && progress.total > 0) {
+            totalFiles = progress.total;
+          }
+
+          // Update Ink UI only (stderr output was interfering with Ink rendering)
+          monitor.updateProgress({
+            current: progress.current,
+            total: progress.total,
+            fileName: progress.fileName,
+            status: progress.status,
+            phase,
+          });
+        },
+      });
+
+      // Handle cache hit - simulate progress to show 100%
+      if (result.stats.cacheHit) {
+        monitor.updateProgress({
+          current: result.stats.totalFiles,
+          total: result.stats.totalFiles,
+          fileName: '',
+          status: 'completed',
+          phase: 'tokenizing',
+        });
+
+        // Small delay
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } else {
+        // Update to calculating phase
+        phase = 'calculating';
+        monitor.updateProgress({ phase: 'calculating' });
+
+        // Small delay to show calculating phase
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Show completion with stats
+      monitor.updateProgress({
+        phase: 'completed',
+        stats: {
+          documentsProcessed: result.stats.totalFiles,
+          uniqueTerms: result.tfidfIndex.idf.size,
+        },
+      });
+
+      // Give time to see the completion message
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      monitor.stop();
     } catch (error) {
       throw new CLIError(`Codebase reindex failed: ${(error as Error).message}`);
     }

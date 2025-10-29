@@ -238,8 +238,6 @@ export class CodebaseIndexer {
         }
         await this.db.setIDFValues(idfValues);
       }
-
-      console.error('[INFO] Cache saved to database');
     } catch (error) {
       console.error('[ERROR] Failed to save cache to database:', error);
       throw error;
@@ -253,6 +251,12 @@ export class CodebaseIndexer {
     options: {
       force?: boolean; // Force full reindex
       embeddingProvider?: EmbeddingProvider; // Optional embeddings
+      onProgress?: (progress: {
+        current: number;
+        total: number;
+        fileName: string;
+        status: 'processing' | 'completed' | 'skipped';
+      }) => void;
     } = {}
   ): Promise<{
     tfidfIndex: SearchIndex;
@@ -270,13 +274,11 @@ export class CodebaseIndexer {
     // Load existing cache
     this.cache = await this.loadCache();
 
-    // Scan codebase
-    console.error('[INFO] Scanning codebase...');
+    // Scan codebase (silent during reindex for clean UI)
     const files = scanFiles(this.codebaseRoot, {
       codebaseRoot: this.codebaseRoot,
       ignoreFilter: this.ig,
     });
-    console.error(`[INFO] Found ${files.length} files`);
 
     // Validate cache (check if file count changed significantly)
     if (this.cache && !force) {
@@ -285,9 +287,6 @@ export class CodebaseIndexer {
 
       // If file count changed by >20%, force full reindex for safety
       if (fileCountChangePercent > 20) {
-        console.error(
-          `[WARN] File count changed significantly (${fileCountChangePercent.toFixed(1)}%), forcing full reindex`
-        );
         force = true;
         this.cache = null;
       }
@@ -322,7 +321,6 @@ export class CodebaseIndexer {
     const cacheHit = !force && !hasChanges;
 
     if (cacheHit && this.cache?.tfidfIndex) {
-      console.error('[INFO] Cache hit! Using cached index');
       return {
         tfidfIndex: this.cache.tfidfIndex,
         stats: {
@@ -333,16 +331,6 @@ export class CodebaseIndexer {
         },
       };
     }
-
-    // Log changes
-    if (changedFiles.length > 0) {
-      console.error(`[INFO] Changed files: ${changedFiles.length}`);
-    }
-    if (deletedFiles.length > 0) {
-      console.error(`[INFO] Deleted files: ${deletedFiles.length}`);
-    }
-
-    console.error(`[INFO] Indexing ${changedFiles.length} changed files...`);
 
     // Store files in database for content retrieval
     await this.db.initialize();
@@ -364,12 +352,11 @@ export class CodebaseIndexer {
       content: file.content,
     }));
 
-    const tfidfIndex = await buildSearchIndex(documents);
+    const tfidfIndex = await buildSearchIndex(documents, options.onProgress);
 
     // Build vector index if embedding provider is available
     let vectorStorage: VectorStorage | undefined;
     if (embeddingProvider) {
-      console.error('[INFO] Generating embeddings...');
       const vectorIndexPath = path.join(this.cacheDir, 'codebase-vectors.hnsw');
       vectorStorage = new VectorStorage(vectorIndexPath, embeddingProvider.dimensions);
 
@@ -397,10 +384,6 @@ export class CodebaseIndexer {
 
           vectorStorage.addDocument(doc);
         }
-
-        console.error(
-          `[INFO] Embedded ${Math.min(i + batchSize, files.length)}/${files.length} files`
-        );
       }
 
       vectorStorage.save();

@@ -247,9 +247,13 @@ export class CacheStorage {
         await this.cache.delete(tfidfTerms).where(eq(tfidfTerms.filePath, filePath));
       }
 
-      // Insert new terms
+      // Insert new terms in batches to avoid SQLite limits
       if (terms.length > 0) {
-        await this.cache.insert(tfidfTerms).values(terms);
+        const batchSize = 500; // SQLite can handle this comfortably
+        for (let i = 0; i < terms.length; i += batchSize) {
+          const batch = terms.slice(i, i + batchSize);
+          await this.cache.insert(tfidfTerms).values(batch);
+        }
       }
     });
   }

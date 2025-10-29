@@ -26,7 +26,7 @@ export class MemoryDatabaseClient extends BaseDatabaseClient<typeof schema> {
       const migrationStatus = await this.getMigrationStatus();
 
       if (migrationStatus.isMigrated) {
-        console.error('[INFO] Memory database tables already exist');
+        // Tables already exist, skip logging to reduce noise
         return;
       }
 

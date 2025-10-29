@@ -194,7 +194,6 @@ let tokenizerInitialized = false;
  */
 async function getTokenizer(): Promise<AdvancedCodeTokenizer> {
   if (!globalTokenizer) {
-    console.log('🔧 Initializing advanced tokenizer (once per session)...');
     globalTokenizer = new AdvancedCodeTokenizer({
       modelPath: './models/starcoder2'
     });
@@ -209,7 +208,6 @@ async function getTokenizer(): Promise<AdvancedCodeTokenizer> {
     try {
       await globalTokenizer.initialize();
       tokenizerInitialized = true;
-      console.log('✅ Tokenizer initialized successfully');
     } finally {
       console.log = originalLog; // Restore console.log
       console.error = originalError; // Restore console.error
@@ -256,54 +254,73 @@ async function extractQueryTokens(query: string): Promise<string[]> {
   return Array.from(uniqueTokens.values());
 }
 
+export interface BuildIndexProgress {
+  current: number;
+  total: number;
+  fileName: string;
+  status: 'processing' | 'completed' | 'skipped';
+}
+
 /**
  * Build TF-IDF search index from documents using our advanced tokenizer
  */
-export async function buildSearchIndex(documents: Array<{ uri: string; content: string }>): Promise<SearchIndex> {
-  console.log(`🔤 Building search index with advanced tokenizer (${documents.length} documents)...`);
-
+export async function buildSearchIndex(
+  documents: Array<{ uri: string; content: string }>,
+  onProgress?: (progress: BuildIndexProgress) => void
+): Promise<SearchIndex> {
   // Process documents one by one to avoid hanging
   const batchSize = 1; // Process 1 document at a time to avoid hanging
   const documentTerms: Array<{ uri: string; terms: Map<string, number> }> = [];
 
   for (let i = 0; i < documents.length; i += batchSize) {
     const batch = documents.slice(i, i + batchSize);
-    const currentBatch = Math.floor(i / batchSize) + 1;
-    const totalBatches = Math.ceil(documents.length / batchSize);
-
-    console.log(`🔤 Batch ${currentBatch}/${totalBatches} (${batch.length} docs)...`);
-    console.log(`📄 Files: ${batch.map(doc => doc.uri.split('/').pop()).join(', ')}`);
-
-    const startTime = Date.now();
 
     // Process sequentially to avoid hanging
     const batchResults = [];
     for (let j = 0; j < batch.length; j++) {
       const doc = batch[j];
-      const docStartTime = Date.now();
+      const fileName = doc.uri.split('/').pop() || doc.uri;
+
+      // Report progress
+      onProgress?.({
+        current: i + j + 1,
+        total: documents.length,
+        fileName,
+        status: 'processing',
+      });
 
       try {
         const result = await extractTerms(doc.content);
-        const docTime = Date.now() - docStartTime;
-        console.log(`   📄 ${currentBatch}-${j + 1}: ${docTime}ms`);
 
         batchResults.push({
           uri: doc.uri,
           terms: result,
         });
+
+        // Report completion
+        onProgress?.({
+          current: i + j + 1,
+          total: documents.length,
+          fileName,
+          status: 'completed',
+        });
       } catch (error) {
-        console.log(`   ⚠️ ${currentBatch}-${j + 1}: Skipped (${error instanceof Error ? error.message : 'Unknown error'})`);
         batchResults.push({
           uri: doc.uri,
           terms: new Map<string, number>(),
         });
+
+        // Report skip
+        onProgress?.({
+          current: i + j + 1,
+          total: documents.length,
+          fileName,
+          status: 'skipped',
+        });
       }
     }
 
-    const batchTime = Date.now() - startTime;
     documentTerms.push(...batchResults);
-
-    console.log(`✅ Batch ${currentBatch}/${totalBatches} (${batchTime}ms, ${Math.round(batchTime/batch.length)}ms/doc)`);
   }
 
   // Calculate IDF scores
@@ -325,8 +342,6 @@ export async function buildSearchIndex(documents: Array<{ uri: string; content: 
       magnitude,
     };
   });
-
-  console.log(`✅ Search index built with ${documentVectors.length} documents, ${idf.size} unique terms`);
 
   return {
     documents: documentVectors,
