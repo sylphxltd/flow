@@ -157,7 +157,7 @@ export async function semanticSearch(
   }
 
   // Process query into TF-IDF vector
-  const queryVector = processQuery(query, index.idf);
+  const queryVector = await processQuery(query, index.idf);
 
   // Calculate cosine similarity for each document
   const results = index.documents.map((doc) => {

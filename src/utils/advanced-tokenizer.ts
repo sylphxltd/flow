@@ -65,6 +65,23 @@ export class AdvancedCodeTokenizer {
 
     const startTime = Date.now();
 
+    // Handle empty content
+    if (!content || content.trim().length === 0) {
+      return {
+        tokens: [],
+        metadata: {
+          totalTokens: 0,
+          vocabSize: 49152,
+          processingTime: Date.now() - startTime,
+          averageConfidence: 0
+        },
+        raw: {
+          inputIds: [],
+          decodedText: ''
+        }
+      };
+    }
+
     try {
       // 完全信任 StarCoder2，直接處理所有內容
       const encoded = await this.tokenizer(content);
@@ -74,7 +91,7 @@ export class AdvancedCodeTokenizer {
       const decodedText = await this.tokenizer.decode(inputIds);
 
       // 直接用 StarCoder2 嘅輸出，唔做多餘分析
-      const tokens = this.createDirectTokens(decodedText, inputIds);
+      const tokens = await this.createDirectTokens(decodedText, inputIds);
 
       const processingTime = Date.now() - startTime;
 
@@ -98,26 +115,35 @@ export class AdvancedCodeTokenizer {
   }
 
   /**
-   * 直接創建 tokens - 完全信任 StarCoder2，唔做多餘分析
+   * 純粹 StarCoder2 tokenization - 完全信任，無任何額外處理
+   * 直接使用 StarCoder2 嘅 token IDs，逐個解碼成文字
    */
-  private createDirectTokens(decodedText: string, inputIds: number[]): AdvancedToken[] {
+  private async createDirectTokens(decodedText: string, inputIds: number[]): Promise<AdvancedToken[]> {
     const tokens: AdvancedToken[] = [];
 
-    // 簡單分割，讓 StarCoder2 本身嘅能力發揮作用
-    const words = decodedText.split(/\s+/).filter(word => word.length > 0);
+    // 完全信任 StarCoder2，直接使用佢嘅 tokenization
+    // 逐個 token ID 解碼，得到 StarCoder2 認為嘅最佳分割
+    for (let i = 0; i < inputIds.length; i++) {
+      const tokenId = inputIds[i];
+      try {
+        // 直接使用 StarCoder2 嘅解碼結果
+        const tokenText = await this.tokenizer.decode([tokenId], { skip_special_tokens: true });
+        const cleaned = tokenText.trim().toLowerCase();
 
-    // 直接為每個 token 分配 ID，唔做多餘處理
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i];
-      const tokenId = i < inputIds.length ? inputIds[i] : inputIds[inputIds.length - 1];
-
-      tokens.push({
-        text: word,
-        id: tokenId,
-        score: 0.8, // StarCoder2 本身就係最高質量
-        confidence: 0.95,
-        relevance: 'high' as const // 所有 StarCoder2 輸出都係高質量
-      });
+        // 只過濾空白 token，其他全部保留（完全信任 StarCoder2）
+        if (cleaned.length > 0) {
+          tokens.push({
+            text: cleaned,
+            id: tokenId,
+            score: 1.0, // StarCoder2 嘅所有 token 都係高質量
+            confidence: 1.0, // 完全信任 StarCoder2
+            relevance: 'high' as const
+          });
+        }
+      } catch (error) {
+        // 靜默跳過無法解碼嘅 token
+        continue;
+      }
     }
 
     return tokens;

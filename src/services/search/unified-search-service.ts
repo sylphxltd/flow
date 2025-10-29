@@ -161,16 +161,46 @@ export class UnifiedSearchService {
       throw new Error('No searchable content found');
     }
 
-    // 執行搜索 with enhanced boost factors for professional tokenizer
-    const searchResults = await searchDocuments(query, index, {
-      limit,
-      minScore: min_score,
-      boostFactors: {
-        exactMatch: 1.5,
-        phraseMatch: 2.0,
-        technicalMatch: 1.8, // Enhanced boost for technical terms
-        identifierMatch: 1.3, // Boost for code identifiers
-      },
+    // 處理 query TF-IDF 向量 - 使用數據庫中嘅值，避免重新計算
+    const { processQuery } = await import('./tfidf.js');
+    const queryVector = await processQuery(query, index.idf);
+
+    // 計算 query magnitude
+    let queryMagnitude = 0;
+    for (const value of queryVector.values()) {
+      queryMagnitude += value * value;
+    }
+    queryMagnitude = Math.sqrt(queryMagnitude);
+
+    // 手動計算相似度（唔使用 searchDocuments 函數，因為佢會重新處理 query）
+    const searchResults = index.documents.map((doc) => {
+      let dotProduct = 0;
+      const matchedTerms: string[] = [];
+
+      // 計算點積
+      for (const [term, queryScore] of queryVector.entries()) {
+        const docScore = doc.terms.get(term) || 0;
+        if (docScore > 0) {
+          dotProduct += queryScore * docScore;
+          matchedTerms.push(term);
+        }
+      }
+
+      // 計算餘弦相似度
+      let similarity = 0;
+      if (queryMagnitude > 0 && doc.magnitude > 0) {
+        similarity = dotProduct / (queryMagnitude * doc.magnitude);
+      }
+
+      // 使用純粹嘅 TF-IDF 分數，唔做多餘嘅增強計算
+      // StarCoder2 已經提供最好嘅 tokenization，我哋完全信任佢
+      let finalScore = similarity;
+
+      return {
+        uri: doc.uri,
+        score: finalScore,
+        matchedTerms,
+      };
     });
 
     // 轉換結果格式

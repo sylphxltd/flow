@@ -56,18 +56,18 @@ describe('TF-IDF Search Service', () => {
   });
 
   describe('buildSearchIndex', () => {
-    it('should build search index from documents', () => {
-      const index = buildSearchIndex(sampleDocuments);
+    it('should build search index from documents', async () => {
+      const index = await buildSearchIndex(sampleDocuments);
 
       expect(index.documents).toHaveLength(4);
       expect(index.totalDocuments).toBe(4);
       expect(index.idf.size).toBeGreaterThan(0);
-      expect(index.metadata.version).toBe('2.0.0');
+      expect(index.metadata.version).toBe('5.0.0');
       expect(index.metadata.generatedAt).toBeDefined();
     });
 
-    it('should calculate document vectors with TF-IDF scores', () => {
-      const index = buildSearchIndex(sampleDocuments);
+    it('should calculate document vectors with TF-IDF scores', async () => {
+      const index = await buildSearchIndex(sampleDocuments);
 
       // Each document should have terms with TF-IDF scores
       for (const doc of index.documents) {
@@ -78,16 +78,16 @@ describe('TF-IDF Search Service', () => {
       }
     });
 
-    it('should handle empty documents array', () => {
-      const index = buildSearchIndex([]);
+    it('should handle empty documents array', async () => {
+      const index = await buildSearchIndex([]);
 
       expect(index.documents).toHaveLength(0);
       expect(index.totalDocuments).toBe(0);
       expect(index.idf.size).toBe(0);
     });
 
-    it('should handle single document', () => {
-      const index = buildSearchIndex([sampleDocuments[0]]);
+    it('should handle single document', async () => {
+      const index = await buildSearchIndex([sampleDocuments[0]]);
 
       expect(index.documents).toHaveLength(1);
       expect(index.totalDocuments).toBe(1);
@@ -98,12 +98,12 @@ describe('TF-IDF Search Service', () => {
   describe('searchDocuments', () => {
     let index: SearchIndex;
 
-    beforeEach(() => {
-      index = buildSearchIndex(sampleDocuments);
+    beforeEach(async () => {
+      index = await buildSearchIndex(sampleDocuments);
     });
 
-    it('should find relevant documents for query', () => {
-      const results = searchDocuments('authenticate user password', index);
+    it('should find relevant documents for query', async () => {
+      const results = await searchDocuments('authenticate user password', index);
 
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].uri).toBe('file:///project/auth.ts');
@@ -111,8 +111,8 @@ describe('TF-IDF Search Service', () => {
       expect(results[0].matchedTerms.length).toBeGreaterThan(0);
     });
 
-    it('should find database-related documents', () => {
-      const results = searchDocuments('database query connect', index);
+    it('should find database-related documents', async () => {
+      const results = await searchDocuments('database query connect', index);
 
       // Database.ts should rank highly
       const topResult = results[0];
@@ -120,21 +120,21 @@ describe('TF-IDF Search Service', () => {
       expect(topResult.score).toBeGreaterThan(0);
     });
 
-    it('should find email validation', () => {
-      const results = searchDocuments('validate email', index);
+    it('should find email validation', async () => {
+      const results = await searchDocuments('validate email', index);
 
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].uri).toContain('utils.ts');
     });
 
-    it('should respect limit parameter', () => {
-      const results = searchDocuments('function', index, { limit: 2 });
+    it('should respect limit parameter', async () => {
+      const results = await searchDocuments('function', index, { limit: 2 });
 
       expect(results.length).toBeLessThanOrEqual(2);
     });
 
-    it('should respect minScore parameter', () => {
-      const results = searchDocuments('xyz random nonexistent', index, {
+    it('should respect minScore parameter', async () => {
+      const results = await searchDocuments('xyz random nonexistent', index, {
         minScore: 0.5,
       });
 
@@ -142,12 +142,12 @@ describe('TF-IDF Search Service', () => {
       expect(results.every((r) => r.score >= 0.5)).toBe(true);
     });
 
-    it('should boost exact matches', () => {
-      const resultsWithBoost = searchDocuments('database', index, {
+    it('should boost exact matches', async () => {
+      const resultsWithBoost = await searchDocuments('database', index, {
         boostFactors: { exactMatch: 2.0 },
       });
 
-      const resultsNoBoost = searchDocuments('database', index, {
+      const resultsNoBoost = await searchDocuments('database', index, {
         boostFactors: { exactMatch: 1.0 },
       });
 
@@ -157,8 +157,8 @@ describe('TF-IDF Search Service', () => {
       }
     });
 
-    it('should boost phrase matches', () => {
-      const results = searchDocuments('function authenticate user', index, {
+    it('should boost phrase matches', async () => {
+      const results = await searchDocuments('function authenticate user', index, {
         boostFactors: { phraseMatch: 2.0 },
       });
 
@@ -167,15 +167,15 @@ describe('TF-IDF Search Service', () => {
       expect(results[0].score).toBeGreaterThan(0);
     });
 
-    it('should return empty array for nonsense query', () => {
-      const results = searchDocuments('xyzabc123', index);
+    it('should return empty array for nonsense query', async () => {
+      const results = await searchDocuments('xyzabc123', index);
 
       // Should either return empty or very low scores
       expect(results.length).toBeGreaterThanOrEqual(0);
     });
 
-    it('should sort results by score descending', () => {
-      const results = searchDocuments('function user database', index);
+    it('should sort results by score descending', async () => {
+      const results = await searchDocuments('function user database', index);
 
       if (results.length > 1) {
         for (let i = 0; i < results.length - 1; i++) {
@@ -188,12 +188,12 @@ describe('TF-IDF Search Service', () => {
   describe('processQuery', () => {
     let index: SearchIndex;
 
-    beforeEach(() => {
-      index = buildSearchIndex(sampleDocuments);
+    beforeEach(async () => {
+      index = await buildSearchIndex(sampleDocuments);
     });
 
-    it('should convert query to TF-IDF vector', () => {
-      const queryVector = processQuery('authenticate user', index.idf);
+    it('should convert query to TF-IDF vector', async () => {
+      const queryVector = await processQuery('authenticate user', index.idf);
 
       expect(queryVector.size).toBeGreaterThan(0);
       // Check that at least one term has a positive TF-IDF score
@@ -201,14 +201,14 @@ describe('TF-IDF Search Service', () => {
       expect(hasPositiveScore).toBe(true);
     });
 
-    it('should handle empty query', () => {
-      const queryVector = processQuery('', index.idf);
+    it('should handle empty query', async () => {
+      const queryVector = await processQuery('', index.idf);
 
       expect(queryVector.size).toBe(0);
     });
 
-    it('should handle single word query', () => {
-      const queryVector = processQuery('database', index.idf);
+    it('should handle single word query', async () => {
+      const queryVector = await processQuery('database', index.idf);
 
       expect(queryVector.size).toBeGreaterThanOrEqual(1);
     });
@@ -217,12 +217,12 @@ describe('TF-IDF Search Service', () => {
   describe('calculateCosineSimilarity', () => {
     let index: SearchIndex;
 
-    beforeEach(() => {
-      index = buildSearchIndex(sampleDocuments);
+    beforeEach(async () => {
+      index = await buildSearchIndex(sampleDocuments);
     });
 
-    it('should calculate similarity between query and document', () => {
-      const queryVector = processQuery('authenticate', index.idf);
+    it('should calculate similarity between query and document', async () => {
+      const queryVector = await processQuery('authenticate', index.idf);
       const authDoc = index.documents.find((d) => d.uri.includes('auth.ts'));
 
       if (authDoc) {
@@ -270,8 +270,8 @@ describe('TF-IDF Search Service', () => {
   describe('serializeIndex and deserializeIndex', () => {
     let index: SearchIndex;
 
-    beforeEach(() => {
-      index = buildSearchIndex(sampleDocuments);
+    beforeEach(async () => {
+      index = await buildSearchIndex(sampleDocuments);
     });
 
     it('should serialize index to JSON', () => {
@@ -322,12 +322,12 @@ describe('TF-IDF Search Service', () => {
   });
 
   describe('Integration Tests', () => {
-    it('should handle complex search workflow', () => {
+    it('should handle complex search workflow', async () => {
       // Build index
-      const index = buildSearchIndex(sampleDocuments);
+      const index = await buildSearchIndex(sampleDocuments);
 
       // Search
-      const results = searchDocuments('user authentication', index, {
+      const results = await searchDocuments('user authentication', index, {
         limit: 10,
         minScore: 0,
       });
@@ -341,7 +341,7 @@ describe('TF-IDF Search Service', () => {
       const restored = deserializeIndex(json);
 
       // Search again
-      const restoredResults = searchDocuments('user authentication', restored, {
+      const restoredResults = await searchDocuments('user authentication', restored, {
         limit: 10,
         minScore: 0,
       });
@@ -349,21 +349,21 @@ describe('TF-IDF Search Service', () => {
       expect(restoredResults.length).toBe(results.length);
     });
 
-    it('should handle case-insensitive search', () => {
-      const index = buildSearchIndex(sampleDocuments);
+    it('should handle case-insensitive search', async () => {
+      const index = await buildSearchIndex(sampleDocuments);
 
-      const upperResults = searchDocuments('DATABASE', index);
-      const lowerResults = searchDocuments('database', index);
+      const upperResults = await searchDocuments('DATABASE', index);
+      const lowerResults = await searchDocuments('database', index);
 
       // Should find similar results regardless of case
       expect(upperResults.length).toBeGreaterThan(0);
       expect(lowerResults.length).toBeGreaterThan(0);
     });
 
-    it('should handle multi-word queries', () => {
-      const index = buildSearchIndex(sampleDocuments);
+    it('should handle multi-word queries', async () => {
+      const index = await buildSearchIndex(sampleDocuments);
 
-      const results = searchDocuments('function user database query', index);
+      const results = await searchDocuments('function user database query', index);
 
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].score).toBeGreaterThan(0);

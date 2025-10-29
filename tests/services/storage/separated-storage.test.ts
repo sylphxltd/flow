@@ -500,8 +500,8 @@ describe('Separated Storage', () => {
 
       const idfValues = await storage.getIDFValues();
 
-      expect(idfValues.length).toBeGreaterThanOrEqual(1);
-      expect(idfValues[0].term).toBe('term1');
+      expect(Object.keys(idfValues).length).toBeGreaterThanOrEqual(1);
+      expect(idfValues['term1']).toBe(2.5);
     });
 
     it('should support upsertTFIDFDocument', async () => {

@@ -61,17 +61,24 @@ export async function buildSearchIndexFromDB(
       return null;
     }
 
-    // Build search documents
+    // Build search documents - read TF-IDF terms directly from database
     const documents = [];
     for (const file of files) {
       const tfidfDoc = await memoryStorage.getTFIDFDocument(file.path);
       if (tfidfDoc) {
-        const rawTerms = tfidfDoc.rawTerms || {};
+        // Get TF-IDF terms from database (already calculated)
+        const tfidfTerms = await memoryStorage.getTFIDFTerms(file.path);
         const terms = new Map<string, number>();
         const rawTermsMap = new Map<string, number>();
 
+        // Use TF-IDF terms for search scoring
+        for (const [term, tfidfScore] of Object.entries(tfidfTerms)) {
+          terms.set(term, tfidfScore as number);
+        }
+
+        // Use rawTerms for reference
+        const rawTerms = tfidfDoc.rawTerms || {};
         for (const [term, freq] of Object.entries(rawTerms)) {
-          terms.set(term, freq as number);
           rawTermsMap.set(term, freq as number);
         }
 
@@ -255,8 +262,8 @@ async function extractQueryTokens(query: string): Promise<string[]> {
 export async function buildSearchIndex(documents: Array<{ uri: string; content: string }>): Promise<SearchIndex> {
   console.log(`🔤 Building search index with advanced tokenizer (${documents.length} documents)...`);
 
-  // Process documents in smaller batches for better responsiveness
-  const batchSize = 5; // Process 5 documents at a time (smaller for faster updates)
+  // Process documents one by one to avoid hanging
+  const batchSize = 1; // Process 1 document at a time to avoid hanging
   const documentTerms: Array<{ uri: string; terms: Map<string, number> }> = [];
 
   for (let i = 0; i < documents.length; i += batchSize) {
@@ -268,39 +275,31 @@ export async function buildSearchIndex(documents: Array<{ uri: string; content: 
     console.log(`📄 Files: ${batch.map(doc => doc.uri.split('/').pop()).join(', ')}`);
 
     const startTime = Date.now();
-    const batchPromises = batch.map(async (doc, index) => {
+
+    // Process sequentially to avoid hanging
+    const batchResults = [];
+    for (let j = 0; j < batch.length; j++) {
+      const doc = batch[j];
       const docStartTime = Date.now();
 
-      // Add timeout for individual documents
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Document processing timeout')), 30000); // 30s timeout per doc
-      });
-
       try {
-        const result = await Promise.race([
-          extractTerms(doc.content),
-          timeoutPromise
-        ]) as Map<string, number>;
-
+        const result = await extractTerms(doc.content);
         const docTime = Date.now() - docStartTime;
-        if (docTime > 2000) { // Show slow docs
-          console.log(`   📄 ${currentBatch}-${index + 1}: ${docTime}ms`);
-        }
+        console.log(`   📄 ${currentBatch}-${j + 1}: ${docTime}ms`);
 
-        return {
+        batchResults.push({
           uri: doc.uri,
           terms: result,
-        };
+        });
       } catch (error) {
-        console.log(`   ⚠️ ${currentBatch}-${index + 1}: Skipped (${error instanceof Error ? error.message : 'Unknown error'})`);
-        return {
+        console.log(`   ⚠️ ${currentBatch}-${j + 1}: Skipped (${error instanceof Error ? error.message : 'Unknown error'})`);
+        batchResults.push({
           uri: doc.uri,
           terms: new Map<string, number>(),
-        };
+        });
       }
-    });
+    }
 
-    const batchResults = await Promise.all(batchPromises);
     const batchTime = Date.now() - startTime;
     documentTerms.push(...batchResults);
 
@@ -374,12 +373,24 @@ export function calculateCosineSimilarity(
 }
 
 /**
- * Process query into TF-IDF vector using our advanced tokenizer
+ * Process query into TF-IDF vector using database values
  */
 export async function processQuery(query: string, idf: Map<string, number>): Promise<Map<string, number>> {
-  const terms = await extractTerms(query);
-  const tf = calculateTF(terms);
-  return calculateTFIDF(tf, idf);
+  const terms = await extractQueryTokens(query);
+  const queryVector = new Map<string, number>();
+
+  // 為每個查詢詞使用 IDF 值（查詢本身無 TF-IDF，直接用 IDF）
+  for (const term of terms) {
+    const lowerTerm = term.toLowerCase();
+    const idfValue = idf.get(lowerTerm) || 0;
+
+    // 純粹用 IDF 值，完全信任 StarCoder2 嘅 tokenization
+    if (idfValue > 0) {
+      queryVector.set(lowerTerm, idfValue);
+    }
+  }
+
+  return queryVector;
 }
 
 /**

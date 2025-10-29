@@ -359,8 +359,13 @@ export class SeparatedMemoryStorage {
   /**
    * Get IDF values (alias for getAllTfidfIdf)
    */
-  async getIDFValues(): Promise<TfidfIdfEntry[]> {
-    return this.cacheStorage.getAllTfidfIdf();
+  async getIDFValues(): Promise<Record<string, number>> {
+    const entries = await this.cacheStorage.getAllTfidfIdf();
+    const idfValues: Record<string, number> = {};
+    for (const entry of entries) {
+      idfValues[entry.term] = entry.idfValue;
+    }
+    return idfValues;
   }
 
   /**
@@ -434,6 +439,18 @@ export class SeparatedMemoryStorage {
    */
   async setCodebaseMetadata(key: string, value: string): Promise<void> {
     return this.cacheStorage.setMetadata(key, value);
+  }
+
+  /**
+   * Get TF-IDF terms for a file
+   */
+  async getTFIDFTerms(filePath: string): Promise<Record<string, number>> {
+    const entries = await this.cacheStorage.getTfidfTerms(filePath);
+    const terms: Record<string, number> = {};
+    for (const entry of entries) {
+      terms[entry.term] = entry.frequency;
+    }
+    return terms;
   }
 
   /**
