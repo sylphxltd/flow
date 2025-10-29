@@ -64,11 +64,13 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
         const status = await searchService.getStatus();
 
         if (status.knowledge.isIndexing) {
+          const progressBar = '█'.repeat(Math.floor((status.knowledge.progress || 0) / 5)) +
+                              '░'.repeat(20 - Math.floor((status.knowledge.progress || 0) / 5));
           return {
             content: [
               {
                 type: 'text',
-                text: `⏳ **Knowledge Indexing in Progress**\n\n- Progress: ${status.knowledge.progress || 0}%\n- Status: Building search index\n\n*This typically takes <1 second for knowledge base.*\n\n**Please wait a moment and try again.**`,
+                text: `⏳ **Knowledge Base Indexing In Progress**\n\nThe knowledge base is currently being indexed. Please wait...\n\n**Progress:** ${status.knowledge.progress || 0}%\n\`${progressBar}\`\n\n**Status:**\n- Documents: ${status.knowledge.documentCount || 0}\n- Building search index for knowledge resources\n\n**Estimated time:** ${status.knowledge.progress && status.knowledge.progress > 0 ? 'Less than 10 seconds' : 'Starting...'}\n\n💡 **Tip:** Knowledge base indexing is very fast. Try your search again in a few seconds.`,
               },
             ],
           };

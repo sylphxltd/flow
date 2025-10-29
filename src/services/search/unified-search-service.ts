@@ -32,6 +32,9 @@ export interface SearchStatus {
     indexed: boolean;
     fileCount: number;
     indexedAt?: string;
+    isIndexing?: boolean;
+    progress?: number;
+    currentFile?: string;
   };
   knowledge: {
     indexed: boolean;
@@ -76,6 +79,7 @@ export class UnifiedSearchService {
     // Codebase status
     const codebaseFiles = await this.memoryStorage.getAllCodebaseFiles();
     const codebaseStats = await this.memoryStorage.getCodebaseIndexStats();
+    const codebaseIndexingStatus = this.codebaseIndexer?.getStatus();
 
     // Knowledge status
     const knowledgeStatus = this.knowledgeIndexer.getStatus();
@@ -95,6 +99,9 @@ export class UnifiedSearchService {
         indexed: codebaseFiles.length > 0,
         fileCount: codebaseFiles.length,
         indexedAt: codebaseStats.indexedAt,
+        isIndexing: codebaseIndexingStatus?.isIndexing || false,
+        progress: codebaseIndexingStatus?.progress || 0,
+        currentFile: codebaseIndexingStatus?.currentFile,
       },
       knowledge: {
         indexed: knowledgeIndexed,

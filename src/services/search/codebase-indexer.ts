@@ -53,6 +53,14 @@ export interface CodebaseIndexerOptions {
 /**
  * Codebase Indexer with caching
  */
+export interface IndexingStatus {
+  isIndexing: boolean;
+  progress: number; // 0-100
+  currentFile?: string;
+  totalFiles: number;
+  indexedFiles: number;
+}
+
 export class CodebaseIndexer {
   private codebaseRoot: string;
   private cacheDir: string;
@@ -62,6 +70,12 @@ export class CodebaseIndexer {
   private options: CodebaseIndexerOptions;
   private watcher?: chokidar.FSWatcher;
   private reindexTimer?: NodeJS.Timeout;
+  private status: IndexingStatus = {
+    isIndexing: false,
+    progress: 0,
+    totalFiles: 0,
+    indexedFiles: 0,
+  };
 
   constructor(options: CodebaseIndexerOptions = {}) {
     this.options = { batchSize: 100, ...options };
@@ -69,6 +83,13 @@ export class CodebaseIndexer {
     this.cacheDir = options.cacheDir || path.join(this.codebaseRoot, '.sylphx-flow', 'cache');
     this.ig = loadGitignore(this.codebaseRoot);
     this.db = new SeparatedMemoryStorage();
+  }
+
+  /**
+   * Get current indexing status
+   */
+  getStatus(): IndexingStatus {
+    return { ...this.status };
   }
 
   /**
@@ -279,14 +300,22 @@ export class CodebaseIndexer {
     let { force = false } = options;
     const { embeddingProvider } = options;
 
-    // Load existing cache
-    this.cache = await this.loadCache();
+    // Set indexing status
+    this.status.isIndexing = true;
+    this.status.progress = 0;
+    this.status.indexedFiles = 0;
 
-    // Scan codebase (silent during reindex for clean UI)
-    const files = scanFiles(this.codebaseRoot, {
-      codebaseRoot: this.codebaseRoot,
-      ignoreFilter: this.ig,
-    });
+    try {
+      // Load existing cache
+      this.cache = await this.loadCache();
+
+      // Scan codebase (silent during reindex for clean UI)
+      const files = scanFiles(this.codebaseRoot, {
+        codebaseRoot: this.codebaseRoot,
+        ignoreFilter: this.ig,
+      });
+
+      this.status.totalFiles = files.length;
 
     // Validate cache (check if file count changed significantly)
     if (this.cache && !force) {
@@ -329,6 +358,11 @@ export class CodebaseIndexer {
     const cacheHit = !force && !hasChanges;
 
     if (cacheHit && this.cache?.tfidfIndex) {
+      // Cache hit - no indexing needed
+      this.status.progress = 100;
+      this.status.indexedFiles = 0;
+      this.status.isIndexing = false;
+
       return {
         tfidfIndex: this.cache.tfidfIndex,
         stats: {
@@ -342,6 +376,7 @@ export class CodebaseIndexer {
 
     // Store files in database for content retrieval
     await this.db.initialize();
+    let processedCount = 0;
     for (const file of files) {
       await this.db.upsertCodebaseFile({
         path: file.path,
@@ -352,6 +387,12 @@ export class CodebaseIndexer {
         size: file.size,
         indexedAt: new Date().toISOString(),
       });
+
+      // Update progress
+      processedCount++;
+      this.status.indexedFiles = processedCount;
+      this.status.currentFile = file.path;
+      this.status.progress = Math.floor((processedCount / files.length) * 100);
     }
 
     // Build TF-IDF index
@@ -412,6 +453,10 @@ export class CodebaseIndexer {
 
     await this.saveCache(this.cache);
 
+    // Update status
+    this.status.indexedFiles = changedFiles.length;
+    this.status.progress = 100;
+
     return {
       tfidfIndex,
       vectorStorage,
@@ -422,6 +467,10 @@ export class CodebaseIndexer {
         cacheHit: false,
       },
     };
+    } finally {
+      // Reset indexing status
+      this.status.isIndexing = false;
+    }
   }
 
   /**
