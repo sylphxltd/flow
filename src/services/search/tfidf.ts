@@ -3,7 +3,7 @@
  * Used for ranking document relevance in semantic search
  */
 
-import { DirectStarCoder2Tokenizer, type DirectStarCoder2Token } from '../../utils/direct-starcoder2.js';
+import { AdvancedCodeTokenizer, type AdvancedToken } from '../../utils/advanced-tokenizer.js';
 import type { SeparatedMemoryStorage } from './separated-storage.js';
 
 export interface DocumentVector {
@@ -178,41 +178,52 @@ function calculateMagnitude(vector: Map<string, number>): number {
 }
 
 
-// Global Direct StarCoder2 tokenizer instance for performance
-let globalDirectStarCoder2Tokenizer: DirectStarCoder2Tokenizer | null = null;
+// Global tokenizer instance for performance
+let globalTokenizer: AdvancedCodeTokenizer | null = null;
 let tokenizerInitialized = false;
 
 /**
- * Get or create the global Direct StarCoder2 tokenizer
+ * Get or create the global tokenizer
  */
-async function getDirectStarCoder2Tokenizer(): Promise<DirectStarCoder2Tokenizer> {
-  if (!globalDirectStarCoder2Tokenizer) {
-    globalDirectStarCoder2Tokenizer = new DirectStarCoder2Tokenizer({
+async function getTokenizer(): Promise<AdvancedCodeTokenizer> {
+  if (!globalTokenizer) {
+    console.log('🔧 Initializing advanced tokenizer (once per session)...');
+    globalTokenizer = new AdvancedCodeTokenizer({
       modelPath: './models/starcoder2'
     });
   }
 
   if (!tokenizerInitialized) {
-    await globalDirectStarCoder2Tokenizer.initialize();
-    tokenizerInitialized = true;
+    // Silently initialize - no console output
+    const originalLog = console.log;
+    const originalError = console.error;
+    console.log = () => {}; // Temporarily silence console.log
+    console.error = () => {}; // Temporarily silence console.error
+    try {
+      await globalTokenizer.initialize();
+      tokenizerInitialized = true;
+      console.log('✅ Tokenizer initialized successfully');
+    } finally {
+      console.log = originalLog; // Restore console.log
+      console.error = originalError; // Restore console.error
+    }
   }
 
-  return globalDirectStarCoder2Tokenizer;
+  return globalTokenizer;
 }
 
 /**
- * Extract terms using Direct StarCoder2 (直接用 StarCoder2)
+ * Extract terms using our advanced tokenizer
  */
-async function extractDirectStarCoder2Terms(content: string): Promise<Map<string, number>> {
-  const tokenizer = await getDirectStarCoder2Tokenizer();
+async function extractTerms(content: string): Promise<Map<string, number>> {
+  const tokenizer = await getTokenizer();
   const result = await tokenizer.tokenize(content);
   const terms = new Map<string, number>();
 
-  // 使用 Direct StarCoder2 的分數
+  // Use token scores as TF weights
   for (const token of result.tokens) {
     const term = token.text.toLowerCase();
     const currentScore = terms.get(term) || 0;
-    // 使用分數作為 TF 權重
     terms.set(term, currentScore + token.score);
   }
 
@@ -220,10 +231,10 @@ async function extractDirectStarCoder2Terms(content: string): Promise<Map<string
 }
 
 /**
- * Extract simple tokens for query processing using Direct StarCoder2
+ * Extract simple tokens for query processing
  */
 async function extractQueryTokens(query: string): Promise<string[]> {
-  const tokenizer = await getDirectStarCoder2Tokenizer();
+  const tokenizer = await getTokenizer();
   const result = await tokenizer.tokenize(query);
 
   // Return unique tokens, sorted by score (highest first)
@@ -239,18 +250,62 @@ async function extractQueryTokens(query: string): Promise<string[]> {
 }
 
 /**
- * Build TF-IDF search index from documents using Direct StarCoder2 (直接用 StarCoder2)
+ * Build TF-IDF search index from documents using our advanced tokenizer
  */
-export async function buildDirectStarCoder2Index(documents: Array<{ uri: string; content: string }>): Promise<SearchIndex> {
-  console.log('🚀 Building Direct StarCoder2 search index...');
+export async function buildSearchIndex(documents: Array<{ uri: string; content: string }>): Promise<SearchIndex> {
+  console.log(`🔤 Building search index with advanced tokenizer (${documents.length} documents)...`);
 
-  // Extract terms from all documents using Direct StarCoder2
-  const documentTermsPromises = documents.map(async (doc) => ({
-    uri: doc.uri,
-    terms: await extractDirectStarCoder2Terms(doc.content),
-  }));
+  // Process documents in smaller batches for better responsiveness
+  const batchSize = 5; // Process 5 documents at a time (smaller for faster updates)
+  const documentTerms: Array<{ uri: string; terms: Map<string, number> }> = [];
 
-  const documentTerms = await Promise.all(documentTermsPromises);
+  for (let i = 0; i < documents.length; i += batchSize) {
+    const batch = documents.slice(i, i + batchSize);
+    const currentBatch = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(documents.length / batchSize);
+
+    console.log(`🔤 Batch ${currentBatch}/${totalBatches} (${batch.length} docs)...`);
+    console.log(`📄 Files: ${batch.map(doc => doc.uri.split('/').pop()).join(', ')}`);
+
+    const startTime = Date.now();
+    const batchPromises = batch.map(async (doc, index) => {
+      const docStartTime = Date.now();
+
+      // Add timeout for individual documents
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Document processing timeout')), 30000); // 30s timeout per doc
+      });
+
+      try {
+        const result = await Promise.race([
+          extractTerms(doc.content),
+          timeoutPromise
+        ]) as Map<string, number>;
+
+        const docTime = Date.now() - docStartTime;
+        if (docTime > 2000) { // Show slow docs
+          console.log(`   📄 ${currentBatch}-${index + 1}: ${docTime}ms`);
+        }
+
+        return {
+          uri: doc.uri,
+          terms: result,
+        };
+      } catch (error) {
+        console.log(`   ⚠️ ${currentBatch}-${index + 1}: Skipped (${error instanceof Error ? error.message : 'Unknown error'})`);
+        return {
+          uri: doc.uri,
+          terms: new Map<string, number>(),
+        };
+      }
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    const batchTime = Date.now() - startTime;
+    documentTerms.push(...batchResults);
+
+    console.log(`✅ Batch ${currentBatch}/${totalBatches} (${batchTime}ms, ${Math.round(batchTime/batch.length)}ms/doc)`);
+  }
 
   // Calculate IDF scores
   const idf = calculateIDF(
@@ -272,7 +327,7 @@ export async function buildDirectStarCoder2Index(documents: Array<{ uri: string;
     };
   });
 
-  console.log(`✅ Direct StarCoder2 search index built with ${documentVectors.length} documents`);
+  console.log(`✅ Search index built with ${documentVectors.length} documents, ${idf.size} unique terms`);
 
   return {
     documents: documentVectors,
@@ -280,10 +335,10 @@ export async function buildDirectStarCoder2Index(documents: Array<{ uri: string;
     totalDocuments: documents.length,
     metadata: {
       generatedAt: new Date().toISOString(),
-      version: '5.0.0-direct-starcoder2', // Direct StarCoder2 powered version
-      tokenizer: 'Direct StarCoder2',
+      version: '5.0.0',
+      tokenizer: 'AdvancedCodeTokenizer',
       features: [
-        'StarCoder2 industry-leading code understanding',
+        'Industry-leading code understanding',
         'Advanced technical term recognition',
         'Optimized for code search',
         'Simple and effective approach',
@@ -319,16 +374,16 @@ export function calculateCosineSimilarity(
 }
 
 /**
- * Process query into TF-IDF vector using Direct StarCoder2
+ * Process query into TF-IDF vector using our advanced tokenizer
  */
 export async function processQuery(query: string, idf: Map<string, number>): Promise<Map<string, number>> {
-  const terms = await extractDirectStarCoder2Terms(query);
+  const terms = await extractTerms(query);
   const tf = calculateTF(terms);
   return calculateTFIDF(tf, idf);
 }
 
 /**
- * Search documents using TF-IDF and cosine similarity with Direct StarCoder2
+ * Search documents using TF-IDF and cosine similarity with Advanced Code Tokenizer
  */
 export async function searchDocuments(
   query: string,
@@ -352,7 +407,7 @@ export async function searchDocuments(
     identifierMatch = 1.3
   } = boostFactors;
 
-  // Process query using Direct StarCoder2
+  // Process query using Advanced Code Tokenizer
   const queryVector = await processQuery(query, index.idf);
   const queryTokens = (await extractQueryTokens(query)).map(t => t.toLowerCase());
 

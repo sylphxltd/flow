@@ -7,7 +7,7 @@ import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
-import { type SearchIndex, searchDocuments, buildDirectStarCoder2Index } from './tfidf.js';
+import { type SearchIndex, searchDocuments, buildSearchIndex } from './tfidf.js';
 
 export interface SearchResult {
   uri: string;
@@ -149,8 +149,14 @@ export class UnifiedSearchService {
       };
     }
 
-    // 創建搜索索引
-    const index = await this.buildSearchIndex(files);
+  // 使用資料庫中嘅 TF-IDF 索引，避免重新建立
+    const { buildSearchIndexFromDB } = await import('./tfidf.js');
+    const index = await buildSearchIndexFromDB(this.memoryStorage, {
+      file_extensions,
+      path_filter,
+      exclude_paths
+    });
+
     if (!index) {
       throw new Error('No searchable content found');
     }
@@ -241,44 +247,7 @@ export class UnifiedSearchService {
     }
   }
 
-  /**
-   * 構建搜索索引 - 內部方法
-   */
-  private async buildSearchIndex(files: any[]): Promise<SearchIndex | null> {
-    try {
-      console.log('🚀 Building Direct StarCoder2 search index for CLI...');
-
-      // 構建文檔數組以供 Direct StarCoder2 使用
-      const documents = [];
-      for (const file of files) {
-        // 直接從文件系統讀取內容
-        const fileContent = await this.memoryStorage.getCodebaseFile(file.path);
-        if (fileContent?.content) {
-          documents.push({
-            uri: `file://${file.path}`,
-            content: fileContent.content
-          });
-        }
-      }
-
-      if (documents.length === 0) {
-        console.log('⚠️  No documents found for Direct StarCoder2 indexing');
-        return null;
-      }
-
-      // 使用 Direct StarCoder2 建立索引
-      const index = await buildDirectStarCoder2Index(documents);
-
-      console.log(`✅ Direct StarCoder2 CLI index built with ${index.totalDocuments} documents`);
-      console.log(`🔤 Total unique terms: ${index.idf.size}`);
-
-      return index;
-    } catch (error) {
-      console.error('[ERROR] Failed to build Direct StarCoder2 search index:', error);
-      return null;
-    }
-  }
-
+  
   /**
    * 格式化搜索結果為 CLI 輸出 - CLI 用
    */

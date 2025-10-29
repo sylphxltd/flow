@@ -10,7 +10,7 @@ import { VectorStorage } from '../storage/lancedb-vector-storage.js';
 import { BaseIndexer } from './base-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
-import { type SearchIndex, buildDirectStarCoder2Index } from './tfidf.js';
+import { type SearchIndex, buildSearchIndex } from './tfidf.js';
 
 /**
  * Knowledge indexer singleton
@@ -69,7 +69,7 @@ class KnowledgeIndexer extends BaseIndexer {
     console.error(`[INFO] Found ${files.length} knowledge files`);
 
     // Build TF-IDF index
-    const index = await buildDirectStarCoder2Index(files);
+    const index = await buildSearchIndex(files);
 
     // Build vector index if embedding provider is available
     if (this.embeddingProvider && files.length > 0) {
