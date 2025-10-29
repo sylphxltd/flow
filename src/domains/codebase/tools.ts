@@ -5,7 +5,9 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { searchService } from '../../services/search/unified-search-service.js';
+import { UnifiedSearchService } from '../../services/search/unified-search-service.js';
+import { CodebaseIndexer } from '../../services/search/codebase-indexer.js';
+import { getDefaultEmbeddingProvider } from '../../services/search/embeddings.js';
 
 /**
  * Register codebase search tool
@@ -73,19 +75,57 @@ The search includes:
       exclude_paths,
     }) => {
       try {
-        // 使用統一搜索服務 - 同 CLI 用相同邏輯
-        await searchService.initialize();
+        // 直接使用 CodebaseIndexer - 與 CLI 相同的邏輯
+        const codebaseIndexer = new CodebaseIndexer();
+        const embeddingProvider = await getDefaultEmbeddingProvider();
 
-        const result = await searchService.searchCodebase(query, {
+        // 確保已索引
+        try {
+          const stats = await codebaseIndexer.getCacheStats();
+          if (stats.fileCount === 0) {
+            await codebaseIndexer.indexCodebase({ embeddingProvider });
+          }
+        } catch {
+          // 如果檢查失敗，直接索引
+          await codebaseIndexer.indexCodebase({ embeddingProvider });
+        }
+
+        // 執行搜索
+        const searchResults = await codebaseIndexer.search(query, {
           limit,
-          include_content,
-          file_extensions,
-          path_filter,
-          exclude_paths,
+          minScore: 0.0, // 設置為 0 確保有結果
+          includeContent: include_content,
         });
 
-        // 返回 MCP 格式
-        return searchService.formatResultsForMCP(result.results, query, result.totalIndexed);
+        // 格式化結果為 MCP 格式
+        const formattedResults = searchResults.map((result, index) => ({
+          uri: `file://${result.path}`,
+          score: result.score || 0,
+          title: result.path.split('/').pop() || result.path,
+          content: include_content && result.content ?
+            (result.content.length > 500 ? result.content.substring(0, 500) + '...' : result.content) :
+            undefined,
+        }));
+
+        // 構建回應文本
+        let responseText = `Found ${searchResults.length} result(s) for "${query}":\n\n`;
+        formattedResults.forEach((result, index) => {
+          responseText += `${index + 1}. **${result.title}** (Score: ${result.score.toFixed(3)})\n`;
+          responseText += `   📁 Path: \`${result.uri.replace('file://', '')}\`\n`;
+          if (result.content) {
+            responseText += `   📄 Content: ${result.content}\n`;
+          }
+          responseText += '\n';
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: responseText,
+            },
+          ],
+        };
       } catch (error) {
         return {
           content: [
