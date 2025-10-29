@@ -5,6 +5,9 @@
 
 import { filterStopWords } from '../../utils/text-processing.js';
 import { ProfessionalTokenizer, type Token } from '../../utils/professional-tokenizer.js';
+import { StarCoder2Tokenizer, type StarCoder2Token } from '../../utils/starcoder2-tokenizer.js';
+import { UltimateCodeTokenizer, type UltimateToken } from '../../utils/ultimate-code-tokenizer.js';
+import { DirectStarCoder2Tokenizer, type DirectStarCoder2Token } from '../../utils/direct-starcoder2.js';
 import type { SeparatedMemoryStorage } from './separated-storage.js';
 
 export interface DocumentVector {
@@ -179,7 +182,7 @@ function calculateMagnitude(vector: Map<string, number>): number {
 }
 
 /**
- * Extract terms using professional tokenizer
+ * Extract terms using professional tokenizer (保持原有功能)
  */
 function extractProfessionalTerms(content: string): Map<string, number> {
   const tokenizer = new ProfessionalTokenizer({
@@ -199,6 +202,29 @@ function extractProfessionalTerms(content: string): Map<string, number> {
   for (const token of tokens) {
     const term = token.text.toLowerCase();
     const currentScore = terms.get(term) || 0;
+    terms.set(term, currentScore + token.score);
+  }
+
+  return terms;
+}
+
+/**
+ * Extract terms using Direct StarCoder2 (直接用 StarCoder2)
+ */
+async function extractDirectStarCoder2Terms(content: string): Promise<Map<string, number>> {
+  const tokenizer = new DirectStarCoder2Tokenizer({
+    modelPath: './models/starcoder2'
+  });
+
+  await tokenizer.initialize();
+  const result = await tokenizer.tokenize(content);
+  const terms = new Map<string, number>();
+
+  // 使用 Direct StarCoder2 的分數
+  for (const token of result.tokens) {
+    const term = token.text.toLowerCase();
+    const currentScore = terms.get(term) || 0;
+    // 使用分數作為 TF 權重
     terms.set(term, currentScore + token.score);
   }
 
@@ -234,14 +260,18 @@ function extractQueryTokens(query: string): string[] {
 }
 
 /**
- * Build TF-IDF search index from documents
+ * Build TF-IDF search index from documents using Direct StarCoder2 (直接用 StarCoder2)
  */
-export function buildSearchIndex(documents: Array<{ uri: string; content: string }>): SearchIndex {
-  // Extract terms from all documents using professional tokenizer
-  const documentTerms = documents.map((doc) => ({
+export async function buildDirectStarCoder2Index(documents: Array<{ uri: string; content: string }>): Promise<SearchIndex> {
+  console.log('🚀 Building Direct StarCoder2 search index...');
+
+  // Extract terms from all documents using Direct StarCoder2
+  const documentTermsPromises = documents.map(async (doc) => ({
     uri: doc.uri,
-    terms: extractProfessionalTerms(doc.content),
+    terms: await extractDirectStarCoder2Terms(doc.content),
   }));
+
+  const documentTerms = await Promise.all(documentTermsPromises);
 
   // Calculate IDF scores
   const idf = calculateIDF(
@@ -263,13 +293,23 @@ export function buildSearchIndex(documents: Array<{ uri: string; content: string
     };
   });
 
+  console.log(`✅ Direct StarCoder2 search index built with ${documentVectors.length} documents`);
+
   return {
     documents: documentVectors,
     idf,
     totalDocuments: documents.length,
     metadata: {
       generatedAt: new Date().toISOString(),
-      version: '2.0.0', // Updated version for professional tokenizer
+      version: '5.0.0-direct-starcoder2', // Direct StarCoder2 powered version
+      tokenizer: 'Direct StarCoder2',
+      features: [
+        'StarCoder2 industry-leading code understanding',
+        'Advanced technical term recognition',
+        'Optimized for code search',
+        'Simple and effective approach',
+        'No unnecessary complexity'
+      ]
     },
   };
 }
