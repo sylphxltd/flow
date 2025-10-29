@@ -3,10 +3,6 @@
  * Used for ranking document relevance in semantic search
  */
 
-import { filterStopWords } from '../../utils/text-processing.js';
-import { ProfessionalTokenizer, type Token } from '../../utils/professional-tokenizer.js';
-import { StarCoder2Tokenizer, type StarCoder2Token } from '../../utils/starcoder2-tokenizer.js';
-import { UltimateCodeTokenizer, type UltimateToken } from '../../utils/ultimate-code-tokenizer.js';
 import { DirectStarCoder2Tokenizer, type DirectStarCoder2Token } from '../../utils/direct-starcoder2.js';
 import type { SeparatedMemoryStorage } from './separated-storage.js';
 
@@ -181,32 +177,6 @@ function calculateMagnitude(vector: Map<string, number>): number {
   return Math.sqrt(sum);
 }
 
-/**
- * Extract terms using professional tokenizer (保持原有功能)
- */
-function extractProfessionalTerms(content: string): Map<string, number> {
-  const tokenizer = new ProfessionalTokenizer({
-    language: 'en',
-    extractCamelCase: true,
-    extractTechnicalTerms: true,
-    useNgrams: true,
-    extractCompoundWords: true,
-    useContextualScoring: true,
-    codeAware: true,
-  });
-
-  const tokens = tokenizer.tokenize(content);
-  const terms = new Map<string, number>();
-
-  // Group tokens by text and sum their scores
-  for (const token of tokens) {
-    const term = token.text.toLowerCase();
-    const currentScore = terms.get(term) || 0;
-    terms.set(term, currentScore + token.score);
-  }
-
-  return terms;
-}
 
 /**
  * Extract terms using Direct StarCoder2 (直接用 StarCoder2)
@@ -232,24 +202,19 @@ async function extractDirectStarCoder2Terms(content: string): Promise<Map<string
 }
 
 /**
- * Extract simple tokens for query processing (using optimized tokenizer)
+ * Extract simple tokens for query processing using Direct StarCoder2
  */
-function extractQueryTokens(query: string): string[] {
-  const tokenizer = new ProfessionalTokenizer({
-    language: 'en',
-    extractCamelCase: true,
-    extractTechnicalTerms: true,
-    useNgrams: false, // Disable n-grams for queries to keep them precise
-    extractCompoundWords: false, // Disable compound words for queries
-    useContextualScoring: false, // Disable contextual scoring for queries
-    codeAware: true,
+async function extractQueryTokens(query: string): Promise<string[]> {
+  const tokenizer = new DirectStarCoder2Tokenizer({
+    modelPath: './models/starcoder2'
   });
 
-  const tokens = tokenizer.tokenize(query);
+  await tokenizer.initialize();
+  const result = await tokenizer.tokenize(query);
 
   // Return unique tokens, sorted by score (highest first)
   const uniqueTokens = new Map<string, string>();
-  for (const token of tokens) {
+  for (const token of result.tokens) {
     const lowerText = token.text.toLowerCase();
     if (!uniqueTokens.has(lowerText) || token.score > 0.8) {
       uniqueTokens.set(lowerText, token.text);
@@ -340,18 +305,18 @@ export function calculateCosineSimilarity(
 }
 
 /**
- * Process query into TF-IDF vector using professional tokenizer
+ * Process query into TF-IDF vector using Direct StarCoder2
  */
-export function processQuery(query: string, idf: Map<string, number>): Map<string, number> {
-  const terms = extractProfessionalTerms(query);
+export async function processQuery(query: string, idf: Map<string, number>): Promise<Map<string, number>> {
+  const terms = await extractDirectStarCoder2Terms(query);
   const tf = calculateTF(terms);
   return calculateTFIDF(tf, idf);
 }
 
 /**
- * Search documents using TF-IDF and cosine similarity with professional tokenizer
+ * Search documents using TF-IDF and cosine similarity with Direct StarCoder2
  */
-export function searchDocuments(
+export async function searchDocuments(
   query: string,
   index: SearchIndex,
   options: {
@@ -364,7 +329,7 @@ export function searchDocuments(
       identifierMatch?: number; // Boost for identifier matches
     };
   } = {}
-): Array<{ uri: string; score: number; matchedTerms: string[] }> {
+): Promise<Array<{ uri: string; score: number; matchedTerms: string[] }>> {
   const { limit = 10, minScore = 0, boostFactors = {} } = options;
   const {
     exactMatch = 1.5,
@@ -373,9 +338,9 @@ export function searchDocuments(
     identifierMatch = 1.3
   } = boostFactors;
 
-  // Process query using professional tokenizer
-  const queryVector = processQuery(query, index.idf);
-  const queryTokens = extractQueryTokens(query).map(t => t.toLowerCase());
+  // Process query using Direct StarCoder2
+  const queryVector = await processQuery(query, index.idf);
+  const queryTokens = (await extractQueryTokens(query)).map(t => t.toLowerCase());
 
   // Calculate similarity for each document
   const results = index.documents.map((doc) => {

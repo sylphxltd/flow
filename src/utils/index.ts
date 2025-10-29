@@ -53,8 +53,6 @@ export * from './prompts.js';
 // Template engine
 export * from './template-engine.js';
 
-// Text processing
-export * from './text-processing.js';
 
 // Command builder
 export * from './command-builder.js';

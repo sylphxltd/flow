@@ -156,7 +156,7 @@ async function testSearchIndex() {
     ];
 
     for (const query of searchQueries) {
-      const results = searchDocuments(query, index, { limit: 3 });
+      const results = await searchDocuments(query, index, { limit: 3 });
       console.log(`\nQuery: "${query}"`);
       if (results.length > 0) {
         results.forEach((result, i) => {
@@ -227,7 +227,7 @@ async function testSearchEffectiveness() {
     let passedTests = 0;
 
     for (const test of searchTests) {
-      const results = searchDocuments(test.query, index, { limit: 5, minScore: 0.1 });
+      const results = await searchDocuments(test.query, index, { limit: 5, minScore: 0.1 });
       const resultFiles = results.map(r => r.uri.split('/').pop());
 
       const hasExpected = test.expected.some(expected =>
