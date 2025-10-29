@@ -7,9 +7,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSearchService } from '../../services/search/unified-search-service.js';
 
-// Get search service instance (lazy initialization)
-const searchService = getSearchService();
-
 /**
  * Register codebase search tool
  */
@@ -77,6 +74,7 @@ The search includes:
     }) => {
       try {
         // Use UnifiedSearchService - same logic as CLI
+        const searchService = getSearchService();
         await searchService.initialize();
 
         // Check codebase status

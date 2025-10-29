@@ -1,10 +1,3 @@
----
-name: shared-autonomous-rules
-version: 2.0.0
-description: Shared execution rules for all autonomous agents
-optimization: "MEP + structured + injection-hardened"
----
-
 <shared_rules type="foundational" override="never" scope="all-agents">
 
 ## AUTHORITY

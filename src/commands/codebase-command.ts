@@ -7,9 +7,6 @@ import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
 
-// Get search service instance (lazy initialization)
-const searchService = getSearchService();
-
 export const codebaseSearchCommand = new Command('search')
   .description('Search codebase files and source code')
   .argument('<query>', 'Search query - use natural language, function names, or technical terms')
@@ -25,6 +22,7 @@ export const codebaseSearchCommand = new Command('search')
       console.log(chalk.gray(`  Query: "${query}"`));
 
       const spinner = ora('Searching...').start();
+      const searchService = getSearchService();
       await searchService.initialize();
 
       const result = await searchService.searchCodebase(query, {

@@ -8,9 +8,6 @@ import { z } from 'zod';
 import { getSearchService } from '../../services/search/unified-search-service.js';
 import { getKnowledgeContent } from './resources.js';
 
-// Get search service instance (lazy initialization)
-const searchService = getSearchService();
-
 /**
  * Register knowledge search tool
  */
@@ -61,6 +58,7 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
     async ({ query, limit = 10, include_content = true }) => {
       try {
         // Use unified search service - same logic as CLI
+        const searchService = getSearchService();
         await searchService.initialize();
 
         // Check knowledge base status
@@ -145,6 +143,7 @@ The available URIs are dynamically generated from the indexed knowledge base. Us
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         // Dynamically get available URIs
+        const searchService = getSearchService();
         const availableURIs = await searchService.getAvailableKnowledgeURIs();
         const uriList =
           availableURIs.length > 0

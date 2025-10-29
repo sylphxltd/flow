@@ -8,9 +8,6 @@ import { getKnowledgeContent } from '../domains/knowledge/resources.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
 
-// Get search service instance (lazy initialization)
-const searchService = getSearchService();
-
 /**
  * Knowledge search command
  */
@@ -23,6 +20,7 @@ export const knowledgeSearchCommand = new Command('search')
     try {
       console.log(`📚 Searching knowledge base for: "${query}"`);
 
+      const searchService = getSearchService();
       await searchService.initialize();
 
       const result = await searchService.searchKnowledge(query, {
@@ -51,6 +49,7 @@ export const knowledgeGetCommand = new Command('get')
       const errorMessage = `Knowledge get failed: ${(error as Error).message}`;
 
       // Show available URIs
+      const searchService = getSearchService();
       const availableURIs = await searchService.getAvailableKnowledgeURIs();
       if (availableURIs.length > 0) {
         console.log('\n**Available knowledge URIs:**');
@@ -70,6 +69,7 @@ export const knowledgeListCommand = new Command('list')
   .option('--category <type>', 'Filter by category (stacks, guides, universal, data)')
   .action(async (options) => {
     try {
+      const searchService = getSearchService();
       await searchService.initialize();
       const availableURIs = await searchService.getAvailableKnowledgeURIs();
 
@@ -124,6 +124,7 @@ export const knowledgeStatusCommand = new Command('status')
     try {
       console.log('\n### 📚 Knowledge Base Status\n');
 
+      const searchService = getSearchService();
       await searchService.initialize();
       const status = await searchService.getStatus();
 

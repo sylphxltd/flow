@@ -22,9 +22,6 @@ import { getSearchService } from '../services/search/unified-search-service.js';
 // Import concrete implementations (will be updated as we refactor)
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 
-// Get search service instance (lazy initialization)
-const searchService = getSearchService();
-
 /**
  * Configure and register all core services with the DI container
  */
@@ -65,6 +62,7 @@ export async function configureServices(): Promise<void> {
   container.register<ISearchService>(
     SERVICE_TOKENS.SEARCH_SERVICE,
     async () => {
+      const searchService = getSearchService();
       await searchService.initialize();
       return searchService;
     },

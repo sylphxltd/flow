@@ -11,10 +11,6 @@ import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
 import { secretUtils } from '../utils/secret-utils.js';
 
-// Get search service instance (lazy initialization)
-// This will start file watching since we're in MCP server mode
-const searchService = getSearchService();
-
 // ============================================================================
 // CONFIGURATION AND SETUP
 // ============================================================================
@@ -119,6 +115,9 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
 
   // Initialize .sylphx-flow directory with proper .gitignore
   await initializeSylphxFlowDirectory();
+
+  // Get search service instance (will enable file watching since MCP_SERVER_MODE is set)
+  const searchService = getSearchService();
 
   // Initialize embedding provider for vector search
   console.log('🔍 Initializing embedding provider...');
