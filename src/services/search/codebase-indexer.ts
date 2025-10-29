@@ -17,7 +17,7 @@ import {
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import { type VectorDocument, VectorStorage } from '../storage/vector-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
-import { type SearchIndex, buildSearchIndex } from './tfidf.js';
+import { type SearchIndex, buildSearchIndexFromDB } from './tfidf.js';
 
 export interface CodebaseFile {
   path: string; // Relative path from codebase root
@@ -364,7 +364,7 @@ export class CodebaseIndexer {
       content: file.content,
     }));
 
-    const tfidfIndex = buildSearchIndex(documents);
+    const tfidfIndex = await buildDirectStarCoder2Index(documents);
 
     // Build vector index if embedding provider is available
     let vectorStorage: VectorStorage | undefined;
