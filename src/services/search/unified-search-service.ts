@@ -4,7 +4,6 @@
  */
 
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
-import { CodebaseIndexer } from './codebase-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
@@ -47,7 +46,6 @@ export interface SearchStatus {
 export class UnifiedSearchService {
   private memoryStorage: SeparatedMemoryStorage;
   private knowledgeIndexer = getKnowledgeIndexer();
-  private codebaseIndexer?: CodebaseIndexer;
   private embeddingProvider?: EmbeddingProvider;
 
   constructor() {
@@ -67,9 +65,6 @@ export class UnifiedSearchService {
 
     // Reinitialize knowledge indexer with embedding provider
     this.knowledgeIndexer = getKnowledgeIndexer(this.embeddingProvider);
-
-    // Initialize codebase indexer
-    this.codebaseIndexer = new CodebaseIndexer();
   }
 
   /**
