@@ -28,13 +28,16 @@ class KnowledgeIndexer extends BaseIndexer {
   private watcher?: chokidar.FSWatcher;
   private reindexTimer?: NodeJS.Timeout;
 
-  constructor(embeddingProvider?: EmbeddingProvider) {
+  constructor(embeddingProvider?: EmbeddingProvider, options?: { autoWatch?: boolean }) {
     super({ name: 'knowledge' });
     this.embeddingProvider = embeddingProvider;
 
-    // MANDATORY: Start file watching immediately
-    // Stale knowledge base data misleads users - must stay up-to-date
-    this.startWatching();
+    // Start file watching only if explicitly enabled or in MCP server context
+    // This prevents file watchers from starting during init command or other non-server contexts
+    const shouldAutoWatch = options?.autoWatch ?? (process.env.MCP_SERVER_MODE === 'true');
+    if (shouldAutoWatch) {
+      this.startWatching();
+    }
   }
 
   /**
@@ -217,9 +220,12 @@ class KnowledgeIndexer extends BaseIndexer {
 // Singleton instance
 let knowledgeIndexer: KnowledgeIndexer | null = null;
 
-export function getKnowledgeIndexer(embeddingProvider?: EmbeddingProvider): KnowledgeIndexer {
+export function getKnowledgeIndexer(
+  embeddingProvider?: EmbeddingProvider,
+  options?: { autoWatch?: boolean }
+): KnowledgeIndexer {
   if (!knowledgeIndexer) {
-    knowledgeIndexer = new KnowledgeIndexer(embeddingProvider);
+    knowledgeIndexer = new KnowledgeIndexer(embeddingProvider, options);
   }
   return knowledgeIndexer;
 }

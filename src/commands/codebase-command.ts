@@ -4,8 +4,11 @@ import ora from 'ora';
 import { CodebaseIndexer } from '../services/search/codebase-indexer.js';
 import { ReindexMonitor } from '../components/reindex-progress.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
-import { searchService } from '../services/search/unified-search-service.js';
+import { getSearchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
+
+// Get search service instance (lazy initialization)
+const searchService = getSearchService();
 
 export const codebaseSearchCommand = new Command('search')
   .description('Search codebase files and source code')

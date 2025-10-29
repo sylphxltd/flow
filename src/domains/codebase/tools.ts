@@ -5,7 +5,10 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { searchService } from '../../services/search/unified-search-service.js';
+import { getSearchService } from '../../services/search/unified-search-service.js';
+
+// Get search service instance (lazy initialization)
+const searchService = getSearchService();
 
 /**
  * Register codebase search tool

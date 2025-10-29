@@ -705,12 +705,25 @@ export const createSearchService = (
 };
 
 /**
- * Default search service instance (singleton)
+ * Lazy search service instance (singleton)
  * Used by CLI and MCP for standard operation
  *
- * This maintains backward compatibility with existing code.
+ * IMPORTANT: This is NOT created at module load time to avoid starting
+ * file watchers during init command. Use getSearchService() to access it.
  */
-export const searchService = createSearchService();
+let _searchServiceInstance: UnifiedSearchService | null = null;
+
+/**
+ * Get the search service singleton (lazy initialization)
+ * This is the preferred way to access the search service.
+ */
+export function getSearchService(): UnifiedSearchService {
+  if (!_searchServiceInstance) {
+    _searchServiceInstance = createSearchService();
+  }
+  return _searchServiceInstance;
+}
+
 
 /**
  * Create test search service with mock dependencies

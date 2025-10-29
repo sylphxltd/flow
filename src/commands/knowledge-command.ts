@@ -5,8 +5,11 @@
 
 import { Command } from 'commander';
 import { getKnowledgeContent } from '../domains/knowledge/resources.js';
-import { searchService } from '../services/search/unified-search-service.js';
+import { getSearchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
+
+// Get search service instance (lazy initialization)
+const searchService = getSearchService();
 
 /**
  * Knowledge search command

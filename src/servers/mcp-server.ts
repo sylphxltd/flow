@@ -8,8 +8,12 @@ import { registerKnowledgeTools } from '../domains/knowledge/tools.js';
 import { registerTimeTools } from '../domains/utilities/time/tools.js';
 import { registerWorkspaceTools } from '../domains/workspace/tasks/tools.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
-import { searchService } from '../services/search/unified-search-service.js';
+import { getSearchService } from '../services/search/unified-search-service.js';
 import { secretUtils } from '../utils/secret-utils.js';
+
+// Get search service instance (lazy initialization)
+// This will start file watching since we're in MCP server mode
+const searchService = getSearchService();
 
 // ============================================================================
 // CONFIGURATION AND SETUP
@@ -104,6 +108,9 @@ const Logger = {
 
 // Main server function
 export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
+  // Set MCP server mode to enable file watching and auto-indexing
+  process.env.MCP_SERVER_MODE = 'true';
+
   // Config should be provided by the caller - no command line parsing here
   // This is a library, not a standalone application
 

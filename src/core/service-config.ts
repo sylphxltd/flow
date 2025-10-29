@@ -18,9 +18,12 @@ import { targetManager } from '../core/target-manager.js';
 import { MemoryDatabaseClient } from '../db/memory-db.js';
 import { MCPService } from '../services/mcp-service.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
-import { searchService } from '../services/search/unified-search-service.js';
+import { getSearchService } from '../services/search/unified-search-service.js';
 // Import concrete implementations (will be updated as we refactor)
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
+
+// Get search service instance (lazy initialization)
+const searchService = getSearchService();
 
 /**
  * Configure and register all core services with the DI container

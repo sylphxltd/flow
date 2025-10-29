@@ -85,9 +85,6 @@ export * from './lancedb-vector-storage.js';
 // Separated storage
 export * from './separated-storage.js';
 
-// Unified search service
-export * from './unified-search-service.js';
-
 // Target config types
 export * from './target-config.js';
 
