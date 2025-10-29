@@ -4,6 +4,7 @@
  */
 
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
+import { CodebaseIndexer } from './codebase-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
@@ -46,6 +47,7 @@ export interface SearchStatus {
 export class UnifiedSearchService {
   private memoryStorage: SeparatedMemoryStorage;
   private knowledgeIndexer = getKnowledgeIndexer();
+  private codebaseIndexer?: CodebaseIndexer;
   private embeddingProvider?: EmbeddingProvider;
 
   constructor() {
@@ -65,15 +67,30 @@ export class UnifiedSearchService {
 
     // Reinitialize knowledge indexer with embedding provider
     this.knowledgeIndexer = getKnowledgeIndexer(this.embeddingProvider);
+
+    // Initialize codebase indexer
+    this.codebaseIndexer = new CodebaseIndexer();
   }
 
   /**
    * 獲取搜索狀態
    */
   async getStatus(): Promise<SearchStatus> {
-    // Codebase status
-    const codebaseFiles = await this.memoryStorage.getAllCodebaseFiles();
-    const codebaseStats = await this.memoryStorage.getCodebaseIndexStats();
+    // Codebase status - use CodebaseIndexer
+    let codebaseIndexed = false;
+    let codebaseFileCount = 0;
+    let codebaseIndexedAt: string | undefined;
+
+    if (this.codebaseIndexer) {
+      try {
+        const stats = await this.codebaseIndexer.getCacheStats();
+        codebaseIndexed = stats.fileCount > 0;
+        codebaseFileCount = stats.fileCount;
+        codebaseIndexedAt = stats.indexedAt;
+      } catch {
+        // Not indexed yet or error
+      }
+    }
 
     // Knowledge status
     const knowledgeStatus = this.knowledgeIndexer.getStatus();
@@ -90,9 +107,9 @@ export class UnifiedSearchService {
 
     return {
       codebase: {
-        indexed: codebaseFiles.length > 0,
-        fileCount: codebaseFiles.length,
-        indexedAt: codebaseStats.indexedAt,
+        indexed: codebaseIndexed,
+        fileCount: codebaseFileCount,
+        indexedAt: codebaseIndexedAt,
       },
       knowledge: {
         indexed: knowledgeIndexed,
@@ -117,79 +134,77 @@ export class UnifiedSearchService {
     const {
       limit = 10,
       include_content = true,
-      file_extensions,
-      path_filter,
-      exclude_paths,
-      min_score = 0.1,
+      min_score = 0.0,
     } = options;
 
-    // 檢查是否已索引
-    const allFiles = await this.memoryStorage.getAllCodebaseFiles();
-    if (allFiles.length === 0) {
-      throw new Error('Codebase not indexed yet. Run "sylphx search reindex" first.');
+    if (!this.codebaseIndexer) {
+      throw new Error('Codebase indexer not initialized');
     }
 
-    // 應用過濾器
-    let files = allFiles;
-    if (file_extensions?.length) {
-      files = files.filter((file) => file_extensions.some((ext) => file.path.endsWith(ext)));
-    }
-    if (path_filter) {
-      files = files.filter((file) => file.path.includes(path_filter));
-    }
-    if (exclude_paths?.length) {
-      files = files.filter((file) => !exclude_paths.some((exclude) => file.path.includes(exclude)));
-    }
+    // 確保索引已建立
+    await this.ensureCodebaseIndexed();
 
-    if (files.length === 0) {
-      return {
-        results: [],
-        totalIndexed: allFiles.length,
-        query,
-      };
-    }
-
-    // 創建搜索索引
-    const index = await this.buildSearchIndex(files);
-    if (!index) {
-      throw new Error('No searchable content found');
-    }
-
-    // 執行搜索
-    const searchResults = await searchDocuments(query, index, {
+    // 使用 CodebaseIndexer 的搜索功能
+    const searchResults = await this.codebaseIndexer.search(query, {
       limit,
       minScore: min_score,
+      includeContent: include_content,
     });
 
     // 轉換結果格式
-    const results: SearchResult[] = [];
-    for (const result of searchResults) {
-      const filename = result.uri?.replace('file://', '') || 'Unknown';
-      let content = '';
-
-      if (include_content) {
-        const file = await this.memoryStorage.getCodebaseFile(filename);
-        if (file?.content) {
-          content = file.content.substring(0, 500);
-          if (file.content.length > 500) {
-            content += '...';
-          }
-        }
-      }
-
-      results.push({
-        uri: result.uri,
-        score: result.score || 0,
-        title: filename.split('/').pop() || filename,
-        content: include_content ? content : undefined,
-      });
-    }
+    const results: SearchResult[] = searchResults.map((result) => ({
+      uri: `file://${result.path}`,
+      score: result.score || 0,
+      title: result.path.split('/').pop() || result.path,
+      content: include_content && result.content ?
+        (result.content.length > 500 ? result.content.substring(0, 500) + '...' : result.content) :
+        undefined,
+    }));
 
     return {
       results,
-      totalIndexed: allFiles.length,
+      totalIndexed: await this.getCodebaseFileCount(),
       query,
     };
+  }
+
+  /**
+   * 確保代碼庫已索引
+   */
+  private async ensureCodebaseIndexed(): Promise<void> {
+    if (!this.codebaseIndexer) {
+      throw new Error('Codebase indexer not initialized');
+    }
+
+    try {
+      const stats = await this.codebaseIndexer.getCacheStats();
+      if (stats.fileCount === 0) {
+        console.log('[INFO] Codebase not indexed, auto-indexing...');
+        await this.codebaseIndexer.indexCodebase({
+          embeddingProvider: this.embeddingProvider
+        });
+        console.log('[INFO] Codebase indexing complete');
+      }
+    } catch (error) {
+      console.error('[ERROR] Failed to ensure codebase is indexed:', error);
+      throw new Error('Failed to index codebase. Please run "sylphx-flow codebase reindex" manually.');
+    }
+  }
+
+  /**
+   * 獲取代碼庫文件數量
+   */
+  private async getCodebaseFileCount(): Promise<number> {
+    if (!this.codebaseIndexer) {
+      return 0;
+    }
+
+    try {
+      const stats = await this.codebaseIndexer.getCacheStats();
+      return stats.fileCount;
+    } catch {
+      return 0;
+    }
   }
 
   /**
