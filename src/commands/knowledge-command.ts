@@ -4,7 +4,7 @@
  */
 
 import { Command } from 'commander';
-import { getKnowledgeContent } from '../resources/knowledge-resources.js';
+import { getKnowledgeContent } from '../domains/knowledge/resources.js';
 import { searchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
 

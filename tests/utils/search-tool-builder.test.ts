@@ -6,8 +6,9 @@ import { searchDocuments } from '../../src/services/search/tfidf';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 // Mock the searchDocuments function
+const mockSearchDocuments = vi.fn();
 vi.mock('../../src/services/search/tfidf', () => ({
-  searchDocuments: vi.fn(),
+  searchDocuments: mockSearchDocuments,
 }));
 
 // Mock McpServer
@@ -94,7 +95,7 @@ describe('search-tool-builder', () => {
     };
 
     // Mock successful search results
-    vi.mocked(searchDocuments).mockReturnValue([
+    mockSearchDocuments.mockReturnValue([
       {
         uri: 'knowledge://test/doc1',
         score: 0.9,
