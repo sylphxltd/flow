@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="31" failures="13" errors="0" time="0.016130375">
+    <testsuite name="tests/utils/search-tool-builder.test.ts" timestamp="2025-10-29T00:41:35.881Z" hostname="Mac" tests="31" failures="13" errors="0" skipped="0" time="0.016130375">
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; buildSearchTool &gt; should register both search and status tools" time="0.001698791">
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; buildSearchTool &gt; should register tools with correct descriptions" time="0.000252125">
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; buildSearchTool &gt; should register search tool with correct schema" time="0.002996292">
+            <failure message="expected ZodString{ …(26) } to be &apos;Search query&apos; // Object.is equality" type="AssertionError">
+AssertionError: expected ZodString{ …(26) } to be &apos;Search query&apos; // Object.is equality
+
+- Expected: 
+&quot;Search query&quot;
+
++ Received: 
+ZodString {
+  &quot;_def&quot;: {
+    &quot;checks&quot;: [],
+    &quot;coerce&quot;: false,
+    &quot;description&quot;: undefined,
+    &quot;typeName&quot;: &quot;ZodString&quot;,
+  },
+  &quot;and&quot;: [Function bound and],
+  &quot;array&quot;: [Function bound array],
+  &quot;brand&quot;: [Function bound brand],
+  &quot;catch&quot;: [Function bound catch],
+  &quot;default&quot;: [Function bound default],
+  &quot;describe&quot;: [Function bound describe],
+  &quot;isNullable&quot;: [Function bound isNullable],
+  &quot;isOptional&quot;: [Function bound isOptional],
+  &quot;nullable&quot;: [Function bound nullable],
+  &quot;nullish&quot;: [Function bound nullish],
+  &quot;optional&quot;: [Function bound optional],
+  &quot;or&quot;: [Function bound or],
+  &quot;parse&quot;: [Function bound parse],
+  &quot;parseAsync&quot;: [Function bound parseAsync],
+  &quot;pipe&quot;: [Function bound pipe],
+  &quot;promise&quot;: [Function bound promise],
+  &quot;readonly&quot;: [Function bound readonly],
+  &quot;refine&quot;: [Function bound refine],
+  &quot;refinement&quot;: [Function bound refinement],
+  &quot;safeParse&quot;: [Function bound safeParse],
+  &quot;safeParseAsync&quot;: [Function bound safeParseAsync],
+  &quot;spa&quot;: [Function bound safeParseAsync],
+  &quot;superRefine&quot;: [Function bound superRefine],
+  &quot;transform&quot;: [Function bound transform],
+  &quot;~standard&quot;: {
+    &quot;validate&quot;: [Function validate],
+    &quot;vendor&quot;: &quot;zod&quot;,
+    &quot;version&quot;: 1,
+  },
+}
+
+ ❯ tests/utils/search-tool-builder.test.ts:154:39
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; buildSearchTool &gt; should register status tool with empty schema" time="0.000163416">
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should handle successful search with basic query" time="0.002181417">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &apos;Found 2 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;Relevance: 90%&apos;" type="AssertionError">
+AssertionError: expected &apos;Found 2 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;Relevance: 90%&apos;
+
+- Expected
++ Received
+
+- Relevance: 90%
++ Found 2 result(s) for &quot;test&quot;:
++
++ ## 1. test/doc1
++ **Relevance**: 90%
++ **Matched terms**: test, document
++
++
++ ---
++
++ ## 2. src/test.ts
++ **Relevance**: 70%
++ **Matched terms**: test
++
++
++ ---
++
++ **Stats:**
++ - Total items: 2
++ - Index time: 0ms
++ - Search time: 0ms
++
+
+ ❯ tests/utils/search-tool-builder.test.ts:191:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should handle search with custom limit" time="0.000210333">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should limit search results to maximum of 20" time="0.000621667">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should use default limit when not specified" time="0.000139542">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should filter results by categories" time="0.000629708">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &apos;No results found for query: &quot;test&quot;\n\…&apos; to contain &apos;Found 1 result(s) for &quot;test&quot;&apos;" type="AssertionError">
+AssertionError: expected &apos;No results found for query: &quot;test&quot;\n\…&apos; to contain &apos;Found 1 result(s) for &quot;test&quot;&apos;
+
+- Expected
++ Received
+
+- Found 1 result(s) for &quot;test&quot;
++ No results found for query: &quot;test&quot;
++
++ Try:
++ - Broader search terms
++ - Different keywords
++ - Check available categories
+
+ ❯ tests/utils/search-tool-builder.test.ts:251:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should filter results by multiple categories" time="0.000448334">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &apos;No results found for query: &quot;test&quot;\n\…&apos; to contain &apos;Found 2 result(s) for &quot;test&quot;&apos;" type="AssertionError">
+AssertionError: expected &apos;No results found for query: &quot;test&quot;\n\…&apos; to contain &apos;Found 2 result(s) for &quot;test&quot;&apos;
+
+- Expected
++ Received
+
+- Found 2 result(s) for &quot;test&quot;
++ No results found for query: &quot;test&quot;
++
++ Try:
++ - Broader search terms
++ - Different keywords
++ - Check available categories
+
+ ❯ tests/utils/search-tool-builder.test.ts:281:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should handle no results found" time="0.000401459">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should handle indexing in progress" time="0.000593458">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &apos;Found 2 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;⏳ Indexing in progress...&apos;" type="AssertionError">
+AssertionError: expected &apos;Found 2 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;⏳ Indexing in progress...&apos;
+
+- Expected
++ Received
+
+- ⏳ Indexing in progress...
++ Found 2 result(s) for &quot;test&quot;:
++
++ ## 1. test/doc1
++ **Relevance**: 90%
++ **Matched terms**: test, document
++
++
++ ---
++
++ ## 2. src/test.ts
++ **Relevance**: 70%
++ **Matched terms**: test
++
++
++ ---
++
++ **Stats:**
++ - Total items: 2
++ - Index time: 0ms
++ - Search time: 0ms
++
+
+ ❯ tests/utils/search-tool-builder.test.ts:314:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should handle indexing error" time="0.000292041">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected undefined to be true // Object.is equality" type="AssertionError">
+AssertionError: expected undefined to be true // Object.is equality
+
+- Expected: 
+true
+
++ Received: 
+undefined
+
+ ❯ tests/utils/search-tool-builder.test.ts:335:30
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should handle search errors" time="0.00070875">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+[ERROR] search_test failed: Error: Search failed
+    at [90m/Users/kyle/rules/[39mtests/utils/search-tool-builder.test.ts:341:15
+    at mockCall [90m(file:///Users/kyle/rules/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:96:15[90m)[39m
+    at spy [90m(file:///Users/kyle/rules/[39mnode_modules/[4mtinyspy[24m/dist/index.js:47:80[90m)[39m
+    at [90m/Users/kyle/rules/[39msrc/utils/search-tool-builder.ts:87:25
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at [90m/Users/kyle/rules/[39mtests/utils/search-tool-builder.test.ts:344:22
+    at [90mfile:///Users/kyle/rules/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-hooks.js:752:20
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should handle non-Error objects in error handling" time="0.000122">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+[ERROR] search_test failed: String error
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should clean file paths in results" time="0.000115667">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should format relevance percentages correctly" time="0.000245459">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &apos;Found 1 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;Relevance: 86%&apos;" type="AssertionError">
+AssertionError: expected &apos;Found 1 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;Relevance: 86%&apos;
+
+- Expected
++ Received
+
+- Relevance: 86%
++ Found 1 result(s) for &quot;test&quot;:
++
++ ## 1. test.ts
++ **Relevance**: 86%
++ **Matched terms**: test
++
++
++ ---
++
++ **Stats:**
++ - Total items: 2
++ - Index time: 0ms
++ - Search time: 0ms
++
+
+ ❯ tests/utils/search-tool-builder.test.ts:394:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; search tool functionality &gt; should display matched terms correctly" time="0.000209709">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &apos;Found 1 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;Matched terms: test, typescript, func…&apos;" type="AssertionError">
+AssertionError: expected &apos;Found 1 result(s) for &quot;test&quot;:\n\n## 1…&apos; to contain &apos;Matched terms: test, typescript, func…&apos;
+
+- Expected
++ Received
+
+- Matched terms: test, typescript, function
++ Found 1 result(s) for &quot;test&quot;:
++
++ ## 1. test.ts
++ **Relevance**: 90%
++ **Matched terms**: test, typescript, function
++
++
++ ---
++
++ **Stats:**
++ - Total items: 2
++ - Index time: 0ms
++ - Search time: 0ms
++
+
+ ❯ tests/utils/search-tool-builder.test.ts:408:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; status tool functionality &gt; should show ready status when indexer is ready" time="0.000116125">
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; status tool functionality &gt; should show indexing in progress status" time="0.000219292">
+            <failure message="expected &apos;✓ **Index Ready**\n\n- Total items: 2…&apos; to contain &apos;⏳ **Indexing in Progress**&apos;" type="AssertionError">
+AssertionError: expected &apos;✓ **Index Ready**\n\n- Total items: 2…&apos; to contain &apos;⏳ **Indexing in Progress**&apos;
+
+- Expected
++ Received
+
+- ⏳ **Indexing in Progress**
++ ✓ **Index Ready**
++
++ - Total items: 2
++ - Unique terms: 3
++ - Status: Ready for search
+
+ ❯ tests/utils/search-tool-builder.test.ts:447:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; status tool functionality &gt; should show indexing failed status" time="0.000123334">
+            <failure message="expected undefined to be true // Object.is equality" type="AssertionError">
+AssertionError: expected undefined to be true // Object.is equality
+
+- Expected: 
+true
+
++ Received: 
+undefined
+
+ ❯ tests/utils/search-tool-builder.test.ts:467:30
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; status tool functionality &gt; should show not indexed status when indexer is not ready" time="0.000198083">
+            <failure message="expected &apos;✓ **Index Ready**\n\n- Total items: 2…&apos; to contain &apos;⚠️ **Not Indexed**&apos;" type="AssertionError">
+AssertionError: expected &apos;✓ **Index Ready**\n\n- Total items: 2…&apos; to contain &apos;⚠️ **Not Indexed**&apos;
+
+- Expected
++ Received
+
+- ⚠️ **Not Indexed**
++ ✓ **Index Ready**
++
++ - Total items: 2
++ - Unique terms: 3
++ - Status: Ready for search
+
+ ❯ tests/utils/search-tool-builder.test.ts:492:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; status tool functionality &gt; should handle null stats gracefully" time="0.0001505">
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; integration scenarios &gt; should work with different tool names and descriptions" time="0.000252">
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; integration scenarios &gt; should handle multiple tool registrations" time="0.000146792">
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; error handling and edge cases &gt; should handle undefined categories gracefully" time="0.000074667">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; error handling and edge cases &gt; should handle empty categories array" time="0.000068583">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; error handling and edge cases &gt; should handle zero limit by using default" time="0.000181792">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; error handling and edge cases &gt; should handle negative limit by using default" time="0.001404708">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &quot;spy&quot; to be called with arguments: [ &apos;test&apos;, Any&lt;Object&gt;, …(1) ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  [[22m
+[2m    &quot;test&quot;,[22m
+[32m-   Any&lt;Object&gt;,[90m
+[31m+   {[90m
+[31m+     &quot;documents&quot;: [[90m
+[31m+       {[90m
+[31m+         &quot;magnitude&quot;: 0.6,[90m
+[31m+         &quot;rawTerms&quot;: Map {[90m
+[31m+           &quot;test&quot; =&gt; 2,[90m
+[31m+           &quot;document&quot; =&gt; 1,[90m
+[31m+         },[90m
+[31m+         &quot;terms&quot;: Map {[90m
+[31m+           &quot;test&quot; =&gt; 0.5,[90m
+[31m+           &quot;document&quot; =&gt; 0.3,[90m
+[31m+         },[90m
+[31m+         &quot;uri&quot;: &quot;knowledge://test/doc1&quot;,[90m
+[31m+       },[90m
+[31m+       {[90m
+[31m+         &quot;magnitude&quot;: 0.8,[90m
+[31m+         &quot;rawTerms&quot;: Map {[90m
+[31m+           &quot;typescript&quot; =&gt; 3,[90m
+[31m+           &quot;test&quot; =&gt; 1,[90m
+[31m+         },[90m
+[31m+         &quot;terms&quot;: Map {[90m
+[31m+           &quot;typescript&quot; =&gt; 0.7,[90m
+[31m+           &quot;test&quot; =&gt; 0.4,[90m
+[31m+         },[90m
+[31m+         &quot;uri&quot;: &quot;file://src/test.ts&quot;,[90m
+[31m+       },[90m
+[31m+     ],[90m
+[31m+     &quot;idf&quot;: Map {[90m
+[31m+       &quot;test&quot; =&gt; 1.5,[90m
+[31m+       &quot;document&quot; =&gt; 2,[90m
+[31m+       &quot;typescript&quot; =&gt; 1.8,[90m
+[31m+     },[90m
+[31m+     &quot;metadata&quot;: {[90m
+[31m+       &quot;generatedAt&quot;: &quot;2025-01-01T00:00:00.000Z&quot;,[90m
+[31m+       &quot;version&quot;: &quot;1.0.0&quot;,[90m
+[31m+     },[90m
+[31m+     &quot;totalDocuments&quot;: 2,[90m
+[31m+   },[90m
+[2m    {[22m
+[32m-     &quot;limit&quot;: -5,[90m
+[31m+     &quot;limit&quot;: -10,[90m
+[2m      &quot;minScore&quot;: 0.01,[22m
+[2m    },[22m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m" type="AssertionError">
+AssertionError: expected &quot;spy&quot; to be called with arguments: [ &apos;test&apos;, Any&lt;Object&gt;, …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  [
+    &quot;test&quot;,
+-   Any&lt;Object&gt;,
++   {
++     &quot;documents&quot;: [
++       {
++         &quot;magnitude&quot;: 0.6,
++         &quot;rawTerms&quot;: Map {
++           &quot;test&quot; =&gt; 2,
++           &quot;document&quot; =&gt; 1,
++         },
++         &quot;terms&quot;: Map {
++           &quot;test&quot; =&gt; 0.5,
++           &quot;document&quot; =&gt; 0.3,
++         },
++         &quot;uri&quot;: &quot;knowledge://test/doc1&quot;,
++       },
++       {
++         &quot;magnitude&quot;: 0.8,
++         &quot;rawTerms&quot;: Map {
++           &quot;typescript&quot; =&gt; 3,
++           &quot;test&quot; =&gt; 1,
++         },
++         &quot;terms&quot;: Map {
++           &quot;typescript&quot; =&gt; 0.7,
++           &quot;test&quot; =&gt; 0.4,
++         },
++         &quot;uri&quot;: &quot;file://src/test.ts&quot;,
++       },
++     ],
++     &quot;idf&quot;: Map {
++       &quot;test&quot; =&gt; 1.5,
++       &quot;document&quot; =&gt; 2,
++       &quot;typescript&quot; =&gt; 1.8,
++     },
++     &quot;metadata&quot;: {
++       &quot;generatedAt&quot;: &quot;2025-01-01T00:00:00.000Z&quot;,
++       &quot;version&quot;: &quot;1.0.0&quot;,
++     },
++     &quot;totalDocuments&quot;: 2,
++   },
+    {
+-     &quot;limit&quot;: -5,
++     &quot;limit&quot;: -10,
+      &quot;minScore&quot;: 0.01,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/utils/search-tool-builder.test.ts:610:31
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; error handling and edge cases &gt; should handle malformed URIs in category filtering" time="0.000405458">
+            <system-err>
+[INFO] test indexing complete: 2 documents
+
+            </system-err>
+            <failure message="expected &apos;No results found for query: &quot;test&quot;\n\…&apos; to contain &apos;Found 1 result(s) for &quot;test&quot;&apos;" type="AssertionError">
+AssertionError: expected &apos;No results found for query: &quot;test&quot;\n\…&apos; to contain &apos;Found 1 result(s) for &quot;test&quot;&apos;
+
+- Expected
++ Received
+
+- Found 1 result(s) for &quot;test&quot;
++ No results found for query: &quot;test&quot;
++
++ Try:
++ - Broader search terms
++ - Different keywords
++ - Check available categories
+
+ ❯ tests/utils/search-tool-builder.test.ts:641:38
+            </failure>
+        </testcase>
+        <testcase classname="tests/utils/search-tool-builder.test.ts" name="search-tool-builder &gt; error handling and edge cases &gt; should handle console error logging" time="0.000194583">
+        </testcase>
+    </testsuite>
+</testsuites>
