@@ -216,4 +216,12 @@ export const opencodeTarget: Target = {
       return false;
     }
   },
+
+  /**
+   * Transform rules content for OpenCode
+   * OpenCode doesn't need front matter in rules files (AGENTS.md)
+   */
+  async transformRulesContent(content: string): Promise<string> {
+    return yamlUtils.stripFrontMatter(content);
+  },
 };

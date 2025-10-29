@@ -197,7 +197,13 @@ export async function installRules(options: CommonOptions): Promise<void> {
   }
 
   const rulePath = getRulesPath('core');
-  const ruleContent = fs.readFileSync(rulePath, 'utf8');
+  let ruleContent = fs.readFileSync(rulePath, 'utf8');
+
+  // Transform rules content if the target provides a transformation method
+  if (target.transformRulesContent) {
+    ruleContent = await target.transformRulesContent(ruleContent);
+  }
+
   const mergedContent = ruleContent;
 
   // Rules files are installed in the project root

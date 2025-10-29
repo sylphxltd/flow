@@ -338,6 +338,14 @@ Please begin your response with a comprehensive summary of all the instructions 
       );
     }
   },
+
+  /**
+   * Transform rules content for Claude Code
+   * Claude Code doesn't need front matter in rules files (CLAUDE.md)
+   */
+  async transformRulesContent(content: string): Promise<string> {
+    return yamlUtils.stripFrontMatter(content);
+  },
 };
 
 /**

@@ -221,6 +221,9 @@ export abstract class Target {
 
   /** Approve MCP servers in target-specific configuration (optional - only for targets that need approval) */
   async approveMCPServers?(cwd: string, serverNames: string[]): Promise<void>;
+
+  /** Transform rules content for the target (optional - defaults to no transformation) */
+  async transformRulesContent?(content: string): Promise<string>;
 }
 
 export interface CommonOptions {
