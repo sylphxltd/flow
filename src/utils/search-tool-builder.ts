@@ -5,8 +5,8 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import type { BaseIndexer } from './base-indexer.js';
-import { searchDocuments } from './tfidf.js';
+import type { BaseIndexer } from '../services/search/base-indexer.js';
+import { searchDocuments } from '../services/search/tfidf.js';
 
 export interface SearchToolConfig {
   indexer: BaseIndexer;

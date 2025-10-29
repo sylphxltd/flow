@@ -175,7 +175,7 @@ export async function deletePathSafe(targetPath: string): Promise<void> {
   const info = await getFileInfo(targetPath);
 
   if (info.isDirectory) {
-    await fs.rmdir(targetPath, { recursive: true });
+    await fs.rm(targetPath, { recursive: true, force: true });
   } else {
     await fs.unlink(targetPath);
   }
