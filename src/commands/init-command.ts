@@ -1,6 +1,7 @@
 import boxen from 'boxen';
 import chalk from 'chalk';
 import { Command } from 'commander';
+import gradient from 'gradient-string';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
@@ -27,26 +28,18 @@ export const initCommand = new Command('init')
   .action(async (options) => {
     let targetId = options.target;
 
-    console.log(
-      '\n' +
-        boxen(
-          chalk.cyan('⚡') +
-            chalk.bold.white(' SYLPHX FLOW ') +
-            chalk.cyan('⚡') +
-            '\n' +
-            chalk.dim.cyan('━'.repeat(32)) +
-            '\n' +
-            chalk.dim('Project Initialization'),
-          {
-            padding: 1,
-            margin: 0,
-            borderStyle: 'double',
-            borderColor: 'cyan',
-            textAlignment: 'center',
-          },
-        ) +
-        '\n',
-    );
+    // Create ASCII art title
+    const title = `
+███████╗██╗   ██╗██╗     ██████╗ ██╗  ██╗██╗  ██╗    ███████╗██╗      ██████╗ ██╗    ██╗
+██╔════╝╚██╗ ██╔╝██║     ██╔══██╗██║  ██║╚██╗██╔╝    ██╔════╝██║     ██╔═══██╗██║    ██║
+███████╗ ╚████╔╝ ██║     ██████╔╝███████║ ╚███╔╝     █████╗  ██║     ██║   ██║██║ █╗ ██║
+╚════██║  ╚██╔╝  ██║     ██╔═══╝ ██╔══██║ ██╔██╗     ██╔══╝  ██║     ██║   ██║██║███╗██║
+███████║   ██║   ███████╗██║     ██║  ██║██╔╝ ██╗    ██║     ███████╗╚██████╔╝╚███╔███╔╝
+╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝
+`;
+
+    console.log(gradient(['cyan', 'blue'])(title));
+    console.log(chalk.dim.cyan('                          Project Initialization\n'));
 
     // Target selection
     if (!targetId) {
