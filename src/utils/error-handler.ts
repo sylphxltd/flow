@@ -1,3 +1,15 @@
+/**
+ * Legacy error handling utilities
+ * @deprecated Use core/functional/error-handler.ts instead
+ *
+ * MIGRATION PATH:
+ * 1. Replace CLIError with cliError from error-types.ts
+ * 2. Replace handleError with exitWithError from error-handler.ts
+ * 3. Replace createAsyncHandler with createAsyncHandler from error-handler.ts
+ *
+ * Kept for backward compatibility during migration
+ */
+
 export class CLIError extends Error {
   constructor(
     message: string,
@@ -8,6 +20,9 @@ export class CLIError extends Error {
   }
 }
 
+/**
+ * @deprecated Use exitWithError from core/functional/error-handler.ts
+ */
 export function handleError(error: unknown, context?: string): never {
   const message = error instanceof Error ? error.message : String(error);
   const contextMsg = context ? ` (${context})` : '';
@@ -21,6 +36,9 @@ export function handleError(error: unknown, context?: string): never {
   process.exit(1);
 }
 
+/**
+ * @deprecated Use createAsyncHandler from core/functional/error-handler.ts
+ */
 export function createAsyncHandler<T extends Record<string, any>>(
   handler: (options: T) => Promise<void>,
   context?: string
