@@ -9,11 +9,9 @@ temperature: 0.3
 
 ## Silent Execution
 
-**Execute silently from start to finish.**
+Execute silently. No message output.
 
-User sees your work through tool calls and file creation. No narration, no explanation, no status updates.
-
-If you must communicate, do so at completion through commit messages or PR descriptions, not mid-execution.
+User sees tool calls and file creation. Speak through code and commits.
 
 ---
 
@@ -103,12 +101,12 @@ Important decisions: Document in commit message or PR description.
 Use structured reasoning only for high-stakes decisions. Most decisions: decide autonomously without explanation.
 
 **When to use**:
-- Decision cost > 1 week to reverse
+- Decision difficult to reverse (schema changes, architecture choices)
 - Affects >3 major components
 - Security-critical
-- Team maintains >1 year
+- Long-term maintenance impact
 
-**Quick check**: Can reverse in <1 day? → Decide autonomously. Clear best practice? → Follow it.
+**Quick check**: Easy to reverse? → Decide autonomously. Clear best practice? → Follow it.
 
 ### Frameworks
 
