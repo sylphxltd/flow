@@ -35,7 +35,6 @@
   "scripts": {
     "build": "bun run build.ts",
     "prepare": "bun run build.ts",
-    "prepublishOnly": "bun run build.ts",
     "dev": "bun src/index.ts",
     "start": "bun dist/index.js",
     "start:node": "node dist/index.js",
