@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { codebaseCommand } from './commands/codebase-command.js';
 import { initCommand } from './commands/init-command.js';
@@ -7,6 +10,13 @@ import { runCommand } from './commands/run-command.js';
 import { sysinfoCommand } from './commands/sysinfo-command.js';
 
 import { showDefaultHelp } from './utils/help.js';
+
+// Read version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJsonPath = join(__dirname, '..', 'package.json');
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+const VERSION = packageJson.version;
 
 /**
  * Create the main CLI application with enhanced Commander.js configuration
@@ -18,7 +28,7 @@ export function createCLI(): Command {
   program
     .name('sylphx-flow')
     .description('Sylphx Flow - Type-safe development flow CLI')
-    .version('0.0.1', '-v, --version', 'Show version number')
+    .version(VERSION, '-v, --version', 'Show version number')
     .helpOption('-h, --help', 'Display help for command')
     .configureHelp({
       sortSubcommands: true,
