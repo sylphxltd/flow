@@ -10,7 +10,7 @@ import {
   DEFAULT_TASK,
   DEFAULT_TIMEOUT,
 } from '../constants/benchmark-constants.js';
-import { AgentService } from '../services/agent-service.js';
+import { getAgentList, runAgent } from '../services/agent-service.js';
 import { EvaluationService } from '../services/evaluation-service.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import type { AgentData, BenchmarkCommandOptions, InitialInfo } from '../types/benchmark.js';
@@ -134,7 +134,7 @@ async function runParallelAgents(
         const startTime = Date.now();
         monitor?.updateAgentStatus(agent, 'running');
 
-        await AgentService.runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
+        await runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
 
         // Record the actual execution time
         const endTime = Date.now();
@@ -202,7 +202,7 @@ async function runParallelAgents(
       const promises = chunks[i].map(async (agent) => {
         const startTime = chunkStartTimes[agent];
         try {
-          await AgentService.runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
+          await runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
 
           // Record successful agent completion time
           const endTime = Date.now();
@@ -300,7 +300,7 @@ export const benchmarkCommand: CommandConfig = {
       await copyTaskFiles(options.task, options.context, options.output);
 
       // Get agent list
-      const agentList = await AgentService.getAgentList(options.agents);
+      const agentList = await getAgentList(options.agents);
 
       // Run agents with concurrency control and React+Ink monitor (unless quiet mode)
       if (options.quiet) {

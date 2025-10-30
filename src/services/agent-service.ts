@@ -8,82 +8,92 @@ import { getAgentsDir } from '../utils/paths.js';
 import { ProcessManager } from '../utils/process-manager.js';
 import { formatToolDisplay } from '../utils/tool-display.js';
 
-export class AgentService {
-  static async getAgentList(agentsOption: string): Promise<string[]> {
-    if (agentsOption === 'all') {
-      return DEFAULT_AGENTS;
-    }
-
-    const selectedAgents = agentsOption.split(',').map((a) => a.trim());
-
-    // Validate selected agents
-    for (const agent of selectedAgents) {
-      if (!DEFAULT_AGENTS.includes(agent)) {
-        throw new Error(`Invalid agent: ${agent}. Available agents: ${DEFAULT_AGENTS.join(', ')}`);
-      }
-    }
-
-    return selectedAgents;
+/**
+ * Get list of agents to run based on user selection
+ * Pure function - no state, no side effects (except validation errors)
+ */
+export async function getAgentList(agentsOption: string): Promise<string[]> {
+  if (agentsOption === 'all') {
+    return DEFAULT_AGENTS;
   }
 
-  static async runAgent(
-    agentName: string,
-    outputDir: string,
-    taskFile: string,
-    contextFile: string | undefined,
-    monitor?: InkMonitor,
-    _maxRetries = 3,
-    timeout = 3600
-  ): Promise<void> {
-    const agentWorkDir = path.join(outputDir, agentName);
-    await fs.mkdir(agentWorkDir, { recursive: true });
+  const selectedAgents = agentsOption.split(',').map((a) => a.trim());
 
-    // Load agent prompt
-    const agentsDir = getAgentsDir();
-    const agentFile = path.join(agentsDir, `${agentName}.md`);
-
-    try {
-      const agentPrompt = await fs.readFile(agentFile, 'utf-8');
-
-      // Prepare task content - instruct agent to work in the temp directory
-      const taskContent = await fs.readFile(taskFile, 'utf-8');
-      let fullTask = taskContent;
-
-      if (contextFile) {
-        try {
-          const contextContent = await fs.readFile(contextFile, 'utf-8');
-          fullTask = `CONTEXT:\n${contextContent}\n\nTASK:\n${taskContent}`;
-        } catch (_error) {
-          // Silently handle context file errors
-        }
-      }
-
-      // Add instruction to work in the temp directory
-      // FUNCTIONAL: Use template string instead of +=
-      const finalTask = `${fullTask}\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
-
-      // Run Claude Code with the agent prompt
-      await AgentService.runSingleAgent(
-        agentName,
-        agentPrompt,
-        finalTask,
-        agentWorkDir,
-        monitor,
-        timeout
-      );
-    } catch (error) {
-      throw new Error(`Failed to load agent ${agentName}: ${error}`);
+  // Validate selected agents
+  for (const agent of selectedAgents) {
+    if (!DEFAULT_AGENTS.includes(agent)) {
+      throw new Error(`Invalid agent: ${agent}. Available agents: ${DEFAULT_AGENTS.join(', ')}`);
     }
   }
 
-  private static async runSingleAgent(
-    agentName: string,
-    agentPrompt: string,
-    fullTask: string,
-    agentWorkDir: string,
-    monitor?: InkMonitor,
-    timeout = 3600
-  ): Promise<void> {
+  return selectedAgents;
+}
+
+/**
+ * Run a single agent with the given task
+ */
+export async function runAgent(
+  agentName: string,
+  outputDir: string,
+  taskFile: string,
+  contextFile: string | undefined,
+  monitor?: InkMonitor,
+  _maxRetries = 3,
+  timeout = 3600
+): Promise<void> {
+  const agentWorkDir = path.join(outputDir, agentName);
+  await fs.mkdir(agentWorkDir, { recursive: true });
+
+  // Load agent prompt
+  const agentsDir = getAgentsDir();
+  const agentFile = path.join(agentsDir, `${agentName}.md`);
+
+  try {
+    const agentPrompt = await fs.readFile(agentFile, 'utf-8');
+
+    // Prepare task content - instruct agent to work in the temp directory
+    const taskContent = await fs.readFile(taskFile, 'utf-8');
+    let fullTask = taskContent;
+
+    if (contextFile) {
+      try {
+        const contextContent = await fs.readFile(contextFile, 'utf-8');
+        fullTask = `CONTEXT:\n${contextContent}\n\nTASK:\n${taskContent}`;
+      } catch (_error) {
+        // Silently handle context file errors
+      }
+    }
+
+    // Add instruction to work in the temp directory
+    // FUNCTIONAL: Use template string instead of +=
+    const finalTask = `${fullTask}\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
+
+    // Run Claude Code with the agent prompt
+    await runSingleAgent(
+      agentName,
+      agentPrompt,
+      finalTask,
+      agentWorkDir,
+      monitor,
+      timeout
+    );
+  } catch (error) {
+    throw new Error(`Failed to load agent ${agentName}: ${error}`);
+  }
+}
+
+/**
+ * Internal helper: Run a single agent process
+ * Handles process spawning, monitoring, and cleanup
+ */
+async function runSingleAgent(
+  agentName: string,
+  agentPrompt: string,
+  fullTask: string,
+  agentWorkDir: string,
+  monitor?: InkMonitor,
+  timeout = 3600
+): Promise<void> {
     // Write agent prompt to a temp file to avoid command line length limits
     const tempPromptFile = path.join(agentWorkDir, '.agent-prompt.md');
     await fs.writeFile(tempPromptFile, agentPrompt);
@@ -245,7 +255,7 @@ export class AgentService {
           resolve();
         } else {
           monitor?.updateAgentStatus(agentName, 'error');
-          await fs.writeFile(path.join(agentWorkDir, 'execution-error.txt'), stderr);
+          await fs.writeFile(path.join(agentWorkDir, 'execution-error.txt'), stderrFinal);
 
           reject(new Error(`Agent ${agentName} failed with code ${code}`));
         }
@@ -263,5 +273,4 @@ export class AgentService {
         reject(error);
       });
     });
-  }
 }
