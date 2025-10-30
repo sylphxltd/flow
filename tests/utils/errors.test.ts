@@ -482,21 +482,28 @@ describe('createError factory', () => {
 describe('ErrorHandler', () => {
   const mockExit = vi.fn();
   const originalEnv = process.env.NODE_ENV;
+  let originalProcess: NodeJS.Process;
 
   beforeEach(() => {
     // Note: vi.resetModules() removed in vitest 4.x
     mockExit.mockReset();
-    // Mock process.exit
-    vi.stubGlobal('process', {
+
+    // Save original process
+    originalProcess = global.process;
+
+    // Mock process.exit (vitest 4.x compatible approach)
+    (global as any).process = {
       ...process,
       env: { ...process.env, NODE_ENV: 'test' },
       exit: mockExit,
-    });
+    };
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
     process.env.NODE_ENV = originalEnv;
+    // Restore original process
+    (global as any).process = originalProcess;
   });
 
   describe('handle', () => {

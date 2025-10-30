@@ -9,13 +9,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 describe('Process Manager', () => {
   let mockProcess: any;
   let ProcessManager: any;
+  let originalProcess: NodeJS.Process;
 
   beforeEach(async () => {
-    // Mock process global
+    // Save original process
+    originalProcess = global.process;
+
+    // Mock process global (vitest 4.x compatible approach)
     mockProcess = new EventEmitter();
     mockProcess.exit = vi.fn();
+    mockProcess.pid = 12345;
+    mockProcess.env = { ...process.env };
 
-    vi.stubGlobal('process', mockProcess);
+    // Replace global process directly
+    (global as any).process = mockProcess;
 
     // Clear module cache and reimport
     // Note: vi.resetModules() removed in vitest 4.x
@@ -25,8 +32,8 @@ describe('Process Manager', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    // Note: vi.unstubAllGlobals() removed in vitest 4.x
-    // Global stubs are automatically restored by vi.clearAllMocks()
+    // Restore original process
+    (global as any).process = originalProcess;
   });
 
   describe('getInstance', () => {

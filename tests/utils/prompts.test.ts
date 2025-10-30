@@ -25,6 +25,7 @@ describe('Prompts', () => {
     write: ReturnType<typeof vi.fn>;
   };
   let createInterfaceSpy: ReturnType<typeof vi.fn>;
+  let originalProcess: NodeJS.Process;
 
   beforeEach(async () => {
     // Create mock stdin with EventEmitter
@@ -48,17 +49,18 @@ describe('Prompts', () => {
     // Mock readline.createInterface
     createInterfaceSpy = vi.fn(() => mockReadline);
 
-    // Mock node:readline module
-    vi.doMock('node:readline', () => ({
-      createInterface: createInterfaceSpy,
-    }));
+    // Note: vi.doMock() removed in vitest 4.x
+    // Mock at module level instead (see top of file)
 
-    // Mock process.stdin and process.stdout
-    vi.stubGlobal('process', {
+    // Save original process
+    originalProcess = global.process;
+
+    // Mock process.stdin and process.stdout (vitest 4.x compatible)
+    (global as any).process = {
       ...process,
       stdin: mockStdin,
       stdout: mockStdout,
-    });
+    };
 
     // Clear module cache and reimport
     // Note: vi.resetModules() removed in vitest 4.x
@@ -66,7 +68,8 @@ describe('Prompts', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    // Note: vi.unstubAllGlobals() removed in vitest 4.x
+    // Restore original process
+    (global as any).process = originalProcess;
   });
 
   describe('ask', () => {
