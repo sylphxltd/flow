@@ -4,6 +4,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Mock management to prevent test pollution
+    mockReset: false,      // Don't reset module-level mocks
+    restoreMocks: false,   // Don't restore mocks to original implementations
+    clearMocks: true,      // Clear mock call history between tests
+    unstubGlobals: false,  // Keep global stubs
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
