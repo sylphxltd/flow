@@ -102,86 +102,9 @@ async function getSystemInfo(preset?: string) {
     return { ...baseInfo, project: projectInfo };
   }
 
-  // Legacy support for old preset names (development, full)
-  if (preset === 'development' || preset === 'full') {
-    const environments = await checkDevelopmentEnvironments();
-    return { ...baseInfo, environments };
-  }
-
   return baseInfo;
 }
 
-async function checkDevelopmentEnvironments() {
-  const envs = [];
-
-  // Node.js environment
-  if (process.version) {
-    envs.push({
-      name: 'Node.js',
-      version: process.version.slice(1), // Remove 'v' prefix
-      path: process.execPath,
-    });
-  }
-
-  // Check for common development tools
-  const tools = [
-    { name: 'Python', check: () => checkCommand('python') || checkCommand('python3') },
-    { name: 'Git', check: () => checkCommand('git') },
-    { name: 'Docker', check: () => checkCommand('docker') },
-    { name: 'Bun', check: () => checkCommand('bun') },
-    { name: 'npm', check: () => checkCommand('npm') },
-    { name: 'yarn', check: () => checkCommand('yarn') },
-    { name: 'pnpm', check: () => checkCommand('pnpm') },
-    { name: 'Homebrew', check: () => checkCommand('brew') },
-  ];
-
-  for (const tool of tools) {
-    try {
-      const version = await tool.check();
-      if (version) {
-        envs.push({
-          name: tool.name,
-          version,
-        });
-      }
-    } catch {
-      // Tool not found
-    }
-  }
-
-  return envs;
-}
-
-async function checkCommand(command: string): Promise<string | null> {
-  try {
-    const { spawn } = await import('node:child_process');
-    return new Promise((resolve, reject) => {
-      const child = spawn(command, ['--version'], {
-        stdio: 'pipe',
-        shell: true,
-      });
-
-      let output = '';
-      child.stdout?.on('data', (data) => {
-        output += data.toString();
-      });
-
-      child.on('close', (code) => {
-        if (code === 0) {
-          // Extract version from output
-          const versionMatch = output.match(/v?(\d+\.\d+(\.\d+)?)/);
-          resolve(versionMatch ? versionMatch[1] : output.trim());
-        } else {
-          reject(new Error(`Command failed with code ${code}`));
-        }
-      });
-
-      child.on('error', reject);
-    });
-  } catch {
-    return null;
-  }
-}
 
 async function detectProjectInfo() {
   const cwd = process.cwd();
