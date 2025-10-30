@@ -370,6 +370,7 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Setup Claude Code hooks for system information display
    */
   async setupClaudeCodeHooks(cwd: string): Promise<{ success: boolean; message?: string }> {
+    const { processSettings, getSuccessMessage } = await import('./functional/claude-code-logic.js');
     const claudeConfigDir = path.join(cwd, '.claude');
     const settingsPath = path.join(claudeConfigDir, 'settings.json');
 
@@ -379,55 +380,33 @@ Please begin your response with a comprehensive summary of all the instructions 
         fs.mkdirSync(claudeConfigDir, { recursive: true });
       }
 
-      // Read existing settings or create new ones
-      let settings = {};
+      // Read existing settings or null if doesn't exist
+      let existingContent: string | null = null;
       if (fs.existsSync(settingsPath)) {
         try {
-          const settingsContent = fs.readFileSync(settingsPath, 'utf-8');
-          settings = JSON.parse(settingsContent);
+          existingContent = fs.readFileSync(settingsPath, 'utf-8');
         } catch (error) {
           console.warn(
             chalk.yellow(
-              '  Warning: Could not parse existing Claude Code settings, creating new ones'
+              '  Warning: Could not read existing Claude Code settings, creating new ones'
             )
           );
         }
       }
 
-      // Add or update hooks configuration
-      settings = {
-        ...settings,
-        hooks: {
-          ...((settings as any).hooks || {}),
-          SessionStart: [
-            {
-              hooks: [
-                {
-                  type: 'command',
-                  command: 'npx -y github:sylphxltd/flow sysinfo --hook session',
-                },
-              ],
-            },
-          ],
-          UserPromptSubmit: [
-            {
-              hooks: [
-                {
-                  type: 'command',
-                  command: 'npx -y github:sylphxltd/flow sysinfo --hook message',
-                },
-              ],
-            },
-          ],
-        },
-      };
+      // Process settings using pure functions
+      const settingsResult = processSettings(existingContent);
+
+      if (settingsResult._tag === 'Failure') {
+        throw new Error(settingsResult.error.message);
+      }
 
       // Write updated settings
-      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+      fs.writeFileSync(settingsPath, settingsResult.value);
 
       return {
         success: true,
-        message: `Claude Code hooks configured: SessionStart (static info) + UserPromptSubmit (dynamic info)`,
+        message: getSuccessMessage(),
       };
     } catch (error) {
       throw error;
