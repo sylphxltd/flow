@@ -6,8 +6,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Console output capture arrays
-const consoleLogOutput: string[] = [];
-const consoleErrorOutput: string[] = [];
+const { consoleLogOutput, consoleErrorOutput, mockConsole } = vi.hoisted(() => {
+  const consoleLogOutput: string[] = [];
+  const consoleErrorOutput: string[] = [];
+
+  const mockConsole = {
+    log: (...args: any[]) => {
+      consoleLogOutput.push(args.join(' '));
+    },
+    error: (...args: any[]) => {
+      consoleErrorOutput.push(args.join(' '));
+    },
+    warn: (...args: any[]) => {},
+    info: (...args: any[]) => {},
+    debug: (...args: any[]) => {},
+  };
+
+  // Replace global console BEFORE any imports
+  globalThis.console = mockConsole as any;
+
+  return { consoleLogOutput, consoleErrorOutput, mockConsole };
+});
 
 // Mock chalk to avoid ANSI codes in test outputs
 vi.mock('chalk', () => ({
@@ -20,37 +39,45 @@ vi.mock('chalk', () => ({
   },
 }));
 
+// Import logger AFTER hoisted console setup
+import { default as logger, log } from '../../src/utils/logger.js';
+
 describe('Logger', () => {
   let Logger: any;
-  let logger: any;
-  let log: any;
+  let testLogger: any;  // Fresh logger instance for each test
+  let testLog: any;  // Convenience functions that use testLogger
 
-  beforeEach(async () => {
-    // Note: vi.resetModules() removed in vitest 4.x
-    // Module cache reset not needed for these tests
-
+  beforeEach(() => {
     // Clear output arrays
     consoleLogOutput.length = 0;
     consoleErrorOutput.length = 0;
 
-    // Mock console (vitest 4.x compatible)
-    vi.spyOn(console, 'log').mockImplementation((...args) => {
-      consoleLogOutput.push(args.join(' '));
-    });
+    // Use the imported Logger class
+    Logger = logger.constructor;
 
-    vi.spyOn(console, 'error').mockImplementation((...args) => {
-      consoleErrorOutput.push(args.join(' '));
-    });
+    // Create fresh logger instance that will use our mocked console
+    testLogger = new Logger();
 
-    // Import fresh logger module
-    const module = await import('../../src/utils/logger.js');
-    Logger = module.default.constructor;
-    logger = module.logger;
-    log = module.log;
+    // Create convenience functions for testing (mirrors the exported 'log' object)
+    testLog = {
+      debug: (message: string, context?: Record<string, unknown>) => testLogger.debug(message, context),
+      info: (message: string, context?: Record<string, unknown>) => testLogger.info(message, context),
+      warn: (message: string, context?: Record<string, unknown>) => testLogger.warn(message, context),
+      error: (message: string, error?: Error, context?: Record<string, unknown>) =>
+        testLogger.error(message, error, context),
+      time: <T>(fn: () => Promise<T>, label: string, context?: Record<string, unknown>) =>
+        testLogger.time(fn, label, context),
+      timeSync: <T>(fn: () => T, label: string, context?: Record<string, unknown>) =>
+        testLogger.timeSync(fn, label, context),
+      child: (context: Record<string, unknown>) => testLogger.child(context),
+      module: (moduleName: string) => testLogger.module(moduleName),
+      setLevel: (level: any) => testLogger.setLevel(level),
+      updateConfig: (config: any) => testLogger.updateConfig(config),
+    };
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    // Clear output arrays
     consoleLogOutput.length = 0;
     consoleErrorOutput.length = 0;
   });
@@ -78,41 +105,41 @@ describe('Logger', () => {
 
   describe('Log Levels', () => {
     it('should log debug messages', () => {
-      logger.setLevel('debug');
-      logger.debug('Debug message');
+      testLogger.setLevel('debug');
+      testLogger.debug('Debug message');
       expect(consoleLogOutput.length).toBeGreaterThan(0);
       expect(consoleLogOutput[0]).toContain('Debug message');
     });
 
     it('should log info messages', () => {
-      logger.setLevel('info');
-      logger.info('Info message');
+      testLogger.setLevel('info');
+      testLogger.info('Info message');
       expect(consoleLogOutput.length).toBeGreaterThan(0);
       expect(consoleLogOutput[0]).toContain('Info message');
     });
 
     it('should log warn messages', () => {
-      logger.setLevel('warn');
-      logger.warn('Warning message');
+      testLogger.setLevel('warn');
+      testLogger.warn('Warning message');
       expect(consoleLogOutput.length).toBeGreaterThan(0);
       expect(consoleLogOutput[0]).toContain('Warning message');
     });
 
     it('should log error messages', () => {
-      logger.error('Error message');
+      testLogger.error('Error message');
       expect(consoleErrorOutput.length).toBeGreaterThan(0);
       expect(consoleErrorOutput[0]).toContain('Error message');
     });
 
     it('should respect log level hierarchy', () => {
-      logger.setLevel('warn');
+      testLogger.setLevel('warn');
 
-      logger.debug('Should not log');
-      logger.info('Should not log');
+      testLogger.debug('Should not log');
+      testLogger.info('Should not log');
       expect(consoleLogOutput).toHaveLength(0);
 
-      logger.warn('Should log');
-      logger.error('Should log');
+      testLogger.warn('Should log');
+      testLogger.error('Should log');
       expect(consoleLogOutput.length).toBeGreaterThan(0);
       expect(consoleErrorOutput.length).toBeGreaterThan(0);
     });
@@ -120,8 +147,8 @@ describe('Logger', () => {
 
   describe('Formats', () => {
     it('should format as JSON', () => {
-      logger.updateConfig({ format: 'json' });
-      logger.info('Test message');
+      testLogger.updateConfig({ format: 'json' });
+      testLogger.info('Test message');
 
       expect(consoleLogOutput.length).toBeGreaterThan(0);
       const output = consoleLogOutput[0];
@@ -134,8 +161,8 @@ describe('Logger', () => {
     });
 
     it('should format as simple', () => {
-      logger.updateConfig({ format: 'simple' });
-      logger.info('Test message');
+      testLogger.updateConfig({ format: 'simple' });
+      testLogger.info('Test message');
 
       const output = consoleLogOutput[0];
       expect(output).toContain('INFO');
@@ -143,8 +170,8 @@ describe('Logger', () => {
     });
 
     it('should format as pretty (default)', () => {
-      logger.updateConfig({ format: 'pretty' });
-      logger.info('Test message');
+      testLogger.updateConfig({ format: 'pretty' });
+      testLogger.info('Test message');
 
       const output = consoleLogOutput[0];
       expect(output).toContain('Test message');
@@ -153,16 +180,16 @@ describe('Logger', () => {
 
   describe('Context', () => {
     it('should include context in logs', () => {
-      logger.updateConfig({ format: 'json' });
-      logger.info('Message with context', { userId: '123', action: 'login' });
+      testLogger.updateConfig({ format: 'json' });
+      testLogger.info('Message with context', { userId: '123', action: 'login' });
 
       const parsed = JSON.parse(consoleLogOutput[0]);
       expect(parsed.context).toEqual({ userId: '123', action: 'login' });
     });
 
     it('should merge context from child logger', () => {
-      logger.updateConfig({ format: 'json' });
-      const child = logger.child({ service: 'auth' });
+      testLogger.updateConfig({ format: 'json' });
+      const child = testLogger.child({ service: 'auth' });
 
       child.info('Child message', { userId: '456' });
 
@@ -172,16 +199,16 @@ describe('Logger', () => {
     });
 
     it('should handle empty context', () => {
-      logger.updateConfig({ format: 'json' });
-      logger.info('No context message');
+      testLogger.updateConfig({ format: 'json' });
+      testLogger.info('No context message');
 
       const parsed = JSON.parse(consoleLogOutput[0]);
       expect(parsed.context).toEqual({});
     });
 
     it('should exclude context when disabled', () => {
-      logger.updateConfig({ format: 'json', includeContext: false });
-      logger.info('Message', { data: 'value' });
+      testLogger.updateConfig({ format: 'json', includeContext: false });
+      testLogger.info('Message', { data: 'value' });
 
       const parsed = JSON.parse(consoleLogOutput[0]);
       expect(parsed.context).toBeUndefined();
@@ -190,13 +217,13 @@ describe('Logger', () => {
 
   describe('Child Logger', () => {
     it('should create child logger with context', () => {
-      const child = logger.child({ component: 'database' });
+      const child = testLogger.child({ component: 'database' });
       expect(child).toBeDefined();
     });
 
     it('should inherit parent context', () => {
-      logger.updateConfig({ format: 'json' });
-      const parent = logger.child({ app: 'test' });
+      testLogger.updateConfig({ format: 'json' });
+      const parent = testLogger.child({ app: 'test' });
       const child = parent.child({ component: 'db' });
 
       child.info('Child message');
@@ -209,13 +236,13 @@ describe('Logger', () => {
 
   describe('Module Logger', () => {
     it('should create module logger', () => {
-      const moduleLogger = logger.module('auth');
+      const moduleLogger = testLogger.module('auth');
       expect(moduleLogger).toBeDefined();
     });
 
     it('should include module in logs', () => {
-      logger.updateConfig({ format: 'json' });
-      const moduleLogger = logger.module('auth');
+      testLogger.updateConfig({ format: 'json' });
+      const moduleLogger = testLogger.module('auth');
 
       moduleLogger.info('Module message');
 
@@ -224,8 +251,8 @@ describe('Logger', () => {
     });
 
     it('should include module in simple format', () => {
-      logger.updateConfig({ format: 'simple' });
-      const moduleLogger = logger.module('database');
+      testLogger.updateConfig({ format: 'simple' });
+      const moduleLogger = testLogger.module('database');
 
       moduleLogger.info('Test');
 
@@ -236,10 +263,10 @@ describe('Logger', () => {
 
   describe('Error Logging', () => {
     it('should log error with stack trace', () => {
-      logger.updateConfig({ format: 'json' });
+      testLogger.updateConfig({ format: 'json' });
       const error = new Error('Test error');
 
-      logger.error('Error occurred', error);
+      testLogger.error('Error occurred', error);
 
       const parsed = JSON.parse(consoleErrorOutput[0]);
       expect(parsed.error).toBeDefined();
@@ -249,21 +276,21 @@ describe('Logger', () => {
     });
 
     it('should include error code if present', () => {
-      logger.updateConfig({ format: 'json' });
+      testLogger.updateConfig({ format: 'json' });
       const error: any = new Error('Test error');
       error.code = 'ERR_TEST';
 
-      logger.error('Error occurred', error);
+      testLogger.error('Error occurred', error);
 
       const parsed = JSON.parse(consoleErrorOutput[0]);
       expect(parsed.error.code).toBe('ERR_TEST');
     });
 
     it('should handle error without code', () => {
-      logger.updateConfig({ format: 'json' });
+      testLogger.updateConfig({ format: 'json' });
       const error = new Error('Simple error');
 
-      logger.error('Error', error);
+      testLogger.error('Error', error);
 
       const parsed = JSON.parse(consoleErrorOutput[0]);
       expect(parsed.error.code).toBeUndefined();
@@ -272,46 +299,46 @@ describe('Logger', () => {
 
   describe('Time Method', () => {
     it('should time async function', async () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const fn = async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         return 'result';
       };
 
-      const result = await logger.time(fn, 'test operation');
+      const result = await testLogger.time(fn, 'test operation');
 
       expect(result).toBe('result');
       expect(consoleLogOutput.length).toBeGreaterThan(0);
     });
 
     it('should log start and completion', async () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const fn = async () => 'done';
 
-      await logger.time(fn, 'operation');
+      await testLogger.time(fn, 'operation');
 
       expect(consoleLogOutput.some((log) => log.includes('Starting operation'))).toBe(true);
       expect(consoleLogOutput.some((log) => log.includes('Completed operation'))).toBe(true);
     });
 
     it('should log error on failure', async () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const error = new Error('Operation failed');
       const fn = async () => {
         throw error;
       };
 
-      await expect(logger.time(fn, 'failing operation')).rejects.toThrow('Operation failed');
+      await expect(testLogger.time(fn, 'failing operation')).rejects.toThrow('Operation failed');
 
       expect(consoleErrorOutput.some((log) => log.includes('Failed failing operation'))).toBe(true);
     });
 
     it('should include duration in context', async () => {
-      logger.setLevel('debug');
-      logger.updateConfig({ format: 'json' });
+      testLogger.setLevel('debug');
+      testLogger.updateConfig({ format: 'json' });
       const fn = async () => 'done';
 
-      await logger.time(fn, 'timed');
+      await testLogger.time(fn, 'timed');
 
       const completedLog = consoleLogOutput.find((log) => log.includes('Completed timed'));
       expect(completedLog).toBeDefined();
@@ -323,27 +350,27 @@ describe('Logger', () => {
 
   describe('TimeSync Method', () => {
     it('should time sync function', () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const fn = () => 'result';
 
-      const result = logger.timeSync(fn, 'sync operation');
+      const result = testLogger.timeSync(fn, 'sync operation');
 
       expect(result).toBe('result');
       expect(consoleLogOutput.length).toBeGreaterThan(0);
     });
 
     it('should log start and completion', () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const fn = () => 42;
 
-      logger.timeSync(fn, 'calculation');
+      testLogger.timeSync(fn, 'calculation');
 
       expect(consoleLogOutput.some((log) => log.includes('Starting calculation'))).toBe(true);
       expect(consoleLogOutput.some((log) => log.includes('Completed calculation'))).toBe(true);
     });
 
     it('should log error on failure', () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const fn = () => {
         throw new Error('Sync failed');
       };
@@ -354,11 +381,11 @@ describe('Logger', () => {
     });
 
     it('should include duration in context', () => {
-      logger.setLevel('debug');
-      logger.updateConfig({ format: 'json' });
+      testLogger.setLevel('debug');
+      testLogger.updateConfig({ format: 'json' });
       const fn = () => 'done';
 
-      logger.timeSync(fn, 'timed sync');
+      testLogger.timeSync(fn, 'timed sync');
 
       const completedLog = consoleLogOutput.find((log) => log.includes('Completed timed sync'));
       const parsed = JSON.parse(completedLog!);
@@ -368,34 +395,34 @@ describe('Logger', () => {
 
   describe('Convenience Functions', () => {
     it('should export log.debug', () => {
-      logger.setLevel('debug');
-      log.debug('Debug via convenience');
+      testLogger.setLevel('debug');
+      testLog.debug('Debug via convenience');
       expect(consoleLogOutput.some((line) => line.includes('Debug via convenience'))).toBe(true);
     });
 
     it('should export log.info', () => {
-      log.info('Info via convenience');
+      testLog.info('Info via convenience');
       expect(consoleLogOutput.some((line) => line.includes('Info via convenience'))).toBe(true);
     });
 
     it('should export log.warn', () => {
-      log.warn('Warn via convenience');
+      testLog.warn('Warn via convenience');
       expect(consoleLogOutput.some((line) => line.includes('Warn via convenience'))).toBe(true);
     });
 
     it('should export log.error', () => {
-      log.error('Error via convenience', new Error('Test'));
+      testLog.error('Error via convenience', new Error('Test'));
       expect(consoleErrorOutput.some((line) => line.includes('Error via convenience'))).toBe(true);
     });
 
     it('should export log.time', async () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const result = await log.time(async () => 'result', 'async op');
       expect(result).toBe('result');
     });
 
     it('should export log.timeSync', () => {
-      logger.setLevel('debug');
+      testLogger.setLevel('debug');
       const result = log.timeSync(() => 42, 'sync op');
       expect(result).toBe(42);
     });
@@ -411,14 +438,14 @@ describe('Logger', () => {
     });
 
     it('should export log.setLevel', () => {
-      log.setLevel('error');
-      log.info('Should not log');
+      testLog.setLevel('error');
+      testLog.info('Should not log');
       expect(consoleLogOutput).toHaveLength(0);
     });
 
     it('should export log.updateConfig', () => {
-      log.updateConfig({ format: 'json' });
-      log.info('JSON test');
+      testLog.updateConfig({ format: 'json' });
+      testLog.info('JSON test');
       const parsed = JSON.parse(consoleLogOutput[0]);
       expect(parsed.level).toBe('info');
     });
@@ -426,40 +453,40 @@ describe('Logger', () => {
 
   describe('Configuration', () => {
     it('should disable colors', () => {
-      logger.updateConfig({ colors: false, format: 'pretty' });
-      logger.info('No colors');
+      testLogger.updateConfig({ colors: false, format: 'pretty' });
+      testLogger.info('No colors');
 
       const output = consoleLogOutput[0];
       expect(output).toContain('No colors');
     });
 
     it('should exclude timestamp', () => {
-      logger.updateConfig({ format: 'json', includeTimestamp: false });
-      logger.info('Test');
+      testLogger.updateConfig({ format: 'json', includeTimestamp: false });
+      testLogger.info('Test');
 
       const parsed = JSON.parse(consoleLogOutput[0]);
       expect(parsed.timestamp).toBeDefined(); // Still included in JSON entry
     });
 
     it('should update multiple config options', () => {
-      logger.updateConfig({
+      testLogger.updateConfig({
         level: 'warn',
         format: 'simple',
         colors: false,
       });
 
-      logger.info('Should not log');
+      testLogger.info('Should not log');
       expect(consoleLogOutput).toHaveLength(0);
 
-      logger.warn('Should log');
+      testLogger.warn('Should log');
       expect(consoleLogOutput.length).toBeGreaterThan(0);
     });
   });
 
   describe('Integration', () => {
     it('should handle complete workflow', async () => {
-      logger.updateConfig({ format: 'json', level: 'debug' });
-      const moduleLogger = logger.module('test');
+      testLogger.updateConfig({ format: 'json', level: 'debug' });
+      const moduleLogger = testLogger.module('test');
       const child = moduleLogger.child({ userId: '123' });
 
       child.debug('Starting operation');
