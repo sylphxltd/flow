@@ -31,7 +31,7 @@ export class TargetManager {
    * Get target by ID
    */
   getTarget(id: string) {
-    return targetRegistry.getTarget(id);
+    return getTarget(id);  // Use lazy-initialized export instead of direct registry access
   }
 
   /**

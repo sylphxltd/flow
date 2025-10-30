@@ -4,6 +4,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Test isolation - run each test file in separate process to prevent mock pollution
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: false,  // Use multiple processes
+      },
+    },
     // Mock management to prevent test pollution
     mockReset: false,      // Don't reset module-level mocks
     restoreMocks: false,   // Don't restore mocks to original implementations

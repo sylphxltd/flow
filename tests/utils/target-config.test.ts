@@ -27,11 +27,9 @@ vi.mock('../../src/utils/secret-utils.js', () => ({
   },
 }));
 
-// Mock readline module at the top level
-let createInterfaceMock = vi.fn();
-
+// Mock readline module - inline vi.fn() to avoid hoisting issues
 vi.mock('node:readline', () => ({
-  createInterface: createInterfaceMock,
+  createInterface: vi.fn(),
 }));
 
 import { MCP_SERVER_REGISTRY } from '../../src/config/servers.js';
@@ -444,7 +442,7 @@ describe('Target Config', () => {
       };
 
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
-      createInterfaceMock.mockReturnValue(readlineInterface as any);
+      vi.mocked(readline.createInterface).mockReturnValue(readlineInterface as any);
       vi.spyOn(secretUtils, 'convertSecretsToFileReferences').mockResolvedValue({});
       vi.spyOn(secretUtils, 'addToGitignore').mockResolvedValue(undefined);
     });
