@@ -3,16 +3,16 @@
  * Tests for centralized path resolution
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getAgentsDir,
-  getTemplatesDir,
-  getRulesDir,
   getKnowledgeDir,
-  getRuleFile,
   getPathsInfo,
+  getRuleFile,
+  getRulesDir,
+  getTemplatesDir,
 } from '../../src/utils/paths.js';
 
 describe('Paths', () => {
@@ -384,7 +384,7 @@ describe('Paths', () => {
           'complex.rule.name.v2.json',
           'rule-with-many-hyphens.md',
           'rule_with_many_underscores.txt',
-          'rule123.test456.ext789'
+          'rule123.test456.ext789',
         ];
 
         for (const filename of validFilenames) {
@@ -405,7 +405,7 @@ describe('Paths', () => {
         const testCases = [
           { filename: 'simple.md', expectedExtension: 'simple.md' },
           { filename: 'rule.v1.json', expectedExtension: 'rule.v1.json' },
-          { filename: 'test_rule_file.txt', expectedExtension: 'test_rule_file.txt' }
+          { filename: 'test_rule_file.txt', expectedExtension: 'test_rule_file.txt' },
         ];
 
         for (const testCase of testCases) {

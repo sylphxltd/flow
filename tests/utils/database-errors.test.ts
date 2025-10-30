@@ -5,20 +5,20 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  DatabaseError,
-  ValidationError,
+  AppError,
   ConnectionError,
+  DatabaseError,
   MigrationError,
-  executeOperation,
-  isDatabaseError,
-  isValidationError,
-  isConnectionError,
-  isMigrationError,
-  createMigrationError,
+  ValidationError,
   createConnectionError,
   createDatabaseError,
+  createMigrationError,
   createValidationError,
-  AppError,
+  executeOperation,
+  isConnectionError,
+  isDatabaseError,
+  isMigrationError,
+  isValidationError,
 } from '../../src/utils/database-errors.js';
 
 describe('Database Errors', () => {
@@ -213,9 +213,13 @@ describe('Database Errors', () => {
     it('should include context in error', async () => {
       const context = { query: 'SELECT *', table: 'users' };
       try {
-        await executeOperation('SELECT', async () => {
-          throw new Error('Query failed');
-        }, context);
+        await executeOperation(
+          'SELECT',
+          async () => {
+            throw new Error('Query failed');
+          },
+          context
+        );
         expect.fail('Should have thrown');
       } catch (error: any) {
         expect(error).toBeDefined();

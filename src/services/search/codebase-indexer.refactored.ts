@@ -7,8 +7,12 @@
 
 import path from 'node:path';
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
+import type {
+  CodebaseFile,
+  CodebaseIndexerOptions,
+  IndexingStatus,
+} from './codebase-indexer.types.js';
 import type { EmbeddingProvider } from './embeddings.js';
-import type { CodebaseFile, CodebaseIndexerOptions, IndexingStatus } from './codebase-indexer.types.js';
 import { FileWatcher } from './file-watcher.js';
 import { IndexCacheManager } from './index-cache.js';
 import { IndexingOperations } from './indexing-operations.js';
@@ -105,7 +109,9 @@ export class CodebaseIndexer {
           }
 
           this.status.indexedFiles++;
-          this.status.progress = Math.round((this.status.indexedFiles / filesToReindex.length) * 100);
+          this.status.progress = Math.round(
+            (this.status.indexedFiles / filesToReindex.length) * 100
+          );
           this.status = this.indexingOps.updateStatus(this.status, filePath, this.status.progress);
         }
 
@@ -132,7 +138,7 @@ export class CodebaseIndexer {
   /**
    * Search the indexed codebase
    */
-  async search(query: string, limit: number = 10): Promise<any[]> {
+  async search(query: string, limit = 10): Promise<any[]> {
     try {
       // For now, return empty array - implement search functionality
       return [];

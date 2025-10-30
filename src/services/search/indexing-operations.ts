@@ -8,10 +8,10 @@ import {
   isTextFile,
   scanFiles,
 } from '../../utils/codebase-helpers.js';
-import type { CodebaseFile, IndexCache, IndexingStatus } from './codebase-indexer.types.js';
-import type { IndexCacheManager } from './index-cache.js';
 import type { SeparatedMemoryStorage } from '../storage/separated-storage.js';
+import type { CodebaseFile, IndexCache, IndexingStatus } from './codebase-indexer.types.js';
 import type { EmbeddingProvider } from './embeddings.js';
+import type { IndexCacheManager } from './index-cache.js';
 import type { SearchIndex } from './tfidf.js';
 
 export class IndexingOperations {
@@ -19,11 +19,7 @@ export class IndexingOperations {
   private cacheManager: IndexCacheManager;
   private batchSize: number;
 
-  constructor(
-    db: SeparatedMemoryStorage,
-    cacheManager: IndexCacheManager,
-    batchSize: number = 100
-  ) {
+  constructor(db: SeparatedMemoryStorage, cacheManager: IndexCacheManager, batchSize = 100) {
     this.db = db;
     this.cacheManager = cacheManager;
     this.batchSize = batchSize;
@@ -49,7 +45,7 @@ export class IndexingOperations {
       }
 
       // Read file content
-      const content = await import('node:fs').then(fs =>
+      const content = await import('node:fs').then((fs) =>
         fs.promises.readFile(absolutePath, 'utf-8')
       );
 
@@ -57,9 +53,7 @@ export class IndexingOperations {
       const language = detectLanguage(filePath);
 
       // Get file stats
-      const stats = await import('node:fs').then(fs =>
-        fs.promises.stat(absolutePath)
-      );
+      const stats = await import('node:fs').then((fs) => fs.promises.stat(absolutePath));
 
       return {
         path: filePath,
@@ -134,11 +128,7 @@ export class IndexingOperations {
   /**
    * Update indexing status
    */
-  updateStatus(
-    status: IndexingStatus,
-    currentFile?: string,
-    progress?: number
-  ): IndexingStatus {
+  updateStatus(status: IndexingStatus, currentFile?: string, progress?: number): IndexingStatus {
     return {
       ...status,
       currentFile,
@@ -149,10 +139,7 @@ export class IndexingOperations {
   /**
    * Get files that need re-indexing
    */
-  getFilesToReindex(
-    scanResult: ScanResult,
-    cache: IndexCache
-  ): string[] {
+  getFilesToReindex(scanResult: ScanResult, cache: IndexCache): string[] {
     const filesToReindex: string[] = [];
 
     for (const file of scanResult.files) {

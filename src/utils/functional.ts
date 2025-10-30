@@ -413,9 +413,7 @@ export const tryCatch = <T, E = Error>(fn: () => T): Result<T, E> => {
 /**
  * TryCatchAsync - Async version of tryCatch
  */
-export const tryCatchAsync = async <T, E = Error>(
-  fn: () => Promise<T>
-): Promise<Result<T, E>> => {
+export const tryCatchAsync = async <T, E = Error>(fn: () => Promise<T>): Promise<Result<T, E>> => {
   try {
     return { ok: true, value: await fn() };
   } catch (error) {

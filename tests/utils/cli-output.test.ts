@@ -3,8 +3,16 @@
  * Tests for CLI output formatting utilities
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { CLIOutput, cli, print, success, warning, error, info } from '../../src/utils/cli-output.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  CLIOutput,
+  cli,
+  error,
+  info,
+  print,
+  success,
+  warning,
+} from '../../src/utils/cli-output.js';
 
 // Mock logger to prevent it from writing to console
 vi.mock('../../src/utils/logger.js', () => ({

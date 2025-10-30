@@ -3,8 +3,8 @@
  * Tests for runtime configuration utilities
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { useRuntimeConfig, useIsCI, useIsDebug } from '../../src/composables/useRuntimeConfig.js';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { useIsCI, useIsDebug, useRuntimeConfig } from '../../src/composables/useRuntimeConfig.js';
 
 describe('useRuntimeConfig', () => {
   const originalEnv = process.env;

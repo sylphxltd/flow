@@ -3,7 +3,7 @@
  * Tests for target registry and management
  */
 
-import { describe, expect, it, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { TargetRegistry } from '../../src/config/targets.js';
 import type { Target } from '../../src/types.js';
 
@@ -374,12 +374,8 @@ describe('Targets Config', () => {
 
   describe('Integration', () => {
     it('should have consistent target data', async () => {
-      const {
-        ALL_TARGETS,
-        IMPLEMENTED_TARGETS,
-        getAllTargetIDs,
-        getImplementedTargetIDs,
-      } = await import('../../src/config/targets.js');
+      const { ALL_TARGETS, IMPLEMENTED_TARGETS, getAllTargetIDs, getImplementedTargetIDs } =
+        await import('../../src/config/targets.js');
 
       const allTargets = ALL_TARGETS();
       const implementedTargets = IMPLEMENTED_TARGETS();
@@ -402,12 +398,9 @@ describe('Targets Config', () => {
     });
 
     it('should handle complete workflow', async () => {
-      const {
-        getAllTargetIDs,
-        getTarget,
-        isTargetImplemented,
-        IMPLEMENTED_TARGETS,
-      } = await import('../../src/config/targets.js');
+      const { getAllTargetIDs, getTarget, isTargetImplemented, IMPLEMENTED_TARGETS } = await import(
+        '../../src/config/targets.js'
+      );
 
       const allIds = getAllTargetIDs();
       expect(allIds.length).toBeGreaterThan(0);

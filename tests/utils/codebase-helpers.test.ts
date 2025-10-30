@@ -3,10 +3,10 @@
  * Tests for file scanning and language detection utilities
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   detectLanguage,
   isTextFile,
@@ -339,8 +339,14 @@ describe('Codebase Helpers', () => {
 
       const results = scanFiles(testDir);
 
-      expect(results.some((f) => f.path.includes('src/index.ts') || f.path.includes('src\\index.ts'))).toBe(true);
-      expect(results.some((f) => f.path.includes('src/utils/helper.ts') || f.path.includes('src\\utils\\helper.ts'))).toBe(true);
+      expect(
+        results.some((f) => f.path.includes('src/index.ts') || f.path.includes('src\\index.ts'))
+      ).toBe(true);
+      expect(
+        results.some(
+          (f) => f.path.includes('src/utils/helper.ts') || f.path.includes('src\\utils\\helper.ts')
+        )
+      ).toBe(true);
     });
 
     it('should respect .gitignore', () => {
@@ -464,12 +470,7 @@ describe('Codebase Helpers', () => {
 
         // Detect language
         const lang = detectLanguage(result.path);
-        expect([
-          'TypeScript',
-          'JavaScript',
-          'Markdown',
-          undefined,
-        ]).toContain(lang);
+        expect(['TypeScript', 'JavaScript', 'Markdown', undefined]).toContain(lang);
 
         // Check if text file
         const isText = isTextFile(result.path);

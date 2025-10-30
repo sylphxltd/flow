@@ -3,7 +3,7 @@
  * Tests for the run CLI command
  */
 
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runCommand } from '../../src/commands/run-command.js';
 
 // Mock fs promises

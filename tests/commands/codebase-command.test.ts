@@ -6,8 +6,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   codebaseCommand,
-  codebaseSearchCommand,
   codebaseReindexCommand,
+  codebaseSearchCommand,
   codebaseStatusCommand,
 } from '../../src/commands/codebase-command.js';
 

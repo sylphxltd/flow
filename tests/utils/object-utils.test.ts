@@ -5,9 +5,9 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  deleteNestedProperty,
   getNestedProperty,
   setNestedProperty,
-  deleteNestedProperty,
 } from '../../src/utils/object-utils.js';
 
 describe('Object Utils', () => {
@@ -78,7 +78,7 @@ describe('Object Utils', () => {
     });
 
     it('should handle object with special keys', () => {
-      const obj = { 'user-name': 'John', 'user_id': 123 };
+      const obj = { 'user-name': 'John', user_id: 123 };
       expect(getNestedProperty(obj, 'user-name')).toBe('John');
       expect(getNestedProperty(obj, 'user_id')).toBe(123);
     });
@@ -338,7 +338,7 @@ describe('Object Utils', () => {
     });
 
     it('should handle deleting paths with special characters', () => {
-      const obj = { 'a-b': 'dash', 'a_b': 'underscore', 'a$b': 'dollar' };
+      const obj = { 'a-b': 'dash', a_b: 'underscore', a$b: 'dollar' };
       deleteNestedProperty(obj, 'a-b');
       deleteNestedProperty(obj, 'a$b');
       expect(obj).toEqual({ a_b: 'underscore' });

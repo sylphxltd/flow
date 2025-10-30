@@ -4,9 +4,9 @@
  * Handles native module dependencies properly
  */
 
-import { build, type BuildOutput } from 'bun';
-import { rmSync, cpSync, existsSync } from 'node:fs';
+import { cpSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { type BuildOutput, build } from 'bun';
 
 // Clean dist folder
 console.log('🧹 Cleaning dist folder...');
@@ -56,7 +56,6 @@ try {
   console.log('\n🎉 Build complete!');
   console.log('\n📝 Note: Native dependencies are marked as external.');
   console.log('   They will be installed from npm when users run the package.');
-
 } catch (error) {
   console.error('❌ Build error:', error);
   process.exit(1);

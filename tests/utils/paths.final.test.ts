@@ -17,7 +17,7 @@ describe('Paths Final Coverage Tests', () => {
       const testPaths = [
         '/invalid/path/module.js',
         '/completely/wrong/structure/file.js',
-        '/some/other/location/not/in/project.js'
+        '/some/other/location/not/in/project.js',
       ];
 
       for (const testPath of testPaths) {
@@ -28,7 +28,9 @@ describe('Paths Final Coverage Tests', () => {
         if (distIndex === -1 && projectRootIndex === -1) {
           // This should trigger the error condition (lines 43-47)
           expect(() => {
-            throw new Error('Code must run from dist/ directory or be in a project with dist/ available');
+            throw new Error(
+              'Code must run from dist/ directory or be in a project with dist/ available'
+            );
           }).toThrow('Code must run from dist/ directory or be in a project with dist/ available');
         }
       }
@@ -38,10 +40,7 @@ describe('Paths Final Coverage Tests', () => {
       // Test the path detection logic that determines which code path is taken
 
       // Test cases that should find /dist/
-      const distPaths = [
-        '/project/dist/module.js',
-        '/very/long/path/to/dist/subdir/file.js'
-      ];
+      const distPaths = ['/project/dist/module.js', '/very/long/path/to/dist/subdir/file.js'];
 
       for (const testPath of distPaths) {
         const distIndex = testPath.lastIndexOf('/dist/');
@@ -50,10 +49,7 @@ describe('Paths Final Coverage Tests', () => {
       }
 
       // Test cases that should find /src/ but not /dist/
-      const srcPaths = [
-        '/project/src/module.js',
-        '/another/src/subdir/file.js'
-      ];
+      const srcPaths = ['/project/src/module.js', '/another/src/subdir/file.js'];
 
       for (const testPath of srcPaths) {
         const distIndex = testPath.lastIndexOf('/dist/');
@@ -67,7 +63,7 @@ describe('Paths Final Coverage Tests', () => {
       const errorPaths = [
         '/invalid/path.js',
         '/wrong/structure/file.js',
-        '/some/other/location.js'
+        '/some/other/location.js',
       ];
 
       for (const testPath of errorPaths) {

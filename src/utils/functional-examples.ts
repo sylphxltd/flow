@@ -5,18 +5,18 @@
 
 import {
   filter,
+  flatMap,
+  flow,
+  groupBy,
   map,
+  mapResult,
   pipe,
   reduce,
   sortBy,
   take,
   tap,
   tryCatch,
-  mapResult,
-  flow,
-  groupBy,
   uniqueBy,
-  flatMap,
 } from './functional.js';
 
 // ============================================================================
@@ -138,7 +138,7 @@ export const getTotalSizeByExtension = (files: FileInfo[]) =>
 export const filterActive = filter((u: User) => u.active);
 export const normalizeEmail = map((u: User) => ({
   ...u,
-  email: u.email.toLowerCase()
+  email: u.email.toLowerCase(),
 }));
 export const sortByAge = sortBy('age');
 export const takeTop5 = take(5);
@@ -146,12 +146,7 @@ export const takeTop5 = take(5);
 /**
  * Compose transformations
  */
-export const getTopActiveUsers = flow(
-  filterActive,
-  normalizeEmail,
-  sortByAge,
-  takeTop5
-);
+export const getTopActiveUsers = flow(filterActive, normalizeEmail, sortByAge, takeTop5);
 
 // Usage:
 // const topUsers = getTopActiveUsers(allUsers);
@@ -309,12 +304,8 @@ export const searchFiles = (
     files,
     // Apply filters
     filter((f: FileInfo) => f.size >= minSize),
-    filter((f: FileInfo) =>
-      extensions.length === 0 || extensions.includes(f.extension)
-    ),
-    filter((f: FileInfo) =>
-      f.path.toLowerCase().includes(query.toLowerCase())
-    ),
+    filter((f: FileInfo) => extensions.length === 0 || extensions.includes(f.extension)),
+    filter((f: FileInfo) => f.path.toLowerCase().includes(query.toLowerCase())),
     // Sort by most recently modified
     sortBy('mtime'),
     // Limit results

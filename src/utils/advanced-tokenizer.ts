@@ -32,12 +32,14 @@ export interface AdvancedTokenizerResult {
  */
 export class AdvancedCodeTokenizer {
   private tokenizer: any;
-  private initialized: boolean = false;
+  private initialized = false;
   private modelPath: string;
 
-  constructor(options: {
-    modelPath?: string;
-  } = {}) {
+  constructor(
+    options: {
+      modelPath?: string;
+    } = {}
+  ) {
     this.modelPath = options.modelPath || './models/starcoder2';
   }
 
@@ -73,12 +75,12 @@ export class AdvancedCodeTokenizer {
           totalTokens: 0,
           vocabSize: 49152,
           processingTime: Date.now() - startTime,
-          averageConfidence: 0
+          averageConfidence: 0,
         },
         raw: {
           inputIds: [],
-          decodedText: ''
-        }
+          decodedText: '',
+        },
       };
     }
 
@@ -101,14 +103,13 @@ export class AdvancedCodeTokenizer {
           totalTokens: tokens.length,
           vocabSize: 49152,
           processingTime,
-          averageConfidence: 0.95 // StarCoder2 本身就係高質量
+          averageConfidence: 0.95, // StarCoder2 本身就係高質量
         },
         raw: {
           inputIds,
-          decodedText
-        }
+          decodedText,
+        },
       };
-
     } catch (error) {
       throw new Error(`Tokenization failed: ${error.message}`);
     }
@@ -118,7 +119,10 @@ export class AdvancedCodeTokenizer {
    * 純粹 StarCoder2 tokenization - 完全信任，無任何額外處理
    * 直接使用 StarCoder2 嘅 token IDs，逐個解碼成文字
    */
-  private async createDirectTokens(decodedText: string, inputIds: number[]): Promise<AdvancedToken[]> {
+  private async createDirectTokens(
+    decodedText: string,
+    inputIds: number[]
+  ): Promise<AdvancedToken[]> {
     const tokens: AdvancedToken[] = [];
 
     // 完全信任 StarCoder2，直接使用佢嘅 tokenization
@@ -137,7 +141,7 @@ export class AdvancedCodeTokenizer {
             id: tokenId,
             score: 1.0, // StarCoder2 嘅所有 token 都係高質量
             confidence: 1.0, // 完全信任 StarCoder2
-            relevance: 'high' as const
+            relevance: 'high' as const,
           });
         }
       } catch (error) {
@@ -152,7 +156,7 @@ export class AdvancedCodeTokenizer {
   /**
    * 便利方法：只返回高質量 tokens
    */
-  async getTopTokens(content: string, limit: number = 20): Promise<AdvancedToken[]> {
+  async getTopTokens(content: string, limit = 20): Promise<AdvancedToken[]> {
     const result = await this.tokenize(content);
     return result.tokens.slice(0, limit);
   }

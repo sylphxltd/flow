@@ -4,10 +4,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import {
-  memoryTuiCommand,
-  handleMemoryTuiCommand,
-} from '../../src/commands/memory-tui-command.js';
+import { handleMemoryTuiCommand, memoryTuiCommand } from '../../src/commands/memory-tui-command.js';
 
 // Mock the TUI handler
 vi.mock('../../src/utils/memory-tui.js', () => {
@@ -49,24 +46,18 @@ describe('Memory TUI Command', () => {
 
   describe('Command Options', () => {
     it('should have target option', () => {
-      const targetOption = memoryTuiCommand.options?.find((opt) =>
-        opt.flags.includes('--target')
-      );
+      const targetOption = memoryTuiCommand.options?.find((opt) => opt.flags.includes('--target'));
       expect(targetOption).toBeDefined();
     });
 
     it('should have target description', () => {
-      const targetOption = memoryTuiCommand.options?.find((opt) =>
-        opt.flags.includes('--target')
-      );
+      const targetOption = memoryTuiCommand.options?.find((opt) => opt.flags.includes('--target'));
       expect(targetOption?.description).toBeTruthy();
       expect(targetOption?.description).toContain('Target platform');
     });
 
     it('should include implemented targets in description', () => {
-      const targetOption = memoryTuiCommand.options?.find((opt) =>
-        opt.flags.includes('--target')
-      );
+      const targetOption = memoryTuiCommand.options?.find((opt) => opt.flags.includes('--target'));
       expect(targetOption?.description).toContain('claude-code');
       expect(targetOption?.description).toContain('opencode');
     });
@@ -146,9 +137,7 @@ describe('Memory TUI Command', () => {
 
   describe('Target Manager Integration', () => {
     it('should include targets in option description', () => {
-      const targetOption = memoryTuiCommand.options?.find((opt) =>
-        opt.flags.includes('--target')
-      );
+      const targetOption = memoryTuiCommand.options?.find((opt) => opt.flags.includes('--target'));
 
       // Target manager is called during module initialization
       expect(targetOption?.description).toContain('claude-code');
@@ -156,9 +145,7 @@ describe('Memory TUI Command', () => {
     });
 
     it('should format targets list correctly', () => {
-      const targetOption = memoryTuiCommand.options?.find((opt) =>
-        opt.flags.includes('--target')
-      );
+      const targetOption = memoryTuiCommand.options?.find((opt) => opt.flags.includes('--target'));
 
       expect(targetOption?.description).toContain('Target platform');
       expect(targetOption?.description).toMatch(/claude-code.*opencode/);

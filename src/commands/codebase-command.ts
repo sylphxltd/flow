@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { CodebaseIndexer } from '../services/search/codebase-indexer.js';
 import { ReindexMonitor } from '../components/reindex-progress.js';
+import { CodebaseIndexer } from '../services/search/codebase-indexer.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
 import { CLIError } from '../utils/error-handler.js';
@@ -98,14 +98,14 @@ export const codebaseReindexCommand = new Command('reindex')
         });
 
         // Small delay
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       } else {
         // Update to calculating phase
         phase = 'calculating';
         monitor.updateProgress({ phase: 'calculating' });
 
         // Small delay to show calculating phase
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // Show completion with stats
@@ -118,7 +118,7 @@ export const codebaseReindexCommand = new Command('reindex')
       });
 
       // Give time to see the completion message
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       monitor.stop();
     } catch (error) {
@@ -133,6 +133,7 @@ export const codebaseStatusCommand = new Command('status')
       console.log('');
       console.log(chalk.cyan.bold('▸ Codebase Status'));
 
+      const searchService = getSearchService();
       await searchService.initialize();
       const status = await searchService.getStatus();
 

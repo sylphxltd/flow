@@ -3,10 +3,10 @@
  * Tests for the unified search service used by both CLI and MCP
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UnifiedSearchService } from '../../../src/services/search/unified-search-service.js';
 
 describe('Unified Search Service', () => {

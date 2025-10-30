@@ -145,7 +145,6 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('time_get_current, time_format, time_parse');
   }
 
-  
   // Codebase tools (enabled by default)
   if (!config.disableCodebase) {
     Logger.info('🔍 Registering codebase tools');

@@ -84,11 +84,7 @@ export class ErrorHandler {
    * Format log message for structured errors
    */
   private static formatLogMessage(error: BaseError, context?: Record<string, unknown>): string {
-    const parts = [
-      `[${error.category}]`,
-      `${error.code}:`,
-      error.message,
-    ];
+    const parts = [`[${error.category}]`, `${error.code}:`, error.message];
 
     if (error.context || context) {
       const allContext = { ...error.context, ...context };
@@ -201,7 +197,7 @@ export function setupGlobalErrorHandlers(): void {
     const error = reason instanceof Error ? reason : new Error(String(reason));
     ErrorHandler.handle(error, {
       source: 'unhandledRejection',
-      promise: promise.toString()
+      promise: promise.toString(),
     });
     process.exit(1);
   });

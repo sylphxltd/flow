@@ -5,7 +5,7 @@
 
 import { StorageUtils } from '../core/unified-storage-manager.js';
 import type {
-  MemoryStorageAdapter,
+  MemoryStorageAdapter as IMemoryStorageAdapter,
   StorageConfig,
   StorageResult,
 } from '../interfaces/unified-storage.js';
@@ -15,7 +15,7 @@ import { type MemoryEntry, MemoryStorage } from '../utils/memory-storage.js';
 /**
  * In-memory storage adapter implementation
  */
-export class MemoryStorageAdapter implements MemoryStorageAdapter {
+export class MemoryStorageAdapter implements IMemoryStorageAdapter {
   readonly type = 'memory';
   private storage: MemoryStorage;
   private config: StorageConfig;
@@ -127,7 +127,6 @@ export class MemoryStorageAdapter implements MemoryStorageAdapter {
     return StorageUtils.executeOperation(async () => {
       this.ensureInitialized();
       const keys = await this.keys(namespace);
-      const entries: MemoryEntry[] = [];
 
       // Use parallel operations for better performance
       const entryPromises = keys.map(async (key) => {
@@ -135,8 +134,8 @@ export class MemoryStorageAdapter implements MemoryStorageAdapter {
         return entry;
       });
 
-      const entries = await Promise.all(entryPromises);
-      return entries.filter((entry): entry is MemoryEntry => entry !== null);
+      const resolvedEntries = await Promise.all(entryPromises);
+      return resolvedEntries.filter((entry): entry is MemoryEntry => entry !== null);
     }, 'memory.getEntries');
   }
 

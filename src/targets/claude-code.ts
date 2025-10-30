@@ -351,15 +351,17 @@ Please begin your response with a comprehensive summary of all the instructions 
   /**
    * Setup Claude Code-specific configuration including hooks
    */
-  async setup(cwd: string, options?: Record<string, unknown>): Promise<{ success: boolean; message?: string }> {
-
+  async setup(
+    cwd: string,
+    options?: Record<string, unknown>
+  ): Promise<{ success: boolean; message?: string }> {
     try {
       const result = await this.setupClaudeCodeHooks(cwd);
       return result;
     } catch (error) {
       return {
         success: false,
-        message: `Could not setup Claude Code hooks: ${error instanceof Error ? error.message : String(error)}`
+        message: `Could not setup Claude Code hooks: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   },
@@ -384,7 +386,11 @@ Please begin your response with a comprehensive summary of all the instructions 
           const settingsContent = fs.readFileSync(settingsPath, 'utf-8');
           settings = JSON.parse(settingsContent);
         } catch (error) {
-          console.warn(chalk.yellow('  Warning: Could not parse existing Claude Code settings, creating new ones'));
+          console.warn(
+            chalk.yellow(
+              '  Warning: Could not parse existing Claude Code settings, creating new ones'
+            )
+          );
         }
       }
 
@@ -421,7 +427,7 @@ Please begin your response with a comprehensive summary of all the instructions 
 
       return {
         success: true,
-        message: `Claude Code hooks configured: SessionStart (static info) + UserPromptSubmit (dynamic info)`
+        message: `Claude Code hooks configured: SessionStart (static info) + UserPromptSubmit (dynamic info)`,
       };
     } catch (error) {
       throw error;

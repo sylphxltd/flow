@@ -3,10 +3,10 @@
  * Tests for the CacheDatabaseClient class
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CacheDatabaseClient } from '../../src/db/cache-db.js';
 import { DatabaseError } from '../../src/utils/database-errors.js';
 
@@ -675,9 +675,13 @@ describe('Cache Database Client', () => {
       `);
 
       // 6. Verify all data
-      const files = await client.client.execute('SELECT COUNT(*) as count FROM codebase_files_table');
+      const files = await client.client.execute(
+        'SELECT COUNT(*) as count FROM codebase_files_table'
+      );
       const terms = await client.client.execute('SELECT COUNT(*) as count FROM tfidf_terms_table');
-      const docs = await client.client.execute('SELECT COUNT(*) as count FROM tfidf_documents_table');
+      const docs = await client.client.execute(
+        'SELECT COUNT(*) as count FROM tfidf_documents_table'
+      );
       const idfs = await client.client.execute('SELECT COUNT(*) as count FROM tfidf_idf_table');
 
       expect(files.rows[0].count).toBe(1);
@@ -689,7 +693,9 @@ describe('Cache Database Client', () => {
       await client.clearCache();
 
       // 8. Verify all tables are empty
-      const filesAfter = await client.client.execute('SELECT COUNT(*) as count FROM codebase_files_table');
+      const filesAfter = await client.client.execute(
+        'SELECT COUNT(*) as count FROM codebase_files_table'
+      );
       expect(filesAfter.rows[0].count).toBe(0);
     });
 

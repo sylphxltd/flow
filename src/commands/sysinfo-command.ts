@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import os from 'node:os';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { Command } from 'commander';
 import chalk from 'chalk';
-import { cli } from '../utils/cli-output.js';
+import { Command } from 'commander';
 import type { CommandOptions } from '../types.js';
+import { cli } from '../utils/cli-output.js';
 
 // Create the sysinfo command
 export const sysinfoCommand = new Command('sysinfo')
@@ -23,7 +23,9 @@ export const sysinfoCommand = new Command('sysinfo')
 
       displaySystemInfo(systemInfo, options.hook || 'message', options.output);
     } catch (error) {
-      cli.error(`Failed to get system info: ${error instanceof Error ? error.message : String(error)}`);
+      cli.error(
+        `Failed to get system info: ${error instanceof Error ? error.message : String(error)}`
+      );
       process.exit(1);
     }
   });
@@ -105,7 +107,6 @@ async function getSystemInfo(preset?: string) {
   return baseInfo;
 }
 
-
 async function detectProjectInfo() {
   const cwd = process.cwd();
   const packageJsonPath = path.join(cwd, 'package.json');
@@ -115,7 +116,7 @@ async function detectProjectInfo() {
     return {
       type: 'unknown',
       packageManager: 'none',
-      description: 'No package.json found'
+      description: 'No package.json found',
     };
   }
 
@@ -134,44 +135,47 @@ async function detectProjectInfo() {
       packageManager: packageManager,
       name: packageJson.name || 'unnamed',
       version: packageJson.version || '0.0.0',
-      description: packageJson.description || ''
+      description: packageJson.description || '',
     };
   } catch (error) {
     return {
       type: 'js/ts',
       packageManager: 'unknown',
-      description: 'Invalid package.json'
+      description: 'Invalid package.json',
     };
   }
 }
 
 function detectProjectType(packageJson: any): string {
   // Check for TypeScript
-  const hasTypescript = packageJson.devDependencies?.typescript ||
-                       packageJson.dependencies?.typescript ||
-                       packageJson.devDependencies?.['@types/node'] ||
-                       packageJson.scripts?.build?.includes('tsc') ||
-                       packageJson.scripts?.dev?.includes('ts-node');
+  const hasTypescript =
+    packageJson.devDependencies?.typescript ||
+    packageJson.dependencies?.typescript ||
+    packageJson.devDependencies?.['@types/node'] ||
+    packageJson.scripts?.build?.includes('tsc') ||
+    packageJson.scripts?.dev?.includes('ts-node');
 
   if (hasTypescript) {
     return 'typescript';
   }
 
   // Check for React
-  const hasReact = packageJson.dependencies?.react ||
-                  packageJson.devDependencies?.react ||
-                  packageJson.scripts?.dev?.includes('vite') ||
-                  packageJson.scripts?.build?.includes('vite');
+  const hasReact =
+    packageJson.dependencies?.react ||
+    packageJson.devDependencies?.react ||
+    packageJson.scripts?.dev?.includes('vite') ||
+    packageJson.scripts?.build?.includes('vite');
 
   if (hasReact) {
     return 'react';
   }
 
   // Check for Next.js
-  const hasNext = packageJson.dependencies?.next ||
-                 packageJson.devDependencies?.next ||
-                 packageJson.scripts?.dev === 'next dev' ||
-                 packageJson.scripts?.build === 'next build';
+  const hasNext =
+    packageJson.dependencies?.next ||
+    packageJson.devDependencies?.next ||
+    packageJson.scripts?.dev === 'next dev' ||
+    packageJson.scripts?.build === 'next build';
 
   if (hasNext) {
     return 'next.js';
@@ -209,7 +213,7 @@ function detectPackageManager(cwd: string, packageJson?: any): string {
   return 'npm'; // Default to npm
 }
 
-function displaySystemInfo(info: any, preset: string = 'message', output: string = 'markdown') {
+function displaySystemInfo(info: any, preset = 'message', output = 'markdown') {
   if (output !== 'markdown') {
     console.log('');
   }
@@ -239,7 +243,9 @@ function displaySimpleMessage(info: any) {
   console.log('');
   console.log(`**Current Time:** ${new Date(info.timestamp).toLocaleString()}`);
   console.log(`**CPU:** ${info.hardware.cpu.usagePercent}`);
-  console.log(`**Memory:** ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`);
+  console.log(
+    `**Memory:** ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`
+  );
 }
 
 function displaySimpleSession(info: any) {
@@ -274,7 +280,9 @@ function displayMessage(info: any) {
 
   console.log(chalk.blue.bold('\n📊 System Status:'));
   console.log(`  CPU: ${info.hardware.cpu.usagePercent}`);
-  console.log(`  Memory: ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`);
+  console.log(
+    `  Memory: ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`
+  );
 }
 
 function displaySession(info: any) {
@@ -309,5 +317,5 @@ function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
 
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
 }

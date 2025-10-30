@@ -3,7 +3,7 @@
  * Tests for environment variable utilities
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useEnv, useEnvVar } from '../../src/composables/useEnv.js';
 
 describe('useEnv', () => {

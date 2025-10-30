@@ -3,8 +3,14 @@
  * Tests for rules configuration utilities
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { CORE_RULES, getRulesPath, getAllRuleTypes, ruleFileExists, RULES_FILES } from '../../src/config/rules.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  CORE_RULES,
+  RULES_FILES,
+  getAllRuleTypes,
+  getRulesPath,
+  ruleFileExists,
+} from '../../src/config/rules.js';
 
 // Mock getRuleFile from paths
 vi.mock('../../src/utils/paths.js', () => ({
@@ -132,9 +138,7 @@ describe('Rules Config', () => {
 
     it('should validate rule existence', () => {
       const types = getAllRuleTypes();
-      const validTypes = types.filter((type) =>
-        ruleFileExists(type as keyof typeof CORE_RULES)
-      );
+      const validTypes = types.filter((type) => ruleFileExists(type as keyof typeof CORE_RULES));
 
       expect(validTypes.length).toBeGreaterThan(0);
     });

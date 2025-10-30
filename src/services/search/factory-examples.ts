@@ -3,15 +3,15 @@
  * Real-world examples showing how to use the new factory pattern
  */
 
+import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
+import { CodebaseIndexer } from './codebase-indexer.js';
+import { getKnowledgeIndexer } from './knowledge-indexer.js';
 import {
+  type SearchServiceDependencies,
   createSearchService,
   createTestSearchService,
   searchService,
-  type SearchServiceDependencies,
 } from './unified-search-service.js';
-import { CodebaseIndexer } from './codebase-indexer.js';
-import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
-import { getKnowledgeIndexer } from './knowledge-indexer.js';
 
 // ============================================================================
 // EXAMPLE 1: Default Usage (Backward Compatible)
@@ -282,7 +282,10 @@ export async function verifyServiceBehavior() {
   await service.searchCodebase('test');
 
   console.log('Service calls:', calls);
-  console.log('Initialize called:', calls.some(c => c.method === 'initialize'));
+  console.log(
+    'Initialize called:',
+    calls.some((c) => c.method === 'initialize')
+  );
 
   return calls;
 }

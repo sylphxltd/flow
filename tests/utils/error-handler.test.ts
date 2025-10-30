@@ -3,8 +3,8 @@
  * Tests for CLI error handling utilities
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { CLIError, handleError, createAsyncHandler } from '../../src/utils/error-handler.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLIError, createAsyncHandler, handleError } from '../../src/utils/error-handler.js';
 
 describe('Error Handler', () => {
   // Save original console.error and process.exit

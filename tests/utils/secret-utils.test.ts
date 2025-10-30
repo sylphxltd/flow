@@ -3,10 +3,10 @@
  * Tests for secret management utilities
  */
 
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { secretUtils } from '../../src/utils/secret-utils.js';
 
 describe('Secret Utils', () => {
@@ -157,7 +157,9 @@ describe('Secret Utils', () => {
 
     it('should handle different key formats', () => {
       expect(secretUtils.toFileReference('simple')).toBe('{file:.secrets/simple}');
-      expect(secretUtils.toFileReference('WITH_UNDERSCORE')).toBe('{file:.secrets/WITH_UNDERSCORE}');
+      expect(secretUtils.toFileReference('WITH_UNDERSCORE')).toBe(
+        '{file:.secrets/WITH_UNDERSCORE}'
+      );
       expect(secretUtils.toFileReference('with-hyphen')).toBe('{file:.secrets/with-hyphen}');
     });
 
@@ -227,10 +229,7 @@ describe('Secret Utils', () => {
     });
 
     it('should resolve string file reference', async () => {
-      const result = await secretUtils.resolveFileReferences(
-        testDir,
-        '{file:.secrets/API_KEY}'
-      );
+      const result = await secretUtils.resolveFileReferences(testDir, '{file:.secrets/API_KEY}');
       expect(result).toBe('secret-api-key');
     });
 
@@ -276,10 +275,7 @@ describe('Secret Utils', () => {
 
     it('should handle mixed nested structures', async () => {
       const obj = {
-        secrets: [
-          { key: '{file:.secrets/API_KEY}' },
-          { key: 'plain-value' },
-        ],
+        secrets: [{ key: '{file:.secrets/API_KEY}' }, { key: 'plain-value' }],
         other: 'value',
       };
 

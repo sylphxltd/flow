@@ -2,8 +2,8 @@
  * File watching functionality for codebase indexer
  */
 
-import chokidar from 'chokidar';
 import path from 'node:path';
+import chokidar from 'chokidar';
 import { loadGitignore } from '../../utils/codebase-helpers.js';
 import type { CodebaseIndexerOptions } from './codebase-indexer.types.js';
 
@@ -14,10 +14,7 @@ export class FileWatcher {
   private codebaseRoot: string;
   private onReindexCallback: () => void;
 
-  constructor(
-    options: CodebaseIndexerOptions,
-    onReindexCallback: () => void
-  ) {
+  constructor(options: CodebaseIndexerOptions, onReindexCallback: () => void) {
     this.codebaseRoot = options.codebaseRoot || process.cwd();
     this.ig = loadGitignore(this.codebaseRoot);
     this.onReindexCallback = onReindexCallback;

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sysinfoCommand } from '../../src/commands/sysinfo-command.js';
 
 // Mock the modules we're testing
@@ -6,7 +6,7 @@ vi.mock('node:os', () => ({
   default: {
     tmpdir: () => '/tmp',
     totalmem: () => 16000000000, // 16GB
-    freemem: () => 8000000000,  // 8GB
+    freemem: () => 8000000000, // 8GB
     cpus: () => [{ model: 'Test CPU', speed: 2400 }],
     uptime: () => 3600, // 1 hour
     platform: () => 'linux',

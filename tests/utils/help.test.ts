@@ -3,7 +3,7 @@
  * Tests for CLI help display utility
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { showDefaultHelp } from '../../src/utils/help.js';
 
 describe('Help', () => {
@@ -89,9 +89,9 @@ describe('Help', () => {
 
     it('should show help footer', () => {
       showDefaultHelp();
-      expect(
-        consoleOutput.some((line) => line.includes('sylphx-flow <command> --help'))
-      ).toBe(true);
+      expect(consoleOutput.some((line) => line.includes('sylphx-flow <command> --help'))).toBe(
+        true
+      );
     });
 
     it('should include emoji in title', () => {

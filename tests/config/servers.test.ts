@@ -3,22 +3,22 @@
  * Tests for MCP server registry and utilities
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   MCP_SERVER_REGISTRY,
-  getAllServerIDs,
-  getServersByCategory,
-  getDefaultServers,
-  getServersRequiringAPIKeys,
-  getServersWithOptionalAPIKeys,
-  getServersWithAnyAPIKeys,
-  getRequiredEnvVars,
-  getOptionalEnvVars,
   getAllEnvVars,
-  getSecretEnvVars,
+  getAllServerIDs,
+  getDefaultServers,
   getNonSecretEnvVars,
-  isValidServerID,
+  getOptionalEnvVars,
+  getRequiredEnvVars,
+  getSecretEnvVars,
   getServerDefinition,
+  getServersByCategory,
+  getServersRequiringAPIKeys,
+  getServersWithAnyAPIKeys,
+  getServersWithOptionalAPIKeys,
+  isValidServerID,
 } from '../../src/config/servers.js';
 
 // Mock dependencies

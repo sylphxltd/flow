@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { targetManager } from '../core/target-manager.js';
+import { SeparatedMemoryStorage } from '../services/storage/separated-storage.js';
 import type { CommandOptions } from '../types.js';
 import { cli } from '../utils/cli-output.js';
 import { CLIError } from '../utils/error-handler.js';
-import { SeparatedMemoryStorage } from '../services/storage/separated-storage.js';
 
 // Create the main memory command
 export const memoryCommand = new Command('memory')

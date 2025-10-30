@@ -3,27 +3,27 @@
  * Comprehensive tests for standardized error handling utilities
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  ErrorCategory,
-  ErrorSeverity,
-  BaseError,
-  ValidationError,
-  ConfigurationError,
-  NetworkError,
-  DatabaseError,
-  FilesystemError,
   AuthenticationError,
   AuthorizationError,
-  ExternalServiceError,
-  InternalError,
+  BaseError,
   CLIError,
-  createError,
-  ErrorHandler,
+  ConfigurationError,
+  DatabaseError,
+  ErrorCategory,
   ErrorContext,
+  ErrorHandler,
+  ErrorSeverity,
+  ExternalServiceError,
+  FilesystemError,
+  InternalError,
+  NetworkError,
   Result,
-  handleError,
+  ValidationError,
   createAsyncHandler,
+  createError,
+  handleError,
 } from '../../src/utils/errors.js';
 
 // Mock logger to avoid actual logging during tests
@@ -360,7 +360,9 @@ describe('InternalError', () => {
 
   it('should return generic user message', () => {
     const error = new InternalError('Memory corruption detected');
-    expect(error.getUserMessage()).toBe('An internal error occurred. Please try again or contact support.');
+    expect(error.getUserMessage()).toBe(
+      'An internal error occurred. Please try again or contact support.'
+    );
   });
 });
 
@@ -411,7 +413,9 @@ describe('createError factory', () => {
   });
 
   it('should create network error', () => {
-    const error = createError.network('Connection failed', 'NET_CODE', { url: 'https://api.example.com' });
+    const error = createError.network('Connection failed', 'NET_CODE', {
+      url: 'https://api.example.com',
+    });
 
     expect(error).toBeInstanceOf(NetworkError);
     expect(error.message).toBe('Connection failed');
@@ -767,9 +771,7 @@ describe('ErrorContext', () => {
   });
 
   it('should add single key-value pair', () => {
-    const context = ErrorContext.create()
-      .add('userId', '123')
-      .add('action', 'delete');
+    const context = ErrorContext.create().add('userId', '123').add('action', 'delete');
 
     expect(context.build()).toEqual({ userId: '123', action: 'delete' });
   });
@@ -799,9 +801,7 @@ describe('ErrorContext', () => {
   });
 
   it('should overwrite values with same key', () => {
-    const context = ErrorContext.create()
-      .add('key', 'original')
-      .add('key', 'updated');
+    const context = ErrorContext.create().add('key', 'original').add('key', 'updated');
 
     expect(context.build()).toEqual({ key: 'updated' });
   });

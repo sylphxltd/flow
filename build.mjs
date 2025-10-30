@@ -4,10 +4,10 @@
  * Uses Bun for faster builds with proper native module handling
  */
 
-import { build } from 'bun';
-import { rmSync, cpSync, existsSync, chmodSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { chmodSync, cpSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { build } from 'bun';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,7 +70,6 @@ try {
   console.log('\n🎉 Build complete!');
   console.log('\n📝 Note: Native dependencies are marked as external.');
   console.log('   They will be resolved from node_modules at runtime.');
-
 } catch (error) {
   console.error('❌ Build error:', error);
   process.exit(1);

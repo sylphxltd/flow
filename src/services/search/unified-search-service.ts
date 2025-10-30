@@ -3,13 +3,13 @@
  * Shared search logic for CLI, MCP, and API
  */
 
-import { CodebaseIndexer } from './codebase-indexer.js';
+import { filter, map, pipe, sortBy, take } from '../../utils/functional.js';
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
+import { CodebaseIndexer } from './codebase-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
-import { type SearchIndex, searchDocuments, buildSearchIndex } from './tfidf.js';
-import { pipe, filter, map, sortBy, take } from '../../utils/functional.js';
+import { type SearchIndex, buildSearchIndex, searchDocuments } from './tfidf.js';
 
 export interface SearchResult {
   uri: string;
@@ -179,7 +179,7 @@ export class UnifiedSearchService {
     const index = await buildSearchIndexFromDB(this.memoryStorage, {
       file_extensions,
       path_filter,
-      exclude_paths
+      exclude_paths,
     });
 
     if (!index) {
@@ -219,7 +219,7 @@ export class UnifiedSearchService {
 
       // Use pure TF-IDF score without extra boosting
       // StarCoder2 tokenization is already optimal
-      let finalScore = similarity;
+      const finalScore = similarity;
 
       return {
         uri: doc.uri,
@@ -275,7 +275,6 @@ export class UnifiedSearchService {
     };
   }
 
-  
   /**
    * Search knowledge base - shared by CLI and MCP
    */
@@ -318,7 +317,6 @@ export class UnifiedSearchService {
     }
   }
 
-  
   /**
    * Format search results for CLI output
    */
@@ -437,9 +435,7 @@ export class UnifiedSearchService {
  * Pure function: Apply file extension filter
  */
 const filterByExtensions = (extensions?: string[]) =>
-  filter((file: any) =>
-    !extensions?.length || extensions.some((ext) => file.path.endsWith(ext))
-  );
+  filter((file: any) => !extensions?.length || extensions.some((ext) => file.path.endsWith(ext)));
 
 /**
  * Pure function: Apply path filter
@@ -451,15 +447,16 @@ const filterByPath = (pathFilter?: string) =>
  * Pure function: Apply exclude paths filter
  */
 const filterByExcludePaths = (excludePaths?: string[]) =>
-  filter((file: any) =>
-    !excludePaths?.length || !excludePaths.some((exclude) => file.path.includes(exclude))
+  filter(
+    (file: any) =>
+      !excludePaths?.length || !excludePaths.some((exclude) => file.path.includes(exclude))
   );
 
 /**
  * Pure function: Calculate cosine similarity between query and document
  */
-const calculateSimilarity = (queryVector: Map<string, number>, queryMagnitude: number) =>
-  (doc: any) => {
+const calculateSimilarity =
+  (queryVector: Map<string, number>, queryMagnitude: number) => (doc: any) => {
     let dotProduct = 0;
     const matchedTerms: string[] = [];
 
@@ -488,7 +485,12 @@ const calculateSimilarity = (queryVector: Map<string, number>, queryMagnitude: n
 /**
  * Pure function: Extract matched lines from content
  */
-const extractMatchedLines = (content: string, matchedTerms: string[], maxLines = 3, maxLineLength = 100): string => {
+const extractMatchedLines = (
+  content: string,
+  matchedTerms: string[],
+  maxLines = 3,
+  maxLineLength = 100
+): string => {
   const lines = content.split('\n');
   const matchedLines: string[] = [];
 
@@ -505,8 +507,14 @@ const extractMatchedLines = (content: string, matchedTerms: string[], maxLines =
 /**
  * Pure function: Convert search result to SearchResult format
  */
-const toSearchResult = (includeContent: boolean) =>
-  (result: { uri: string; score: number; matchedTerms: string[]; content?: string }): SearchResult => {
+const toSearchResult =
+  (includeContent: boolean) =>
+  (result: {
+    uri: string;
+    score: number;
+    matchedTerms: string[];
+    content?: string;
+  }): SearchResult => {
     const filename = result.uri?.replace('file://', '') || 'Unknown';
     return {
       uri: result.uri,
@@ -602,9 +610,7 @@ export async function searchCodebaseFunctional(
       if (include_content && result.matchedTerms.length > 0) {
         const filename = result.uri?.replace('file://', '') || '';
         const file = await storage.getCodebaseFile(filename);
-        const content = file?.content
-          ? extractMatchedLines(file.content, result.matchedTerms)
-          : '';
+        const content = file?.content ? extractMatchedLines(file.content, result.matchedTerms) : '';
         return { ...result, content };
       }
       return { ...result, content: '' };
@@ -723,7 +729,6 @@ export function getSearchService(): UnifiedSearchService {
   }
   return _searchServiceInstance;
 }
-
 
 /**
  * Create test search service with mock dependencies

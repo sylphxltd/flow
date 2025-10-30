@@ -3,10 +3,10 @@
  * Tests for the codebase search tool (MCP tool)
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   registerCodebaseSearchTool,
   registerCodebaseTools,
@@ -101,7 +101,9 @@ describe('Codebase Tools', () => {
     it('should handle search when codebase not indexed', async () => {
       // Clear codebase index to ensure clean state for this specific test
       // This prevents shared database state from interfering with the test
-      const { searchService } = await import('../../../src/services/search/unified-search-service.js');
+      const { searchService } = await import(
+        '../../../src/services/search/unified-search-service.js'
+      );
       await searchService.initialize();
       const storage = (searchService as any).memoryStorage;
       await storage.clearCodebaseIndex();

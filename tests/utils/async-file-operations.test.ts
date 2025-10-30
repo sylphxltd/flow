@@ -3,11 +3,22 @@
  * Tests for async file operations utility with comprehensive coverage
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import { AsyncFileOperations, asyncFileOps, readFile, writeFile, exists, ensureDir, remove, copy, move, readDir } from '../../src/utils/async-file-operations.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  AsyncFileOperations,
+  asyncFileOps,
+  copy,
+  ensureDir,
+  exists,
+  move,
+  readDir,
+  readFile,
+  remove,
+  writeFile,
+} from '../../src/utils/async-file-operations.js';
 
 describe('AsyncFileOperations', () => {
   let fileOps: AsyncFileOperations;
@@ -60,7 +71,7 @@ describe('AsyncFileOperations', () => {
 
       const result = await fileOps.readFile(testFile, {
         retryAttempts: 1,
-        retryDelay: 100
+        retryDelay: 100,
       });
       expect(result).toBe(content);
     });
@@ -102,7 +113,7 @@ describe('AsyncFileOperations', () => {
 
       // Check that backup file exists
       const backupFiles = await fs.readdir(testDir);
-      const backupFile = backupFiles.find(f => f.includes('.backup.'));
+      const backupFile = backupFiles.find((f) => f.includes('.backup.'));
       expect(backupFile).toBeTruthy();
 
       const backupContent = await fs.readFile(path.join(testDir, backupFile!), 'utf8');
@@ -118,7 +129,7 @@ describe('AsyncFileOperations', () => {
 
       // Check that no backup file exists
       const files = await fs.readdir(testDir);
-      const backupFiles = files.filter(f => f.includes('.backup.'));
+      const backupFiles = files.filter((f) => f.includes('.backup.'));
       expect(backupFiles).toHaveLength(0);
     });
   });
@@ -269,7 +280,9 @@ describe('AsyncFileOperations', () => {
       const nestedDir = path.join(testDir, 'nested');
       await fs.mkdir(nestedDir);
 
-      await expect(fileOps.remove(nestedDir, { recursive: false })).rejects.toThrow('Cannot remove directory without recursive option');
+      await expect(fileOps.remove(nestedDir, { recursive: false })).rejects.toThrow(
+        'Cannot remove directory without recursive option'
+      );
     });
 
     it('should not throw error with force option for non-existent file', async () => {
@@ -315,7 +328,9 @@ describe('AsyncFileOperations', () => {
       await fs.writeFile(testFile, content);
       await fs.writeFile(destFile, destContent);
 
-      await expect(fileOps.copy(testFile, destFile, { overwrite: false })).rejects.toThrow('Destination already exists');
+      await expect(fileOps.copy(testFile, destFile, { overwrite: false })).rejects.toThrow(
+        'Destination already exists'
+      );
     });
 
     it('should overwrite when overwrite option is true', async () => {
@@ -392,7 +407,9 @@ describe('AsyncFileOperations', () => {
       await fs.writeFile(testFile, content);
       await fs.writeFile(destFile, destContent);
 
-      await expect(fileOps.move(testFile, destFile, { overwrite: false })).rejects.toThrow('Destination already exists');
+      await expect(fileOps.move(testFile, destFile, { overwrite: false })).rejects.toThrow(
+        'Destination already exists'
+      );
     });
 
     it('should overwrite when overwrite option is true', async () => {
@@ -427,7 +444,7 @@ describe('AsyncFileOperations', () => {
 
       expect(entries.length).toBeGreaterThanOrEqual(3); // file1.txt, file2.txt, subdir
 
-      const fileNames = entries.map(e => e.name);
+      const fileNames = entries.map((e) => e.name);
       expect(fileNames).toContain('file1.txt');
       expect(fileNames).toContain('file2.txt');
       expect(fileNames).toContain('subdir');
@@ -436,8 +453,8 @@ describe('AsyncFileOperations', () => {
     it('should include file types', async () => {
       const entries = await fileOps.readDir(testDir, { withFileTypes: true });
 
-      const file1 = entries.find(e => e.name === 'file1.txt');
-      const subdir = entries.find(e => e.name === 'subdir');
+      const file1 = entries.find((e) => e.name === 'file1.txt');
+      const subdir = entries.find((e) => e.name === 'subdir');
 
       expect(file1?.isFile).toBe(true);
       expect(file1?.isDirectory).toBe(false);
@@ -448,7 +465,7 @@ describe('AsyncFileOperations', () => {
     it('should read directory recursively', async () => {
       const entries = await fileOps.readDir(testDir, { withFileTypes: true, recursive: true });
 
-      const fileNames = entries.map(e => e.name);
+      const fileNames = entries.map((e) => e.name);
       expect(fileNames).toContain('file1.txt');
       expect(fileNames).toContain('file2.txt');
       expect(fileNames).toContain('file3.txt');
@@ -458,7 +475,7 @@ describe('AsyncFileOperations', () => {
     it('should include stats when requested', async () => {
       const entries = await fileOps.readDir(testDir, { withFileTypes: true, includeStats: true });
 
-      const file1 = entries.find(e => e.name === 'file1.txt');
+      const file1 = entries.find((e) => e.name === 'file1.txt');
       expect(file1?.stats).toBeDefined();
       expect(file1?.stats?.size).toBe(8); // 'content1' length
     });
@@ -468,16 +485,20 @@ describe('AsyncFileOperations', () => {
       const entries = await fileOps.readDir(testDir, { withFileTypes: true, filter });
 
       expect(entries).toHaveLength(2); // only files
-      expect(entries.every(e => e.isFile)).toBe(true);
+      expect(entries.every((e) => e.isFile)).toBe(true);
     });
 
     it('should respect max depth', async () => {
       await fs.mkdir(path.join(testDir, 'subdir', 'nested'), { recursive: true });
       await fs.writeFile(path.join(testDir, 'subdir', 'nested', 'deep.txt'), 'deep');
 
-      const entries = await fileOps.readDir(testDir, { withFileTypes: true, recursive: true, maxDepth: 1 });
+      const entries = await fileOps.readDir(testDir, {
+        withFileTypes: true,
+        recursive: true,
+        maxDepth: 1,
+      });
 
-      const deepFile = entries.find(e => e.name === 'deep.txt');
+      const deepFile = entries.find((e) => e.name === 'deep.txt');
       expect(deepFile).toBeUndefined();
     });
 
@@ -595,7 +616,7 @@ describe('AsyncFileOperations', () => {
       const entries = await readDir(testDir, { withFileTypes: true });
 
       expect(entries.length).toBeGreaterThanOrEqual(1);
-      expect(entries.some(e => e.name === path.basename(testFile))).toBe(true);
+      expect(entries.some((e) => e.name === path.basename(testFile))).toBe(true);
     });
   });
 
@@ -619,7 +640,7 @@ describe('AsyncFileOperations', () => {
       // Test with custom retry options
       const result = await fileOps.readFile(retryFile, {
         retryAttempts: 1,
-        retryDelay: 10
+        retryDelay: 10,
       });
 
       expect(result).toBe('content');
@@ -677,7 +698,7 @@ describe('AsyncFileOperations', () => {
 
       const result = await fileOps.readFile(testFile, {
         retryAttempts: 1,
-        encoding: 'utf8'
+        encoding: 'utf8',
       });
       expect(result).toBe(content);
     });

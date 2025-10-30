@@ -82,13 +82,14 @@ The search includes:
 
         // If indexing in progress, show progress
         if (status.codebase.isIndexing) {
-          const progressBar = '█'.repeat(Math.floor(status.codebase.progress / 5)) +
-                              '░'.repeat(20 - Math.floor(status.codebase.progress / 5));
+          const progressBar =
+            '█'.repeat(Math.floor(status.codebase.progress / 5)) +
+            '░'.repeat(20 - Math.floor(status.codebase.progress / 5));
           return {
             content: [
               {
                 type: 'text',
-                text: `⏳ **Codebase Indexing In Progress**\n\nThe codebase is currently being indexed. Please wait...\n\n**Progress:** ${status.codebase.progress}%\n\`${progressBar}\`\n\n**Status:**\n- Files indexed: ${status.codebase.progress > 0 ? Math.floor(status.codebase.fileCount * status.codebase.progress / 100) : 0}/${status.codebase.fileCount}\n${status.codebase.currentFile ? `- Current file: \`${status.codebase.currentFile}\`` : ''}\n\n**Estimated time:** ${status.codebase.progress > 0 ? 'Less than 1 minute' : 'Starting...'}\n\n💡 **Tip:** Try your search again in a few seconds.`,
+                text: `⏳ **Codebase Indexing In Progress**\n\nThe codebase is currently being indexed. Please wait...\n\n**Progress:** ${status.codebase.progress}%\n\`${progressBar}\`\n\n**Status:**\n- Files indexed: ${status.codebase.progress > 0 ? Math.floor((status.codebase.fileCount * status.codebase.progress) / 100) : 0}/${status.codebase.fileCount}\n${status.codebase.currentFile ? `- Current file: \`${status.codebase.currentFile}\`` : ''}\n\n**Estimated time:** ${status.codebase.progress > 0 ? 'Less than 1 minute' : 'Starting...'}\n\n💡 **Tip:** Try your search again in a few seconds.`,
               },
             ],
           };

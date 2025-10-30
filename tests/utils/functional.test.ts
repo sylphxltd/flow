@@ -136,10 +136,7 @@ describe('Functional Programming Utilities', () => {
     });
 
     it('sortBy should sort by property', () => {
-      const result = pipe(
-        [{ age: 30 }, { age: 20 }, { age: 25 }],
-        sortBy('age')
-      );
+      const result = pipe([{ age: 30 }, { age: 20 }, { age: 25 }], sortBy('age'));
       expect(result).toEqual([{ age: 20 }, { age: 25 }, { age: 30 }]);
     });
 
@@ -164,7 +161,11 @@ describe('Functional Programming Utilities', () => {
 
     it('uniqueBy should remove duplicates by key', () => {
       const result = pipe(
-        [{ id: 1, name: 'A' }, { id: 2, name: 'B' }, { id: 1, name: 'C' }],
+        [
+          { id: 1, name: 'A' },
+          { id: 2, name: 'B' },
+          { id: 1, name: 'C' },
+        ],
         uniqueBy('id')
       );
       expect(result).toEqual([
@@ -256,11 +257,7 @@ describe('Functional Programming Utilities', () => {
 
     it('trace should log value and return it', () => {
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      const result = pipe(
-        5,
-        (x) => x * 2,
-        trace('After multiply')
-      );
+      const result = pipe(5, (x) => x * 2, trace('After multiply'));
       expect(result).toBe(10);
       expect(consoleLogSpy).toHaveBeenCalledWith('After multiply:', 10);
       consoleLogSpy.mockRestore();
@@ -306,13 +303,19 @@ describe('Functional Programming Utilities', () => {
 
     it('mapResult should transform ok result', () => {
       const result = { ok: true as const, value: 5 };
-      const mapped = pipe(result, mapResult((x: number) => x * 2));
+      const mapped = pipe(
+        result,
+        mapResult((x: number) => x * 2)
+      );
       expect(mapped).toEqual({ ok: true, value: 10 });
     });
 
     it('mapResult should pass through error result', () => {
       const result = { ok: false as const, error: new Error('Test') };
-      const mapped = pipe(result, mapResult((x: number) => x * 2));
+      const mapped = pipe(
+        result,
+        mapResult((x: number) => x * 2)
+      );
       expect(mapped).toEqual(result);
     });
   });
@@ -361,10 +364,7 @@ describe('Functional Programming Utilities', () => {
     });
 
     it('prop should extract property value', () => {
-      const result = pipe(
-        [{ name: 'Alice' }, { name: 'Bob' }],
-        map(prop('name'))
-      );
+      const result = pipe([{ name: 'Alice' }, { name: 'Bob' }], map(prop('name')));
       expect(result).toEqual(['Alice', 'Bob']);
     });
 

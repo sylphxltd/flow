@@ -52,9 +52,8 @@ export class ReindexMonitor {
     this.progress = { ...this.progress, ...data };
 
     // Only trigger UI update when percentage changes (to reduce render overhead)
-    const currentPercentage = this.progress.total > 0
-      ? Math.floor((this.progress.current / this.progress.total) * 100)
-      : 0;
+    const currentPercentage =
+      this.progress.total > 0 ? Math.floor((this.progress.current / this.progress.total) * 100) : 0;
 
     // Always trigger on phase change or when percentage actually changes
     if (data.phase || currentPercentage !== this.lastPercentage) {
@@ -77,14 +76,11 @@ export class ReindexMonitor {
     process.stdout.isTTY = true;
     process.stderr.isTTY = true;
 
-    const uiInstance = render(
-      <ReindexProgress monitor={this} />,
-      {
-        debug: false,
-        patchConsole: false, // Don't patch console to allow direct stderr output
-        exitOnCtrlC: false,
-      }
-    );
+    const uiInstance = render(<ReindexProgress monitor={this} />, {
+      debug: false,
+      patchConsole: false, // Don't patch console to allow direct stderr output
+      exitOnCtrlC: false,
+    });
 
     this.uiInstance = uiInstance;
   }
@@ -159,10 +155,16 @@ const ReindexProgress: React.FC<ReindexProgressProps> = ({ monitor }) => {
           🔤 Reindexing Codebase
         </Text>
         {progress.mode === 'tfidf-only' && (
-          <Text color="yellow" dimColor> (TF-IDF mode - no API key)</Text>
+          <Text color="yellow" dimColor>
+            {' '}
+            (TF-IDF mode - no API key)
+          </Text>
         )}
         {progress.mode === 'semantic' && (
-          <Text color="green" dimColor> (Semantic search enabled)</Text>
+          <Text color="green" dimColor>
+            {' '}
+            (Semantic search enabled)
+          </Text>
         )}
       </Box>
 
@@ -180,14 +182,18 @@ const ReindexProgress: React.FC<ReindexProgressProps> = ({ monitor }) => {
         <Box width={barWidth + 2} marginRight={2}>
           <Text color="blue">{progressBar}</Text>
         </Box>
-        <Text color="cyan" bold>{percentage}%</Text>
+        <Text color="cyan" bold>
+          {percentage}%
+        </Text>
       </Box>
 
       {/* Current file and stats */}
       <Box flexDirection="column" marginBottom={1}>
         <Box>
           <Text color="gray">Progress: </Text>
-          <Text color="white">{progress.current}/{progress.total} files</Text>
+          <Text color="white">
+            {progress.current}/{progress.total} files
+          </Text>
         </Box>
 
         {progress.phase === 'tokenizing' && progress.fileName && (
@@ -222,7 +228,9 @@ const ReindexProgress: React.FC<ReindexProgressProps> = ({ monitor }) => {
       {/* Final stats when completed */}
       {progress.phase === 'completed' && progress.stats && (
         <Box flexDirection="column" marginTop={1}>
-          <Text color="green" bold>✓ Indexing Complete!</Text>
+          <Text color="green" bold>
+            ✓ Indexing Complete!
+          </Text>
           <Box marginTop={1}>
             <Text color="gray">Documents: </Text>
             <Text color="white">{progress.stats.documentsProcessed}</Text>

@@ -65,8 +65,9 @@ The knowledge is curated for LLM code generation - includes decision trees, comm
         const status = await searchService.getStatus();
 
         if (status.knowledge.isIndexing) {
-          const progressBar = '█'.repeat(Math.floor((status.knowledge.progress || 0) / 5)) +
-                              '░'.repeat(20 - Math.floor((status.knowledge.progress || 0) / 5));
+          const progressBar =
+            '█'.repeat(Math.floor((status.knowledge.progress || 0) / 5)) +
+            '░'.repeat(20 - Math.floor((status.knowledge.progress || 0) / 5));
           return {
             content: [
               {

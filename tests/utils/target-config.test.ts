@@ -3,25 +3,25 @@
  * Comprehensive tests for target-specific MCP configuration utilities
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import {
-  addMCPServersToTarget,
-  removeMCPServersFromTarget,
-  listMCPServersForTarget,
-  configureMCPServerForTarget,
-  getTargetHelpText,
-  getAllTargetsHelpText,
-  validateTarget,
-  targetSupportsMCPServers,
-  getTargetsWithMCPSupport,
-} from '../../src/utils/target-config.js';
-import { targetManager } from '../../src/core/target-manager.js';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MCP_SERVER_REGISTRY } from '../../src/config/servers.js';
+import { targetManager } from '../../src/core/target-manager.js';
 import * as mcpService from '../../src/services/mcp-service.js';
 import { secretUtils } from '../../src/utils/secret-utils.js';
+import {
+  addMCPServersToTarget,
+  configureMCPServerForTarget,
+  getAllTargetsHelpText,
+  getTargetHelpText,
+  getTargetsWithMCPSupport,
+  listMCPServersForTarget,
+  removeMCPServersFromTarget,
+  targetSupportsMCPServers,
+  validateTarget,
+} from '../../src/utils/target-config.js';
 
 // Mock readline module at the top level
 vi.mock('node:readline', () => ({
@@ -175,9 +175,9 @@ describe('Target Config', () => {
 
     it('should throw if target does not support MCP servers', async () => {
       mockTarget.config.installation.supportedMcpServers = false;
-      await expect(
-        addMCPServersToTarget(testDir, 'test-target', ['context7'])
-      ).rejects.toThrow('does not support MCP servers');
+      await expect(addMCPServersToTarget(testDir, 'test-target', ['context7'])).rejects.toThrow(
+        'does not support MCP servers'
+      );
     });
 
     it('should add new MCP server', async () => {
@@ -261,9 +261,9 @@ describe('Target Config', () => {
 
     it('should throw if target not found', async () => {
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
-      await expect(
-        removeMCPServersFromTarget(testDir, 'invalid', ['context7'])
-      ).rejects.toThrow('Target not found');
+      await expect(removeMCPServersFromTarget(testDir, 'invalid', ['context7'])).rejects.toThrow(
+        'Target not found'
+      );
     });
 
     it('should remove existing MCP server', async () => {
@@ -345,9 +345,7 @@ describe('Target Config', () => {
 
     it('should throw if target not found', async () => {
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
-      await expect(listMCPServersForTarget(testDir, 'invalid')).rejects.toThrow(
-        'Target not found'
-      );
+      await expect(listMCPServersForTarget(testDir, 'invalid')).rejects.toThrow('Target not found');
     });
 
     it('should list configured MCP servers', async () => {
@@ -432,9 +430,9 @@ describe('Target Config', () => {
 
     it('should throw if target not found', async () => {
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
-      await expect(
-        configureMCPServerForTarget(testDir, 'invalid', 'context7')
-      ).rejects.toThrow('Target not found');
+      await expect(configureMCPServerForTarget(testDir, 'invalid', 'context7')).rejects.toThrow(
+        'Target not found'
+      );
     });
 
     it('should return false for unknown server', async () => {
@@ -448,11 +446,7 @@ describe('Target Config', () => {
 
     it('should return true for servers without required env vars', async () => {
       // Use a server with no required env vars
-      const result = await configureMCPServerForTarget(
-        testDir,
-        'test-target',
-        'context7'
-      );
+      const result = await configureMCPServerForTarget(testDir, 'test-target', 'context7');
 
       expect(result).toBe(true);
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -735,7 +729,7 @@ describe('Target Config', () => {
       // Update mock to return added servers
       mockTarget.readConfig.mockResolvedValue({
         mcpServers: {
-          'context7': { type: 'http', url: 'test1' },
+          context7: { type: 'http', url: 'test1' },
           'gemini-search': { type: 'http', url: 'test2' },
         },
       });

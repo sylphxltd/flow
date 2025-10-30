@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildSearchTool, type SearchToolConfig } from '../../src/utils/search-tool-builder';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseIndexer, type IndexingStatus } from '../../src/services/search/base-indexer';
 import type { SearchIndex } from '../../src/services/search/tfidf';
 import { searchDocuments } from '../../src/services/search/tfidf';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type SearchToolConfig, buildSearchTool } from '../../src/utils/search-tool-builder';
 
 // Mock the searchDocuments function
 const mockSearchDocuments = vi.fn();
@@ -19,7 +19,10 @@ const mockServer: McpServer = {
 
 // Mock BaseIndexer implementation
 class MockIndexer extends BaseIndexer {
-  constructor(config: { name: string }, private mockStatus: Partial<IndexingStatus> = {}) {
+  constructor(
+    config: { name: string },
+    private mockStatus: Partial<IndexingStatus> = {}
+  ) {
     super(config);
   }
 
@@ -28,14 +31,26 @@ class MockIndexer extends BaseIndexer {
       documents: [
         {
           uri: 'knowledge://test/doc1',
-          terms: new Map([['test', 0.5], ['document', 0.3]]),
-          rawTerms: new Map([['test', 2], ['document', 1]]),
+          terms: new Map([
+            ['test', 0.5],
+            ['document', 0.3],
+          ]),
+          rawTerms: new Map([
+            ['test', 2],
+            ['document', 1],
+          ]),
           magnitude: 0.6,
         },
         {
           uri: 'file://src/test.ts',
-          terms: new Map([['typescript', 0.7], ['test', 0.4]]),
-          rawTerms: new Map([['typescript', 3], ['test', 1]]),
+          terms: new Map([
+            ['typescript', 0.7],
+            ['test', 0.4],
+          ]),
+          rawTerms: new Map([
+            ['typescript', 3],
+            ['test', 1],
+          ]),
           magnitude: 0.8,
         },
       ],
@@ -172,18 +187,17 @@ describe('search-tool-builder', () => {
 
     beforeEach(() => {
       buildSearchTool(mockServer, config);
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       searchHandler = searchCall![2];
     });
 
     it('should handle successful search with basic query', async () => {
       const result = await searchHandler({ query: 'test' });
 
-      expect(searchDocuments).toHaveBeenCalledWith(
-        'test',
-        expect.any(Object),
-        { limit: 10, minScore: 0.01 }
-      );
+      expect(searchDocuments).toHaveBeenCalledWith('test', expect.any(Object), {
+        limit: 10,
+        minScore: 0.01,
+      });
       expect(result.content).toHaveLength(1);
       expect(result.content[0].type).toBe('text');
       expect(result.content[0].text).toContain('Found 2 result(s) for "test"');
@@ -198,31 +212,28 @@ describe('search-tool-builder', () => {
     it('should handle search with custom limit', async () => {
       await searchHandler({ query: 'test', limit: 3 });
 
-      expect(searchDocuments).toHaveBeenCalledWith(
-        'test',
-        expect.any(Object),
-        { limit: 6, minScore: 0.01 }
-      );
+      expect(searchDocuments).toHaveBeenCalledWith('test', expect.any(Object), {
+        limit: 6,
+        minScore: 0.01,
+      });
     });
 
     it('should limit search results to maximum of 20', async () => {
       await searchHandler({ query: 'test', limit: 50 });
 
-      expect(searchDocuments).toHaveBeenCalledWith(
-        'test',
-        expect.any(Object),
-        { limit: 40, minScore: 0.01 }
-      );
+      expect(searchDocuments).toHaveBeenCalledWith('test', expect.any(Object), {
+        limit: 40,
+        minScore: 0.01,
+      });
     });
 
     it('should use default limit when not specified', async () => {
       await searchHandler({ query: 'test' });
 
-      expect(searchDocuments).toHaveBeenCalledWith(
-        'test',
-        expect.any(Object),
-        { limit: 10, minScore: 0.01 }
-      );
+      expect(searchDocuments).toHaveBeenCalledWith('test', expect.any(Object), {
+        limit: 10,
+        minScore: 0.01,
+      });
     });
 
     it('should filter results by categories', async () => {
@@ -246,7 +257,7 @@ describe('search-tool-builder', () => {
 
       const result = await searchHandler({
         query: 'test',
-        categories: ['knowledge']
+        categories: ['knowledge'],
       });
 
       expect(result.content[0].text).toContain('Found 1 result(s) for "test"');
@@ -276,7 +287,7 @@ describe('search-tool-builder', () => {
 
       const result = await searchHandler({
         query: 'test',
-        categories: ['knowledge', 'file']
+        categories: ['knowledge', 'file'],
       });
 
       expect(result.content[0].text).toContain('Found 2 result(s) for "test"');
@@ -296,18 +307,21 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle indexing in progress', async () => {
-      const indexingIndexer = new MockIndexer({ name: 'test' }, {
-        isIndexing: true,
-        progress: 45,
-        totalItems: 100,
-        indexedItems: 45,
-        startTime: Date.now() - 5000,
-      });
+      const indexingIndexer = new MockIndexer(
+        { name: 'test' },
+        {
+          isIndexing: true,
+          progress: 45,
+          totalItems: 100,
+          indexedItems: 45,
+          startTime: Date.now() - 5000,
+        }
+      );
 
       const indexingConfig = { ...config, indexer: indexingIndexer };
       buildSearchTool(mockServer, indexingConfig);
 
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       const result = await searchHandler({ query: 'test' });
@@ -320,15 +334,18 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle indexing error', async () => {
-      const errorIndexer = new MockIndexer({ name: 'test' }, {
-        isIndexing: false,
-        error: 'Failed to index files',
-      });
+      const errorIndexer = new MockIndexer(
+        { name: 'test' },
+        {
+          isIndexing: false,
+          error: 'Failed to index files',
+        }
+      );
 
       const errorConfig = { ...config, indexer: errorIndexer };
       buildSearchTool(mockServer, errorConfig);
 
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       const result = await searchHandler({ query: 'test' });
@@ -415,7 +432,7 @@ describe('search-tool-builder', () => {
 
     beforeEach(() => {
       buildSearchTool(mockServer, config);
-      const statusCall = mockRegisterTool.mock.calls.find(call => call[0] === 'get_test_status');
+      const statusCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'get_test_status');
       statusHandler = statusCall![2];
     });
 
@@ -429,18 +446,21 @@ describe('search-tool-builder', () => {
     });
 
     it('should show indexing in progress status', async () => {
-      const indexingIndexer = new MockIndexer({ name: 'test' }, {
-        isIndexing: true,
-        progress: 75,
-        totalItems: 200,
-        indexedItems: 150,
-        startTime: Date.now() - 10000,
-      });
+      const indexingIndexer = new MockIndexer(
+        { name: 'test' },
+        {
+          isIndexing: true,
+          progress: 75,
+          totalItems: 200,
+          indexedItems: 150,
+          startTime: Date.now() - 10000,
+        }
+      );
 
       const indexingConfig = { ...config, indexer: indexingIndexer };
       buildSearchTool(mockServer, indexingConfig);
 
-      const statusCall = mockRegisterTool.mock.calls.find(call => call[0] === 'get_test_status');
+      const statusCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'get_test_status');
       const statusHandler = statusCall![2];
 
       const result = await statusHandler();
@@ -452,15 +472,18 @@ describe('search-tool-builder', () => {
     });
 
     it('should show indexing failed status', async () => {
-      const errorIndexer = new MockIndexer({ name: 'test' }, {
-        isIndexing: false,
-        error: 'Disk space full',
-      });
+      const errorIndexer = new MockIndexer(
+        { name: 'test' },
+        {
+          isIndexing: false,
+          error: 'Disk space full',
+        }
+      );
 
       const errorConfig = { ...config, indexer: errorIndexer };
       buildSearchTool(mockServer, errorConfig);
 
-      const statusCall = mockRegisterTool.mock.calls.find(call => call[0] === 'get_test_status');
+      const statusCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'get_test_status');
       const statusHandler = statusCall![2];
 
       const result = await statusHandler();
@@ -485,7 +508,7 @@ describe('search-tool-builder', () => {
       const notReadyConfig = { ...config, indexer: notReadyIndexer };
       buildSearchTool(mockServer, notReadyConfig);
 
-      const statusCall = mockRegisterTool.mock.calls.find(call => call[0] === 'get_test_status');
+      const statusCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'get_test_status');
       const statusHandler = statusCall![2];
 
       const result = await statusHandler();
@@ -549,22 +572,38 @@ describe('search-tool-builder', () => {
       buildSearchTool(mockServer, config2);
 
       expect(mockRegisterTool).toHaveBeenCalledTimes(4);
-      expect(mockRegisterTool).toHaveBeenCalledWith('search_knowledge', expect.any(Object), expect.any(Function));
-      expect(mockRegisterTool).toHaveBeenCalledWith('get_knowledge_status', expect.any(Object), expect.any(Function));
-      expect(mockRegisterTool).toHaveBeenCalledWith('search_codebase', expect.any(Object), expect.any(Function));
-      expect(mockRegisterTool).toHaveBeenCalledWith('get_codebase_status', expect.any(Object), expect.any(Function));
+      expect(mockRegisterTool).toHaveBeenCalledWith(
+        'search_knowledge',
+        expect.any(Object),
+        expect.any(Function)
+      );
+      expect(mockRegisterTool).toHaveBeenCalledWith(
+        'get_knowledge_status',
+        expect.any(Object),
+        expect.any(Function)
+      );
+      expect(mockRegisterTool).toHaveBeenCalledWith(
+        'search_codebase',
+        expect.any(Object),
+        expect.any(Function)
+      );
+      expect(mockRegisterTool).toHaveBeenCalledWith(
+        'get_codebase_status',
+        expect.any(Object),
+        expect.any(Function)
+      );
     });
   });
 
   describe('error handling and edge cases', () => {
     it('should handle undefined categories gracefully', async () => {
       buildSearchTool(mockServer, config);
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       const result = await searchHandler({
         query: 'test',
-        categories: undefined
+        categories: undefined,
       });
 
       expect(result.content[0].text).toContain('Found 2 result(s) for "test"');
@@ -572,12 +611,12 @@ describe('search-tool-builder', () => {
 
     it('should handle empty categories array', async () => {
       buildSearchTool(mockServer, config);
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       const result = await searchHandler({
         query: 'test',
-        categories: []
+        categories: [],
       });
 
       expect(result.content[0].text).toContain('Found 2 result(s) for "test"');
@@ -585,16 +624,15 @@ describe('search-tool-builder', () => {
 
     it('should handle zero limit by using default', async () => {
       buildSearchTool(mockServer, config);
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       await searchHandler({ query: 'test', limit: 0 });
 
-      expect(searchDocuments).toHaveBeenCalledWith(
-        'test',
-        expect.any(Object),
-        { limit: 10, minScore: 0.01 }
-      );
+      expect(searchDocuments).toHaveBeenCalledWith('test', expect.any(Object), {
+        limit: 10,
+        minScore: 0.01,
+      });
     });
 
     it('should handle negative limit by using default', async () => {
@@ -603,16 +641,15 @@ describe('search-tool-builder', () => {
       // Get the last registered search tool
       const searchCall = Array.from(mockRegisterTool.mock.calls)
         .reverse()
-        .find(call => call[0] === 'search_test');
+        .find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       await searchHandler({ query: 'test', limit: -5 });
 
-      expect(searchDocuments).toHaveBeenCalledWith(
-        'test',
-        expect.any(Object),
-        { limit: -5, minScore: 0.01 }
-      );
+      expect(searchDocuments).toHaveBeenCalledWith('test', expect.any(Object), {
+        limit: -5,
+        minScore: 0.01,
+      });
     });
 
     it('should handle malformed URIs in category filtering', async () => {
@@ -630,12 +667,12 @@ describe('search-tool-builder', () => {
       ]);
 
       buildSearchTool(mockServer, config);
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       const result = await searchHandler({
         query: 'test',
-        categories: ['knowledge']
+        categories: ['knowledge'],
       });
 
       // Should still show the knowledge:// result and handle the malformed URI gracefully
@@ -650,7 +687,7 @@ describe('search-tool-builder', () => {
       });
 
       buildSearchTool(mockServer, config);
-      const searchCall = mockRegisterTool.mock.calls.find(call => call[0] === 'search_test');
+      const searchCall = mockRegisterTool.mock.calls.find((call) => call[0] === 'search_test');
       const searchHandler = searchCall![2];
 
       await searchHandler({ query: 'test' });

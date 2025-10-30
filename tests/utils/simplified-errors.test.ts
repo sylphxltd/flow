@@ -3,27 +3,27 @@
  * Comprehensive tests for error handling system
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AppError,
-  ValidationError,
+  AuthenticationError,
+  BaseError,
   ConfigurationError,
   DatabaseError,
-  NetworkError,
-  FilesystemError,
-  AuthenticationError,
+  ErrorCategory,
   ErrorFactory,
   ErrorHandler,
   ErrorSeverity,
-  ErrorCategory,
-  createValidationError,
+  FilesystemError,
+  NetworkError,
+  ValidationError,
+  createAuthenticationError,
   createConfigurationError,
   createDatabaseError,
-  createNetworkError,
-  createFilesystemError,
-  createAuthenticationError,
   createError,
-  BaseError,
+  createFilesystemError,
+  createNetworkError,
+  createValidationError,
 } from '../../src/utils/simplified-errors.js';
 
 describe('Simplified Errors', () => {
@@ -101,61 +101,43 @@ describe('Simplified Errors', () => {
 
     describe('getUserMessage', () => {
       it('should return validation-specific message', () => {
-        const error = new AppError(
-          'Invalid email format',
-          'VAL_ERROR',
-          ErrorCategory.VALIDATION
-        );
+        const error = new AppError('Invalid email format', 'VAL_ERROR', ErrorCategory.VALIDATION);
 
         expect(error.getUserMessage()).toBe('Validation failed: Invalid email format');
       });
 
       it('should return configuration-specific message', () => {
-        const error = new AppError(
-          'Missing API key',
-          'CONFIG_ERROR',
-          ErrorCategory.CONFIGURATION
-        );
+        const error = new AppError('Missing API key', 'CONFIG_ERROR', ErrorCategory.CONFIGURATION);
 
-        expect(error.getUserMessage()).toBe('Configuration error: Missing API key. Please check your settings.');
+        expect(error.getUserMessage()).toBe(
+          'Configuration error: Missing API key. Please check your settings.'
+        );
       });
 
       it('should return database-specific message', () => {
-        const error = new AppError(
-          'Connection failed',
-          'DB_ERROR',
-          ErrorCategory.DATABASE
-        );
+        const error = new AppError('Connection failed', 'DB_ERROR', ErrorCategory.DATABASE);
 
         expect(error.getUserMessage()).toBe('Database operation failed. Please try again later.');
       });
 
       it('should return network-specific message', () => {
-        const error = new AppError(
-          'Connection timeout',
-          'NET_ERROR',
-          ErrorCategory.NETWORK
-        );
+        const error = new AppError('Connection timeout', 'NET_ERROR', ErrorCategory.NETWORK);
 
-        expect(error.getUserMessage()).toBe('External service unavailable. Please try again later.');
+        expect(error.getUserMessage()).toBe(
+          'External service unavailable. Please try again later.'
+        );
       });
 
       it('should return external-specific message', () => {
-        const error = new AppError(
-          'API error',
-          'EXT_ERROR',
-          ErrorCategory.EXTERNAL
-        );
+        const error = new AppError('API error', 'EXT_ERROR', ErrorCategory.EXTERNAL);
 
-        expect(error.getUserMessage()).toBe('External service unavailable. Please try again later.');
+        expect(error.getUserMessage()).toBe(
+          'External service unavailable. Please try again later.'
+        );
       });
 
       it('should return default message for other categories', () => {
-        const error = new AppError(
-          'Runtime error',
-          'RUN_ERROR',
-          ErrorCategory.RUNTIME
-        );
+        const error = new AppError('Runtime error', 'RUN_ERROR', ErrorCategory.RUNTIME);
 
         expect(error.getUserMessage()).toBe('Runtime error');
       });
@@ -229,7 +211,7 @@ describe('Simplified Errors', () => {
 
       expect(error.context).toEqual({
         operation: 'SELECT',
-        query: 'SELECT * FROM users'
+        query: 'SELECT * FROM users',
       });
     });
   });
@@ -251,7 +233,7 @@ describe('Simplified Errors', () => {
 
       expect(error.context).toEqual({
         url: 'https://api.example.com',
-        statusCode: undefined
+        statusCode: undefined,
       });
     });
 
@@ -260,7 +242,7 @@ describe('Simplified Errors', () => {
 
       expect(error.context).toEqual({
         url: 'https://api.example.com',
-        statusCode: 404
+        statusCode: 404,
       });
     });
   });
@@ -282,7 +264,7 @@ describe('Simplified Errors', () => {
 
       expect(error.context).toEqual({
         path: '/tmp/file.txt',
-        operation: undefined
+        operation: undefined,
       });
     });
 
@@ -291,7 +273,7 @@ describe('Simplified Errors', () => {
 
       expect(error.context).toEqual({
         path: '/tmp/file.txt',
-        operation: 'READ'
+        operation: 'READ',
       });
     });
   });
@@ -495,7 +477,9 @@ describe('Simplified Errors', () => {
 
       it('should preserve AppError context', async () => {
         const operation = async () => {
-          throw new AppError('Test', 'CODE', ErrorCategory.RUNTIME, ErrorSeverity.MEDIUM, { original: 'context' });
+          throw new AppError('Test', 'CODE', ErrorCategory.RUNTIME, ErrorSeverity.MEDIUM, {
+            original: 'context',
+          });
         };
         const additionalContext = { added: 'context' };
         const result = await ErrorHandler.execute(operation, additionalContext);
@@ -504,7 +488,7 @@ describe('Simplified Errors', () => {
         if (!result.success) {
           expect(result.error.context).toMatchObject({
             original: 'context',
-            added: 'context'
+            added: 'context',
           });
         }
       });
@@ -628,13 +612,9 @@ describe('Simplified Errors', () => {
     });
 
     it('should create generic error', () => {
-      const error = createError(
-        'Test',
-        'CODE',
-        ErrorCategory.RUNTIME,
-        ErrorSeverity.HIGH,
-        { key: 'value' }
-      );
+      const error = createError('Test', 'CODE', ErrorCategory.RUNTIME, ErrorSeverity.HIGH, {
+        key: 'value',
+      });
 
       expect(error).toBeInstanceOf(AppError);
       expect(error.message).toBe('Test');

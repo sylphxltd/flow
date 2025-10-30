@@ -191,7 +191,6 @@ export class IndexerService {
     return [];
   }
 
-  
   /**
    * 建立向量索引
    */

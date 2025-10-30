@@ -3,8 +3,8 @@
  * Tests for process lifecycle management
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Process Manager', () => {
   let mockProcess: any;

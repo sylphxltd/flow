@@ -184,7 +184,6 @@ function calculateMagnitude(vector: Map<string, number>): number {
   return Math.sqrt(sum);
 }
 
-
 // Global tokenizer instance for performance
 let globalTokenizer: AdvancedCodeTokenizer | null = null;
 let tokenizerInitialized = false;
@@ -195,7 +194,7 @@ let tokenizerInitialized = false;
 async function getTokenizer(): Promise<AdvancedCodeTokenizer> {
   if (!globalTokenizer) {
     globalTokenizer = new AdvancedCodeTokenizer({
-      modelPath: './models/starcoder2'
+      modelPath: './models/starcoder2',
     });
   }
 
@@ -356,8 +355,8 @@ export async function buildSearchIndex(
         'Advanced technical term recognition',
         'Optimized for code search',
         'Simple and effective approach',
-        'No unnecessary complexity'
-      ]
+        'No unnecessary complexity',
+      ],
     },
   };
 }
@@ -390,7 +389,10 @@ export function calculateCosineSimilarity(
 /**
  * Process query into TF-IDF vector using database values
  */
-export async function processQuery(query: string, idf: Map<string, number>): Promise<Map<string, number>> {
+export async function processQuery(
+  query: string,
+  idf: Map<string, number>
+): Promise<Map<string, number>> {
   const terms = await extractQueryTokens(query);
   const queryVector = new Map<string, number>();
 
@@ -430,12 +432,12 @@ export async function searchDocuments(
     exactMatch = 1.5,
     phraseMatch = 2.0,
     technicalMatch = 1.8,
-    identifierMatch = 1.3
+    identifierMatch = 1.3,
   } = boostFactors;
 
   // Process query using Advanced Code Tokenizer
   const queryVector = await processQuery(query, index.idf);
-  const queryTokens = (await extractQueryTokens(query)).map(t => t.toLowerCase());
+  const queryTokens = (await extractQueryTokens(query)).map((t) => t.toLowerCase());
 
   // Calculate similarity for each document
   const results = index.documents.map((doc) => {
@@ -500,7 +502,7 @@ function isTechnicalTerm(term: string): boolean {
     /\b(?:http|https|json|xml|yaml|sql|api|url|uri)\b/, // Technical keywords
   ];
 
-  return technicalPatterns.some(pattern => pattern.test(term));
+  return technicalPatterns.some((pattern) => pattern.test(term));
 }
 
 /**

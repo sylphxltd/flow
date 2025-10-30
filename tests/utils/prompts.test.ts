@@ -3,8 +3,8 @@
  * Tests for modern CLI prompts with progressive output
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock chalk
 vi.mock('chalk', () => ({
@@ -73,9 +73,11 @@ describe('Prompts', () => {
     it('should ask question and return answer', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('Test answer');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('Test answer');
+        }
+      );
 
       const result = await ask('What is your name?');
       expect(result).toBe('Test answer');
@@ -85,10 +87,12 @@ describe('Prompts', () => {
     it('should include question in prompt', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('What is your name?');
-        callback('answer');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('What is your name?');
+          callback('answer');
+        }
+      );
 
       await ask('What is your name?');
     });
@@ -96,10 +100,12 @@ describe('Prompts', () => {
     it('should format prompt with cyan arrow', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('[CYAN]❯[/CYAN]');
-        callback('answer');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('[CYAN]❯[/CYAN]');
+          callback('answer');
+        }
+      );
 
       await ask('Question?');
     });
@@ -107,10 +113,12 @@ describe('Prompts', () => {
     it('should handle default value', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('default');
-        callback('');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('default');
+          callback('');
+        }
+      );
 
       const result = await ask('Question?', 'default');
       expect(result).toBe('default');
@@ -119,10 +127,12 @@ describe('Prompts', () => {
     it('should show default value in prompt', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('[GRAY](default)[/GRAY]');
-        callback('answer');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('[GRAY](default)[/GRAY]');
+          callback('answer');
+        }
+      );
 
       await ask('Question?', 'default');
     });
@@ -130,9 +140,11 @@ describe('Prompts', () => {
     it('should trim whitespace from answer', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('  answer with spaces  ');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('  answer with spaces  ');
+        }
+      );
 
       const result = await ask('Question?');
       expect(result).toBe('answer with spaces');
@@ -141,9 +153,11 @@ describe('Prompts', () => {
     it('should return empty string if no answer and no default', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('');
+        }
+      );
 
       const result = await ask('Question?');
       expect(result).toBe('');
@@ -152,9 +166,11 @@ describe('Prompts', () => {
     it('should create readline interface with stdin/stdout', async () => {
       const { ask } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('answer');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('answer');
+        }
+      );
 
       await ask('Question?');
 
@@ -193,9 +209,7 @@ describe('Prompts', () => {
 
       await askSecret('Enter password');
 
-      expect(mockStdout.write).toHaveBeenCalledWith(
-        expect.stringContaining('Enter password')
-      );
+      expect(mockStdout.write).toHaveBeenCalledWith(expect.stringContaining('Enter password'));
     });
 
     it('should mask input with bullets', async () => {
@@ -360,23 +374,25 @@ describe('Prompts', () => {
     it('should display question', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('1');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('1');
+        }
+      );
 
       await select('Choose option', ['Option 1', 'Option 2']);
 
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Choose option')
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Choose option'));
     });
 
     it('should display all choices', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('1');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('1');
+        }
+      );
 
       await select('Choose', ['Option 1', 'Option 2', 'Option 3']);
 
@@ -388,9 +404,11 @@ describe('Prompts', () => {
     it('should return selected choice', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('2');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('2');
+        }
+      );
 
       const result = await select('Choose', ['First', 'Second', 'Third']);
       expect(result).toBe('Second');
@@ -399,9 +417,11 @@ describe('Prompts', () => {
     it('should handle first choice', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('1');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('1');
+        }
+      );
 
       const result = await select('Choose', ['First', 'Second']);
       expect(result).toBe('First');
@@ -410,9 +430,11 @@ describe('Prompts', () => {
     it('should handle last choice', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('3');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('3');
+        }
+      );
 
       const result = await select('Choose', ['First', 'Second', 'Third']);
       expect(result).toBe('Third');
@@ -421,9 +443,11 @@ describe('Prompts', () => {
     it('should default to first choice if invalid number', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('99');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('99');
+        }
+      );
 
       const result = await select('Choose', ['First', 'Second']);
       expect(result).toBe('First');
@@ -432,9 +456,11 @@ describe('Prompts', () => {
     it('should default to first choice if negative number', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('-1');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('-1');
+        }
+      );
 
       const result = await select('Choose', ['First', 'Second']);
       expect(result).toBe('First');
@@ -443,9 +469,11 @@ describe('Prompts', () => {
     it('should default to first choice if not a number', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('not a number');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('not a number');
+        }
+      );
 
       const result = await select('Choose', ['First', 'Second']);
       expect(result).toBe('First');
@@ -454,10 +482,12 @@ describe('Prompts', () => {
     it('should show range in prompt', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('1-3');
-        callback('1');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('1-3');
+          callback('1');
+        }
+      );
 
       await select('Choose', ['First', 'Second', 'Third']);
     });
@@ -465,9 +495,11 @@ describe('Prompts', () => {
     it('should close readline after selection', async () => {
       const { select } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('1');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('1');
+        }
+      );
 
       await select('Choose', ['First', 'Second']);
       expect(mockReadline.close).toHaveBeenCalledOnce();
@@ -478,9 +510,11 @@ describe('Prompts', () => {
     it('should return true for "y" input', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('y');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('y');
+        }
+      );
 
       const result = await confirm('Continue?');
       expect(result).toBe(true);
@@ -489,9 +523,11 @@ describe('Prompts', () => {
     it('should return true for "yes" input', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('yes');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('yes');
+        }
+      );
 
       const result = await confirm('Continue?');
       expect(result).toBe(true);
@@ -500,9 +536,11 @@ describe('Prompts', () => {
     it('should return false for "n" input', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('n');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('n');
+        }
+      );
 
       const result = await confirm('Continue?');
       expect(result).toBe(false);
@@ -511,9 +549,11 @@ describe('Prompts', () => {
     it('should return false for "no" input', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('no');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('no');
+        }
+      );
 
       const result = await confirm('Continue?');
       expect(result).toBe(false);
@@ -522,9 +562,11 @@ describe('Prompts', () => {
     it('should handle uppercase input', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('Y');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('Y');
+        }
+      );
 
       const result = await confirm('Continue?');
       expect(result).toBe(true);
@@ -533,9 +575,11 @@ describe('Prompts', () => {
     it('should handle mixed case input', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('Yes');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('Yes');
+        }
+      );
 
       const result = await confirm('Continue?');
       expect(result).toBe(true);
@@ -544,9 +588,11 @@ describe('Prompts', () => {
     it('should use default value for empty input', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('');
+        }
+      );
 
       const result = await confirm('Continue?', true);
       expect(result).toBe(true);
@@ -555,9 +601,11 @@ describe('Prompts', () => {
     it('should default to true by default', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('');
+        }
+      );
 
       const result = await confirm('Continue?');
       expect(result).toBe(true);
@@ -566,9 +614,11 @@ describe('Prompts', () => {
     it('should respect false default value', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('');
+        }
+      );
 
       const result = await confirm('Continue?', false);
       expect(result).toBe(false);
@@ -577,10 +627,12 @@ describe('Prompts', () => {
     it('should show Y/n for true default', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('Y/n');
-        callback('');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('Y/n');
+          callback('');
+        }
+      );
 
       await confirm('Continue?', true);
     });
@@ -588,10 +640,12 @@ describe('Prompts', () => {
     it('should show y/N for false default', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('y/N');
-        callback('');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('y/N');
+          callback('');
+        }
+      );
 
       await confirm('Continue?', false);
     });
@@ -599,10 +653,12 @@ describe('Prompts', () => {
     it('should include question in prompt', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('Do you want to continue?');
-        callback('y');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('Do you want to continue?');
+          callback('y');
+        }
+      );
 
       await confirm('Do you want to continue?');
     });
@@ -610,10 +666,12 @@ describe('Prompts', () => {
     it('should format prompt with cyan arrow', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((prompt: string, callback: (answer: string) => void) => {
-        expect(prompt).toContain('[CYAN]❯[/CYAN]');
-        callback('y');
-      });
+      mockReadline.question.mockImplementation(
+        (prompt: string, callback: (answer: string) => void) => {
+          expect(prompt).toContain('[CYAN]❯[/CYAN]');
+          callback('y');
+        }
+      );
 
       await confirm('Continue?');
     });
@@ -621,9 +679,11 @@ describe('Prompts', () => {
     it('should close readline after confirmation', async () => {
       const { confirm } = await import('../../src/utils/prompts.js');
 
-      mockReadline.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
-        callback('y');
-      });
+      mockReadline.question.mockImplementation(
+        (_prompt: string, callback: (answer: string) => void) => {
+          callback('y');
+        }
+      );
 
       await confirm('Continue?');
       expect(mockReadline.close).toHaveBeenCalledOnce();

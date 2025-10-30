@@ -415,9 +415,7 @@ describe('MCP Command', () => {
 
     it('should allow disabling features on start', () => {
       const startCmd = mcpCommand.commands.find((cmd) => cmd.name() === 'start');
-      const disableOptions = startCmd?.options.filter((opt) =>
-        opt.long?.startsWith('--disable-')
-      );
+      const disableOptions = startCmd?.options.filter((opt) => opt.long?.startsWith('--disable-'));
       expect(disableOptions?.length).toBe(5);
     });
   });

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { claudeCodeTarget } from '../../src/targets/claude-code.js';
 
 // Mock fs module
@@ -29,7 +29,7 @@ describe('claude-code target', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset all mock functions
-    Object.values(mockFs).forEach(fn => {
+    Object.values(mockFs).forEach((fn) => {
       if (typeof fn === 'function') {
         fn.mockReset();
       }
@@ -48,7 +48,7 @@ describe('claude-code target', () => {
       mockFs.writeFileSync.mockReturnValue(undefined);
 
       const result = await claudeCodeTarget.setup?.(testCwd, {
-        hookCommand: 'npx @sylphxltd/flow@latest sysinfo'
+        hookCommand: 'npx @sylphxltd/flow@latest sysinfo',
       });
 
       expect(result?.success).toBe(true);
@@ -78,8 +78,8 @@ describe('claude-code target', () => {
       const existingSettings = {
         existingConfig: 'value',
         hooks: {
-          ExistingHook: 'should-be-preserved'
-        }
+          ExistingHook: 'should-be-preserved',
+        },
       };
 
       mockFs.existsSync.mockReturnValue(true);
@@ -129,10 +129,7 @@ describe('claude-code target', () => {
       mockFs.mkdirSync.mockReturnValue(undefined);
       mockFs.writeFileSync.mockReturnValue(undefined);
 
-      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(
-        testCwd,
-        'test-command'
-      );
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, 'test-command');
 
       expect(result).toHaveProperty('success', true);
       expect(result).toHaveProperty('message');
@@ -142,27 +139,20 @@ describe('claude-code target', () => {
     it('should preserve existing hooks', async () => {
       const existingSettings = {
         hooks: {
-          ExistingHook: [
-            { type: 'command', command: 'existing-command' }
-          ]
-        }
+          ExistingHook: [{ type: 'command', command: 'existing-command' }],
+        },
       };
 
       mockFs.existsSync.mockReturnValue(true);
       mockFs.readFileSync.mockReturnValue(JSON.stringify(existingSettings));
       mockFs.writeFileSync.mockReturnValue(undefined);
 
-      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(
-        testCwd,
-        'new-command'
-      );
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, 'new-command');
 
       expect(result.success).toBe(true);
 
       // Verify that both hooks are present
-      const writtenData = JSON.parse(
-        (mockFs.writeFileSync.mock.calls[0][1] as string)
-      );
+      const writtenData = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
 
       expect(writtenData.hooks.ExistingHook).toBeDefined();
       expect(writtenData.hooks.UserPromptSubmit).toBeDefined();

@@ -5,15 +5,15 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  AGENT_DESCRIPTIONS,
   DEFAULT_AGENTS,
-  DEFAULT_TASK,
   DEFAULT_CONCURRENCY,
   DEFAULT_DELAY,
-  DEFAULT_TIMEOUT,
   DEFAULT_REPORT_DIR,
-  PERFORMANCE_SCORE_RANGES,
+  DEFAULT_TASK,
+  DEFAULT_TIMEOUT,
   EVALUATION_CRITERIA,
-  AGENT_DESCRIPTIONS,
+  PERFORMANCE_SCORE_RANGES,
 } from '../../src/constants/benchmark-constants.js';
 
 describe('Benchmark Constants', () => {
@@ -311,9 +311,7 @@ describe('Benchmark Constants', () => {
     });
 
     it('should have performance ranges covering full benchmark duration', () => {
-      const maxTime = PERFORMANCE_SCORE_RANGES.find(
-        (r) => r.max === Number.POSITIVE_INFINITY
-      );
+      const maxTime = PERFORMANCE_SCORE_RANGES.find((r) => r.max === Number.POSITIVE_INFINITY);
       expect(maxTime).toBeDefined();
       expect(maxTime?.score).toBe(1); // Lowest score for infinite time
     });

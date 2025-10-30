@@ -3,16 +3,16 @@
  * Tests for input validation, sanitization, and safe operations
  */
 
-import { describe, expect, it, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  securitySchemas,
-  pathSecurity,
-  commandSecurity,
-  sanitize,
-  envSecurity,
-  cryptoUtils,
   RateLimiter,
+  commandSecurity,
+  cryptoUtils,
+  envSecurity,
+  pathSecurity,
+  sanitize,
   securityMiddleware,
+  securitySchemas,
 } from '../../src/utils/security.js';
 
 describe('Security Utilities', () => {
@@ -380,9 +380,7 @@ describe('Security Utilities', () => {
       });
 
       it('should validate URL variables', () => {
-        expect(() =>
-          envSecurity.validateEnvVar('API_URL', 'http://example.com')
-        ).toThrow();
+        expect(() => envSecurity.validateEnvVar('API_URL', 'http://example.com')).toThrow();
       });
 
       it('should validate key length', () => {

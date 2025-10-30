@@ -188,7 +188,7 @@ export const initCommand = new Command('init')
 
     // Setup target-specific configuration
     const target = targetManager.getTarget(targetId);
-    if (target && target.setup) {
+    if (target?.setup) {
       const setupResult = await target.setup(process.cwd());
 
       if (setupResult.success) {

@@ -3,9 +3,9 @@
  * Specialized tests to achieve 100% coverage for paths.ts
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Paths Coverage - Edge Cases', () => {
   let originalFsExistsSync: typeof fs.existsSync;
@@ -73,7 +73,7 @@ describe('Paths Coverage - Edge Cases', () => {
       const testPaths = [
         '/some/invalid/path/module.js',
         '/completely/wrong/structure/file.js',
-        '/invalid/location/not/in/project.js'
+        '/invalid/location/not/in/project.js',
       ];
 
       for (const testPath of testPaths) {
@@ -86,7 +86,9 @@ describe('Paths Coverage - Edge Cases', () => {
 
         // This would trigger the error on lines 43-47
         expect(() => {
-          throw new Error('Code must run from dist/ directory or be in a project with dist/ available');
+          throw new Error(
+            'Code must run from dist/ directory or be in a project with dist/ available'
+          );
         }).toThrow('Code must run from dist/ directory or be in a project with dist/ available');
       }
     });
@@ -126,7 +128,7 @@ describe('Paths Coverage - Edge Cases', () => {
         'simple-rule.json',
         'complex-rule-name.v2.md',
         'rule_with_underscores.txt',
-        'rule123.test456.ext789.json'
+        'rule123.test456.ext789.json',
       ];
 
       for (const filename of testFiles) {

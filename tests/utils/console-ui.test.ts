@@ -3,7 +3,7 @@
  * Tests for modern console UI utilities
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ui } from '../../src/utils/console-ui.js';
 
 // Mock chalk to return identifiable strings

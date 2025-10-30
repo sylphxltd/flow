@@ -111,10 +111,7 @@ const setError = (state: IndexerState, error: Error): IndexerState => ({
 /**
  * Set indexing promise
  */
-const setIndexingPromise = (
-  state: IndexerState,
-  promise: Promise<SearchIndex>
-): IndexerState => ({
+const setIndexingPromise = (state: IndexerState, promise: Promise<SearchIndex>): IndexerState => ({
   ...state,
   indexingPromise: promise,
 });

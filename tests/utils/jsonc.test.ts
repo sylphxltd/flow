@@ -3,14 +3,14 @@
  * Tests for JSON with Comments utilities
  */
 
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   parseJSONC,
-  stringifyJSONC,
   readJSONCFile,
+  stringifyJSONC,
   writeJSONCFile,
 } from '../../src/utils/jsonc.js';
 

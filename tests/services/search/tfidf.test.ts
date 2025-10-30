@@ -3,19 +3,19 @@
  * Tests for TF-IDF indexing, search, and cosine similarity
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  buildSearchIndex,
-  searchDocuments,
-  processQuery,
-  calculateCosineSimilarity,
-  serializeIndex,
-  deserializeIndex,
-  type SearchIndex,
   type DocumentVector,
+  type SearchIndex,
+  buildSearchIndex,
+  calculateCosineSimilarity,
+  deserializeIndex,
+  processQuery,
+  searchDocuments,
+  serializeIndex,
 } from '../../../src/services/search/tfidf.js';
 
 describe('TF-IDF Search Service', () => {
@@ -31,7 +31,8 @@ describe('TF-IDF Search Service', () => {
     sampleDocuments = [
       {
         uri: 'file:///project/auth.ts',
-        content: 'function authenticateUser(username, password) { return validateCredentials(username, password); }',
+        content:
+          'function authenticateUser(username, password) { return validateCredentials(username, password); }',
       },
       {
         uri: 'file:///project/database.ts',
@@ -39,11 +40,13 @@ describe('TF-IDF Search Service', () => {
       },
       {
         uri: 'file:///project/api.ts',
-        content: 'async function fetchUserData(userId) { const user = await database.query("SELECT * FROM users WHERE id = ?", userId); return user; }',
+        content:
+          'async function fetchUserData(userId) { const user = await database.query("SELECT * FROM users WHERE id = ?", userId); return user; }',
       },
       {
         uri: 'file:///project/utils.ts',
-        content: 'function validateEmail(email) { return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email); }',
+        content:
+          'function validateEmail(email) { return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email); }',
       },
     ];
   });

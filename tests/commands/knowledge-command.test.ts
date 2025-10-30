@@ -6,9 +6,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   knowledgeCommand,
-  knowledgeSearchCommand,
   knowledgeGetCommand,
   knowledgeListCommand,
+  knowledgeSearchCommand,
   knowledgeStatusCommand,
 } from '../../src/commands/knowledge-command.js';
 
@@ -187,9 +187,7 @@ describe('Knowledge Command', () => {
     });
 
     it('should have category option', () => {
-      const categoryOption = knowledgeListCommand.options.find(
-        (opt) => opt.long === '--category'
-      );
+      const categoryOption = knowledgeListCommand.options.find((opt) => opt.long === '--category');
       expect(categoryOption).toBeDefined();
     });
 
@@ -198,17 +196,13 @@ describe('Knowledge Command', () => {
     });
 
     it('should describe category option', () => {
-      const categoryOption = knowledgeListCommand.options.find(
-        (opt) => opt.long === '--category'
-      );
+      const categoryOption = knowledgeListCommand.options.find((opt) => opt.long === '--category');
       expect(categoryOption?.description).toBeTruthy();
       expect(categoryOption?.description).toContain('category');
     });
 
     it('should list valid categories in option description', () => {
-      const categoryOption = knowledgeListCommand.options.find(
-        (opt) => opt.long === '--category'
-      );
+      const categoryOption = knowledgeListCommand.options.find((opt) => opt.long === '--category');
       expect(categoryOption?.description).toContain('stacks');
       expect(categoryOption?.description).toContain('guides');
       expect(categoryOption?.description).toContain('universal');

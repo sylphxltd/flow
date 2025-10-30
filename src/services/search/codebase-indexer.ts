@@ -8,9 +8,9 @@
  * - Debounced re-indexing (5 seconds after last change)
  */
 
-import chokidar from 'chokidar';
 import fs from 'node:fs';
 import path from 'node:path';
+import chokidar from 'chokidar';
 import ignore, { type Ignore } from 'ignore';
 import {
   type ScanResult,
@@ -23,7 +23,7 @@ import {
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import { type VectorDocument, VectorStorage } from '../storage/vector-storage.js';
 import type { EmbeddingProvider } from './embeddings.js';
-import { type SearchIndex, buildSearchIndexFromDB, buildSearchIndex } from './tfidf.js';
+import { type SearchIndex, buildSearchIndex, buildSearchIndexFromDB } from './tfidf.js';
 
 export interface CodebaseFile {
   path: string; // Relative path from codebase root
@@ -317,156 +317,156 @@ export class CodebaseIndexer {
 
       this.status.totalFiles = files.length;
 
-    // Validate cache (check if file count changed significantly)
-    if (this.cache && !force) {
-      const fileCountDiff = Math.abs(files.length - this.cache.fileCount);
-      const fileCountChangePercent = (fileCountDiff / this.cache.fileCount) * 100;
+      // Validate cache (check if file count changed significantly)
+      if (this.cache && !force) {
+        const fileCountDiff = Math.abs(files.length - this.cache.fileCount);
+        const fileCountChangePercent = (fileCountDiff / this.cache.fileCount) * 100;
 
-      // If file count changed by >20%, force full reindex for safety
-      if (fileCountChangePercent > 20) {
-        force = true;
-        this.cache = null;
-      }
-    }
-
-    // Detect changes (new, modified, deleted files)
-    const changedFiles: CodebaseFile[] = [];
-    const deletedFiles: string[] = [];
-    const fileMap = new Map<string, { mtime: number; hash: string }>();
-
-    // Check for new/modified files
-    for (const file of files) {
-      const hash = simpleHash(file.content);
-      fileMap.set(file.path, { mtime: file.mtime, hash });
-
-      const cached = this.cache?.files.get(file.path);
-      if (force || !cached || cached.hash !== hash) {
-        changedFiles.push(file);
-      }
-    }
-
-    // Check for deleted files
-    if (this.cache?.files) {
-      for (const cachedPath of this.cache.files.keys()) {
-        if (!fileMap.has(cachedPath)) {
-          deletedFiles.push(cachedPath);
+        // If file count changed by >20%, force full reindex for safety
+        if (fileCountChangePercent > 20) {
+          force = true;
+          this.cache = null;
         }
       }
-    }
 
-    const hasChanges = changedFiles.length > 0 || deletedFiles.length > 0;
-    const cacheHit = !force && !hasChanges;
+      // Detect changes (new, modified, deleted files)
+      const changedFiles: CodebaseFile[] = [];
+      const deletedFiles: string[] = [];
+      const fileMap = new Map<string, { mtime: number; hash: string }>();
 
-    if (cacheHit && this.cache?.tfidfIndex) {
-      // Cache hit - no indexing needed
+      // Check for new/modified files
+      for (const file of files) {
+        const hash = simpleHash(file.content);
+        fileMap.set(file.path, { mtime: file.mtime, hash });
+
+        const cached = this.cache?.files.get(file.path);
+        if (force || !cached || cached.hash !== hash) {
+          changedFiles.push(file);
+        }
+      }
+
+      // Check for deleted files
+      if (this.cache?.files) {
+        for (const cachedPath of this.cache.files.keys()) {
+          if (!fileMap.has(cachedPath)) {
+            deletedFiles.push(cachedPath);
+          }
+        }
+      }
+
+      const hasChanges = changedFiles.length > 0 || deletedFiles.length > 0;
+      const cacheHit = !force && !hasChanges;
+
+      if (cacheHit && this.cache?.tfidfIndex) {
+        // Cache hit - no indexing needed
+        this.status.progress = 100;
+        this.status.indexedFiles = 0;
+        this.status.isIndexing = false;
+
+        return {
+          tfidfIndex: this.cache.tfidfIndex,
+          stats: {
+            totalFiles: files.length,
+            indexedFiles: 0,
+            skippedFiles: files.length,
+            cacheHit: true,
+          },
+        };
+      }
+
+      // Store files in database for content retrieval
+      await this.db.initialize();
+      let processedCount = 0;
+      for (const file of files) {
+        await this.db.upsertCodebaseFile({
+          path: file.path,
+          mtime: file.mtime,
+          hash: simpleHash(file.content),
+          content: file.content,
+          language: file.language,
+          size: file.size,
+          indexedAt: new Date().toISOString(),
+        });
+
+        // Update progress
+        processedCount++;
+        this.status.indexedFiles = processedCount;
+        this.status.currentFile = file.path;
+        this.status.progress = Math.floor((processedCount / files.length) * 100);
+      }
+
+      // Build TF-IDF index
+      const documents = files.map((file) => ({
+        uri: `file://${file.path}`,
+        content: file.content,
+      }));
+
+      const tfidfIndex = await buildSearchIndex(documents, options.onProgress);
+
+      // Build vector index if embedding provider is available
+      let vectorStorage: VectorStorage | undefined;
+      if (embeddingProvider) {
+        const vectorIndexPath = path.join(this.cacheDir, 'codebase-vectors.hnsw');
+        vectorStorage = new VectorStorage(vectorIndexPath, embeddingProvider.dimensions);
+
+        // Generate embeddings in batches
+        const batchSize = 10;
+        for (let i = 0; i < files.length; i += batchSize) {
+          const batch = files.slice(i, i + batchSize);
+          const texts = batch.map((f) => f.content);
+          const embeddings = await embeddingProvider.generateEmbeddings(texts);
+
+          for (let j = 0; j < batch.length; j++) {
+            const file = batch[j];
+            const embedding = embeddings[j];
+
+            const doc: VectorDocument = {
+              id: `file://${file.path}`,
+              embedding,
+              metadata: {
+                type: 'code',
+                language: file.language || '',
+                content: file.content.slice(0, 500), // Store snippet
+                category: '',
+              },
+            };
+
+            vectorStorage.addDocument(doc);
+          }
+        }
+
+        vectorStorage.save();
+      }
+
+      // Update cache
+      this.cache = {
+        version: '1.0.0',
+        codebaseRoot: this.codebaseRoot,
+        indexedAt: new Date().toISOString(),
+        fileCount: files.length,
+        files: fileMap,
+        tfidfIndex,
+        vectorIndexPath: vectorStorage
+          ? path.join(this.cacheDir, 'codebase-vectors.hnsw')
+          : undefined,
+      };
+
+      await this.saveCache(this.cache);
+
+      // Update status
+      this.status.indexedFiles = changedFiles.length;
       this.status.progress = 100;
-      this.status.indexedFiles = 0;
-      this.status.isIndexing = false;
 
       return {
-        tfidfIndex: this.cache.tfidfIndex,
+        tfidfIndex,
+        vectorStorage,
         stats: {
           totalFiles: files.length,
-          indexedFiles: 0,
-          skippedFiles: files.length,
-          cacheHit: true,
+          indexedFiles: changedFiles.length,
+          skippedFiles: files.length - changedFiles.length,
+          cacheHit: false,
         },
       };
-    }
-
-    // Store files in database for content retrieval
-    await this.db.initialize();
-    let processedCount = 0;
-    for (const file of files) {
-      await this.db.upsertCodebaseFile({
-        path: file.path,
-        mtime: file.mtime,
-        hash: simpleHash(file.content),
-        content: file.content,
-        language: file.language,
-        size: file.size,
-        indexedAt: new Date().toISOString(),
-      });
-
-      // Update progress
-      processedCount++;
-      this.status.indexedFiles = processedCount;
-      this.status.currentFile = file.path;
-      this.status.progress = Math.floor((processedCount / files.length) * 100);
-    }
-
-    // Build TF-IDF index
-    const documents = files.map((file) => ({
-      uri: `file://${file.path}`,
-      content: file.content,
-    }));
-
-    const tfidfIndex = await buildSearchIndex(documents, options.onProgress);
-
-    // Build vector index if embedding provider is available
-    let vectorStorage: VectorStorage | undefined;
-    if (embeddingProvider) {
-      const vectorIndexPath = path.join(this.cacheDir, 'codebase-vectors.hnsw');
-      vectorStorage = new VectorStorage(vectorIndexPath, embeddingProvider.dimensions);
-
-      // Generate embeddings in batches
-      const batchSize = 10;
-      for (let i = 0; i < files.length; i += batchSize) {
-        const batch = files.slice(i, i + batchSize);
-        const texts = batch.map((f) => f.content);
-        const embeddings = await embeddingProvider.generateEmbeddings(texts);
-
-        for (let j = 0; j < batch.length; j++) {
-          const file = batch[j];
-          const embedding = embeddings[j];
-
-          const doc: VectorDocument = {
-            id: `file://${file.path}`,
-            embedding,
-            metadata: {
-              type: 'code',
-              language: file.language || '',
-              content: file.content.slice(0, 500), // Store snippet
-              category: '',
-            },
-          };
-
-          vectorStorage.addDocument(doc);
-        }
-      }
-
-      vectorStorage.save();
-    }
-
-    // Update cache
-    this.cache = {
-      version: '1.0.0',
-      codebaseRoot: this.codebaseRoot,
-      indexedAt: new Date().toISOString(),
-      fileCount: files.length,
-      files: fileMap,
-      tfidfIndex,
-      vectorIndexPath: vectorStorage
-        ? path.join(this.cacheDir, 'codebase-vectors.hnsw')
-        : undefined,
-    };
-
-    await this.saveCache(this.cache);
-
-    // Update status
-    this.status.indexedFiles = changedFiles.length;
-    this.status.progress = 100;
-
-    return {
-      tfidfIndex,
-      vectorStorage,
-      stats: {
-        totalFiles: files.length,
-        indexedFiles: changedFiles.length,
-        skippedFiles: files.length - changedFiles.length,
-        cacheHit: false,
-      },
-    };
     } finally {
       // Reset indexing status
       this.status.isIndexing = false;
@@ -508,12 +508,14 @@ export class CodebaseIndexer {
       minScore?: number;
       includeContent?: boolean;
     } = {}
-  ): Promise<Array<{
-    path: string;
-    score: number;
-    content?: string;
-    language?: string;
-  }>> {
+  ): Promise<
+    Array<{
+      path: string;
+      score: number;
+      content?: string;
+      language?: string;
+    }>
+  > {
     const { limit = 10, minScore = 0, includeContent = true } = options;
 
     // Load TF-IDF index from cache
@@ -694,9 +696,7 @@ export class CodebaseIndexer {
  * const result = await indexer.indexCodebase();
  * const results = await indexer.search('authentication');
  */
-export function createCodebaseIndexerFunctional(
-  options: CodebaseIndexerOptions = {}
-): {
+export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions = {}): {
   readonly getStatus: () => IndexingStatus;
   readonly indexCodebase: (opts?: {
     force?: boolean;
@@ -717,16 +717,21 @@ export function createCodebaseIndexerFunctional(
       cacheHit: boolean;
     };
   }>;
-  readonly search: (query: string, opts?: {
-    limit?: number;
-    minScore?: number;
-    includeContent?: boolean;
-  }) => Promise<Array<{
-    path: string;
-    score: number;
-    content?: string;
-    language?: string;
-  }>>;
+  readonly search: (
+    query: string,
+    opts?: {
+      limit?: number;
+      minScore?: number;
+      includeContent?: boolean;
+    }
+  ) => Promise<
+    Array<{
+      path: string;
+      score: number;
+      content?: string;
+      language?: string;
+    }>
+  >;
   readonly getCacheStats: () => Promise<{
     exists: boolean;
     fileCount: number;
@@ -1086,9 +1091,7 @@ export function createCodebaseIndexerFunctional(
           fileCount: files.length,
           files: fileMap,
           tfidfIndex,
-          vectorIndexPath: vectorStorage
-            ? path.join(cacheDir, 'codebase-vectors.hnsw')
-            : undefined,
+          vectorIndexPath: vectorStorage ? path.join(cacheDir, 'codebase-vectors.hnsw') : undefined,
         };
 
         await saveCache(cache);

@@ -3,7 +3,7 @@
  * Tests for centralized logging utility
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock chalk to avoid ANSI codes in test outputs
 vi.mock('chalk', () => ({

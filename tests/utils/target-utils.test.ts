@@ -3,19 +3,19 @@
  * Tests for target-specific utility functions
  */
 
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { MCPServerConfigUnion, TargetConfig } from '../../src/types.js';
 import {
   fileUtils,
-  yamlUtils,
+  generateHelpText,
   pathUtils,
   systemPromptUtils,
   transformUtils,
-  generateHelpText,
+  yamlUtils,
 } from '../../src/utils/target-utils.js';
-import type { TargetConfig, MCPServerConfigUnion } from '../../src/types.js';
 
 describe('Target Utils', () => {
   let testDir: string;
@@ -229,9 +229,7 @@ describe('Target Utils', () => {
           installation: { createConfigFile: false, supportedMcpServers: false },
         };
 
-        await expect(
-          fileUtils.validateRequirements(configNoFile, testDir)
-        ).resolves.not.toThrow();
+        await expect(fileUtils.validateRequirements(configNoFile, testDir)).resolves.not.toThrow();
       });
     });
 
@@ -648,9 +646,9 @@ Content here`;
       });
 
       it('should reject absolute path with \\', () => {
-        expect(() => pathUtils.getAgentFilePath('\\windows\\system32', mockConfig, testDir)).toThrow(
-          'Invalid source path'
-        );
+        expect(() =>
+          pathUtils.getAgentFilePath('\\windows\\system32', mockConfig, testDir)
+        ).toThrow('Invalid source path');
       });
 
       it('should generate flattened path', () => {

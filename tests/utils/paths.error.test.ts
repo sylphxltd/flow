@@ -3,9 +3,9 @@
  * Tests for the final uncovered error case in paths.ts
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Paths Error Cases', () => {
   let originalFileURLToPath: any;

@@ -93,7 +93,6 @@ export class SemanticSearchService {
       results.push(...codebaseResults);
     }
 
-    
     // 按score排序並限制結果數量
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
@@ -148,7 +147,6 @@ export class SemanticSearchService {
     }));
   }
 
-  
   /**
    * 索引內容
    */

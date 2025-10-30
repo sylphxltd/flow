@@ -3,27 +3,27 @@
  * Tests for standardized file operations with proper error handling
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  readFileSafe,
-  writeFileSafe,
-  fileExists,
-  getFileInfo,
-  ensureDirectory,
-  copyFileSafe,
-  deletePathSafe,
-  readDirectorySafe,
-  findFiles,
-  moveFileSafe,
-  formatFileSize,
-  validateFilePath,
-  type FileReadOptions,
-  type FileWriteOptions,
   type FileCopyOptions,
   type FileInfo,
+  type FileReadOptions,
+  type FileWriteOptions,
+  copyFileSafe,
+  deletePathSafe,
+  ensureDirectory,
+  fileExists,
+  findFiles,
+  formatFileSize,
+  getFileInfo,
+  moveFileSafe,
+  readDirectorySafe,
+  readFileSafe,
+  validateFilePath,
+  writeFileSafe,
 } from '../../src/utils/file-operations.js';
 
 describe('File Operations Utilities', () => {
@@ -34,7 +34,10 @@ describe('File Operations Utilities', () => {
 
   beforeEach(async () => {
     // Create unique test directory
-    testDir = path.join(tmpdir(), `file-ops-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    testDir = path.join(
+      tmpdir(),
+      `file-ops-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    );
     testFile = path.join(testDir, 'test.txt');
     testSubDir = path.join(testDir, 'subdir');
     testSubFile = path.join(testSubDir, 'subtest.txt');
@@ -121,7 +124,7 @@ describe('File Operations Utilities', () => {
 
       // Check backup was created
       const files = await fs.readdir(testDir);
-      const backupFiles = files.filter(file => file.includes('.backup.'));
+      const backupFiles = files.filter((file) => file.includes('.backup.'));
       expect(backupFiles.length).toBe(1);
 
       const backupPath = path.join(testDir, backupFiles[0]);
@@ -138,7 +141,7 @@ describe('File Operations Utilities', () => {
       await writeFileSafe(testFile, content, { backup: true });
 
       const files = await fs.readdir(testDir);
-      const backupFiles = files.filter(file => file.includes('.backup.'));
+      const backupFiles = files.filter((file) => file.includes('.backup.'));
       expect(backupFiles.length).toBe(0);
     });
 
@@ -266,16 +269,18 @@ describe('File Operations Utilities', () => {
       const destFile = path.join(testDir, 'copy.txt');
       await fs.writeFile(destFile, 'Old content');
 
-      await expect(copyFileSafe(testFile, destFile, { overwrite: false }))
-        .rejects.toThrow('Destination file already exists');
+      await expect(copyFileSafe(testFile, destFile, { overwrite: false })).rejects.toThrow(
+        'Destination file already exists'
+      );
     });
 
     it('should throw error when source does not exist', async () => {
       const nonExistentSource = path.join(testDir, 'nonexistent.txt');
       const destFile = path.join(testDir, 'copy.txt');
 
-      await expect(copyFileSafe(nonExistentSource, destFile))
-        .rejects.toThrow('Source file does not exist');
+      await expect(copyFileSafe(nonExistentSource, destFile)).rejects.toThrow(
+        'Source file does not exist'
+      );
     });
 
     it('should throw error for invalid paths', async () => {
@@ -354,7 +359,10 @@ describe('File Operations Utilities', () => {
     });
 
     it('should filter to include only files', async () => {
-      const results = await readDirectorySafe(testDir, { includeFiles: true, includeDirectories: false });
+      const results = await readDirectorySafe(testDir, {
+        includeFiles: true,
+        includeDirectories: false,
+      });
 
       expect(results).toHaveLength(2);
       expect(results).toContain(testFile);
@@ -364,7 +372,10 @@ describe('File Operations Utilities', () => {
     });
 
     it('should filter to include only directories', async () => {
-      const results = await readDirectorySafe(testDir, { includeFiles: false, includeDirectories: true });
+      const results = await readDirectorySafe(testDir, {
+        includeFiles: false,
+        includeDirectories: true,
+      });
 
       expect(results).toHaveLength(2);
       expect(results).toContain(testSubDir);
@@ -376,13 +387,11 @@ describe('File Operations Utilities', () => {
     it('should throw error when directory does not exist', async () => {
       const nonExistentDir = path.join(testDir, 'nonexistent');
 
-      await expect(readDirectorySafe(nonExistentDir))
-        .rejects.toThrow('Directory does not exist');
+      await expect(readDirectorySafe(nonExistentDir)).rejects.toThrow('Directory does not exist');
     });
 
     it('should throw error when path is not a directory', async () => {
-      await expect(readDirectorySafe(testFile))
-        .rejects.toThrow('Path is not a directory');
+      await expect(readDirectorySafe(testFile)).rejects.toThrow('Path is not a directory');
     });
 
     it('should throw error for invalid path', async () => {
@@ -409,18 +418,18 @@ describe('File Operations Utilities', () => {
       const results = await findFiles(testDir, ['*.txt']);
 
       expect(results).toHaveLength(2);
-      expect(results.some(path => path.includes('test.txt'))).toBe(true);
-      expect(results.some(path => path.includes('other.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('test.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('other.txt'))).toBe(true);
     });
 
     it('should find files matching multiple patterns', async () => {
       const results = await findFiles(testDir, ['*.txt', '*.js']);
 
       expect(results).toHaveLength(3);
-      expect(results.some(path => path.includes('test.txt'))).toBe(true);
-      expect(results.some(path => path.includes('other.txt'))).toBe(true);
-      expect(results.some(path => path.includes('test.js'))).toBe(true);
-      expect(results.some(path => path.includes('sub.js'))).toBe(false); // sub.js is in subdir, not found by default
+      expect(results.some((path) => path.includes('test.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('other.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('test.js'))).toBe(true);
+      expect(results.some((path) => path.includes('sub.js'))).toBe(false); // sub.js is in subdir, not found by default
     });
 
     it('should find files case-sensitive by default', async () => {
@@ -439,8 +448,8 @@ describe('File Operations Utilities', () => {
       const results = await findFiles(testDir, ['*.txt']);
 
       expect(results).toHaveLength(2);
-      expect(results.some(path => path.includes('test.txt'))).toBe(true);
-      expect(results.some(path => path.includes('other.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('test.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('other.txt'))).toBe(true);
     });
 
     it('should find files recursively when explicitly requested', async () => {
@@ -449,35 +458,35 @@ describe('File Operations Utilities', () => {
       // The current implementation appears to have issues with recursive search
       // This test documents the current behavior
       expect(results).toHaveLength(2);
-      expect(results.some(path => path.includes('test.txt'))).toBe(true);
-      expect(results.some(path => path.includes('other.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('test.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('other.txt'))).toBe(true);
     });
 
     it('should find files non-recursively when requested', async () => {
       const results = await findFiles(testDir, ['*.txt'], { recursive: false });
 
       expect(results).toHaveLength(2);
-      expect(results.some(path => path.includes('test.txt'))).toBe(true);
-      expect(results.some(path => path.includes('other.txt'))).toBe(true);
-      expect(results.some(path => path.includes('sub.txt'))).toBe(false);
+      expect(results.some((path) => path.includes('test.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('other.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('sub.txt'))).toBe(false);
     });
 
     it('should handle wildcards correctly', async () => {
       const results = await findFiles(testDir, ['test.*']);
 
       expect(results).toHaveLength(2);
-      expect(results.some(path => path.includes('test.txt'))).toBe(true);
-      expect(results.some(path => path.includes('test.js'))).toBe(true);
-      expect(results.some(path => path.includes('test.ts'))).toBe(false); // Not found because it's not created
+      expect(results.some((path) => path.includes('test.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('test.js'))).toBe(true);
+      expect(results.some((path) => path.includes('test.ts'))).toBe(false); // Not found because it's not created
     });
 
     it('should handle question mark wildcard', async () => {
       const results = await findFiles(testDir, ['tes?.*']);
 
       expect(results).toHaveLength(2);
-      expect(results.some(path => path.includes('test.txt'))).toBe(true);
-      expect(results.some(path => path.includes('test.js'))).toBe(true);
-      expect(results.some(path => path.includes('test.ts'))).toBe(false); // Not found because it's not created
+      expect(results.some((path) => path.includes('test.txt'))).toBe(true);
+      expect(results.some((path) => path.includes('test.js'))).toBe(true);
+      expect(results.some((path) => path.includes('test.ts'))).toBe(false); // Not found because it's not created
     });
   });
 
@@ -529,8 +538,9 @@ describe('File Operations Utilities', () => {
       const destFile = path.join(testDir, 'moved.txt');
       await fs.writeFile(destFile, 'Existing content');
 
-      await expect(moveFileSafe(testFile, destFile, { overwrite: false }))
-        .rejects.toThrow('Destination file already exists');
+      await expect(moveFileSafe(testFile, destFile, { overwrite: false })).rejects.toThrow(
+        'Destination file already exists'
+      );
     });
   });
 
@@ -650,21 +660,13 @@ describe('File Operations Utilities', () => {
     });
 
     it('should handle concurrent file operations safely', async () => {
-      const files = Array.from({ length: 5 }, (_, i) =>
-        path.join(testDir, `file${i}.txt`)
-      );
+      const files = Array.from({ length: 5 }, (_, i) => path.join(testDir, `file${i}.txt`));
 
       // Write files concurrently
-      await Promise.all(
-        files.map((file, index) =>
-          writeFileSafe(file, `Content ${index}`)
-        )
-      );
+      await Promise.all(files.map((file, index) => writeFileSafe(file, `Content ${index}`)));
 
       // Read files concurrently
-      const contents = await Promise.all(
-        files.map(file => readFileSafe(file))
-      );
+      const contents = await Promise.all(files.map((file) => readFileSafe(file)));
 
       expect(contents).toHaveLength(5);
       contents.forEach((content, index) => {
@@ -672,7 +674,7 @@ describe('File Operations Utilities', () => {
       });
 
       // Verify all files exist
-      const exists = await Promise.all(files.map(file => fileExists(file)));
+      const exists = await Promise.all(files.map((file) => fileExists(file)));
       expect(exists.every(Boolean)).toBe(true);
     });
   });
@@ -686,8 +688,7 @@ describe('File Operations Utilities', () => {
       const nonExistentDir = path.join(testDir, 'nonexistent');
       const nonExistentFile = path.join(nonExistentDir, 'file.txt');
 
-      await expect(readFileSafe(nonExistentFile, { fallback: 'default' }))
-        .resolves.toBe('default');
+      await expect(readFileSafe(nonExistentFile, { fallback: 'default' })).resolves.toBe('default');
     });
 
     it('should handle very long file names', async () => {

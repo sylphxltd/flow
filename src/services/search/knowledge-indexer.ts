@@ -8,15 +8,15 @@
  * - Debounced re-indexing (2 seconds after last change)
  */
 
-import chokidar from 'chokidar';
 import fs from 'node:fs';
 import path from 'node:path';
+import chokidar from 'chokidar';
 import { getKnowledgeDir } from '../../utils/paths.js';
 import { VectorStorage } from '../storage/lancedb-vector-storage.js';
 import { BaseIndexer } from './base-indexer.js';
-import { createIndexer, type Indexer } from './functional-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
+import { type Indexer, createIndexer } from './functional-indexer.js';
 import { type SearchIndex, buildSearchIndex } from './tfidf.js';
 
 /**
@@ -34,7 +34,7 @@ class KnowledgeIndexer extends BaseIndexer {
 
     // Start file watching only if explicitly enabled or in MCP server context
     // This prevents file watchers from starting during init command or other non-server contexts
-    const shouldAutoWatch = options?.autoWatch ?? (process.env.MCP_SERVER_MODE === 'true');
+    const shouldAutoWatch = options?.autoWatch ?? process.env.MCP_SERVER_MODE === 'true';
     if (shouldAutoWatch) {
       this.startWatching();
     }
@@ -303,11 +303,13 @@ export function createKnowledgeIndexerFunctional(
         console.error('[INFO] Building vector index for knowledge...');
 
         try {
-          const vectorPath = path.join(knowledgeDir, '..', '.sylphx-flow', 'knowledge-vectors.hnsw');
-          const vectorStorage = new VectorStorage(
-            vectorPath,
-            embeddingProvider.dimensions || 1536
+          const vectorPath = path.join(
+            knowledgeDir,
+            '..',
+            '.sylphx-flow',
+            'knowledge-vectors.hnsw'
           );
+          const vectorStorage = new VectorStorage(vectorPath, embeddingProvider.dimensions || 1536);
           await vectorStorage.initialize();
 
           // Process in batches

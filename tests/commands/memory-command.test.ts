@@ -3,7 +3,7 @@
  * Tests for the memory CLI command
  */
 
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { memoryCommand } from '../../src/commands/memory-command.js';
 
 // Mock the storage
