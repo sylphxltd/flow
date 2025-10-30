@@ -94,7 +94,8 @@ ${searchDescription}
         let filtered = results;
         if (categories && categories.length > 0) {
           filtered = results.filter((result) => {
-            const category = result.uri.split('/')[1];
+            // Extract scheme/protocol from URI (e.g., 'knowledge' from 'knowledge://path')
+            const category = result.uri.split('://')[0];
             return categories.includes(category);
           });
         }

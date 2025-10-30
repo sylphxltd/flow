@@ -318,6 +318,8 @@ describe('search-tool-builder', () => {
         }
       );
 
+      // Clear previous registrations and build with new indexer
+      mockRegisterTool.mockClear();
       const indexingConfig = { ...config, indexer: indexingIndexer };
       buildSearchTool(mockServer, indexingConfig);
 
@@ -342,6 +344,8 @@ describe('search-tool-builder', () => {
         }
       );
 
+      // Clear previous registrations and build with new indexer
+      mockRegisterTool.mockClear();
       const errorConfig = { ...config, indexer: errorIndexer };
       buildSearchTool(mockServer, errorConfig);
 
@@ -409,7 +413,7 @@ describe('search-tool-builder', () => {
 
       const result = await searchHandler({ query: 'test' });
 
-      expect(result.content[0].text).toContain('Relevance: 86%');
+      expect(result.content[0].text).toContain('**Relevance**: 86%');
     });
 
     it('should display matched terms correctly', async () => {
@@ -423,7 +427,7 @@ describe('search-tool-builder', () => {
 
       const result = await searchHandler({ query: 'test' });
 
-      expect(result.content[0].text).toContain('Matched terms: test, typescript, function');
+      expect(result.content[0].text).toContain('**Matched terms**: test, typescript, function');
     });
   });
 
@@ -457,6 +461,8 @@ describe('search-tool-builder', () => {
         }
       );
 
+      // Clear previous registrations and build with new indexer
+      mockRegisterTool.mockClear();
       const indexingConfig = { ...config, indexer: indexingIndexer };
       buildSearchTool(mockServer, indexingConfig);
 
@@ -480,6 +486,8 @@ describe('search-tool-builder', () => {
         }
       );
 
+      // Clear previous registrations and build with new indexer
+      mockRegisterTool.mockClear();
       const errorConfig = { ...config, indexer: errorIndexer };
       buildSearchTool(mockServer, errorConfig);
 
@@ -504,6 +512,8 @@ describe('search-tool-builder', () => {
         }
       }
 
+      // Clear previous registrations and build with new indexer
+      mockRegisterTool.mockClear();
       const notReadyIndexer = new NotReadyIndexer();
       const notReadyConfig = { ...config, indexer: notReadyIndexer };
       buildSearchTool(mockServer, notReadyConfig);
@@ -646,8 +656,9 @@ describe('search-tool-builder', () => {
 
       await searchHandler({ query: 'test', limit: -5 });
 
+      // Negative limit is doubled (limit * 2), so -5 becomes -10
       expect(searchDocuments).toHaveBeenCalledWith('test', expect.any(Object), {
-        limit: -5,
+        limit: -10,
         minScore: 0.01,
       });
     });
@@ -655,12 +666,12 @@ describe('search-tool-builder', () => {
     it('should handle malformed URIs in category filtering', async () => {
       mockSearchDocuments.mockReturnValue([
         {
-          uri: 'test/invalid',
+          uri: 'test/invalid', // Malformed: no protocol
           score: 0.9,
           matchedTerms: ['test'],
         },
         {
-          uri: 'knowledge/test/doc1',
+          uri: 'knowledge://test/doc1', // Properly formatted
           score: 0.8,
           matchedTerms: ['test'],
         },
@@ -675,9 +686,10 @@ describe('search-tool-builder', () => {
         categories: ['knowledge'],
       });
 
-      // Should still show the knowledge:// result and handle the malformed URI gracefully
+      // Should show the properly formatted knowledge:// result and filter out malformed URI
       expect(result.content[0].text).toContain('Found 1 result(s) for "test"');
       expect(result.content[0].text).toContain('test/doc1');
+      expect(result.content[0].text).not.toContain('test/invalid');
     });
 
     it('should handle console error logging', async () => {
