@@ -16,3 +16,4 @@ export * from './pipe.js';
 export * from './validation.js';
 export * from './error-types.js';
 export * from './error-handler.js';
+export * from './async.js';
