@@ -10,6 +10,7 @@ export const sysinfoCommand = new Command('sysinfo')
   .description('Display system information and current status')
   .option('--target <type>', 'Target platform (claude-code, opencode, default: auto-detect)')
   .option('--json', 'Output in JSON format')
+  .option('--preset <type>', 'Output preset (hook, development, full)', 'hook')
   .action(async (options) => {
     try {
       const systemInfo = await getSystemInfo();
@@ -19,8 +20,8 @@ export const sysinfoCommand = new Command('sysinfo')
         return;
       }
 
-      // Display formatted system information
-      displaySystemInfo(systemInfo);
+      // Display formatted system information based on preset
+      displaySystemInfo(systemInfo, options.preset);
 
     } catch (error) {
       cli.error(`Failed to get system info: ${error instanceof Error ? error.message : String(error)}`);
@@ -53,6 +54,9 @@ async function getSystemInfo() {
   const arch = os.arch();
   const hostname = os.hostname();
   const userInfo = os.userInfo();
+
+  // Check for development environments
+  const environments = await checkDevelopmentEnvironments();
 
   return {
     timestamp: currentTime,
@@ -89,12 +93,175 @@ async function getSystemInfo() {
       ppid: process.ppid,
       memoryUsage: process.memoryUsage(),
     },
+    environments,
   };
 }
 
-function displaySystemInfo(info: any) {
+async function checkDevelopmentEnvironments() {
+  const envs = [];
+
+  // Node.js environment
+  if (process.version) {
+    envs.push({
+      name: 'Node.js',
+      version: process.version.slice(1), // Remove 'v' prefix
+      path: process.execPath,
+    });
+  }
+
+  // Check for common development tools
+  const tools = [
+    { name: 'Python', check: () => checkCommand('python') || checkCommand('python3') },
+    { name: 'Git', check: () => checkCommand('git') },
+    { name: 'Docker', check: () => checkCommand('docker') },
+    { name: 'Bun', check: () => checkCommand('bun') },
+    { name: 'npm', check: () => checkCommand('npm') },
+    { name: 'yarn', check: () => checkCommand('yarn') },
+    { name: 'pnpm', check: () => checkCommand('pnpm') },
+    { name: 'Homebrew', check: () => checkCommand('brew') },
+  ];
+
+  for (const tool of tools) {
+    try {
+      const version = await tool.check();
+      if (version) {
+        envs.push({
+          name: tool.name,
+          version,
+        });
+      }
+    } catch {
+      // Tool not found
+    }
+  }
+
+  return envs;
+}
+
+async function checkCommand(command: string): Promise<string | null> {
+  try {
+    const { spawn } = await import('node:child_process');
+    return new Promise((resolve, reject) => {
+      const child = spawn(command, ['--version'], {
+        stdio: 'pipe',
+        shell: true,
+      });
+
+      let output = '';
+      child.stdout?.on('data', (data) => {
+        output += data.toString();
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          // Extract version from output
+          const versionMatch = output.match(/v?(\d+\.\d+(\.\d+)?)/);
+          resolve(versionMatch ? versionMatch[1] : output.trim());
+        } else {
+          reject(new Error(`Command failed with code ${code}`));
+        }
+      });
+
+      child.on('error', reject);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function displaySystemInfo(info: any, preset: string = 'hook') {
   console.log('');
-  console.log(chalk.cyan.bold('▸ System Information'));
+
+  switch (preset) {
+    case 'hook':
+      displayHookPreset(info);
+      break;
+    case 'development':
+      displayDevelopmentPreset(info);
+      break;
+    case 'full':
+    default:
+      displayFullPreset(info);
+      break;
+  }
+
+  console.log(chalk.green('✓ System information retrieved successfully'));
+  console.log('');
+}
+
+function displayHookPreset(info: any) {
+  console.log(chalk.cyan('▸ Quick System Info'));
+  console.log(chalk.gray('===================='));
+
+  // Current Time (essential for context)
+  console.log(chalk.blue.bold('\n📅 Time:'));
+  console.log(`  ${new Date(info.timestamp).toLocaleString('zh-HK', {
+    timeZone: 'Asia/Hong_Kong',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })}`);
+
+  // Environment info (most useful for LLM)
+  if (info.environments && info.environments.length > 0) {
+    console.log(chalk.blue.bold('\n🛠️  Environment:'));
+    info.environments.slice(0, 5).forEach((env: any) => {
+      console.log(`  ${env.name}: ${env.version}`);
+    });
+    if (info.environments.length > 5) {
+      console.log(`  ... and ${info.environments.length - 5} more tools`);
+    }
+  }
+
+  // Quick system stats
+  console.log(chalk.blue.bold('\n💻 System:'));
+  console.log(`  Platform: ${info.system.platform} (${info.system.arch})`);
+  console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
+  console.log(`  Working Dir: ${info.directories.workingDirectory}`);
+}
+
+function displayDevelopmentPreset(info: any) {
+  console.log(chalk.cyan.bold('▸ Development Environment'));
+  console.log(chalk.gray('========================'));
+
+  // Current Time
+  console.log(chalk.blue.bold('\n📅 Time:'));
+  console.log(`  ${new Date(info.timestamp).toLocaleString('zh-HK', {
+    timeZone: 'Asia/Hong_Kong',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })}`);
+
+  // Development environments
+  if (info.environments && info.environments.length > 0) {
+    console.log(chalk.blue.bold('\n🛠️  Development Tools:'));
+    info.environments.forEach((env: any) => {
+      const path = env.path ? ` (${env.path})` : '';
+      console.log(`  ${env.name} v${env.version}${path}`);
+    });
+  }
+
+  // System Info
+  console.log(chalk.blue.bold('\n💻 System:'));
+  console.log(`  Platform: ${info.system.platform} (${info.system.arch})`);
+  console.log(`  Node.js: ${info.system.nodeVersion}`);
+  console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
+  console.log(`  Working: ${info.directories.workingDirectory}`);
+
+  // Hardware
+  console.log(chalk.blue.bold('\n🔧 Hardware:'));
+  console.log(`  CPU: ${info.hardware.cpu.cores} cores`);
+  console.log(`  Memory: ${info.hardware.memory.used} / ${info.hardware.memory.total}`);
+}
+
+function displayFullPreset(info: any) {
+  console.log(chalk.cyan.bold('▸ Complete System Information'));
   console.log(chalk.gray('====================================='));
 
   // Current Time
@@ -123,6 +290,15 @@ function displaySystemInfo(info: any) {
   console.log(`  Memory: ${info.hardware.memory.used} / ${info.hardware.memory.total} (${info.hardware.memory.usagePercent})`);
   console.log(`  Uptime: ${info.hardware.uptime}`);
 
+  // Development environments
+  if (info.environments && info.environments.length > 0) {
+    console.log(chalk.blue.bold('\n🛠️  Development Tools:'));
+    info.environments.forEach((env: any) => {
+      const path = env.path ? ` (${env.path})` : '';
+      console.log(`  ${env.name} v${env.version}${path}`);
+    });
+  }
+
   // Directory Info
   console.log(chalk.blue.bold('\n📁 Directories:'));
   console.log(`  Temp: ${info.directories.temp}`);
@@ -133,10 +309,6 @@ function displaySystemInfo(info: any) {
   console.log(chalk.blue.bold('\n⚡ Process:'));
   console.log(`  PID: ${info.process.pid}`);
   console.log(`  Memory Usage: ${formatBytes(info.process.memoryUsage.rss)}`);
-
-  console.log('');
-  console.log(chalk.green('✓ System information retrieved successfully'));
-  console.log('');
 }
 
 function formatBytes(bytes: number): string {
