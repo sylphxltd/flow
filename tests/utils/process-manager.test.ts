@@ -161,7 +161,7 @@ describe('Process Manager', () => {
       const manager = ProcessManager.getInstance();
       manager['childProcesses'].add(null);
 
-      await expect(manager.killAllProcesses()).resolves.not.toThrow();
+      await expect(manager.killAllProcesses()).resolves.toBeUndefined();
     });
 
     it('should handle kill errors silently', async () => {
@@ -174,7 +174,7 @@ describe('Process Manager', () => {
       });
 
       manager.trackChildProcess(child);
-      await expect(manager.killAllProcesses()).resolves.not.toThrow();
+      await expect(manager.killAllProcesses()).resolves.toBeUndefined();
     });
 
     it('should force kill with SIGKILL after timeout', async () => {

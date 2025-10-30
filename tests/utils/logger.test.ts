@@ -5,6 +5,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Console output capture arrays
+const consoleLogOutput: string[] = [];
+const consoleErrorOutput: string[] = [];
+
 // Mock chalk to avoid ANSI codes in test outputs
 vi.mock('chalk', () => ({
   default: {
@@ -21,22 +25,20 @@ describe('Logger', () => {
   let logger: any;
   let log: any;
 
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-  let consoleLogOutput: string[];
-  let consoleErrorOutput: string[];
-
   beforeEach(async () => {
     // Note: vi.resetModules() removed in vitest 4.x
     // Module cache reset not needed for these tests
 
-    // Mock console
-    consoleLogOutput = [];
-    consoleErrorOutput = [];
-    console.log = vi.fn((...args) => {
+    // Clear output arrays
+    consoleLogOutput.length = 0;
+    consoleErrorOutput.length = 0;
+
+    // Mock console (vitest 4.x compatible)
+    vi.spyOn(console, 'log').mockImplementation((...args) => {
       consoleLogOutput.push(args.join(' '));
     });
-    console.error = vi.fn((...args) => {
+
+    vi.spyOn(console, 'error').mockImplementation((...args) => {
       consoleErrorOutput.push(args.join(' '));
     });
 
@@ -48,8 +50,9 @@ describe('Logger', () => {
   });
 
   afterEach(() => {
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
+    vi.restoreAllMocks();
+    consoleLogOutput.length = 0;
+    consoleErrorOutput.length = 0;
   });
 
   describe('Logger Constructor', () => {
@@ -120,6 +123,7 @@ describe('Logger', () => {
       logger.updateConfig({ format: 'json' });
       logger.info('Test message');
 
+      expect(consoleLogOutput.length).toBeGreaterThan(0);
       const output = consoleLogOutput[0];
       const parsed = JSON.parse(output);
 

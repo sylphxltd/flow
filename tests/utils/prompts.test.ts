@@ -6,6 +6,15 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Module-level mock variables (need to be defined before vi.mock)
+let mockReadlineInstance: any;
+let createInterfaceMock = vi.fn(() => mockReadlineInstance);
+
+// Mock readline module (vitest 4.x compatible)
+vi.mock('node:readline', () => ({
+  createInterface: createInterfaceMock,
+}));
+
 // Mock chalk
 vi.mock('chalk', () => ({
   default: {
@@ -46,11 +55,14 @@ describe('Prompts', () => {
       close: vi.fn(),
     };
 
-    // Mock readline.createInterface
-    createInterfaceSpy = vi.fn(() => mockReadline);
+    // Update the module-level mock instance
+    mockReadlineInstance = mockReadline;
 
-    // Note: vi.doMock() removed in vitest 4.x
-    // Mock at module level instead (see top of file)
+    // Reset the mock to clear call counts
+    createInterfaceMock.mockClear();
+
+    // Use the module-level mock as our spy
+    createInterfaceSpy = createInterfaceMock;
 
     // Save original process
     originalProcess = global.process;
@@ -61,9 +73,6 @@ describe('Prompts', () => {
       stdin: mockStdin,
       stdout: mockStdout,
     };
-
-    // Clear module cache and reimport
-    // Note: vi.resetModules() removed in vitest 4.x
   });
 
   afterEach(() => {

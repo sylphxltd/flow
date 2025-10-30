@@ -237,7 +237,7 @@ describe('AsyncFileOperations', () => {
     });
 
     it('should not throw error if directory already exists', async () => {
-      await expect(fileOps.ensureDir(testDir)).resolves.not.toThrow();
+      await expect(fileOps.ensureDir(testDir)).resolves.toBeUndefined();
     });
   });
 
@@ -286,7 +286,7 @@ describe('AsyncFileOperations', () => {
     });
 
     it('should not throw error with force option for non-existent file', async () => {
-      await expect(fileOps.remove('/non/existent', { force: true })).resolves.not.toThrow();
+      await expect(fileOps.remove('/non/existent', { force: true })).resolves.toBeUndefined();
     });
 
     it('should throw error without force option for non-existent file', async () => {

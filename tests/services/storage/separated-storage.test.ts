@@ -44,7 +44,7 @@ describe('Separated Storage', () => {
   describe('Initialization', () => {
     it('should initialize storage', async () => {
       const newStorage = new SeparatedMemoryStorage();
-      await expect(newStorage.initialize()).resolves.not.toThrow();
+      await expect(newStorage.initialize()).resolves.toBeUndefined();
     });
   });
 

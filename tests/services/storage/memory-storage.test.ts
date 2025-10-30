@@ -49,7 +49,7 @@ describe('Memory Storage', () => {
   describe('Initialization', () => {
     it('should initialize storage', async () => {
       const newStorage = new MemoryStorage();
-      await expect(newStorage.initialize()).resolves.not.toThrow();
+      await expect(newStorage.initialize()).resolves.toBeUndefined();
     });
   });
 

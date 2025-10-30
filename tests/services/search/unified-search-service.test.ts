@@ -39,7 +39,7 @@ describe('Unified Search Service', () => {
 
   describe('initialize', () => {
     it('should initialize the search service', async () => {
-      await expect(searchService.initialize()).resolves.not.toThrow();
+      await expect(searchService.initialize()).resolves.toBeUndefined();
     });
   });
 
@@ -312,7 +312,7 @@ describe('Unified Search Service', () => {
   describe('Error Handling', () => {
     it('should handle initialization errors gracefully', async () => {
       // Initialize should not throw even if some setup fails
-      await expect(searchService.initialize()).resolves.not.toThrow();
+      await expect(searchService.initialize()).resolves.toBeUndefined();
     });
 
     it('should provide clear error messages', async () => {

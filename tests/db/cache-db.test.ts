@@ -63,7 +63,7 @@ describe('Cache Database Client', () => {
 
   describe('initialize', () => {
     it('should initialize cache database tables', async () => {
-      await expect(client.initialize()).resolves.not.toThrow();
+      await expect(client.initialize()).resolves.toBeUndefined();
     });
 
     it('should create codebase_files_table', async () => {
@@ -131,7 +131,7 @@ describe('Cache Database Client', () => {
 
     it('should skip initialization if already initialized', async () => {
       await client.initialize();
-      await expect(client.initialize()).resolves.not.toThrow();
+      await expect(client.initialize()).resolves.toBeUndefined();
     });
 
     it('should handle initialization errors gracefully', async () => {
@@ -325,7 +325,7 @@ describe('Cache Database Client', () => {
         VALUES ('test.ts', 1.5, 10, '{}')
       `);
 
-      await expect(client.clearCache()).resolves.not.toThrow();
+      await expect(client.clearCache()).resolves.toBeUndefined();
     });
   });
 
@@ -413,12 +413,12 @@ describe('Cache Database Client', () => {
 
   describe('close', () => {
     it('should close database connection', async () => {
-      await expect(client.close()).resolves.not.toThrow();
+      await expect(client.close()).resolves.toBeUndefined();
     });
 
     it('should be callable multiple times', async () => {
       await client.close();
-      await expect(client.close()).resolves.not.toThrow();
+      await expect(client.close()).resolves.toBeUndefined();
     });
   });
 

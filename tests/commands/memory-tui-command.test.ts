@@ -79,7 +79,7 @@ describe('Memory TUI Command', () => {
     });
 
     it('should not throw errors', async () => {
-      await expect(handleMemoryTuiCommand()).resolves.not.toThrow();
+      await expect(handleMemoryTuiCommand()).resolves.toBeUndefined();
     });
 
     it('should return undefined', async () => {

@@ -54,12 +54,12 @@ describe('Secret Utils', () => {
       const secretsDir = join(testDir, '.secrets');
       mkdirSync(secretsDir);
 
-      await expect(secretUtils.ensureSecretsDir(testDir)).resolves.not.toThrow();
+      await expect(secretUtils.ensureSecretsDir(testDir)).resolves.toBeUndefined();
     });
 
     it('should create directory with recursive flag', async () => {
       // Ensure it works even if parent doesn't exist (though testDir does)
-      await expect(secretUtils.ensureSecretsDir(testDir)).resolves.not.toThrow();
+      await expect(secretUtils.ensureSecretsDir(testDir)).resolves.toBeUndefined();
     });
   });
 
@@ -370,7 +370,7 @@ describe('Secret Utils', () => {
     });
 
     it('should handle empty secrets object', async () => {
-      await expect(secretUtils.saveSecrets(testDir, {})).resolves.not.toThrow();
+      await expect(secretUtils.saveSecrets(testDir, {})).resolves.toBeUndefined();
     });
 
     it('should create secrets directory', async () => {
@@ -525,7 +525,7 @@ describe('Secret Utils', () => {
       const gitignorePath = join(testDir, '.gitignore');
       mkdirSync(gitignorePath);
 
-      await expect(secretUtils.addToGitignore(testDir)).resolves.not.toThrow();
+      await expect(secretUtils.addToGitignore(testDir)).resolves.toBeUndefined();
 
       // Restore console.warn
       console.warn = originalWarn;

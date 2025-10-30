@@ -193,7 +193,7 @@ describe('Target Utils', () => {
 
     describe('validateRequirements', () => {
       it('should validate writable agent directory', async () => {
-        await expect(fileUtils.validateRequirements(mockConfig, testDir)).resolves.not.toThrow();
+        await expect(fileUtils.validateRequirements(mockConfig, testDir)).resolves.toBeUndefined();
       });
 
       it('should create agent directory if missing', async () => {
@@ -220,7 +220,7 @@ describe('Target Utils', () => {
 
         await expect(
           fileUtils.validateRequirements(configWithFile, testDir)
-        ).resolves.not.toThrow();
+        ).resolves.toBeUndefined();
       });
 
       it('should skip config validation if not needed', async () => {
@@ -229,7 +229,7 @@ describe('Target Utils', () => {
           installation: { createConfigFile: false, supportedMcpServers: false },
         };
 
-        await expect(fileUtils.validateRequirements(configNoFile, testDir)).resolves.not.toThrow();
+        await expect(fileUtils.validateRequirements(configNoFile, testDir)).resolves.toBeUndefined();
       });
     });
 
@@ -999,7 +999,7 @@ This is a test agent description.`;
       expect(result).toEqual(data);
 
       // Validate requirements
-      await expect(fileUtils.validateRequirements(mockConfig, testDir)).resolves.not.toThrow();
+      await expect(fileUtils.validateRequirements(mockConfig, testDir)).resolves.toBeUndefined();
     });
 
     it('should support YAML front matter workflow', async () => {

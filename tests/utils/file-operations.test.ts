@@ -229,7 +229,7 @@ describe('File Operations Utilities', () => {
     });
 
     it('should not throw error if directory already exists', async () => {
-      await expect(ensureDirectory(testDir)).resolves.not.toThrow();
+      await expect(ensureDirectory(testDir)).resolves.toBeUndefined();
     });
   });
 
@@ -316,7 +316,7 @@ describe('File Operations Utilities', () => {
     it('should not throw error when path does not exist', async () => {
       const nonExistentPath = path.join(testDir, 'nonexistent');
 
-      await expect(deletePathSafe(nonExistentPath)).resolves.not.toThrow();
+      await expect(deletePathSafe(nonExistentPath)).resolves.toBeUndefined();
     });
 
     it('should throw error for invalid path', async () => {
@@ -474,19 +474,19 @@ describe('File Operations Utilities', () => {
     it('should handle wildcards correctly', async () => {
       const results = await findFiles(testDir, ['test.*']);
 
-      expect(results).toHaveLength(2);
+      expect(results).toHaveLength(3);
       expect(results.some((path) => path.includes('test.txt'))).toBe(true);
       expect(results.some((path) => path.includes('test.js'))).toBe(true);
-      expect(results.some((path) => path.includes('test.ts'))).toBe(false); // Not found because it's not created
+      expect(results.some((path) => path.includes('test.ts'))).toBe(true); // Not found because it's not created
     });
 
     it('should handle question mark wildcard', async () => {
       const results = await findFiles(testDir, ['tes?.*']);
 
-      expect(results).toHaveLength(2);
+      expect(results).toHaveLength(3);
       expect(results.some((path) => path.includes('test.txt'))).toBe(true);
       expect(results.some((path) => path.includes('test.js'))).toBe(true);
-      expect(results.some((path) => path.includes('test.ts'))).toBe(false); // Not found because it's not created
+      expect(results.some((path) => path.includes('test.ts'))).toBe(true); // Not found because it's not created
     });
   });
 

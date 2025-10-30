@@ -252,7 +252,7 @@ export async function findFiles(
 
   const regexPatterns = patterns.map((pattern) => {
     const regexPattern = pattern.replace(/\./g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.');
-    return new RegExp(regexPattern, caseSensitive ? 'g' : 'gi');
+    return new RegExp(regexPattern, caseSensitive ? '' : 'i');
   });
 
   return allFiles.filter((filePath) => {
