@@ -5,7 +5,7 @@ import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { FileInstaller } from '../core/installers/file-installer.js';
 import { MCPInstaller } from '../core/installers/mcp-installer.js';
 import { displayResults } from '../shared.js';
-import type { CommonOptions, MCPServerConfigUnion, Target } from '../types.js';
+import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
 import { getAgentsDir, getOutputStylesDir } from '../utils/paths.js';
 import { secretUtils } from '../utils/secret-utils.js';
@@ -236,7 +236,7 @@ export const opencodeTarget: Target = {
    * Setup agents for OpenCode
    * Install agents to .opencode/agent/ directory
    */
-  async setupAgents(cwd: string, options: CommonOptions): Promise<void> {
+  async setupAgents(cwd: string, options: CommonOptions): Promise<SetupResult> {
     const installer = new FileInstaller();
     const agentsDir = path.join(cwd, this.config.agentDir);
 
@@ -248,23 +248,22 @@ export const opencodeTarget: Target = {
       },
       {
         ...options,
-        showProgress: true,
+        showProgress: false,  // UI handled by init-command
       }
     );
 
-    displayResults(results, agentsDir, this.name, 'Install', options.verbose, options.quiet);
+    return { count: results.length };
   },
 
   /**
    * Setup output styles for OpenCode
    * Append output styles to AGENTS.md (OpenCode doesn't support separate output style files)
    */
-  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<void> {
+  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<SetupResult> {
     if (!this.config.rulesFile) {
-      return;
+      return { count: 0 };
     }
 
-    const installer = new FileInstaller();
     const rulesFilePath = path.join(cwd, this.config.rulesFile);
 
     // Read existing rules file content if it exists
@@ -276,7 +275,7 @@ export const opencodeTarget: Target = {
     // Build output styles section
     const outputStylesSourceDir = getOutputStylesDir();
     if (!fs.existsSync(outputStylesSourceDir)) {
-      return; // No output styles available
+      return { count: 0 }; // No output styles available
     }
 
     let outputStylesContent = '\n\n---\n\n# Output Styles\n\n';
@@ -288,7 +287,7 @@ export const opencodeTarget: Target = {
       .map((dirent) => dirent.name);
 
     if (files.length === 0) {
-      return;
+      return { count: 0 };
     }
 
     for (const styleFile of files) {
@@ -316,28 +315,21 @@ export const opencodeTarget: Target = {
     // Append output styles section
     fs.writeFileSync(rulesFilePath, existingContent + outputStylesContent, 'utf8');
 
-    if (!options.quiet) {
-      console.log(
-        `Appended ${files.length} output style${files.length > 1 ? 's' : ''} to ${this.config.rulesFile}`
-      );
-    }
+    return { count: files.length };
   },
 
   /**
    * Setup rules for OpenCode
    * Install rules to AGENTS.md in project root
    */
-  async setupRules(cwd: string, options: CommonOptions): Promise<void> {
+  async setupRules(cwd: string, options: CommonOptions): Promise<SetupResult> {
     if (!this.config.rulesFile) {
-      return;
+      return { count: 0 };
     }
 
     // Check if core rules file exists
     if (!ruleFileExists('core')) {
-      if (!options.quiet) {
-        console.warn('⚠️ Core rules file not found');
-      }
-      return;
+      throw new Error('Core rules file not found');
     }
 
     const installer = new FileInstaller();
@@ -356,21 +348,18 @@ export const opencodeTarget: Target = {
       },
       {
         ...options,
-        showProgress: true,
+        showProgress: false,  // UI handled by init-command
       }
     );
+
+    return { count: 1 };
   },
 
   /**
    * Setup MCP servers for OpenCode
    * Select, configure, install, and setup secrets directory
    */
-  async setupMCP(cwd: string, options: CommonOptions): Promise<void> {
-    // Skip if MCP is disabled
-    if (options.mcp === false) {
-      return;
-    }
-
+  async setupMCP(cwd: string, options: CommonOptions): Promise<SetupResult> {
     // Setup secrets directory first (OpenCode-specific)
     if (!options.dryRun) {
       await secretUtils.ensureSecretsDir(cwd);
@@ -379,6 +368,8 @@ export const opencodeTarget: Target = {
 
     // Install MCP servers
     const installer = new MCPInstaller(this.id);
-    await installer.setupMCP(options);
+    const result = await installer.setupMCP({ ...options, quiet: true });
+
+    return { count: result.selectedServers.length };
   },
 };

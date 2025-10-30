@@ -5,7 +5,7 @@ import path from 'node:path';
 import chalk from 'chalk';
 import { FileInstaller } from '../core/installers/file-installer.js';
 import { MCPInstaller } from '../core/installers/mcp-installer.js';
-import type { CommonOptions, MCPServerConfigUnion, Target } from '../types.js';
+import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
 import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { CLIError } from '../utils/error-handler.js';
@@ -359,7 +359,7 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Setup hooks for Claude Code
    * Configure session and prompt hooks for system information display
    */
-  async setupHooks(cwd: string, options: CommonOptions): Promise<void> {
+  async setupHooks(cwd: string, options: CommonOptions): Promise<SetupResult> {
     const { processSettings } = await import('./functional/claude-code-logic.js');
     const { pathExists, createDirectory, readFile, writeFile } = await import(
       '../composables/functional/useFileSystem.js'
@@ -399,13 +399,16 @@ Please begin your response with a comprehensive summary of all the instructions 
     if (writeResult._tag === 'Failure') {
       throw new Error(`Failed to write settings: ${writeResult.error.message}`);
     }
+
+    // Return 2 hooks configured (SessionStart + UserPromptSubmit)
+    return { count: 2, message: 'Configured session and prompt hooks' };
   },
 
   /**
    * Setup agents for Claude Code
    * Install agents to .claude/agents/ directory with YAML front matter
    */
-  async setupAgents(cwd: string, options: CommonOptions): Promise<void> {
+  async setupAgents(cwd: string, options: CommonOptions): Promise<SetupResult> {
     const installer = new FileInstaller();
     const agentsDir = path.join(cwd, this.config.agentDir);
 
@@ -417,20 +420,20 @@ Please begin your response with a comprehensive summary of all the instructions 
       },
       {
         ...options,
-        showProgress: true,
+        showProgress: false,  // UI handled by init-command
       }
     );
 
-    displayResults(results, agentsDir, this.name, 'Install', options.verbose, options.quiet);
+    return { count: results.length };
   },
 
   /**
    * Setup output styles for Claude Code
    * Install output styles to .claude/output-styles/ directory with YAML front matter
    */
-  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<void> {
+  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<SetupResult> {
     if (!this.config.outputStylesDir) {
-      return;
+      return { count: 0 };
     }
 
     const installer = new FileInstaller();
@@ -444,28 +447,25 @@ Please begin your response with a comprehensive summary of all the instructions 
       },
       {
         ...options,
-        showProgress: true,
+        showProgress: false,  // UI handled by init-command
       }
     );
 
-    displayResults(results, outputStylesDir, this.name, 'Install', options.verbose, options.quiet);
+    return { count: results.length };
   },
 
   /**
    * Setup rules for Claude Code
    * Install rules to CLAUDE.md in project root
    */
-  async setupRules(cwd: string, options: CommonOptions): Promise<void> {
+  async setupRules(cwd: string, options: CommonOptions): Promise<SetupResult> {
     if (!this.config.rulesFile) {
-      return;
+      return { count: 0 };
     }
 
     // Check if core rules file exists
     if (!ruleFileExists('core')) {
-      if (!options.quiet) {
-        console.warn('⚠️ Core rules file not found');
-      }
-      return;
+      throw new Error('Core rules file not found');
     }
 
     const installer = new FileInstaller();
@@ -484,23 +484,20 @@ Please begin your response with a comprehensive summary of all the instructions 
       },
       {
         ...options,
-        showProgress: true,
+        showProgress: false,  // UI handled by init-command
       }
     );
+
+    return { count: 1 };
   },
 
   /**
    * Setup MCP servers for Claude Code
    * Select, configure, install, and approve MCP servers
    */
-  async setupMCP(cwd: string, options: CommonOptions): Promise<void> {
-    // Skip if MCP is disabled
-    if (options.mcp === false) {
-      return;
-    }
-
+  async setupMCP(cwd: string, options: CommonOptions): Promise<SetupResult> {
     const installer = new MCPInstaller(this.id);
-    const result = await installer.setupMCP(options);
+    const result = await installer.setupMCP({ ...options, quiet: true });
 
     // Approve servers in Claude Code settings
     if (result.selectedServers.length > 0 && !options.dryRun) {
@@ -508,6 +505,8 @@ Please begin your response with a comprehensive summary of all the instructions 
         await this.approveMCPServers(cwd, result.selectedServers);
       }
     }
+
+    return { count: result.selectedServers.length };
   },
 };
 

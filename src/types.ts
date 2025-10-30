@@ -233,19 +233,19 @@ export abstract class Target {
   async setup?(cwd: string, options?: Record<string, unknown>): Promise<void>;
 
   /** Setup agents for this target (optional - implement if target needs agents) */
-  async setupAgents?(cwd: string, options: CommonOptions): Promise<void>;
+  async setupAgents?(cwd: string, options: CommonOptions): Promise<SetupResult>;
 
   /** Setup rules for this target (optional - implement if target needs rules) */
-  async setupRules?(cwd: string, options: CommonOptions): Promise<void>;
+  async setupRules?(cwd: string, options: CommonOptions): Promise<SetupResult>;
 
   /** Setup output styles for this target (optional - implement if target supports output styles) */
-  async setupOutputStyles?(cwd: string, options: CommonOptions): Promise<void>;
+  async setupOutputStyles?(cwd: string, options: CommonOptions): Promise<SetupResult>;
 
   /** Setup MCP servers for this target (optional - implement if target supports MCP) */
-  async setupMCP?(cwd: string, options: CommonOptions): Promise<void>;
+  async setupMCP?(cwd: string, options: CommonOptions): Promise<SetupResult>;
 
   /** Setup hooks for this target (optional - implement if target needs hooks like Claude Code) */
-  async setupHooks?(cwd: string, options: CommonOptions): Promise<void>;
+  async setupHooks?(cwd: string, options: CommonOptions): Promise<SetupResult>;
 }
 
 export interface CommonOptions {
@@ -256,4 +256,15 @@ export interface CommonOptions {
   mcp?: string[] | null | boolean;
   quiet?: boolean;
   agent?: string;
+}
+
+/**
+ * Standardized result from setup methods
+ * Used for consistent UI feedback
+ */
+export interface SetupResult {
+  /** Number of items processed (servers, agents, files, etc.) */
+  count: number;
+  /** Optional detailed message */
+  message?: string;
 }

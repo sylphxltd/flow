@@ -114,9 +114,20 @@ export const initCommand = new Command('init')
       throw new Error(`Target not found: ${targetId}`);
     }
 
-    // Setup MCP servers if target supports it
-    if (target.setupMCP) {
-      await target.setupMCP(process.cwd(), options);
+    // Setup MCP servers if target supports it and MCP is enabled
+    if (target.setupMCP && options.mcp !== false) {
+      const mcpSpinner = ora({ text: 'Setting up MCP servers', color: 'cyan' }).start();
+      try {
+        const result = await target.setupMCP(process.cwd(), options);
+        if (result.count > 0) {
+          mcpSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} MCP server${result.count !== 1 ? 's' : ''}`));
+        } else {
+          mcpSpinner.info(chalk.dim('No MCP servers selected'));
+        }
+      } catch (error) {
+        mcpSpinner.fail(chalk.red('Failed to setup MCP servers'));
+        throw error;
+      }
     }
 
     console.log(chalk.cyan.bold('\n━━━ Installing Core Components ━━━\n'));
@@ -124,35 +135,57 @@ export const initCommand = new Command('init')
     // Install agents if target supports it
     if (target.setupAgents) {
       const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
-      await target.setupAgents(process.cwd(), { ...options, quiet: true });
-      agentSpinner.succeed(chalk.green('Agents installed'));
+      try {
+        const result = await target.setupAgents(process.cwd(), { ...options, quiet: true });
+        agentSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} agent${result.count !== 1 ? 's' : ''}`));
+      } catch (error) {
+        agentSpinner.fail(chalk.red('Failed to install agents'));
+        throw error;
+      }
     }
 
     // Install output styles if target supports it
     if (target.setupOutputStyles) {
       const outputStylesSpinner = ora({ text: 'Installing output styles', color: 'cyan' }).start();
-      await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
-      outputStylesSpinner.succeed(chalk.green('Output styles installed'));
+      try {
+        const result = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
+        if (result.count > 0) {
+          outputStylesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} output style${result.count !== 1 ? 's' : ''}`));
+        } else {
+          outputStylesSpinner.info(chalk.dim('No output styles to install'));
+        }
+      } catch (error) {
+        outputStylesSpinner.fail(chalk.red('Failed to install output styles'));
+        throw error;
+      }
     }
 
     // Install rules if target supports it
     if (target.setupRules) {
       const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
-      await target.setupRules(process.cwd(), { ...options, quiet: true });
-      rulesSpinner.succeed(chalk.green('Rules installed'));
+      try {
+        const result = await target.setupRules(process.cwd(), { ...options, quiet: true });
+        rulesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} rule${result.count !== 1 ? 's' : ''}`));
+      } catch (error) {
+        rulesSpinner.fail(chalk.red('Failed to install rules'));
+        throw error;
+      }
     }
 
     // Setup hooks if target supports it
     if (target.setupHooks) {
+      const hooksSpinner = ora({ text: 'Setting up hooks', color: 'cyan' }).start();
       try {
-        await target.setupHooks(process.cwd(), { ...options, quiet: true });
+        const result = await target.setupHooks(process.cwd(), { ...options, quiet: true });
+        if (result.count > 0) {
+          hooksSpinner.succeed(chalk.green(`Configured ${chalk.cyan(result.count)} hook${result.count !== 1 ? 's' : ''}`));
+        } else {
+          hooksSpinner.info(chalk.dim('No hooks to configure'));
+        }
       } catch (error) {
         // Don't fail entire setup if hooks fail
-        console.warn(
-          chalk.yellow(
-            `⚠ Warning: Could not setup hooks: ${error instanceof Error ? error.message : String(error)}`
-          )
-        );
+        hooksSpinner.warn(chalk.yellow('Could not setup hooks'));
+        console.warn(chalk.dim(`  ${error instanceof Error ? error.message : String(error)}`));
       }
     }
 
