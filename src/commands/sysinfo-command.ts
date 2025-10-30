@@ -233,14 +233,18 @@ function displaySystemInfo(info: any, preset: string = 'message', output: string
   }
 }
 
-// Simple output functions (no decorations, optimized for LLMs)
+// Simple output functions (minimal decorations, optimized for LLMs)
 function displaySimpleMessage(info: any) {
+  console.log('System Status');
+  console.log('=============');
   console.log(`Current Time: ${new Date(info.timestamp).toLocaleString()}`);
   console.log(`CPU: ${info.hardware.cpu.usagePercent}`);
   console.log(`Memory: ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`);
 }
 
 function displaySimpleSession(info: any) {
+  console.log('Session Information');
+  console.log('===================');
   console.log(`Platform: ${info.system.platform} (${info.system.arch})`);
   console.log(`Working Directory: ${info.directories.workingDirectory}`);
   console.log(`Temp Directory: ${info.directories.temp}`);
@@ -249,6 +253,8 @@ function displaySimpleSession(info: any) {
 
   // Project information
   if (info.project) {
+    console.log('Project Information');
+    console.log('==================');
     console.log(`Project Type: ${info.project.type}`);
     console.log(`Package Manager: ${info.project.packageManager}`);
     if (info.project.name && info.project.name !== 'unnamed') {
