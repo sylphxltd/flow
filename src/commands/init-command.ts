@@ -29,12 +29,22 @@ export const initCommand = new Command('init')
 
     console.log(
       '\n' +
-        boxen(chalk.bold.cyan('⚡ Sylphx Flow Setup'), {
-          padding: { top: 0, bottom: 0, left: 2, right: 2 },
-          margin: 0,
-          borderStyle: 'round',
-          borderColor: 'cyan',
-        }) +
+        boxen(
+          chalk.cyan('⚡') +
+            chalk.bold.white(' SYLPHX FLOW ') +
+            chalk.cyan('⚡') +
+            '\n' +
+            chalk.dim.cyan('━'.repeat(32)) +
+            '\n' +
+            chalk.dim('Project Initialization'),
+          {
+            padding: 1,
+            margin: 0,
+            borderStyle: 'double',
+            borderColor: 'cyan',
+            textAlignment: 'center',
+          },
+        ) +
         '\n',
     );
 
