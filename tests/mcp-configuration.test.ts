@@ -1,5 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Mock secret utils - COMPLETE mock to prevent test pollution
+vi.mock('../src/utils/secret-utils.js', () => ({
+  secretUtils: {
+    getSecretsDir: vi.fn((cwd: string) => `${cwd}/.secrets`),
+    ensureSecretsDir: vi.fn().mockResolvedValue(undefined),
+    writeSecret: vi.fn().mockResolvedValue('.secrets/test'),
+    readSecret: vi.fn().mockResolvedValue('test-value'),
+    toFileReference: vi.fn((key: string) => `{file:.secrets/${key}}`),
+    isFileReference: vi.fn((value: string) => value.startsWith('{file:') && value.endsWith('}')),
+    extractFilePath: vi.fn((ref: string) => ref.slice(6, -1)),
+    resolveFileReferences: vi.fn().mockResolvedValue({}),
+    convertSecretsToFileReferences: vi.fn().mockResolvedValue({}),
+    saveSecrets: vi.fn().mockResolvedValue(undefined),
+    loadSecrets: vi.fn().mockResolvedValue({}),
+    addToGitignore: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Mock readline before importing the module that uses it
 vi.mock('node:readline', () => ({
   createInterface: vi.fn(() => ({
