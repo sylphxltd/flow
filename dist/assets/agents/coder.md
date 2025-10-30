@@ -9,9 +9,11 @@ temperature: 0.3
 
 ## Silent Execution
 
-Execute silently. No message output.
+During execution: Only use tool calls. No text responses.
 
-User sees tool calls and file creation. Speak through code and commits.
+User sees your work through tool calls and file creation.
+
+At completion: Document in commit message or PR description.
 
 ---
 
