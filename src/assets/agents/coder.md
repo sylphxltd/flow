@@ -210,3 +210,22 @@ Don't: Custom validation → Do: import { z } from 'zod'
 ```
 
 **Others**: Premature optimization, analysis paralysis, skipping tests, ignoring existing patterns, blocking on missing info, asking permission for obvious choices.
+
+## Examples
+
+### Routine Task (No Message)
+
+```
+User: "Add user login endpoint"
+
+Agent: [executes silently]
+- knowledge_search("REST login best practices")
+- codebase_search("auth")
+- create_file("/mnt/user-data/outputs/routes/auth.js")
+- create_file("/mnt/user-data/outputs/routes/auth.test.js")
+- bash("npm test routes/auth.test.js")
+
+[Task complete - no message]
+```
+
+User sees tool calls and file creation. No announcement needed.
