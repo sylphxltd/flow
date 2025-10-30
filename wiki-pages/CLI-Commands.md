@@ -12,7 +12,7 @@ npx github:sylphxltd/flow <command> [subcommand] [options]
 
 ### `flow init` - Initialize Project
 
-Initialize your project with Sylphx Flow development agents and MCP tools.
+Initialize your project with Sylphx Flow development agents, MCP tools, hooks, and output styles.
 
 #### Syntax
 ```bash
@@ -20,186 +20,234 @@ npx github:sylphxltd/flow init [options]
 ```
 
 #### Options
-- `--agent <type>` - Force specific agent (opencode, cursor, kilocode, roocode)
-- `--verbose` - Show detailed output
+- `--target <type>` - Force specific target (opencode, claude-code, default: auto-detect)
 - `--dry-run` - Show what would be done without making changes
-- `--clear` - Clear obsolete items before processing
-- `--no-mcp` - Skip MCP tools installation
+- `--skip-agents` - Skip agent installation
+- `--skip-hooks` - Skip git hooks installation
+- `--skip-mcp` - Skip MCP configuration
+- `--skip-output-styles` - Skip output styles installation
 
 #### Examples
 ```bash
-# Default initialization
+# Full initialization (default)
 npx github:sylphxltd/flow init
 
 # Preview changes
 npx github:sylphxltd/flow init --dry-run
 
-# Initialize without MCP tools
-npx github:sylphxltd/flow init --no-mcp
+# Initialize without MCP
+npx github:sylphxltd/flow init --skip-mcp
 
-# Verbose output
-npx github:sylphxltd/flow init --verbose
+# Initialize only agents
+npx github:sylphxltd/flow init --skip-hooks --skip-mcp --skip-output-styles
 
-# Clear existing setup first
-npx github:sylphxltd/flow init --clear
+# Force Claude Code target
+npx github:sylphxltd/flow init --target claude-code
 ```
 
-### `flow memory` - Manage Memory Database
+#### What Gets Installed
+- **Agents**: orchestrator, coder, reviewer, writer
+- **Hooks**: Session and message hooks for system info
+- **MCP Configuration**: Auto-configured for detected AI tool
+- **Output Styles**: AI response formatting styles
 
-Manage the Sylphx Flow memory database directly from the command line.
+---
+
+### `flow knowledge` - Knowledge Base Management
+
+Access and search curated development guidelines and best practices.
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow memory [subcommand] [options]
+npx github:sylphxltd/flow knowledge [subcommand] [options]
 ```
 
 #### Subcommands
 
-##### `memory stats` - Show Database Statistics
+##### `knowledge search` - Search Knowledge Base
 ```bash
-npx github:sylphxltd/flow memory stats
+npx github:sylphxltd/flow knowledge search <query> [options]
 ```
 
-**Output:**
-```
-📊 Memory Statistics
-==================
-Total Entries: 15
-Namespaces: 3
-
-Namespaces:
-  • default: 5 entries
-  • user: 8 entries
-  • project: 2 entries
-
-Oldest Entry: 16/10/2024, 17:00:00
-Newest Entry: 16/10/2024, 17:03:20
-
-📍 Database: .sylphx-flow/memory.db
-```
-
-##### `memory list` - List Memory Entries
-```bash
-npx github:sylphxltd/flow memory list [options]
-```
+**Arguments:**
+- `query` - Search query (required)
 
 **Options:**
-- `--namespace <name>` - Filter by namespace
-- `--limit <number>` - Limit number of entries (default: 50)
+- `--limit <number>` - Maximum results to return (default: 5)
+- `--include-content` - Include full content in results
+- `--output <format>` - Output format: markdown, json (default: markdown)
 
 **Examples:**
 ```bash
-# List all entries
-npx github:sylphxltd/flow memory list
+# Basic search
+npx github:sylphxltd/flow knowledge search "react hooks patterns"
 
-# List specific namespace
-npx github:sylphxltd/flow memory list --namespace "user"
+# Search with more results
+npx github:sylphxltd/flow knowledge search "nextjs routing" --limit 10
 
-# Limit results
-npx github:sylphxltd/flow memory list --limit 10
+# Include full content
+npx github:sylphxltd/flow knowledge search "security practices" --include-content
+
+# JSON output
+npx github:sylphxltd/flow knowledge search "testing strategies" --output json
 ```
 
-##### `memory search` - Search Memory Entries
+##### `knowledge get` - Get Specific Document
 ```bash
-npx github:sylphxltd/flow memory search --pattern <pattern> [options]
+npx github:sylphxltd/flow knowledge get <uri>
 ```
 
-**Options:**
-- `--pattern <pattern>` - Search pattern (supports * wildcards) [REQUIRED]
-- `--namespace <name>` - Filter by namespace
+**Arguments:**
+- `uri` - Document URI (e.g., "/stacks/react-app")
 
 **Examples:**
 ```bash
-# Search for theme-related entries
-npx github:sylphxltd/flow memory search --pattern "*theme*"
+# Get React patterns
+npx github:sylphxltd/flow knowledge get "/stacks/react-app"
 
-# Search within namespace
-npx github:sylphxltd/flow memory search --pattern "config/*" --namespace "project"
+# Get security guidelines
+npx github:sylphxltd/flow knowledge get "/universal/security"
 
-# Exact match
-npx github:sylphxltd/flow memory search --pattern "user-settings"
+# Get SaaS architecture guide
+npx github:sylphxltd/flow knowledge get "/guides/saas-template"
 ```
 
-##### `memory delete` - Delete Memory Entry
+##### `knowledge list` - List All Resources
 ```bash
-npx github:sylphxltd/flow memory delete --key <key> [options]
+npx github:sylphxltd/flow knowledge list [options]
 ```
 
 **Options:**
-- `--key <key>` - Memory key to delete [REQUIRED]
-- `--namespace <name>` - Namespace (default: default)
+- `--category <name>` - Filter by category (stacks, guides, universal, data)
+- `--output <format>` - Output format: markdown, json
 
 **Examples:**
 ```bash
-# Delete from default namespace
-npx github:sylphxltd/flow memory delete --key "old-data"
+# List all knowledge
+npx github:sylphxltd/flow knowledge list
 
-# Delete from specific namespace
-npx github:sylphxltd/flow memory delete --key "temp-file" --namespace "cache"
+# List only stacks
+npx github:sylphxltd/flow knowledge list --category stacks
+
+# JSON output
+npx github:sylphxltd/flow knowledge list --output json
 ```
 
-##### `memory clear` - Clear Memory Entries
+##### `knowledge status` - Check Knowledge Base Status
 ```bash
-npx github:sylphxltd/flow memory clear [options]
+npx github:sylphxltd/flow knowledge status
 ```
+
+Shows:
+- Index status
+- Number of documents
+- Number of embeddings
+- Database size
+- Last indexed time
+
+---
+
+### `flow codebase` - Codebase Search & Indexing
+
+Semantic search across your project's codebase.
+
+#### Syntax
+```bash
+npx github:sylphxltd/flow codebase [subcommand] [options]
+```
+
+#### Subcommands
+
+##### `codebase search` - Search Codebase
+```bash
+npx github:sylphxltd/flow codebase search <query> [options]
+```
+
+**Arguments:**
+- `query` - Search query describing what to find (required)
 
 **Options:**
-- `--namespace <name>` - Clear specific namespace (optional)
-- `--confirm` - Confirm the clear operation [REQUIRED]
+- `--limit <number>` - Maximum results to return (default: 10)
+- `--include-content` - Include full code content in results
+- `--output <format>` - Output format: markdown, json (default: markdown)
 
 **Examples:**
 ```bash
-# Clear specific namespace
-npx github:sylphxltd/flow memory clear --namespace "temp" --confirm
+# Basic search
+npx github:sylphxltd/flow codebase search "authentication logic"
 
-# Clear all data
-npx github:sylphxltd/flow memory clear --confirm
+# Search with more results
+npx github:sylphxltd/flow codebase search "api endpoints" --limit 20
+
+# Include content
+npx github:sylphxltd/flow codebase search "database queries" --include-content
+
+# JSON output
+npx github:sylphxltd/flow codebase search "error handling" --output json
 ```
 
-##### `memory tui` - Launch Interactive TUI
+##### `codebase reindex` - Reindex Codebase
 ```bash
-npx github:sylphxltd/flow memory tui
-# or use the alias
-npx github:sylphxltd/flow mtui
+npx github:sylphxltd/flow codebase reindex
 ```
 
-Launch a powerful interactive terminal UI for memory management.
+Rebuilds the codebase search index. Run after significant code changes.
 
-**Features:**
-- 📋 **List View** - Browse all memory entries with namespace filtering
-- 🔍 **Search** - Wildcard search patterns (`*theme*`, `config/*`)
-- ✏️ **Edit Mode** - Create or modify memory entries
-- 🗑️ **Delete** - Remove entries with confirmation
-- 📊 **Statistics** - View memory usage and namespace breakdown
-- ⌨️ **Keyboard Shortcuts** - Quick navigation
-
-**Keyboard Shortcuts:**
-- `q` - Quit TUI
-- `s` - Search mode
-- `n` - New entry
-- `d` - Delete selected entry
-- `t` - Statistics view
-- `r` - Refresh list
-- `ESC` - Go back / Cancel
-- `ENTER` - Confirm / Select
-
-**Example Workflow:**
+##### `codebase status` - Check Index Status
 ```bash
-# Launch TUI
-npx github:sylphxltd/flow mtui
-
-# Inside TUI:
-# 1. Press 's' to search for "*config*"
-# 2. Select an entry to view details
-# 3. Press 'e' to edit the entry
-# 4. Press 'd' to delete (with 'y' confirmation)
-# 5. Press 't' to view statistics
-# 6. Press 'q' to quit
+npx github:sylphxltd/flow codebase status
 ```
 
-### `flow mcp` - Manage MCP Tools
+Shows:
+- Index status
+- Number of files indexed
+- Languages detected
+- Database size
+- Last indexed time
 
-Manage MCP (Model Context Protocol) tools and servers.
+---
+
+### `flow run` - Execute AI Agents
+
+Run AI agents with specific prompts and tasks.
+
+#### Syntax
+```bash
+npx github:sylphxltd/flow run [prompt] [options]
+```
+
+#### Arguments
+- `prompt` - The task or prompt for the agent (optional, will prompt if not provided)
+
+#### Options
+- `--agent <name>` - Agent to use: coder, reviewer, writer, orchestrator (default: coder)
+- `--target <type>` - Force specific target (opencode, claude-code)
+
+#### Examples
+```bash
+# Use default agent (coder)
+npx github:sylphxltd/flow run "implement user authentication"
+
+# Specify agent
+npx github:sylphxltd/flow run "review this code for security" --agent reviewer
+npx github:sylphxltd/flow run "document the API" --agent writer
+npx github:sylphxltd/flow run "implement OAuth with tests" --agent orchestrator
+
+# Interactive mode (prompts for input)
+npx github:sylphxltd/flow run --agent coder
+```
+
+#### Available Agents
+- **coder** - Code implementation and execution (default)
+- **orchestrator** - Task coordination and delegation
+- **reviewer** - Code review and quality assurance
+- **writer** - Documentation and technical writing
+
+---
+
+### `flow mcp` - Manage MCP Server
+
+Manage MCP (Model Context Protocol) server and configuration.
 
 #### Syntax
 ```bash
@@ -210,97 +258,112 @@ npx github:sylphxltd/flow mcp [subcommand] [options]
 
 ##### `mcp start` - Start MCP Server
 ```bash
-npx github:sylphxltd/flow mcp start
+npx github:sylphxltd/flow mcp start [options]
 ```
-
-Starts the Sylphx Flow MCP server for AI agent integration.
-
-##### `mcp install` - Install MCP Tools
-```bash
-npx github:sylphxltd/flow mcp install [servers...] [options]
-```
-
-**Arguments:**
-- `servers...` - MCP tools to install (memory, gpt-image, perplexity, context7, gemini-search)
 
 **Options:**
-- `--all` - Install all available MCP tools
-- `--dry-run` - Show what would be done without making changes
+- `--disable-knowledge` - Disable knowledge base tools
+- `--disable-codebase` - Disable codebase search tools
+- `--disable-time` - Disable time utility tools
+- `--disable-memory` - Disable memory tools (deprecated)
+- `--target <type>` - Force specific target configuration
 
 **Examples:**
 ```bash
-# Install specific tools
-npx github:sylphxltd/flow mcp install memory
+# Start with all tools (default)
+npx github:sylphxltd/flow mcp start
 
-# Install all tools
-npx github:sylphxltd/flow mcp install --all
+# Start without knowledge tools
+npx github:sylphxltd/flow mcp start --disable-knowledge
 
-# Preview installation
-npx github:sylphxltd/flow mcp install --all --dry-run
+# Start with only knowledge tools
+npx github:sylphxltd/flow mcp start --disable-codebase --disable-time
+
+# Force OpenCode configuration
+npx github:sylphxltd/flow mcp start --target opencode
 ```
 
-##### `mcp list` - List Available MCP Tools
+**Available MCP Tools:**
+- `knowledge_search`, `knowledge_get`, `knowledge_list` - Knowledge base access
+- `codebase_search`, `codebase_reindex`, `codebase_status` - Codebase search
+- `time_get_current`, `time_format`, `time_calculate` - Time utilities
+
+##### `mcp config` - Configure MCP Server
+```bash
+npx github:sylphxltd/flow mcp config [options]
+```
+
+Configure MCP server settings and API keys.
+
+##### `mcp list` - List MCP Servers
 ```bash
 npx github:sylphxltd/flow mcp list
 ```
 
-**Output:**
-```
-🔧 Available MCP Tools:
-====================
-memory           - Agent coordination & memory
+List all configured MCP servers.
 
-gpt-image-1-mcp  - GPT image generation
-perplexity-ask   - Perplexity search
-gemini-google-search - Google search via Gemini
-context7         - Context management
-```
-
-##### `mcp config` - Configure API Keys
+##### `mcp add` - Add MCP Servers
 ```bash
-npx github:sylphxltd/flow mcp config <server>
+npx github:sylphxltd/flow mcp add <servers...>
 ```
 
-**Arguments:**
-- `server` - MCP server to configure (gpt-image, perplexity, gemini-search)
+Add additional MCP servers to configuration.
 
-**Examples:**
+##### `mcp remove` - Remove MCP Servers
 ```bash
-# Configure GPT Image tool
-npx github:sylphxltd/flow mcp config gpt-image
-
-# Configure Perplexity tool
-npx github:sylphxltd/flow mcp config perplexity
-
-# Configure Gemini Search tool
-npx github:sylphxltd/flow mcp config gemini-search
+npx github:sylphxltd/flow mcp remove <servers...>
 ```
 
-### `flow sync` - Legacy Sync [DEPRECATED]
+Remove MCP servers from configuration.
 
-> ⚠️ **DEPRECATED**: Use `flow init` instead. Kept for backward compatibility.
+---
+
+### `flow sysinfo` - System Information
+
+Display system information and current status.
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow sync [options]
+npx github:sylphxltd/flow sysinfo [options]
 ```
 
 #### Options
-- `--agent <type>` - Force specific agent (cursor, kilocode, roocode)
-- `--verbose` - Show detailed output
-- `--dry-run` - Show what would be done without making changes
-- `--clear` - Clear obsolete items before processing
+- `--hook <type>` - Hook type: session (static), message (dynamic)
+- `--output <format>` - Output format: markdown, standard, json
+- `--target <type>` - Force specific target (opencode, claude-code)
+
+#### Hook Types
+- **session** - Static system info (platform, dirs, hardware) - runs once at session start
+- **message** - Dynamic status (time, CPU, memory) - runs per message
+
+#### Output Formats
+- **markdown** - Markdown format, optimized for LLM hooks (default)
+- **standard** - Colored terminal output with decorations
+- **json** - JSON format for automation
 
 #### Examples
 ```bash
-# Legacy usage (not recommended)
-npx github:sylphxltd/flow sync --agent=cursor
-npx github:sylphxltd/flow sync --dry-run
+# Default output (markdown, message hook)
+npx github:sylphxltd/flow sysinfo
+
+# Session info (runs once)
+npx github:sylphxltd/flow sysinfo --hook session
+
+# Dynamic status (per message)
+npx github:sylphxltd/flow sysinfo --hook message
+
+# Standard terminal output
+npx github:sylphxltd/flow sysinfo --output standard
+
+# JSON output for scripting
+npx github:sylphxltd/flow sysinfo --output json
 ```
+
+---
 
 ## 🔧 Global Options
 
-These options can be used with any command:
+These options work with all commands:
 
 - `--help, -h` - Show help for command
 - `--version, -v` - Show version number
@@ -310,91 +373,216 @@ These options can be used with any command:
 ### Success Messages
 ```
 ✅ Operation completed successfully
-✅ Memory entry deleted: default:test-key
-✅ MCP tools installed
+✅ Knowledge search completed: 5 results
+✅ Codebase indexed: 347 files
+✅ MCP server started
 ```
 
 ### Error Messages
 ```
 ❌ Error: Invalid option
-❌ Memory entry not found: default:missing-key
-❌ Please use --confirm to clear memory entries
+❌ Database not found, run: flow init
+❌ OpenAI API key not configured
 ```
 
 ### Warning Messages
 ```
-⚠️ WARNING: The "sync" command is deprecated
-⚠️ Database file not found, creating new one
+⚠️ WARNING: Codebase not indexed yet
+⚠️ Knowledge base is empty
 ```
 
 ### Info Messages
 ```
-ℹ️ Database: .sylphx-flow/memory.db
-ℹ️ Found 15 entries
-ℹ️ No changes required
+ℹ️ Database: .sylphx-flow/codebase.db
+ℹ️ Found 347 files
+ℹ️ MCP server running on stdio
 ```
 
 ## 🎯 Common Workflows
 
-### 1. Complete Setup
+### 1. Initial Setup
 ```bash
 # Initialize project
 npx github:sylphxltd/flow init
 
-# Check memory system
-npx github:sylphxltd/flow memory stats
+# Check knowledge base
+npx github:sylphxltd/flow knowledge status
+
+# Check codebase index
+npx github:sylphxltd/flow codebase status
 
 # Start MCP server
 npx github:sylphxltd/flow mcp start
 ```
 
-### 2. Memory Management
+### 2. Working with Knowledge Base
 ```bash
-# Check what's stored
-npx github:sylphxltd/flow memory list
+# Search for patterns
+npx github:sylphxltd/flow knowledge search "react hooks"
 
-# Search for specific data
-npx github:sylphxltd/flow memory search --pattern "*config*"
+# Get specific guide
+npx github:sylphxltd/flow knowledge get "/stacks/react-app"
 
-# Clean up old data
-npx github:sylphxltd/flow memory clear --namespace "temp" --confirm
+# List all resources
+npx github:sylphxltd/flow knowledge list
 ```
 
-### 3. MCP Tool Management
+### 3. Searching Codebase
 ```bash
-# Install all MCP tools
-npx github:sylphxltd/flow mcp install --all
+# Semantic search
+npx github:sylphxltd/flow codebase search "authentication logic"
 
-# Configure API keys
-npx github:sylphxltd/flow mcp config gpt-image
+# Search with more results
+npx github:sylphxltd/flow codebase search "api endpoints" --limit 20
 
-# List available tools
+# Reindex after changes
+npx github:sylphxltd/flow codebase reindex
+```
+
+### 4. Using AI Agents
+```bash
+# Implement feature
+npx github:sylphxltd/flow run "add user authentication" --agent coder
+
+# Review code
+npx github:sylphxltd/flow run "review for security" --agent reviewer
+
+# Write documentation
+npx github:sylphxltd/flow run "document the API" --agent writer
+
+# Complex task
+npx github:sylphxltd/flow run "implement OAuth with tests" --agent orchestrator
+```
+
+### 5. Managing MCP Server
+```bash
+# Start with all tools
+npx github:sylphxltd/flow mcp start
+
+# Start with specific tools
+npx github:sylphxltd/flow mcp start --disable-codebase
+
+# List configured servers
 npx github:sylphxltd/flow mcp list
 ```
 
-### 4. Troubleshooting
+## ⚙️ Environment Variables
+
+### Required for Embeddings
 ```bash
-# Check system status
-npx github:sylphxltd/flow memory stats
+# OpenAI API key for vector embeddings
+export OPENAI_API_KEY="your-api-key"
 
-# Test with dry run
-npx github:sylphxltd/flow init --dry-run
+# Optional: Custom embedding model
+export EMBEDDING_MODEL="text-embedding-3-small"
 
-# Verbose output for debugging
-npx github:sylphxltd/flow init --verbose
+# Optional: Custom OpenAI endpoint
+export OPENAI_BASE_URL="https://api.openai.com/v1"
 ```
 
-## 🐛 Error Codes
+### Development
+```bash
+# Enable debug mode
+export NODE_ENV="development"
 
-| Error Code | Description | Solution |
-|------------|-------------|----------|
-| `INVALID_OPTION` | Unknown command option | Check `--help` for valid options |
-| `FILE_NOT_FOUND` | Database or config file missing | Run `flow init` to create |
-| `PERMISSION_DENIED` | Insufficient file permissions | Check directory permissions |
-| `INVALID_JSON` | Corrupted JSON file | Restore from backup or reinitialize |
-| `NETWORK_ERROR` | Failed to download tools | Check internet connection |
-| `API_KEY_MISSING` | Required API key not configured | Use `flow mcp config <server>` |
+# Verbose logging
+export DEBUG="sylphx:*"
+```
+
+## 🐛 Troubleshooting
+
+### Knowledge Base Issues
+```bash
+# Check status
+flow knowledge status
+
+# Verify database exists
+ls -la .sylphx-flow/knowledge.db
+
+# Rebuild index
+rm .sylphx-flow/knowledge.db
+flow mcp start
+```
+
+### Codebase Search Issues
+```bash
+# Check status
+flow codebase status
+
+# Reindex
+flow codebase reindex
+
+# Verify API key
+echo $OPENAI_API_KEY
+```
+
+### MCP Server Issues
+```bash
+# Check configuration
+cat .claude/mcp.json  # or opencode.jsonc
+
+# Test with verbose output
+flow mcp start --verbose
+
+# Verify tools are available
+flow knowledge status
+flow codebase status
+```
+
+### Agent Issues
+```bash
+# Check agents are installed
+ls .claude/agents/  # or .kilocode/agents/
+
+# Reinstall agents
+flow init --skip-hooks --skip-mcp
+```
+
+## 🎯 Pro Tips
+
+### Efficient Knowledge Search
+```bash
+# Be specific
+flow knowledge search "react custom hooks patterns"
+
+# Use categories
+flow knowledge list --category stacks
+
+# Get full content when needed
+flow knowledge search "security" --include-content
+```
+
+### Effective Codebase Search
+```bash
+# Describe what you're looking for
+flow codebase search "code that handles user authentication"
+
+# Search for related concepts
+flow codebase search "error handling in API routes"
+
+# Reindex regularly
+git pull && flow codebase reindex
+```
+
+### Agent Best Practices
+```bash
+# Use orchestrator for complex tasks
+flow run "implement feature with tests" --agent orchestrator
+
+# Be specific in prompts
+flow run "add JWT authentication with refresh tokens" --agent coder
+
+# Use reviewer for quality checks
+flow run "review for OWASP vulnerabilities" --agent reviewer
+```
+
+## 📚 Next Steps
+
+- **[Knowledge Base](Knowledge-Base)** - Learn about curated guidelines
+- **[Codebase Search](Codebase-Search)** - Semantic code discovery
+- **[Agent Framework](Agent-Framework)** - Working with AI agents
+- **[MCP Integration](MCP-Integration)** - Connecting AI tools
 
 ---
 
-**Related**: [Memory System](Memory-System), [Installation & Setup](Installation-&-Setup)
+*Last Updated: 2025-10-30 | [Edit this page](https://github.com/sylphxltd/flow/wiki/CLI-Commands) | [Report Issues](https://github.com/sylphxltd/flow/issues)*
