@@ -3,10 +3,14 @@ import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import chalk from 'chalk';
-import type { MCPServerConfigUnion, Target } from '../types.js';
+import { FileInstaller } from '../core/installers/file-installer.js';
+import type { CommonOptions, MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
+import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { CLIError } from '../utils/error-handler.js';
+import { getAgentsDir, getOutputStylesDir } from '../utils/paths.js';
 import { commandSecurity, sanitize } from '../utils/security.js';
+import { displayResults } from '../shared.js';
 import {
   fileUtils,
   generateHelpText,
@@ -454,6 +458,94 @@ Please begin your response with a comprehensive summary of all the instructions 
     } catch (error) {
       throw error;
     }
+  },
+
+  /**
+   * Setup agents for Claude Code
+   * Install agents to .claude/agents/ directory with YAML front matter
+   */
+  async setupAgents(cwd: string, options: CommonOptions): Promise<void> {
+    const installer = new FileInstaller();
+    const agentsDir = path.join(cwd, this.config.agentDir);
+
+    const results = await installer.installToDirectory(
+      getAgentsDir(),
+      agentsDir,
+      async (content, sourcePath) => {
+        return await this.transformAgentContent(content, undefined, sourcePath);
+      },
+      {
+        ...options,
+        showProgress: true,
+      }
+    );
+
+    displayResults(results, agentsDir, this.name, 'Install', options.verbose, options.quiet);
+  },
+
+  /**
+   * Setup output styles for Claude Code
+   * Install output styles to .claude/output-styles/ directory with YAML front matter
+   */
+  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<void> {
+    if (!this.config.outputStylesDir) {
+      return;
+    }
+
+    const installer = new FileInstaller();
+    const outputStylesDir = path.join(cwd, this.config.outputStylesDir);
+
+    const results = await installer.installToDirectory(
+      getOutputStylesDir(),
+      outputStylesDir,
+      async (content, sourcePath) => {
+        return await this.transformAgentContent(content, undefined, sourcePath);
+      },
+      {
+        ...options,
+        showProgress: true,
+      }
+    );
+
+    displayResults(results, outputStylesDir, this.name, 'Install', options.verbose, options.quiet);
+  },
+
+  /**
+   * Setup rules for Claude Code
+   * Install rules to CLAUDE.md in project root
+   */
+  async setupRules(cwd: string, options: CommonOptions): Promise<void> {
+    if (!this.config.rulesFile) {
+      return;
+    }
+
+    // Check if core rules file exists
+    if (!ruleFileExists('core')) {
+      if (!options.quiet) {
+        console.warn('⚠️ Core rules file not found');
+      }
+      return;
+    }
+
+    const installer = new FileInstaller();
+    const rulesDestPath = path.join(cwd, this.config.rulesFile);
+    const rulePath = getRulesPath('core');
+
+    await installer.installFile(
+      rulePath,
+      rulesDestPath,
+      async (content) => {
+        // Transform rules content if transformation is available
+        if (this.transformRulesContent) {
+          return await this.transformRulesContent(content);
+        }
+        return content;
+      },
+      {
+        ...options,
+        showProgress: true,
+      }
+    );
   },
 };
 

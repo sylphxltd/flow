@@ -1,8 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { MCP_SERVER_REGISTRY } from '../config/servers.js';
-import type { MCPServerConfigUnion, Target } from '../types.js';
+import { FileInstaller } from '../core/installers/file-installer.js';
+import { displayResults } from '../shared.js';
+import type { CommonOptions, MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
+import { getAgentsDir, getOutputStylesDir } from '../utils/paths.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
 
@@ -225,5 +229,134 @@ export const opencodeTarget: Target = {
    */
   async transformRulesContent(content: string): Promise<string> {
     return yamlUtils.stripFrontMatter(content);
+  },
+
+  /**
+   * Setup agents for OpenCode
+   * Install agents to .opencode/agent/ directory
+   */
+  async setupAgents(cwd: string, options: CommonOptions): Promise<void> {
+    const installer = new FileInstaller();
+    const agentsDir = path.join(cwd, this.config.agentDir);
+
+    const results = await installer.installToDirectory(
+      getAgentsDir(),
+      agentsDir,
+      async (content, sourcePath) => {
+        return await this.transformAgentContent(content, undefined, sourcePath);
+      },
+      {
+        ...options,
+        showProgress: true,
+      }
+    );
+
+    displayResults(results, agentsDir, this.name, 'Install', options.verbose, options.quiet);
+  },
+
+  /**
+   * Setup output styles for OpenCode
+   * Append output styles to AGENTS.md (OpenCode doesn't support separate output style files)
+   */
+  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<void> {
+    if (!this.config.rulesFile) {
+      return;
+    }
+
+    const installer = new FileInstaller();
+    const rulesFilePath = path.join(cwd, this.config.rulesFile);
+
+    // Read existing rules file content if it exists
+    let existingContent = '';
+    if (fs.existsSync(rulesFilePath)) {
+      existingContent = fs.readFileSync(rulesFilePath, 'utf8');
+    }
+
+    // Build output styles section
+    const outputStylesSourceDir = getOutputStylesDir();
+    if (!fs.existsSync(outputStylesSourceDir)) {
+      return; // No output styles available
+    }
+
+    let outputStylesContent = '\n\n---\n\n# Output Styles\n\n';
+
+    // Collect output style files
+    const files = fs
+      .readdirSync(outputStylesSourceDir, { withFileTypes: true })
+      .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.md'))
+      .map((dirent) => dirent.name);
+
+    if (files.length === 0) {
+      return;
+    }
+
+    for (const styleFile of files) {
+      const sourcePath = path.join(outputStylesSourceDir, styleFile);
+      let content = fs.readFileSync(sourcePath, 'utf8');
+
+      // Strip YAML front matter for system prompt
+      if (this.transformRulesContent) {
+        content = await this.transformRulesContent(content);
+      }
+
+      outputStylesContent += content + '\n\n';
+    }
+
+    // Check if output styles section already exists
+    const outputStylesMarker = '# Output Styles';
+    if (existingContent.includes(outputStylesMarker)) {
+      // Replace existing output styles section
+      const startIndex = existingContent.indexOf('---\n\n# Output Styles');
+      if (startIndex !== -1) {
+        existingContent = existingContent.substring(0, startIndex);
+      }
+    }
+
+    // Append output styles section
+    fs.writeFileSync(rulesFilePath, existingContent + outputStylesContent, 'utf8');
+
+    if (!options.quiet) {
+      console.log(
+        `Appended ${files.length} output style${files.length > 1 ? 's' : ''} to ${this.config.rulesFile}`
+      );
+    }
+  },
+
+  /**
+   * Setup rules for OpenCode
+   * Install rules to AGENTS.md in project root
+   */
+  async setupRules(cwd: string, options: CommonOptions): Promise<void> {
+    if (!this.config.rulesFile) {
+      return;
+    }
+
+    // Check if core rules file exists
+    if (!ruleFileExists('core')) {
+      if (!options.quiet) {
+        console.warn('⚠️ Core rules file not found');
+      }
+      return;
+    }
+
+    const installer = new FileInstaller();
+    const rulesDestPath = path.join(cwd, this.config.rulesFile);
+    const rulePath = getRulesPath('core');
+
+    await installer.installFile(
+      rulePath,
+      rulesDestPath,
+      async (content) => {
+        // Transform rules content if transformation is available
+        if (this.transformRulesContent) {
+          return await this.transformRulesContent(content);
+        }
+        return content;
+      },
+      {
+        ...options,
+        showProgress: true,
+      }
+    );
   },
 };

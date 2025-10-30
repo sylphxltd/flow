@@ -5,7 +5,6 @@ import gradient from 'gradient-string';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
-import { installAgents, installOutputStyles, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
 import { MCPService } from '../services/mcp-service.js';
 import type { CommandOptions } from '../types.js';
@@ -192,17 +191,32 @@ export const initCommand = new Command('init')
 
     console.log(chalk.cyan.bold('\n━━━ Installing Core Components ━━━\n'));
 
-    const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
-    await installAgents({ ...options, quiet: true });
-    agentSpinner.succeed(chalk.green('Agents installed'));
+    // Get target instance
+    const target = targetManager.getTarget(targetId);
+    if (!target) {
+      throw new Error(`Target not found: ${targetId}`);
+    }
 
-    const outputStylesSpinner = ora({ text: 'Installing output styles', color: 'cyan' }).start();
-    await installOutputStyles({ ...options, quiet: true });
-    outputStylesSpinner.succeed(chalk.green('Output styles installed'));
+    // Install agents if target supports it
+    if (target.setupAgents) {
+      const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
+      await target.setupAgents(process.cwd(), { ...options, quiet: true });
+      agentSpinner.succeed(chalk.green('Agents installed'));
+    }
 
-    const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
-    await installRules({ ...options, quiet: true });
-    rulesSpinner.succeed(chalk.green('Rules installed'));
+    // Install output styles if target supports it
+    if (target.setupOutputStyles) {
+      const outputStylesSpinner = ora({ text: 'Installing output styles', color: 'cyan' }).start();
+      await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
+      outputStylesSpinner.succeed(chalk.green('Output styles installed'));
+    }
+
+    // Install rules if target supports it
+    if (target.setupRules) {
+      const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
+      await target.setupRules(process.cwd(), { ...options, quiet: true });
+      rulesSpinner.succeed(chalk.green('Rules installed'));
+    }
 
     // Save the selected target as project default
     const targetInfo: string[] = [];
@@ -220,8 +234,7 @@ export const initCommand = new Command('init')
     }
 
     // Setup target-specific configuration
-    const target = targetManager.getTarget(targetId);
-    if (target?.setup) {
+    if (target.setup) {
       const setupResult = await target.setup(process.cwd());
 
       if (setupResult.success) {

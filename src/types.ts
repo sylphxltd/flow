@@ -231,6 +231,15 @@ export abstract class Target {
 
   /** Setup target-specific configuration (optional - for targets that need additional setup) */
   async setup?(cwd: string, options?: Record<string, unknown>): Promise<void>;
+
+  /** Setup agents for this target (optional - implement if target needs agents) */
+  async setupAgents?(cwd: string, options: CommonOptions): Promise<void>;
+
+  /** Setup rules for this target (optional - implement if target needs rules) */
+  async setupRules?(cwd: string, options: CommonOptions): Promise<void>;
+
+  /** Setup output styles for this target (optional - implement if target supports output styles) */
+  async setupOutputStyles?(cwd: string, options: CommonOptions): Promise<void>;
 }
 
 export interface CommonOptions {
