@@ -126,8 +126,8 @@ async function detectProjectInfo() {
     // Detect project type based on dependencies and scripts
     const projectType = detectProjectType(packageJson);
 
-    // Detect package manager based on lock files
-    const packageManager = detectPackageManager(cwd);
+    // Detect package manager based on package.json field, then lock files
+    const packageManager = detectPackageManager(cwd, packageJson);
 
     return {
       type: projectType,
@@ -181,8 +181,18 @@ function detectProjectType(packageJson: any): string {
   return 'javascript';
 }
 
-function detectPackageManager(cwd: string): string {
-  // Check for lock files in order of preference
+function detectPackageManager(cwd: string, packageJson?: any): string {
+  // First, check package.json for explicit packageManager field (most accurate)
+  if (packageJson?.packageManager) {
+    const packageManagerField = packageJson.packageManager;
+    // Extract manager name from "bun@1.3.1" format
+    const managerName = packageManagerField.split('@')[0];
+    if (['npm', 'yarn', 'pnpm', 'bun'].includes(managerName)) {
+      return managerName;
+    }
+  }
+
+  // Fallback: Check for lock files in order of preference
   const lockFiles = [
     { file: 'pnpm-lock.yaml', manager: 'pnpm' },
     { file: 'yarn.lock', manager: 'yarn' },
