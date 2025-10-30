@@ -18,6 +18,7 @@ import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { type Indexer, createIndexer } from './functional-indexer.js';
 import { type SearchIndex, buildSearchIndex } from './tfidf.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Knowledge indexer singleton
@@ -82,14 +83,14 @@ class KnowledgeIndexer extends BaseIndexer {
     }
 
     const files = this.scanKnowledgeFiles(knowledgeDir);
-    console.error(`[INFO] Found ${files.length} knowledge files`);
+    logger.info('Found knowledge files', { count: files.length });
 
     // Build TF-IDF index
     const index = await buildSearchIndex(files);
 
     // Build vector index if embedding provider is available
     if (this.embeddingProvider && files.length > 0) {
-      console.error('[INFO] Building vector index for knowledge...');
+      logger.info('Building vector index for knowledge');
 
       try {
         const vectorPath = path.join(
@@ -128,15 +129,16 @@ class KnowledgeIndexer extends BaseIndexer {
             });
           }
 
-          console.error(
-            `[INFO] Processed ${Math.min(i + batchSize, files.length)}/${files.length} knowledge files`
-          );
+          logger.info('Processed knowledge files', {
+            processed: Math.min(i + batchSize, files.length),
+            total: files.length,
+          });
         }
 
         await this.vectorStorage.save();
-        console.error('[INFO] Vector index built successfully');
+        logger.info('Vector index built successfully');
       } catch (error) {
-        console.error('[ERROR] Failed to build vector index:', error);
+        logger.error(' Failed to build vector index:', error);
         this.vectorStorage = undefined;
       }
     }
@@ -152,7 +154,7 @@ class KnowledgeIndexer extends BaseIndexer {
     const knowledgeDir = getKnowledgeDir();
 
     if (!fs.existsSync(knowledgeDir)) {
-      console.error(`[WARN] Knowledge directory not found: ${knowledgeDir}`);
+      logger.warn('Knowledge directory not found', { knowledgeDir });
       return;
     }
 
@@ -168,7 +170,7 @@ class KnowledgeIndexer extends BaseIndexer {
       });
 
       this.watcher.on('all', (event, filePath) => {
-        console.error(`[INFO] Knowledge file ${event}: ${path.basename(filePath)}`);
+        logger.debug('Knowledge file changed', { event, file: path.basename(filePath) });
 
         // Debounce: Wait 2 seconds after last change before re-indexing
         if (this.reindexTimer) {
@@ -176,15 +178,15 @@ class KnowledgeIndexer extends BaseIndexer {
         }
 
         this.reindexTimer = setTimeout(() => {
-          console.error('[INFO] Re-indexing knowledge base due to file changes...');
+          logger.info('Re-indexing knowledge base due to file changes');
           this.clearCache();
           this.startBackgroundIndexing();
         }, 2000);
       });
 
-      console.error(`[INFO] Watching knowledge directory for changes: ${knowledgeDir}`);
+      logger.info('Watching knowledge directory for changes', { knowledgeDir });
     } catch (error) {
-      console.error('[ERROR] Failed to start file watching:', error);
+      logger.error(' Failed to start file watching:', error);
       // Don't throw - indexing can still work without watching
     }
   }
@@ -201,7 +203,7 @@ class KnowledgeIndexer extends BaseIndexer {
     if (this.watcher) {
       this.watcher.close();
       this.watcher = undefined;
-      console.error('[INFO] Stopped watching knowledge directory');
+      logger.info('Stopped watching knowledge directory');
     }
   }
 
@@ -293,14 +295,14 @@ export function createKnowledgeIndexerFunctional(
       };
 
       const files = scanKnowledgeFiles(knowledgeDir);
-      console.error(`[INFO] Found ${files.length} knowledge files`);
+      logger.info('Found knowledge files', { count: files.length });
 
       // Build TF-IDF index
       const index = await buildSearchIndex(files);
 
       // Build vector index if embedding provider available
       if (embeddingProvider && files.length > 0) {
-        console.error('[INFO] Building vector index for knowledge...');
+        logger.info('Building vector index for knowledge');
 
         try {
           const vectorPath = path.join(
@@ -336,15 +338,16 @@ export function createKnowledgeIndexerFunctional(
               });
             }
 
-            console.error(
-              `[INFO] Processed ${Math.min(i + batchSize, files.length)}/${files.length} knowledge files`
-            );
+          logger.info('Processed knowledge files', {
+            processed: Math.min(i + batchSize, files.length),
+            total: files.length,
+          });
           }
 
           await vectorStorage.save();
-          console.error('[INFO] Vector index built successfully');
+          logger.info('Vector index built successfully');
         } catch (error) {
-          console.error('[ERROR] Failed to build vector index:', error);
+          logger.error(' Failed to build vector index:', error);
         }
       }
 
@@ -366,7 +369,7 @@ export function createKnowledgeIndexerFunctional(
       });
 
       watcher.on('all', (event, filePath) => {
-        console.error(`[INFO] Knowledge file ${event}: ${path.basename(filePath)}`);
+        logger.debug('Knowledge file changed', { event, file: path.basename(filePath) });
 
         // Debounce: Wait 2 seconds after last change
         if (reindexTimer) {
@@ -374,15 +377,15 @@ export function createKnowledgeIndexerFunctional(
         }
 
         reindexTimer = setTimeout(() => {
-          console.error('[INFO] Re-indexing knowledge base due to file changes...');
+          logger.info('Re-indexing knowledge base due to file changes');
           coreIndexer.clearCache();
           coreIndexer.startBackgroundIndexing();
         }, 2000);
       });
 
-      console.error(`[INFO] Watching knowledge directory for changes: ${knowledgeDir}`);
+      logger.info('Watching knowledge directory for changes', { knowledgeDir });
     } catch (error) {
-      console.error('[ERROR] Failed to start file watching:', error);
+      logger.error(' Failed to start file watching:', error);
     }
   }
 
@@ -397,7 +400,7 @@ export function createKnowledgeIndexerFunctional(
       if (watcher) {
         watcher.close();
         watcher = undefined;
-        console.error('[INFO] Stopped watching knowledge directory');
+        logger.info('Stopped watching knowledge directory');
       }
     },
   };

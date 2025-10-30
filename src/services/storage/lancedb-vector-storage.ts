@@ -3,6 +3,8 @@
  * Local-only, no cloud services required
  */
 
+import { logger } from '../../utils/logger.js';
+
 /**
  * Generate mock embedding for testing/fallback
  */
@@ -106,7 +108,7 @@ export class VectorStorage {
         // Update count
         try {
           this.metadata.count = await this.table.countRows();
-          console.error(`[INFO] Loaded LanceDB table with ${this.metadata.count} vectors`);
+          logger.info('Loaded LanceDB table', { count: this.metadata.count });
         } catch (_e) {
           this.metadata.count = 0;
         }
@@ -128,10 +130,10 @@ export class VectorStorage {
         // Remove the init record
         await this.table.delete('id = ?', ['init']);
 
-        console.error(`[INFO] Created new LanceDB table: ${this.tableName}`);
+        logger.info('Created new LanceDB table', { tableName: this.tableName });
       }
     } catch (error) {
-      console.error('[ERROR] Failed to initialize LanceDB:', error);
+      logger.error('Failed to initialize LanceDB', { error });
       // Fallback to simple in-memory storage
       this.useFallback = true;
     }
@@ -145,12 +147,12 @@ export class VectorStorage {
    */
   async save(): Promise<void> {
     if (this.useFallback) {
-      console.error('[INFO] Using fallback storage - save is no-op');
+      logger.warn('Using fallback storage - save is no-op');
       return;
     }
 
     // LanceDB automatically saves
-    console.error('[INFO] LanceDB saves automatically');
+    logger.debug('LanceDB saves automatically');
   }
 
   /**
@@ -186,7 +188,7 @@ export class VectorStorage {
 
       this.metadata.count++;
     } catch (error) {
-      console.error('[ERROR] Failed to add document, falling back:', error);
+      logger.error('Failed to add document, falling back', { error });
       this.useFallback = true;
       this.fallbackData.set(doc.id, doc);
       this.metadata.count = this.fallbackData.size;
@@ -235,9 +237,9 @@ export class VectorStorage {
       await this.table.add(records);
       this.metadata.count += docs.length;
 
-      console.error(`[INFO] Added ${docs.length} documents to LanceDB`);
+      logger.info('Added documents to LanceDB', { count: docs.length });
     } catch (error) {
-      console.error('[ERROR] Failed to add documents, falling back:', error);
+      logger.error('Failed to add documents, falling back', { error });
       this.useFallback = true;
       for (const doc of docs) {
         this.fallbackData.set(doc.id, doc);
@@ -324,7 +326,7 @@ export class VectorStorage {
 
       return filteredResults;
     } catch (error) {
-      console.error('[ERROR] Vector search failed, falling back:', error);
+      logger.error('Vector search failed, falling back', { error });
       // Fallback to simple search
       return this.search(queryEmbedding, options);
     }
@@ -360,7 +362,7 @@ export class VectorStorage {
         },
       };
     } catch (error) {
-      console.error('[ERROR] Failed to get document:', error);
+      logger.error('Failed to get document', { error });
       return this.fallbackData.get(id);
     }
   }
@@ -388,7 +390,7 @@ export class VectorStorage {
         },
       }));
     } catch (error) {
-      console.error('[ERROR] Failed to get all documents:', error);
+      logger.error('Failed to get all documents', { error });
       return Array.from(this.fallbackData.values());
     }
   }
@@ -431,9 +433,9 @@ export class VectorStorage {
       await this.table.delete('id = ?', ['init']);
 
       this.metadata.count = 0;
-      console.error('[INFO] Cleared all vectors from LanceDB');
+      logger.info('Cleared all vectors from LanceDB');
     } catch (error) {
-      console.error('[ERROR] Failed to clear vectors:', error);
+      logger.error('Failed to clear vectors', { error });
       this.fallbackData.clear();
       this.metadata.count = 0;
     }
@@ -460,7 +462,7 @@ export class VectorStorage {
       const storage = new VectorStorage(indexPath, 1536);
       return storage;
     } catch (error) {
-      console.error('[ERROR] Failed to load LanceDB storage:', error);
+      logger.error('Failed to load LanceDB storage', { error });
       return null;
     }
   }

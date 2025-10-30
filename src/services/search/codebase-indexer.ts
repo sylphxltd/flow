@@ -30,6 +30,7 @@ import type {
   CodebaseIndexerOptions,
   IndexingStatus,
 } from './codebase-indexer-types.js';
+import { logger } from '../../utils/logger.js';
 
 export class CodebaseIndexer {
   private codebaseRoot: string;
@@ -81,7 +82,7 @@ export class CodebaseIndexer {
               try {
                 rawTermsObj = JSON.parse(tfidfDoc.rawTerms);
               } catch (error) {
-                console.warn(`[WARN] Failed to parse rawTerms for ${file.path}:`, error);
+                logger.warn('Failed to parse rawTerms', { path: file.path, error });
                 rawTermsObj = {};
               }
             } else if (typeof tfidfDoc.rawTerms === 'object') {
@@ -127,7 +128,7 @@ export class CodebaseIndexer {
         },
       };
     } catch (error) {
-      console.error('[ERROR] Failed to build TF-IDF index from database:', error);
+      logger.error('Failed to build TF-IDF index from database', { error });
       return undefined;
     }
   }
@@ -174,7 +175,7 @@ export class CodebaseIndexer {
         vectorIndexPath,
       };
     } catch (error) {
-      console.error('[ERROR] Failed to load cache from database:', error);
+      logger.error('Failed to load cache from database', { error });
       return null;
     }
   }
@@ -238,7 +239,7 @@ export class CodebaseIndexer {
         await this.db.setIDFValues(idfValues);
       }
     } catch (error) {
-      console.error('[ERROR] Failed to save cache to database:', error);
+      logger.error('Failed to save cache to database', { error });
       throw error;
     }
   }
@@ -460,7 +461,7 @@ export class CodebaseIndexer {
         indexedAt: stats.indexedAt,
       };
     } catch (error) {
-      console.error('[ERROR] Failed to get cache stats:', error);
+      logger.error('Failed to get cache stats', { error });
       return {
         exists: false,
         fileCount: 0,
@@ -534,7 +535,7 @@ export class CodebaseIndexer {
    */
   startWatching(): void {
     if (this.watcher) {
-      console.error('[INFO] Codebase watcher already running');
+      logger.info('Codebase watcher already running');
       return;
     }
 
@@ -570,7 +571,7 @@ export class CodebaseIndexer {
           return;
         }
 
-        console.error(`[INFO] Codebase file ${event}: ${path.basename(filePath)}`);
+        logger.debug('Codebase file changed', { event, file: path.basename(filePath) });
 
         // Debounce: Wait 5 seconds after last change before re-indexing
         // (Longer than knowledge because code files save more frequently)
@@ -579,19 +580,19 @@ export class CodebaseIndexer {
         }
 
         this.reindexTimer = setTimeout(async () => {
-          console.error('[INFO] Re-indexing codebase due to file changes...');
+          logger.info('Re-indexing codebase due to file changes');
           try {
             await this.index();
-            console.error('[INFO] Codebase re-indexing complete');
+            logger.info('Codebase re-indexing complete');
           } catch (error) {
-            console.error('[ERROR] Codebase re-indexing failed:', error);
+            logger.error('Codebase re-indexing failed', { error });
           }
         }, 5000);
       });
 
-      console.error(`[INFO] Watching codebase directory for changes: ${this.codebaseRoot}`);
+      logger.info('Watching codebase directory for changes', { codebaseRoot: this.codebaseRoot });
     } catch (error) {
-      console.error('[ERROR] Failed to start codebase file watching:', error);
+      logger.error('Failed to start codebase file watching', { error });
       // Don't throw - indexing can still work without watching
     }
   }
@@ -608,7 +609,7 @@ export class CodebaseIndexer {
     if (this.watcher) {
       this.watcher.close();
       this.watcher = undefined;
-      console.error('[INFO] Stopped watching codebase directory');
+      logger.info('Stopped watching codebase directory');
     }
   }
 
@@ -638,9 +639,9 @@ export class CodebaseIndexer {
         fs.unlinkSync(vectorPath);
       }
 
-      console.error('[INFO] Cache cleared from database and files');
+      logger.info('Cache cleared from database and files');
     } catch (error) {
-      console.error('[ERROR] Failed to clear cache:', error);
+      logger.error('Failed to clear cache', { error });
     }
   }
 
@@ -794,7 +795,7 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
         },
       };
     } catch (error) {
-      console.error('[ERROR] Failed to build TF-IDF index from database:', error);
+      logger.error('Failed to build TF-IDF index from database', { error });
       return undefined;
     }
   };
@@ -835,7 +836,7 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
         vectorIndexPath,
       };
     } catch (error) {
-      console.error('[ERROR] Failed to load cache from database:', error);
+      logger.error('Failed to load cache from database', { error });
       return null;
     }
   };
@@ -895,7 +896,7 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
         await db.setIDFValues(idfValues);
       }
     } catch (error) {
-      console.error('[ERROR] Failed to save cache to database:', error);
+      logger.error('Failed to save cache to database', { error });
       throw error;
     }
   };
@@ -1134,7 +1135,7 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
           indexedAt: stats.indexedAt,
         };
       } catch (error) {
-        console.error('[ERROR] Failed to get cache stats:', error);
+        logger.error('Failed to get cache stats', { error });
         return {
           exists: false,
           fileCount: 0,
@@ -1165,9 +1166,9 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
           fs.unlinkSync(vectorPath);
         }
 
-        console.error('[INFO] Cache cleared from database and files');
+        logger.info('Cache cleared from database and files');
       } catch (error) {
-        console.error('[ERROR] Failed to clear cache:', error);
+        logger.error('Failed to clear cache', { error });
       }
     },
 
@@ -1176,7 +1177,7 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
      */
     startWatching: () => {
       if (watcher) {
-        console.error('[INFO] Codebase watcher already running');
+        logger.info('Codebase watcher already running');
         return;
       }
 
@@ -1205,26 +1206,26 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
           const relativePath = path.relative(codebaseRoot, filePath);
           if (ig.ignores(relativePath)) return;
 
-          console.error(`[INFO] Codebase file ${event}: ${path.basename(filePath)}`);
+          logger.debug('Codebase file changed', { event, file: path.basename(filePath) });
 
           if (reindexTimer) {
             clearTimeout(reindexTimer);
           }
 
           reindexTimer = setTimeout(async () => {
-            console.error('[INFO] Re-indexing codebase due to file changes...');
+            logger.info('Re-indexing codebase due to file changes');
             try {
               await api.indexCodebase();
-              console.error('[INFO] Codebase re-indexing complete');
+              logger.info('Codebase re-indexing complete');
             } catch (error) {
-              console.error('[ERROR] Codebase re-indexing failed:', error);
+              logger.error('Codebase re-indexing failed', { error });
             }
           }, 5000);
         });
 
-        console.error(`[INFO] Watching codebase directory for changes: ${codebaseRoot}`);
+        logger.info('Watching codebase directory for changes', { codebaseRoot });
       } catch (error) {
-        console.error('[ERROR] Failed to start codebase file watching:', error);
+        logger.error('Failed to start codebase file watching', { error });
       }
     },
 
@@ -1240,7 +1241,7 @@ export function createCodebaseIndexerFunctional(options: CodebaseIndexerOptions 
       if (watcher) {
         watcher.close();
         watcher = undefined;
-        console.error('[INFO] Stopped watching codebase directory');
+        logger.info('Stopped watching codebase directory');
       }
     },
   };
