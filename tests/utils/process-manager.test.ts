@@ -18,14 +18,15 @@ describe('Process Manager', () => {
     vi.stubGlobal('process', mockProcess);
 
     // Clear module cache and reimport
-    vi.resetModules();
+    // Note: vi.resetModules() removed in vitest 4.x
     const module = await import('../../src/utils/process-manager.js');
     ProcessManager = module.ProcessManager;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    vi.unstubAllGlobals();
+    // Note: vi.unstubAllGlobals() removed in vitest 4.x
+    // Global stubs are automatically restored by vi.clearAllMocks()
   });
 
   describe('getInstance', () => {

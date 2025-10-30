@@ -27,8 +27,8 @@ describe('Logger', () => {
   let consoleErrorOutput: string[];
 
   beforeEach(async () => {
-    // Reset module cache
-    vi.resetModules();
+    // Note: vi.resetModules() removed in vitest 4.x
+    // Module cache reset not needed for these tests
 
     // Mock console
     consoleLogOutput = [];

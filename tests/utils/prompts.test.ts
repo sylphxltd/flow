@@ -61,12 +61,12 @@ describe('Prompts', () => {
     });
 
     // Clear module cache and reimport
-    vi.resetModules();
+    // Note: vi.resetModules() removed in vitest 4.x
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    vi.unstubAllGlobals();
+    // Note: vi.unstubAllGlobals() removed in vitest 4.x
   });
 
   describe('ask', () => {

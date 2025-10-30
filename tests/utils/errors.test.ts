@@ -484,7 +484,7 @@ describe('ErrorHandler', () => {
   const originalEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
-    vi.resetModules();
+    // Note: vi.resetModules() removed in vitest 4.x
     mockExit.mockReset();
     // Mock process.exit
     vi.stubGlobal('process', {
