@@ -134,17 +134,17 @@ export const initCommand = new Command('init')
     }
 
     // Setup MCP servers if target supports it and MCP is enabled
+    // Note: No spinner here because MCP setup is interactive (user prompts)
     if (target.setupMCP && options.mcp !== false) {
-      const mcpSpinner = ora({ text: 'Setting up MCP servers', color: 'cyan' }).start();
       try {
         const result = await target.setupMCP(process.cwd(), options);
         if (result.count > 0) {
-          mcpSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} MCP server${result.count !== 1 ? 's' : ''}`));
+          console.log(chalk.green(`✔ Installed ${chalk.cyan(result.count)} MCP server${result.count !== 1 ? 's' : ''}`));
         } else {
-          mcpSpinner.info(chalk.dim('No MCP servers selected'));
+          console.log(chalk.dim('ℹ No MCP servers selected'));
         }
       } catch (error) {
-        mcpSpinner.fail(chalk.red('Failed to setup MCP servers'));
+        console.error(chalk.red('✖ Failed to setup MCP servers'));
         throw error;
       }
     }
