@@ -53,13 +53,13 @@ describe('MCP Configuration Tests', () => {
         installation: {
           createAgentDir: true,
           createConfigFile: true,
-          supportedMcpServers: true,
           useSecretFiles: true,
         },
       },
       readConfig: vi.fn().mockResolvedValue({ mcpServers: {} }),
       writeConfig: vi.fn().mockResolvedValue(undefined),
       transformMCPConfig: vi.fn((config: any) => config),
+      setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
     };
 
     mockGetTarget.mockReturnValue(mockTargetDefinition);

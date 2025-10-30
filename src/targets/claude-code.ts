@@ -53,9 +53,7 @@ export const claudeCodeTarget: Target = {
     installation: {
       createAgentDir: true,
       createConfigFile: true,
-      supportedMcpServers: true,
       useSecretFiles: false,
-      supportOutputStyles: true,
     },
   },
 

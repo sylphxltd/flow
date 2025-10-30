@@ -44,9 +44,7 @@ export const opencodeTarget: Target = {
     installation: {
       createAgentDir: true,
       createConfigFile: true,
-      supportedMcpServers: true,
       useSecretFiles: true,
-      supportOutputStyles: false,
     },
   },
 

@@ -59,7 +59,6 @@ class MockTarget extends Target {
         installation: {
           createAgentDir: true,
           createConfigFile: true,
-          supportedMcpServers: true,
           useSecretFiles: true,
         },
       },

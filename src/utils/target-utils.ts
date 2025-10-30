@@ -387,13 +387,8 @@ export function generateHelpText(config: TargetConfig): string {
   help += `  Strip YAML: ${config.stripYaml ? 'Yes' : 'No'}\n`;
   help += `  Flatten Structure: ${config.flatten ? 'Yes' : 'No'}\n\n`;
 
-  if (config.installation.supportedMcpServers) {
-    help += 'MCP Server Support:\n';
-    help += `  Config Path: ${config.mcpConfigPath}\n`;
-    help += '  Supported: Yes\n\n';
-  } else {
-    help += 'MCP Server Support: Not yet implemented\n\n';
-  }
+  help += 'MCP Server Support:\n';
+  help += `  Config Path: ${config.mcpConfigPath}\n\n`;
 
   return help;
 }

@@ -215,7 +215,7 @@ describe('Target Utils', () => {
       it('should validate config file location if needed', async () => {
         const configWithFile = {
           ...mockConfig,
-          installation: { createConfigFile: true, supportedMcpServers: true },
+          installation: { createConfigFile: true, createAgentDir: true },
         };
 
         await expect(
@@ -226,7 +226,7 @@ describe('Target Utils', () => {
       it('should skip config validation if not needed', async () => {
         const configNoFile = {
           ...mockConfig,
-          installation: { createConfigFile: false, supportedMcpServers: false },
+          installation: { createConfigFile: false, createAgentDir: false },
         };
 
         await expect(fileUtils.validateRequirements(configNoFile, testDir)).resolves.toBeUndefined();
@@ -618,7 +618,7 @@ Content here`;
         mcpConfigPath: 'mcp.json',
         stripYaml: false,
         flatten: false,
-        installation: { createConfigFile: false, supportedMcpServers: false },
+        installation: { createConfigFile: false, createAgentDir: false },
       };
 
       it('should reject empty source path', () => {
@@ -895,7 +895,7 @@ Content here`;
       flatten: true,
       installation: {
         createConfigFile: true,
-        supportedMcpServers: true,
+        createAgentDir: true,
       },
     };
 
@@ -918,20 +918,10 @@ Content here`;
       expect(result).toContain('Flatten Structure: Yes');
     });
 
-    it('should show MCP support if enabled', () => {
+    it('should show MCP support info', () => {
       const result = generateHelpText(mockConfig);
       expect(result).toContain('MCP Server Support:');
       expect(result).toContain('Config Path: mcp.json');
-      expect(result).toContain('Supported: Yes');
-    });
-
-    it('should show not implemented if MCP not supported', () => {
-      const noMcpConfig = {
-        ...mockConfig,
-        installation: { ...mockConfig.installation, supportedMcpServers: false },
-      };
-      const result = generateHelpText(noMcpConfig);
-      expect(result).toContain('Not yet implemented');
     });
 
     it('should handle stripYaml: false', () => {
@@ -987,7 +977,7 @@ This is a test agent description.`;
         mcpConfigPath: 'mcp.json',
         stripYaml: false,
         flatten: false,
-        installation: { createConfigFile: true, supportedMcpServers: true },
+        installation: { createConfigFile: true, createAgentDir: true },
       };
 
       // Write config

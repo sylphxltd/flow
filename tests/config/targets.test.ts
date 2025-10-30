@@ -18,9 +18,11 @@ describe('Targets Config', () => {
     isDefault: true,
     config: {
       installation: {
-        supportedMcpServers: ['server1', 'server2'],
+        createConfigFile: true,
+        createAgentDir: true,
       },
     },
+    setupMCP: async () => ({ count: 2 }),
   } as Target;
 
   const mockTarget2: Target = {
@@ -31,9 +33,11 @@ describe('Targets Config', () => {
     isDefault: false,
     config: {
       installation: {
-        supportedMcpServers: ['server3'],
+        createConfigFile: true,
+        createAgentDir: true,
       },
     },
+    setupMCP: async () => ({ count: 1 }),
   } as Target;
 
   const mockTarget3: Target = {

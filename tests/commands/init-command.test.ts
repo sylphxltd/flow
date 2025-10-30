@@ -17,14 +17,6 @@ vi.mock('../../src/core/target-manager.js', () => {
   };
 });
 
-// Mock init functions
-vi.mock('../../src/core/init.js', () => {
-  return {
-    installAgents: vi.fn().mockResolvedValue(undefined),
-    installRules: vi.fn().mockResolvedValue(undefined),
-  };
-});
-
 // Mock MCP service
 vi.mock('../../src/services/mcp-service.js', () => {
   return {

@@ -125,12 +125,8 @@ export interface TargetConfig {
     createAgentDir: boolean;
     /** Whether to create the config file */
     createConfigFile: boolean;
-    /** Whether MCP servers are supported */
-    supportedMcpServers: boolean;
     /** Whether to use secret file references for sensitive environment variables */
     useSecretFiles?: boolean;
-    /** Whether output styles are supported as separate files */
-    supportOutputStyles?: boolean;
   };
 }
 

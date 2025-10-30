@@ -37,7 +37,7 @@ export async function addMCPServersToTarget(
     throw new Error(`Target not found: ${targetId}`);
   }
 
-  if (!target.config.installation.supportedMcpServers) {
+  if (!target.setupMCP) {
     throw new Error(`Target ${targetId} does not support MCP servers`);
   }
 
@@ -350,8 +350,8 @@ export async function configureMCPServerForTarget(
 
   console.log('🔍 Debug: secretApiKeys =', Object.keys(secretApiKeys));
   console.log(
-    '🔍 Debug: targetConfig.supportedMcpServers =',
-    targetConfig?.config.installation.supportedMcpServers
+    '🔍 Debug: targetConfig.setupMCP =',
+    !!targetConfig?.setupMCP
   );
   console.log(
     '🔍 Debug: targetConfig.useSecretFiles =',
@@ -359,7 +359,7 @@ export async function configureMCPServerForTarget(
   );
 
   if (
-    targetConfig?.config.installation.supportedMcpServers &&
+    targetConfig?.setupMCP &&
     targetConfig.config.installation.useSecretFiles !== false &&
     Object.keys(secretApiKeys).length > 0
   ) {
@@ -451,7 +451,7 @@ export function validateTarget(targetId: string): string {
  */
 export function targetSupportsMCPServers(targetId: string): boolean {
   const target = targetManager.getTarget(targetId);
-  return target?.config.installation.supportedMcpServers ?? false;
+  return !!target?.setupMCP;
 }
 
 /**

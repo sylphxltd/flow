@@ -80,18 +80,15 @@ describe('Target Config', () => {
     });
 
     it('should return false for targets without MCP support', () => {
-      // Mock a target without MCP support
+      // Mock a target without MCP support (no setupMCP method)
       const originalGet = targetManager.getTarget.bind(targetManager);
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+      const mockTarget = {
         ...originalGet('claude-code')!,
-        config: {
-          ...originalGet('claude-code')!.config,
-          installation: {
-            ...originalGet('claude-code')!.config.installation,
-            supportedMcpServers: false,
-          },
-        },
-      } as any);
+      };
+      // Remove setupMCP method to simulate target without MCP support
+      delete (mockTarget as any).setupMCP;
+
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget as any);
 
       expect(targetSupportsMCPServers('test')).toBe(false);
 
@@ -158,11 +155,12 @@ describe('Target Config', () => {
         config: {
           configFile: 'claude_desktop_config.json',
           mcpConfigPath: 'mcpServers',
-          installation: { supportedMcpServers: true },
+          installation: { createConfigFile: true, createAgentDir: true },
         },
         readConfig: vi.fn().mockResolvedValue({ mcpServers: {} }),
         writeConfig: vi.fn().mockResolvedValue(undefined),
         transformMCPConfig: vi.fn((config: any) => config),
+        setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
@@ -177,7 +175,7 @@ describe('Target Config', () => {
     });
 
     it('should throw if target does not support MCP servers', async () => {
-      mockTarget.config.installation.supportedMcpServers = false;
+      delete (mockTarget as any).setupMCP;
       await expect(addMCPServersToTarget(testDir, 'test-target', ['context7'])).rejects.toThrow(
         'does not support MCP servers'
       );
@@ -410,11 +408,12 @@ describe('Target Config', () => {
         config: {
           configFile: 'claude_desktop_config.json',
           mcpConfigPath: 'mcpServers',
-          installation: { supportedMcpServers: true, useSecretFiles: true },
+          installation: { createConfigFile: true, createAgentDir: true, useSecretFiles: true },
         },
         readConfig: vi.fn().mockResolvedValue({ mcpServers: {} }),
         writeConfig: vi.fn().mockResolvedValue(undefined),
         transformMCPConfig: vi.fn((config: any) => config),
+        setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
       readlineInterface = {
@@ -667,11 +666,12 @@ describe('Target Config', () => {
         config: {
           configFile: 'claude_desktop_config.json',
           mcpConfigPath: 'mcpServers',
-          installation: { supportedMcpServers: true },
+          installation: { createConfigFile: true, createAgentDir: true },
         },
         readConfig: vi.fn().mockRejectedValue(new Error('File read error')),
         writeConfig: vi.fn(),
         transformMCPConfig: vi.fn((config: any) => config),
+        setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
@@ -687,11 +687,12 @@ describe('Target Config', () => {
         config: {
           configFile: 'claude_desktop_config.json',
           mcpConfigPath: 'mcpServers',
-          installation: { supportedMcpServers: true },
+          installation: { createConfigFile: true, createAgentDir: true },
         },
         readConfig: vi.fn().mockResolvedValue({ mcpServers: {} }),
         writeConfig: vi.fn().mockRejectedValue(new Error('File write error')),
         transformMCPConfig: vi.fn((config: any) => config),
+        setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
@@ -712,12 +713,13 @@ describe('Target Config', () => {
         config: {
           configFile: 'claude_desktop_config.json',
           mcpConfigPath: 'mcpServers',
-          installation: { supportedMcpServers: true, useSecretFiles: true },
+          installation: { createConfigFile: true, createAgentDir: true, useSecretFiles: true },
         },
         readConfig: vi.fn().mockResolvedValue({ mcpServers: {} }),
         writeConfig: vi.fn().mockResolvedValue(undefined),
         transformMCPConfig: vi.fn((config: any) => config),
         getHelpText: vi.fn().mockReturnValue('Help text for test target'),
+        setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);

@@ -71,7 +71,7 @@ export class TargetRegistry {
    */
   getTargetsWithMCPSupport(): Target[] {
     return this.getImplementedTargets().filter(
-      (target) => target.config.installation.supportedMcpServers
+      (target) => !!target.setupMCP
     );
   }
 
