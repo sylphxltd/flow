@@ -144,7 +144,16 @@ export const initCommand = new Command('init')
 
     // Setup hooks if target supports it
     if (target.setupHooks) {
-      await target.setupHooks(process.cwd(), { ...options, quiet: true });
+      try {
+        await target.setupHooks(process.cwd(), { ...options, quiet: true });
+      } catch (error) {
+        // Don't fail entire setup if hooks fail
+        console.warn(
+          chalk.yellow(
+            `⚠ Warning: Could not setup hooks: ${error instanceof Error ? error.message : String(error)}`
+          )
+        );
+      }
     }
 
     // Save the selected target as project default

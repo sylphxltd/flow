@@ -360,113 +360,44 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Configure session and prompt hooks for system information display
    */
   async setupHooks(cwd: string, options: CommonOptions): Promise<void> {
-    try {
-      const result = await this.setupClaudeCodeHooks(cwd);
-      if (!result.success) {
-        if (!options.quiet) {
-          console.warn(chalk.yellow(`⚠ Warning: ${result.message}`));
-        }
-      } else {
-        if (!options.quiet && options.verbose) {
-          console.log(chalk.green(`✓ ${result.message}`));
-        }
-      }
-    } catch (error) {
-      if (!options.quiet) {
-        console.warn(
-          chalk.yellow(
-            `⚠ Warning: Could not setup hooks: ${error instanceof Error ? error.message : String(error)}`
-          )
-        );
-      }
-    }
-  },
-
-  /**
-   * Setup Claude Code hooks for system information display
-   */
-  async setupClaudeCodeHooks(
-    cwd: string,
-    fileSystem?: {
-      pathExists: (path: string) => Promise<boolean>;
-      createDirectory: (path: string) => Promise<void>;
-      readFile: (path: string) => Promise<string>;
-      writeFile: (path: string, content: string) => Promise<void>;
-    }
-  ): Promise<{ success: boolean; message?: string }> {
-    const { processSettings, getSuccessMessage } = await import('./functional/claude-code-logic.js');
+    const { processSettings } = await import('./functional/claude-code-logic.js');
     const { pathExists, createDirectory, readFile, writeFile } = await import(
       '../composables/functional/useFileSystem.js'
     );
 
-    // Use injected file system or default functional utilities
-    const fs = fileSystem || {
-      pathExists: async (p: string) => {
-        const result = await pathExists(p);
-        return result._tag === 'Success' ? result.value : false;
-      },
-      createDirectory: async (p: string) => {
-        const result = await createDirectory(p, { recursive: true });
-        if (result._tag === 'Failure') {
-          throw new Error(result.error.message);
-        }
-      },
-      readFile: async (p: string) => {
-        const result = await readFile(p);
-        if (result._tag === 'Failure') {
-          throw new Error(result.error.message);
-        }
-        return result.value;
-      },
-      writeFile: async (p: string, content: string) => {
-        const result = await writeFile(p, content);
-        if (result._tag === 'Failure') {
-          throw new Error(result.error.message);
-        }
-      },
-    };
-
     const claudeConfigDir = path.join(cwd, '.claude');
     const settingsPath = path.join(claudeConfigDir, 'settings.json');
 
-    try {
-      // Ensure .claude directory exists
-      const dirExists = await fs.pathExists(claudeConfigDir);
-      if (!dirExists) {
-        await fs.createDirectory(claudeConfigDir);
+    // Ensure .claude directory exists
+    const dirExistsResult = await pathExists(claudeConfigDir);
+    if (dirExistsResult._tag === 'Success' && !dirExistsResult.value) {
+      const createResult = await createDirectory(claudeConfigDir, { recursive: true });
+      if (createResult._tag === 'Failure') {
+        throw new Error(`Failed to create .claude directory: ${createResult.error.message}`);
       }
+    }
 
-      // Read existing settings or null if doesn't exist
-      let existingContent: string | null = null;
-      const fileExists = await fs.pathExists(settingsPath);
-      if (fileExists) {
-        try {
-          existingContent = await fs.readFile(settingsPath);
-        } catch (error) {
-          console.warn(
-            chalk.yellow(
-              '  Warning: Could not read existing Claude Code settings, creating new ones'
-            )
-          );
-        }
+    // Read existing settings or null if doesn't exist
+    let existingContent: string | null = null;
+    const fileExistsResult = await pathExists(settingsPath);
+    if (fileExistsResult._tag === 'Success' && fileExistsResult.value) {
+      const readResult = await readFile(settingsPath);
+      if (readResult._tag === 'Success') {
+        existingContent = readResult.value;
       }
+    }
 
-      // Process settings using pure functions
-      const settingsResult = processSettings(existingContent);
+    // Process settings using pure functions
+    const settingsResult = processSettings(existingContent);
 
-      if (settingsResult._tag === 'Failure') {
-        throw new Error(settingsResult.error.message);
-      }
+    if (settingsResult._tag === 'Failure') {
+      throw new Error(`Failed to process settings: ${settingsResult.error.message}`);
+    }
 
-      // Write updated settings
-      await fs.writeFile(settingsPath, settingsResult.value);
-
-      return {
-        success: true,
-        message: getSuccessMessage(),
-      };
-    } catch (error) {
-      throw error;
+    // Write updated settings
+    const writeResult = await writeFile(settingsPath, settingsResult.value);
+    if (writeResult._tag === 'Failure') {
+      throw new Error(`Failed to write settings: ${writeResult.error.message}`);
     }
   },
 
