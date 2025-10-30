@@ -3,8 +3,16 @@
  * 統一管理所有embedding相關操作
  */
 
+import { type Result, tryCatchAsync } from '../../core/functional/result.js';
+import {
+  EmbeddingInitError,
+  EmbeddingNotInitializedError,
+  VectorDimensionError,
+  type EmbeddingsErrorType,
+} from '../../errors/embeddings-errors.js';
 import type { EmbeddingProvider } from '../../utils/embeddings.js';
 import { getDefaultEmbeddingProvider } from '../../utils/embeddings.js';
+import { chunk } from '../../utils/functional/array.js';
 
 export interface EmbeddingConfig {
   provider?: 'openai' | 'local' | 'auto';
@@ -42,89 +50,139 @@ export class EmbeddingsProviderService {
   /**
    * 初始化embedding provider
    */
-  async initialize(): Promise<void> {
+  async initialize(): Promise<Result<void, EmbeddingsErrorType>> {
     if (this.isInitialized) {
-      return;
+      return { _tag: 'Success', value: undefined };
     }
 
-    try {
-      this.provider = await getDefaultEmbeddingProvider();
-      this.isInitialized = true;
-    } catch (error) {
-      throw new Error(`Failed to initialize embedding provider: ${error}`);
-    }
+    return await tryCatchAsync(
+      async () => {
+        this.provider = await getDefaultEmbeddingProvider();
+        this.isInitialized = true;
+        return undefined;
+      },
+      (error) => new EmbeddingInitError(error)
+    );
   }
 
   /**
    * 確保已初始化
    */
-  private async ensureInitialized(): Promise<void> {
+  private async ensureInitialized(): Promise<Result<void, EmbeddingsErrorType>> {
     if (!this.isInitialized) {
-      await this.initialize();
+      return await this.initialize();
     }
+    return { _tag: 'Success', value: undefined };
   }
 
   /**
    * 生成嵌入向量
    */
-  async generateEmbeddings(texts: string[]): Promise<number[][]> {
-    await this.ensureInitialized();
+  async generateEmbeddings(texts: string[]): Promise<Result<number[][], EmbeddingsErrorType>> {
+    return await tryCatchAsync(
+      async () => {
+        const initResult = await this.ensureInitialized();
+        if (initResult._tag === 'Failure') {
+          throw initResult.error;
+        }
 
-    if (!this.provider) {
-      throw new Error('Embedding provider not initialized');
-    }
+        if (!this.provider) {
+          throw new EmbeddingNotInitializedError();
+        }
 
-    // 檢查文本長度
-    const filteredTexts = texts.filter((text) => text.trim().length > 0);
-    if (filteredTexts.length === 0) {
-      return [];
-    }
+        // 檢查文本長度
+        const filteredTexts = texts.filter((text) => text.trim().length > 0);
+        if (filteredTexts.length === 0) {
+          return [];
+        }
 
-    // 批量處理
-    const batchSize = this.config.batchSize || 10;
-    const allEmbeddings: number[][] = [];
+        // FUNCTIONAL: 批量處理 - Use chunk and flatMap instead of for loop
+        const batchSize = this.config.batchSize || 10;
+        const batches = chunk(batchSize)(filteredTexts);
 
-    for (let i = 0; i < filteredTexts.length; i += batchSize) {
-      const batch = filteredTexts.slice(i, i + batchSize);
+        // Process batches and flatten results
+        const batchResults = await Promise.all(
+          batches.map(async (batch, index) => {
+            try {
+              return await this.provider.generateEmbeddings(batch);
+            } catch (error) {
+              console.error(
+                `Failed to generate embeddings for batch ${index * batchSize}-${index * batchSize + batchSize}:`,
+                error
+              );
+              // 為失敗嘅batch添加零向量
+              const zeroVector = new Array(this.config.dimensions || 1536).fill(0);
+              return Array(batch.length).fill(zeroVector);
+            }
+          })
+        );
 
-      try {
-        const embeddings = await this.provider.generateEmbeddings(batch);
-        allEmbeddings.push(...embeddings);
-      } catch (error) {
-        console.error(`Failed to generate embeddings for batch ${i}-${i + batchSize}:`, error);
-        // 為失敗嘅batch添加零向量
-        const zeroVector = new Array(this.config.dimensions || 1536).fill(0);
-        allEmbeddings.push(...Array(batch.length).fill(zeroVector));
+        return batchResults.flat();
+      },
+      (error) => {
+        if (
+          error instanceof EmbeddingInitError ||
+          error instanceof EmbeddingNotInitializedError
+        ) {
+          return error;
+        }
+        return new EmbeddingInitError(error);
       }
-    }
-
-    return allEmbeddings;
+    );
   }
 
   /**
    * 生成單個文本嘅嵌入向量
    */
-  async generateEmbedding(text: string): Promise<number[]> {
-    const embeddings = await this.generateEmbeddings([text]);
-    return embeddings[0] || [];
+  async generateEmbedding(text: string): Promise<Result<number[], EmbeddingsErrorType>> {
+    return await tryCatchAsync(
+      async () => {
+        const result = await this.generateEmbeddings([text]);
+        if (result._tag === 'Failure') {
+          throw result.error;
+        }
+        return result.value[0] || [];
+      },
+      (error) => {
+        if (error instanceof EmbeddingInitError || error instanceof EmbeddingNotInitializedError) {
+          return error;
+        }
+        return new EmbeddingInitError(error);
+      }
+    );
   }
 
   /**
    * 批量生成嵌入向量（帶性能監控）
    */
-  async generateEmbeddingsWithMetrics(texts: string[]): Promise<EmbeddingResult> {
-    const startTime = Date.now();
+  async generateEmbeddingsWithMetrics(
+    texts: string[]
+  ): Promise<Result<EmbeddingResult, EmbeddingsErrorType>> {
+    return await tryCatchAsync(
+      async () => {
+        const startTime = Date.now();
 
-    const embeddings = await this.generateEmbeddings(texts);
+        const result = await this.generateEmbeddings(texts);
+        if (result._tag === 'Failure') {
+          throw result.error;
+        }
 
-    const processingTime = Date.now() - startTime;
-    const tokensUsed = this.estimateTokens(texts);
+        const processingTime = Date.now() - startTime;
+        const tokensUsed = this.estimateTokens(texts);
 
-    return {
-      embeddings,
-      tokensUsed,
-      processingTime,
-    };
+        return {
+          embeddings: result.value,
+          tokensUsed,
+          processingTime,
+        };
+      },
+      (error) => {
+        if (error instanceof EmbeddingInitError || error instanceof EmbeddingNotInitializedError) {
+          return error;
+        }
+        return new EmbeddingInitError(error);
+      }
+    );
   }
 
   /**
@@ -184,26 +242,29 @@ export class EmbeddingsProviderService {
   /**
    * 計算兩個向量嘅餘弦相似度
    */
-  cosineSimilarity(vecA: number[], vecB: number[]): number {
+  cosineSimilarity(vecA: number[], vecB: number[]): Result<number, VectorDimensionError> {
     if (vecA.length !== vecB.length) {
-      throw new Error('Vectors must have the same length');
+      return { _tag: 'Failure', error: new VectorDimensionError(vecA.length, vecB.length) };
     }
 
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
-    }
+    // FUNCTIONAL: Use reduce instead of for loop
+    const { dotProduct, normA, normB } = vecA.reduce(
+      (acc, aVal, i) => {
+        const bVal = vecB[i];
+        return {
+          dotProduct: acc.dotProduct + aVal * bVal,
+          normA: acc.normA + aVal * aVal,
+          normB: acc.normB + bVal * bVal,
+        };
+      },
+      { dotProduct: 0, normA: 0, normB: 0 }
+    );
 
     if (normA === 0 || normB === 0) {
-      return 0;
+      return { _tag: 'Success', value: 0 };
     }
 
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    return { _tag: 'Success', value: dotProduct / (Math.sqrt(normA) * Math.sqrt(normB)) };
   }
 
   /**
@@ -212,17 +273,31 @@ export class EmbeddingsProviderService {
   findMostSimilar(
     queryVector: number[],
     candidateVectors: number[][]
-  ): { index: number; similarity: number } {
-    let bestMatch = { index: -1, similarity: 0 };
+  ): Result<{ index: number; similarity: number }, VectorDimensionError> {
+    // FUNCTIONAL: Use reduce instead of for loop
+    const result = candidateVectors.reduce<
+      Result<{ index: number; similarity: number }, VectorDimensionError>
+    >(
+      (acc, candidateVector, index) => {
+        // Short-circuit on error
+        if (acc._tag === 'Failure') {
+          return acc;
+        }
 
-    for (let i = 0; i < candidateVectors.length; i++) {
-      const similarity = this.cosineSimilarity(queryVector, candidateVectors[i]);
-      if (similarity > bestMatch.similarity) {
-        bestMatch = { index: i, similarity };
-      }
-    }
+        const similarityResult = this.cosineSimilarity(queryVector, candidateVector);
+        if (similarityResult._tag === 'Failure') {
+          return similarityResult;
+        }
 
-    return bestMatch;
+        const similarity = similarityResult.value;
+        return similarity > acc.value.similarity
+          ? { _tag: 'Success', value: { index, similarity } }
+          : acc;
+      },
+      { _tag: 'Success', value: { index: -1, similarity: 0 } }
+    );
+
+    return result;
   }
 
   /**
@@ -247,34 +322,49 @@ export class EmbeddingsProviderService {
   /**
    * 獲取provider信息
    */
-  async getProviderInfo(): Promise<{
-    provider: string;
-    model: string;
-    dimensions: number;
-    available: boolean;
-  }> {
-    try {
-      await this.ensureInitialized();
+  async getProviderInfo(): Promise<
+    Result<
+      {
+        provider: string;
+        model: string;
+        dimensions: number;
+        available: boolean;
+      },
+      EmbeddingsErrorType
+    >
+  > {
+    return await tryCatchAsync(
+      async () => {
+        const initResult = await this.ensureInitialized();
+        if (initResult._tag === 'Failure') {
+          // Return unavailable info instead of throwing
+          return {
+            provider: this.config.provider || 'unknown',
+            model: this.config.model || 'unknown',
+            dimensions: this.config.dimensions || 1536,
+            available: false,
+          };
+        }
 
-      if (!this.provider) {
-        throw new Error('Provider not initialized');
-      }
+        if (!this.provider) {
+          return {
+            provider: this.config.provider || 'unknown',
+            model: this.config.model || 'unknown',
+            dimensions: this.config.dimensions || 1536,
+            available: false,
+          };
+        }
 
-      // 這裡需要根據實際provider interface實現
-      return {
-        provider: this.config.provider || 'unknown',
-        model: this.config.model || 'unknown',
-        dimensions: this.config.dimensions || 1536,
-        available: true,
-      };
-    } catch (error) {
-      return {
-        provider: this.config.provider || 'unknown',
-        model: this.config.model || 'unknown',
-        dimensions: this.config.dimensions || 1536,
-        available: false,
-      };
-    }
+        // 這裡需要根據實際provider interface實現
+        return {
+          provider: this.config.provider || 'unknown',
+          model: this.config.model || 'unknown',
+          dimensions: this.config.dimensions || 1536,
+          available: true,
+        };
+      },
+      (error) => new EmbeddingInitError(error)
+    );
   }
 }
 

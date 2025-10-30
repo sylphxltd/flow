@@ -58,19 +58,21 @@ export class EvaluationService {
       try {
         // Read all files in agent directory
         const files = await fs.readdir(agentDir);
-        let agentContent = `=== ${agentName} WORK ===\n\n`;
 
+        // FUNCTIONAL: Build file content array instead of string accumulation
+        const fileContents: string[] = [];
         for (const file of files) {
           const filePath = path.join(agentDir, file);
           const stat = await fs.stat(filePath);
 
           if (stat.isFile()) {
             const content = await fs.readFile(filePath, 'utf-8');
-            agentContent += `\n--- File: ${file} ---\n${content}\n`;
+            fileContents.push(`\n--- File: ${file} ---\n${content}\n`);
           }
         }
 
-        agentWork[agentName] = agentContent;
+        // Join at the end
+        agentWork[agentName] = `=== ${agentName} WORK ===\n\n${fileContents.join('')}`;
       } catch (error) {
         agentWork[agentName] =
           `=== ${agentName} WORK ===\n\nERROR: Could not read files - ${error}`;
@@ -118,16 +120,17 @@ export class EvaluationService {
     // Track evaluation process for cleanup
     ProcessManager.getInstance().trackChildProcess(evaluationProcess);
 
-    let evaluationOutput = '';
-    let stdoutBuffer = '';
+    // FUNCTIONAL: Use arrays for immutable buffer accumulation
+    const evaluationOutputChunks: string[] = [];
+    let incompleteStdoutLine = '';
 
     evaluationProcess.stdout?.on('data', (data) => {
       const output = data.toString();
-      stdoutBuffer += output;
 
       // Process complete lines only - keep incomplete data in buffer
-      const lines = stdoutBuffer.split('\n');
-      stdoutBuffer = lines.pop() || ''; // Keep last incomplete line
+      const combined = incompleteStdoutLine + output;
+      const lines = combined.split('\n');
+      incompleteStdoutLine = lines.pop() || ''; // Keep last incomplete line
 
       for (const line of lines) {
         if (!line.trim()) {
@@ -143,7 +146,7 @@ export class EvaluationService {
               if (content.type === 'text') {
                 const textContent = content.text.trim();
                 if (textContent) {
-                  evaluationOutput += `${textContent}\n`;
+                  evaluationOutputChunks.push(`${textContent}\n`);
                   // Add to monitor if available
                   monitor?.addAgentOutput('evaluator', textContent);
                 }
@@ -153,7 +156,7 @@ export class EvaluationService {
         } catch (_e) {
           // Skip invalid JSON (shouldn't happen with stream-json)
           // For non-JSON output, add to evaluation output
-          evaluationOutput += `${line}\n`;
+          evaluationOutputChunks.push(`${line}\n`);
           monitor?.addAgentOutput('evaluator', line);
         }
       }
@@ -166,6 +169,8 @@ export class EvaluationService {
 
         if (code === 0) {
           // Save report to both temp directory and optionally to project directory
+          // FUNCTIONAL: Join output chunks at the end
+          const evaluationOutput = evaluationOutputChunks.join('');
           const tempReportPath = path.join(outputDir, 'evaluation-report.md');
           await fs.writeFile(tempReportPath, evaluationOutput);
 

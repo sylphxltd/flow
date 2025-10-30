@@ -59,13 +59,14 @@ export class AgentService {
       }
 
       // Add instruction to work in the temp directory
-      fullTask += `\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
+      // FUNCTIONAL: Use template string instead of +=
+      const finalTask = `${fullTask}\n\nIMPORTANT: Please implement your solution in the current working directory: ${agentWorkDir}\nThis is a temporary directory for testing, so you can create files freely without affecting any production codebase.`;
 
       // Run Claude Code with the agent prompt
       await AgentService.runSingleAgent(
         agentName,
         agentPrompt,
-        fullTask,
+        finalTask,
         agentWorkDir,
         monitor,
         timeout
@@ -137,16 +138,19 @@ export class AgentService {
       // Track this child process for cleanup
       ProcessManager.getInstance().trackChildProcess(claudeProcess);
 
-      let stdoutBuffer = '';
-      let stderr = '';
+      // FUNCTIONAL: Use arrays for immutable buffer accumulation
+      const stdoutChunks: string[] = [];
+      const stderrChunks: string[] = [];
+      let incompleteStdoutLine = '';
 
       claudeProcess.stdout?.on('data', (data) => {
         const output = data.toString();
-        stdoutBuffer += output;
+        stdoutChunks.push(output);
 
         // Process complete lines only - keep incomplete data in buffer
-        const lines = stdoutBuffer.split('\n');
-        stdoutBuffer = lines.pop() || ''; // Keep last incomplete line
+        const combined = incompleteStdoutLine + output;
+        const lines = combined.split('\n');
+        incompleteStdoutLine = lines.pop() || ''; // Keep last incomplete line
 
         for (const line of lines) {
           if (!line.trim()) {
@@ -184,7 +188,7 @@ export class AgentService {
 
       claudeProcess.stderr?.on('data', (data) => {
         const output = data.toString();
-        stderr += output;
+        stderrChunks.push(output);
 
         // Add error output to monitor (with ANSI cleaning)
         monitor?.addAgentOutput(agentName, `ERROR: ${output}`);
@@ -217,15 +221,18 @@ export class AgentService {
         }
 
         // Write execution log with timing information
-        const executionLog = `Execution completed at: ${new Date(endTime).toISOString()}\nExit code: ${code}\n\n=== STDOUT ===\n${stdoutBuffer}\n\n=== STDERR ===\n${stderr}\n`;
+        // FUNCTIONAL: Join arrays at the end instead of accumulating with +=
+        const stdoutFinal = stdoutChunks.join('');
+        const stderrFinal = stderrChunks.join('');
+        const executionLog = `Execution completed at: ${new Date(endTime).toISOString()}\nExit code: ${code}\n\n=== STDOUT ===\n${stdoutFinal}\n\n=== STDERR ===\n${stderrFinal}\n`;
         await fs.writeFile(path.join(agentWorkDir, 'execution-log.txt'), executionLog);
 
         // Write timing metadata
         const timingData: TimingData = {
           endTime,
           exitCode: code,
-          stdoutLength: stdoutBuffer.length,
-          stderrLength: stderr.length,
+          stdoutLength: stdoutFinal.length,
+          stderrLength: stderrFinal.length,
         };
         await fs.writeFile(
           path.join(agentWorkDir, 'timing.json'),
