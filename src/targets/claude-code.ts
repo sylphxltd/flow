@@ -396,8 +396,12 @@ Please begin your response with a comprehensive summary of all the instructions 
           ...((settings as any).hooks || {}),
           UserPromptSubmit: [
             {
-              type: 'command',
-              command: hookCommand,
+              hooks: [
+                {
+                  type: 'command',
+                  command: hookCommand,
+                },
+              ],
             },
           ],
         },
