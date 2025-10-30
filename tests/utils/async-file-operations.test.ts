@@ -630,7 +630,7 @@ describe('AsyncFileOperations', () => {
 
       await expect(fileOps.readFile(restrictedFile)).rejects.toThrow();
 
-      vi.restoreAllMocks();
+      vi.clearAllMocks();
     });
 
     it('should handle retry mechanism', async () => {

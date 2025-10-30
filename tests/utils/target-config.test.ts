@@ -65,7 +65,7 @@ describe('Target Config', () => {
     if (testDir) {
       rmSync(testDir, { recursive: true, force: true });
     }
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('validateTarget', () => {
@@ -89,7 +89,7 @@ describe('Target Config', () => {
 
       expect(() => validateTarget('claude-code')).toThrow('not implemented');
 
-      vi.restoreAllMocks();
+      vi.clearAllMocks();
     });
   });
 
@@ -111,13 +111,13 @@ describe('Target Config', () => {
 
       expect(targetSupportsMCPServers('test')).toBe(false);
 
-      vi.restoreAllMocks();
+      vi.clearAllMocks();
     });
 
     it('should return false for non-existent target', () => {
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
       expect(targetSupportsMCPServers('nonexistent')).toBe(false);
-      vi.restoreAllMocks();
+      vi.clearAllMocks();
     });
   });
 

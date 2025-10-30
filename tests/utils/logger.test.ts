@@ -50,7 +50,7 @@ describe('Logger', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
     consoleLogOutput.length = 0;
     consoleErrorOutput.length = 0;
   });

@@ -505,7 +505,7 @@ describe('ErrorHandler', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
     process.env.NODE_ENV = originalEnv;
     // Restore original process
     (global as any).process = originalProcess;

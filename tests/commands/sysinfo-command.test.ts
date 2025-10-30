@@ -29,7 +29,7 @@ describe('sysinfo-command', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should be defined with correct configuration', () => {
