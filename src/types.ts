@@ -240,6 +240,9 @@ export abstract class Target {
 
   /** Setup output styles for this target (optional - implement if target supports output styles) */
   async setupOutputStyles?(cwd: string, options: CommonOptions): Promise<void>;
+
+  /** Setup MCP servers for this target (optional - implement if target supports MCP) */
+  async setupMCP?(cwd: string, options: CommonOptions): Promise<void>;
 }
 
 export interface CommonOptions {

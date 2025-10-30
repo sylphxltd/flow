@@ -4,6 +4,7 @@ import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import chalk from 'chalk';
 import { FileInstaller } from '../core/installers/file-installer.js';
+import { MCPInstaller } from '../core/installers/mcp-installer.js';
 import type { CommonOptions, MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
 import { getRulesPath, ruleFileExists } from '../config/rules.js';
@@ -546,6 +547,27 @@ Please begin your response with a comprehensive summary of all the instructions 
         showProgress: true,
       }
     );
+  },
+
+  /**
+   * Setup MCP servers for Claude Code
+   * Select, configure, install, and approve MCP servers
+   */
+  async setupMCP(cwd: string, options: CommonOptions): Promise<void> {
+    // Skip if MCP is disabled
+    if (options.mcp === false) {
+      return;
+    }
+
+    const installer = new MCPInstaller(this.id);
+    const result = await installer.setupMCP(options);
+
+    // Approve servers in Claude Code settings
+    if (result.selectedServers.length > 0 && !options.dryRun) {
+      if (this.approveMCPServers) {
+        await this.approveMCPServers(cwd, result.selectedServers);
+      }
+    }
   },
 };
 

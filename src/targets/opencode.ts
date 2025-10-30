@@ -3,6 +3,7 @@ import path from 'node:path';
 import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { FileInstaller } from '../core/installers/file-installer.js';
+import { MCPInstaller } from '../core/installers/mcp-installer.js';
 import { displayResults } from '../shared.js';
 import type { CommonOptions, MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
@@ -358,5 +359,26 @@ export const opencodeTarget: Target = {
         showProgress: true,
       }
     );
+  },
+
+  /**
+   * Setup MCP servers for OpenCode
+   * Select, configure, install, and setup secrets directory
+   */
+  async setupMCP(cwd: string, options: CommonOptions): Promise<void> {
+    // Skip if MCP is disabled
+    if (options.mcp === false) {
+      return;
+    }
+
+    // Setup secrets directory first (OpenCode-specific)
+    if (!options.dryRun) {
+      await secretUtils.ensureSecretsDir(cwd);
+      await secretUtils.addToGitignore(cwd);
+    }
+
+    // Install MCP servers
+    const installer = new MCPInstaller(this.id);
+    await installer.setupMCP(options);
   },
 };
