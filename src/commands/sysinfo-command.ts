@@ -190,8 +190,8 @@ function displaySystemInfo(info: any, preset: string = 'hook') {
 }
 
 function displayHookPreset(info: any) {
-  console.log(chalk.cyan('▸ Available Tools'));
-  console.log(chalk.gray('=================='));
+  console.log(chalk.cyan('▸ System Info'));
+  console.log(chalk.gray('=============='));
 
   // Current Time (essential for context)
   console.log(chalk.blue.bold('\n📅 Time:'));
@@ -204,16 +204,11 @@ function displayHookPreset(info: any) {
     minute: '2-digit'
   })}`);
 
-  // Environment info (most useful for LLM)
-  if (info.environments && info.environments.length > 0) {
-    console.log(chalk.blue.bold('\n🛠️  Available Tools:'));
-    info.environments.slice(0, 5).forEach((env: any) => {
-      console.log(`  ${env.name}: ${env.version}`);
-    });
-    if (info.environments.length > 5) {
-      console.log(`  ... and ${info.environments.length - 5} more tools`);
-    }
-  }
+  // System info
+  console.log(chalk.blue.bold('\n💻 System:'));
+  console.log(`  Platform: ${info.system.platform} (${info.system.arch})`);
+  console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
+  console.log(`  Working Dir: ${info.directories.workingDirectory}`);
 
   // Temp directory info (useful for file operations)
   console.log(chalk.blue.bold('\n📁 Temp Directory:'));
@@ -238,7 +233,7 @@ function displayDevelopmentPreset(info: any) {
 
   // Development environments
   if (info.environments && info.environments.length > 0) {
-    console.log(chalk.blue.bold('\n🛠️  Development Tools:'));
+    console.log(chalk.blue.bold('\n🛠️  Available Tools:'));
     info.environments.forEach((env: any) => {
       const path = env.path ? ` (${env.path})` : '';
       console.log(`  ${env.name} v${env.version}${path}`);
@@ -251,6 +246,7 @@ function displayDevelopmentPreset(info: any) {
   console.log(`  Node.js: ${info.system.nodeVersion}`);
   console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
   console.log(`  Working: ${info.directories.workingDirectory}`);
+  console.log(`  Temp Dir: ${info.directories.temp}`);
 
   // Hardware
   console.log(chalk.blue.bold('\n🔧 Hardware:'));
