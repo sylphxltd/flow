@@ -224,6 +224,9 @@ export abstract class Target {
 
   /** Transform rules content for the target (optional - defaults to no transformation) */
   async transformRulesContent?(content: string): Promise<string>;
+
+  /** Setup target-specific configuration (optional - for targets that need additional setup) */
+  async setup?(cwd: string, options?: Record<string, unknown>): Promise<void>;
 }
 
 export interface CommonOptions {

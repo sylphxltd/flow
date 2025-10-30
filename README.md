@@ -58,6 +58,14 @@ npx github:sylphxltd/flow mcp install --all    # Install all MCP tools
 npx github:sylphxltd/flow mcp config gpt-image # Configure API keys
 ```
 
+### `flow sysinfo` - Display System Information
+```bash
+npx github:sylphxltd/flow sysinfo              # Show formatted system info
+npx github:sylphxltd/flow sysinfo --json       # Output system info as JSON
+```
+
+*Displays current time, system specifications, memory usage, and directory paths.*
+
 ### `flow sync` - Legacy Sync [DEPRECATED]
 > ⚠️ Use `flow init` instead. Kept for backward compatibility.
 

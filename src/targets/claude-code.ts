@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
+import chalk from 'chalk';
 import type { MCPServerConfigUnion, Target } from '../types.js';
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
 import { CLIError } from '../utils/error-handler.js';
@@ -27,7 +28,7 @@ export const claudeCodeTarget: Target = {
 
   mcpServerConfig: {
     disableMemory: true,
-    disableTime: false,
+    disableTime: true,
     disableProjectStartup: false,
     disableKnowledge: false,
     disableCodebase: true,
@@ -345,6 +346,73 @@ Please begin your response with a comprehensive summary of all the instructions 
    */
   async transformRulesContent(content: string): Promise<string> {
     return yamlUtils.stripFrontMatter(content);
+  },
+
+  /**
+   * Setup Claude Code-specific configuration including hooks
+   */
+  async setup(cwd: string, options?: Record<string, unknown>): Promise<{ success: boolean; message?: string }> {
+    const hookCommand = options?.hookCommand || 'npx @sylphxltd/flow@latest sysinfo';
+
+    try {
+      const result = await this.setupClaudeCodeHooks(cwd, hookCommand);
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message: `Could not setup Claude Code hooks: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  },
+
+  /**
+   * Setup Claude Code hooks for system information display
+   */
+  async setupClaudeCodeHooks(cwd: string, hookCommand: string): Promise<{ success: boolean; message?: string }> {
+    const claudeConfigDir = path.join(cwd, '.claude');
+    const settingsPath = path.join(claudeConfigDir, 'settings.json');
+
+    try {
+      // Ensure .claude directory exists
+      if (!fs.existsSync(claudeConfigDir)) {
+        fs.mkdirSync(claudeConfigDir, { recursive: true });
+      }
+
+      // Read existing settings or create new ones
+      let settings = {};
+      if (fs.existsSync(settingsPath)) {
+        try {
+          const settingsContent = fs.readFileSync(settingsPath, 'utf-8');
+          settings = JSON.parse(settingsContent);
+        } catch (error) {
+          console.warn(chalk.yellow('  Warning: Could not parse existing Claude Code settings, creating new ones'));
+        }
+      }
+
+      // Add or update hooks configuration
+      settings = {
+        ...settings,
+        hooks: {
+          ...((settings as any).hooks || {}),
+          UserPromptSubmit: [
+            {
+              type: 'command',
+              command: hookCommand,
+            },
+          ],
+        },
+      };
+
+      // Write updated settings
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
+      return {
+        success: true,
+        message: `Claude Code hooks configured with command: ${hookCommand}`
+      };
+    } catch (error) {
+      throw error;
+    }
   },
 };
 

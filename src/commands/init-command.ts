@@ -185,5 +185,21 @@ export const initCommand = new Command('init')
         )
       );
     }
+
+    // Setup target-specific configuration
+    const target = targetManager.getTarget(targetId);
+    if (target && target.setup) {
+      const setupResult = await target.setup(process.cwd(), {
+        hookCommand: 'npx @sylphxltd/flow@latest sysinfo'
+      });
+
+      if (setupResult.success) {
+        console.log(chalk.cyan('  ✓ Claude Code hooks configured'));
+        console.log(chalk.gray(`    ${setupResult.message}`));
+      } else {
+        console.warn(chalk.yellow(`  Warning: ${setupResult.message}`));
+      }
+    }
+
     console.log('');
   });
