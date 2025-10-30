@@ -631,9 +631,9 @@ describe('File Operations Utilities', () => {
       // Modify original file with backup
       await writeFileSafe(testFile, 'Modified content', { backup: true });
 
-      // Find all .txt files
+      // Find all .txt files (recursive: test.txt + subdir/copy.txt)
       const txtFiles = await findFiles(testDir, ['*.txt']);
-      expect(txtFiles).toHaveLength(1);
+      expect(txtFiles).toHaveLength(2);
 
       // Move copy file
       const movedFile = path.join(testDir, 'moved.txt');

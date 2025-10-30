@@ -101,9 +101,10 @@ describe('Codebase Tools', () => {
     it('should handle search when codebase not indexed', async () => {
       // Clear codebase index to ensure clean state for this specific test
       // This prevents shared database state from interfering with the test
-      const { searchService } = await import(
+      const { getSearchService } = await import(
         '../../../src/services/search/unified-search-service.js'
       );
+      const searchService = getSearchService();
       await searchService.initialize();
       const storage = (searchService as any).memoryStorage;
       await storage.clearCodebaseIndex();

@@ -27,8 +27,13 @@ import {
 } from '../../src/utils/errors.js';
 
 // Mock logger to avoid actual logging during tests
+// Support both logger.error() and logger.module().error() patterns
 vi.mock('../../src/utils/logger.js', () => ({
   logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
     module: vi.fn(() => ({
       error: vi.fn(),
       warn: vi.fn(),

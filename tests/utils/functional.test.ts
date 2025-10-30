@@ -2,7 +2,7 @@
  * Functional Programming Utilities Tests
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   and,
   compose,
