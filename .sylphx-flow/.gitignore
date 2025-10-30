@@ -4,9 +4,6 @@
 *.db-shm
 *.db-wal
 
-# Workspace management
-workspace/
-!workspace/README.md
 
 # Search cache and indexes
 search-cache/
