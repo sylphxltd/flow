@@ -178,7 +178,9 @@ async function checkCommand(command: string): Promise<string | null> {
 }
 
 function displaySystemInfo(info: any, preset: string = 'hook', type: string = 'standard') {
-  console.log('');
+  if (type !== 'simple') {
+    console.log('');
+  }
 
   switch (preset) {
     case 'session':
@@ -199,8 +201,11 @@ function displaySystemInfo(info: any, preset: string = 'hook', type: string = 's
       break;
   }
 
-  console.log(chalk.green('✓ System information retrieved successfully'));
-  console.log('');
+  // Only show success message for non-simple output
+  if (type !== 'simple') {
+    console.log(chalk.green('✓ System information retrieved successfully'));
+    console.log('');
+  }
 }
 
 function displayHookPreset(info: any) {
