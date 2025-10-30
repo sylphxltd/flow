@@ -5,6 +5,7 @@
 
 import { logger } from './logger.js';
 import { ErrorHandler } from './simplified-errors.js';
+import { chunk } from './functional/array.js';
 
 /**
  * Configuration for parallel operations
@@ -68,77 +69,85 @@ export async function parallel<T>(
     timeout,
   });
 
-  const results: ParallelResult<T> = {
-    successful: [],
-    failed: [],
-    total: items.length,
-    successCount: 0,
-    failureCount: 0,
-    duration: 0,
-  };
+  // FUNCTIONAL: Use chunk and reduce to accumulate results instead of imperative loop
+  const batches = chunk(concurrency)(items);
 
-  // Process items in batches based on concurrency limit
-  for (let i = 0; i < items.length; i += concurrency) {
-    const batch = items.slice(i, Math.min(i + concurrency, items.length));
-    const batchPromises = batch.map(async (item, batchIndex) => {
-      const globalIndex = i + batchIndex;
+  const results = await batches.reduce<Promise<ParallelResult<T>>>(
+    async (accPromise, batch, batchIdx) => {
+      const acc = await accPromise;
 
-      try {
-        // Add timeout to individual operations
-        const operationPromise = operation(item, globalIndex);
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error(`Operation timeout after ${timeout}ms`)), timeout);
-        });
+      const batchPromises = batch.map(async (item, batchIndex) => {
+        const globalIndex = batchIdx * concurrency + batchIndex;
 
-        const result = await Promise.race([operationPromise, timeoutPromise]);
+        try {
+          // Add timeout to individual operations
+          const operationPromise = operation(item, globalIndex);
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error(`Operation timeout after ${timeout}ms`)), timeout);
+          });
 
-        results.successful.push({
-          index: globalIndex,
-          result,
-          item,
-        });
+          const result = await Promise.race([operationPromise, timeoutPromise]);
 
-        // Report progress
-        if (onProgress) {
-          onProgress(results.successful.length + results.failed.length, results.total, item);
+          // Report progress
+          if (onProgress) {
+            onProgress(acc.successCount + acc.failureCount + 1, items.length, item);
+          }
+
+          return { success: true as const, index: globalIndex, result, item };
+        } catch (error) {
+          const errorObj = error instanceof Error ? error : new Error(String(error));
+
+          logger.warn('Parallel operation failed', {
+            index: globalIndex,
+            error: errorObj.message,
+            item: typeof item === 'object' ? JSON.stringify(item) : item,
+          });
+
+          // Re-throw if not continuing on error
+          if (!continueOnError) {
+            throw errorObj;
+          }
+
+          return { success: false as const, index: globalIndex, error: errorObj, item };
         }
+      });
 
-        return result;
-      } catch (error) {
-        const errorObj = error instanceof Error ? error : new Error(String(error));
+      // Wait for current batch to complete
+      const batchResults = await Promise.all(batchPromises);
 
-        results.failed.push({
-          index: globalIndex,
-          error: errorObj,
-          item,
-        });
+      // FUNCTIONAL: Partition results into successful/failed
+      const newSuccessful = batchResults
+        .filter((r) => r.success)
+        .map((r) => ({ index: r.index, result: r.result, item: r.item }));
+      const newFailed = batchResults
+        .filter((r) => !r.success)
+        .map((r) => ({ index: r.index, error: r.error, item: r.item }));
 
-        logger.warn('Parallel operation failed', {
-          index: globalIndex,
-          error: errorObj.message,
-          item: typeof item === 'object' ? JSON.stringify(item) : item,
-        });
-
-        // Re-throw if not continuing on error
-        if (!continueOnError) {
-          throw errorObj;
-        }
-
-        return null;
+      // Add delay between batches if specified
+      if (options.batchDelay && batchIdx < batches.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, options.batchDelay!));
       }
-    });
 
-    // Wait for current batch to complete
-    await Promise.allSettled(batchPromises);
+      return {
+        successful: [...acc.successful, ...newSuccessful],
+        failed: [...acc.failed, ...newFailed],
+        total: items.length,
+        successCount: acc.successCount + newSuccessful.length,
+        failureCount: acc.failureCount + newFailed.length,
+        duration: 0, // Will be set after reduce completes
+      };
+    },
+    Promise.resolve({
+      successful: [],
+      failed: [],
+      total: items.length,
+      successCount: 0,
+      failureCount: 0,
+      duration: 0,
+    })
+  );
 
-    // Add delay between batches if specified
-    if (options.batchDelay && i + concurrency < items.length) {
-      await new Promise((resolve) => setTimeout(resolve, options.batchDelay));
-    }
-  }
-
-  results.successCount = results.successful.length;
-  results.failureCount = results.failed.length;
+  // Set final duration
   results.duration = Date.now() - startTime;
 
   logger.info('Parallel operations completed', {
@@ -164,30 +173,45 @@ export async function parallelWithRetry<T>(
 
   const result = await parallel(items, operation, parallelOptions);
 
-  // Retry failed operations
-  for (let attempt = 1; attempt <= maxRetries && result.failed.length > 0; attempt++) {
-    logger.info(`Retrying failed operations (attempt ${attempt}/${maxRetries})`, {
-      failedCount: result.failed.length,
-      retryDelay,
-    });
+  // FUNCTIONAL: Retry failed operations using reduce instead of for loop
+  const attempts = Array.from({ length: maxRetries }, (_, i) => i + 1);
 
-    // Wait before retry
-    if (retryDelay > 0) {
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
-    }
+  const finalResult = await attempts.reduce<Promise<ParallelResult<T>>>(
+    async (accPromise, attempt) => {
+      const acc = await accPromise;
 
-    // Retry only failed items
-    const failedItems = result.failed.map((f) => f.item);
-    const retryResult = await parallel(failedItems, operation, parallelOptions);
+      if (acc.failed.length === 0) {
+        return acc; // No more failures to retry
+      }
 
-    // Merge results
-    result.successful.push(...retryResult.successful);
-    result.failed = retryResult.failed;
-    result.successCount = result.successful.length;
-    result.failureCount = result.failed.length;
-  }
+      logger.info(`Retrying failed operations (attempt ${attempt}/${maxRetries})`, {
+        failedCount: acc.failed.length,
+        retryDelay,
+      });
 
-  return result;
+      // Wait before retry
+      if (retryDelay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+
+      // Retry only failed items
+      const failedItems = acc.failed.map((f) => f.item);
+      const retryResult = await parallel(failedItems, operation, parallelOptions);
+
+      // Merge results immutably
+      return {
+        successful: [...acc.successful, ...retryResult.successful],
+        failed: retryResult.failed,
+        total: acc.total,
+        successCount: acc.successful.length + retryResult.successful.length,
+        failureCount: retryResult.failed.length,
+        duration: acc.duration,
+      };
+    },
+    Promise.resolve(result)
+  );
+
+  return finalResult;
 }
 
 /**
@@ -200,10 +224,8 @@ export async function batchParallel<T, R>(
 ): Promise<R[]> {
   const { batchSize = 50, concurrency = 3, continueOnError = true, onProgress } = options;
 
-  const batches: T[][] = [];
-  for (let i = 0; i < items.length; i += batchSize) {
-    batches.push(items.slice(i, i + batchSize));
-  }
+  // FUNCTIONAL: Use chunk utility instead of for loop
+  const batches = chunk(batchSize)(items);
 
   logger.info('Starting batch parallel processing', {
     totalItems: items.length,
@@ -308,40 +330,36 @@ export async function parallelReduce<T>(
 
   // For small arrays, use regular reduce
   if (items.length <= 100) {
-    let result = initialValue;
-    for (const item of items) {
-      result = await reducer(result, item);
-    }
-    return result;
+    // FUNCTIONAL: Use reduce instead of for-of loop
+    return await items.reduce(async (accPromise, item) => {
+      const acc = await accPromise;
+      return await reducer(acc, item);
+    }, Promise.resolve(initialValue));
   }
 
   // For large arrays, split into chunks and reduce in parallel
   const chunkSize = Math.ceil(items.length / (options?.concurrency || 10));
-  const chunks: T[][] = [];
 
-  for (let i = 0; i < items.length; i += chunkSize) {
-    chunks.push(items.slice(i, i + chunkSize));
-  }
+  // FUNCTIONAL: Use chunk utility instead of for loop
+  const chunks = chunk(chunkSize)(items);
 
   const chunkResults = await parallelMap(
     chunks,
-    async (chunk) => {
-      let result = initialValue;
-      for (const item of chunk) {
-        result = await reducer(result, item);
-      }
-      return result;
+    async (chunkItems) => {
+      // FUNCTIONAL: Use reduce instead of for-of loop
+      return await chunkItems.reduce(async (accPromise, item) => {
+        const acc = await accPromise;
+        return await reducer(acc, item);
+      }, Promise.resolve(initialValue));
     },
     options
   );
 
-  // Combine chunk results
-  let finalResult = initialValue;
-  for (const chunkResult of chunkResults) {
-    finalResult = await reducer(finalResult, chunkResult);
-  }
-
-  return finalResult;
+  // FUNCTIONAL: Combine chunk results using reduce instead of for-of loop
+  return await chunkResults.reduce(async (accPromise, chunkResult) => {
+    const acc = await accPromise;
+    return await reducer(acc, chunkResult);
+  }, Promise.resolve(initialValue));
 }
 
 /**
