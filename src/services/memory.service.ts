@@ -21,7 +21,7 @@ import type {
   MemoryEntry,
   MemorySearchParams,
 } from '../repositories/memory.repository.js';
-import type { MemoryValue } from '../types/memory-types.js';
+import type { MemoryStatsResult, MemoryValue } from '../types/memory-types.js';
 import {
   type CacheState,
   cacheDelete,
@@ -44,33 +44,79 @@ export interface MemoryServiceConfig {
   };
 }
 
-export class MemoryService {
-  // FUNCTIONAL: Use immutable cache instead of mutable Map
-  private cache: CacheState<string, MemoryEntry> = createCache();
-  private cleanupTimer?: NodeJS.Timeout;
+/**
+ * Dependencies for MemoryService
+ */
+export interface MemoryServiceDeps {
+  readonly repository: MemoryRepository;
+  readonly logger: ILogger;
+}
 
-  constructor(
-    private readonly repository: MemoryRepository,
-    private readonly logger: ILogger,
-    private readonly config: MemoryServiceConfig = {}
-  ) {
-    this.setupCleanupTimer();
-  }
+/**
+ * Internal state for MemoryService
+ */
+interface MemoryServiceState {
+  readonly cache: CacheState<string, MemoryEntry>;
+  readonly cleanupTimer?: NodeJS.Timeout;
+}
+
+/**
+ * MemoryService Interface
+ * Business logic layer for memory operations
+ */
+export interface MemoryService {
+  readonly get: (key: string, namespace?: string) => Promise<Result<MemoryValue, MemoryErrorType>>;
+  readonly set: (key: string, value: string, namespace?: string) => Promise<Result<MemoryEntry, MemoryErrorType>>;
+  readonly delete: (key: string, namespace?: string) => Promise<Result<boolean, MemoryError>>;
+  readonly list: (namespace?: string) => Promise<Result<string[], MemoryError>>;
+  readonly search: (params: MemorySearchParams) => Promise<Result<MemoryEntry[], MemoryError>>;
+  readonly clear: (namespace?: string) => Promise<Result<number, MemoryError>>;
+  readonly getStats: () => Promise<Result<MemoryStatsResult, MemoryError>>;
+  readonly bulkSet: (entries: Array<{ key: string; value: string; namespace?: string }>, namespace?: string) => Promise<Result<MemoryEntry[], MemoryError>>;
+  readonly dispose: () => Promise<void>;
+}
+
+/**
+ * Create Memory Service (Factory Function)
+ * Handles memory management with validation, caching, and business rules
+ */
+export const createMemoryService = (
+  deps: MemoryServiceDeps,
+  config: MemoryServiceConfig = {}
+): MemoryService => {
+  // Service configuration in closure
+  const serviceConfig: MemoryServiceConfig = {
+    defaultNamespace: 'default',
+    enableCaching: true,
+    cacheMaxSize: 1000,
+    ...config,
+  };
+
+  // Mutable state in closure (will be updated immutably)
+  let state: MemoryServiceState = {
+    cache: createCache(),
+    cleanupTimer: undefined,
+  };
+
+  // Helper: Update state immutably
+  const updateState = (updates: Partial<MemoryServiceState>): void => {
+    state = { ...state, ...updates };
+  };
 
   /**
    * Get a memory value
    */
-  async get(
+  const get = async (
     key: string,
-    namespace: string = this.config.defaultNamespace || 'default'
-  ): Promise<Result<MemoryValue, MemoryErrorType>> {
+    namespace: string = serviceConfig.defaultNamespace || 'default'
+  ): Promise<Result<MemoryValue, MemoryErrorType>> => {
     return await tryCatchAsync(
       async () => {
         // Check cache first if enabled
-        if (this.config.enableCaching) {
+        if (serviceConfig.enableCaching) {
           const cacheKey = `${namespace}:${key}`;
           // FUNCTIONAL: Use immutable cache get
-          const cached = cacheGet(this.cache, cacheKey);
+          const cached = cacheGet(state.cache, cacheKey);
           if (cached) {
             return {
               value: cached.value,
@@ -84,15 +130,15 @@ export class MemoryService {
         }
 
         // Fetch from repository
-        const entry = await this.repository.getByKey(key, namespace);
+        const entry = await deps.repository.getByKey(key, namespace);
 
         if (!entry) {
           throw new MemoryNotFoundError(key, namespace);
         }
 
         // Cache the result if enabled
-        if (this.config.enableCaching) {
-          this.updateCache(entry);
+        if (serviceConfig.enableCaching) {
+          updateCache(entry);
         }
 
         return {
@@ -108,24 +154,24 @@ export class MemoryService {
         if (error instanceof MemoryNotFoundError) {
           return error;
         }
-        this.logger.error(`Failed to get memory entry: ${key}`, error);
+        deps.logger.error(`Failed to get memory entry: ${key}`, error);
         return new MemoryError(`Failed to get memory entry: ${key}`, error);
       }
     );
-  }
+  };
 
   /**
    * Set a memory value
    */
-  async set(
+  const set = async (
     key: string,
     value: string,
-    namespace: string = this.config.defaultNamespace || 'default'
-  ): Promise<Result<MemoryEntry, MemoryErrorType>> {
+    namespace: string = serviceConfig.defaultNamespace || 'default'
+  ): Promise<Result<MemoryEntry, MemoryErrorType>> => {
     return await tryCatchAsync(
       async () => {
         // Validate inputs
-        const validationError = this.validateMemoryEntry(key, value);
+        const validationError = validateMemoryEntry(key, value);
         if (validationError) {
           throw validationError;
         }
@@ -139,15 +185,15 @@ export class MemoryService {
         };
 
         // Store in repository
-        const entry = await this.repository.setMemory(data);
+        const entry = await deps.repository.setMemory(data);
 
         // Update cache if enabled
-        if (this.config.enableCaching) {
-          this.updateCache(entry);
-          this.enforceCacheLimit();
+        if (serviceConfig.enableCaching) {
+          updateCache(entry);
+          enforceCacheLimit();
         }
 
-        this.logger.debug(`Memory entry set: ${key} in namespace: ${namespace}`);
+        deps.logger.debug(`Memory entry set: ${key} in namespace: ${namespace}`);
 
         return entry;
       },
@@ -155,112 +201,114 @@ export class MemoryService {
         if (error instanceof MemoryValidationError || error instanceof MemorySizeError) {
           return error;
         }
-        this.logger.error(`Failed to set memory entry: ${key}`, error);
+        deps.logger.error(`Failed to set memory entry: ${key}`, error);
         return new MemoryError(`Failed to set memory entry: ${key}`, error);
       }
     );
-  }
+  };
 
   /**
    * Delete a memory entry
    */
-  async delete(
+  const deleteEntry = async (
     key: string,
-    namespace: string = this.config.defaultNamespace || 'default'
-  ): Promise<Result<boolean, MemoryError>> {
+    namespace: string = serviceConfig.defaultNamespace || 'default'
+  ): Promise<Result<boolean, MemoryError>> => {
     return await tryCatchAsync(
       async () => {
-        const deleted = await this.repository.deleteMemory(key, namespace);
+        const deleted = await deps.repository.deleteMemory(key, namespace);
 
         // Remove from cache if present
-        if (this.config.enableCaching) {
+        if (serviceConfig.enableCaching) {
           const cacheKey = `${namespace}:${key}`;
           // FUNCTIONAL: Use immutable cache delete, returns new state
-          this.cache = cacheDelete(this.cache, cacheKey);
+          updateState({ cache: cacheDelete(state.cache, cacheKey) });
         }
 
-        this.logger.debug(`Memory entry deleted: ${key} in namespace: ${namespace}`);
+        deps.logger.debug(`Memory entry deleted: ${key} in namespace: ${namespace}`);
 
         return deleted;
       },
       (error) => {
-        this.logger.error(`Failed to delete memory entry: ${key}`, error);
+        deps.logger.error(`Failed to delete memory entry: ${key}`, error);
         return new MemoryError(`Failed to delete memory entry: ${key}`, error);
       }
     );
-  }
+  };
 
   /**
    * List all keys in a namespace
    */
-  async list(
-    namespace: string = this.config.defaultNamespace || 'default'
-  ): Promise<Result<string[], MemoryError>> {
+  const list = async (
+    namespace: string = serviceConfig.defaultNamespace || 'default'
+  ): Promise<Result<string[], MemoryError>> => {
     return await tryCatchAsync(
       async () => {
-        const keys = await this.repository.listKeys(namespace);
+        const keys = await deps.repository.listKeys(namespace);
         return keys;
       },
       (error) => {
-        this.logger.error(`Failed to list keys in namespace: ${namespace}`, error);
+        deps.logger.error(`Failed to list keys in namespace: ${namespace}`, error);
         return new MemoryError(`Failed to list keys in namespace: ${namespace}`, error);
       }
     );
-  }
+  };
 
   /**
    * Search memory entries
    */
-  async search(params: MemorySearchParams): Promise<Result<MemoryEntry[], MemoryError>> {
+  const search = async (params: MemorySearchParams): Promise<Result<MemoryEntry[], MemoryError>> => {
     return await tryCatchAsync(
       async () => {
-        const entries = await this.repository.searchMemory(params);
+        const entries = await deps.repository.searchMemory(params);
         return entries;
       },
       (error) => {
-        this.logger.error('Failed to search memory entries', error);
+        deps.logger.error('Failed to search memory entries', error);
         return new MemoryError('Failed to search memory entries', error);
       }
     );
-  }
+  };
 
   /**
    * Clear all entries in a namespace
    */
-  async clear(
-    namespace: string = this.config.defaultNamespace || 'default'
-  ): Promise<Result<number, MemoryError>> {
+  const clear = async (
+    namespace: string = serviceConfig.defaultNamespace || 'default'
+  ): Promise<Result<number, MemoryError>> => {
     return await tryCatchAsync(
       async () => {
-        const deletedCount = await this.repository.clearNamespace(namespace);
+        const deletedCount = await deps.repository.clearNamespace(namespace);
 
         // Clear cache entries for this namespace
-        if (this.config.enableCaching) {
+        if (serviceConfig.enableCaching) {
           // FUNCTIONAL: Use immutable cache deleteWhere, returns new state
-          this.cache = cacheDeleteWhere(
-            this.cache,
-            (key) => key.startsWith(`${namespace}:`)
-          );
+          updateState({
+            cache: cacheDeleteWhere(
+              state.cache,
+              (key) => key.startsWith(`${namespace}:`)
+            )
+          });
         }
 
-        this.logger.info(`Cleared ${deletedCount} entries from namespace: ${namespace}`);
+        deps.logger.info(`Cleared ${deletedCount} entries from namespace: ${namespace}`);
 
         return deletedCount;
       },
       (error) => {
-        this.logger.error(`Failed to clear namespace: ${namespace}`, error);
+        deps.logger.error(`Failed to clear namespace: ${namespace}`, error);
         return new MemoryError(`Failed to clear namespace: ${namespace}`, error);
       }
     );
-  }
+  };
 
   /**
    * Get memory statistics
    */
-  async getStats(): Promise<Result<MemoryStatsResult, MemoryError>> {
+  const getStats = async (): Promise<Result<MemoryStatsResult, MemoryError>> => {
     return await tryCatchAsync(
       async () => {
-        const stats = await this.repository.getStats();
+        const stats = await deps.repository.getStats();
 
         return {
           totalEntries: stats.totalEntries,
@@ -271,26 +319,26 @@ export class MemoryService {
         };
       },
       (error) => {
-        this.logger.error('Failed to get memory statistics', error);
+        deps.logger.error('Failed to get memory statistics', error);
         return new MemoryError('Failed to get memory statistics', error);
       }
     );
-  }
+  };
 
   /**
    * Perform bulk operations
    */
-  async bulkSet(
+  const bulkSet = async (
     entries: Array<{ key: string; value: string; namespace?: string }>,
-    namespace: string = this.config.defaultNamespace || 'default'
-  ): Promise<Result<MemoryEntry[], MemoryError>> {
+    namespace: string = serviceConfig.defaultNamespace || 'default'
+  ): Promise<Result<MemoryEntry[], MemoryError>> => {
     return await tryCatchAsync(
       async () => {
         const results: MemoryEntry[] = [];
         const errors: string[] = [];
 
         for (const entry of entries) {
-          const result = await this.set(entry.key, entry.value, entry.namespace || namespace);
+          const result = await set(entry.key, entry.value, entry.namespace || namespace);
           if (result._tag === 'Success') {
             results.push(result.value);
           } else {
@@ -299,7 +347,7 @@ export class MemoryService {
         }
 
         if (errors.length > 0) {
-          this.logger.warn(`Bulk set completed with ${errors.length} errors`, { errors });
+          deps.logger.warn(`Bulk set completed with ${errors.length} errors`, { errors });
           throw new MemoryError(`Bulk set completed with errors: ${errors.join('; ')}`);
         }
 
@@ -309,16 +357,16 @@ export class MemoryService {
         if (error instanceof MemoryError) {
           return error;
         }
-        this.logger.error('Failed to perform bulk set', error);
+        deps.logger.error('Failed to perform bulk set', error);
         return new MemoryError('Failed to perform bulk set', error);
       }
     );
-  }
+  };
 
   /**
    * Validate memory entry data
    */
-  private validateMemoryEntry(key: string, value: string): MemoryValidationError | MemorySizeError | null {
+  const validateMemoryEntry = (key: string, value: string): MemoryValidationError | MemorySizeError | null => {
     if (!key || key.trim().length === 0) {
       return new MemoryValidationError('Key cannot be empty', 'key', key);
     }
@@ -327,8 +375,8 @@ export class MemoryService {
       return new MemoryValidationError('Key cannot exceed 255 characters', 'key', key);
     }
 
-    if (this.config.maxEntrySize && value.length > this.config.maxEntrySize) {
-      return new MemorySizeError(value.length, this.config.maxEntrySize);
+    if (serviceConfig.maxEntrySize && value.length > serviceConfig.maxEntrySize) {
+      return new MemorySizeError(value.length, serviceConfig.maxEntrySize);
     }
 
     // Validate key format (no special characters that could cause issues)
@@ -341,62 +389,79 @@ export class MemoryService {
     }
 
     return null;
-  }
+  };
 
   /**
    * Update cache with new entry
    * FUNCTIONAL: Returns new cache state instead of mutating
    */
-  private updateCache(entry: MemoryEntry): void {
+  const updateCache = (entry: MemoryEntry): void => {
     const cacheKey = `${entry.namespace}:${entry.key}`;
     // FUNCTIONAL: Use immutable cache set, returns new state
-    this.cache = cacheSet(this.cache, cacheKey, entry);
-  }
+    updateState({ cache: cacheSet(state.cache, cacheKey, entry) });
+  };
 
   /**
    * Enforce cache size limit
    * FUNCTIONAL: Uses immutable cache operations
    */
-  private enforceCacheLimit(): void {
-    if (this.config.cacheMaxSize && this.cache.size > this.config.cacheMaxSize) {
+  const enforceCacheLimit = (): void => {
+    if (serviceConfig.cacheMaxSize && state.cache.size > serviceConfig.cacheMaxSize) {
       // FUNCTIONAL: Use immutable cache enforceLimit, returns new state
-      const entriesToRemove = this.cache.size - this.config.cacheMaxSize;
-      this.cache = cacheEnforceLimit(this.cache, this.config.cacheMaxSize);
-      this.logger.debug(`Cache eviction: removed ${entriesToRemove} entries`);
+      const entriesToRemove = state.cache.size - serviceConfig.cacheMaxSize;
+      updateState({ cache: cacheEnforceLimit(state.cache, serviceConfig.cacheMaxSize) });
+      deps.logger.debug(`Cache eviction: removed ${entriesToRemove} entries`);
     }
-  }
+  };
 
   /**
    * Setup cleanup timer for retention policy
    */
-  private setupCleanupTimer(): void {
-    if (this.config.retentionPolicy?.enabled && this.config.retentionPolicy.cleanupInterval) {
-      this.cleanupTimer = setInterval(async () => {
+  const setupCleanupTimer = (): void => {
+    if (serviceConfig.retentionPolicy?.enabled && serviceConfig.retentionPolicy.cleanupInterval) {
+      const timer = setInterval(async () => {
         try {
-          const deletedCount = await this.repository.cleanupOldEntries(
-            this.config.retentionPolicy?.maxAge
+          const deletedCount = await deps.repository.cleanupOldEntries(
+            serviceConfig.retentionPolicy?.maxAge
           );
           if (deletedCount > 0) {
-            this.logger.info(`Automatic cleanup: removed ${deletedCount} old entries`);
+            deps.logger.info(`Automatic cleanup: removed ${deletedCount} old entries`);
           }
         } catch (error) {
-          this.logger.error('Automatic cleanup failed', error);
+          deps.logger.error('Automatic cleanup failed', error);
         }
-      }, this.config.retentionPolicy.cleanupInterval);
+      }, serviceConfig.retentionPolicy.cleanupInterval);
+      updateState({ cleanupTimer: timer });
     }
-  }
+  };
 
   /**
    * Cleanup resources
    */
-  async dispose(): Promise<void> {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = undefined;
+  const dispose = async (): Promise<void> => {
+    if (state.cleanupTimer) {
+      clearInterval(state.cleanupTimer);
+      updateState({ cleanupTimer: undefined });
     }
 
     // FUNCTIONAL: Replace cache with new empty cache instead of clearing
-    this.cache = createCache();
-    this.logger.info('Memory service disposed');
-  }
-}
+    updateState({ cache: createCache() });
+    deps.logger.info('Memory service disposed');
+  };
+
+  // Initialize cleanup timer
+  setupCleanupTimer();
+
+  // Return service interface
+  return {
+    get,
+    set,
+    delete: deleteEntry,
+    list,
+    search,
+    clear,
+    getStats,
+    bulkSet,
+    dispose,
+  };
+};
