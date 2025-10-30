@@ -189,9 +189,7 @@ export const initCommand = new Command('init')
     // Setup target-specific configuration
     const target = targetManager.getTarget(targetId);
     if (target && target.setup) {
-      const setupResult = await target.setup(process.cwd(), {
-        hookCommand: 'npx -y github:sylphxltd/flow sysinfo --preset hook'
-      });
+      const setupResult = await target.setup(process.cwd());
 
       if (setupResult.success) {
         console.log(chalk.cyan('  ✓ Claude Code hooks configured'));

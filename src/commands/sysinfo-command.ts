@@ -10,10 +10,18 @@ export const sysinfoCommand = new Command('sysinfo')
   .description('Display system information and current status')
   .option('--target <type>', 'Target platform (claude-code, opencode, default: auto-detect)')
   .option('--json', 'Output in JSON format')
-  .option('--preset <type>', 'Output preset (hook, development, full)', 'hook')
+  .option('--preset <type>', 'Output preset (session, message, hook, development, full)', 'hook')
   .action(async (options) => {
     try {
-      const systemInfo = await getSystemInfo();
+      // Only check environments for presets that need them
+      let systemInfo;
+      if (options.preset === 'session' || options.preset === 'message' || options.preset === 'hook') {
+        // Fast path - no environment checks for session/message/hook presets
+        systemInfo = await getSystemInfo();
+      } else {
+        // Full info with environment checks for other presets
+        systemInfo = await getSystemInfoWithEnvironments();
+      }
 
       if (options.json) {
         console.log(JSON.stringify(systemInfo, null, 2));
@@ -173,6 +181,12 @@ function displaySystemInfo(info: any, preset: string = 'hook') {
   console.log('');
 
   switch (preset) {
+    case 'session':
+      displaySessionPreset(info);
+      break;
+    case 'message':
+      displayMessagePreset(info);
+      break;
     case 'hook':
       displayHookPreset(info);
       break;
@@ -210,6 +224,44 @@ function displayHookPreset(info: any) {
   console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
   console.log(`  Working Dir: ${info.directories.workingDirectory}`);
   console.log(`  Temp Dir: ${info.directories.temp}`);
+}
+
+function displaySessionPreset(info: any) {
+  console.log(chalk.cyan('▸ Session System Info'));
+  console.log(chalk.gray('===================='));
+
+  // Static system info (doesn't change during session)
+  console.log(chalk.blue.bold('\n💻 System:'));
+  console.log(`  Platform: ${info.system.platform} (${info.system.arch})`);
+  console.log(`  Working Dir: ${info.directories.workingDirectory}`);
+  console.log(`  Temp Dir: ${info.directories.temp}`);
+
+  // Hardware info (static)
+  console.log(chalk.blue.bold('\n🔧 Hardware:'));
+  console.log(`  CPU: ${info.hardware.cpu.cores} cores`);
+  console.log(`  Total Memory: ${info.hardware.memory.total}`);
+}
+
+function displayMessagePreset(info: any) {
+  console.log(chalk.cyan('▸ Current Status'));
+  console.log(chalk.gray('================'));
+
+  // Current Time (changes frequently)
+  console.log(chalk.blue.bold('\n📅 Time:'));
+  console.log(`  ${new Date(info.timestamp).toLocaleString('zh-HK', {
+    timeZone: 'Asia/Hong_Kong',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })}`);
+
+  // Dynamic system stats (can change frequently)
+  console.log(chalk.blue.bold('\n📊 System Status:'));
+  console.log(`  Memory Usage: ${info.hardware.memory.usagePercent} used`);
+  console.log(`  Available Memory: ${info.hardware.memory.free}`);
 }
 
 function displayDevelopmentPreset(info: any) {

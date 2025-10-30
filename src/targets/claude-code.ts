@@ -352,10 +352,9 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Setup Claude Code-specific configuration including hooks
    */
   async setup(cwd: string, options?: Record<string, unknown>): Promise<{ success: boolean; message?: string }> {
-    const hookCommand = options?.hookCommand || 'npx -y github:sylphxltd/flow sysinfo --preset hook';
 
     try {
-      const result = await this.setupClaudeCodeHooks(cwd, hookCommand);
+      const result = await this.setupClaudeCodeHooks(cwd);
       return result;
     } catch (error) {
       return {
@@ -368,7 +367,7 @@ Please begin your response with a comprehensive summary of all the instructions 
   /**
    * Setup Claude Code hooks for system information display
    */
-  async setupClaudeCodeHooks(cwd: string, hookCommand: string): Promise<{ success: boolean; message?: string }> {
+  async setupClaudeCodeHooks(cwd: string): Promise<{ success: boolean; message?: string }> {
     const claudeConfigDir = path.join(cwd, '.claude');
     const settingsPath = path.join(claudeConfigDir, 'settings.json');
 
@@ -394,12 +393,22 @@ Please begin your response with a comprehensive summary of all the instructions 
         ...settings,
         hooks: {
           ...((settings as any).hooks || {}),
+          SessionStart: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'npx -y github:sylphxltd/flow sysinfo --preset session',
+                },
+              ],
+            },
+          ],
           UserPromptSubmit: [
             {
               hooks: [
                 {
                   type: 'command',
-                  command: hookCommand,
+                  command: 'npx -y github:sylphxltd/flow sysinfo --preset message',
                 },
               ],
             },
@@ -412,7 +421,7 @@ Please begin your response with a comprehensive summary of all the instructions 
 
       return {
         success: true,
-        message: `Claude Code hooks configured with command: ${hookCommand}`
+        message: `Claude Code hooks configured: SessionStart (static info) + UserPromptSubmit (dynamic info)`
       };
     } catch (error) {
       throw error;
