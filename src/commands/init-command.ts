@@ -1,3 +1,4 @@
+import boxen from 'boxen';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import inquirer from 'inquirer';
@@ -26,8 +27,16 @@ export const initCommand = new Command('init')
   .action(async (options) => {
     let targetId = options.target;
 
-    console.log('');
-    console.log(chalk.cyan.bold('▸ Sylphx Flow Setup'));
+    console.log(
+      '\n' +
+        boxen(chalk.bold.cyan('⚡ Sylphx Flow Setup'), {
+          padding: { top: 0, bottom: 0, left: 2, right: 2 },
+          margin: 0,
+          borderStyle: 'round',
+          borderColor: 'cyan',
+        }) +
+        '\n',
+    );
 
     // Target selection
     if (!targetId) {
@@ -60,24 +69,44 @@ export const initCommand = new Command('init')
 
     // Dry run
     if (options.dryRun) {
-      console.log(chalk.yellow('\n  Dry run mode - no changes will be made'));
+      console.log(
+        boxen(
+          chalk.yellow('⚠ Dry Run Mode') +
+            chalk.dim('\nNo changes will be made to your project'),
+          {
+            padding: 1,
+            margin: { top: 0, bottom: 1, left: 0, right: 0 },
+            borderStyle: 'round',
+            borderColor: 'yellow',
+          },
+        ),
+      );
 
       if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
         const mcpService = new MCPService(targetId);
         const availableServers = await mcpService.getAvailableServers();
-        console.log(chalk.cyan('\n▸ MCP Tools'));
+        console.log(chalk.cyan.bold('MCP Tools:'));
         for (const s of availableServers) {
-          console.log(chalk.gray(`  • ${MCP_SERVER_REGISTRY[s].name}`));
+          console.log(chalk.dim(`  ✓ ${MCP_SERVER_REGISTRY[s].name}`));
         }
       }
 
-      console.log(chalk.cyan('\n▸ Agents'));
-      console.log(chalk.gray('  • Development agents'));
+      console.log(chalk.cyan.bold('\nAgents:'));
+      console.log(chalk.dim('  ✓ Development agents'));
 
-      console.log(chalk.cyan('\n▸ Rules'));
-      console.log(chalk.gray('  • Custom rules'));
+      console.log(chalk.cyan.bold('\nRules:'));
+      console.log(chalk.dim('  ✓ Custom rules'));
 
-      console.log(chalk.green('\n✓ Dry run complete\n'));
+      console.log(
+        '\n' +
+          boxen(chalk.green.bold('✓ Dry run complete'), {
+            padding: { top: 0, bottom: 0, left: 2, right: 2 },
+            margin: 0,
+            borderStyle: 'round',
+            borderColor: 'green',
+          }) +
+          '\n',
+      );
       return;
     }
 
@@ -87,9 +116,7 @@ export const initCommand = new Command('init')
       const allServers = mcpService.getAllServerIds();
       const installedServers = await mcpService.getInstalledServerIds();
 
-      console.log('');
-      console.log(chalk.cyan.bold('▸ Configure MCP Tools'));
-      console.log('');
+      console.log(chalk.cyan.bold('━━━ Configure MCP Tools ━━━\n'));
 
       // Show server selection (show all servers, mark installed ones as checked)
       const serverSelectionAnswer = await inquirer.prompt([
@@ -126,8 +153,7 @@ export const initCommand = new Command('init')
         const serverConfigsMap: Record<MCPServerID, Record<string, string>> = {};
 
         if (serversNeedingConfig.length > 0) {
-          console.log('');
-          console.log(chalk.cyan.bold('▸ Configure selected MCP tools'));
+          console.log(chalk.cyan.bold('\n━━━ Server Configuration ━━━\n'));
 
           const collectedEnv: Record<string, string> = {};
           for (const serverId of serversNeedingConfig) {
@@ -138,10 +164,17 @@ export const initCommand = new Command('init')
         }
 
         // Install all selected servers
-        const spinner = ora('Installing MCP servers...').start();
+        const spinner = ora({
+          text: `Installing ${selectedServers.length} MCP server${selectedServers.length > 1 ? 's' : ''}`,
+          color: 'cyan',
+        }).start();
         try {
           await mcpService.installServers(selectedServers, serverConfigsMap);
-          spinner.succeed('MCP servers installed');
+          spinner.succeed(
+            chalk.green(
+              `Installed ${chalk.cyan(selectedServers.length)} MCP server${selectedServers.length > 1 ? 's' : ''}`,
+            ),
+          );
         } catch (error) {
           spinner.fail(chalk.red('Failed to install MCP servers'));
           throw error;
@@ -154,35 +187,28 @@ export const initCommand = new Command('init')
       await secretUtils.addToGitignore(process.cwd());
     }
 
-    console.log('');
-    const agentSpinner = ora('Installing agents...').start();
+    console.log(chalk.cyan.bold('\n━━━ Installing Core Components ━━━\n'));
+
+    const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
     await installAgents({ ...options, quiet: true });
-    agentSpinner.succeed('Agents installed');
+    agentSpinner.succeed(chalk.green('Agents installed'));
 
-    console.log('');
-    const rulesSpinner = ora('Installing rules...').start();
+    const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
     await installRules({ ...options, quiet: true });
-    rulesSpinner.succeed('Rules installed');
-
-    console.log('');
-    console.log(chalk.green.bold('✓ Setup complete!'));
-    console.log(chalk.gray('  Start coding with Sylphx Flow'));
-    console.log('');
+    rulesSpinner.succeed(chalk.green('Rules installed'));
 
     // Save the selected target as project default
+    const targetInfo: string[] = [];
     try {
       await projectSettings.setDefaultTarget(targetId);
-      console.log(
-        chalk.gray(
-          `  Default target set to: ${targetManager.getTarget(targetId)?.name || targetId}`
-        )
-      );
+      const targetName = targetManager.getTarget(targetId)?.name || targetId;
+      targetInfo.push(`Target: ${targetName}`);
     } catch (error) {
       // Don't fail the entire setup if we can't save settings
       console.warn(
         chalk.yellow(
-          `  Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`
-        )
+          `⚠ Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`,
+        ),
       );
     }
 
@@ -192,12 +218,28 @@ export const initCommand = new Command('init')
       const setupResult = await target.setup(process.cwd());
 
       if (setupResult.success) {
-        console.log(chalk.cyan('  ✓ Claude Code hooks configured'));
-        console.log(chalk.gray(`    ${setupResult.message}`));
+        targetInfo.push('Claude Code hooks configured');
       } else {
-        console.warn(chalk.yellow(`  Warning: ${setupResult.message}`));
+        console.warn(chalk.yellow(`⚠ Warning: ${setupResult.message}`));
       }
     }
 
-    console.log('');
+    // Success summary
+    console.log(
+      '\n' +
+        boxen(
+          chalk.green.bold('✓ Setup complete!') +
+            '\n\n' +
+            chalk.dim(targetInfo.join('\n')) +
+            '\n\n' +
+            chalk.cyan('Ready to code with Sylphx Flow'),
+          {
+            padding: 1,
+            margin: 0,
+            borderStyle: 'round',
+            borderColor: 'green',
+          },
+        ) +
+        '\n',
+    );
   });
