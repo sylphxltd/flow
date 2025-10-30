@@ -11,7 +11,7 @@ import {
   DEFAULT_TIMEOUT,
 } from '../constants/benchmark-constants.js';
 import { getAgentList, runAgent } from '../services/agent-service.js';
-import { EvaluationService } from '../services/evaluation-service.js';
+import { evaluateResults } from '../services/evaluation-service.js';
 import type { CommandConfig, CommandOptions } from '../types.js';
 import type { AgentData, BenchmarkCommandOptions, InitialInfo } from '../types/benchmark.js';
 import { CLIError } from '../utils/error-handler.js';
@@ -331,7 +331,7 @@ export const benchmarkCommand: CommandConfig = {
 
       // Evaluate results if requested
       if (options.evaluate) {
-        await EvaluationService.evaluateResults(options.output, options.report, monitor);
+        await evaluateResults(options.output, options.report, monitor);
       }
 
       // Stop the monitor after all agents and evaluation are complete

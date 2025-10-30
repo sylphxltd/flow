@@ -11,12 +11,15 @@ import {
 import type { AgentTimings, AgentWork, TimingData } from '../types/benchmark.js';
 import { ProcessManager } from '../utils/process-manager.js';
 
-export class EvaluationService {
-  static async evaluateResults(
-    outputDir: string,
-    reportDir: string | undefined,
-    monitor?: InkMonitor
-  ): Promise<void> {
+/**
+ * Evaluate agent results by running Claude to analyze agent work
+ * Pure function (with side effects: file I/O, process spawning)
+ */
+export async function evaluateResults(
+  outputDir: string,
+  reportDir: string | undefined,
+  monitor?: InkMonitor
+): Promise<void> {
     // First, collect actual timing information for each agent
     const agentTimings: AgentTimings = {};
     const agentDirs = DEFAULT_AGENTS.map((agent) => path.join(outputDir, agent));
@@ -48,7 +51,7 @@ export class EvaluationService {
       }
     }
 
-    const evaluatorPrompt = await EvaluationService.buildEvaluationPrompt(agentTimings);
+    const evaluatorPrompt = await buildEvaluationPrompt(agentTimings);
 
     // Collect all agent work by reading their created files
     const agentWork: AgentWork = {};
@@ -244,29 +247,31 @@ export class EvaluationService {
     });
   }
 
-  private static async buildEvaluationPrompt(agentTimings: AgentTimings): Promise<string> {
-    // Load template from file - required file, no fallback
-    const templatePath = path.join(process.cwd(), 'templates', 'evaluation-prompt.md');
+/**
+ * Internal helper: Build evaluation prompt from agent timings
+ */
+async function buildEvaluationPrompt(agentTimings: AgentTimings): Promise<string> {
+  // Load template from file - required file, no fallback
+  const templatePath = path.join(process.cwd(), 'templates', 'evaluation-prompt.md');
 
-    try {
-      const template = await fs.readFile(templatePath, 'utf-8');
+  try {
+    const template = await fs.readFile(templatePath, 'utf-8');
 
-      // Generate agent performance data section
-      const performanceData = Object.entries(agentTimings)
-        .map(([agent, timing]) => {
-          const duration = timing.duration || 0;
-          const scoreRange = PERFORMANCE_SCORE_RANGES.find((range) => duration <= range.max)!;
-          return `- ${agent}: ${duration}s execution time (Performance: ${scoreRange.score}/10)`;
-        })
-        .join('\n');
+    // Generate agent performance data section
+    const performanceData = Object.entries(agentTimings)
+      .map(([agent, timing]) => {
+        const duration = timing.duration || 0;
+        const scoreRange = PERFORMANCE_SCORE_RANGES.find((range) => duration <= range.max)!;
+        return `- ${agent}: ${duration}s execution time (Performance: ${scoreRange.score}/10)`;
+      })
+      .join('\n');
 
-      // Replace template variables
-      return template.replace('{{AGENT_PERFORMANCE_DATA}}', performanceData);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Failed to load evaluation template from ${templatePath}. Error: ${errorMessage}\n\nPlease ensure:\n1. The file exists at: ${templatePath}\n2. The file is readable (check permissions)\n3. The file contains valid markdown content`
-      );
-    }
+    // Replace template variables
+    return template.replace('{{AGENT_PERFORMANCE_DATA}}', performanceData);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Failed to load evaluation template from ${templatePath}. Error: ${errorMessage}\n\nPlease ensure:\n1. The file exists at: ${templatePath}\n2. The file is readable (check permissions)\n3. The file contains valid markdown content`
+    );
   }
 }
