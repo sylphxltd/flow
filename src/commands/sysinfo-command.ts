@@ -11,7 +11,7 @@ import type { CommandOptions } from '../types.js';
 export const sysinfoCommand = new Command('sysinfo')
   .description('Display system information and current status')
   .option('--hook <type>', 'Hook type (session, message)')
-  .option('--output <type>', 'Output format (simple, standard, json)', 'simple')
+  .option('--output <type>', 'Output format (markdown, standard, json)', 'markdown')
   .action(async (options) => {
     try {
       const systemInfo = await getSystemInfo(options.hook || 'message');
@@ -209,25 +209,25 @@ function detectPackageManager(cwd: string, packageJson?: any): string {
   return 'npm'; // Default to npm
 }
 
-function displaySystemInfo(info: any, preset: string = 'message', output: string = 'simple') {
-  if (output !== 'simple') {
+function displaySystemInfo(info: any, preset: string = 'message', output: string = 'markdown') {
+  if (output !== 'markdown') {
     console.log('');
   }
 
   switch (preset) {
     case 'session':
-      output === 'simple' ? displaySimpleSession(info) : displaySession(info);
+      output === 'markdown' ? displaySimpleSession(info) : displaySession(info);
       break;
     case 'message':
-      output === 'simple' ? displaySimpleMessage(info) : displayMessage(info);
+      output === 'markdown' ? displaySimpleMessage(info) : displayMessage(info);
       break;
     default:
       displayMessage(info);
       break;
   }
 
-  // Only show success message for non-simple output
-  if (output !== 'simple') {
+  // Only show success message for non-markdown output
+  if (output !== 'markdown') {
     console.log(chalk.green('✓ System information retrieved successfully'));
     console.log('');
   }

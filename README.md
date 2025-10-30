@@ -68,7 +68,7 @@ npx github:sylphxltd/flow sysinfo --output json             # JSON output
 ```
 
 *Output Formats:*
-- *`simple`* - Clean text, optimized for LLM hooks (default)
+- *`markdown`* - Markdown format, optimized for LLM hooks (default)
 - *`standard`* - Colored output with decorations
 - *`json`* - JSON format for automation
 
