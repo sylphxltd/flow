@@ -190,8 +190,8 @@ function displaySystemInfo(info: any, preset: string = 'hook') {
 }
 
 function displayHookPreset(info: any) {
-  console.log(chalk.cyan('▸ Quick System Info'));
-  console.log(chalk.gray('===================='));
+  console.log(chalk.cyan('▸ Available Tools'));
+  console.log(chalk.gray('=================='));
 
   // Current Time (essential for context)
   console.log(chalk.blue.bold('\n📅 Time:'));
@@ -206,7 +206,7 @@ function displayHookPreset(info: any) {
 
   // Environment info (most useful for LLM)
   if (info.environments && info.environments.length > 0) {
-    console.log(chalk.blue.bold('\n🛠️  Environment:'));
+    console.log(chalk.blue.bold('\n🛠️  Available Tools:'));
     info.environments.slice(0, 5).forEach((env: any) => {
       console.log(`  ${env.name}: ${env.version}`);
     });
@@ -215,11 +215,9 @@ function displayHookPreset(info: any) {
     }
   }
 
-  // Quick system stats
-  console.log(chalk.blue.bold('\n💻 System:'));
-  console.log(`  Platform: ${info.system.platform} (${info.system.arch})`);
-  console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
-  console.log(`  Working Dir: ${info.directories.workingDirectory}`);
+  // Temp directory info (useful for file operations)
+  console.log(chalk.blue.bold('\n📁 Temp Directory:'));
+  console.log(`  ${info.directories.temp}`);
 }
 
 function displayDevelopmentPreset(info: any) {
