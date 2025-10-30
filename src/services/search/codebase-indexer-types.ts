@@ -2,6 +2,8 @@
  * Types and interfaces for the codebase indexer
  */
 
+import type { SearchIndex } from './tfidf.js';
+
 export interface CodebaseFile {
   path: string; // Relative path from codebase root
   absolutePath: string;
@@ -17,7 +19,7 @@ export interface IndexCache {
   indexedAt: string;
   fileCount: number;
   files: Map<string, { mtime: number; hash: string }>; // Track file changes
-  tfidfIndex?: import('./tfidf').SearchIndex;
+  tfidfIndex?: SearchIndex;
   vectorIndexPath?: string;
 }
 

@@ -29,7 +29,8 @@ export * from './security.js';
 
 // Error handling
 export * from './error-handler.js';
-export * from './errors.js';
+export * from './simplified-errors.js';
+export * from './database-errors.js';
 
 // Logger utilities
 export * from './logger.js';
