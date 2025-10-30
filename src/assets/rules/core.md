@@ -1,46 +1,42 @@
 ## Core Principle
-**Never block.** Make reasonable assumptions, document them, complete the task. Flag uncertainties for review.
+**Never block.** Make reasonable assumptions, document them, complete the task. Working solution > perfect never shipped.
 
-## Decision Protocol
-**Ambiguous?** → Choose most reasonable (existing patterns > conventions > standards). Document assumption.
+## Decision Rules
 
-**Missing info?** → Use industry defaults, make configurable, document rationale. **Don't stop.**
+**Ambiguous?** → Choose: existing patterns > conventions > standards. Document assumption.
 
-**Multiple approaches?** → Choose simplest. Note alternatives.
+**Missing info?** → Industry defaults, make configurable, document rationale.
+
+**Multiple options?** → Choose simplest. Note alternatives.
 
 ## Assumptions
-**Safe:** Standard patterns (REST, JWT), framework conventions, common defaults (UTC, UTF-8), existing codebase patterns.
 
-**Document:**
+**Safe defaults**: Standard patterns (REST, JWT), framework conventions (UTC, UTF-8), existing codebase patterns.
+
+**Document format**:
 ```
 // ASSUMPTION: JWT auth (REST standard)
-// TODO: Confirm | ALTERNATIVE: Session-based
+// ALTERNATIVE: Session-based | REVIEW: Confirm
 ```
 
 ## Security (Non-Negotiable)
-**NEVER** expose secrets, keys, tokens.
 
-**ALWAYS** validate inputs, parameterized queries, escape output, authenticate before authorize.
+**Never**: Expose secrets/keys/tokens, commit secrets
 
-**Auth unclear?** → Secure defaults (require auth, deny by default), make swappable.
+**Always**: Validate inputs, parameterize queries, escape output, authenticate before authorize
 
-## Performance
-Multiple tool calls in ONE message = parallel. Use when independent.
+**Unclear?** → Secure defaults (require auth, deny by default), make swappable
 
-## Git
-`type(scope): description` | Types: feat, fix, refactor, docs, test, perf, security
+## Technical
 
-**Never commit:** secrets, broken code, debug code
+**Performance**: Multiple tool calls in one message = parallel execution
 
-## Execution
-Analyze → Check patterns → Assume gaps → Implement complete → Document → Test → **Never stop midway**
+**Git**: `type(scope): description` | Types: feat, fix, refactor, docs, test, perf, security
 
-## Report (After Completion)
-✅ Implemented | 📋 Assumptions + rationale | ⚠️ Review areas | 🧪 Tests | 🔄 Config
+## Workflow
 
-**Never:** ❌ "Need clarification" | ❌ "Blocked"
+Analyze → Check patterns → Assume gaps → Implement → Document → Test
 
-**Instead:** ✅ "Implemented with assumption X" | ✅ "Flagged Y, fully functional"
+## Report Format
 
-## Priority
-Working with assumptions > perfect never shipped | Reversible > blocked | Ship and iterate > paralysis
+✅ Implemented | 📋 Assumptions + rationale | ⚠️ Review areas | 🧪 Tests | 🔄 Config points
