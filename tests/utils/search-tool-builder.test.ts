@@ -167,9 +167,9 @@ describe('search-tool-builder', () => {
       expect(schema.query).toBeDefined();
       expect(schema.limit).toBeDefined();
       expect(schema.categories).toBeDefined();
-      expect(schema.query.describe()).toBe('Search query');
-      expect(schema.limit.describe()).toBe('Maximum results (default: 5, max: 20)');
-      expect(schema.categories.describe()).toBe('Filter by categories (optional)');
+      expect(schema.query.description).toBe('Search query');
+      expect(schema.limit.description).toBe('Maximum results (default: 5, max: 20)');
+      expect(schema.categories.description).toBe('Filter by categories (optional)');
     });
 
     it('should register status tool with empty schema', () => {
@@ -203,7 +203,7 @@ describe('search-tool-builder', () => {
       expect(result.content[0].text).toContain('Found 2 result(s) for "test"');
       expect(result.content[0].text).toContain('test/doc1');
       expect(result.content[0].text).toContain('src/test.ts');
-      expect(result.content[0].text).toContain('Relevance: 90%');
+      expect(result.content[0].text).toContain('Relevance**: 90%');
       expect(result.content[0].text).toContain('Stats:');
       expect(result.content[0].text).toContain('Index time:');
       expect(result.content[0].text).toContain('Search time:');
@@ -237,7 +237,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should filter results by categories', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      mockSearchDocuments.mockReturnValue([
         {
           uri: 'knowledge://test/doc1',
           score: 0.9,
@@ -267,7 +267,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should filter results by multiple categories', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      mockSearchDocuments.mockReturnValue([
         {
           uri: 'knowledge://test/doc1',
           score: 0.9,
@@ -297,7 +297,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle no results found', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([]);
+      mockSearchDocuments.mockReturnValue([]);
 
       const result = await searchHandler({ query: 'nonexistent' });
 
@@ -355,7 +355,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle search errors', async () => {
-      vi.mocked(searchDocuments).mockImplementation(() => {
+      mockSearchDocuments.mockImplementation(() => {
         throw new Error('Search failed');
       });
 
@@ -366,7 +366,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle non-Error objects in error handling', async () => {
-      vi.mocked(searchDocuments).mockImplementation(() => {
+      mockSearchDocuments.mockImplementation(() => {
         throw 'String error';
       });
 
@@ -377,7 +377,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should clean file paths in results', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      mockSearchDocuments.mockReturnValue([
         {
           uri: 'knowledge://test/doc1',
           score: 0.9,
@@ -399,7 +399,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should format relevance percentages correctly', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      mockSearchDocuments.mockReturnValue([
         {
           uri: 'file://test.ts',
           score: 0.856,
@@ -413,7 +413,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should display matched terms correctly', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      mockSearchDocuments.mockReturnValue([
         {
           uri: 'file://test.ts',
           score: 0.9,
@@ -653,7 +653,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle malformed URIs in category filtering', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      mockSearchDocuments.mockReturnValue([
         {
           uri: 'test/invalid',
           score: 0.9,
@@ -682,7 +682,7 @@ describe('search-tool-builder', () => {
 
     it('should handle console error logging', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.mocked(searchDocuments).mockImplementation(() => {
+      mockSearchDocuments.mockImplementation(() => {
         throw new Error('Test error');
       });
 

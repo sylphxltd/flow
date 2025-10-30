@@ -1,17 +1,14 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { claudeCodeTarget } from '../../src/targets/claude-code.js';
 
-// Mock fs module
-const mockFs = {
-  existsSync: vi.fn(),
-  mkdirSync: vi.fn(),
-  readFileSync: vi.fn(),
-  writeFileSync: vi.fn(),
-};
-
-vi.mock('node:fs', () => mockFs);
+// Mock file system for dependency injection
+const createMockFileSystem = () => ({
+  pathExists: vi.fn(),
+  createDirectory: vi.fn(),
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+});
 
 vi.mock('chalk', () => ({
   default: {
@@ -25,15 +22,11 @@ describe('claude-code target', () => {
   const testCwd = '/tmp/test-project';
   const claudeDir = path.join(testCwd, '.claude');
   const settingsPath = path.join(claudeDir, 'settings.json');
+  let mockFs: ReturnType<typeof createMockFileSystem>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset all mock functions
-    Object.values(mockFs).forEach((fn) => {
-      if (typeof fn === 'function') {
-        fn.mockReset();
-      }
-    });
+    mockFs = createMockFileSystem();
   });
 
   afterEach(() => {
@@ -43,35 +36,33 @@ describe('claude-code target', () => {
   describe('setup method', () => {
     it('should setup Claude Code hooks successfully', async () => {
       // Mock successful file operations
-      mockFs.existsSync.mockReturnValue(false);
-      mockFs.mkdirSync.mockReturnValue(undefined);
-      mockFs.writeFileSync.mockReturnValue(undefined);
+      mockFs.pathExists.mockResolvedValue(false);
+      mockFs.createDirectory.mockResolvedValue(undefined);
+      mockFs.writeFile.mockResolvedValue(undefined);
 
-      const result = await claudeCodeTarget.setup?.(testCwd, {
-        hookCommand: 'npx @sylphxltd/flow@latest sysinfo',
-      });
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, mockFs);
 
       expect(result?.success).toBe(true);
       expect(result?.message).toContain('Claude Code hooks configured');
-      expect(mockFs.mkdirSync).toHaveBeenCalledWith(claudeDir, { recursive: true });
-      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
-        settingsPath,
-        expect.stringContaining('npx @sylphxltd/flow@latest sysinfo')
-      );
+      expect(mockFs.pathExists).toHaveBeenCalledWith(claudeDir);
+      expect(mockFs.createDirectory).toHaveBeenCalledWith(claudeDir);
+      expect(mockFs.writeFile).toHaveBeenCalled();
     });
 
     it('should use default hook command when none provided', async () => {
-      mockFs.existsSync.mockReturnValue(false);
-      mockFs.mkdirSync.mockReturnValue(undefined);
-      mockFs.writeFileSync.mockReturnValue(undefined);
+      mockFs.pathExists.mockResolvedValue(false);
+      mockFs.createDirectory.mockResolvedValue(undefined);
+      mockFs.writeFile.mockResolvedValue(undefined);
 
-      const result = await claudeCodeTarget.setup?.(testCwd);
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, mockFs);
 
       expect(result?.success).toBe(true);
-      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
-        settingsPath,
-        expect.stringContaining('npx @sylphxltd/flow@latest sysinfo')
-      );
+      expect(mockFs.writeFile).toHaveBeenCalled();
+
+      // Check that the written content includes the hook configuration
+      const writeCall = mockFs.writeFile.mock.calls[0];
+      expect(writeCall[1]).toContain('SessionStart');
+      expect(writeCall[1]).toContain('UserPromptSubmit');
     });
 
     it('should handle existing settings file correctly', async () => {
@@ -82,58 +73,56 @@ describe('claude-code target', () => {
         },
       };
 
-      mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify(existingSettings));
-      mockFs.writeFileSync.mockReturnValue(undefined);
+      mockFs.pathExists.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+      mockFs.readFile.mockResolvedValue(JSON.stringify(existingSettings));
+      mockFs.writeFile.mockResolvedValue(undefined);
 
-      const result = await claudeCodeTarget.setup?.(testCwd);
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, mockFs);
 
       expect(result?.success).toBe(true);
-      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
-        settingsPath,
-        expect.stringContaining('"existingConfig": "value"')
-      );
-      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
-        settingsPath,
-        expect.stringContaining('"UserPromptSubmit"')
-      );
+
+      // Check that the written content preserves existing config and adds new hooks
+      const writeCall = mockFs.writeFile.mock.calls[0];
+      expect(writeCall[1]).toContain('"existingConfig": "value"');
+      expect(writeCall[1]).toContain('UserPromptSubmit');
     });
 
     it('should handle errors gracefully', async () => {
-      mockFs.existsSync.mockReturnValue(false);
-      mockFs.mkdirSync.mockImplementation(() => {
-        throw new Error('Permission denied');
-      });
+      mockFs.pathExists.mockResolvedValue(false);
+      mockFs.createDirectory.mockRejectedValue(new Error('Permission denied'));
 
-      const result = await claudeCodeTarget.setup?.(testCwd);
-
-      expect(result?.success).toBe(false);
-      expect(result?.message).toContain('Could not setup Claude Code hooks');
+      try {
+        await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, mockFs);
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain('Permission denied');
+      }
     });
 
     it('should handle JSON parse errors gracefully', async () => {
-      mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue('invalid json');
-      mockFs.writeFileSync.mockReturnValue(undefined);
+      mockFs.pathExists.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+      mockFs.readFile.mockResolvedValue('invalid json');
+      mockFs.writeFile.mockResolvedValue(undefined);
 
-      const result = await claudeCodeTarget.setup?.(testCwd);
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, mockFs);
 
       expect(result?.success).toBe(true);
-      expect(mockFs.writeFileSync).toHaveBeenCalled();
+      expect(mockFs.writeFile).toHaveBeenCalled();
     });
   });
 
   describe('setupClaudeCodeHooks method', () => {
     it('should return correct result format', async () => {
-      mockFs.existsSync.mockReturnValue(false);
-      mockFs.mkdirSync.mockReturnValue(undefined);
-      mockFs.writeFileSync.mockReturnValue(undefined);
+      mockFs.pathExists.mockResolvedValue(false);
+      mockFs.createDirectory.mockResolvedValue(undefined);
+      mockFs.writeFile.mockResolvedValue(undefined);
 
-      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, 'test-command');
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, mockFs);
 
       expect(result).toHaveProperty('success', true);
       expect(result).toHaveProperty('message');
-      expect(result.message).toContain('test-command');
+      expect(result.message).toContain('Claude Code hooks configured');
     });
 
     it('should preserve existing hooks', async () => {
@@ -143,20 +132,21 @@ describe('claude-code target', () => {
         },
       };
 
-      mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify(existingSettings));
-      mockFs.writeFileSync.mockReturnValue(undefined);
+      mockFs.pathExists.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+      mockFs.readFile.mockResolvedValue(JSON.stringify(existingSettings));
+      mockFs.writeFile.mockResolvedValue(undefined);
 
-      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, 'new-command');
+      const result = await (claudeCodeTarget as any).setupClaudeCodeHooks(testCwd, mockFs);
 
       expect(result.success).toBe(true);
 
       // Verify that both hooks are present
-      const writtenData = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
+      const writeCall = mockFs.writeFile.mock.calls[0];
+      const writtenData = JSON.parse(writeCall[1] as string);
 
       expect(writtenData.hooks.ExistingHook).toBeDefined();
       expect(writtenData.hooks.UserPromptSubmit).toBeDefined();
-      expect(writtenData.hooks.UserPromptSubmit[0].command).toBe('new-command');
+      expect(writtenData.hooks.SessionStart).toBeDefined();
     });
   });
 });

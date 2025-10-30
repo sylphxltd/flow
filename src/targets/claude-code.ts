@@ -369,22 +369,63 @@ Please begin your response with a comprehensive summary of all the instructions 
   /**
    * Setup Claude Code hooks for system information display
    */
-  async setupClaudeCodeHooks(cwd: string): Promise<{ success: boolean; message?: string }> {
+  async setupClaudeCodeHooks(
+    cwd: string,
+    fileSystem?: {
+      pathExists: (path: string) => Promise<boolean>;
+      createDirectory: (path: string) => Promise<void>;
+      readFile: (path: string) => Promise<string>;
+      writeFile: (path: string, content: string) => Promise<void>;
+    }
+  ): Promise<{ success: boolean; message?: string }> {
     const { processSettings, getSuccessMessage } = await import('./functional/claude-code-logic.js');
+    const { pathExists, createDirectory, readFile, writeFile } = await import(
+      '../composables/functional/useFileSystem.js'
+    );
+
+    // Use injected file system or default functional utilities
+    const fs = fileSystem || {
+      pathExists: async (p: string) => {
+        const result = await pathExists(p);
+        return result._tag === 'Success' ? result.value : false;
+      },
+      createDirectory: async (p: string) => {
+        const result = await createDirectory(p, { recursive: true });
+        if (result._tag === 'Failure') {
+          throw new Error(result.error.message);
+        }
+      },
+      readFile: async (p: string) => {
+        const result = await readFile(p);
+        if (result._tag === 'Failure') {
+          throw new Error(result.error.message);
+        }
+        return result.value;
+      },
+      writeFile: async (p: string, content: string) => {
+        const result = await writeFile(p, content);
+        if (result._tag === 'Failure') {
+          throw new Error(result.error.message);
+        }
+      },
+    };
+
     const claudeConfigDir = path.join(cwd, '.claude');
     const settingsPath = path.join(claudeConfigDir, 'settings.json');
 
     try {
       // Ensure .claude directory exists
-      if (!fs.existsSync(claudeConfigDir)) {
-        fs.mkdirSync(claudeConfigDir, { recursive: true });
+      const dirExists = await fs.pathExists(claudeConfigDir);
+      if (!dirExists) {
+        await fs.createDirectory(claudeConfigDir);
       }
 
       // Read existing settings or null if doesn't exist
       let existingContent: string | null = null;
-      if (fs.existsSync(settingsPath)) {
+      const fileExists = await fs.pathExists(settingsPath);
+      if (fileExists) {
         try {
-          existingContent = fs.readFileSync(settingsPath, 'utf-8');
+          existingContent = await fs.readFile(settingsPath);
         } catch (error) {
           console.warn(
             chalk.yellow(
@@ -402,7 +443,7 @@ Please begin your response with a comprehensive summary of all the instructions 
       }
 
       // Write updated settings
-      fs.writeFileSync(settingsPath, settingsResult.value);
+      await fs.writeFile(settingsPath, settingsResult.value);
 
       return {
         success: true,
