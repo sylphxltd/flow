@@ -18,35 +18,39 @@ Deep dive into Sylphx Flow's technical implementation, focusing on **StarCoder2 
 
 ### Why StarCoder2 Tokenization + TF-IDF?
 
-**Sylphx Flow uses a hybrid approach:**
+**Sylphx Flow uses a hybrid auto-switching approach:**
 
 1. **StarCoder2 Tokenization** - World-class code understanding (70+ languages)
-2. **TF-IDF Statistical Search** - Primary search method (fast, local, free)
-3. **Optional Vector Embeddings** - OpenAI-compatible enhancement (higher quality)
+2. **Auto-Switching Search**:
+   - **Has API key** → OpenAI-compatible vector embeddings search (highest quality)
+   - **No API key** → TF-IDF statistical search (fast, local, free)
+3. **Same Service** - Seamless switching, no code changes needed
 
-**The best of both worlds**: Fast TF-IDF + Optional semantic vectors
+**The best of both worlds**: Automatic quality vs speed optimization based on configuration
 
 #### Comparison with Alternatives
 
 | Feature | Sylphx Flow (Hybrid) | Pure Vector | Traditional Keywords |
 |---------|----------------------|-------------|---------------------|
-| **Primary Method** | TF-IDF + Tokenization | Vector embeddings | Keyword matching |
-| **Enhancement** | Optional vectors | - | - |
+| **Search Mode** | Auto-switching | Always vector | Always keyword |
+| **With API Key** | Vector embeddings | Vector embeddings | N/A |
+| **Without API Key** | TF-IDF + Tokenization | ❌ Fails | Keyword matching |
 | **Languages** | 70+ (StarCoder2) | Limited | Any |
-| **Speed** | ⚡ Very Fast | Medium | ⚡ Fast |
-| **Accuracy** | ✅ High (both methods) | ✅ High | ❌ Low |
+| **Speed** | ⚡ Fast (both modes) | Medium | ⚡ Fast |
+| **Accuracy** | ✅ High (both modes) | ✅ High | ❌ Low |
 | **API Required** | ❌ No (✅ optional) | ✅ Yes | ❌ No |
 | **API Cost** | 🆓 Free (💰 optional) | 💰 Per token | 🆓 Free |
-| **Semantic** | ✅ Yes | ✅ Yes | ❌ No |
+| **Semantic** | ✅ Yes (both modes) | ✅ Yes | ❌ No |
 | **Works Offline** | ✅ Yes | ❌ No | ✅ Yes |
 
-**Why Sylphx Flow chose this hybrid approach:**
-1. **Works out of the box** - TF-IDF works without API key
-2. **Optional enhancement** - Add OpenAI-compatible embeddings for higher quality
-3. **Best of both worlds** - Fast statistical search + optional semantic vectors
-4. **70+ language support** - StarCoder2 tokenization for all languages
-5. **Flexible & pragmatic** - Choose speed (TF-IDF) or quality (+ vectors)
+**Why Sylphx Flow chose this hybrid auto-switching approach:**
+1. **Zero configuration** - Works immediately without API key (TF-IDF mode)
+2. **Automatic upgrade** - Add API key to get vector search (no code changes)
+3. **Same service** - UnifiedSearchService handles both modes seamlessly
+4. **70+ language support** - StarCoder2 tokenization for all languages (both modes)
+5. **Flexible & pragmatic** - System chooses best method based on configuration
 6. **OpenAI-compatible** - Works with OpenAI, Azure OpenAI, or any compatible endpoint
+7. **Fail-safe** - Falls back to TF-IDF if vector search fails
 
 ### First Production Implementation
 

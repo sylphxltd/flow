@@ -217,6 +217,21 @@ class KnowledgeIndexer extends BaseIndexer {
     }
     super.clearCache();
   }
+
+  /**
+   * Get vector storage for hybrid search
+   * Returns undefined if no embedding provider or vector index not built
+   */
+  getVectorStorage(): VectorStorage | undefined {
+    return this.vectorStorage;
+  }
+
+  /**
+   * Check if vector search is available
+   */
+  hasVectorSearch(): boolean {
+    return this.vectorStorage !== undefined;
+  }
 }
 
 // Singleton instance

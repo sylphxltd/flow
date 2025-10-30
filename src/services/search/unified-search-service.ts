@@ -277,6 +277,7 @@ export class UnifiedSearchService {
 
   /**
    * Search knowledge base - shared by CLI and MCP
+   * Hybrid mode: Uses vector search if API key provided, falls back to TF-IDF otherwise
    */
   async searchKnowledge(
     query: string,
@@ -290,21 +291,56 @@ export class UnifiedSearchService {
 
     try {
       const index = await this.knowledgeIndexer.loadIndex();
-      const searchResults = await searchDocuments(query, index, {
-        limit,
-        boostFactors: {
-          exactMatch: 1.5,
-          phraseMatch: 2.0,
-          technicalMatch: 1.8, // Enhanced boost for technical terms
-          identifierMatch: 1.3, // Boost for code identifiers
-        },
-      });
+
+      // Hybrid mode: Check if vector search is available
+      const vectorStorage = this.knowledgeIndexer.getVectorStorage();
+
+      let searchResults: Array<{ uri: string; score: number }>;
+
+      if (vectorStorage && this.embeddingProvider) {
+        // Has API key → Use vector search
+        try {
+          const queryEmbeddings = await this.embeddingProvider.generateEmbeddings([query]);
+          const queryEmbedding = queryEmbeddings[0];
+
+          const vectorResults = await vectorStorage.search(queryEmbedding, {
+            k: limit,
+          });
+
+          searchResults = vectorResults.map((result) => ({
+            uri: result.doc.id,
+            score: result.similarity,
+          }));
+        } catch (error) {
+          // Fallback to TF-IDF if vector search fails
+          searchResults = await searchDocuments(query, index, {
+            limit,
+            boostFactors: {
+              exactMatch: 1.5,
+              phraseMatch: 2.0,
+              technicalMatch: 1.8,
+              identifierMatch: 1.3,
+            },
+          });
+        }
+      } else {
+        // No API key → Use TF-IDF search
+        searchResults = await searchDocuments(query, index, {
+          limit,
+          boostFactors: {
+            exactMatch: 1.5,
+            phraseMatch: 2.0,
+            technicalMatch: 1.8,
+            identifierMatch: 1.3,
+          },
+        });
+      }
 
       const results: SearchResult[] = searchResults.map((result) => ({
         uri: result.uri,
         score: result.score || 0,
         title: result.uri?.split('/').pop() || 'Unknown',
-        content: include_content ? '' : undefined, // Knowledge search doesn't include content by default
+        content: include_content ? '' : undefined,
       }));
 
       return {
@@ -635,13 +671,14 @@ export async function searchCodebaseFunctional(
 
 /**
  * Functional searchKnowledge implementation
- * Simplified version using functional pipeline
+ * Hybrid mode: Uses vector search if available, falls back to TF-IDF
  *
  * @example
- * const results = await searchKnowledgeFunctional(indexer, 'react hooks', { limit: 10 });
+ * const results = await searchKnowledgeFunctional(indexer, embeddingProvider, 'react hooks', { limit: 10 });
  */
 export async function searchKnowledgeFunctional(
   knowledgeIndexer: ReturnType<typeof getKnowledgeIndexer>,
+  embeddingProvider: EmbeddingProvider | undefined,
   query: string,
   options: SearchOptions = {}
 ): Promise<{
@@ -653,15 +690,50 @@ export async function searchKnowledgeFunctional(
 
   try {
     const index = await knowledgeIndexer.loadIndex();
-    const searchResults = await searchDocuments(query, index, {
-      limit,
-      boostFactors: {
-        exactMatch: 1.5,
-        phraseMatch: 2.0,
-        technicalMatch: 1.8,
-        identifierMatch: 1.3,
-      },
-    });
+
+    // Hybrid mode: Check if vector search is available
+    const vectorStorage = knowledgeIndexer.getVectorStorage();
+
+    let searchResults: Array<{ uri: string; score: number }>;
+
+    if (vectorStorage && embeddingProvider) {
+      // Has API key → Use vector search
+      try {
+        const queryEmbeddings = await embeddingProvider.generateEmbeddings([query]);
+        const queryEmbedding = queryEmbeddings[0];
+
+        const vectorResults = await vectorStorage.search(queryEmbedding, {
+          k: limit,
+        });
+
+        searchResults = vectorResults.map((result) => ({
+          uri: result.doc.id,
+          score: result.similarity,
+        }));
+      } catch {
+        // Fallback to TF-IDF if vector search fails
+        searchResults = await searchDocuments(query, index, {
+          limit,
+          boostFactors: {
+            exactMatch: 1.5,
+            phraseMatch: 2.0,
+            technicalMatch: 1.8,
+            identifierMatch: 1.3,
+          },
+        });
+      }
+    } else {
+      // No API key → Use TF-IDF search
+      searchResults = await searchDocuments(query, index, {
+        limit,
+        boostFactors: {
+          exactMatch: 1.5,
+          phraseMatch: 2.0,
+          technicalMatch: 1.8,
+          identifierMatch: 1.3,
+        },
+      });
+    }
 
     // Functional pipeline: map to SearchResult format
     const results = pipe(

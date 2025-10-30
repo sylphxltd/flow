@@ -390,34 +390,43 @@ flow run "review this component for best practices" --agent reviewer
 
 ## 🔧 How It Works
 
-### Indexing Process
+### Indexing Process (Hybrid)
 ```
 1. Knowledge files in assets/knowledge/
    ↓
 2. Parsed and chunked into sections
    ↓
-3. StarCoder2 tokenization + TF-IDF indexing (primary)
+3. StarCoder2 tokenization + TF-IDF indexing (always)
    ↓
-4. Optional: OpenAI vector embeddings (if API key provided)
+4. Check if API key is configured
    ↓
-5. Stored in .sylphx-flow/knowledge.db
+5a. Has API key:
+    → Generate OpenAI-compatible embeddings
+    → Build vector index (stored separately)
+
+5b. No API key:
+    → Skip vector index generation
    ↓
-6. Ready for semantic search
+6. Stored in .sylphx-flow/knowledge.db
+   ↓
+7. Ready for hybrid search
 ```
 
-### Search Process
+### Search Process (Hybrid Auto-Switching)
 ```
 1. User/AI searches: "react hooks patterns"
    ↓
-2. StarCoder2 tokenization
+2. Check if API key is configured
    ↓
-3. TF-IDF statistical search (primary method)
-   ↓
-4. Optional: Vector similarity search (if embeddings available)
-   ↓
-5. Results ranked by relevance
-   ↓
-6. Top results returned with metadata
+3a. Has API key:
+    → Generate query embedding with OpenAI-compatible API
+    → Vector similarity search
+    → Return ranked results
+
+3b. No API key:
+    → StarCoder2 tokenization
+    → TF-IDF statistical search
+    → Return ranked results
 ```
 
 ## ⚙️ Configuration
@@ -434,9 +443,10 @@ EMBEDDING_MODEL=text-embedding-3-small
 # Optional: OpenAI-compatible endpoint (Azure OpenAI, etc.)
 OPENAI_BASE_URL=https://api.openai.com/v1
 
-# Hybrid Search Architecture:
-# - Primary: TF-IDF (always available, no API key needed)
-# - Enhancement: Vector embeddings (optional, if API key provided)
+# Hybrid Search Architecture (Auto-switching):
+# - Has API key → Uses OpenAI-compatible vector embeddings search
+# - No API key → Automatically falls back to TF-IDF search
+# - Same search service handles both modes seamlessly
 ```
 
 ### MCP Server Options

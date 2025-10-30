@@ -206,9 +206,10 @@ const result = await pipe(
 # 1. Initialize (one time)
 npx github:sylphxltd/flow init
 
-# 2. (Optional) Set OpenAI-compatible API key for enhanced vector search
-# Works without API key using TF-IDF search
-export OPENAI_API_KEY="your-key-here"  # Optional enhancement
+# 2. (Optional) Set OpenAI-compatible API key to use vector search
+# Without key: Uses TF-IDF search (fast, free)
+# With key: Auto-upgrades to vector search (higher quality)
+export OPENAI_API_KEY="your-key-here"  # Auto-switches search mode
 ```
 
 ### Start Building
