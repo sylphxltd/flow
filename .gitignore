@@ -41,6 +41,7 @@ claude-flow
 .sylphx-flow/search-cache/
 
 ## Build artifacts and temporary files
+dist/
 package-lock.json
 *.tgz
 
