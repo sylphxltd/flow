@@ -816,7 +816,7 @@ ${mxA(Q)}`;if(B){let J=D.agentFile?`file: ${D.agentFile}`:`agent: ${D.agent}`;co
 \uD83D\uDCBB System:`)),console.log(`  Platform: ${A.system.platform} (${A.system.arch})`),console.log(`  Working Dir: ${A.directories.workingDirectory}`),console.log(`  Temp Dir: ${A.directories.temp}`),console.log(UA.blue.bold(`
 \uD83D\uDD27 Hardware:`)),console.log(`  CPU: ${A.hardware.cpu.cores} cores`),console.log(`  Total Memory: ${A.hardware.memory.total}`)}function ixA(A){console.log(UA.cyan("▸ Current Status")),console.log(UA.gray("================")),console.log(UA.blue.bold(`
 \uD83D\uDCC5 Time:`)),console.log(`  ${new Date(A.timestamp).toLocaleString("zh-HK",{timeZone:"Asia/Hong_Kong",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"})}`),console.log(UA.blue.bold(`
-\uD83D\uDCCA System Status:`)),console.log(`  Memory Usage: ${A.hardware.memory.usagePercent} used`),console.log(`  Available Memory: ${A.hardware.memory.free}`)}function sxA(A){if(console.log(UA.cyan.bold("▸ Development Environment")),console.log(UA.gray("========================")),console.log(UA.blue.bold(`
+\uD83D\uDCCA System Status:`)),console.log(`  Memory: ${A.hardware.memory.usagePercent} used (${A.hardware.memory.free} free)`)}function sxA(A){if(console.log(UA.cyan.bold("▸ Development Environment")),console.log(UA.gray("========================")),console.log(UA.blue.bold(`
 \uD83D\uDCC5 Time:`)),console.log(`  ${new Date(A.timestamp).toLocaleString("zh-HK",{timeZone:"Asia/Hong_Kong",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"})}`),A.environments&&A.environments.length>0)console.log(UA.blue.bold(`
 \uD83D\uDEE0️  Available Tools:`)),A.environments.forEach((D)=>{let B=D.path?` (${D.path})`:"";console.log(`  ${D.name} v${D.version}${B}`)});console.log(UA.blue.bold(`
 \uD83D\uDCBB System:`)),console.log(`  Platform: ${A.system.platform} (${A.system.arch})`),console.log(`  Node.js: ${A.system.nodeVersion}`),console.log(`  Memory: ${A.hardware.memory.usagePercent} used`),console.log(`  Working: ${A.directories.workingDirectory}`),console.log(`  Temp Dir: ${A.directories.temp}`),console.log(UA.blue.bold(`
@@ -831,4 +831,4 @@ ${mxA(Q)}`;if(B){let J=D.agentFile?`file: ${D.agentFile}`:`agent: ${D.agent}`;co
 \uD83D\uDC4B Sylphx Flow CLI terminated`),process.exit(0)})}function exA(A){if(A instanceof Error){if(A.name==="CommanderError"){let D=A;if(D.code==="commander.help"||D.code==="commander.version")return;console.error(`✗ ${D.message}`),process.exit(D.exitCode||1)}if(console.error(`✗ Error: ${A.message}`),A.stack)console.error(`
 Stack trace:`),console.error(A.stack)}else console.error(`✗ Unknown error: ${String(A)}`);process.exit(1)}zBA();
 
-//# debugId=146B45ECA71BDD0A64756E2164756E21
+//# debugId=5CDEB46BADE3F70164756E2164756E21

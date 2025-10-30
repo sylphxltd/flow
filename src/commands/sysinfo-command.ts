@@ -260,8 +260,7 @@ function displayMessagePreset(info: any) {
 
   // Dynamic system stats (can change frequently)
   console.log(chalk.blue.bold('\n📊 System Status:'));
-  console.log(`  Memory Usage: ${info.hardware.memory.usagePercent} used`);
-  console.log(`  Available Memory: ${info.hardware.memory.free}`);
+  console.log(`  Memory: ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`);
 }
 
 function displayDevelopmentPreset(info: any) {
