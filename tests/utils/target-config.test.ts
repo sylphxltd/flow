@@ -6,6 +6,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import * as readline from 'node:readline';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MCP_SERVER_REGISTRY } from '../../src/config/servers.js';
 import { targetManager } from '../../src/core/target-manager.js';
@@ -24,8 +25,10 @@ import {
 } from '../../src/utils/target-config.js';
 
 // Mock readline module at the top level
+let createInterfaceMock = vi.fn();
+
 vi.mock('node:readline', () => ({
-  createInterface: vi.fn(),
+  createInterface: createInterfaceMock,
 }));
 
 describe('Target Config', () => {
@@ -423,7 +426,7 @@ describe('Target Config', () => {
       };
 
       vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
-      vi.mocked(readline.createInterface).mockReturnValue(readlineInterface as any);
+      createInterfaceMock.mockReturnValue(readlineInterface as any);
       vi.spyOn(secretUtils, 'convertSecretsToFileReferences').mockResolvedValue({});
       vi.spyOn(secretUtils, 'addToGitignore').mockResolvedValue(undefined);
     });
