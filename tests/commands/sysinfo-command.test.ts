@@ -42,19 +42,19 @@ describe('sysinfo-command', () => {
     const options = sysinfoCommand.options;
     const optionNames = options.map((opt: any) => opt.flags);
 
-    expect(optionNames).toContain('--target <type>');
-    expect(optionNames).toContain('--json');
+    expect(optionNames).toContain('--hook <type>');
+    expect(optionNames).toContain('--output <type>');
   });
 
-  it('should accept target option', () => {
-    const targetOption = sysinfoCommand.options.find((opt: any) => opt.flags === '--target <type>');
-    expect(targetOption).toBeDefined();
-    expect(targetOption.description).toContain('Target platform');
+  it('should accept hook option', () => {
+    const hookOption = sysinfoCommand.options.find((opt: any) => opt.flags === '--hook <type>');
+    expect(hookOption).toBeDefined();
+    expect(hookOption.description).toContain('Hook type');
   });
 
-  it('should accept json option', () => {
-    const jsonOption = sysinfoCommand.options.find((opt: any) => opt.flags === '--json');
-    expect(jsonOption).toBeDefined();
-    expect(jsonOption.description).toBe('Output in JSON format');
+  it('should accept output option', () => {
+    const outputOption = sysinfoCommand.options.find((opt: any) => opt.flags === '--output <type>');
+    expect(outputOption).toBeDefined();
+    expect(outputOption.description).toContain('Output format');
   });
 });
