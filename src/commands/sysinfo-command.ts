@@ -52,6 +52,10 @@ async function getSystemInfo() {
   const cpuModel = cpus[0]?.model || 'Unknown';
   const cpuCores = cpus.length;
 
+  // Use load average as CPU indicator (fast and available on Unix-like systems)
+  const loadAvg = os.loadavg();
+  const cpuUsagePercent = Math.round((loadAvg[0] / cpuCores) * 100); // 1-minute average / cores
+
   // Get system uptime
   const uptime = os.uptime();
   const uptimeHours = Math.floor(uptime / 3600);
@@ -82,6 +86,7 @@ async function getSystemInfo() {
       cpu: {
         model: cpuModel,
         cores: cpuCores,
+        usagePercent: `${cpuUsagePercent}%`,
       },
       memory: {
         total: formatBytes(totalMem),
@@ -228,6 +233,7 @@ function displaySimpleMessagePreset(info: any) {
   // Simple, clean output without extra symbols
   console.log(`Current Time: ${new Date(info.timestamp).toLocaleString()}`);
 
+  console.log(`CPU: ${info.hardware.cpu.usagePercent}`);
   console.log(`Memory: ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`);
 }
 
