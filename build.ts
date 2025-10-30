@@ -4,7 +4,7 @@
  * Handles native module dependencies properly
  */
 
-import { chmodSync, cpSync, existsSync, rmSync } from 'node:fs';
+import { chmodSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { type BuildOutput, build } from 'bun';
 import chalk from 'chalk';
@@ -79,20 +79,6 @@ try {
 	}
 } catch (error) {
 	execSpinner.fail('Failed to make executable');
-	throw error;
-}
-
-// Copy assets
-const assetsSpinner = ora('Copying assets').start();
-try {
-	if (existsSync('./src/assets')) {
-		cpSync('./src/assets', './dist/assets', { recursive: true });
-		assetsSpinner.succeed('Copied assets');
-	} else {
-		assetsSpinner.info('No assets to copy');
-	}
-} catch (error) {
-	assetsSpinner.fail('Failed to copy assets');
 	throw error;
 }
 

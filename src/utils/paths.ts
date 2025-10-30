@@ -2,12 +2,12 @@
  * Centralized path resolution for all static assets
  *
  * Structure:
- *   src/assets/agents/     -> copied to dist/assets/agents/
- *   src/assets/templates/  -> copied to dist/assets/templates/
- *   src/assets/rules/      -> copied to dist/assets/rules/
+ *   assets/ (at project root) - single source of truth
  *
- * Assets are always in dist/assets/ when published.
- * During development, we reference from src/.
+ * Path resolution:
+ * - Development: src/utils/paths.ts reads ../assets
+ * - Production: dist/xxx.js reads ../assets
+ * - No copying needed, both read same location
  */
 
 import fs from 'node:fs';
@@ -16,37 +16,27 @@ import { fileURLToPath } from 'node:url';
 import { pathSecurity } from './security.js';
 
 /**
- * Get the dist directory (where assets live)
+ * Get the project root directory
  */
-function getDistDir(): string {
+function getProjectRoot(): string {
   const __filename = fileURLToPath(import.meta.url);
 
-  // Find dist directory - code is always bundled into dist/
-  const distIndex = __filename.lastIndexOf('/dist/');
-  if (distIndex === -1) {
-    // In test/development environments, we might be running from src/
-    // Try to find the project root and look for dist directory
-    const projectRootIndex = __filename.lastIndexOf('/src/');
-    if (projectRootIndex !== -1) {
-      const projectRoot = __filename.substring(0, projectRootIndex);
-      const distDir = path.join(projectRoot, 'dist');
-
-      // Check if dist directory exists
-      if (fs.existsSync(distDir)) {
-        return distDir;
-      }
-
-      // If dist doesn't exist yet, assume project root as base for development
-      return projectRoot;
-    }
-
-    throw new Error('Code must run from dist/ directory or be in a project with dist/ available');
+  // From src/utils/paths.ts → find /src/ and go up
+  const srcIndex = __filename.lastIndexOf('/src/');
+  if (srcIndex !== -1) {
+    return __filename.substring(0, srcIndex);
   }
 
-  return __filename.substring(0, distIndex + 5); // +5 to include '/dist'
+  // From dist/xxx.js → find /dist/ and go up
+  const distIndex = __filename.lastIndexOf('/dist/');
+  if (distIndex !== -1) {
+    return __filename.substring(0, distIndex);
+  }
+
+  throw new Error('Cannot determine project root - code must be in src/ or dist/');
 }
 
-const ASSETS_ROOT = path.join(getDistDir(), 'assets');
+const ASSETS_ROOT = path.join(getProjectRoot(), 'assets');
 
 /**
  * Get path to agents directory
