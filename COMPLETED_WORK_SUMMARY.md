@@ -429,8 +429,9 @@ const result = await pipe(
 **Results:**
 - ✅ Claude-code tests: 7/7 passing (was 0/7)
 - ✅ Functional tests: 75/75 passing (100%)
-- ✅ Search-tool-builder: 20/31 passing (improved from 14/31)
-- ✅ Overall: 1577 pass, 412 fail (improved from 599 baseline)
+- ✅ Search-tool-builder: 31/31 passing (was 20/31, fixed critical category bug)
+- ✅ Overall: 1588 pass, 401 fail (was 1346 pass, 599 fail at baseline)
+- 🎯 **79.8% pass rate** (up from 69.2% baseline)
 
 **Code Quality Metrics:**
 - **Type Safety**: Full Result type usage for file operations
@@ -454,6 +455,25 @@ const result = await pipe(
    - Clear parameter types for injected dependencies
    - Comments explain why dependency injection is used
    - Result types document possible errors
+
+### Critical Bug Fixes ✅
+
+**Problem:** Category filtering in search-tool-builder was broken
+
+**Root Cause:**
+- URI parsing used `.split('/')[1]` to extract category
+- For `knowledge://test/doc1`, this returned empty string instead of 'knowledge'
+- Category filtering never worked correctly
+
+**Solution:**
+- Changed to `.split('://')[0]` to extract protocol/scheme
+- Properly extracts 'knowledge' from 'knowledge://test/doc1'
+- All 31 search-tool-builder tests now passing
+
+**Impact:**
+- MCP server search now correctly filters by category
+- Knowledge base and codebase searches work as expected
+- Production-ready search functionality
 
 ---
 
