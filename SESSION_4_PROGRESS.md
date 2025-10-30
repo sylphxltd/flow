@@ -226,3 +226,55 @@ class ProcessManager {
 **Status**: Session complete, 90% milestone achieved
 **Next Goal**: 95% (2139/2243 tests)
 **Path**: Fix test pollution in tests #1-49
+
+---
+
+## Session 4 Extended: Deep Pollution Investigation
+
+**Final Status**: 2035/2243 (90.7%)
+**Total Session Gain**: +174 tests (1861 → 2035)
+**Investigation Time**: ~4 hours
+
+### Major Discovery
+
+Found the ROOT CAUSE of test pollution through systematic binary search:
+
+**The Problem**: Module-level vi.mock() calls persist across test files in vitest 4.x
+
+**Example Flow**:
+1. mcp-configuration.test.ts mocks secret-utils
+2. Tests run in alphabetical order
+3. Later, secret-utils.test.ts tries to test REAL implementation
+4. But the mock from mcp-configuration is still active!
+5. Result: 42 test failures (testing mock instead of real code)
+
+### Investigation Methods Used
+
+**Binary Search Approach**:
+- Split 57 test files in half
+- Test each half + secret-utils.test.ts
+- Narrowed down to files 15-21
+- Identified: mcp-configuration.test.ts causes pollution
+
+**Key Finding**: Tests pass individually but fail in specific combinations
+
+### Solutions Attempted (All Unsuccessful)
+
+1. vitest config changes - No effect
+2. vi.resetModules() - Made worse (231 failures)
+3. vi.unmock() - Not available in vitest 4.x
+4. Import order changes - No effect
+5. restoreAllMocks fixes - Only +1 test
+6. Additional defensive mocks - No effect
+
+### The Path Forward
+
+**Root Issue**: Vitest 4.x lacks vi.unmock() to undo module mocks
+
+**Next Approaches**:
+1. Test isolation: Run in separate processes
+2. Refactor to per-test mocks
+3. Reorder test execution
+4. Consider vitest version change
+
+**Recommendation**: Test isolation most promising
