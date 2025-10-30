@@ -60,17 +60,21 @@ npx github:sylphxltd/flow mcp config gpt-image # Configure API keys
 
 ### `flow sysinfo` - Display System Information
 ```bash
-npx github:sylphxltd/flow sysinfo              # Quick system info (default hook preset)
-npx github:sylphxltd/flow sysinfo --preset hook     # Minimal info for LLM hooks
-npx github:sylphxltd/flow sysinfo --preset development # Development tools & system info
-npx github:sylphxltd/flow sysinfo --preset full     # Complete system details
-npx github:sylphxltd/flow sysinfo --json      # Output system info as JSON
+npx github:sylphxltd/flow sysinfo                     # Show system info (message hook)
+npx github:sylphxltd/flow sysinfo --hook session          # Static session info
+npx github:sylphxltd/flow sysinfo --hook message          # Dynamic system status
+npx github:sylphxltd/flow sysinfo --output standard          # Standard output
+npx github:sylphxltd/flow sysinfo --output json             # JSON output
 ```
 
-*Presets:*
-- *`hook`* - Time, environment tools, platform, memory usage (for LLM hooks)
-- *`development`* - Development tools, system specs, and hardware info
-- *`full`* - Complete system information including processes and directories
+*Output Formats:*
+- *`simple`* - Clean text, optimized for LLM hooks (default)
+- *`standard`* - Colored output with decorations
+- *`json`* - JSON format for automation
+
+*Hook Types:*
+- *`session`* - Static system info (platform, dirs, hardware) - runs once
+- *`message`* - Dynamic status (time, CPU, memory) - runs per message
 
 ### `flow sync` - Legacy Sync [DEPRECATED]
 > ⚠️ Use `flow init` instead. Kept for backward compatibility.

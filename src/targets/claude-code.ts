@@ -398,7 +398,7 @@ Please begin your response with a comprehensive summary of all the instructions 
               hooks: [
                 {
                   type: 'command',
-                  command: 'npx -y github:sylphxltd/flow sysinfo --preset session --output simple',
+                  command: 'npx -y github:sylphxltd/flow sysinfo --hook session',
                 },
               ],
             },
@@ -408,7 +408,7 @@ Please begin your response with a comprehensive summary of all the instructions 
               hooks: [
                 {
                   type: 'command',
-                  command: 'npx -y github:sylphxltd/flow sysinfo --preset message --output simple',
+                  command: 'npx -y github:sylphxltd/flow sysinfo --hook message',
                 },
               ],
             },
