@@ -7,12 +7,11 @@
 import { chmodSync, cpSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { type BuildOutput, build } from 'bun';
+import chalk from 'chalk';
+import ora from 'ora';
+import boxen from 'boxen';
 
-// Clean dist folder
-console.log('🧹 Cleaning dist folder...');
-if (existsSync('./dist')) {
-	rmSync('./dist', { recursive: true, force: true });
-}
+const startTime = Date.now();
 
 // Native dependencies that should not be bundled
 const externalDeps = [
@@ -25,10 +24,25 @@ const externalDeps = [
 	'fsevents',
 ];
 
-console.log('📦 Building with Bun...');
-console.log('   External deps:', externalDeps.join(', '));
+console.log(chalk.bold.cyan('\n⚡ Sylphx Flow Build\n'));
 
+// Clean dist folder
+const cleanSpinner = ora('Cleaning dist folder').start();
 try {
+	if (existsSync('./dist')) {
+		rmSync('./dist', { recursive: true, force: true });
+	}
+	cleanSpinner.succeed('Cleaned dist folder');
+} catch (error) {
+	cleanSpinner.fail('Failed to clean dist folder');
+	throw error;
+}
+
+// Build with Bun
+const buildSpinner = ora('Building with Bun').start();
+try {
+	buildSpinner.text = `Building with Bun (${externalDeps.length} external deps)`;
+
 	const result: BuildOutput = await build({
 		entrypoints: ['./src/index.ts'],
 		outdir: './dist',
@@ -40,30 +54,72 @@ try {
 	});
 
 	if (!result.success) {
-		console.error('❌ Build failed');
+		buildSpinner.fail('Build failed');
 		process.exit(1);
 	}
 
-	console.log('✅ Build successful!');
+	buildSpinner.succeed(
+		`Built ${chalk.cyan(result.outputs.length)} output files`,
+	);
+} catch (error) {
+	buildSpinner.fail('Build error');
+	console.error(chalk.red('\n'), error);
+	process.exit(1);
+}
 
-	// Make index.js executable
+// Make executable
+const execSpinner = ora('Making index.js executable').start();
+try {
 	const indexPath = join('./dist', 'index.js');
 	if (existsSync(indexPath)) {
 		chmodSync(indexPath, '755');
-		console.log('✅ Made index.js executable');
+		execSpinner.succeed('Made index.js executable');
+	} else {
+		execSpinner.warn('index.js not found');
 	}
+} catch (error) {
+	execSpinner.fail('Failed to make executable');
+	throw error;
+}
 
-	// Copy assets
-	console.log('📁 Copying assets...');
+// Copy assets
+const assetsSpinner = ora('Copying assets').start();
+try {
 	if (existsSync('./src/assets')) {
 		cpSync('./src/assets', './dist/assets', { recursive: true });
-		console.log('✅ Assets copied');
+		assetsSpinner.succeed('Copied assets');
+	} else {
+		assetsSpinner.info('No assets to copy');
 	}
-
-	console.log('\n🎉 Build complete!');
-	console.log('\n📝 Note: Native dependencies are marked as external.');
-	console.log('   They will be resolved from node_modules at runtime.');
 } catch (error) {
-	console.error('❌ Build error:', error);
-	process.exit(1);
+	assetsSpinner.fail('Failed to copy assets');
+	throw error;
 }
+
+// Success summary
+const buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
+console.log(
+	'\n' +
+		boxen(
+			chalk.green.bold('✓ Build complete!') +
+				'\n\n' +
+				chalk.dim(`Time: ${buildTime}s`) +
+				'\n' +
+				chalk.dim(`Target: node`) +
+				'\n' +
+				chalk.dim(`External deps: ${externalDeps.length}`),
+			{
+				padding: 1,
+				margin: 0,
+				borderStyle: 'round',
+				borderColor: 'green',
+			},
+		) +
+		'\n',
+);
+
+console.log(
+	chalk.dim(
+		'ℹ Native dependencies will be resolved from node_modules at runtime.\n',
+	),
+);
