@@ -4,9 +4,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { mcpCommand } from '../../src/commands/mcp-command.js';
 
-// Mock target manager
+// Mock target manager - MUST be before importing mcpCommand
 vi.mock('../../src/core/target-manager.js', () => {
   return {
     targetManager: {
@@ -99,6 +98,9 @@ vi.mock('../../src/utils/error-handler.js', () => {
     },
   };
 });
+
+// Dynamic import after all mocks are defined
+const { mcpCommand } = await import('../../src/commands/mcp-command.js');
 
 describe('MCP Command', () => {
   describe('Main Command', () => {

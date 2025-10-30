@@ -4,7 +4,6 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runCommand } from '../../src/commands/run-command.js';
 
 // Mock fs promises
 vi.mock('node:fs/promises', () => {
@@ -61,6 +60,9 @@ beforeEach(() => {
 afterEach(() => {
   console.log = originalConsoleLog;
 });
+
+// Dynamic import after all mocks are defined
+const { runCommand } = await import('../../src/commands/run-command.js');
 
 describe('Run Command', () => {
   describe('Command Registration', () => {

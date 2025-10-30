@@ -99,20 +99,47 @@ export class TargetRegistry {
 // Global registry instance
 export const targetRegistry = new TargetRegistry();
 
-// Initialize targets immediately
-targetRegistry.initialize();
+/**
+ * Lazy initialization - called on first access to avoid circular dependency
+ */
+function ensureInitialized() {
+  targetRegistry.initialize();
+}
 
 /**
  * Convenience functions that delegate to the registry
  */
-export const ALL_TARGETS = () => targetRegistry.getAllTargets();
-export const IMPLEMENTED_TARGETS = () => targetRegistry.getImplementedTargets();
-export const getAllTargetIDs = () => targetRegistry.getAllTargetIDs();
-export const getImplementedTargetIDs = () => targetRegistry.getImplementedTargetIDs();
-export const getDefaultTarget = () => targetRegistry.getDefaultTarget().id;
-export const getTarget = (id: string) => targetRegistry.getTarget(id);
-export const isTargetImplemented = (id: string) => targetRegistry.isTargetImplemented(id);
-export const getTargetsWithMCPSupport = () =>
-  targetRegistry.getTargetsWithMCPSupport().map((target) => target.id);
+export const ALL_TARGETS = () => {
+  ensureInitialized();
+  return targetRegistry.getAllTargets();
+};
+export const IMPLEMENTED_TARGETS = () => {
+  ensureInitialized();
+  return targetRegistry.getImplementedTargets();
+};
+export const getAllTargetIDs = () => {
+  ensureInitialized();
+  return targetRegistry.getAllTargetIDs();
+};
+export const getImplementedTargetIDs = () => {
+  ensureInitialized();
+  return targetRegistry.getImplementedTargetIDs();
+};
+export const getDefaultTarget = () => {
+  ensureInitialized();
+  return targetRegistry.getDefaultTarget().id;
+};
+export const getTarget = (id: string) => {
+  ensureInitialized();
+  return targetRegistry.getTarget(id);
+};
+export const isTargetImplemented = (id: string) => {
+  ensureInitialized();
+  return targetRegistry.isTargetImplemented(id);
+};
+export const getTargetsWithMCPSupport = () => {
+  ensureInitialized();
+  return targetRegistry.getTargetsWithMCPSupport().map((target) => target.id);
+};
 
 export type TargetID = ReturnType<typeof getAllTargetIDs>[number];

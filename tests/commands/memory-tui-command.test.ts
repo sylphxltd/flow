@@ -4,7 +4,6 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { handleMemoryTuiCommand, memoryTuiCommand } from '../../src/commands/memory-tui-command.js';
 
 // Mock the TUI handler
 vi.mock('../../src/utils/memory-tui.js', () => {
@@ -21,6 +20,9 @@ vi.mock('../../src/core/target-manager.js', () => {
     },
   };
 });
+
+// Dynamic import after all mocks are defined
+const { handleMemoryTuiCommand, memoryTuiCommand } = await import('../../src/commands/memory-tui-command.js');
 
 describe('Memory TUI Command', () => {
   describe('Command Configuration', () => {

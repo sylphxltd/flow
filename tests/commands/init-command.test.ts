@@ -4,9 +4,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { initCommand } from '../../src/commands/init-command.js';
 
-// Mock target manager
+// Mock target manager - MUST be before importing initCommand
 vi.mock('../../src/core/target-manager.js', () => {
   return {
     targetManager: {
@@ -122,6 +121,9 @@ vi.mock('../../src/config/servers.js', () => {
     },
   };
 });
+
+// Dynamic import after all mocks are defined
+const { initCommand } = await import('../../src/commands/init-command.js');
 
 describe('Init Command', () => {
   describe('Command Registration', () => {
