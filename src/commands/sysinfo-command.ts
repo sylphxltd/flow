@@ -13,7 +13,15 @@ export const sysinfoCommand = new Command('sysinfo')
   .option('--preset <type>', 'Output preset (hook, development, full)', 'hook')
   .action(async (options) => {
     try {
-      const systemInfo = await getSystemInfo();
+      // Only check environments for presets that need them
+      let systemInfo;
+      if (options.preset === 'hook') {
+        // Fast path - no environment checks for hook preset
+        systemInfo = await getSystemInfo();
+      } else {
+        // Full info with environment checks for other presets
+        systemInfo = await getSystemInfoWithEnvironments();
+      }
 
       if (options.json) {
         console.log(JSON.stringify(systemInfo, null, 2));
@@ -55,9 +63,6 @@ async function getSystemInfo() {
   const hostname = os.hostname();
   const userInfo = os.userInfo();
 
-  // Check for development environments
-  const environments = await checkDevelopmentEnvironments();
-
   return {
     timestamp: currentTime,
     system: {
@@ -93,6 +98,15 @@ async function getSystemInfo() {
       ppid: process.ppid,
       memoryUsage: process.memoryUsage(),
     },
+  };
+}
+
+async function getSystemInfoWithEnvironments() {
+  const systemInfo = await getSystemInfo();
+  const environments = await checkDevelopmentEnvironments();
+
+  return {
+    ...systemInfo,
     environments,
   };
 }
@@ -100,7 +114,7 @@ async function getSystemInfo() {
 async function checkDevelopmentEnvironments() {
   const envs = [];
 
-  // Node.js environment
+  // Node.js environment (immediate, no external command)
   if (process.version) {
     envs.push({
       name: 'Node.js',
@@ -109,33 +123,111 @@ async function checkDevelopmentEnvironments() {
     });
   }
 
-  // Check for common development tools
-  const tools = [
-    { name: 'Python', check: () => checkCommand('python') || checkCommand('python3') },
-    { name: 'Git', check: () => checkCommand('git') },
-    { name: 'Docker', check: () => checkCommand('docker') },
-    { name: 'Bun', check: () => checkCommand('bun') },
-    { name: 'npm', check: () => checkCommand('npm') },
-    { name: 'yarn', check: () => checkCommand('yarn') },
-    { name: 'pnpm', check: () => checkCommand('pnpm') },
-    { name: 'Homebrew', check: () => checkCommand('brew') },
+  // Quick environment variable checks (no external commands)
+  const quickChecks = [
+    { name: 'npm', env: 'npm_config_user_agent', version: extractVersionFromEnv },
+    { name: 'yarn', env: 'npm_config_user_agent', version: extractVersionFromEnv },
+    { name: 'pnpm', env: 'npm_config_user_agent', version: extractVersionFromEnv },
   ];
 
-  for (const tool of tools) {
-    try {
-      const version = await tool.check();
-      if (version) {
-        envs.push({
-          name: tool.name,
-          version,
-        });
-      }
-    } catch {
-      // Tool not found
+  for (const tool of quickChecks) {
+    const version = tool.version(process.env[tool.env], tool.name);
+    if (version) {
+      envs.push({
+        name: tool.name,
+        version,
+      });
     }
   }
 
+  // Parallel fast checks for essential tools with timeout
+  const essentialTools = [
+    { name: 'Git', check: () => checkCommandFast('git') },
+    { name: 'Python', check: () => checkCommandFast('python3') || checkCommandFast('python') },
+    { name: 'Docker', check: () => checkCommandFast('docker') },
+    { name: 'Bun', check: () => checkCommandFast('bun') },
+  ];
+
+  // Run checks in parallel with timeout
+  const results = await Promise.allSettled(
+    essentialTools.map(async (tool) => {
+      try {
+        const version = await tool.check();
+        return version ? { name: tool.name, version } : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  // Add successful results
+  results.forEach((result) => {
+    if (result.status === 'fulfilled' && result.value) {
+      envs.push(result.value);
+    }
+  });
+
   return envs;
+}
+
+function extractVersionFromEnv(userAgent: string | undefined, toolName: string): string | null {
+  if (!userAgent) return null;
+
+  const regex = new RegExp(`${toolName.toLowerCase()}/([\\d.]+)`, 'i');
+  const match = userAgent.match(regex);
+  return match ? match[1] : null;
+}
+
+async function checkCommandFast(command: string): Promise<string | null> {
+  try {
+    const { spawn } = await import('node:child_process');
+    return new Promise((resolve, reject) => {
+      const child = spawn(command, ['--version'], {
+        stdio: 'pipe',
+        shell: true,
+      });
+
+      let output = '';
+      let finished = false;
+
+      // Set timeout
+      const timeout = setTimeout(() => {
+        if (!finished) {
+          finished = true;
+          child.kill();
+          reject(new Error('Command timeout'));
+        }
+      }, 1000); // 1 second timeout
+
+      child.stdout?.on('data', (data) => {
+        output += data.toString();
+      });
+
+      child.on('close', (code) => {
+        if (!finished) {
+          finished = true;
+          clearTimeout(timeout);
+          if (code === 0) {
+            // Extract version from output
+            const versionMatch = output.match(/v?(\d+\.\d+(\.\d+)?)/);
+            resolve(versionMatch ? versionMatch[1] : output.trim());
+          } else {
+            reject(new Error(`Command failed with code ${code}`));
+          }
+        }
+      });
+
+      child.on('error', (error) => {
+        if (!finished) {
+          finished = true;
+          clearTimeout(timeout);
+          reject(error);
+        }
+      });
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function checkCommand(command: string): Promise<string | null> {
@@ -204,14 +296,20 @@ function displayHookPreset(info: any) {
     minute: '2-digit'
   })}`);
 
-  // Environment info (most useful for LLM)
+  // Node.js info (always available, no external command)
+  console.log(chalk.blue.bold('\n🛠️  Environment:'));
+  console.log(`  Node.js: ${info.system.nodeVersion.slice(1)}`);
+
+  // Additional environment info (only if available from other presets)
   if (info.environments && info.environments.length > 0) {
-    console.log(chalk.blue.bold('\n🛠️  Environment:'));
-    info.environments.slice(0, 5).forEach((env: any) => {
-      console.log(`  ${env.name}: ${env.version}`);
-    });
-    if (info.environments.length > 5) {
-      console.log(`  ... and ${info.environments.length - 5} more tools`);
+    const otherEnvs = info.environments.filter((env: any) => env.name !== 'Node.js');
+    if (otherEnvs.length > 0) {
+      otherEnvs.slice(0, 3).forEach((env: any) => {
+        console.log(`  ${env.name}: ${env.version}`);
+      });
+      if (otherEnvs.length > 3) {
+        console.log(`  ... and ${otherEnvs.length - 3} more tools`);
+      }
     }
   }
 
