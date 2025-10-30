@@ -4,6 +4,7 @@ export class ProcessManager {
   private static instance: ProcessManager;
   private childProcesses: Set<any> = new Set();
   private isShuttingDown = false;
+  private signalHandlers: Map<string, (...args: any[]) => void> = new Map();
 
   static getInstance(): ProcessManager {
     if (!ProcessManager.instance) {
@@ -11,6 +12,17 @@ export class ProcessManager {
       ProcessManager.instance.setupSignalHandlers();
     }
     return ProcessManager.instance;
+  }
+
+  /**
+   * Reset singleton instance (for testing only)
+   * @internal
+   */
+  static resetInstance(): void {
+    if (ProcessManager.instance) {
+      ProcessManager.instance.cleanup();
+      ProcessManager.instance = undefined as any;
+    }
   }
 
   private setupSignalHandlers() {
@@ -24,10 +36,35 @@ export class ProcessManager {
       process.exit(0);
     };
 
+    // Create and store signal handlers
+    const sigintHandler = () => shutdown('SIGINT');
+    const sigtermHandler = () => shutdown('SIGTERM');
+    const sighupHandler = () => shutdown('SIGHUP');
+
+    this.signalHandlers.set('SIGINT', sigintHandler);
+    this.signalHandlers.set('SIGTERM', sigtermHandler);
+    this.signalHandlers.set('SIGHUP', sighupHandler);
+
     // Handle termination signals
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGHUP', () => shutdown('SIGHUP'));
+    process.on('SIGINT', sigintHandler);
+    process.on('SIGTERM', sigtermHandler);
+    process.on('SIGHUP', sighupHandler);
+  }
+
+  /**
+   * Cleanup signal handlers and reset state (for testing)
+   * @internal
+   */
+  private cleanup() {
+    // Remove signal handlers
+    for (const [signal, handler] of this.signalHandlers.entries()) {
+      process.removeListener(signal as any, handler);
+    }
+    this.signalHandlers.clear();
+
+    // Clear child processes
+    this.childProcesses.clear();
+    this.isShuttingDown = false;
   }
 
   trackChildProcess(childProcess: any) {

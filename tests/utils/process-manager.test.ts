@@ -31,6 +31,11 @@ describe('Process Manager', () => {
   });
 
   afterEach(() => {
+    // Reset singleton instance to clean state
+    if (ProcessManager) {
+      ProcessManager.resetInstance();
+    }
+
     vi.clearAllMocks();
     // Restore original process
     (global as any).process = originalProcess;
