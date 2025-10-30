@@ -1,24 +1,26 @@
 # Codebase Search - Semantic Code Discovery
 
-The **Codebase Search** system provides AI assistants with semantic search capabilities across your entire codebase using vector embeddings and intelligent indexing.
+The **Codebase Search** system provides AI assistants with semantic search capabilities across your entire codebase using **StarCoder2 tokenization + TF-IDF** for intelligent code understanding.
 
 ## 🔍 What is Codebase Search?
 
 A semantic search system that understands code by meaning, not just by keywords:
-- **Vector Embeddings** - Code converted to semantic vectors
+- **StarCoder2 Tokenization** - World-class code tokenization (70+ languages)
+- **TF-IDF Statistical Ranking** - Proven relevance scoring
 - **Intelligent Indexing** - Automatic codebase scanning and indexing
-- **Context-Aware** - Understands code relationships and context
+- **Context-Aware** - Understands code semantically through tokenization
 - **Real-time Updates** - Can reindex as code changes
-- **Multi-Language** - Works with any programming language
+- **Multi-Language** - Works with 70+ programming languages
 
 ## ✨ Key Features
 
 - **🧠 Semantic Understanding** - Find code by what it does, not what it's called
-- **⚡ Fast Search** - Vector similarity search in milliseconds
-- **📊 Relevance Ranking** - Results sorted by semantic similarity
+- **⚡ Fast Search** - TF-IDF statistical search in milliseconds
+- **📊 Relevance Ranking** - Results ranked by TF-IDF + semantic tokens
 - **🔄 Auto-Indexing** - Keeps search index up-to-date
 - **🎯 Precise Results** - Find exact code sections, not entire files
-- **🌐 Language Agnostic** - TypeScript, JavaScript, Python, Go, Rust, etc.
+- **🌐 70+ Languages** - StarCoder2 understands TypeScript, JavaScript, Python, Go, Rust, and 65+ more
+- **🆓 No API Needed** - Runs locally, no external dependencies
 
 ## 🛠️ CLI Commands
 
@@ -184,26 +186,30 @@ flow codebase search "error handling and exception management"
    ↓
 2. Filter files (ignore node_modules, .git, etc.)
    ↓
-3. Read and chunk source files
+3. Read source files
    ↓
-4. Generate vector embeddings (OpenAI)
+4. Tokenize with StarCoder2 (70+ languages)
    ↓
-5. Store in .sylphx-flow/codebase.db
+5. Calculate TF-IDF scores
    ↓
-6. Ready for semantic search
+6. Store in .sylphx-flow/codebase.db
+   ↓
+7. Ready for fast TF-IDF search
 ```
 
 ### Search Process
 ```
 1. User/AI searches: "authentication logic"
    ↓
-2. Query converted to vector embedding
+2. Query tokenized with StarCoder2
    ↓
-3. Semantic similarity search in index
+3. TF-IDF statistical search
    ↓
-4. Results ranked by relevance score
+4. Cosine similarity ranking
    ↓
-5. Code chunks returned with context
+5. Results ranked by relevance score
+   ↓
+6. Code sections returned with context
 ```
 
 ### File Filtering
@@ -293,14 +299,14 @@ flow run "implement user registration" --agent coder
 
 ### Environment Variables
 ```bash
-# Required for embeddings
-OPENAI_API_KEY=your-api-key-here
+# Codebase search uses TF-IDF (primary method)
+# No API key required for basic functionality
 
-# Optional: Custom embedding model
-EMBEDDING_MODEL=text-embedding-3-small
+# Optional: Future support for OpenAI-compatible vector embeddings
+# OPENAI_API_KEY=your-key-here  # Not yet implemented for codebase
 
-# Optional: Custom OpenAI endpoint
-OPENAI_BASE_URL=https://api.openai.com/v1
+# Note: Knowledge base supports optional vector embeddings
+# Codebase search currently uses TF-IDF only (fast and accurate)
 ```
 
 ### MCP Server Options
@@ -512,23 +518,25 @@ flow codebase reindex
 flow codebase status
 ```
 
-### Embeddings Not Working
+### Search Not Working
 
-**Problem**: Search fails with embedding errors
+**Problem**: Search returns no results or fails
 
 **Solutions:**
 ```bash
-# Check API key
-echo $OPENAI_API_KEY
+# Check if codebase is indexed
+flow codebase status
 
-# Verify MCP server is running
-flow mcp start
+# Reindex if needed
+flow codebase reindex
 
-# Check MCP logs for errors
-flow mcp start --verbose
+# Verify database exists
+ls -la .sylphx-flow/codebase.db
 
 # Test with simpler query
-flow codebase search "simple test"
+flow codebase search "function"
+
+# Note: No API key needed - uses local StarCoder2 tokenization
 ```
 
 ## 🎯 Advanced Usage

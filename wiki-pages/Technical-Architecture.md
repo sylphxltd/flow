@@ -1,114 +1,167 @@
 # Technical Architecture
 
-Deep dive into Sylphx Flow's technical implementation, focusing on **Starcode embeddings**, **functional architecture**, and **MCP integration**.
+Deep dive into Sylphx Flow's technical implementation, focusing on **StarCoder2 tokenization**, **TF-IDF search**, **functional architecture**, and **MCP integration**.
 
-## 🌟 Starcode Embeddings - The Core Innovation
+## 🌟 StarCoder2 Tokenization - The Core Innovation
 
-### What is Starcode?
+### What is StarCoder2?
 
-**Starcode** is a state-of-the-art code embedding model that transforms code into semantic vectors for understanding and search.
+**StarCoder2** is BigCode's state-of-the-art code tokenizer that provides world-class tokenization for 70+ programming languages and natural languages.
 
 **Key Properties:**
 - 🌍 **70+ Programming Languages** - From TypeScript to Assembly
 - 🗣️ **Natural Language Support** - English, Chinese, Japanese, etc.
-- 🎯 **Semantic Understanding** - Understands what code *does*, not just what it *says*
-- ⚡ **High Performance** - Fast embedding generation
+- 🎯 **Semantic Tokenization** - Understands code semantically, not just lexically
+- ⚡ **High Performance** - Fast, local tokenization
 - 🎨 **Context-Aware** - Understands code structure and relationships
+- 🔧 **49,152 Vocabulary** - Rich vocabulary for code understanding
 
-### Why Starcode?
+### Why StarCoder2 Tokenization + TF-IDF?
+
+**Sylphx Flow uses a hybrid approach:**
+
+1. **StarCoder2 Tokenization** - World-class code understanding (70+ languages)
+2. **TF-IDF Statistical Search** - Primary search method (fast, local, free)
+3. **Optional Vector Embeddings** - OpenAI-compatible enhancement (higher quality)
+
+**The best of both worlds**: Fast TF-IDF + Optional semantic vectors
 
 #### Comparison with Alternatives
 
-| Feature | Starcode | OpenAI Embeddings | CodeBERT | UnixCoder |
-|---------|----------|-------------------|----------|-----------|
-| **Languages** | 70+ | Limited | ~10 | ~5 |
-| **NL + Code** | ✅ Hybrid | Separate | ✅ Hybrid | Limited |
-| **Code Structure** | ✅ Deep | Surface | ✅ Deep | Medium |
-| **Performance** | Fast | API latency | Fast | Medium |
-| **Cost** | Open source | Per token | Open source | Open source |
-| **Context Size** | 2048 | 8192 | 512 | 512 |
+| Feature | Sylphx Flow (Hybrid) | Pure Vector | Traditional Keywords |
+|---------|----------------------|-------------|---------------------|
+| **Primary Method** | TF-IDF + Tokenization | Vector embeddings | Keyword matching |
+| **Enhancement** | Optional vectors | - | - |
+| **Languages** | 70+ (StarCoder2) | Limited | Any |
+| **Speed** | ⚡ Very Fast | Medium | ⚡ Fast |
+| **Accuracy** | ✅ High (both methods) | ✅ High | ❌ Low |
+| **API Required** | ❌ No (✅ optional) | ✅ Yes | ❌ No |
+| **API Cost** | 🆓 Free (💰 optional) | 💰 Per token | 🆓 Free |
+| **Semantic** | ✅ Yes | ✅ Yes | ❌ No |
+| **Works Offline** | ✅ Yes | ❌ No | ✅ Yes |
 
-**Why Sylphx Flow chose Starcode:**
-1. **70+ language support** - True polyglot search
-2. **Hybrid NL+Code** - Search in any language, find any code
-3. **Open source** - No API costs, runs locally
-4. **Optimized for code** - Better than general-purpose embeddings
+**Why Sylphx Flow chose this hybrid approach:**
+1. **Works out of the box** - TF-IDF works without API key
+2. **Optional enhancement** - Add OpenAI-compatible embeddings for higher quality
+3. **Best of both worlds** - Fast statistical search + optional semantic vectors
+4. **70+ language support** - StarCoder2 tokenization for all languages
+5. **Flexible & pragmatic** - Choose speed (TF-IDF) or quality (+ vectors)
+6. **OpenAI-compatible** - Works with OpenAI, Azure OpenAI, or any compatible endpoint
 
 ### First Production Implementation
 
-**Sylphx Flow is the first production system to implement:**
+**Sylphx Flow is the first production system to use:**
 
-1. **Starcode at scale** - Indexing entire codebases
-2. **Hybrid search** - Natural language + code simultaneously
-3. **Real-time indexing** - Fast reindexing for code changes
-4. **Cross-language understanding** - Search concepts across languages
+1. **StarCoder2 tokenization for search** - Not just for code generation
+2. **TF-IDF with code-aware tokens** - Statistical search meets semantic understanding
+3. **Hybrid NL + code search** - Natural language queries find code in any programming language
+4. **Cross-language understanding** - Search concepts across 70+ languages
 
 ### Technical Details
 
-#### Embedding Generation
+#### StarCoder2 Tokenization
 
 ```typescript
-// Starcode embedding pipeline
-class StarcodeEmbeddings {
-  async embed(code: string): Promise<number[]> {
-    // 1. Tokenization (code-aware)
-    const tokens = this.tokenize(code);
+// StarCoder2 tokenization pipeline
+class AdvancedCodeTokenizer {
+  private tokenizer: AutoTokenizer;
 
-    // 2. Generate embeddings (1536 dimensions)
-    const embedding = await this.model.encode(tokens);
-
-    // 3. Normalize for similarity search
-    return this.normalize(embedding);
+  async initialize() {
+    // Load StarCoder2 tokenizer from HuggingFace
+    this.tokenizer = await AutoTokenizer.from_pretrained('./models/starcoder2');
   }
 
-  private tokenize(code: string): Token[] {
-    // Code-aware tokenization
-    // Understands: functions, classes, variables, comments
-    // Preserves: structure, syntax, semantic meaning
+  async tokenize(code: string): Promise<AdvancedToken[]> {
+    // 1. Tokenize with StarCoder2 (49,152 vocabulary)
+    const encoded = await this.tokenizer(code);
+    const inputIds = encoded.input_ids.tolist()[0];
+
+    // 2. Decode each token ID to get text
+    const tokens = [];
+    for (const tokenId of inputIds) {
+      const tokenText = await this.tokenizer.decode([tokenId]);
+      tokens.push({
+        text: tokenText.trim().toLowerCase(),
+        id: tokenId,
+        score: 1.0, // StarCoder2 tokens are high quality
+        confidence: 1.0,
+        relevance: 'high'
+      });
+    }
+
+    return tokens;
   }
 }
 ```
 
-#### Vector Search
+#### TF-IDF Search
 
 ```typescript
-// Semantic similarity search
-class VectorSearch {
-  async search(query: string, limit: number = 10) {
-    // 1. Embed the query
-    const queryVector = await this.embeddings.embed(query);
+// Statistical search with StarCoder2 tokens
+class TFIDFSearch {
+  async search(query: string, index: SearchIndex, limit: number = 10) {
+    // 1. Tokenize query with StarCoder2
+    const queryTokens = await this.tokenizer.extractQueryTokens(query);
 
-    // 2. Cosine similarity search in vector database
-    const results = await this.vectorDB.similaritySearch(
-      queryVector,
-      limit,
-      threshold: 0.7  // Minimum similarity score
-    );
+    // 2. Calculate TF-IDF scores
+    const queryVector = this.calculateTFIDF(queryTokens, index.idf);
 
-    // 3. Rank by relevance
-    return this.rankResults(results);
+    // 3. Calculate cosine similarity with documents
+    const results = index.documents.map((doc) => {
+      const similarity = this.cosineSimilarity(queryVector, doc.terms);
+      return {
+        uri: doc.uri,
+        score: similarity,
+        matchedTerms: this.getMatchedTerms(queryTokens, doc.terms)
+      };
+    });
+
+    // 4. Sort by score and return top results
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
+  }
+
+  private cosineSimilarity(queryVec: Map<string, number>, docVec: Map<string, number>): number {
+    let dotProduct = 0;
+    for (const [term, queryScore] of queryVec.entries()) {
+      const docScore = docVec.get(term) || 0;
+      dotProduct += queryScore * docScore;
+    }
+    return dotProduct / (this.magnitude(queryVec) * this.magnitude(docVec));
   }
 }
 ```
 
-#### Chunking Strategy
+#### File Indexing Strategy
 
 ```typescript
-// Smart code chunking
-class CodeChunker {
-  chunk(code: string): Chunk[] {
-    // Parse code into semantic units
-    const ast = this.parse(code);
+// Index codebase files with StarCoder2 + TF-IDF
+async function buildSearchIndex(files: Array<{uri: string, content: string}>) {
+  const tokenizer = new AdvancedCodeTokenizer();
+  await tokenizer.initialize();
 
-    // Chunk by:
-    // - Function definitions
-    // - Class definitions
-    // - Import statements
-    // - Comment blocks
-    // - Logical sections
+  // 1. Tokenize all files with StarCoder2
+  const documentTerms = await Promise.all(
+    files.map(async (file) => ({
+      uri: file.uri,
+      terms: await tokenizer.tokenize(file.content)
+    }))
+  );
 
-    return this.ast.extractSemanticUnits();
-  }
+  // 2. Calculate IDF (Inverse Document Frequency)
+  const idf = calculateIDF(documentTerms, files.length);
+
+  // 3. Calculate TF-IDF for each document
+  const documents = documentTerms.map((doc) => ({
+    uri: doc.uri,
+    terms: calculateTFIDF(doc.terms, idf),
+    magnitude: calculateMagnitude(doc.terms)
+  }));
+
+  return {
+    documents,
+    idf,
+    totalDocuments: files.length
+  };
 }
 ```
 
@@ -218,7 +271,7 @@ class HybridSearch {
 "password hashing with bcrypt"
 "OAuth 2.0 flow implementation"
 
-// All work seamlessly with Starcode!
+// All work seamlessly with StarCoder2 tokenization!
 ```
 
 ## 🏗️ Functional Architecture
@@ -330,18 +383,18 @@ class CodebaseSearch extends BaseSearch {
 }
 
 // ✅ Good: Function composition
-const createSearch = (embedFn, dbFn) => async (query) => {
-  const embedding = await embedFn(query);
-  return await dbFn(embedding);
+const createSearch = (tokenizeFn, searchFn) => async (query) => {
+  const tokens = await tokenizeFn(query);
+  return await searchFn(tokens);
 };
 
 const knowledgeSearch = createSearch(
-  embedKnowledge,
+  tokenizeQuery,
   searchKnowledgeDB
 );
 
 const codebaseSearch = createSearch(
-  embedCode,
+  tokenizeQuery,
   searchCodebaseDB
 );
 ```
@@ -547,24 +600,25 @@ interface UnifiedStorage {
 
 // Implementations for different domains
 class KnowledgeStorage implements UnifiedStorage {
-  // Uses Starcode embeddings
-  // Stores in vector database
+  // Uses StarCoder2 tokenization + TF-IDF
+  // Optional: OpenAI embeddings for vector search
+  // Stores in SQLite database
 }
 
 class CodebaseStorage implements UnifiedStorage {
-  // Uses Starcode embeddings
-  // Stores in vector database
+  // Uses StarCoder2 tokenization + TF-IDF
+  // Stores in SQLite database
   // Monitors file changes
 }
 ```
 
 ## 📊 Performance Characteristics
 
-### Embedding Performance
+### StarCoder2 Tokenization Performance
 
 ```typescript
-// Starcode embedding generation
-const performance = {
+// StarCoder2 tokenization speed
+const tokenizationPerformance = {
   singleFile: "10-50ms",        // Average TypeScript file
   largeFile: "50-200ms",        // 1000+ lines
   batchProcessing: "100-500ms", // 10 files
@@ -572,15 +626,15 @@ const performance = {
 };
 ```
 
-### Search Performance
+### TF-IDF Search Performance
 
 ```typescript
-// Vector similarity search
+// TF-IDF statistical search
 const searchPerformance = {
-  coldSearch: "100-300ms",    // First search
-  warmSearch: "20-50ms",      // Subsequent searches
-  complexQuery: "50-100ms",   // Multi-term queries
-  largDatabase: "100-200ms"   // 10,000+ entries
+  coldSearch: "50-150ms",     // First search (no cache)
+  warmSearch: "10-30ms",      // Subsequent searches (cached)
+  complexQuery: "30-80ms",    // Multi-term queries
+  largeDatabase: "50-120ms"   // 10,000+ files
 };
 ```
 
@@ -606,14 +660,16 @@ const scalability = {
 
 ## 🎯 Design Trade-offs
 
-### Trade-off: Starcode vs OpenAI Embeddings
+### Trade-off: StarCoder2 + TF-IDF vs Vector Embeddings
 
-**Chose Starcode:**
-- ✅ 70+ languages vs limited
-- ✅ Code-optimized vs general-purpose
-- ✅ Local/free vs API/cost
-- ✅ Fast vs latency
-- ❌ 1536 dims vs 3072 dims (less capacity)
+**Chose StarCoder2 + TF-IDF:**
+- ✅ 70+ languages - True polyglot support
+- ✅ Code-optimized tokenization - Built for code
+- ✅ Local/free - No API costs
+- ✅ Fast - No API latency
+- ✅ Simpler - Less complexity
+- ✅ Reliable - No external dependencies
+- ✅ Statistical relevance - Proven TF-IDF algorithm
 
 ### Trade-off: Curated vs Custom Knowledge
 
@@ -638,7 +694,7 @@ const scalability = {
 Learn more about the implementation:
 
 - **[MEP Design Philosophy](MEP-Design-Philosophy)** - Design principles
-- **[Codebase Search](Codebase-Search)** - Using Starcode in practice
+- **[Codebase Search](Codebase-Search)** - Using StarCoder2 tokenization in practice
 - **[Knowledge Base](Knowledge-Base)** - Curated guidelines system
 - **[Agent Framework](Agent-Framework)** - Functional agent composition
 

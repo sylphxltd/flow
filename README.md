@@ -4,7 +4,7 @@
 
 **Stop writing prompts. Start building software.**
 
-The first AI development platform where you just say what you want, and it happens. Built on MEP (Minimal Effective Prompt) architecture with Starcode embeddings for true code understanding.
+The first AI development platform where you just say what you want, and it happens. Built on MEP (Minimal Effective Prompt) architecture with StarCoder2 tokenization for true code understanding.
 
 [![GitHub Stars](https://img.shields.io/github/stars/sylphxltd/flow?style=social)](https://github.com/sylphxltd/flow)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -139,9 +139,9 @@ You: [Ship it]
 - 🖥️ Your environment (via system hooks)
 - ⏰ Current time and context (automatic)
 
-### 2. Starcode Embeddings - 70+ Languages
+### 2. StarCoder2 Tokenization - 70+ Languages
 
-**First production platform to use Starcode for code understanding.**
+**First production platform to use StarCoder2 tokenization for code search.**
 
 ```bash
 # Search in ANY language, find code in ANY language
@@ -160,7 +160,8 @@ $ flow codebase search "ユーザーログイン処理"       # Japanese
 - Find code by what it **does**, not what it's **called**
 - Works across 70+ programming languages
 - Understands natural language in any human language
-- Semantic understanding, not keyword matching
+- Semantic tokenization, not keyword matching
+- TF-IDF search powered by world-class tokenization
 
 ### 3. Curated Knowledge Base (No Maintenance)
 
@@ -205,8 +206,9 @@ const result = await pipe(
 # 1. Initialize (one time)
 npx github:sylphxltd/flow init
 
-# 2. Set OpenAI API key (for embeddings)
-export OPENAI_API_KEY="your-key-here"
+# 2. (Optional) Set OpenAI-compatible API key for enhanced vector search
+# Works without API key using TF-IDF search
+export OPENAI_API_KEY="your-key-here"  # Optional enhancement
 ```
 
 ### Start Building
@@ -367,8 +369,8 @@ $ flow codebase search "authentication middleware"
 
 ### Powered By
 
-- **🌟 Starcode** - State-of-the-art code embeddings (70+ languages)
-- **🧠 Vector Search** - Semantic understanding, not keywords
+- **🌟 StarCoder2** - World-class code tokenization (70+ languages)
+- **🧠 TF-IDF Search** - Statistical relevance with semantic tokenization
 - **📚 Curated Knowledge** - Professional best practices
 - **🤖 Agent Orchestration** - Specialized AI agents working together
 - **🔌 MCP Protocol** - Standard AI tool integration
@@ -477,7 +479,7 @@ flow sysinfo  # See what AI knows about your environment
 
 - **[Installation & Setup](https://github.com/sylphxltd/flow/wiki/Installation-&-Setup)** - Complete setup guide
 - **[MEP Design Philosophy](https://github.com/sylphxltd/flow/wiki/MEP-Design-Philosophy)** - Why MEP changes everything
-- **[Technical Architecture](https://github.com/sylphxltd/flow/wiki/Technical-Architecture)** - How Starcode works
+- **[Technical Architecture](https://github.com/sylphxltd/flow/wiki/Technical-Architecture)** - How StarCoder2 tokenization works
 - **[CLI Commands](https://github.com/sylphxltd/flow/wiki/CLI-Commands)** - Full command reference
 - **[Knowledge Base](https://github.com/sylphxltd/flow/wiki/Knowledge-Base)** - Curated guidelines system
 - **[Codebase Search](https://github.com/sylphxltd/flow/wiki/Codebase-Search)** - Semantic search deep dive
@@ -499,8 +501,9 @@ flow sysinfo  # See what AI knows about your environment
 # 1. Initialize
 npx github:sylphxltd/flow init
 
-# 2. Add your OpenAI key to .claude/mcp.json
-# (for embeddings)
+# 2. (Optional) Add OpenAI-compatible key to .claude/mcp.json
+# Enhances search quality with vector embeddings
+# Works without API key using TF-IDF
 
 # 3. Restart Claude Code
 # Done! All tools available.
@@ -513,7 +516,7 @@ npx github:sylphxltd/flow init
 ### Roadmap
 
 - [ ] **More Knowledge Domains** - Expand beyond web development
-- [ ] **Offline Mode** - Run embeddings locally
+- [ ] **Offline Mode** - Run StarCoder2 tokenization locally (no API needed)
 - [ ] **Team Collaboration** - Share knowledge across team
 - [ ] **Custom Agents** - Create your own specialized agents
 - [ ] **IDE Plugins** - Direct integration with VSCode, IntelliJ
@@ -544,7 +547,7 @@ We welcome contributions! Check out:
 ## 🙏 Acknowledgments
 
 Built with:
-- **[Starcode](https://huggingface.co/bigcode/starcode)** - Code embeddings
+- **[StarCoder2](https://huggingface.co/bigcode/starcoder2)** - Code tokenization
 - **[MCP Protocol](https://modelcontextprotocol.io)** - AI tool integration
 - **[Anthropic Claude](https://claude.ai)** - AI foundation
 - Open source community ❤️

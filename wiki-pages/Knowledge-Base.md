@@ -47,11 +47,12 @@ flow knowledge validate my-guide.md
 
 #### 3. **Optimized Performance**
 ```typescript
-// Fixed knowledge base = Optimized embeddings
+// Fixed knowledge base = Optimized search
 const performance = {
-  searchTime: "<100ms",     // Pre-optimized index
+  searchTime: "<100ms",     // TF-IDF search (primary)
   indexSize: "Fixed",       // Known size, optimized storage
-  cacheStrategy: "Perfect"  // Can pre-cache everything
+  cacheStrategy: "Perfect", // Can pre-cache everything
+  vectorSearch: "Optional"  // OpenAI embeddings if API key provided
 };
 
 // Custom knowledge = Variable performance
@@ -395,38 +396,47 @@ flow run "review this component for best practices" --agent reviewer
    ↓
 2. Parsed and chunked into sections
    ↓
-3. Vector embeddings generated (OpenAI)
+3. StarCoder2 tokenization + TF-IDF indexing (primary)
    ↓
-4. Stored in .sylphx-flow/knowledge.db
+4. Optional: OpenAI vector embeddings (if API key provided)
    ↓
-5. Ready for semantic search
+5. Stored in .sylphx-flow/knowledge.db
+   ↓
+6. Ready for semantic search
 ```
 
 ### Search Process
 ```
 1. User/AI searches: "react hooks patterns"
    ↓
-2. Query converted to vector embedding
+2. StarCoder2 tokenization
    ↓
-3. Semantic similarity search in database
+3. TF-IDF statistical search (primary method)
    ↓
-4. Top results ranked by relevance
+4. Optional: Vector similarity search (if embeddings available)
    ↓
-5. Results returned with metadata
+5. Results ranked by relevance
+   ↓
+6. Top results returned with metadata
 ```
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 ```bash
-# Required for vector embeddings
+# Optional: For vector embeddings (enhances search quality)
+# Works without API key using TF-IDF search
 OPENAI_API_KEY=your-api-key-here
 
-# Optional: Custom embedding model
+# Optional: Custom embedding model (only if OPENAI_API_KEY is set)
 EMBEDDING_MODEL=text-embedding-3-small
 
-# Optional: Custom OpenAI endpoint
+# Optional: OpenAI-compatible endpoint (Azure OpenAI, etc.)
 OPENAI_BASE_URL=https://api.openai.com/v1
+
+# Hybrid Search Architecture:
+# - Primary: TF-IDF (always available, no API key needed)
+# - Enhancement: Vector embeddings (optional, if API key provided)
 ```
 
 ### MCP Server Options
@@ -459,8 +469,9 @@ Resources:
   • Total: 11 documents
 
 Index:
-  • Embeddings: 247 chunks
-  • Vector dimensions: 1536
+  • Search method: TF-IDF (primary) + Vector (optional)
+  • TF-IDF index: 247 chunks
+  • Vector embeddings: Available (if OpenAI API key set)
   • Database size: 1.2 MB
   • Last indexed: 2025-10-30 19:00:00
 
@@ -573,29 +584,32 @@ flow knowledge list
 flow knowledge search "alternative keywords"
 ```
 
-### Embeddings Not Working
+### Search Not Working
 ```bash
-# Verify API key is set
-echo $OPENAI_API_KEY
+# Check if indexed
+flow knowledge status
 
-# Check MCP server logs
-flow mcp start --verbose
+# Verify database exists
+ls -la .sylphx-flow/knowledge.db
 
-# Verify knowledge tools are enabled
-flow mcp start  # (default: enabled)
+# Restart to reindex
+flow init
+
+# Note: Search works without OPENAI_API_KEY (uses TF-IDF)
+# Vector embeddings are optional enhancements
 ```
 
 ## 📈 Performance
 
 ### Search Speed
-- **Cold start**: ~200-500ms (first search)
-- **Warm cache**: ~50-100ms (subsequent searches)
-- **Embedding generation**: ~100-200ms per query
+- **Cold start**: ~100-300ms (first search)
+- **Warm cache**: ~20-50ms (subsequent searches, TF-IDF)
+- **With vector embeddings**: +100-200ms per query (optional)
 
 ### Database Size
-- **Base knowledge**: ~1-2 MB
-- **Custom knowledge**: Varies by content
-- **Embeddings**: ~4 KB per chunk
+- **Base knowledge (TF-IDF)**: ~1-2 MB
+- **Vector embeddings (optional)**: +4 KB per chunk (~1 MB extra)
+- **Total with embeddings**: ~2-3 MB
 
 ### Optimization Tips
 ```bash

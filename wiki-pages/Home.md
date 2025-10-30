@@ -2,7 +2,7 @@
 
 **MEP (Minimal Effective Prompt) Architecture** - 90% less prompt, 100% better results.
 
-Welcome to **Sylphx Flow**, the first production platform built on **Starcode embeddings** for 70+ language hybrid search, combining **curated knowledge**, **semantic code search**, and **AI agent orchestration** through the Model Context Protocol (MCP).
+Welcome to **Sylphx Flow**, the first production platform built on **StarCoder2 tokenization** for 70+ language hybrid search, combining **curated knowledge**, **TF-IDF semantic search**, and **AI agent orchestration** through the Model Context Protocol (MCP).
 
 ## 🎯 The MEP Difference
 
@@ -30,9 +30,9 @@ User: "implement authentication"
 
 ## 🚀 Core Innovations
 
-### 1. 🌟 Starcode Embeddings - 70+ Languages
+### 1. 🌟 StarCoder2 Tokenization - 70+ Languages
 
-**First production implementation of Starcode:**
+**First production use of StarCoder2 tokenization for search:**
 
 - **70+ Programming Languages** - TypeScript to Assembly
 - **Hybrid Search** - Search in any language, find code in any language
@@ -78,7 +78,7 @@ npx github:sylphxltd/flow run
 
 - ✅ **Quality Guaranteed** - Professionally curated
 - ✅ **Zero Maintenance** - Auto-updated with `flow init`
-- ✅ **Optimized Performance** - Fixed embeddings = <100ms search
+- ✅ **Optimized Performance** - Local tokenization + TF-IDF = <100ms search
 
 **Project-specific patterns?** Use codebase search:
 ```bash
@@ -114,11 +114,11 @@ flow codebase search "our authentication pattern"
 
 ### Core Features
 - **[Knowledge Base](Knowledge-Base)** - Curated development guidelines
-- **[Codebase Search](Codebase-Search)** - ⭐ Starcode 70+ language search
+- **[Codebase Search](Codebase-Search)** - ⭐ StarCoder2 70+ language search
 - **[Agent Framework](Agent-Framework)** - Orchestrated AI agents
 
 ### Technical Deep Dive
-- **[Technical Architecture](Technical-Architecture)** - ⭐ Starcode + Functional design
+- **[Technical Architecture](Technical-Architecture)** - ⭐ StarCoder2 + Functional design
 - **[Configuration](Configuration)** - Customize your setup
 - **[Contributing](Contributing)** - Help improve Sylphx Flow
 
@@ -232,7 +232,7 @@ Developer → AI Assistant → knowledge_search("react best practices")
 ```
 Developer → AI Assistant → codebase_search("authentication")
                           ↓
-                   Vector Embeddings (semantic understanding)
+                   StarCoder2 Tokenization + TF-IDF (semantic understanding)
                           ↓
                    Returns: All auth-related code by meaning
 ```
