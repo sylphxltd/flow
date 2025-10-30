@@ -190,7 +190,7 @@ export const initCommand = new Command('init')
     const target = targetManager.getTarget(targetId);
     if (target && target.setup) {
       const setupResult = await target.setup(process.cwd(), {
-        hookCommand: 'npx @sylphxltd/flow@latest sysinfo'
+        hookCommand: 'npx -y github:sylphxltd/flow sysinfo'
       });
 
       if (setupResult.success) {

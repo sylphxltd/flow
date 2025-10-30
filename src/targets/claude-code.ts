@@ -352,7 +352,7 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Setup Claude Code-specific configuration including hooks
    */
   async setup(cwd: string, options?: Record<string, unknown>): Promise<{ success: boolean; message?: string }> {
-    const hookCommand = options?.hookCommand || 'npx @sylphxltd/flow@latest sysinfo';
+    const hookCommand = options?.hookCommand || 'npx -y github:sylphxltd/flow sysinfo';
 
     try {
       const result = await this.setupClaudeCodeHooks(cwd, hookCommand);
