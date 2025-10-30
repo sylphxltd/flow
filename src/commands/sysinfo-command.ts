@@ -209,10 +209,7 @@ function displayHookPreset(info: any) {
   console.log(`  Platform: ${info.system.platform} (${info.system.arch})`);
   console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
   console.log(`  Working Dir: ${info.directories.workingDirectory}`);
-
-  // Temp directory info (useful for file operations)
-  console.log(chalk.blue.bold('\n📁 Temp Directory:'));
-  console.log(`  ${info.directories.temp}`);
+  console.log(`  Temp Dir: ${info.directories.temp}`);
 }
 
 function displayDevelopmentPreset(info: any) {
