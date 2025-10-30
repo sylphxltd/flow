@@ -9,8 +9,8 @@ import type { CommandOptions } from '../types.js';
 export const sysinfoCommand = new Command('sysinfo')
   .description('Display system information and current status')
   .option('--target <type>', 'Target platform (claude-code, opencode, default: auto-detect)')
-  .option('--json', 'Output in JSON format')
   .option('--preset <type>', 'Output preset (session, message, hook, development, full)', 'hook')
+  .option('--output <type>', 'Output format (simple, standard, json)', 'standard')
   .action(async (options) => {
     try {
       // Only check environments for presets that need them
@@ -23,13 +23,13 @@ export const sysinfoCommand = new Command('sysinfo')
         systemInfo = await getSystemInfoWithEnvironments();
       }
 
-      if (options.json) {
+      if (options.output === 'json') {
         console.log(JSON.stringify(systemInfo, null, 2));
         return;
       }
 
-      // Display formatted system information based on preset
-      displaySystemInfo(systemInfo, options.preset);
+      // Display formatted system information based on preset and output format
+      displaySystemInfo(systemInfo, options.preset, options.output);
 
     } catch (error) {
       cli.error(`Failed to get system info: ${error instanceof Error ? error.message : String(error)}`);
@@ -177,18 +177,18 @@ async function checkCommand(command: string): Promise<string | null> {
   }
 }
 
-function displaySystemInfo(info: any, preset: string = 'hook') {
+function displaySystemInfo(info: any, preset: string = 'hook', type: string = 'standard') {
   console.log('');
 
   switch (preset) {
     case 'session':
-      displaySessionPreset(info);
+      type === 'simple' ? displaySimpleSessionPreset(info) : displaySessionPreset(info);
       break;
     case 'message':
-      displayMessagePreset(info);
+      type === 'simple' ? displaySimpleMessagePreset(info) : displayMessagePreset(info);
       break;
     case 'hook':
-      displayHookPreset(info);
+      type === 'simple' ? displaySimpleMessagePreset(info) : displayHookPreset(info);
       break;
     case 'development':
       displayDevelopmentPreset(info);
@@ -209,14 +209,7 @@ function displayHookPreset(info: any) {
 
   // Current Time (essential for context)
   console.log(chalk.blue.bold('\n📅 Time:'));
-  console.log(`  ${new Date(info.timestamp).toLocaleString('zh-HK', {
-    timeZone: 'Asia/Hong_Kong',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })}`);
+  console.log(`  ${new Date(info.timestamp).toLocaleString()}`);
 
   // System info
   console.log(chalk.blue.bold('\n💻 System:'));
@@ -224,6 +217,22 @@ function displayHookPreset(info: any) {
   console.log(`  Memory: ${info.hardware.memory.usagePercent} used`);
   console.log(`  Working Dir: ${info.directories.workingDirectory}`);
   console.log(`  Temp Dir: ${info.directories.temp}`);
+}
+
+function displaySimpleMessagePreset(info: any) {
+  // Simple, clean output without extra symbols
+  console.log(`Current Time: ${new Date(info.timestamp).toLocaleString()}`);
+
+  console.log(`Memory: ${info.hardware.memory.usagePercent} used (${info.hardware.memory.free} free)`);
+}
+
+function displaySimpleSessionPreset(info: any) {
+  // Simple, clean output without extra symbols
+  console.log(`Platform: ${info.system.platform} (${info.system.arch})`);
+  console.log(`Working Directory: ${info.directories.workingDirectory}`);
+  console.log(`Temp Directory: ${info.directories.temp}`);
+  console.log(`CPU: ${info.hardware.cpu.cores} cores`);
+  console.log(`Total Memory: ${info.hardware.memory.total}`);
 }
 
 function displaySessionPreset(info: any) {
@@ -248,15 +257,7 @@ function displayMessagePreset(info: any) {
 
   // Current Time (changes frequently)
   console.log(chalk.blue.bold('\n📅 Time:'));
-  console.log(`  ${new Date(info.timestamp).toLocaleString('zh-HK', {
-    timeZone: 'Asia/Hong_Kong',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })}`);
+  console.log(`  ${new Date(info.timestamp).toLocaleString()}`);
 
   // Dynamic system stats (can change frequently)
   console.log(chalk.blue.bold('\n📊 System Status:'));
@@ -269,15 +270,7 @@ function displayDevelopmentPreset(info: any) {
 
   // Current Time
   console.log(chalk.blue.bold('\n📅 Time:'));
-  console.log(`  ${new Date(info.timestamp).toLocaleString('zh-HK', {
-    timeZone: 'Asia/Hong_Kong',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })}`);
+  console.log(`  ${new Date(info.timestamp).toLocaleString()}`);
 
   // Development environments
   if (info.environments && info.environments.length > 0) {
@@ -308,15 +301,7 @@ function displayFullPreset(info: any) {
 
   // Current Time
   console.log(chalk.blue.bold('\n📅 Current Time:'));
-  console.log(`  ${new Date(info.timestamp).toLocaleString('zh-HK', {
-    timeZone: 'Asia/Hong_Kong',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })}`);
+  console.log(`  ${new Date(info.timestamp).toLocaleString()}`);
 
   // System Info
   console.log(chalk.blue.bold('\n💻 System:'));
