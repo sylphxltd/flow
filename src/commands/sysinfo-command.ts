@@ -31,7 +31,9 @@ export const sysinfoCommand = new Command('sysinfo')
 
 async function getSystemInfo() {
   const currentTime = new Date().toISOString();
-  const tempDir = os.tmpdir();
+
+  // For macOS, use /tmp instead of the long user-specific temp directory
+  const tempDir = os.platform() === 'darwin' ? '/tmp' : os.tmpdir();
 
   // Get memory information
   const totalMem = os.totalmem();
