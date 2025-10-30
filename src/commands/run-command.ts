@@ -94,13 +94,13 @@ function getExecutableTargets(): string[] {
 // Create the run command
 export const runCommand = new Command('run')
   .description(
-    'Run a prompt with a specific agent (default: master-craftsman) using the detected or specified target'
+    'Run a prompt with a specific agent (default: coder) using the detected or specified target'
   )
   .option(
     '--target <name>',
     `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`
   )
-  .option('--agent <name>', 'Agent to use (default: master-craftsman)')
+  .option('--agent <name>', 'Agent to use (default: coder)')
   .option('--agent-file <path>', 'Load agent from specific file path (overrides --agent)')
   .option('--verbose', 'Show detailed output')
   .option('--dry-run', 'Show what would be done without executing the command')
@@ -114,7 +114,7 @@ export const runCommand = new Command('run')
 
     // Set default agent
     if (!options.agent) {
-      options.agent = 'master-craftsman';
+      options.agent = 'coder';
     }
 
     // Resolve target

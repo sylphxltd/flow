@@ -3,7 +3,7 @@
  * Tests for the run CLI command
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runCommand } from '../../src/commands/run-command.js';
 
 // Mock fs promises
@@ -74,7 +74,7 @@ describe('Run Command', () => {
     });
 
     it('should mention default agent in description', () => {
-      expect(runCommand.description()).toContain('master-craftsman');
+      expect(runCommand.description()).toContain('coder');
     });
   });
 
@@ -152,7 +152,7 @@ describe('Run Command', () => {
 
     it('should mention default agent in agent description', () => {
       const agentOption = runCommand.options.find((opt) => opt.long === '--agent');
-      expect(agentOption?.description).toContain('master-craftsman');
+      expect(agentOption?.description).toContain('coder');
     });
 
     it('should describe agent-file option', () => {
