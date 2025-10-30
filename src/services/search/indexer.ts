@@ -72,7 +72,7 @@ export class IndexerService {
    * 為指定domain建立索引
    */
   async buildIndex(
-    domain: 'knowledge' | 'codebase' | 'workspace',
+    domain: 'knowledge' | 'codebase',
     options: IndexingOptions = {}
   ): Promise<SearchIndex> {
     const { batchSize = 10, includeVectorIndex = true, forceRebuild = false } = options;
@@ -139,8 +139,6 @@ export class IndexerService {
         return this.scanKnowledgeFiles();
       case 'codebase':
         return this.scanCodebaseFiles();
-      case 'workspace':
-        return this.scanWorkspaceFiles();
       default:
         throw new Error(`Unknown domain: ${domain}`);
     }
@@ -193,15 +191,7 @@ export class IndexerService {
     return [];
   }
 
-  /**
-   * 掃描workspace文件
-   */
-  private async scanWorkspaceFiles(): Promise<Array<{ uri: string; content: string }>> {
-    // 實現workspace文件掃描邏輯
-    // 這裡需要根據實際需求實現
-    return [];
-  }
-
+  
   /**
    * 建立向量索引
    */

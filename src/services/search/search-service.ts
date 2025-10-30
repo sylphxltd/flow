@@ -1,6 +1,6 @@
 /**
  * Semantic Search Service - 統一語義搜索服務
- * 提供跨domain嘅搜索功能：workspace, codebase, knowledge
+ * 提供跨domain嘅搜索功能：codebase, knowledge
  */
 
 import type { VectorStorage } from '../storage/lancedb-vector-storage.js';
@@ -15,7 +15,7 @@ export interface SearchResult {
   title?: string;
   content?: string;
   metadata?: {
-    type: 'codebase' | 'knowledge' | 'workspace';
+    type: 'codebase' | 'knowledge';
     category?: string;
     language?: string;
     path?: string;
@@ -29,13 +29,13 @@ export interface SearchOptions {
   path_filter?: string;
   exclude_paths?: string[];
   min_score?: number;
-  domain?: 'codebase' | 'knowledge' | 'workspace' | 'all';
+  domain?: 'codebase' | 'knowledge' | 'all';
 }
 
 export interface ContentMetadata {
   uri: string;
   content: string;
-  type: 'codebase' | 'knowledge' | 'workspace';
+  type: 'codebase' | 'knowledge';
   category?: string;
   language?: string;
   path?: string;
@@ -93,14 +93,7 @@ export class SemanticSearchService {
       results.push(...codebaseResults);
     }
 
-    if (domain === 'all' || domain === 'workspace') {
-      const workspaceResults = await this.searchWorkspace(query, {
-        limit: Math.ceil(limit / 3),
-        include_content,
-      });
-      results.push(...workspaceResults);
-    }
-
+    
     // 按score排序並限制結果數量
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
@@ -155,30 +148,7 @@ export class SemanticSearchService {
     }));
   }
 
-  /**
-   * 搜索workspace
-   */
-  private async searchWorkspace(query: string, options: SearchOptions): Promise<SearchResult[]> {
-    // 實現workspace搜索邏輯
-    const workspaceIndex = this.searchIndexes.get('workspace');
-    if (!workspaceIndex) {
-      return [];
-    }
-
-    const searchResults = searchDocuments(query, workspaceIndex, {
-      limit: options.limit,
-      minScore: options.min_score || 0.1,
-    });
-
-    return searchResults.map((result) => ({
-      ...result,
-      metadata: {
-        type: 'workspace' as const,
-        category: result.metadata?.category,
-      },
-    }));
-  }
-
+  
   /**
    * 索引內容
    */
@@ -249,10 +219,6 @@ export class SemanticSearchService {
       },
       codebase: {
         indexed: this.searchIndexes.has('codebase'),
-        documentCount: 0, // 需要實際計算
-      },
-      workspace: {
-        indexed: this.searchIndexes.has('workspace'),
         documentCount: 0, // 需要實際計算
       },
     };

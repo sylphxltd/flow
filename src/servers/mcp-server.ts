@@ -6,7 +6,6 @@ import fs from 'fs/promises';
 import { registerCodebaseTools } from '../domains/codebase/tools.js';
 import { registerKnowledgeTools } from '../domains/knowledge/tools.js';
 import { registerTimeTools } from '../domains/utilities/time/tools.js';
-import { registerWorkspaceTools } from '../domains/workspace/tasks/tools.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
 import { secretUtils } from '../utils/secret-utils.js';
@@ -35,9 +34,6 @@ async function initializeSylphxFlowDirectory(cwd: string = process.cwd()): Promi
 *.db-shm
 *.db-wal
 
-# Workspace management
-workspace/
-!workspace/README.md
 
 # Search cache and indexes
 search-cache/
@@ -87,7 +83,6 @@ export interface ServerConfig {
   disableTime?: boolean;
   disableKnowledge?: boolean;
   disableCodebase?: boolean;
-  disableWorkspace?: boolean;
 }
 
 // Logger utility
@@ -150,20 +145,7 @@ export async function startSylphxFlowMCPServer(config: ServerConfig = {}) {
     enabledTools.push('time_get_current, time_format, time_parse');
   }
 
-  // Workspace tools (enabled by default, can be disabled)
-  if (!config.disableWorkspace) {
-    Logger.info('📁 Registering workspace tools (stateless)');
-    registerWorkspaceTools(server);
-    enabledTools.push(
-      'workspace_create_task',
-      'workspace_read_task',
-      'workspace_update_task',
-      'workspace_list_tasks',
-      'workspace_complete_task'
-    );
-    console.log('📁 Workspace Tools: Enabled (5 stateless tools)');
-  }
-
+  
   // Codebase tools (enabled by default)
   if (!config.disableCodebase) {
     Logger.info('🔍 Registering codebase tools');

@@ -183,15 +183,9 @@ describe('MCP Command', () => {
       expect(option).toBeDefined();
     });
 
-    it('should have disable-workspace option', () => {
+    it('should have all 5 disable options', () => {
       const startCmd = mcpCommand.commands.find((cmd) => cmd.name() === 'start');
-      const option = startCmd?.options.find((opt) => opt.long === '--disable-workspace');
-      expect(option).toBeDefined();
-    });
-
-    it('should have all 6 disable options', () => {
-      const startCmd = mcpCommand.commands.find((cmd) => cmd.name() === 'start');
-      expect(startCmd?.options.length).toBe(6);
+      expect(startCmd?.options.length).toBe(5);
     });
 
     it('should describe all disable options', () => {
@@ -424,7 +418,7 @@ describe('MCP Command', () => {
       const disableOptions = startCmd?.options.filter((opt) =>
         opt.long?.startsWith('--disable-')
       );
-      expect(disableOptions?.length).toBe(6);
+      expect(disableOptions?.length).toBe(5);
     });
   });
 
@@ -433,7 +427,7 @@ describe('MCP Command', () => {
       const startCmd = mcpCommand.commands.find((cmd) => cmd.name() === 'start');
       expect(startCmd?.name()).toBe('start');
       expect(startCmd?._args.length).toBe(0);
-      expect(startCmd?.options.length).toBe(6);
+      expect(startCmd?.options.length).toBe(5);
     });
 
     it('should validate config command structure', () => {

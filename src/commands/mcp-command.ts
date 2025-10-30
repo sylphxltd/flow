@@ -27,7 +27,6 @@ mcpCommand
   .option('--disable-project-startup', 'Disable project startup functionality')
   .option('--disable-knowledge', 'Disable knowledge functionality')
   .option('--disable-codebase', 'Disable codebase search functionality')
-  .option('--disable-workspace', 'Disable workspace functionality')
   .action(async (options) => {
     const config = {
       disableMemory: options.disableMemory === true,
@@ -35,7 +34,6 @@ mcpCommand
       disableProjectStartup: options.disableProjectStartup === true,
       disableKnowledge: options.disableKnowledge === true,
       disableCodebase: options.disableCodebase === true,
-      disableWorkspace: options.disableWorkspace === true,
     };
 
     try {

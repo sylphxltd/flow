@@ -30,7 +30,7 @@ export type {
 // 便捷函數：快速搜索
 export async function quickSearch(
   query: string,
-  domain: 'codebase' | 'knowledge' | 'workspace' | 'all' = 'all',
+  domain: 'codebase' | 'knowledge' | 'all' = 'all',
   limit = 10
 ) {
   const searchService = getSearchService();
@@ -39,7 +39,7 @@ export async function quickSearch(
 
 // 便捷函數：批量索引
 export async function quickIndex(
-  domains: Array<'knowledge' | 'codebase' | 'workspace'>,
+  domains: Array<'knowledge' | 'codebase'>,
   options?: { batchSize?: number; includeVectorIndex?: boolean }
 ) {
   const indexerService = getIndexerService();
