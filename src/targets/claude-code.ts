@@ -356,20 +356,29 @@ Please begin your response with a comprehensive summary of all the instructions 
   },
 
   /**
-   * Setup Claude Code-specific configuration including hooks
+   * Setup hooks for Claude Code
+   * Configure session and prompt hooks for system information display
    */
-  async setup(
-    cwd: string,
-    options?: Record<string, unknown>
-  ): Promise<{ success: boolean; message?: string }> {
+  async setupHooks(cwd: string, options: CommonOptions): Promise<void> {
     try {
       const result = await this.setupClaudeCodeHooks(cwd);
-      return result;
+      if (!result.success) {
+        if (!options.quiet) {
+          console.warn(chalk.yellow(`⚠ Warning: ${result.message}`));
+        }
+      } else {
+        if (!options.quiet && options.verbose) {
+          console.log(chalk.green(`✓ ${result.message}`));
+        }
+      }
     } catch (error) {
-      return {
-        success: false,
-        message: `Could not setup Claude Code hooks: ${error instanceof Error ? error.message : String(error)}`,
-      };
+      if (!options.quiet) {
+        console.warn(
+          chalk.yellow(
+            `⚠ Warning: Could not setup hooks: ${error instanceof Error ? error.message : String(error)}`
+          )
+        );
+      }
     }
   },
 

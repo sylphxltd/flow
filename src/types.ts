@@ -243,6 +243,9 @@ export abstract class Target {
 
   /** Setup MCP servers for this target (optional - implement if target supports MCP) */
   async setupMCP?(cwd: string, options: CommonOptions): Promise<void>;
+
+  /** Setup hooks for this target (optional - implement if target needs hooks like Claude Code) */
+  async setupHooks?(cwd: string, options: CommonOptions): Promise<void>;
 }
 
 export interface CommonOptions {

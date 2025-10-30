@@ -142,6 +142,11 @@ export const initCommand = new Command('init')
       rulesSpinner.succeed(chalk.green('Rules installed'));
     }
 
+    // Setup hooks if target supports it
+    if (target.setupHooks) {
+      await target.setupHooks(process.cwd(), { ...options, quiet: true });
+    }
+
     // Save the selected target as project default
     const targetInfo: string[] = [];
     try {
@@ -155,17 +160,6 @@ export const initCommand = new Command('init')
           `⚠ Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`,
         ),
       );
-    }
-
-    // Setup target-specific configuration
-    if (target.setup) {
-      const setupResult = await target.setup(process.cwd());
-
-      if (setupResult.success) {
-        targetInfo.push('Claude Code hooks configured');
-      } else {
-        console.warn(chalk.yellow(`⚠ Warning: ${setupResult.message}`));
-      }
     }
 
     // Success summary
