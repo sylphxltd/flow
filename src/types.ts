@@ -117,6 +117,8 @@ export interface TargetConfig {
   mcpConfigPath: string;
   /** Rules file path (optional, relative to project root) */
   rulesFile?: string;
+  /** Output styles directory (optional, relative to project root) */
+  outputStylesDir?: string;
   /** Installation-specific configuration */
   installation: {
     /** Whether to create the agent directory */
@@ -127,6 +129,8 @@ export interface TargetConfig {
     supportedMcpServers: boolean;
     /** Whether to use secret file references for sensitive environment variables */
     useSecretFiles?: boolean;
+    /** Whether output styles are supported as separate files */
+    supportOutputStyles?: boolean;
   };
 }
 

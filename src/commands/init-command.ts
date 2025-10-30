@@ -5,7 +5,7 @@ import gradient from 'gradient-string';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
-import { installAgents, installRules } from '../core/init.js';
+import { installAgents, installOutputStyles, installRules } from '../core/init.js';
 import { targetManager } from '../core/target-manager.js';
 import { MCPService } from '../services/mcp-service.js';
 import type { CommandOptions } from '../types.js';
@@ -195,6 +195,10 @@ export const initCommand = new Command('init')
     const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
     await installAgents({ ...options, quiet: true });
     agentSpinner.succeed(chalk.green('Agents installed'));
+
+    const outputStylesSpinner = ora({ text: 'Installing output styles', color: 'cyan' }).start();
+    await installOutputStyles({ ...options, quiet: true });
+    outputStylesSpinner.succeed(chalk.green('Output styles installed'));
 
     const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
     await installRules({ ...options, quiet: true });

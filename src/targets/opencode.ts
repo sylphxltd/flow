@@ -35,11 +35,13 @@ export const opencodeTarget: Target = {
     configSchema: 'https://opencode.ai/config.json',
     mcpConfigPath: 'mcp',
     rulesFile: 'AGENTS.md',
+    outputStylesDir: undefined, // OpenCode doesn't support output styles as separate files
     installation: {
       createAgentDir: true,
       createConfigFile: true,
       supportedMcpServers: true,
       useSecretFiles: true,
+      supportOutputStyles: false,
     },
   },
 

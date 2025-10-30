@@ -67,6 +67,13 @@ export function getKnowledgeDir(): string {
 }
 
 /**
+ * Get path to output styles directory
+ */
+export function getOutputStylesDir(): string {
+  return path.join(ASSETS_ROOT, 'output-styles');
+}
+
+/**
  * Get path to a specific rule file with path traversal protection
  */
 export function getRuleFile(filename: string): string {
@@ -105,5 +112,6 @@ export function getPathsInfo() {
     agents: getAgentsDir(),
     templates: getTemplatesDir(),
     rules: getRulesDir(),
+    outputStyles: getOutputStylesDir(),
   };
 }

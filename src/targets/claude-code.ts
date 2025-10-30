@@ -44,11 +44,13 @@ export const claudeCodeTarget: Target = {
     configSchema: null,
     mcpConfigPath: 'mcpServers',
     rulesFile: 'CLAUDE.md',
+    outputStylesDir: '.claude/output-styles',
     installation: {
       createAgentDir: true,
       createConfigFile: true,
       supportedMcpServers: true,
       useSecretFiles: false,
+      supportOutputStyles: true,
     },
   },
 
