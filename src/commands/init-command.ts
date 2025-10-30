@@ -20,6 +20,10 @@ export const initCommand = new Command('init')
   .option('--dry-run', 'Show what would be done without making changes')
   .option('--clear', 'Clear obsolete items before processing')
   .option('--no-mcp', 'Skip MCP tools installation')
+  .option('--no-agents', 'Skip agents installation')
+  .option('--no-rules', 'Skip rules installation')
+  .option('--no-output-styles', 'Skip output styles installation')
+  .option('--no-hooks', 'Skip hooks setup')
   .action(async (options) => {
     let targetId = options.target;
 
@@ -80,20 +84,35 @@ export const initCommand = new Command('init')
         ),
       );
 
-      if (options.mcp !== false && targetSupportsMCPServers(targetId)) {
-        const mcpService = new MCPService(targetId);
-        const availableServers = await mcpService.getAvailableServers();
-        console.log(chalk.cyan.bold('MCP Tools:'));
-        for (const s of availableServers) {
-          console.log(chalk.dim(`  ✓ ${MCP_SERVER_REGISTRY[s].name}`));
-        }
+      const target = targetManager.getTarget(targetId);
+      if (!target) {
+        throw new Error(`Target not found: ${targetId}`);
       }
 
-      console.log(chalk.cyan.bold('\nAgents:'));
-      console.log(chalk.dim('  ✓ Development agents'));
+      if (options.mcp !== false && target.setupMCP) {
+        console.log(chalk.cyan.bold('MCP Tools:'));
+        console.log(chalk.dim('  ✓ MCP servers will be configured'));
+      }
 
-      console.log(chalk.cyan.bold('\nRules:'));
-      console.log(chalk.dim('  ✓ Custom rules'));
+      if (options.agents !== false && target.setupAgents) {
+        console.log(chalk.cyan.bold('\nAgents:'));
+        console.log(chalk.dim('  ✓ Development agents will be installed'));
+      }
+
+      if (options.outputStyles !== false && target.setupOutputStyles) {
+        console.log(chalk.cyan.bold('\nOutput Styles:'));
+        console.log(chalk.dim('  ✓ Output styles will be installed'));
+      }
+
+      if (options.rules !== false && target.setupRules) {
+        console.log(chalk.cyan.bold('\nRules:'));
+        console.log(chalk.dim('  ✓ Custom rules will be installed'));
+      }
+
+      if (options.hooks !== false && target.setupHooks) {
+        console.log(chalk.cyan.bold('\nHooks:'));
+        console.log(chalk.dim('  ✓ Hooks will be configured'));
+      }
 
       console.log(
         '\n' +
@@ -132,8 +151,8 @@ export const initCommand = new Command('init')
 
     console.log(chalk.cyan.bold('\n━━━ Installing Core Components ━━━\n'));
 
-    // Install agents if target supports it
-    if (target.setupAgents) {
+    // Install agents if target supports it and agents are not skipped
+    if (target.setupAgents && options.agents !== false) {
       const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
       try {
         const result = await target.setupAgents(process.cwd(), { ...options, quiet: true });
@@ -144,8 +163,8 @@ export const initCommand = new Command('init')
       }
     }
 
-    // Install output styles if target supports it
-    if (target.setupOutputStyles) {
+    // Install output styles if target supports it and output styles are not skipped
+    if (target.setupOutputStyles && options.outputStyles !== false) {
       const outputStylesSpinner = ora({ text: 'Installing output styles', color: 'cyan' }).start();
       try {
         const result = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
@@ -160,8 +179,8 @@ export const initCommand = new Command('init')
       }
     }
 
-    // Install rules if target supports it
-    if (target.setupRules) {
+    // Install rules if target supports it and rules are not skipped
+    if (target.setupRules && options.rules !== false) {
       const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
       try {
         const result = await target.setupRules(process.cwd(), { ...options, quiet: true });
@@ -172,8 +191,8 @@ export const initCommand = new Command('init')
       }
     }
 
-    // Setup hooks if target supports it
-    if (target.setupHooks) {
+    // Setup hooks if target supports it and hooks are not skipped
+    if (target.setupHooks && options.hooks !== false) {
       const hooksSpinner = ora({ text: 'Setting up hooks', color: 'cyan' }).start();
       try {
         const result = await target.setupHooks(process.cwd(), { ...options, quiet: true });

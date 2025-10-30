@@ -13,6 +13,12 @@ export interface CommandOptions {
   server?: string;
   all?: boolean;
 
+  // Init command skip flags (--no-X sets to false)
+  // Note: 'agents' and 'rules' may also be strings in other commands
+  rules?: boolean | string;
+  outputStyles?: boolean;
+  hooks?: boolean;
+
   // Memory command options
   namespace?: string;
   limit?: number;
@@ -21,7 +27,7 @@ export interface CommandOptions {
   confirm?: boolean;
 
   // Benchmark-specific options
-  agents?: string;
+  agents?: string | boolean; // boolean for init command --no-agents
   task?: string;
   output?: string;
   context?: string;

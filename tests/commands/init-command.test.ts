@@ -159,8 +159,28 @@ describe('Init Command', () => {
       expect(noMcpOption).toBeDefined();
     });
 
-    it('should have all 5 options', () => {
-      expect(initCommand.options.length).toBe(5);
+    it('should have no-agents option', () => {
+      const noAgentsOption = initCommand.options.find((opt) => opt.long === '--no-agents');
+      expect(noAgentsOption).toBeDefined();
+    });
+
+    it('should have no-rules option', () => {
+      const noRulesOption = initCommand.options.find((opt) => opt.long === '--no-rules');
+      expect(noRulesOption).toBeDefined();
+    });
+
+    it('should have no-output-styles option', () => {
+      const noOutputStylesOption = initCommand.options.find((opt) => opt.long === '--no-output-styles');
+      expect(noOutputStylesOption).toBeDefined();
+    });
+
+    it('should have no-hooks option', () => {
+      const noHooksOption = initCommand.options.find((opt) => opt.long === '--no-hooks');
+      expect(noHooksOption).toBeDefined();
+    });
+
+    it('should have all 9 options', () => {
+      expect(initCommand.options.length).toBe(9);
     });
   });
 
@@ -274,6 +294,10 @@ describe('Init Command', () => {
       expect(optionNames).toContain('--dry-run');
       expect(optionNames).toContain('--clear');
       expect(optionNames).toContain('--no-mcp');
+      expect(optionNames).toContain('--no-agents');
+      expect(optionNames).toContain('--no-rules');
+      expect(optionNames).toContain('--no-output-styles');
+      expect(optionNames).toContain('--no-hooks');
     });
   });
 

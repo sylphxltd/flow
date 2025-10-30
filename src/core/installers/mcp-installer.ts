@@ -105,20 +105,27 @@ export class MCPInstaller {
       return;
     }
 
-    const spinner = ora({
-      text: `Installing ${selectedServers.length} MCP server${selectedServers.length > 1 ? 's' : ''}`,
-      color: 'cyan',
-    }).start();
+    // Only show spinner if not in quiet mode
+    const spinner = options.quiet
+      ? null
+      : ora({
+          text: `Installing ${selectedServers.length} MCP server${selectedServers.length > 1 ? 's' : ''}`,
+          color: 'cyan',
+        }).start();
 
     try {
       await this.mcpService.installServers(selectedServers, serverConfigsMap);
-      spinner.succeed(
-        chalk.green(
-          `Installed ${chalk.cyan(selectedServers.length)} MCP server${selectedServers.length > 1 ? 's' : ''}`,
-        ),
-      );
+      if (spinner) {
+        spinner.succeed(
+          chalk.green(
+            `Installed ${chalk.cyan(selectedServers.length)} MCP server${selectedServers.length > 1 ? 's' : ''}`,
+          ),
+        );
+      }
     } catch (error) {
-      spinner.fail(chalk.red('Failed to install MCP servers'));
+      if (spinner) {
+        spinner.fail(chalk.red('Failed to install MCP servers'));
+      }
       throw error;
     }
   }
