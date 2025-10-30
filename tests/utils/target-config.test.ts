@@ -64,6 +64,7 @@ describe('Target Config', () => {
       rmSync(testDir, { recursive: true, force: true });
     }
     vi.clearAllMocks();
+    vi.restoreAllMocks(); // Restore spies to prevent test pollution
   });
 
   describe('validateTarget', () => {
@@ -464,8 +465,8 @@ describe('Target Config', () => {
     });
 
     it('should return true for servers without required env vars', async () => {
-      // Use a server with no required env vars
-      const result = await configureMCPServerForTarget(testDir, 'test-target', 'context7');
+      // Use a server with no env vars at all (grep has no envVars defined)
+      const result = await configureMCPServerForTarget(testDir, 'test-target', 'grep');
 
       expect(result).toBe(true);
       expect(consoleLogSpy).toHaveBeenCalledWith(

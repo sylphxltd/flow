@@ -208,8 +208,6 @@ export async function configureMCPServerForTarget(
   targetId: string,
   serverType: MCPServerID
 ): Promise<boolean> {
-  console.log(`🔍 Debug: configureMCPServerForTarget called with serverType = ${serverType}`);
-
   const target = targetManager.getTarget(targetId);
 
   if (!target) {
@@ -243,7 +241,7 @@ export async function configureMCPServerForTarget(
   if (isServerInstalled && requiredEnvVars.length) {
     const serverConfig = mcpSection[server.name];
     hasExistingValidKeys = requiredEnvVars.every((envVar) => {
-      const envValue = serverConfig.environment?.[envVar];
+      const envValue = serverConfig.env?.[envVar] || serverConfig.environment?.[envVar];
       return envValue && envValue.trim() !== '';
     });
   } else if (isServerInstalled && requiredEnvVars.length === 0) {
@@ -262,6 +260,21 @@ export async function configureMCPServerForTarget(
     }
   }
 
+  // Also extract existing keys from MCP config
+  const existingConfigKeys: Record<string, string> = {};
+  if (isServerInstalled && mcpSection[server.name]) {
+    const serverConfig = mcpSection[server.name];
+    for (const envVar of allEnvVars) {
+      const configValue = serverConfig.env?.[envVar] || serverConfig.environment?.[envVar];
+      if (configValue && configValue.trim() !== '') {
+        existingConfigKeys[envVar] = configValue.trim();
+      }
+    }
+  }
+
+  // Merge existing keys: env vars take precedence over config keys
+  const existingKeys = { ...existingConfigKeys, ...envApiKeys };
+
   // If we have all required keys from environment, use them
   const _hasAllRequiredEnvKeys = requiredEnvVars.every(
     (envVar) => envApiKeys[envVar] && envApiKeys[envVar].trim() !== ''
@@ -271,16 +284,25 @@ export async function configureMCPServerForTarget(
   console.log(
     '✓ Found existing API keys, you can update them or press Enter to keep current values'
   );
-  const apiKeys = await promptForAPIKeys([serverType], envApiKeys);
+  const apiKeys = await promptForAPIKeys([serverType], existingKeys);
 
   // Check if all required environment variables are provided
   const hasAllRequiredKeys = requiredEnvVars.every(
     (envVar) => apiKeys[envVar] && apiKeys[envVar].trim() !== ''
   );
 
-  console.log(
-    `🔍 Debug: requiredEnvVars.length = ${requiredEnvVars.length}, hasAllRequiredKeys = ${hasAllRequiredKeys}`
-  );
+  // Check if user made any changes to existing keys
+  const userMadeChanges = allEnvVars.some((envVar) => {
+    const newValue = apiKeys[envVar];
+    const existingValue = existingKeys[envVar];
+    return newValue !== existingValue;
+  });
+
+  // If server is installed with valid keys and user didn't change anything, keep it
+  if (isServerInstalled && hasExistingValidKeys && !userMadeChanges) {
+    console.log(`✓ Keeping ${server.name} (existing API keys are valid)`);
+    return true;
+  }
 
   // For servers with required keys, validate them
   if (requiredEnvVars.length > 0 && !hasAllRequiredKeys) {
@@ -348,26 +370,13 @@ export async function configureMCPServerForTarget(
   let processedSecretApiKeys = secretApiKeys;
   const targetConfig = targetManager.getTarget(targetId);
 
-  console.log('🔍 Debug: secretApiKeys =', Object.keys(secretApiKeys));
-  console.log(
-    '🔍 Debug: targetConfig.setupMCP =',
-    !!targetConfig?.setupMCP
-  );
-  console.log(
-    '🔍 Debug: targetConfig.useSecretFiles =',
-    targetConfig?.config.installation.useSecretFiles
-  );
-
   if (
     targetConfig?.setupMCP &&
     targetConfig.config.installation.useSecretFiles !== false &&
     Object.keys(secretApiKeys).length > 0
   ) {
-    console.log('🔍 Debug: Converting secrets to file references...');
     processedSecretApiKeys = await secretUtils.convertSecretsToFileReferences(cwd, secretApiKeys);
     await secretUtils.addToGitignore(cwd);
-  } else {
-    console.log('🔍 Debug: Skipping secret conversion');
   }
 
   // Combine processed secret keys with non-secret keys
@@ -495,7 +504,7 @@ async function promptForAPIKeys(
       const hasDefault = envConfig.default !== undefined;
       const existingValue = existingKeys[envVar];
       const displayExisting = existingValue
-        ? ` (current: ${existingValue.substring(0, 8)}${existingValue.length > 8 ? '...' : ''})`
+        ? ` (current: ${existingValue.substring(0, 9)}${existingValue.length > 9 ? '...' : ''})`
         : '';
 
       let promptText: string;
@@ -544,7 +553,6 @@ async function promptForAPIKeys(
     }
   }
 
-  console.log('🔍 Debug: promptForAPIKeys returning apiKeys =', apiKeys);
   rl.close();
   return apiKeys;
 }
