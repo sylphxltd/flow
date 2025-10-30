@@ -8,6 +8,32 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as readline from 'node:readline';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Mock secret utils - COMPLETE mock to prevent test pollution
+vi.mock('../../src/utils/secret-utils.js', () => ({
+  secretUtils: {
+    getSecretsDir: vi.fn((cwd: string) => `${cwd}/.secrets`),
+    ensureSecretsDir: vi.fn().mockResolvedValue(undefined),
+    writeSecret: vi.fn().mockResolvedValue('.secrets/test'),
+    readSecret: vi.fn().mockResolvedValue('test-value'),
+    toFileReference: vi.fn((key: string) => `{file:.secrets/${key}}`),
+    isFileReference: vi.fn((value: string) => value.startsWith('{file:') && value.endsWith('}')),
+    extractFilePath: vi.fn((ref: string) => ref.slice(6, -1)),
+    resolveFileReferences: vi.fn().mockResolvedValue({}),
+    convertSecretsToFileReferences: vi.fn().mockResolvedValue({}),
+    saveSecrets: vi.fn().mockResolvedValue(undefined),
+    loadSecrets: vi.fn().mockResolvedValue({}),
+    addToGitignore: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// Mock readline module at the top level
+let createInterfaceMock = vi.fn();
+
+vi.mock('node:readline', () => ({
+  createInterface: createInterfaceMock,
+}));
+
 import { MCP_SERVER_REGISTRY } from '../../src/config/servers.js';
 import { targetManager } from '../../src/core/target-manager.js';
 import * as mcpService from '../../src/services/mcp-service.js';
@@ -23,13 +49,6 @@ import {
   targetSupportsMCPServers,
   validateTarget,
 } from '../../src/utils/target-config.js';
-
-// Mock readline module at the top level
-let createInterfaceMock = vi.fn();
-
-vi.mock('node:readline', () => ({
-  createInterface: createInterfaceMock,
-}));
 
 describe('Target Config', () => {
   let testDir: string;
