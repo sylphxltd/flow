@@ -43,7 +43,17 @@ export const detectInvocation = (): InvocationMethod => {
     return { type: 'npm', package: match ? match[0] : '@sylphx/flow' };
   }
 
-  // Check if running via bunx
+  // Check if running via bunx (bun's cache directory)
+  // Note: bunx uses #!/usr/bin/env node shebang, so execPath won't be bun
+  // Instead, check for bun's install cache directory structure
+  if (
+    scriptPath.includes('/.bun/install/cache/') ||
+    scriptPath.includes('/bun/install/cache/')
+  ) {
+    return { type: 'bunx', package: '@sylphx/flow' };
+  }
+
+  // Check if running via bunx (old detection using execPath)
   if (execPath.includes('bun') && !scriptPath.includes(process.cwd())) {
     return { type: 'bunx', package: '@sylphx/flow' };
   }
