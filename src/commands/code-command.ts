@@ -129,7 +129,7 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
 
   const model = providerInstance.createClient(apiKey, session.model);
 
-  // Get tools
+  // Get all tools - tools are required for this AI assistant
   const tools = getAISDKTools();
 
   // Add user message to session
@@ -178,17 +178,20 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
       fullResponse += chunk;
     }
 
-    // If no output, model might not support tools
+    // If no output, model doesn't support function calling
     if (!hasOutput || fullResponse.length === 0) {
-      console.error(chalk.yellow('\n⚠️  No response from model'));
+      console.error(chalk.red('\n✗ This model does not support function calling/tools\n'));
       console.error(
-        chalk.dim(
-          'This model might not support function calling/tools. Try a different model:\n'
-        )
+        chalk.yellow('This AI assistant requires tools to read/write files and execute commands.')
       );
-      console.error(chalk.dim('- anthropic/claude-3.5-sonnet'));
-      console.error(chalk.dim('- openai/gpt-4o'));
-      console.error(chalk.dim('- google/gemini-2.0-flash-exp\n'));
+      console.error(
+        chalk.yellow('Please switch to a tool-compatible model:\n')
+      );
+      console.error(chalk.green('  • anthropic/claude-3.5-sonnet'));
+      console.error(chalk.green('  • anthropic/claude-3.5-haiku'));
+      console.error(chalk.green('  • openai/gpt-4o'));
+      console.error(chalk.green('  • google/gemini-2.0-flash-exp\n'));
+      console.error(chalk.dim('To configure: Run `sylphx code` (TUI mode) then press Ctrl+P\n'));
       process.exit(1);
     }
 
@@ -215,7 +218,7 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
  * Create code command
  */
 export const codeCommand = new Command('code')
-  .description('AI development assistant - TUI or headless mode with filesystem tools')
+  .description('AI development assistant with filesystem tools - TUI or headless mode')
   .argument('[prompt]', 'Headless mode: Send prompt and get response (if not provided, starts TUI)')
   .option('-c, --continue', 'Continue last session in headless mode')
   .option('-q, --quiet', 'Quiet mode - only output assistant response')

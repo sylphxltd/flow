@@ -100,8 +100,31 @@ async function testChat() {
     process.exit(1);
   }
 
-  // Test 2: Message with tools
-  console.log('\n📝 Test 2: Message with tools\n');
+  // Test 2: Message with empty tools
+  console.log('\n📝 Test 2: Message with empty tools object\n');
+  const emptyToolsMessage = 'Say goodbye in one sentence.';
+  console.log(`👤 User: ${emptyToolsMessage}\n`);
+
+  try {
+    const emptyToolsResult = await streamText({
+      model,
+      messages: [{ role: 'user', content: emptyToolsMessage }],
+      tools: {},
+    });
+
+    console.log('🤖 Assistant: ');
+    let emptyToolsResponse = '';
+    for await (const chunk of emptyToolsResult.textStream) {
+      process.stdout.write(chunk);
+      emptyToolsResponse += chunk;
+    }
+    console.log(`\n✅ Empty tools test: ${emptyToolsResponse.length} chars\n`);
+  } catch (error) {
+    console.error('\n❌ Empty tools test failed:', error);
+  }
+
+  // Test 3: Message with actual tools
+  console.log('\n📝 Test 3: Message with actual tools\n');
   const userMessage = 'What is the current working directory? Use the get_cwd tool.';
   console.log(`👤 User: ${userMessage}\n`);
 
