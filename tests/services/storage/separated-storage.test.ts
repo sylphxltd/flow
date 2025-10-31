@@ -278,6 +278,10 @@ describe('Separated Storage', () => {
       } catch {
         // Ignore errors if table doesn't exist
       }
+
+      // Create parent codebase files required for foreign key constraint
+      await storage.setCodebaseFile('file1.ts', Date.now(), 'hash1');
+      await storage.setCodebaseFile('file2.ts', Date.now(), 'hash2');
     });
 
     it('should store and retrieve TF-IDF terms', async () => {
@@ -344,6 +348,12 @@ describe('Separated Storage', () => {
   });
 
   describe('TF-IDF Documents Operations', () => {
+    beforeEach(async () => {
+      // Create parent codebase files required for foreign key constraint
+      await storage.setCodebaseFile('file1.ts', Date.now(), 'hash1');
+      await storage.setCodebaseFile('file2.ts', Date.now(), 'hash2');
+    });
+
     it('should store and retrieve TF-IDF document', async () => {
       try {
         await storage.setTfidfDocument('file1.ts', 1.5, 100, '{"term1": 5, "term2": 3}');
@@ -483,6 +493,12 @@ describe('Separated Storage', () => {
   });
 
   describe('Compatibility Aliases', () => {
+    beforeEach(async () => {
+      // Create parent codebase files required for foreign key constraint
+      await storage.setCodebaseFile('file1.ts', Date.now(), 'hash1');
+      await storage.setCodebaseFile('file2.ts', Date.now(), 'hash2');
+    });
+
     it('should support getCodebaseIndexStats', async () => {
       await storage.setMetadata('indexedAt', '2024-01-01T00:00:00Z');
       await storage.setMetadata('totalFiles', '10');
