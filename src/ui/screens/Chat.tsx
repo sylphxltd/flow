@@ -32,18 +32,18 @@ export default function Chat() {
   // Check if ready to chat
   if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
     return (
-      <Box flexDirection="column" paddingX={2} paddingY={2}>
-        <Box marginBottom={2}>
+      <Box flexDirection="column" height="100%">
+        <Box marginBottom={1}>
           <Text color="#00D9FF">▌</Text>
           <Text bold color="white"> WELCOME</Text>
         </Box>
 
-        <Box marginBottom={2}>
+        <Box marginBottom={1}>
           <Text color="#FFD700">▌</Text>
           <Text color="gray"> No AI provider configured yet</Text>
         </Box>
 
-        <Box flexDirection="column" marginBottom={1} gap={1}>
+        <Box flexDirection="column" gap={1}>
           <Box>
             <Text color="#00D9FF">1.</Text>
             <Text color="gray"> Press </Text>
@@ -94,64 +94,47 @@ export default function Chat() {
   };
 
   return (
-    <Box flexDirection="column" paddingX={2} paddingY={1}>
+    <Box flexDirection="column" height="100%">
       {/* Header */}
-      <Box marginBottom={2} flexDirection="column">
-        <Box>
-          <Text color="#00D9FF">▌</Text>
-          <Text bold color="white"> CHAT SESSION</Text>
-        </Box>
-        <Box paddingLeft={2}>
-          <Text color="gray">
-            {currentSession.provider} · {currentSession.model}
-          </Text>
-        </Box>
+      <Box marginBottom={1}>
+        <Text color="#00D9FF">▌</Text>
+        <Text bold color="white"> CHAT</Text>
+        <Text dimColor> · {currentSession.provider} · {currentSession.model}</Text>
       </Box>
 
       {/* Messages */}
-      <Box flexDirection="column" marginBottom={2}>
+      <Box flexDirection="column" flexGrow={1}>
         {currentSession.messages.length === 0 && !isStreaming ? (
-          <Box paddingLeft={2}>
-            <Text color="gray">Ready to chat. Type your message below...</Text>
-          </Box>
+          <Text dimColor>Ready to chat...</Text>
         ) : (
           <>
             {currentSession.messages.map((msg, i) => (
-              <Box key={i} marginBottom={2} flexDirection="column">
+              <Box key={i} marginBottom={1} flexDirection="column">
                 {msg.role === 'user' ? (
                   <>
-                    <Box marginBottom={1}>
-                      <Text color="#00D9FF">▌</Text>
-                      <Text bold color="#00D9FF"> YOU</Text>
+                    <Box>
+                      <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
-                    <Box paddingLeft={2}>
-                      <Text color="white">{msg.content}</Text>
-                    </Box>
+                    <Text color="white">{msg.content}</Text>
                   </>
                 ) : (
                   <>
-                    <Box marginBottom={1}>
-                      <Text color="#00FF88">▌</Text>
-                      <Text bold color="#00FF88"> ASSISTANT</Text>
+                    <Box>
+                      <Text color="#00FF88">▌ ASSISTANT</Text>
                     </Box>
-                    <Box paddingLeft={2}>
-                      <Text color="gray">{msg.content}</Text>
-                    </Box>
+                    <Text color="gray">{msg.content}</Text>
                   </>
                 )}
               </Box>
             ))}
 
             {isStreaming && (
-              <Box marginBottom={2} flexDirection="column">
-                <Box marginBottom={1}>
-                  <Text color="#00FF88">▌</Text>
-                  <Text bold color="#00FF88"> ASSISTANT</Text>
+              <Box marginBottom={1} flexDirection="column">
+                <Box>
+                  <Text color="#00FF88">▌ ASSISTANT</Text>
                 </Box>
-                <Box paddingLeft={2}>
-                  <Text color="gray">{streamingContent}</Text>
-                  <Text color="#FFD700">▊</Text>
-                </Box>
+                <Text color="gray">{streamingContent}</Text>
+                <Text color="#FFD700">▊</Text>
               </Box>
             )}
           </>
@@ -159,20 +142,17 @@ export default function Chat() {
       </Box>
 
       {/* Input */}
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text color="#00D9FF">▌</Text>
-          <Text bold color="white"> INPUT</Text>
+      <Box flexDirection="column" marginTop={1}>
+        <Box>
+          <Text color="#00D9FF">▌ INPUT</Text>
         </Box>
-        <Box paddingLeft={2} paddingRight={2} paddingY={1} borderStyle="round" borderColor="#00D9FF">
-          <TextInput
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSubmit}
-            placeholder={isStreaming ? 'Waiting for response...' : 'Type your message...'}
-            showCursor={!isStreaming}
-          />
-        </Box>
+        <TextInput
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          placeholder={isStreaming ? 'Waiting...' : 'Type your message...'}
+          showCursor={!isStreaming}
+        />
       </Box>
     </Box>
   );

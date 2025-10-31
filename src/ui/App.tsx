@@ -39,42 +39,26 @@ export default function App() {
   }, [error, setError]);
 
   return (
-    <Box flexDirection="column" paddingX={2} paddingY={1}>
+    <Box flexDirection="column" width="100%" height="100%">
       {/* Header */}
-      <Box flexDirection="column" marginBottom={1}>
-        <Box>
-          <Text bold color="#00D9FF">
-            ╭─────────────────────────────────────────────╮
-          </Text>
-        </Box>
-        <Box paddingLeft={2} paddingRight={2}>
-          <Text bold color="#00D9FF">
-            ⚡ SYLPHX FLOW
-          </Text>
-          <Text dimColor> │ </Text>
-          <Text color="gray">AI Development Assistant</Text>
-        </Box>
-        <Box>
-          <Text bold color="#00D9FF">
-            ╰─────────────────────────────────────────────╯
-          </Text>
-        </Box>
+      <Box>
+        <Text bold color="#00D9FF">⚡ SYLPHX FLOW</Text>
+        <Text dimColor> │ </Text>
+        <Text dimColor>AI Development Assistant</Text>
       </Box>
 
       {/* Error Display */}
       {error && (
-        <Box marginBottom={1}>
-          <Box>
-            <Text color="#FF3366">▌</Text>
-            <Text color="#FF3366" bold> ERROR </Text>
-            <Text color="gray"> {error}</Text>
-          </Box>
+        <Box marginTop={1}>
+          <Text color="#FF3366">▌</Text>
+          <Text color="#FF3366" bold> ERROR </Text>
+          <Text color="gray">{error}</Text>
         </Box>
       )}
 
       {/* Loading Indicator */}
       {isLoading && (
-        <Box marginBottom={1}>
+        <Box marginTop={1}>
           <Text color="#FFD700">▌</Text>
           <Text color="#FFD700" bold> LOADING</Text>
           <Text color="gray">...</Text>
@@ -82,7 +66,7 @@ export default function App() {
       )}
 
       {/* Screen Router */}
-      <Box flexDirection="column">
+      <Box flexDirection="column" flexGrow={1} marginTop={1}>
         {currentScreen === 'chat' && <Chat />}
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
@@ -90,19 +74,8 @@ export default function App() {
 
       {/* Global Shortcuts Help */}
       {currentScreen === 'chat' && (
-        <Box marginTop={1} paddingY={1} paddingX={2}>
-          <Text color="#00D9FF">◆</Text>
-          <Text color="gray"> </Text>
-          <Text color="#00D9FF" bold>Ctrl+P</Text>
-          <Text dimColor> Providers </Text>
-          <Text color="gray">│</Text>
-          <Text dimColor> </Text>
-          <Text color="#00D9FF" bold>Ctrl+M</Text>
-          <Text dimColor> Models </Text>
-          <Text color="gray">│</Text>
-          <Text dimColor> </Text>
-          <Text color="#00D9FF" bold>Ctrl+Q</Text>
-          <Text dimColor> Quit</Text>
+        <Box marginTop={1}>
+          <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
         </Box>
       )}
     </Box>

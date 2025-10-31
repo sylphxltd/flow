@@ -32,47 +32,34 @@ export default function ProviderCard({
   const color = colors[providerId];
 
   return (
-    <Box flexDirection="column" marginBottom={2} paddingX={2}>
+    <Box flexDirection="column" marginBottom={1}>
       {/* Header */}
-      <Box marginBottom={1}>
-        <Text color={color}>▌</Text>
-        <Text bold color="white"> {provider.name.toUpperCase()}</Text>
+      <Box>
+        <Text color={color}>▌ {provider.name.toUpperCase()}</Text>
         {isDefault && (
           <>
-            <Text color="gray"> · </Text>
+            <Text dimColor> · </Text>
             <Text color="#FFD700">DEFAULT</Text>
           </>
         )}
       </Box>
 
       {/* Details */}
-      <Box flexDirection="column" paddingLeft={2} gap={1}>
-        {/* API Key Status */}
-        <Box>
-          <Text color="gray">API Key </Text>
-          <Text color="gray">│ </Text>
-          {apiKey ? (
-            <Text color="#00FF88">✓ Configured</Text>
-          ) : (
-            <Text color="#FF3366">✗ Not configured</Text>
-          )}
-        </Box>
-
-        {/* Default Model */}
-        {defaultModel && (
-          <Box>
-            <Text color="gray">Model </Text>
-            <Text color="gray">│ </Text>
-            <Text color="white">{defaultModel}</Text>
-          </Box>
+      <Box>
+        <Text dimColor>  </Text>
+        {apiKey ? (
+          <Text color="#00FF88">✓</Text>
+        ) : (
+          <Text color="#FF3366">✗</Text>
         )}
-
-        {/* Model Count */}
-        <Box>
-          <Text color="gray">Available </Text>
-          <Text color="gray">│ </Text>
-          <Text color={color}>{provider.models.length} models</Text>
-        </Box>
+        <Text dimColor> │ </Text>
+        {defaultModel && (
+          <>
+            <Text color="white">{defaultModel}</Text>
+            <Text dimColor> │ </Text>
+          </>
+        )}
+        <Text color={color}>{provider.models.length} models</Text>
       </Box>
     </Box>
   );

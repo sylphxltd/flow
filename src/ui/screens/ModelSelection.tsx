@@ -103,18 +103,15 @@ export default function ModelSelection() {
     };
 
     return (
-      <Box flexDirection="column" paddingX={2} paddingY={1}>
-        <Box marginBottom={2}>
-          <Text color="#00D9FF">▌</Text>
-          <Text bold color="white"> SELECT PROVIDER</Text>
+      <Box flexDirection="column" height="100%">
+        <Box marginBottom={1}>
+          <Text color="#00D9FF">▌ SELECT PROVIDER</Text>
         </Box>
 
-        <Box paddingLeft={2}>
-          <SelectInput items={items} onSelect={handleSelect} />
-        </Box>
+        <SelectInput items={items} onSelect={handleSelect} />
 
-        <Box marginTop={2} paddingLeft={2}>
-          <Text color="gray">↑↓ Navigate · Enter Select · Esc Back</Text>
+        <Box marginTop={1}>
+          <Text dimColor>↑↓ Navigate · Enter Select · Esc Back</Text>
         </Box>
       </Box>
     );
@@ -172,50 +169,42 @@ export default function ModelSelection() {
     };
 
     return (
-      <Box flexDirection="column" paddingX={2} paddingY={1}>
-        <Box marginBottom={2}>
-          <Text color="#00D9FF">▌</Text>
-          <Text bold color="white"> SELECT MODEL</Text>
-          <Text color="gray"> · </Text>
-          <Text color="gray">{selectedProvider && AI_PROVIDERS[selectedProvider].name}</Text>
+      <Box flexDirection="column" height="100%">
+        <Box marginBottom={1}>
+          <Text color="#00D9FF">▌ SELECT MODEL</Text>
+          <Text dimColor> · {selectedProvider && AI_PROVIDERS[selectedProvider].name}</Text>
         </Box>
 
         {/* Search input */}
-        <Box marginBottom={2} paddingLeft={2} flexDirection="column">
-          <Box marginBottom={1}>
-            <Text color="gray">Search</Text>
-          </Box>
-          <Box borderStyle="round" borderColor="#00D9FF" paddingX={2} paddingY={1}>
-            <TextInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Type to filter models..."
-              showCursor
-            />
-          </Box>
+        <Box marginBottom={1} flexDirection="column">
+          <Text dimColor>Search</Text>
+          <TextInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Type to filter..."
+            showCursor
+          />
         </Box>
 
         {/* Model list */}
         {filteredModels.length === 0 ? (
-          <Box paddingLeft={2} marginBottom={2}>
+          <Box marginBottom={1}>
             <Text color="#FFD700">▌</Text>
-            <Text color="gray"> No models found</Text>
+            <Text dimColor> No models found</Text>
           </Box>
         ) : (
           <>
-            <Box marginBottom={1} paddingLeft={2}>
-              <Text color="gray">
+            <Box marginBottom={1}>
+              <Text dimColor>
                 Showing {Math.min(filteredModels.length, 20)} of {models.length} models
               </Text>
             </Box>
-            <Box paddingLeft={2}>
-              <SelectInput items={items} onSelect={handleSelect} />
-            </Box>
+            <SelectInput items={items} onSelect={handleSelect} />
           </>
         )}
 
-        <Box marginTop={2} paddingLeft={2}>
-          <Text color="gray">↑↓ Navigate · Type Search · Enter Select · Esc Cancel</Text>
+        <Box marginTop={1}>
+          <Text dimColor>↑↓ Navigate · Type Search · Enter Select · Esc Cancel</Text>
         </Box>
       </Box>
     );
