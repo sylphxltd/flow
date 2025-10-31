@@ -53,7 +53,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
       type: 'stdio' as const,
       command: 'sylphx-flow',
       args: async () => {
-        const args = ['mcp-server'];
+        const args = ['mcp', 'start'];
 
         // Get target config without creating circular dependency
         const targetConfig = await useTargetConfig();

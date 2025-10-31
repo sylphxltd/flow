@@ -1,21 +1,21 @@
 {
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx -y @sylphx/flow hook --type message --target claude-code"
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y @sylphx/flow hook --type session --target claude-code"
+            "command": "bun run dev hook --type session --target claude-code"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run dev hook --type message --target claude-code"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y @sylphx/flow hook --type notification --target claude-code"
+            "command": "bun run dev hook --type notification --target claude-code"
           }
         ]
       }
