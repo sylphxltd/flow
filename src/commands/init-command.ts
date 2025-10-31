@@ -280,7 +280,9 @@ export const initCommand = new Command('init')
     const targetInfo: string[] = [];
     try {
       await projectSettings.setDefaultTarget(targetId);
-      const targetName = targetManager.getTarget(targetId)?.name || targetId;
+      const targetNameOption = targetManager.getTarget(targetId);
+      const targetName =
+        targetNameOption._tag === 'Some' ? targetNameOption.value.name : targetId;
       targetInfo.push(`Target: ${targetName}`);
     } catch (error) {
       // Don't fail the entire setup if we can't save settings

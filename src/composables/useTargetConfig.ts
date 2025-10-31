@@ -14,8 +14,11 @@ export async function useTargetConfig(): Promise<MCPServerConfigFlags | undefine
   });
 
   try {
-    const target = targetManager.getTarget(currentTargetId);
-    return target?.mcpServerConfig;
+    const targetOption = targetManager.getTarget(currentTargetId);
+    if (targetOption._tag === 'None') {
+      return undefined;
+    }
+    return targetOption.value.mcpServerConfig;
   } catch {
     // If target doesn't exist, return undefined
     return undefined;
@@ -27,8 +30,11 @@ export async function useTargetConfig(): Promise<MCPServerConfigFlags | undefine
  */
 export function useTargetConfigById(targetId: string): MCPServerConfigFlags | undefined {
   try {
-    const target = targetManager.getTarget(targetId);
-    return target?.mcpServerConfig;
+    const targetOption = targetManager.getTarget(targetId);
+    if (targetOption._tag === 'None') {
+      return undefined;
+    }
+    return targetOption.value.mcpServerConfig;
   } catch {
     return undefined;
   }

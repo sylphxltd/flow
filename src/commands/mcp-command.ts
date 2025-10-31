@@ -70,10 +70,12 @@ mcpCommand
     console.log(chalk.cyan.bold('▸ Configure MCP Server'));
     console.log(chalk.gray(`  Target: ${targetId}`));
 
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
+    const targetOption = targetManager.getTarget(targetId);
+    if (targetOption._tag === 'None') {
       throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
     }
+
+    const target = targetOption.value;
     const mcpService = createMCPService({ target });
 
     // If no server specified, show selection
@@ -176,10 +178,12 @@ mcpCommand
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
+    const targetOption = targetManager.getTarget(targetId);
+    if (targetOption._tag === 'None') {
       throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
     }
+
+    const target = targetOption.value;
     const mcpService = createMCPService({ target });
     const allServerIds = mcpService.getAllServerIds();
 
@@ -224,10 +228,12 @@ mcpCommand
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
+    const targetOption = targetManager.getTarget(targetId);
+    if (targetOption._tag === 'None') {
       throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
     }
+
+    const target = targetOption.value;
     const mcpService = createMCPService({ target });
     const installedServerIds = mcpService.getInstalledServerIds();
 

@@ -216,11 +216,12 @@ export async function configureMCP(
 
   // Save configuration
   if (result.serverId) {
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
+    const targetOption = targetManager.getTarget(targetId);
+    if (targetOption._tag === 'None') {
       throw new Error(`Target not found: ${targetId}`);
     }
 
+    const target = targetOption.value;
     const config = await target.readConfig(cwd);
     const mcpConfigPath = target.config.mcpConfigPath;
     const mcpSection = getNestedProperty(config, mcpConfigPath) || {};

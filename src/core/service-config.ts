@@ -94,10 +94,12 @@ export async function configureServices(): Promise<void> {
   container.register<IMCPService>(
     SERVICE_TOKENS.MCP_SERVICE,
     (targetId: string) => {
-      const target = targetManager.getTarget(targetId);
-      if (!target) {
+      const targetOption = targetManager.getTarget(targetId);
+      if (targetOption._tag === 'None') {
         throw new Error(`Target not found: ${targetId}`);
       }
+
+      const target = targetOption.value;
       return createMCPService({ target });
     },
     'transient'

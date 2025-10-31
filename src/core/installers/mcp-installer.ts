@@ -37,10 +37,12 @@ export interface MCPInstaller {
  * Handles server selection, configuration, and installation
  */
 export function createMCPInstaller(targetId: string): MCPInstaller {
-  const target = targetManager.getTarget(targetId);
-  if (!target) {
+  const targetOption = targetManager.getTarget(targetId);
+  if (targetOption._tag === 'None') {
     throw new Error(`Target not found: ${targetId}`);
   }
+
+  const target = targetOption.value;
   const mcpService = createMCPService({ target });
 
   /**
