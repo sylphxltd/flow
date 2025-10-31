@@ -24,9 +24,7 @@ import {
 // Mock dependencies
 vi.mock('../composables/useTargetConfig.js', () => ({
   useTargetConfig: vi.fn(async () => ({
-    disableMemory: false,
     disableTime: false,
-    disableProjectStartup: false,
     disableKnowledge: false,
     disableCodebase: false,
   })),

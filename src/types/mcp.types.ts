@@ -36,9 +36,7 @@ export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP;
  * Used to disable specific server features per target
  */
 export type MCPServerConfigFlags = {
-  disableMemory?: boolean;
   disableTime?: boolean;
-  disableProjectStartup?: boolean;
   disableKnowledge?: boolean;
   disableCodebase?: boolean;
 };

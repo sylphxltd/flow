@@ -23,9 +23,7 @@ export const claudeCodeTarget: Target = {
   isDefault: false,
 
   mcpServerConfig: {
-    disableMemory: true,
     disableTime: true,
-    disableProjectStartup: false,
     disableKnowledge: false,
     disableCodebase: true,
   },

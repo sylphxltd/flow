@@ -21,16 +21,12 @@ export const mcpCommand = new Command('mcp')
 mcpCommand
   .command('start')
   .description('Start Sylphx Flow MCP server with specific configuration')
-  .option('--disable-memory', 'Disable memory functionality')
   .option('--disable-time', 'Disable time functionality')
-  .option('--disable-project-startup', 'Disable project startup functionality')
   .option('--disable-knowledge', 'Disable knowledge functionality')
   .option('--disable-codebase', 'Disable codebase search functionality')
   .action(async (options) => {
     const config = {
-      disableMemory: options.disableMemory === true,
       disableTime: options.disableTime === true,
-      disableProjectStartup: options.disableProjectStartup === true,
       disableKnowledge: options.disableKnowledge === true,
       disableCodebase: options.disableCodebase === true,
     };

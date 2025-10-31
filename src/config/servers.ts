@@ -59,14 +59,8 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
         const targetConfig = await useTargetConfig();
 
         // Apply flags based on target configuration
-        if (targetConfig?.disableMemory) {
-          args.push('--disable-memory');
-        }
         if (targetConfig?.disableTime) {
           args.push('--disable-time');
-        }
-        if (targetConfig?.disableProjectStartup) {
-          args.push('--disable-project-startup');
         }
         if (targetConfig?.disableKnowledge) {
           args.push('--disable-knowledge');
