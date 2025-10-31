@@ -1,4 +1,5 @@
-import { createInterface } from 'node:readline';
+import React from 'react';
+import { render } from 'ink';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { anthropic } from '@ai-sdk/anthropic';
@@ -13,7 +14,7 @@ import {
   loadAIConfig,
   type ProviderId,
 } from '../config/ai-config.js';
-import { configureAI, quickSetupAI } from '../utils/ai-config-tui.js';
+import App from '../ui/App.js';
 import type { CommandOptions } from '../types.js';
 
 /**
@@ -101,123 +102,11 @@ async function getAIModel(cwd: string = process.cwd()): Promise<{
 }
 
 /**
- * Start interactive chat session
+ * Start interactive TUI app
  */
-async function startChatSession(options: CommandOptions): Promise<void> {
-  const cwd = process.cwd();
-
-  // Get configured model
-  const modelInfo = await getAIModel(cwd);
-
-  if (!modelInfo) {
-    console.log(chalk.yellow('\n⚠️  No AI provider configured\n'));
-    console.log(chalk.dim('Run configuration wizard...\n'));
-
-    const configured = await quickSetupAI(cwd);
-
-    if (!configured) {
-      console.error(chalk.red('\n✗ Configuration failed\n'));
-      process.exit(1);
-    }
-
-    // Retry getting model
-    const retryModel = await getAIModel(cwd);
-    if (!retryModel) {
-      console.error(chalk.red('\n✗ Failed to load AI model\n'));
-      process.exit(1);
-    }
-
-    return startChatSession(options);
-  }
-
-  const { model, providerName, modelName } = modelInfo;
-
-  // Conversation history
-  const messages: Message[] = [];
-
-  // System prompt
-  const systemPrompt = `You are a helpful coding assistant. You help users with programming tasks, code review, debugging, and software development.
-
-Key capabilities:
-- Write clean, functional code
-- Explain complex concepts clearly
-- Debug issues systematically
-- Follow best practices
-- Provide examples and documentation`;
-
-  console.log(chalk.cyan.bold('\n🤖 Sylphx Flow AI Chat\n'));
-  console.log(chalk.dim(`Provider: ${providerName}`));
-  console.log(chalk.dim(`Model: ${modelName}`));
-  console.log(chalk.dim('Powered by Vercel AI SDK v5'));
-  console.log(chalk.dim('Type your message and press Enter. Type "exit" or "quit" to end.\n'));
-
-  // Create readline interface
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: chalk.green('You: '),
-  });
-
-  rl.prompt();
-
-  rl.on('line', async (input: string) => {
-    const userMessage = input.trim();
-
-    // Exit commands
-    if (userMessage.toLowerCase() === 'exit' || userMessage.toLowerCase() === 'quit') {
-      console.log(chalk.cyan('\n👋 Goodbye!\n'));
-      rl.close();
-      process.exit(0);
-    }
-
-    // Skip empty messages
-    if (!userMessage) {
-      rl.prompt();
-      return;
-    }
-
-    // Add user message to history
-    messages.push({ role: 'user', content: userMessage });
-
-    try {
-      // Stream response
-      console.log(chalk.blue('\nAssistant: '));
-
-      const { textStream } = streamText({
-        model,
-        system: systemPrompt,
-        messages: messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      });
-
-      let assistantMessage = '';
-
-      // Stream tokens to console
-      for await (const textPart of textStream) {
-        process.stdout.write(textPart);
-        assistantMessage += textPart;
-      }
-
-      console.log('\n'); // New line after response
-
-      // Add assistant response to history
-      messages.push({ role: 'assistant', content: assistantMessage });
-
-      // Show prompt again
-      rl.prompt();
-    } catch (error) {
-      console.error(chalk.red('\n✗ Error:'), error instanceof Error ? error.message : String(error));
-      console.log('');
-      rl.prompt();
-    }
-  });
-
-  rl.on('close', () => {
-    console.log(chalk.cyan('\n👋 Chat session ended\n'));
-    process.exit(0);
-  });
+async function startTUIApp(options: CommandOptions): Promise<void> {
+  // Render React + Ink app
+  render(React.createElement(App));
 }
 
 /**
@@ -282,8 +171,8 @@ async function runPrompt(prompt: string, options: CommandOptions): Promise<void>
  * Create code command
  */
 export const codeCommand = new Command('code')
-  .description('AI chatbot powered by Vercel AI SDK v5 (multi-provider support)')
-  .argument('[prompt]', 'One-shot prompt (optional - if not provided, starts interactive chat)')
+  .description('AI development assistant with React + Ink TUI')
+  .argument('[prompt]', 'One-shot prompt (optional - if not provided, starts interactive TUI)')
   .option('--no-stream', 'Disable streaming output (return full response at once)')
   .option('--verbose', 'Show detailed output')
   .action(async (prompt, options) => {
@@ -291,15 +180,7 @@ export const codeCommand = new Command('code')
       // One-shot mode
       await runPrompt(prompt, options);
     } else {
-      // Interactive chat mode
-      await startChatSession(options);
+      // Interactive TUI mode
+      await startTUIApp(options);
     }
-  });
-
-// Add config subcommand
-codeCommand
-  .command('config')
-  .description('Configure AI providers and models (TUI)')
-  .action(async () => {
-    await configureAI(process.cwd());
   });
