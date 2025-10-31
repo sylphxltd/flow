@@ -51,21 +51,9 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     description: 'Sylphx Flow MCP server for agent coordination and memory management',
     config: {
       type: 'stdio' as const,
-      command: async () => {
-        const { getMCPServerCommand, loadInvocationMethod, detectInvocation } = await import(
-          '../utils/cli-invocation.js'
-        );
-        const method = (await loadInvocationMethod()) || detectInvocation();
-        return getMCPServerCommand(method);
-      },
+      command: 'sylphx-flow',
       args: async () => {
-        const { getMCPServerArgs, loadInvocationMethod, detectInvocation } = await import(
-          '../utils/cli-invocation.js'
-        );
-
-        // Get saved or detected invocation method
-        const method = (await loadInvocationMethod()) || detectInvocation();
-        const args = getMCPServerArgs(method);
+        const args = ['mcp-server'];
 
         // Get target config without creating circular dependency
         const targetConfig = await useTargetConfig();

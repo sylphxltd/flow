@@ -56,7 +56,7 @@ User: "I'm using TypeScript + React + Next.js 14 App Router,
 
 ```bash
 # What you type with Sylphx Flow ✅
-npx @sylphx/flow run "implement authentication"
+sylphx-flow run "implement authentication"
 
 # You get: Production-ready code that:
 ✅ Uses YOUR tech stack (auto-detected)
@@ -70,28 +70,39 @@ npx @sylphx/flow run "implement authentication"
 
 ---
 
-## 🚀 Two Commands. That's It.
+## 🚀 Installation
 
-### 1. Setup (Once)
+### Install globally (required)
 
 ```bash
-npx @sylphx/flow init
+# Using npm
+npm install -g @sylphx/flow
+
+# Using bun
+bun install -g @sylphx/flow
+```
+
+### Initialize your project
+
+```bash
+sylphx-flow init
 ```
 
 Done. Everything configured. Never think about setup again.
 
-> **💡 Want the bleeding edge?** Use `npx github:sylphxltd/flow init` to try unreleased features.
-
-### 2. Build (Forever)
+### Usage
 
 ```bash
 # Direct prompt
-npx @sylphx/flow run "add password reset"
-npx @sylphx/flow run "review for security" --agent reviewer
-npx @sylphx/flow run "write API docs" --agent writer
+sylphx-flow run "add password reset"
+sylphx-flow run "review for security" --agent reviewer
+sylphx-flow run "write API docs" --agent writer
 
-# Or interactive mode - just start chatting
-npx @sylphx/flow run
+# Interactive AI chat
+sylphx-flow code
+
+# Or interactive build mode
+sylphx-flow run
 > implement OAuth
 > add tests
 > optimize performance
@@ -205,25 +216,27 @@ const result = await pipe(
 ### Install & Setup
 
 ```bash
-# 1. Initialize (one time)
-npx @sylphx/flow init
+# 1. Install globally
+npm install -g @sylphx/flow
+# or: bun install -g @sylphx/flow
 
-# 2. (Optional) Set OpenAI-compatible API key to use vector search
+# 2. Initialize (one time)
+sylphx-flow init
+
+# 3. (Optional) Set OpenAI-compatible API key to use vector search
 # Without key: Uses TF-IDF search (fast, free)
 # With key: Auto-upgrades to vector search (higher quality)
 export OPENAI_API_KEY="your-key-here"  # Auto-switches search mode
 ```
 
-> **💡 Want the latest unreleased features?** Use `npx github:sylphxltd/flow` instead.
-
 ### Start Building
 
 ```bash
 # Method 1: Direct command
-npx @sylphx/flow run "implement user registration"
+sylphx-flow run "implement user registration"
 
 # Method 2: Interactive mode (recommended)
-npx @sylphx/flow run
+sylphx-flow run
 # Then just chat naturally:
 # > add authentication
 # > review the code
@@ -500,14 +513,17 @@ flow codebase reindex  # After major code changes
 ### Setup for Claude Code
 
 ```bash
-# 1. Initialize
-npx @sylphx/flow init
+# 1. Install globally
+npm install -g @sylphx/flow
 
-# 2. (Optional) Add OpenAI-compatible key to .claude/mcp.json
+# 2. Initialize
+sylphx-flow init
+
+# 3. (Optional) Add OpenAI-compatible key to .claude/mcp.json
 # Enhances search quality with vector embeddings
 # Works without API key using TF-IDF
 
-# 3. Restart Claude Code
+# 4. Restart Claude Code
 # Done! All tools available.
 ```
 

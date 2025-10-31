@@ -37,22 +37,14 @@ export interface HookConfig {
 }
 
 /**
- * Generate hook commands based on how CLI was invoked
- * Detects invocation method and generates matching commands
+ * Generate hook commands for the target
+ * Uses global sylphx-flow command (users must install globally first)
  */
 export const generateHookCommands = async (targetId: string): Promise<HookConfig> => {
-  const { detectInvocation, generateHookCommand, loadInvocationMethod } = await import(
-    '../../utils/cli-invocation.js'
-  );
-
-  // Try to load saved invocation method, fall back to detection
-  const savedMethod = await loadInvocationMethod();
-  const method = savedMethod || detectInvocation();
-
   return {
-    sessionCommand: generateHookCommand('session', targetId, method),
-    messageCommand: generateHookCommand('message', targetId, method),
-    notificationCommand: generateHookCommand('notification', targetId, method),
+    sessionCommand: `sylphx-flow hook --type session --target ${targetId}`,
+    messageCommand: `sylphx-flow hook --type message --target ${targetId}`,
+    notificationCommand: `sylphx-flow hook --type notification --target ${targetId}`,
   };
 };
 
@@ -61,9 +53,9 @@ export const generateHookCommands = async (targetId: string): Promise<HookConfig
  * Now using unified hook command for all content (rules, output styles, system info)
  */
 export const DEFAULT_HOOKS: HookConfig = {
-  sessionCommand: 'npx -y @sylphx/flow hook --type session --target claude-code',
-  messageCommand: 'npx -y @sylphx/flow hook --type message --target claude-code',
-  notificationCommand: 'npx -y @sylphx/flow hook --type notification --target claude-code',
+  sessionCommand: 'sylphx-flow hook --type session --target claude-code',
+  messageCommand: 'sylphx-flow hook --type message --target claude-code',
+  notificationCommand: 'sylphx-flow hook --type notification --target claude-code',
 };
 
 /**

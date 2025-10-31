@@ -69,11 +69,6 @@ export const initCommand = new Command('init')
       throw new Error('Target ID not set');
     }
 
-    // Detect and save invocation method for generating consistent commands
-    const { detectInvocation, saveInvocationMethod } = await import('../utils/cli-invocation.js');
-    const invocationMethod = detectInvocation();
-    await saveInvocationMethod(invocationMethod);
-
     // Dry run
     if (options.dryRun) {
       console.log(

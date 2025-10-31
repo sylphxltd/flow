@@ -12,14 +12,6 @@ export interface ProjectSettings {
   defaultTarget?: string;
   /** Settings version for migration purposes */
   version?: string;
-  /** How the CLI was invoked (for generating consistent commands) */
-  invocationMethod?: {
-    type: 'npm' | 'github' | 'bunx' | 'local-dev' | 'global' | 'unknown';
-    package?: string;
-    repo?: string;
-    script?: string;
-    command?: string;
-  };
 }
 
 const SETTINGS_FILE = '.sylphx-flow/settings.json';
