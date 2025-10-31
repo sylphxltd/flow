@@ -88,10 +88,12 @@ export const initCommand = new Command('init')
         )
       );
 
-      const target = targetManager.getTarget(targetId);
-      if (!target) {
+      const targetOption = targetManager.getTarget(targetId);
+      if (targetOption._tag === 'None') {
         throw new Error(`Target not found: ${targetId}`);
       }
+
+      const target = targetOption.value;
 
       if (options.mcp !== false && target.setupMCP) {
         console.log(chalk.cyan.bold('MCP Tools:'));
@@ -137,10 +139,12 @@ export const initCommand = new Command('init')
     }
 
     // Get target instance
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
+    const targetOption = targetManager.getTarget(targetId);
+    if (targetOption._tag === 'None') {
       throw new Error(`Target not found: ${targetId}`);
     }
+
+    const target = targetOption.value;
 
     // Setup MCP servers if target supports it and MCP is enabled
     // Note: No spinner here because MCP setup is interactive (user prompts)
@@ -157,8 +161,13 @@ export const initCommand = new Command('init')
           console.log(chalk.dim('ℹ No MCP servers selected'));
         }
       } catch (error) {
-        console.error(chalk.red('✖ Failed to setup MCP servers'));
-        throw error;
+        // If user cancels MCP setup (Ctrl+C), continue with other components
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          console.log(chalk.yellow('\n⚠️  MCP setup cancelled, continuing with other components\n'));
+        } else {
+          console.error(chalk.red('✖ Failed to setup MCP servers'));
+          throw error;
+        }
       }
     }
 
