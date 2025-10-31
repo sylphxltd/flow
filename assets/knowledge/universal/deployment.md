@@ -3,274 +3,107 @@ name: Deployment & DevOps
 description: Docker, CI/CD, monitoring, scaling, infrastructure
 ---
 
-# Infrastructure & DevOps
+# Deployment & DevOps
 
 ## Deployment Strategies
 
-### Blue-Green Deployment
-**How:** Two identical environments (blue=current, green=new)
-**Process:** Deploy to green, test, switch traffic
-**Benefits:** Zero downtime, instant rollback
-**Drawback:** Doubles infrastructure cost
+**Blue-Green**: Two environments (blue=current, green=new) → test → switch. Zero downtime, instant rollback, 2x cost.
 
-### Rolling Deployment
-**How:** Gradually replace instances (10% at a time)
-**Benefits:** No extra infrastructure, lower risk
-**Drawback:** Slower, mixed versions during rollout
+**Rolling**: Replace gradually (10% at a time). No extra infrastructure, lower risk, slower.
 
-### Canary Deployment
-**How:** Route small % of traffic to new version
-**Benefits:** Test in production with minimal risk
-**Drawback:** Complex routing, requires monitoring
+**Canary**: Route small % to new version. Test in production, minimal risk, complex routing.
 
-### Feature Flags
-**How:** Deploy code disabled, enable via config
-**Benefits:** Decouple deploy from release
-**Use:** A/B testing, gradual rollouts, kill switches
+**Feature Flags**: Deploy code disabled, enable via config. Decouple deploy from release, A/B testing, kill switches.
 
 ## CI/CD Pipeline
 
-### Continuous Integration
-**On every commit:**
+### Continuous Integration (On Every Commit)
 1. Run linter
 2. Run tests (unit, integration)
 3. Build application
 4. Security scanning
 5. Code quality checks
 
-**Best practices:**
-- Fast feedback (< 10min)
-- Fail fast (stop on first failure)
-- Keep builds green (fix breaks immediately)
+**Best practices**: Fast feedback (< 10min), fail fast, keep builds green
 
 ### Continuous Deployment
-**Pipeline stages:**
-1. CI passes
-2. Deploy to staging
-3. Run E2E tests
-4. Deploy to production
-5. Health checks
-6. Rollback if failed
+**Stages**: CI passes → deploy staging → E2E tests → deploy production → health checks → rollback if failed
 
-**Tools:** GitHub Actions, GitLab CI, Jenkins, CircleCI
+**Tools**: GitHub Actions, GitLab CI, Jenkins, CircleCI
 
 ## Containerization (Docker)
 
-### Dockerfile Best Practices
-```dockerfile
-# Multi-stage build (smaller image)
-FROM node:18 AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:18-slim
-COPY --from=builder /app/dist ./dist
-CMD ["node", "dist/index.js"]
-```
-
-**Optimization:**
-- Use slim/alpine base images
-- Multi-stage builds
-- Layer caching (COPY deps before code)
-- .dockerignore (exclude node_modules, .git)
-- Don't run as root (USER directive)
-
-### Docker Compose
-**Development environment:**
-- App + database + cache in one command
-- Consistent across team
-- Version-controlled configuration
+### Best Practices
+- Multi-stage builds (build → slim runtime)
+- Slim/alpine images
+- Layer caching (deps before code)
+- .dockerignore
+- Don't run as root
 
 ## Orchestration (Kubernetes)
 
-### Core Concepts
-- **Pod:** Group of containers
-- **Deployment:** Manages pod replicas
-- **Service:** Load balancer for pods
-- **Ingress:** External routing
-- **ConfigMap:** Configuration
-- **Secret:** Sensitive data
+**Core**: Pod (containers), Deployment (replicas), Service (load balancer), Ingress (routing), ConfigMap (config), Secret (sensitive)
 
-### Scaling
-**Horizontal Pod Autoscaler:**
-- Scale based on CPU/memory
-- Min/max replicas
-- Target utilization
-
-**Cluster Autoscaler:**
-- Add/remove nodes based on demand
+**Scaling**:
+- Horizontal Pod Autoscaler: Scale based on CPU/memory, min/max replicas
+- Cluster Autoscaler: Add/remove nodes
 
 ## Monitoring & Observability
 
 ### Logs
-**Structured logging:**
-```json
-{
-  "level": "error",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "message": "Database connection failed",
-  "error": "Connection timeout",
-  "user_id": "123"
-}
-```
+**Structured logging**: JSON format with level, timestamp, message, context (user_id, trace_id)
 
-**Centralized:** ELK Stack, Datadog, CloudWatch
-**Best practices:**
-- Log errors with context
-- Trace IDs for request correlation
-- Don't log secrets
-- Set retention policies
+**Centralized**: ELK, Datadog, CloudWatch
+**Best practices**: Log errors with context, trace IDs, don't log secrets, set retention
 
 ### Metrics
-**What to track:**
-- Request rate (throughput)
-- Error rate
-- Response time (latency)
-- Resource usage (CPU, memory, disk)
-
-**Tools:** Prometheus, Grafana, Datadog
+**Track**: Request rate, error rate, response time (latency), resource usage (CPU, memory, disk)
+**Tools**: Prometheus, Grafana, Datadog
 
 ### Tracing
-**Distributed tracing:**
-- Track requests across services
-- Identify bottlenecks
-- Tools: Jaeger, Zipkin, Datadog APM
+**Distributed tracing**: Track requests across services, identify bottlenecks
+**Tools**: Jaeger, Zipkin, Datadog APM
 
 ### Alerting
-**Alert on:**
-- Error rate > threshold
-- Response time > SLA
-- Resource exhaustion
-- Service down
-
-**Best practices:**
-- Actionable alerts only
-- Include runbook links
-- Escalation policies
-- On-call rotation
+**Alert on**: Error rate > threshold, response time > SLA, resource exhaustion, service down
+**Best practices**: Actionable only, include runbooks, escalation policies, on-call rotation
 
 ## High Availability
 
 ### Load Balancing
-**Algorithms:**
-- Round robin: Equal distribution
-- Least connections: Send to least busy
-- IP hash: Consistent routing per client
-
-**Health checks:**
-- HTTP endpoints (/_health)
-- TCP connection tests
-- Check every 10-30s
-- Remove unhealthy instances
+**Algorithms**: Round robin (equal), least connections (least busy), IP hash (consistent)
+**Health checks**: HTTP (/_health), TCP, check every 10-30s, remove unhealthy
 
 ### Database Replication
-**Primary-Replica:**
-- Writes to primary
-- Reads from replicas
-- Async replication (eventual consistency)
-
-**Multi-Primary:**
-- Write to any instance
-- Conflict resolution needed
-- Complex but highly available
+**Primary-Replica**: Writes to primary, reads from replicas, async (eventual consistency)
+**Multi-Primary**: Write to any, conflict resolution needed, complex but highly available
 
 ### Backup & Disaster Recovery
-**Backups:**
-- Automated daily backups
-- Retention policy (7 days, 4 weeks, 12 months)
-- Test restores regularly
-- Offsite/cross-region storage
-
-**RTO/RPO:**
-- RTO (Recovery Time Objective): How long to restore
-- RPO (Recovery Point Objective): How much data loss acceptable
+**Backups**: Automated daily, retention (7 days, 4 weeks, 12 months), test restores, offsite/cross-region
+**RTO/RPO**: RTO (recovery time), RPO (data loss acceptable)
 
 ## Security
 
-### Network Security
-- Firewall rules (whitelist approach)
-- Private subnets for databases
-- VPN for internal access
-- DDoS protection (Cloudflare, AWS Shield)
-
-### Secrets Management
-- Never commit secrets to git
-- Use secret managers (AWS Secrets Manager, Vault)
-- Rotate credentials regularly
-- Least privilege access
-
-### SSL/TLS
-- HTTPS everywhere
-- Auto-renewal (Let's Encrypt, cert-manager)
-- Strong cipher suites
-- HSTS headers
-
-### Compliance
-- Encryption at rest
-- Encryption in transit
-- Access logs
-- Regular security audits
+**Network**: Firewall (whitelist), private subnets for DBs, VPN for internal, DDoS protection
+**Secrets**: Never commit to git, use secret managers (AWS Secrets Manager, Vault), rotate regularly, least privilege
+**SSL/TLS**: HTTPS everywhere, auto-renewal (Let's Encrypt), strong ciphers, HSTS headers
+**Compliance**: Encryption at rest, encryption in transit, access logs, security audits
 
 ## Cost Optimization
 
-### Right-sizing
-- Monitor resource usage
-- Scale down over-provisioned instances
-- Use spot/preemptible instances for non-critical
-
-### Auto-scaling
-- Scale down during off-peak
-- Scale up during peak
-- Set appropriate thresholds
-
-### Reserved Instances
-- Commit to 1-3 years for discount (30-70%)
-- For predictable, steady workloads
-
-### Storage Optimization
-- Lifecycle policies (move old data to cheaper storage)
-- Delete unused snapshots/volumes
-- Compress backups
+**Right-sizing**: Monitor usage, scale down over-provisioned, spot/preemptible for non-critical
+**Auto-scaling**: Scale down off-peak, scale up peak
+**Reserved Instances**: 1-3 year commit for 30-70% discount (predictable workloads)
+**Storage**: Lifecycle policies (move old to cheaper), delete unused, compress backups
 
 ## Common Patterns
 
-### Immutable Infrastructure
-- Never modify running servers
-- Deploy new instances, terminate old
-- Consistent, repeatable deployments
-
-### Infrastructure as Code
-- Terraform, CloudFormation, Pulumi
-- Version controlled
-- Reproducible environments
-- Disaster recovery
-
-### GitOps
-- Git as single source of truth
-- Automated deployment on merge
-- Drift detection and reconciliation
-- Tools: ArgoCD, Flux
+**Immutable Infrastructure**: Never modify servers, deploy new, terminate old
+**Infrastructure as Code**: Terraform, CloudFormation, Pulumi → version controlled, reproducible
+**GitOps**: Git as truth, auto-deploy on merge, drift detection (ArgoCD, Flux)
 
 ## Best Practices
 
-### Documentation
-- Runbooks for common tasks
-- Architecture diagrams
-- Incident response procedures
-- On-call guides
-
-### Change Management
-- Change review process
-- Deployment windows
-- Rollback procedures
-- Communication plan
-
-### Incident Response
-1. Detect (monitoring)
-2. Triage (assess impact)
-3. Mitigate (stop bleeding)
-4. Resolve (fix root cause)
-5. Post-mortem (learn, prevent)
+**Documentation**: Runbooks, architecture diagrams, incident response, on-call guides
+**Change Management**: Review process, deployment windows, rollback procedures, communication
+**Incident Response**: Detect → Triage → Mitigate → Resolve → Post-mortem

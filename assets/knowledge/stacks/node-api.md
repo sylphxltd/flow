@@ -3,243 +3,218 @@ name: Node.js API
 description: Express/Fastify, REST/GraphQL, authentication, middleware, error handling
 ---
 
-# Backend Development
+# Backend API Development
 
-## API Design
+## REST Structure
 
-### REST Principles
-**Resource-oriented URLs:**
-- Collections: `GET /users`, `POST /users`
-- Resources: `GET /users/123`, `PUT /users/123`, `DELETE /users/123`
-- Nested: `GET /users/123/posts` for relationships
+```
+GET    /users              List
+POST   /users              Create
+GET    /users/:id          Get
+PATCH  /users/:id          Update
+DELETE /users/:id          Delete
+GET    /users/:id/posts    Nested
+```
 
-**HTTP Methods:**
-- GET: Read (idempotent, cacheable)
-- POST: Create (not idempotent)
-- PUT: Replace (idempotent)
-- PATCH: Update (partial)
-- DELETE: Remove (idempotent)
+**Status**: 200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
 
-**Status Codes:**
-- 200 OK: Success
-- 201 Created: Resource created
-- 204 No Content: Success, no body
-- 400 Bad Request: Client error (validation)
-- 401 Unauthorized: Not authenticated
-- 403 Forbidden: Authenticated but not authorized
-- 404 Not Found: Resource doesn't exist
-- 500 Internal Server Error: Server error
+**Response format (project standard):**
+```json
+{ "data": {...}, "meta": {...} }
+{ "items": [...], "total": 100, "page": 1, "limit": 20 }
+{ "error": { "code": "VALIDATION_ERROR", "message": "...", "field": "..." } }
+```
 
-### Request/Response
-**Request:**
-- Validate all inputs (schema validation: Zod, Joi)
-- Sanitize inputs (prevent injection)
-- Rate limit by IP/user
-- Accept Content-Type header
+## N+1 Problem
 
-**Response:**
-- Consistent format: `{ data, error, meta }`
-- Include pagination: `{ items, total, page, limit }`
-- Proper Content-Type header
-- CORS headers if cross-origin
-
-### Error Handling
 ```javascript
-{
-  error: {
-    code: "VALIDATION_ERROR",
-    message: "Invalid email format",
-    field: "email"  // for field-level errors
-  }
-}
+// BAD - N+1 queries
+for (user of users) { user.posts = await getPosts(user.id) }
+
+// GOOD - Join
+await db.users.findMany({ include: { posts: true } })
+
+// GOOD - Batch fetch
+const userIds = users.map(u => u.id)
+const posts = await db.posts.findMany({ where: { userId: { in: userIds } } })
+
+// GraphQL: DataLoader
+const loader = new DataLoader(async (ids) => {
+  const items = await db.find({ where: { id: { in: ids } } })
+  return ids.map(id => items.filter(i => i.parentId === id))
+})
 ```
 
 ## Database
 
-### SQL Best Practices
-**Queries:**
-- Use prepared statements (prevent SQL injection)
-- Index frequently queried columns
-- Avoid SELECT * (specify columns)
-- Use LIMIT for pagination
-- Explain query plans for optimization
-
-**Transactions:**
-- ACID compliance for critical operations
-- Keep transactions short
-- Handle deadlocks with retry logic
-
-**Schema:**
-- Foreign keys for referential integrity
-- NOT NULL where appropriate
-- Unique constraints for business rules
-- Timestamps: created_at, updated_at
-
-### NoSQL (MongoDB, etc.)
-**When to use:**
-- Flexible schema requirements
-- Horizontal scaling needs
-- Document-oriented data
-
-**Patterns:**
-- Embed related data (avoid joins)
-- Index frequently queried fields
-- Use aggregation pipeline for complex queries
-- Shard for horizontal scaling
-
-### Caching
-**Layers:**
-1. Application cache (in-memory: Redis, Memcached)
-2. Database query cache
-3. CDN for static assets
-
-**Strategies:**
-- Cache-aside: App checks cache, then DB
-- Write-through: Update cache on write
-- TTL-based expiration
-- Invalidate on update
-
-**What to cache:**
-- Database query results
-- Expensive computations
-- External API responses
-- Session data
-
-## Authentication & Authorization
-
-### Authentication (Who you are)
-**Session-based:**
-- Server stores session, client gets cookie
-- Good for: Traditional web apps
-- Stateful (requires session store)
-
-**Token-based (JWT):**
-- Client stores token, sends in headers
-- Good for: SPAs, mobile apps, microservices
-- Stateless (self-contained)
-
-**Best practices:**
-- Hash passwords with bcrypt/argon2
-- Implement rate limiting on login
-- Support 2FA for sensitive apps
-- Use refresh tokens (short-lived access + long-lived refresh)
-
-### Authorization (What you can do)
-**RBAC (Role-Based):**
-- Assign roles to users (admin, editor, viewer)
-- Roles have permissions
-- Good for: Defined organizational structure
-
-**ABAC (Attribute-Based):**
-- Policies based on attributes (user.department == resource.owner)
-- More flexible, more complex
-
-**Middleware pattern:**
+**Connection pooling:**
 ```javascript
-requireAuth()       // Must be logged in
-requireRole('admin') // Must have role
-requireOwnership()  // Must own resource
+const pool = new Pool({ max: 20, idleTimeoutMillis: 30000 })
 ```
 
-## Error Handling & Logging
-
-### Error Categories
-**Operational errors (expected):**
-- Validation failures
-- Network timeouts
-- Resource not found
-- Handle gracefully, return to client
-
-**Programmer errors (bugs):**
-- Null reference
-- Type errors
-- Logic bugs
-- Log and alert, don't expose to client
-
-### Logging
-**What to log:**
-- Errors with stack traces
-- Security events (failed logins)
-- Performance metrics
-- Business events
-
-**What NOT to log:**
-- Passwords, tokens, secrets
-- Personal data (GDPR)
-- Full request bodies (may contain sensitive data)
-
-**Levels:**
-- ERROR: Failures requiring attention
-- WARN: Potential issues
-- INFO: Significant events
-- DEBUG: Detailed for troubleshooting
-
-## Performance
-
-### N+1 Query Problem
-**Problem:** Loading relations in loop
-**Solution:** Eager loading, data loader pattern
-
-### Connection Pooling
-- Reuse DB connections (don't open/close per request)
-- Configure max pool size
-- Monitor connection usage
-
-### Async/Parallel Processing
-- Use async/await for I/O operations
-- Run independent operations in parallel
-- Use job queues for background tasks (Bull, BullMQ)
-
-### Response Time
-- Database queries: < 100ms
-- API endpoints: < 200ms
-- Use APM tools to monitor (New Relic, Datadog)
-
-## Testing
-
-### Unit Tests
-- Test business logic in isolation
-- Mock external dependencies (DB, APIs)
-- Test edge cases and error paths
-
-### Integration Tests
-- Test API endpoints end-to-end
-- Use test database
-- Test authentication/authorization
-
-### Load Testing
-- Simulate realistic traffic
-- Identify bottlenecks
-- Tools: k6, Artillery, JMeter
-
-## Common Patterns
-
-### Repository Pattern
-Separate data access from business logic
+**Caching pattern:**
 ```javascript
-class UserRepository {
-  findById(id) { /* DB logic */ }
-  save(user) { /* DB logic */ }
+async function getUser(id) {
+  const cached = await redis.get(`user:${id}`)
+  if (cached) return JSON.parse(cached)
+
+  const user = await db.users.findUnique({ where: { id } })
+  await redis.set(`user:${id}`, JSON.stringify(user), 'EX', 3600)
+  return user
+}
+
+// Invalidate on update
+async function updateUser(id, data) {
+  const user = await db.users.update({ where: { id }, data })
+  await redis.del(`user:${id}`)
+  return user
 }
 ```
 
-### Service Layer
-Business logic separate from controllers
+## Authentication
+
+**Session vs Token:**
+- Session: Traditional web apps, need fine-grained control
+- Token (JWT): SPAs, mobile apps, microservices
+
+**JWT middleware (project standard):**
 ```javascript
-class UserService {
-  async createUser(data) {
-    // Validation, business rules
-    return userRepo.save(data)
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) return res.status(401).json({ error: { code: 'NO_TOKEN' } })
+
+  try {
+    req.userId = jwt.verify(token, process.env.JWT_SECRET).userId
+    next()
+  } catch {
+    res.status(401).json({ error: { code: 'INVALID_TOKEN' } })
   }
 }
 ```
 
-### Middleware Chain
-Request processing pipeline
+**Authorization patterns:**
+```javascript
+// Role check
+function requireRole(...roles) {
+  return async (req, res, next) => {
+    const user = await db.users.findUnique({ where: { id: req.userId } })
+    if (!roles.includes(user.role)) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN' } })
+    }
+    next()
+  }
+}
+
+// Ownership check
+function requireOwnership(getter) {
+  return async (req, res, next) => {
+    const resource = await getter(req)
+    if (resource.userId !== req.userId) {
+      return res.status(403).json({ error: { code: 'NOT_OWNER' } })
+    }
+    next()
+  }
+}
+```
+
+## Error Handling
+
+**Project standard:**
+```javascript
+class ApiError extends Error {
+  constructor(statusCode, code, message) {
+    super(message)
+    this.statusCode = statusCode
+    this.code = code
+    this.isOperational = true
+  }
+}
+
+// Error middleware (last!)
+app.use((err, req, res, next) => {
+  if (err.isOperational) {
+    return res.status(err.statusCode).json({
+      error: { code: err.code, message: err.message }
+    })
+  }
+
+  console.error('PROGRAMMER ERROR:', err)
+  res.status(500).json({ error: { code: 'INTERNAL_ERROR' } })
+})
+
+// Usage
+if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found')
+```
+
+## Performance
+
+**Targets**: DB < 100ms, API < 200ms
+
+**Optimize:**
+- N+1 → Joins / DataLoader
+- Connection pooling
+- Redis caching
+- Job queues (background tasks)
+- Pagination (always LIMIT)
+
+## GraphQL Basics
+
+**When**: Complex relationships, flexible queries
+**vs REST**: Simple CRUD → REST
+
+**DataLoader (required for N+1):**
+```javascript
+const postLoader = new DataLoader(async (userIds) => {
+  const posts = await db.posts.findMany({ where: { userId: { in: userIds } } })
+  return userIds.map(id => posts.filter(p => p.userId === id))
+})
+
+// In resolver
+User: {
+  posts: (user) => postLoader.load(user.id)
+}
+```
+
+## Common Patterns
+
+**Repository:**
+```javascript
+class UserRepo {
+  findById(id) { return db.users.findUnique({ where: { id } }) }
+  save(data) { return db.users.create({ data }) }
+}
+```
+
+**Service:**
+```javascript
+class UserService {
+  async createUser(data) {
+    if (!data.email) throw new Error('Email required')
+    return await this.repo.save(data)
+  }
+}
+```
+
+**Middleware chain:**
 ```javascript
 app.use(cors())
+app.use(express.json())
+app.use(rateLimit())
 app.use(auth())
-app.use(validate())
-app.use(handler())
-app.use(errorHandler())
+app.use(errorHandler()) // Last!
 ```
+
+## Best Practices
+
+✅ Prepared statements (prevent injection)
+✅ Connection pooling
+✅ Index foreign keys
+✅ Rate limit auth endpoints
+✅ Hash passwords (bcrypt/argon2)
+✅ HTTPS only
+✅ Validate server-side
+
+❌ SQL injection (string concat)
+❌ Plain text passwords
+❌ N+1 queries
+❌ No error handling

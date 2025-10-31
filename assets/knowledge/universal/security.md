@@ -8,70 +8,72 @@ description: OWASP, authentication, authorization, vulnerabilities, secure codin
 ## OWASP Top 10
 
 ### SQL Injection
-- **Never** concatenate user input into SQL queries
-- Use parameterized queries or prepared statements
-- Example (bad): `SELECT * FROM users WHERE id = ${userId}`  
-- Example (good): `SELECT * FROM users WHERE id = ?` with parameter binding
+**Never** concatenate user input into SQL
+```javascript
+// BAD: Vulnerable
+db.query(`SELECT * FROM users WHERE id = ${userId}`)
+
+// GOOD: Parameterized
+db.query('SELECT * FROM users WHERE id = $1', [userId])
+```
 
 ### XSS (Cross-Site Scripting)
-- Sanitize and escape all user-generated content before rendering
-- Use Content Security Policy (CSP) headers
+- Sanitize/escape user content before rendering
+- Use CSP headers
 - Never use `dangerouslySetInnerHTML` without sanitization
-- Validate on server-side, not just client-side
+- Validate server-side, not just client
 
 ### Authentication & Authorization
-- Use established auth libraries (Passport, NextAuth, Auth0)
-- Store passwords with bcrypt/argon2, never plain text
-- Implement rate limiting on login endpoints
-- Use httpOnly, secure, sameSite cookies for session tokens
-- Separate authentication (who you are) from authorization (what you can do)
+- Use established libraries (Passport, NextAuth, Auth0)
+- Hash passwords (bcrypt/argon2), never plain text
+- Rate limit login endpoints
+- httpOnly, secure, sameSite cookies for tokens
+- Separate authentication (who) from authorization (what)
 
 ### CSRF (Cross-Site Request Forgery)
-- Use CSRF tokens for state-changing operations
+- CSRF tokens for state-changing ops
 - Check Origin/Referer headers
-- SameSite cookie attribute helps prevent CSRF
+- SameSite cookie attribute
 
 ## Secrets Management
-- **Never** commit secrets to git (.env in .gitignore)
-- Use environment variables for secrets
+**Never** commit secrets to git (.env in .gitignore)
+- Environment variables for secrets
 - Rotate credentials regularly
-- Use secret management services (AWS Secrets Manager, Vault)
+- Use secret managers (AWS Secrets Manager, Vault)
 
 ## Input Validation
-- Validate on server-side (client validation is for UX only)
-- Whitelist approach: Define what's allowed, reject everything else
-- Sanitize file uploads (check type, size, scan for malware)
-- Validate API inputs against schema (Zod, Joi)
+- Validate server-side (client is UX only)
+- Whitelist approach: Define allowed, reject all else
+- Sanitize file uploads (check type, size, scan)
+- Schema validation (Zod, Joi)
 
 ## API Security
-- Use HTTPS everywhere
-- Implement rate limiting
+- HTTPS everywhere
+- Rate limiting
 - Validate Content-Type headers
-- Use API keys/tokens with least privilege
+- API keys/tokens with least privilege
 - Log security events (failed logins, unusual activity)
 
 ## Common Vulnerabilities
 
 ### Path Traversal
-- Validate file paths, never trust user input
-- Use path.resolve() and check if result is within allowed directory
+Validate file paths, never trust user input. Use path.resolve() and verify within allowed directory.
 
 ### Command Injection
-- Never pass user input to shell commands
-- If unavoidable, use libraries that properly escape arguments
+Never pass user input to shell commands. If unavoidable, use libraries that escape properly.
 
 ### JWT Security
 - Verify signature on every request
 - Check expiration (exp claim)
-- Use short expiration times (15min) with refresh tokens
+- Short expiration (15min) + refresh tokens
 - Store in httpOnly cookies, not localStorage
 
 ## Security Checklist
-- [ ] All user inputs validated and sanitized
-- [ ] Secrets in environment variables, not code
+- [ ] All inputs validated/sanitized
+- [ ] Secrets in environment variables
 - [ ] HTTPS enforced
 - [ ] Rate limiting on sensitive endpoints
-- [ ] Authentication + authorization on protected routes
-- [ ] CORS configured properly
-- [ ] Security headers set (CSP, X-Frame-Options, etc.)
-- [ ] Dependencies regularly updated (npm audit)
+- [ ] Auth + authz on protected routes
+- [ ] CORS configured
+- [ ] Security headers (CSP, X-Frame-Options)
+- [ ] Dependencies updated (npm audit)
