@@ -221,23 +221,23 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
       console.error(chalk.dim(`\n[Stream complete. Response length: ${fullResponse.length}]`));
     }
 
-    // If no output, model doesn't support function calling
+    // If no output, model may not support multi-step tool calling
     if (!hasOutput || fullResponse.length === 0) {
       console.error(chalk.red('\n✗ No text response received from model\n'));
       console.error(
-        chalk.yellow('The model called tools but did not generate a final text response.')
+        chalk.yellow('The model may have called tools but did not generate a final text response.')
       );
       console.error(
-        chalk.yellow('This could mean:\n')
+        chalk.yellow('This usually means:\n')
       );
-      console.error(chalk.dim('  • The model does not support multi-step tool calling'));
-      console.error(chalk.dim('  • The model expects a different tool result format'));
-      console.error(chalk.dim('  • Try a different model that fully supports tool roundtrips\n'));
-      console.error(chalk.green('Recommended models:'));
+      console.error(chalk.dim('  • The current model does not fully support multi-step tool calling'));
+      console.error(chalk.dim('  • Some models can call tools but cannot process results and respond\n'));
+      console.error(chalk.green('Recommended models with full tool support:'));
       console.error(chalk.green('  • anthropic/claude-3.5-sonnet'));
       console.error(chalk.green('  • anthropic/claude-3.5-haiku'));
       console.error(chalk.green('  • openai/gpt-4o'));
       console.error(chalk.green('  • google/gemini-2.0-flash-exp\n'));
+      console.error(chalk.dim('💡 Tip: Ask questions that don\'t require tools, or switch to a model above'));
       console.error(chalk.dim('To configure: Run `sylphx code` (TUI mode) then press Ctrl+P\n'));
       process.exit(1);
     }
