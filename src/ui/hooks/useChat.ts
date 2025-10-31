@@ -1,20 +1,35 @@
 /**
  * Chat Hook
- * Handle AI chat with streaming support
+ * Handle AI chat with streaming support and tool execution
  */
 
 import { streamText } from 'ai';
 import { useAppStore } from '../stores/app-store.js';
 import { getProvider } from '../../providers/index.js';
+import { getAISDKTools } from '../../tools/index.js';
 
-const SYSTEM_PROMPT = `You are a helpful coding assistant. You help users with programming tasks, code review, debugging, and software development.
+const SYSTEM_PROMPT = `You are a helpful coding assistant with access to filesystem and shell tools. You help users with programming tasks, code review, debugging, and software development.
 
 Key capabilities:
 - Write clean, functional code
+- Read and write files using tools
+- Execute shell commands
+- Search for files and content
 - Explain complex concepts clearly
 - Debug issues systematically
 - Follow best practices
-- Provide examples and documentation`;
+
+Available tools:
+- read_file: Read file contents
+- write_file: Write content to files
+- list_directory: List files in directories
+- file_stats: Get file information
+- execute_bash: Run shell commands
+- get_cwd: Get current working directory
+- glob_files: Search files by pattern
+- grep_content: Search content in files
+
+Use tools proactively to help users with their tasks.`;
 
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -61,14 +76,19 @@ export function useChat() {
       const providerInstance = getProvider(provider);
       const model = providerInstance.createClient(providerConfig.apiKey, modelName);
 
-      // Stream response
-      const { textStream } = streamText({
+      // Get all available tools
+      const tools = getAISDKTools();
+
+      // Stream response with tools
+      const { textStream, toolCalls } = streamText({
         model,
         system: SYSTEM_PROMPT,
         messages: messages.map((m) => ({
           role: m.role,
           content: m.content,
         })),
+        tools,
+        maxSteps: 5, // Allow up to 5 tool calls per message
       });
 
       let fullResponse = '';
