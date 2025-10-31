@@ -71,13 +71,6 @@ export default function App() {
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
       </Box>
-
-      {/* Global Shortcuts Help - Fixed at bottom */}
-      {currentScreen === 'chat' && (
-        <Box flexShrink={0} paddingTop={1}>
-          <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
-        </Box>
-      )}
     </Box>
   );
 }

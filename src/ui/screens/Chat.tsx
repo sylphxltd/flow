@@ -156,12 +156,15 @@ export default function Chat() {
       </Box>
 
       {/* Status Bar - Fixed at bottom */}
-      <StatusBar
-        provider={currentSession.provider}
-        model={currentSession.model}
-        apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
-        messageCount={currentSession.messages.length}
-      />
+      <Box flexShrink={0} paddingTop={1} flexDirection="row" justifyContent="space-between">
+        <StatusBar
+          provider={currentSession.provider}
+          model={currentSession.model}
+          apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
+          messageCount={currentSession.messages.length}
+        />
+        <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
+      </Box>
     </Box>
   );
 }

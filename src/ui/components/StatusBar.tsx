@@ -47,7 +47,7 @@ export default function StatusBar({ provider, model, apiKey, messageCount }: Sta
   };
 
   return (
-    <Box flexShrink={0} paddingTop={1}>
+    <Box>
       <Text dimColor>
         {provider} · {model}
       </Text>
