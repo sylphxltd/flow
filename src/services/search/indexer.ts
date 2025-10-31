@@ -25,59 +25,91 @@ export interface IndexingProgress {
 }
 
 /**
- * 統一索引服務
+ * Internal state for IndexerService
  */
-export class IndexerService {
-  private embeddingProvider?: EmbeddingProvider;
-  private vectorStorages: Map<string, VectorStorage> = new Map();
-  private progressCallbacks: Set<(progress: IndexingProgress) => void> = new Set();
+interface IndexerServiceState {
+  readonly embeddingProvider?: EmbeddingProvider;
+  readonly vectorStorages: ReadonlyMap<string, VectorStorage>;
+  readonly progressCallbacks: ReadonlySet<(progress: IndexingProgress) => void>;
+}
 
-  constructor(embeddingProvider?: EmbeddingProvider) {
-    this.embeddingProvider = embeddingProvider;
-  }
+/**
+ * IndexerService Interface
+ * Unified indexer for building and maintaining search indices
+ */
+export interface IndexerService {
+  readonly initialize: () => Promise<void>;
+  readonly onProgress: (callback: (progress: IndexingProgress) => void) => void;
+  readonly offProgress: (callback: (progress: IndexingProgress) => void) => void;
+  readonly buildIndex: (domain: 'knowledge' | 'codebase', options?: IndexingOptions) => Promise<SearchIndex>;
+  readonly updateIndex: (domain: string, content: ContentMetadata) => Promise<void>;
+  readonly removeFromIndex: (domain: string, uri: string) => Promise<void>;
+}
+
+/**
+ * Create Indexer Service (Factory Function)
+ * Handles all domain indexing and maintenance
+ */
+export const createIndexerService = (embeddingProvider?: EmbeddingProvider): IndexerService => {
+  // Mutable state in closure (will be updated immutably)
+  let state: IndexerServiceState = {
+    embeddingProvider,
+    vectorStorages: new Map(),
+    progressCallbacks: new Set(),
+  };
+
+  // Helper: Update state immutably
+  const updateState = (updates: Partial<IndexerServiceState>): void => {
+    state = { ...state, ...updates };
+  };
 
   /**
    * 初始化索引服務
    */
-  async initialize(): Promise<void> {
-    if (!this.embeddingProvider) {
+  const initialize = async (): Promise<void> => {
+    if (!state.embeddingProvider) {
       // Import here to avoid circular dependencies
       const { getDefaultEmbeddingProvider } = await import('../../utils/embeddings.js');
-      this.embeddingProvider = await getDefaultEmbeddingProvider();
+      const provider = await getDefaultEmbeddingProvider();
+      updateState({ embeddingProvider: provider });
     }
-  }
+  };
 
   /**
    * 註冊進度回調
    */
-  onProgress(callback: (progress: IndexingProgress) => void): void {
-    this.progressCallbacks.add(callback);
-  }
+  const onProgress = (callback: (progress: IndexingProgress) => void): void => {
+    const newCallbacks = new Set(state.progressCallbacks);
+    newCallbacks.add(callback);
+    updateState({ progressCallbacks: newCallbacks });
+  };
 
   /**
    * 移除進度回調
    */
-  offProgress(callback: (progress: IndexingProgress) => void): void {
-    this.progressCallbacks.delete(callback);
-  }
+  const offProgress = (callback: (progress: IndexingProgress) => void): void => {
+    const newCallbacks = new Set(state.progressCallbacks);
+    newCallbacks.delete(callback);
+    updateState({ progressCallbacks: newCallbacks });
+  };
 
   /**
    * 報告進度
    */
-  private reportProgress(progress: IndexingProgress): void {
-    this.progressCallbacks.forEach((callback) => callback(progress));
-  }
+  const reportProgress = (progress: IndexingProgress): void => {
+    state.progressCallbacks.forEach((callback) => callback(progress));
+  };
 
   /**
    * 為指定domain建立索引
    */
-  async buildIndex(
+  const buildIndex = async (
     domain: 'knowledge' | 'codebase',
     options: IndexingOptions = {}
-  ): Promise<SearchIndex> {
+  ): Promise<SearchIndex> => {
     const { batchSize = 10, includeVectorIndex = true, forceRebuild = false } = options;
 
-    this.reportProgress({
+    reportProgress({
       domain,
       totalFiles: 0,
       processedFiles: 0,
@@ -86,9 +118,9 @@ export class IndexerService {
 
     try {
       // 掃描文件
-      const files = await this.scanDomainFiles(domain);
+      const files = await scanDomainFiles(domain);
 
-      this.reportProgress({
+      reportProgress({
         domain,
         totalFiles: files.length,
         processedFiles: 0,
@@ -98,7 +130,7 @@ export class IndexerService {
       // 建立TF-IDF索引
       const searchIndex = buildSearchIndex(files);
 
-      this.reportProgress({
+      reportProgress({
         domain,
         totalFiles: files.length,
         processedFiles: files.length,
@@ -106,11 +138,11 @@ export class IndexerService {
       });
 
       // 建立向量索引
-      if (includeVectorIndex && this.embeddingProvider) {
-        await this.buildVectorIndex(domain, files, batchSize);
+      if (includeVectorIndex && state.embeddingProvider) {
+        await buildVectorIndex(domain, files, batchSize);
       }
 
-      this.reportProgress({
+      reportProgress({
         domain,
         totalFiles: files.length,
         processedFiles: files.length,
@@ -119,7 +151,7 @@ export class IndexerService {
 
       return searchIndex;
     } catch (error) {
-      this.reportProgress({
+      reportProgress({
         domain,
         totalFiles: 0,
         processedFiles: 0,
@@ -128,26 +160,26 @@ export class IndexerService {
       });
       throw error;
     }
-  }
+  };
 
   /**
    * 掃描指定domain嘅文件
    */
-  private async scanDomainFiles(domain: string): Promise<Array<{ uri: string; content: string }>> {
+  const scanDomainFiles = async (domain: string): Promise<Array<{ uri: string; content: string }>> => {
     switch (domain) {
       case 'knowledge':
-        return this.scanKnowledgeFiles();
+        return scanKnowledgeFiles();
       case 'codebase':
-        return this.scanCodebaseFiles();
+        return scanCodebaseFiles();
       default:
         throw new Error(`Unknown domain: ${domain}`);
     }
-  }
+  };
 
   /**
    * 掃描knowledge文件
    */
-  private async scanKnowledgeFiles(): Promise<Array<{ uri: string; content: string }>> {
+  const scanKnowledgeFiles = async (): Promise<Array<{ uri: string; content: string }>> => {
     const { getKnowledgeDir } = await import('../../utils/paths.js');
     const knowledgeDir = getKnowledgeDir();
 
@@ -185,36 +217,39 @@ export class IndexerService {
   /**
    * 掃描codebase文件
    */
-  private async scanCodebaseFiles(): Promise<Array<{ uri: string; content: string }>> {
+  const scanCodebaseFiles = async (): Promise<Array<{ uri: string; content: string }>> => {
     // 實現codebase文件掃描邏輯
     // 這裡需要根據實際需求實現
     return [];
-  }
+  };
 
   /**
    * 建立向量索引
    */
-  private async buildVectorIndex(
+  const buildVectorIndex = async (
     domain: string,
     files: Array<{ uri: string; content: string }>,
     batchSize: number
-  ): Promise<void> {
-    if (!this.embeddingProvider) {
+  ): Promise<void> => {
+    if (!state.embeddingProvider) {
       throw new Error('Embedding provider not available');
     }
 
     // 初始化向量存儲
     const vectorPath = path.join(process.cwd(), '.sylphx-flow', `${domain}-vectors.hnsw`);
 
-    const vectorStorage = new VectorStorage(vectorPath, this.embeddingProvider.dimensions || 1536);
+    const vectorStorage = new VectorStorage(vectorPath, state.embeddingProvider.dimensions || 1536);
     await vectorStorage.initialize();
 
-    this.vectorStorages.set(domain, vectorStorage);
+    // FUNCTIONAL: Update map immutably
+    const newStorages = new Map(state.vectorStorages);
+    newStorages.set(domain, vectorStorage);
+    updateState({ vectorStorages: newStorages });
 
     // 批量處理文件
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
-      const embeddings = await this.embeddingProvider.generateEmbeddings(
+      const embeddings = await state.embeddingProvider.generateEmbeddings(
         batch.map((file) => file.content)
       );
 
@@ -228,14 +263,14 @@ export class IndexerService {
           metadata: {
             type: domain,
             content: file.content.slice(0, 500),
-            language: this.detectLanguage(file.uri),
+            language: detectLanguage(file.uri),
           },
         });
       }
 
       // 報告向量化進度
       const progress = Math.min(i + batchSize, files.length);
-      this.reportProgress({
+      reportProgress({
         domain,
         totalFiles: files.length,
         processedFiles: progress,
@@ -244,12 +279,12 @@ export class IndexerService {
     }
 
     await vectorStorage.save();
-  }
+  };
 
   /**
    * 檢測文件語言
    */
-  private detectLanguage(uri: string): string {
+  const detectLanguage = (uri: string): string => {
     const ext = path.extname(uri).toLowerCase();
     const languageMap: Record<string, string> = {
       '.ts': 'typescript',
@@ -288,12 +323,12 @@ export class IndexerService {
   /**
    * 更新索引
    */
-  async updateIndex(domain: string, content: ContentMetadata): Promise<void> {
+  const updateIndex = async (domain: string, content: ContentMetadata): Promise<void> => {
     // 更新TF-IDF索引（需要重新建立整個index）
     // 更新向量索引（可以單獨更新）
-    if (this.vectorStorages.has(domain) && this.embeddingProvider) {
-      const vectorStorage = this.vectorStorages.get(domain)!;
-      const embedding = await this.embeddingProvider.generateEmbeddings([content.content]);
+    if (state.vectorStorages.has(domain) && state.embeddingProvider) {
+      const vectorStorage = state.vectorStorages.get(domain)!;
+      const embedding = await state.embeddingProvider.generateEmbeddings([content.content]);
 
       await vectorStorage.addDocument({
         id: content.uri,
@@ -309,27 +344,32 @@ export class IndexerService {
 
       await vectorStorage.save();
     }
-  }
+  };
 
   /**
    * 從索引中移除文檔
    */
-  async removeFromIndex(domain: string, uri: string): Promise<void> {
+  const removeFromIndex = async (domain: string, uri: string): Promise<void> => {
     // 從向量索引中移除
-    if (this.vectorStorages.has(domain)) {
-      const vectorStorage = this.vectorStorages.get(domain)!;
+    if (state.vectorStorages.has(domain)) {
+      const vectorStorage = state.vectorStorages.get(domain)!;
       await vectorStorage.removeDocument(uri);
       await vectorStorage.save();
     }
-  }
-}
+  };
 
-// Singleton instance
-let indexerService: IndexerService | null = null;
+  // Return service interface
+  return {
+    initialize,
+    onProgress,
+    offProgress,
+    buildIndex,
+    updateIndex,
+    removeFromIndex,
+  };
+};
 
+// Factory function for creating default instance
 export function getIndexerService(): IndexerService {
-  if (!indexerService) {
-    indexerService = new IndexerService();
-  }
-  return indexerService;
+  return createIndexerService();
 }
