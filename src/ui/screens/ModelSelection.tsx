@@ -103,16 +103,16 @@ export default function ModelSelection() {
     };
 
     return (
-      <Box flexDirection="column" height="100%">
-        <Box paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ SELECT PROVIDER</Text>
         </Box>
 
-        <Box paddingY={1}>
+        <Box flexGrow={1} paddingY={1}>
           <SelectInput items={items} onSelect={handleSelect} />
         </Box>
 
-        <Box paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Select · Esc Back</Text>
         </Box>
       </Box>
@@ -171,14 +171,14 @@ export default function ModelSelection() {
     };
 
     return (
-      <Box flexDirection="column" height="100%">
-        <Box paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ SELECT MODEL</Text>
           <Text dimColor> · {selectedProvider && AI_PROVIDERS[selectedProvider].name}</Text>
         </Box>
 
         {/* Search input */}
-        <Box paddingY={1} flexDirection="column">
+        <Box flexShrink={0} paddingY={1} flexDirection="column">
           <Box marginBottom={1}>
             <Text dimColor>Search</Text>
           </Box>
@@ -191,7 +191,7 @@ export default function ModelSelection() {
         </Box>
 
         {/* Model list */}
-        <Box paddingY={1} flexDirection="column">
+        <Box flexGrow={1} paddingY={1} flexDirection="column">
           {filteredModels.length === 0 ? (
             <Box>
               <Text color="#FFD700">▌</Text>
@@ -209,7 +209,7 @@ export default function ModelSelection() {
           )}
         </Box>
 
-        <Box paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Type Search · Enter Select · Esc Cancel</Text>
         </Box>
       </Box>

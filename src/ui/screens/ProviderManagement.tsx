@@ -62,16 +62,16 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column" height="100%">
-        <Box paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ PROVIDER MANAGEMENT</Text>
         </Box>
 
-        <Box paddingY={1}>
+        <Box flexGrow={1} paddingY={1}>
           <SelectInput items={items} onSelect={handleSelect} />
         </Box>
 
-        <Box paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Select · Esc Back</Text>
         </Box>
       </Box>
@@ -81,12 +81,12 @@ export default function ProviderManagement() {
   // View mode
   if (mode === 'view') {
     return (
-      <Box flexDirection="column" height="100%">
-        <Box paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ CONFIGURED PROVIDERS</Text>
         </Box>
 
-        <Box paddingY={1}>
+        <Box flexGrow={1} paddingY={1}>
           {configuredProviders.length === 0 ? (
             <Box>
               <Text color="#FFD700">▌</Text>
@@ -105,7 +105,7 @@ export default function ProviderManagement() {
           )}
         </Box>
 
-        <Box paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>Press Esc to go back</Text>
         </Box>
       </Box>
@@ -124,16 +124,16 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column" height="100%">
-        <Box paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ SELECT PROVIDER</Text>
         </Box>
 
-        <Box paddingY={1}>
+        <Box flexGrow={1} paddingY={1}>
           <SelectInput items={items} onSelect={handleSelect} />
         </Box>
 
-        <Box paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Select · Esc Cancel</Text>
         </Box>
       </Box>
@@ -161,16 +161,16 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column" height="100%">
-        <Box paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ CONFIGURE {provider.name.toUpperCase()}</Text>
         </Box>
 
-        <Box paddingBottom={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text dimColor>Enter your {provider.keyName}</Text>
         </Box>
 
-        <Box flexDirection="column" paddingY={1}>
+        <Box flexGrow={1} flexDirection="column" paddingY={1}>
           {apiKeyInput && (
             <Box marginBottom={1}>
               <Text dimColor>{'*'.repeat(apiKeyInput.length)}</Text>
@@ -186,7 +186,7 @@ export default function ProviderManagement() {
           />
         </Box>
 
-        <Box paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>Enter Save · Esc Cancel</Text>
         </Box>
       </Box>
@@ -208,16 +208,16 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column" height="100%">
-        <Box paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1}>
+        <Box flexShrink={0} paddingBottom={1}>
           <Text color="#FF3366">▌ REMOVE PROVIDER</Text>
         </Box>
 
-        <Box paddingY={1}>
+        <Box flexGrow={1} paddingY={1}>
           <SelectInput items={items} onSelect={handleSelect} />
         </Box>
 
-        <Box paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Remove · Esc Cancel</Text>
         </Box>
       </Box>

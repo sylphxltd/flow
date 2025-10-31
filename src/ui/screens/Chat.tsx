@@ -32,7 +32,7 @@ export default function Chat() {
   // Check if ready to chat
   if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
     return (
-      <Box flexDirection="column" height="100%" paddingY={2}>
+      <Box flexDirection="column" flexGrow={1} paddingY={2}>
         <Box paddingBottom={2}>
           <Text color="#00D9FF">▌</Text>
           <Text bold color="white"> WELCOME</Text>
@@ -94,9 +94,9 @@ export default function Chat() {
   };
 
   return (
-    <Box flexDirection="column" height="100%">
+    <Box flexDirection="column" flexGrow={1}>
       {/* Header */}
-      <Box paddingBottom={1}>
+      <Box flexShrink={0} paddingBottom={1}>
         <Text color="#00D9FF">▌</Text>
         <Text bold color="white"> CHAT</Text>
         <Text dimColor> · {currentSession.provider} · {currentSession.model}</Text>
@@ -143,7 +143,7 @@ export default function Chat() {
         )}
       </Box>
 
-      {/* Input - Fixed at bottom */}
+      {/* Input - Fixed */}
       <Box flexDirection="column" flexShrink={0} paddingTop={1}>
         <Box marginBottom={1}>
           <Text color="#00D9FF">▌ INPUT</Text>

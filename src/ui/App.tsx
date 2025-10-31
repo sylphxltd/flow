@@ -66,15 +66,15 @@ export default function App() {
       )}
 
       {/* Screen Router */}
-      <Box flexDirection="column" flexGrow={1}>
+      <Box flexDirection="column" flexGrow={1} minHeight={0}>
         {currentScreen === 'chat' && <Chat />}
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
       </Box>
 
-      {/* Global Shortcuts Help */}
+      {/* Global Shortcuts Help - Fixed at bottom */}
       {currentScreen === 'chat' && (
-        <Box paddingY={1}>
+        <Box flexShrink={0} paddingTop={1}>
           <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
         </Box>
       )}
