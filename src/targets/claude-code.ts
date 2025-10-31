@@ -49,7 +49,7 @@ export const claudeCodeTarget: Target = {
     configSchema: null,
     mcpConfigPath: 'mcpServers',
     rulesFile: 'CLAUDE.md',
-    outputStylesDir: '.claude/output-styles',
+    outputStylesDir: undefined, // Output styles are included in CLAUDE.md
     slashCommandsDir: '.claude/commands',
     installation: {
       createAgentDir: true,
@@ -431,34 +431,20 @@ Please begin your response with a comprehensive summary of all the instructions 
 
   /**
    * Setup output styles for Claude Code
-   * Install output styles to .claude/output-styles/ directory with YAML front matter
+   * Append output styles to CLAUDE.md file
    */
   async setupOutputStyles(cwd: string, options: CommonOptions): Promise<SetupResult> {
-    if (!this.config.outputStylesDir) {
-      return { count: 0 };
-    }
-
-    const installer = new FileInstaller();
-    const outputStylesDir = path.join(cwd, this.config.outputStylesDir);
-
-    const results = await installer.installToDirectory(
-      getOutputStylesDir(),
-      outputStylesDir,
-      async (content, sourcePath) => {
-        return await this.transformAgentContent(content, undefined, sourcePath);
-      },
-      {
-        ...options,
-        showProgress: false,  // UI handled by init-command
-      }
-    );
-
-    return { count: results.length };
+    // Output styles are appended to CLAUDE.md during setupRules
+    // Return 0 as this is handled by setupRules
+    return {
+      count: 0,
+      message: 'Output styles included in CLAUDE.md'
+    };
   },
 
   /**
    * Setup rules for Claude Code
-   * Install rules to CLAUDE.md in project root
+   * Install rules and output styles to CLAUDE.md in project root
    */
   async setupRules(cwd: string, options: CommonOptions): Promise<SetupResult> {
     if (!this.config.rulesFile) {
@@ -474,23 +460,57 @@ Please begin your response with a comprehensive summary of all the instructions 
     const rulesDestPath = path.join(cwd, this.config.rulesFile);
     const rulePath = getRulesPath('core');
 
-    await installer.installFile(
-      rulePath,
-      rulesDestPath,
-      async (content) => {
-        // Transform rules content if transformation is available
-        if (this.transformRulesContent) {
-          return await this.transformRulesContent(content);
-        }
-        return content;
-      },
-      {
-        ...options,
-        showProgress: false,  // UI handled by init-command
-      }
-    );
+    // Read rules content
+    const rulesContent = await fsPromises.readFile(rulePath, 'utf8');
 
-    return { count: 1 };
+    // Transform rules content
+    let transformedRules = rulesContent;
+    if (this.transformRulesContent) {
+      transformedRules = await this.transformRulesContent(rulesContent);
+    }
+
+    // Read and append output styles
+    const outputStylesContent = await this.loadOutputStyles();
+
+    // Combine rules and output styles
+    const finalContent = transformedRules + '\n\n' + outputStylesContent;
+
+    // Write combined content to CLAUDE.md
+    await fsPromises.writeFile(rulesDestPath, finalContent, 'utf8');
+
+    return { count: 1, message: 'Installed rules with output styles to CLAUDE.md' };
+  },
+
+  /**
+   * Load output styles content
+   */
+  async loadOutputStyles(): Promise<string> {
+    const outputStylesSourceDir = getOutputStylesDir();
+
+    try {
+      const files = await fsPromises.readdir(outputStylesSourceDir);
+      const mdFiles = files.filter(f => f.endsWith('.md'));
+
+      if (mdFiles.length === 0) {
+        return '';
+      }
+
+      const sections: string[] = [];
+
+      for (const file of mdFiles) {
+        const filePath = path.join(outputStylesSourceDir, file);
+        const content = await fsPromises.readFile(filePath, 'utf8');
+
+        // Strip YAML front matter
+        const stripped = await yamlUtils.stripFrontMatter(content);
+        sections.push(stripped);
+      }
+
+      return sections.join('\n\n---\n\n');
+    } catch (error) {
+      // If output styles directory doesn't exist or is empty, return empty string
+      return '';
+    }
   },
 
   /**
