@@ -86,29 +86,29 @@ export default function Chat() {
     setIsStreaming(true);
     setStreamParts([]);
 
-    let currentTextContent = '';
-
     await sendMessage(
       userMessage,
       // onChunk - text streaming
       (chunk) => {
-        currentTextContent += chunk;
         setStreamParts((prev) => {
-          // Find last text part and update it, or add new one
           const newParts = [...prev];
           const lastPart = newParts[newParts.length - 1];
+
+          // If last part is text, append to it
           if (lastPart && lastPart.type === 'text') {
-            newParts[newParts.length - 1] = { type: 'text', content: currentTextContent };
+            newParts[newParts.length - 1] = {
+              type: 'text',
+              content: lastPart.content + chunk
+            };
           } else {
-            newParts.push({ type: 'text', content: currentTextContent });
+            // Otherwise create new text part
+            newParts.push({ type: 'text', content: chunk });
           }
           return newParts;
         });
       },
       // onToolCall - tool execution started
       (toolName, args) => {
-        // Reset current text content when tool starts
-        currentTextContent = '';
         setStreamParts((prev) => [
           ...prev,
           { type: 'tool', name: toolName, status: 'running' },
