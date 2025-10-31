@@ -61,6 +61,8 @@
   "packageManager": "bun@1.3.1",
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.40",
+    "@ai-sdk/google": "^2.0.26",
+    "@ai-sdk/openai": "^2.0.59",
     "@huggingface/transformers": "^3.7.6",
     "@lancedb/lancedb": "^0.22.2",
     "@libsql/client": "^0.15.15",
