@@ -11,7 +11,7 @@ import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { CLIError } from '../utils/error-handler.js';
 import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';
 import { commandSecurity, sanitize } from '../utils/security.js';
-import { displayResults } from '../shared.js';
+import { displayResults } from '../shared/index.js';
 import {
   fileUtils,
   generateHelpText,

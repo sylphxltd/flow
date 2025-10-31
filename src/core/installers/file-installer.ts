@@ -5,8 +5,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { CommonOptions, ProcessResult } from '../../shared.js';
-import { clearObsoleteFiles, collectFiles, displayResults, getLocalFileInfo } from '../../shared.js';
+import type { CommonOptions, ProcessResult } from '../../shared/index.js';
+import { clearObsoleteFiles, collectFiles, displayResults, getLocalFileInfo } from '../../shared/index.js';
 
 export interface InstallOptions extends CommonOptions {
   /** Custom file extension */

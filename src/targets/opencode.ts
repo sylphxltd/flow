@@ -4,7 +4,7 @@ import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { FileInstaller } from '../core/installers/file-installer.js';
 import { MCPInstaller } from '../core/installers/mcp-installer.js';
-import { displayResults } from '../shared.js';
+import { displayResults } from '../shared/index.js';
 import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
 import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';

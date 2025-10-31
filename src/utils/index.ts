@@ -72,7 +72,7 @@ export * from './target-utils.js';
 // Test utilities - removed (obsolete)
 
 // Shared utilities
-export * from '../shared.js';
+export * from '../shared/index.js';
 
 // Base indexer - moved to services/search/
 
