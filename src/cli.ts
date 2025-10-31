@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
+import { codeCommand } from './commands/code-command.js';
 import { codebaseCommand } from './commands/codebase-command.js';
 import { hookCommand } from './commands/hook-command.js';
 import { initCommand } from './commands/init-command.js';
@@ -45,6 +46,7 @@ export function createCLI(): Command {
   program.addCommand(initCommand);
   program.addCommand(mcpCommand);
   program.addCommand(runCommand);
+  program.addCommand(codeCommand);
   program.addCommand(codebaseCommand);
   program.addCommand(knowledgeCommand);
   program.addCommand(hookCommand);
