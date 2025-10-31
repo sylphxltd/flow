@@ -2,19 +2,13 @@
  * Shared types for common operations and configurations
  */
 
+// Re-export CommonOptions from centralized location
+export type { CommonOptions } from '../../types/common.types.js';
+
 export interface ProcessResult {
   file: string;
   status: 'added' | 'updated' | 'current' | 'skipped';
   action: string;
-}
-
-export interface CommonOptions {
-  target?: string;
-  verbose?: boolean;
-  dryRun?: boolean;
-  clear?: boolean;
-  mcp?: string[] | null | boolean;
-  quiet?: boolean;
 }
 
 export interface AgentConfig {

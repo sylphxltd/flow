@@ -1,145 +1,124 @@
 /**
- * Target registry - contains all available targets
+ * Target registry - functional implementation with composition
+ * Pure functions operating on immutable data
  */
 
 import { claudeCodeTarget } from '../targets/claude-code.js';
 import { opencodeTarget } from '../targets/opencode.js';
 import type { Target } from '../types.js';
+import type { Option } from '../core/functional/option.js';
+import { none, some } from '../core/functional/option.js';
 
 /**
- * Target registry to avoid circular dependencies
- * Targets are registered at runtime
+ * All available targets
+ * Lazy-initialized to avoid circular dependencies
  */
-export class TargetRegistry {
-  private targets: Target[] = [];
+let cachedTargets: readonly Target[] | null = null;
 
-  /**
-   * Register a target
-   */
-  register(target: Target) {
-    this.targets.push(target);
+const initializeTargets = (): readonly Target[] => {
+  if (cachedTargets) {
+    return cachedTargets;
   }
 
-  /**
-   * Get all targets
-   */
-  getAllTargets(): Target[] {
-    return [...this.targets];
-  }
+  cachedTargets = Object.freeze([
+    opencodeTarget,
+    claudeCodeTarget,
+  ]);
 
-  /**
-   * Get implemented targets only
-   */
-  getImplementedTargets(): Target[] {
-    return this.targets.filter((target) => target.isImplemented);
-  }
-
-  /**
-   * Get all target IDs
-   */
-  getAllTargetIDs(): string[] {
-    return this.targets.map((target) => target.id);
-  }
-
-  /**
-   * Get implemented target IDs
-   */
-  getImplementedTargetIDs(): string[] {
-    return this.getImplementedTargets().map((target) => target.id);
-  }
-
-  /**
-   * Get target by ID
-   */
-  getTarget(id: string): Target | undefined {
-    return this.targets.find((target) => target.id === id);
-  }
-
-  /**
-   * Get default target
-   */
-  getDefaultTarget(): Target {
-    const defaultTarget = this.targets.find((target) => target.isDefault);
-    if (!defaultTarget) {
-      throw new Error('No default target configured');
-    }
-    return defaultTarget;
-  }
-
-  /**
-   * Get targets that support MCP servers
-   */
-  getTargetsWithMCPSupport(): Target[] {
-    return this.getImplementedTargets().filter(
-      (target) => !!target.setupMCP
-    );
-  }
-
-  /**
-   * Check if target is implemented
-   */
-  isTargetImplemented(id: string): boolean {
-    const target = this.getTarget(id);
-    return target?.isImplemented ?? false;
-  }
-
-  /**
-   * Initialize targets - register all available targets
-   */
-  initialize() {
-    if (this.targets.length > 0) {
-      return; // Already initialized
-    }
-
-    this.register(opencodeTarget);
-    this.register(claudeCodeTarget);
-  }
-}
-
-// Global registry instance
-export const targetRegistry = new TargetRegistry();
+  return cachedTargets;
+};
 
 /**
- * Lazy initialization - called on first access to avoid circular dependency
+ * Get all targets
  */
-function ensureInitialized() {
-  targetRegistry.initialize();
-}
+export const getAllTargets = (): readonly Target[] => initializeTargets();
 
 /**
- * Convenience functions that delegate to the registry
+ * Get implemented targets only
  */
-export const ALL_TARGETS = () => {
-  ensureInitialized();
-  return targetRegistry.getAllTargets();
-};
-export const IMPLEMENTED_TARGETS = () => {
-  ensureInitialized();
-  return targetRegistry.getImplementedTargets();
-};
-export const getAllTargetIDs = () => {
-  ensureInitialized();
-  return targetRegistry.getAllTargetIDs();
-};
-export const getImplementedTargetIDs = () => {
-  ensureInitialized();
-  return targetRegistry.getImplementedTargetIDs();
-};
-export const getDefaultTarget = () => {
-  ensureInitialized();
-  return targetRegistry.getDefaultTarget().id;
-};
-export const getTarget = (id: string) => {
-  ensureInitialized();
-  return targetRegistry.getTarget(id);
-};
-export const isTargetImplemented = (id: string) => {
-  ensureInitialized();
-  return targetRegistry.isTargetImplemented(id);
-};
-export const getTargetsWithMCPSupport = () => {
-  ensureInitialized();
-  return targetRegistry.getTargetsWithMCPSupport().map((target) => target.id);
+export const getImplementedTargets = (): readonly Target[] =>
+  getAllTargets().filter((target) => target.isImplemented);
+
+/**
+ * Get all target IDs
+ */
+export const getAllTargetIDs = (): readonly string[] =>
+  getAllTargets().map((target) => target.id);
+
+/**
+ * Get implemented target IDs
+ */
+export const getImplementedTargetIDs = (): readonly string[] =>
+  getImplementedTargets().map((target) => target.id);
+
+/**
+ * Get target by ID
+ * Returns Option type for explicit null handling
+ */
+export const getTarget = (id: string): Option<Target> => {
+  const target = getAllTargets().find((t) => t.id === id);
+  return target ? some(target) : none();
 };
 
+/**
+ * Get target by ID (unsafe - throws if not found)
+ * Use getTarget() for safer alternative with Option type
+ */
+export const getTargetUnsafe = (id: string): Target => {
+  const target = getAllTargets().find((t) => t.id === id);
+  if (!target) {
+    throw new Error(`Target not found: ${id}`);
+  }
+  return target;
+};
+
+/**
+ * Get default target
+ * Returns Option type for explicit null handling
+ */
+export const getDefaultTarget = (): Option<Target> => {
+  const target = getAllTargets().find((t) => t.isDefault);
+  return target ? some(target) : none();
+};
+
+/**
+ * Get default target (unsafe - throws if not found)
+ * Use getDefaultTarget() for safer alternative with Option type
+ */
+export const getDefaultTargetUnsafe = (): Target => {
+  const target = getAllTargets().find((t) => t.isDefault);
+  if (!target) {
+    throw new Error('No default target configured');
+  }
+  return target;
+};
+
+/**
+ * Get targets that support MCP servers
+ */
+export const getTargetsWithMCPSupport = (): readonly Target[] =>
+  getImplementedTargets().filter((target) => !!target.setupMCP);
+
+/**
+ * Check if target is implemented
+ */
+export const isTargetImplemented = (id: string): boolean => {
+  const target = getAllTargets().find((t) => t.id === id);
+  return target?.isImplemented ?? false;
+};
+
+/**
+ * Utility type for target IDs
+ */
 export type TargetID = ReturnType<typeof getAllTargetIDs>[number];
+
+/**
+ * Legacy aliases for backward compatibility
+ * @deprecated Use getAllTargets() instead
+ */
+export const ALL_TARGETS = getAllTargets;
+
+/**
+ * @deprecated Use getImplementedTargets() instead
+ */
+export const IMPLEMENTED_TARGETS = getImplementedTargets;

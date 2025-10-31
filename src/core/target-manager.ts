@@ -1,27 +1,30 @@
 import inquirer from 'inquirer';
 import {
+  getAllTargets,
   getAllTargetIDs,
-  getDefaultTarget,
+  getDefaultTargetUnsafe,
+  getImplementedTargets,
   getImplementedTargetIDs,
   getTarget,
   getTargetsWithMCPSupport,
-  targetRegistry,
+  isTargetImplemented,
 } from '../config/targets.js';
 import { projectSettings } from '../utils/settings.js';
+import { getOrElse, isSome } from '../core/functional/option.js';
 
 /**
  * Target Manager interface
  */
 export interface TargetManager {
-  getAllTargets(): ReturnType<typeof targetRegistry.getAllTargets>;
-  getImplementedTargets(): ReturnType<typeof targetRegistry.getImplementedTargets>;
+  getAllTargets(): ReturnType<typeof getAllTargets>;
+  getImplementedTargets(): ReturnType<typeof getImplementedTargets>;
   getTarget(id: string): ReturnType<typeof getTarget>;
   promptForTargetSelection(): Promise<string>;
   resolveTarget(options: { target?: string; allowSelection?: boolean }): Promise<string>;
   isTargetImplemented(targetId: string): boolean;
-  getTargetsWithMCPSupport(): string[];
-  getImplementedTargetIDs(): string[];
-  getAllTargetIDs(): string[];
+  getTargetsWithMCPSupport(): ReturnType<typeof getTargetsWithMCPSupport>;
+  getImplementedTargetIDs(): ReturnType<typeof getImplementedTargetIDs>;
+  getAllTargetIDs(): ReturnType<typeof getAllTargetIDs>;
 }
 
 /**
@@ -33,7 +36,7 @@ export function createTargetManager(): TargetManager {
    */
   const detectTargetFromEnvironment = (): string | null => {
     try {
-      const implementedTargets = targetRegistry.getImplementedTargets();
+      const implementedTargets = getImplementedTargets();
 
       // Prioritize non-default targets for detection
       const nonDefaultTargets = implementedTargets.filter((target) => !target.isDefault);
@@ -68,10 +71,10 @@ export function createTargetManager(): TargetManager {
     const availableTargets = getImplementedTargetIDs();
 
     // Try to get saved default target for default selection
-    let defaultTarget = getDefaultTarget();
+    let defaultTarget = getDefaultTargetUnsafe().id;
     try {
       const savedDefaultTarget = await projectSettings.getDefaultTarget();
-      if (savedDefaultTarget && getTarget(savedDefaultTarget)) {
+      if (savedDefaultTarget && isSome(getTarget(savedDefaultTarget))) {
         defaultTarget = savedDefaultTarget;
       }
     } catch {
@@ -84,9 +87,10 @@ export function createTargetManager(): TargetManager {
         name: 'target',
         message: 'Select target platform:',
         choices: availableTargets.map((id) => {
-          const target = getTarget(id);
+          const targetOption = getTarget(id);
+          const target = getOrElse({ id, name: id } as any)(targetOption);
           return {
-            name: target?.name || id,
+            name: target.name || id,
             value: id,
           };
         }),
@@ -103,7 +107,7 @@ export function createTargetManager(): TargetManager {
   const resolveTarget = async (options: { target?: string; allowSelection?: boolean }): Promise<string> => {
     // If target is explicitly specified, use it
     if (options.target) {
-      if (!getTarget(options.target)) {
+      if (!isSome(getTarget(options.target))) {
         throw new Error(
           `Unknown target: ${options.target}. Available targets: ${getAllTargetIDs().join(', ')}`
         );
@@ -114,7 +118,7 @@ export function createTargetManager(): TargetManager {
     // Try to use saved project default target first
     try {
       const savedDefaultTarget = await projectSettings.getDefaultTarget();
-      if (savedDefaultTarget && getTarget(savedDefaultTarget)) {
+      if (savedDefaultTarget && isSome(getTarget(savedDefaultTarget))) {
         return savedDefaultTarget;
       }
     } catch (_error) {
@@ -133,20 +137,20 @@ export function createTargetManager(): TargetManager {
     }
 
     // Fall back to system default target
-    const defaultTarget = getDefaultTarget();
-    return defaultTarget;
+    const defaultTarget = getDefaultTargetUnsafe();
+    return defaultTarget.id;
   };
 
   return {
-    getAllTargets: () => targetRegistry.getAllTargets(),
-    getImplementedTargets: () => targetRegistry.getImplementedTargets(),
-    getTarget: (id: string) => getTarget(id),
+    getAllTargets,
+    getImplementedTargets,
+    getTarget,
     promptForTargetSelection,
     resolveTarget,
-    isTargetImplemented: (targetId: string) => getTarget(targetId)?.isImplemented ?? false,
-    getTargetsWithMCPSupport: () => getTargetsWithMCPSupport(),
-    getImplementedTargetIDs: () => getImplementedTargetIDs(),
-    getAllTargetIDs: () => getAllTargetIDs(),
+    isTargetImplemented,
+    getTargetsWithMCPSupport,
+    getImplementedTargetIDs,
+    getAllTargetIDs,
   };
 }
 
