@@ -3,8 +3,8 @@
  * Central registry for all AI SDK tools
  */
 
-import type { CoreTool } from 'ai';
-import { createCoreTool, type ToolDefinition } from './base.js';
+import type { Tool } from 'ai';
+import { createTool, type ToolDefinition } from './base.js';
 import { filesystemTools } from './filesystem.js';
 import { shellTools } from './shell.js';
 import { searchTools } from './search.js';
@@ -19,13 +19,13 @@ const ALL_TOOLS: Record<string, ToolDefinition> = {
 };
 
 /**
- * Get all tools in AI SDK CoreTool format
+ * Get all tools in AI SDK Tool format
  */
-export function getAISDKTools(): Record<string, CoreTool> {
-  const tools: Record<string, CoreTool> = {};
+export function getAISDKTools(): Record<string, Tool> {
+  const tools: Record<string, Tool> = {};
 
   for (const [name, tool] of Object.entries(ALL_TOOLS)) {
-    tools[name] = createCoreTool(tool);
+    tools[name] = createTool(tool);
   }
 
   return tools;
@@ -34,12 +34,12 @@ export function getAISDKTools(): Record<string, CoreTool> {
 /**
  * Get specific tools by name
  */
-export function getTools(names: string[]): Record<string, CoreTool> {
-  const tools: Record<string, CoreTool> = {};
+export function getTools(names: string[]): Record<string, Tool> {
+  const tools: Record<string, Tool> = {};
 
   for (const name of names) {
     if (ALL_TOOLS[name]) {
-      tools[name] = createCoreTool(ALL_TOOLS[name]);
+      tools[name] = createTool(ALL_TOOLS[name]);
     }
   }
 

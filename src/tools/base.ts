@@ -3,8 +3,8 @@
  * Types and interfaces for AI SDK tools
  */
 
-import type { CoreTool } from 'ai';
-import { z } from 'zod';
+import { zodSchema, type Tool } from 'ai';
+import type { z } from 'zod';
 
 /**
  * Tool definition for registering tools
@@ -17,15 +17,29 @@ export interface ToolDefinition<TParams = any, TResult = any> {
 }
 
 /**
- * Convert ToolDefinition to AI SDK CoreTool format
+ * Convert ToolDefinition to AI SDK Tool format
  */
-export function createCoreTool<TParams, TResult>(
-  tool: ToolDefinition<TParams, TResult>
-): CoreTool<TParams, TResult> {
+export function createTool<TParams, TResult>(
+  def: ToolDefinition<TParams, TResult>
+): Tool<TParams, TResult> {
   return {
-    description: tool.description,
-    parameters: tool.parameters,
-    execute: tool.execute,
+    description: def.description,
+    inputSchema: zodSchema(def.parameters),
+    type: 'function' as const,
+    execute: async (params, options) => {
+      console.log(`[Tool Execute] ${def.name} called with params:`, JSON.stringify(params));
+      const result = await def.execute(params);
+      console.log(`[Tool Execute] ${def.name} result:`, JSON.stringify(result));
+      // Unwrap ToolResult format for AI SDK
+      if (result && typeof result === 'object' && 'success' in result) {
+        const toolResult = result as ToolResult;
+        if (!toolResult.success) {
+          throw new Error(toolResult.error || 'Tool execution failed');
+        }
+        return toolResult.data as TResult;
+      }
+      return result;
+    },
   };
 }
 

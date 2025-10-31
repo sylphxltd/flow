@@ -88,7 +88,7 @@ export function useChat() {
           content: m.content,
         })),
         tools,
-        maxSteps: 5, // Allow up to 5 tool calls per message
+        toolChoice: 'auto', // Let model decide when to use tools
         onStepFinish: (step) => {
           // Log tool execution for debugging
           if (step.toolCalls && step.toolCalls.length > 0) {

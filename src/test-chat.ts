@@ -124,7 +124,7 @@ async function testChat() {
   }
 
   // Test 3: Message with actual tools
-  console.log('\n📝 Test 3: Message with actual tools\n');
+  console.log('\n📝 Test 3: Message with actual tools + toolChoice (no maxSteps)\n');
   const userMessage = 'What is the current working directory? Use the get_cwd tool.';
   console.log(`👤 User: ${userMessage}\n`);
 
@@ -134,7 +134,7 @@ async function testChat() {
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
       tools,
-      maxSteps: 5,
+      toolChoice: 'auto', // Explicitly set tool choice
       onStepFinish: (step) => {
         console.log('\n📋 Step finished:', {
           stepType: step.stepType,

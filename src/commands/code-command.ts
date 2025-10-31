@@ -153,7 +153,8 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
       system: SYSTEM_PROMPT,
       messages,
       tools,
-      maxSteps: 5,
+      toolChoice: 'auto', // Let model decide when to use tools
+      maxToolRoundtrips: 5, // Allow multiple tool calls
       onStepFinish: (step) => {
         // Show tool calls if verbose
         if (options.verbose && step.toolCalls && step.toolCalls.length > 0) {
@@ -170,23 +171,38 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
     let fullResponse = '';
     let hasOutput = false;
 
+    if (options.verbose) {
+      console.error(chalk.dim('\n[Streaming text response...]'));
+    }
+
     for await (const chunk of result.textStream) {
       if (!hasOutput) {
         hasOutput = true;
+        if (options.verbose) {
+          console.error(chalk.dim('[First chunk received]'));
+        }
       }
       process.stdout.write(chunk);
       fullResponse += chunk;
     }
 
+    if (options.verbose) {
+      console.error(chalk.dim(`\n[Stream complete. Response length: ${fullResponse.length}]`));
+    }
+
     // If no output, model doesn't support function calling
     if (!hasOutput || fullResponse.length === 0) {
-      console.error(chalk.red('\n✗ This model does not support function calling/tools\n'));
+      console.error(chalk.red('\n✗ No text response received from model\n'));
       console.error(
-        chalk.yellow('This AI assistant requires tools to read/write files and execute commands.')
+        chalk.yellow('The model called tools but did not generate a final text response.')
       );
       console.error(
-        chalk.yellow('Please switch to a tool-compatible model:\n')
+        chalk.yellow('This could mean:\n')
       );
+      console.error(chalk.dim('  • The model does not support multi-step tool calling'));
+      console.error(chalk.dim('  • The model expects a different tool result format'));
+      console.error(chalk.dim('  • Try a different model that fully supports tool roundtrips\n'));
+      console.error(chalk.green('Recommended models:'));
       console.error(chalk.green('  • anthropic/claude-3.5-sonnet'));
       console.error(chalk.green('  • anthropic/claude-3.5-haiku'));
       console.error(chalk.green('  • openai/gpt-4o'));
