@@ -229,7 +229,9 @@ describe('Target Utils', () => {
           installation: { createConfigFile: false, createAgentDir: false },
         };
 
-        await expect(fileUtils.validateRequirements(configNoFile, testDir)).resolves.toBeUndefined();
+        await expect(
+          fileUtils.validateRequirements(configNoFile, testDir)
+        ).resolves.toBeUndefined();
       });
     });
 

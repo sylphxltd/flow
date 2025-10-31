@@ -47,7 +47,9 @@ export const hookCommand = new Command('hook')
 
       // Validate hook type
       if (!['session', 'message', 'notification'].includes(hookType)) {
-        throw new Error(`Invalid hook type: ${hookType}. Must be 'session', 'message', or 'notification'`);
+        throw new Error(
+          `Invalid hook type: ${hookType}. Must be 'session', 'message', or 'notification'`
+        );
       }
 
       // Validate target
@@ -95,7 +97,7 @@ async function loadHookContent(
  * Load content for session start hook
  * Includes: system info only (rules and output styles are static files)
  */
-async function loadSessionContent(target: TargetPlatform, verbose: boolean): Promise<string> {
+async function loadSessionContent(_target: TargetPlatform, verbose: boolean): Promise<string> {
   // Load system info for session
   if (verbose) {
     cli.info('Loading system info...');
@@ -107,7 +109,7 @@ async function loadSessionContent(target: TargetPlatform, verbose: boolean): Pro
  * Load content for message hook
  * Includes: system status
  */
-async function loadMessageContent(target: TargetPlatform, verbose: boolean): Promise<string> {
+async function loadMessageContent(_target: TargetPlatform, verbose: boolean): Promise<string> {
   if (verbose) {
     cli.info('Loading system status...');
   }
@@ -202,7 +204,7 @@ async function detectProjectInfo() {
       version: packageJson.version || '0.0.0',
       description: packageJson.description || '',
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       type: 'js/ts',
       packageManager: 'unknown',
@@ -214,7 +216,7 @@ async function detectProjectInfo() {
 /**
  * Detect project type from package.json
  */
-function detectProjectType(packageJson: any): string {
+function detectProjectType(packageJson: Record<string, unknown>): string {
   // Check for TypeScript
   const hasTypescript =
     packageJson.devDependencies?.typescript ||
@@ -289,10 +291,12 @@ function detectPackageManager(cwd: string, packageJson?: any): string {
  */
 function formatBytes(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
 
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
+  return `${Math.round((bytes / 1024 ** i) * 100) / 100} ${sizes[i]}`;
 }
 
 /**

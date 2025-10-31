@@ -8,14 +8,14 @@ export default defineConfig({
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: false,  // Use multiple processes
+        singleFork: false, // Use multiple processes
       },
     },
     // Mock management to prevent test pollution
-    mockReset: false,      // Don't reset module-level mocks
-    restoreMocks: false,   // Don't restore mocks to original implementations
-    clearMocks: true,      // Clear mock call history between tests
-    unstubGlobals: false,  // Keep global stubs
+    mockReset: false, // Don't reset module-level mocks
+    restoreMocks: false, // Don't restore mocks to original implementations
+    clearMocks: true, // Clear mock call history between tests
+    unstubGlobals: false, // Keep global stubs
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

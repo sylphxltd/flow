@@ -4,12 +4,11 @@ import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { FileInstaller } from '../core/installers/file-installer.js';
 import { MCPInstaller } from '../core/installers/mcp-installer.js';
-import { displayResults } from '../shared/index.js';
-import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
+import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
 import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';
 import { secretUtils } from '../utils/secret-utils.js';
-import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
+import { fileUtils, generateHelpText, yamlUtils } from '../utils/target-utils.js';
 
 /**
  * OpenCode target - composition approach with all original functionality
@@ -247,7 +246,7 @@ export const opencodeTarget: Target = {
       },
       {
         ...options,
-        showProgress: false,  // UI handled by init-command
+        showProgress: false, // UI handled by init-command
       }
     );
 
@@ -258,7 +257,7 @@ export const opencodeTarget: Target = {
    * Setup output styles for OpenCode
    * Append output styles to AGENTS.md (OpenCode doesn't support separate output style files)
    */
-  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<SetupResult> {
+  async setupOutputStyles(cwd: string, _options: CommonOptions): Promise<SetupResult> {
     if (!this.config.rulesFile) {
       return { count: 0 };
     }
@@ -298,7 +297,7 @@ export const opencodeTarget: Target = {
         content = await this.transformRulesContent(content);
       }
 
-      outputStylesContent += content + '\n\n';
+      outputStylesContent += `${content}\n\n`;
     }
 
     // Check if output styles section already exists
@@ -347,7 +346,7 @@ export const opencodeTarget: Target = {
       },
       {
         ...options,
-        showProgress: false,  // UI handled by init-command
+        showProgress: false, // UI handled by init-command
       }
     );
 
@@ -393,7 +392,7 @@ export const opencodeTarget: Target = {
       },
       {
         ...options,
-        showProgress: false,  // UI handled by init-command
+        showProgress: false, // UI handled by init-command
       }
     );
 

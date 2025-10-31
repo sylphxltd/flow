@@ -4,7 +4,6 @@ import { Command } from 'commander';
 import gradient from 'gradient-string';
 import ora from 'ora';
 import { targetManager } from '../core/target-manager.js';
-import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { projectSettings } from '../utils/settings.js';
 import { validateTarget } from '../utils/target-config.js';
@@ -74,15 +73,14 @@ export const initCommand = new Command('init')
     if (options.dryRun) {
       console.log(
         boxen(
-          chalk.yellow('⚠ Dry Run Mode') +
-            chalk.dim('\nNo changes will be made to your project'),
+          chalk.yellow('⚠ Dry Run Mode') + chalk.dim('\nNo changes will be made to your project'),
           {
             padding: 1,
             margin: { top: 0, bottom: 1, left: 0, right: 0 },
             borderStyle: 'round',
             borderColor: 'yellow',
-          },
-        ),
+          }
+        )
       );
 
       const target = targetManager.getTarget(targetId);
@@ -128,7 +126,7 @@ export const initCommand = new Command('init')
             borderStyle: 'round',
             borderColor: 'green',
           }) +
-          '\n',
+          '\n'
       );
       return;
     }
@@ -145,7 +143,11 @@ export const initCommand = new Command('init')
       try {
         const result = await target.setupMCP(process.cwd(), options);
         if (result.count > 0) {
-          console.log(chalk.green(`✔ Installed ${chalk.cyan(result.count)} MCP server${result.count !== 1 ? 's' : ''}`));
+          console.log(
+            chalk.green(
+              `✔ Installed ${chalk.cyan(result.count)} MCP server${result.count !== 1 ? 's' : ''}`
+            )
+          );
         } else {
           console.log(chalk.dim('ℹ No MCP servers selected'));
         }
@@ -162,7 +164,9 @@ export const initCommand = new Command('init')
       const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
       try {
         const result = await target.setupAgents(process.cwd(), { ...options, quiet: true });
-        agentSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} agent${result.count !== 1 ? 's' : ''}`));
+        agentSpinner.succeed(
+          chalk.green(`Installed ${chalk.cyan(result.count)} agent${result.count !== 1 ? 's' : ''}`)
+        );
       } catch (error) {
         agentSpinner.fail(chalk.red('Failed to install agents'));
         throw error;
@@ -175,7 +179,11 @@ export const initCommand = new Command('init')
       try {
         const result = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
         if (result.count > 0) {
-          outputStylesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} output style${result.count !== 1 ? 's' : ''}`));
+          outputStylesSpinner.succeed(
+            chalk.green(
+              `Installed ${chalk.cyan(result.count)} output style${result.count !== 1 ? 's' : ''}`
+            )
+          );
         } else if (result.message) {
           outputStylesSpinner.info(chalk.dim(result.message));
         } else {
@@ -193,7 +201,11 @@ export const initCommand = new Command('init')
       try {
         const result = await target.setupRules(process.cwd(), { ...options, quiet: true });
         if (result.count > 0) {
-          rulesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} rule${result.count !== 1 ? 's' : ''}`));
+          rulesSpinner.succeed(
+            chalk.green(
+              `Installed ${chalk.cyan(result.count)} rule${result.count !== 1 ? 's' : ''}`
+            )
+          );
         } else if (result.message) {
           rulesSpinner.info(chalk.dim(result.message));
         } else {
@@ -207,11 +219,18 @@ export const initCommand = new Command('init')
 
     // Install slash commands if target supports it and slash commands are not skipped
     if (target.setupSlashCommands && options.slashCommands !== false) {
-      const slashCommandsSpinner = ora({ text: 'Installing slash commands', color: 'cyan' }).start();
+      const slashCommandsSpinner = ora({
+        text: 'Installing slash commands',
+        color: 'cyan',
+      }).start();
       try {
         const result = await target.setupSlashCommands(process.cwd(), { ...options, quiet: true });
         if (result.count > 0) {
-          slashCommandsSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} slash command${result.count !== 1 ? 's' : ''}`));
+          slashCommandsSpinner.succeed(
+            chalk.green(
+              `Installed ${chalk.cyan(result.count)} slash command${result.count !== 1 ? 's' : ''}`
+            )
+          );
         } else if (result.message) {
           slashCommandsSpinner.info(chalk.dim(result.message));
         } else {
@@ -253,8 +272,8 @@ export const initCommand = new Command('init')
       // Don't fail the entire setup if we can't save settings
       console.warn(
         chalk.yellow(
-          `⚠ Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`,
-        ),
+          `⚠ Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`
+        )
       );
     }
 
@@ -272,8 +291,8 @@ export const initCommand = new Command('init')
             margin: 0,
             borderStyle: 'round',
             borderColor: 'green',
-          },
+          }
         ) +
-        '\n',
+        '\n'
     );
   });

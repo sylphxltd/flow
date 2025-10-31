@@ -88,6 +88,4 @@ export interface IRepository<T, ID = string | number> {
 /**
  * Factory function type for creating repositories
  */
-export type RepositoryFactory<T, ID = string | number> = (
-  tableName: string
-) => IRepository<T, ID>;
+export type RepositoryFactory<T, ID = string | number> = (tableName: string) => IRepository<T, ID>;

@@ -2,11 +2,10 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
+import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import { startSylphxFlowMCPServer } from '../servers/mcp-server.js';
 import { createMCPService } from '../services/mcp-service.js';
-import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
 

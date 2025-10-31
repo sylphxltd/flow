@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Module-level mock variables (need to be defined before vi.mock)
 let mockReadlineInstance: any;
-let createInterfaceMock = vi.fn(() => mockReadlineInstance);
+const createInterfaceMock = vi.fn(() => mockReadlineInstance);
 
 // Mock readline module (vitest 4.x compatible)
 vi.mock('node:readline', () => ({

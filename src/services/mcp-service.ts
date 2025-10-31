@@ -1,11 +1,10 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
-import { targetManager } from '../core/target-manager.js';
-import { type Resolvable, isCLICommandConfig } from '../types.js';
-import type { Target } from '../types.js';
+import { MCP_SERVER_REGISTRY, type MCPServerID } from '../config/servers.js';
 import type { TargetConfigurationData } from '../types/target-config.types.js';
+import type { Target } from '../types.js';
+import { isCLICommandConfig, type Resolvable } from '../types.js';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -27,9 +26,18 @@ export interface MCPService {
   readonly getAvailableServers: () => Promise<MCPServerID[]>;
   readonly getInstalledServerIds: () => Promise<MCPServerID[]>;
   readonly getRequiringConfiguration: (serverIds: MCPServerID[]) => MCPServerID[];
-  readonly validateServer: (serverId: MCPServerID, envValues: Record<string, string>) => ValidationResult;
-  readonly configureServer: (serverId: MCPServerID, collectedEnv?: Record<string, string>) => Promise<Record<string, string>>;
-  readonly installServers: (serverIds: MCPServerID[], serverConfigs?: Record<MCPServerID, Record<string, string>>) => Promise<void>;
+  readonly validateServer: (
+    serverId: MCPServerID,
+    envValues: Record<string, string>
+  ) => ValidationResult;
+  readonly configureServer: (
+    serverId: MCPServerID,
+    collectedEnv?: Record<string, string>
+  ) => Promise<Record<string, string>>;
+  readonly installServers: (
+    serverIds: MCPServerID[],
+    serverConfigs?: Record<MCPServerID, Record<string, string>>
+  ) => Promise<void>;
   readonly readConfig: () => Promise<TargetConfigurationData>;
   readonly writeConfig: (configData: TargetConfigurationData) => Promise<void>;
 }
@@ -119,7 +127,10 @@ export const createMCPService = (deps: MCPServiceDeps): MCPService => {
   /**
    * Validate server configuration
    */
-  const validateServer = (serverId: MCPServerID, envValues: Record<string, string>): ValidationResult => {
+  const validateServer = (
+    serverId: MCPServerID,
+    envValues: Record<string, string>
+  ): ValidationResult => {
     const server = MCP_SERVER_REGISTRY[serverId];
     if (!server?.envVars) {
       return { isValid: true, missingRequired: [], invalidValues: [] };

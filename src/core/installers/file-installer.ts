@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { CommonOptions, ProcessResult } from '../../shared/index.js';
-import { clearObsoleteFiles, collectFiles, displayResults, getLocalFileInfo } from '../../shared/index.js';
+import { clearObsoleteFiles, collectFiles, getLocalFileInfo } from '../../shared/index.js';
 
 export interface InstallOptions extends CommonOptions {
   /** Custom file extension */
@@ -17,9 +17,7 @@ export interface InstallOptions extends CommonOptions {
   showProgress?: boolean;
 }
 
-export interface FileTransformFn {
-  (content: string, sourcePath?: string): Promise<string>;
-}
+export type FileTransformFn = (content: string, sourcePath?: string) => Promise<string>;
 
 /**
  * Collect files from source directory
@@ -80,7 +78,7 @@ export async function installToDirectory(
           const parsed = path.parse(file);
           const baseName = parsed.name;
           const dir = parsed.dir;
-          const flatName = dir ? `${dir.replace(/[\/\\]/g, '-')}-${baseName}` : baseName;
+          const flatName = dir ? `${dir.replace(/[/\\]/g, '-')}-${baseName}` : baseName;
           return `${flatName}${options.extension || '.md'}`;
         }
         return file;
@@ -185,7 +183,7 @@ export async function appendToFile(
     const sourcePath = path.join(sourceDir, file);
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = await transform(content, file);
-    appendContent += content + '\n\n';
+    appendContent += `${content}\n\n`;
   }
 
   // Write combined content
@@ -209,9 +207,7 @@ export async function installFile(
 ): Promise<void> {
   if (options.dryRun) {
     if (!options.quiet) {
-      console.log(
-        `Dry run: Would install file to ${targetFile.replace(`${process.cwd()}/`, '')}`
-      );
+      console.log(`Dry run: Would install file to ${targetFile.replace(`${process.cwd()}/`, '')}`);
     }
     return;
   }

@@ -7,7 +7,6 @@ import { StorageUtils } from '../core/unified-storage-manager.js';
 import type {
   MemoryStorageAdapter as IMemoryStorageAdapter,
   StorageConfig,
-  StorageResult,
 } from '../interfaces/unified-storage.js';
 import { logger } from '../utils/logger.js';
 import { type MemoryEntry, MemoryStorage } from '../utils/memory-storage.js';

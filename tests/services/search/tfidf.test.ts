@@ -8,12 +8,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  type DocumentVector,
-  type SearchIndex,
   buildSearchIndex,
   calculateCosineSimilarity,
+  type DocumentVector,
   deserializeIndex,
   processQuery,
+  type SearchIndex,
   searchDocuments,
   serializeIndex,
 } from '../../../src/services/search/tfidf.js';

@@ -53,12 +53,14 @@ export const isFailure = <T, E>(result: Result<T, E>): result is Failure<E> =>
  * Transform the success value
  * Failure propagates unchanged
  */
-export const map = <T, U, E>(fn: (value: T) => U) => (result: Result<T, E>): Result<U, E> => {
-  if (isSuccess(result)) {
-    return success(fn(result.value));
-  }
-  return result;
-};
+export const map =
+  <T, U, E>(fn: (value: T) => U) =>
+  (result: Result<T, E>): Result<U, E> => {
+    if (isSuccess(result)) {
+      return success(fn(result.value));
+    }
+    return result;
+  };
 
 /**
  * Transform the success value with a function that returns a Result
@@ -78,12 +80,14 @@ export const flatMap =
  * Transform the error
  * Success propagates unchanged
  */
-export const mapError = <T, E, F>(fn: (error: E) => F) => (result: Result<T, E>): Result<T, F> => {
-  if (isFailure(result)) {
-    return failure(fn(result.error));
-  }
-  return result;
-};
+export const mapError =
+  <T, E, F>(fn: (error: E) => F) =>
+  (result: Result<T, E>): Result<T, F> => {
+    if (isFailure(result)) {
+      return failure(fn(result.error));
+    }
+    return result;
+  };
 
 /**
  * Extract value or provide default

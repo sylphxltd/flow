@@ -12,8 +12,8 @@ import {
   getImplementedTargetIDs,
   getImplementedTargets,
   getTarget,
-  getTargetUnsafe,
   getTargetsWithMCPSupport,
+  getTargetUnsafe,
   isTargetImplemented,
 } from '../../src/config/targets.js';
 import { isNone, isSome } from '../../src/core/functional/option.js';

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_HOOKS,
   buildHookConfiguration,
   createSettings,
+  DEFAULT_HOOKS,
   getSuccessMessage,
   mergeSettings,
   parseSettings,

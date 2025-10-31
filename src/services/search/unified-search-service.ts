@@ -3,13 +3,13 @@
  * Shared search logic for CLI, MCP, and API
  */
 
-import { filter, map, pipe, sortBy, take } from '../../utils/functional.js';
+import { filter, map, pipe, take } from '../../utils/functional.js';
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import { CodebaseIndexer } from './codebase-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
-import { getKnowledgeIndexer, getKnowledgeIndexerWithEmbeddings } from './knowledge-indexer.js';
-import { type SearchIndex, buildSearchIndex, searchDocuments } from './tfidf.js';
+import { getKnowledgeIndexer } from './knowledge-indexer.js';
+import { searchDocuments } from './tfidf.js';
 
 export interface SearchResult {
   uri: string;
@@ -63,18 +63,32 @@ export interface SearchServiceDependencies {
 export interface UnifiedSearchService {
   readonly initialize: () => Promise<void>;
   readonly getStatus: () => Promise<SearchStatus>;
-  readonly searchCodebase: (query: string, options?: SearchOptions) => Promise<{
+  readonly searchCodebase: (
+    query: string,
+    options?: SearchOptions
+  ) => Promise<{
     results: SearchResult[];
     totalIndexed: number;
     query: string;
   }>;
-  readonly searchKnowledge: (query: string, options?: SearchOptions) => Promise<{
+  readonly searchKnowledge: (
+    query: string,
+    options?: SearchOptions
+  ) => Promise<{
     results: SearchResult[];
     totalIndexed: number;
     query: string;
   }>;
-  readonly formatResultsForCLI: (results: SearchResult[], query: string, totalIndexed: number) => string;
-  readonly formatResultsForMCP: (results: SearchResult[], query: string, totalIndexed: number) => {
+  readonly formatResultsForCLI: (
+    results: SearchResult[],
+    query: string,
+    totalIndexed: number
+  ) => string;
+  readonly formatResultsForMCP: (
+    results: SearchResult[],
+    query: string,
+    totalIndexed: number
+  ) => {
     content: Array<{ type: 'text'; text: string }>;
   };
   readonly getAvailableKnowledgeURIs: () => Promise<string[]>;
@@ -96,9 +110,11 @@ interface UnifiedSearchServiceState {
  * Create Unified Search Service (Factory Function)
  * Shared search logic for CLI, MCP, and API
  */
-export const createUnifiedSearchService = (dependencies: SearchServiceDependencies = {}): UnifiedSearchService => {
+export const createUnifiedSearchService = (
+  dependencies: SearchServiceDependencies = {}
+): UnifiedSearchService => {
   // Mutable state in closure (updated immutably where possible)
-  let state: UnifiedSearchServiceState = {
+  const state: UnifiedSearchServiceState = {
     memoryStorage: dependencies.memoryStorage || new SeparatedMemoryStorage(),
     knowledgeIndexer: dependencies.knowledgeIndexer || getKnowledgeIndexer(),
     codebaseIndexer: dependencies.codebaseIndexer,
@@ -343,7 +359,7 @@ export const createUnifiedSearchService = (dependencies: SearchServiceDependenci
             uri: result.doc.id,
             score: result.similarity,
           }));
-        } catch (error) {
+        } catch (_error) {
           // Fallback to TF-IDF if vector search fails
           searchResults = await searchDocuments(query, index, {
             limit,
@@ -388,7 +404,11 @@ export const createUnifiedSearchService = (dependencies: SearchServiceDependenci
   /**
    * Format search results for CLI output
    */
-  const formatResultsForCLI = (results: SearchResult[], query: string, totalIndexed: number): string => {
+  const formatResultsForCLI = (
+    results: SearchResult[],
+    query: string,
+    totalIndexed: number
+  ): string => {
     if (results.length === 0) {
       return `📭 No results found for "${query}"\n\n**Total indexed files:** ${totalIndexed}`;
     }

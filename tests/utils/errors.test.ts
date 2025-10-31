@@ -10,6 +10,8 @@ import {
   BaseError,
   CLIError,
   ConfigurationError,
+  createAsyncHandler,
+  createError,
   DatabaseError,
   ErrorCategory,
   ErrorContext,
@@ -17,13 +19,11 @@ import {
   ErrorSeverity,
   ExternalServiceError,
   FilesystemError,
+  handleError,
   InternalError,
   NetworkError,
   Result,
   ValidationError,
-  createAsyncHandler,
-  createError,
-  handleError,
 } from '../../src/utils/errors.js';
 
 // Mock logger to avoid actual logging during tests

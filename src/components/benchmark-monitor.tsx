@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { Box, Text, render, useApp } from 'ink';
+import { Box, render, Text, useApp } from 'ink';
 import React from 'react';
 import type { AgentData, InitialInfo } from '../types/benchmark.js';
 
@@ -148,7 +148,7 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
   const { exit } = useApp();
 
   // Subscribe to monitor changes using proper React state
-  const [updateTrigger, setUpdateTrigger] = React.useState(0);
+  const [_updateTrigger, setUpdateTrigger] = React.useState(0);
   const [flashState, setFlashState] = React.useState(true);
 
   React.useEffect(() => {
@@ -254,7 +254,7 @@ const BenchmarkMonitor: React.FC<InkMonitorProps> = ({ monitor, onComplete }) =>
         pid: agent.pid,
       };
     });
-  }, [monitor, updateTrigger, flashState]);
+  }, [monitor, flashState]);
 
   const workspaceDirs = monitor.getWorkspaceDirs();
   const initialInfo = monitor.getInitialInfo();

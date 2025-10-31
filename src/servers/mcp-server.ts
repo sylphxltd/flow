@@ -1,14 +1,13 @@
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import fs from 'fs/promises';
 
 import { registerCodebaseTools } from '../domains/codebase/tools.js';
 import { registerKnowledgeTools } from '../domains/knowledge/tools.js';
 import { registerTimeTools } from '../domains/utilities/time/tools.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
-import { secretUtils } from '../utils/secret-utils.js';
 
 // ============================================================================
 // CONFIGURATION AND SETUP

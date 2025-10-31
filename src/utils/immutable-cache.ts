@@ -19,11 +19,7 @@ export const createCache = <K, V>(): CacheState<K, V> => ({
 /**
  * Set a value in the cache, returning new cache state
  */
-export const cacheSet = <K, V>(
-  cache: CacheState<K, V>,
-  key: K,
-  value: V
-): CacheState<K, V> => {
+export const cacheSet = <K, V>(cache: CacheState<K, V>, key: K, value: V): CacheState<K, V> => {
   const newEntries = new Map(cache.entries);
   newEntries.set(key, value);
   return {

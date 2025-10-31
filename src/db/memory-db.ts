@@ -5,7 +5,6 @@
 
 import * as path from 'node:path';
 import type { drizzle } from 'drizzle-orm/libsql';
-import { migrate } from 'drizzle-orm/libsql/migrator';
 import { DatabaseError } from '../utils/database-errors.js';
 import { BaseDatabaseClient } from './base-database-client.js';
 import * as schema from './memory-schema.js';

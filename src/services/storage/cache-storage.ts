@@ -6,13 +6,12 @@
 import { count, desc, eq } from 'drizzle-orm';
 import { type CacheDatabase, CacheDatabaseClient } from '../../db/cache-db.js';
 import {
+  codebaseFiles,
+  codebaseMetadata,
   type NewCodebaseFile,
-  type NewCodebaseMetadata,
   type NewTfidfDocument,
   type NewTfidfIdf,
   type NewTfidfTerm,
-  codebaseFiles,
-  codebaseMetadata,
   tfidfDocuments,
   tfidfIdf,
   tfidfTerms,

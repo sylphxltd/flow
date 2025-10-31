@@ -15,50 +15,39 @@
 // ============================================================================
 // Direct exports for backward compatibility - @deprecated
 
-// File operations
-export * from './file-operations.js';
-
-// JSONC utilities
-export * from './jsonc.js';
-
-// Path utilities
-export * from './paths.js';
-
-// Security utilities
-export * from './security.js';
-
+export * from './cache-storage.js';
+export * from './database-errors.js';
+// Database utilities
+export * from './drizzle-storage.js';
 // Error handling
 export * from './error-handler.js';
-export * from './simplified-errors.js';
-export * from './database-errors.js';
-
+// File operations
+export * from './file-operations.js';
+// JSONC utilities
+export * from './jsonc.js';
 // Logger utilities
 export * from './logger.js';
-
+export * from './memory-storage.js';
+// Path utilities
+export * from './paths.js';
+// Security utilities
+export * from './security.js';
+export * from './simplified-errors.js';
 // Target configuration
 export * from './target-config.js';
 
-// Database utilities
-export * from './drizzle-storage.js';
-export * from './memory-storage.js';
-export * from './cache-storage.js';
-
 // Search and indexing - moved to services/search/
-
-// Console UI utilities
-export * from './console-ui.js';
-
-// Prompt utilities
-export * from './prompts.js';
-
-// Template engine
-export * from './template-engine.js';
 
 // Command builder
 export * from './command-builder.js';
-
+// Console UI utilities
+export * from './console-ui.js';
+// Prompt utilities
+export * from './prompts.js';
 // Secret utilities
 export * from './secret-utils.js';
+// Template engine
+export * from './template-engine.js';
 
 // Embeddings and TF-IDF - moved to services/search/
 
@@ -76,17 +65,14 @@ export * from '../shared/index.js';
 
 // Base indexer - moved to services/search/
 
-// Vector storage
-export * from './vector-storage.js';
-
 // LanceDB vector storage
 export * from './lancedb-vector-storage.js';
-
 // Separated storage
 export * from './separated-storage.js';
+// Settings utilities
+export * from './settings.js';
 
 // Target config types
 export * from './target-config.js';
-
-// Settings utilities
-export * from './settings.js';
+// Vector storage
+export * from './vector-storage.js';

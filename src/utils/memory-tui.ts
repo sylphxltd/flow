@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import inquirer from 'inquirer';
 
 import inquirer from 'inquirer';
 import { DrizzleMemoryStorage, type MemoryEntry } from '../utils/drizzle-storage.js';

@@ -11,7 +11,7 @@
 
 import type { FileSystemError } from '../../core/functional/error-types.js';
 import { fileSystemError } from '../../core/functional/error-types.js';
-import { flow, pipe } from '../../core/functional/pipe.js';
+import { pipe } from '../../core/functional/pipe.js';
 import type { Result } from '../../core/functional/result.js';
 import { failure, success } from '../../core/functional/result.js';
 import { Arr, Obj, Str } from '../../utils/functional/index.js';
@@ -67,12 +67,9 @@ export const parseTimingJSON = (content: string): Result<AgentTiming, FileSystem
     return success({ duration: data.duration || 0 });
   } catch (error) {
     return failure(
-      fileSystemError(
-        'Failed to parse timing JSON',
-        '',
-        'read',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError('Failed to parse timing JSON', '', 'read', {
+        cause: error instanceof Error ? error : undefined,
+      })
     );
   }
 };
@@ -206,10 +203,7 @@ export const combineAgentWork = (workSections: string[]): string => {
 /**
  * Build full evaluation input
  */
-export const buildEvaluationInput = (
-  prompt: string,
-  agentWork: string
-): string => {
+export const buildEvaluationInput = (prompt: string, agentWork: string): string => {
   return `${prompt}\n\nAGENT WORK TO EVALUATE:\n${agentWork}`;
 };
 
@@ -218,19 +212,13 @@ export const buildEvaluationInput = (
  */
 export const validateTemplate = (template: string): Result<string, FileSystemError> => {
   if (Str.isBlank(template)) {
-    return failure(
-      fileSystemError('Template is empty', '', 'read')
-    );
+    return failure(fileSystemError('Template is empty', '', 'read'));
   }
 
   const parsed = parseTemplate(template);
   if (!parsed.variables.includes('AGENT_PERFORMANCE_DATA')) {
     return failure(
-      fileSystemError(
-        'Template missing required variable: AGENT_PERFORMANCE_DATA',
-        '',
-        'read'
-      )
+      fileSystemError('Template missing required variable: AGENT_PERFORMANCE_DATA', '', 'read')
     );
   }
 
@@ -240,9 +228,7 @@ export const validateTemplate = (template: string): Result<string, FileSystemErr
 /**
  * Extract summary statistics from agent work
  */
-export const extractSummaryStats = (
-  agentWork: Record<string, string>
-): Record<string, number> => {
+export const extractSummaryStats = (agentWork: Record<string, string>): Record<string, number> => {
   return pipe(
     Obj.entries(agentWork),
     Arr.map(([agent, content]) => {
@@ -287,7 +273,7 @@ export const parseEvaluationOutput = (
         content: '',
       };
     } else if (currentSection) {
-      currentSection.content += line + '\n';
+      currentSection.content += `${line}\n`;
     }
   }
 

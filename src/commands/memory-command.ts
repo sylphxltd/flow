@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { targetManager } from '../core/target-manager.js';
 import { SeparatedMemoryStorage } from '../services/storage/separated-storage.js';
-import type { CommandOptions } from '../types.js';
 import { cli } from '../utils/cli-output.js';
 import { CLIError } from '../utils/error-handler.js';
 
@@ -30,14 +28,14 @@ memoryCommand
         return;
       }
 
-      const limit = Number.parseInt(options.limit) || 50;
+      const limit = Number.parseInt(options.limit, 10) || 50;
       const display = filtered.slice(0, limit);
 
       display.forEach((entry, index) => {
         cli.memoryEntry(entry, index);
       });
     } else {
-      const limit = Number.parseInt(options.limit) || 50;
+      const limit = Number.parseInt(options.limit, 10) || 50;
       cli.listSummary('all', Math.min(limit, entries.length), entries.length);
 
       if (entries.length === 0) {
@@ -123,7 +121,7 @@ memoryCommand
   .command('stats')
   .description('Show memory statistics')
   .option('--namespace <name>', 'Filter by namespace')
-  .action(async (options) => {
+  .action(async (_options) => {
     const memory = new SeparatedMemoryStorage();
     const stats = await memory.getStats();
 

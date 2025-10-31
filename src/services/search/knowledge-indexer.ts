@@ -11,14 +11,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import chokidar from 'chokidar';
+import { logger } from '../../utils/logger.js';
 import { getKnowledgeDir } from '../../utils/paths.js';
 import { VectorStorage } from '../storage/lancedb-vector-storage.js';
 import { BaseIndexer } from './base-indexer.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
-import { type Indexer, createIndexer } from './functional-indexer.js';
-import { type SearchIndex, buildSearchIndex } from './tfidf.js';
-import { logger } from '../../utils/logger.js';
+import { createIndexer, type Indexer } from './functional-indexer.js';
+import { buildSearchIndex, type SearchIndex } from './tfidf.js';
 
 /**
  * Knowledge indexer singleton
@@ -160,7 +160,7 @@ class KnowledgeIndexer extends BaseIndexer {
 
     try {
       this.watcher = chokidar.watch(`${knowledgeDir}/**/*.md`, {
-        ignored: /(^|[\/\\])\../, // Ignore dotfiles
+        ignored: /(^|[/\\])\../, // Ignore dotfiles
         persistent: true,
         ignoreInitial: true, // Don't trigger on initial scan
         awaitWriteFinish: {
@@ -353,10 +353,10 @@ export function createKnowledgeIndexerFunctional(
               });
             }
 
-          logger.info('Processed knowledge files', {
-            processed: Math.min(i + batchSize, files.length),
-            total: files.length,
-          });
+            logger.info('Processed knowledge files', {
+              processed: Math.min(i + batchSize, files.length),
+              total: files.length,
+            });
           }
 
           await vectorStorage.save();
@@ -374,7 +374,7 @@ export function createKnowledgeIndexerFunctional(
   if (fs.existsSync(knowledgeDir)) {
     try {
       watcher = chokidar.watch(`${knowledgeDir}/**/*.md`, {
-        ignored: /(^|[\/\\])\../,
+        ignored: /(^|[/\\])\../,
         persistent: true,
         ignoreInitial: true,
         awaitWriteFinish: {

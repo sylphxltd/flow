@@ -170,7 +170,9 @@ export const isNotBlank = (str: string): boolean => str.trim().length > 0;
  * Capitalize first letter
  */
 export const capitalize = (str: string): string => {
-  if (str.length === 0) return str;
+  if (str.length === 0) {
+    return str;
+  }
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
@@ -227,7 +229,9 @@ export const toSnakeCase = (str: string): string => {
 export const truncate =
   (maxLength: number, suffix = '...') =>
   (str: string): string => {
-    if (str.length <= maxLength) return str;
+    if (str.length <= maxLength) {
+      return str;
+    }
     return str.slice(0, maxLength - suffix.length) + suffix;
   };
 
@@ -240,9 +244,7 @@ export const lines = (str: string): string[] => str.split(/\r?\n/);
  * Remove empty lines
  */
 export const removeEmptyLines = (str: string): string => {
-  return lines(str)
-    .filter(isNotBlank)
-    .join('\n');
+  return lines(str).filter(isNotBlank).join('\n');
 };
 
 /**
@@ -264,13 +266,11 @@ export const dedent = (str: string): string => {
   const linesArray = lines(str);
 
   // Find minimum indentation
-  const minIndent = linesArray
-    .filter(isNotBlank)
-    .reduce((min, line) => {
-      const match = line.match(/^(\s*)/);
-      const indent = match ? match[1].length : 0;
-      return Math.min(min, indent);
-    }, Number.POSITIVE_INFINITY);
+  const minIndent = linesArray.filter(isNotBlank).reduce((min, line) => {
+    const match = line.match(/^(\s*)/);
+    const indent = match ? match[1].length : 0;
+    return Math.min(min, indent);
+  }, Number.POSITIVE_INFINITY);
 
   if (minIndent === 0 || minIndent === Number.POSITIVE_INFINITY) {
     return str;

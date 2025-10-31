@@ -10,7 +10,7 @@ import type { EmbeddingProvider } from './embeddings.js';
 import { getDefaultEmbeddingProvider } from './embeddings.js';
 import { VectorStorage } from './lancedb-vector-storage.js';
 import { getKnowledgeDir } from './paths.js';
-import { type SearchIndex, buildSearchIndex } from './tfidf.js';
+import { buildSearchIndex, type SearchIndex } from './tfidf.js';
 
 /**
  * Knowledge indexer singleton

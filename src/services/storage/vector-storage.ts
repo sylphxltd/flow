@@ -5,9 +5,9 @@
 
 // Re-export from the LanceDB implementation
 export {
-  VectorStorage,
-  type VectorDocument,
-  type VectorStorageMetadata,
-  type VectorSearchResult,
   generateMockEmbedding,
+  type VectorDocument,
+  type VectorSearchResult,
+  VectorStorage,
+  type VectorStorageMetadata,
 } from './lancedb-vector-storage.js';

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MCP_SERVER_REGISTRY,
   getAllServerIDs,
   getDefaultServers,
   getServerDefinition,
   getServersRequiringAPIKeys,
   isValidServerID,
+  MCP_SERVER_REGISTRY,
 } from '../src/config/servers';
 
 describe('Server Registry Tests', () => {

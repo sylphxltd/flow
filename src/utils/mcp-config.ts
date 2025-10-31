@@ -1,21 +1,10 @@
 import chalk from 'chalk';
-import inquirer from 'inquirer';
 
 import inquirer from 'inquirer';
 import type { MCPServerID } from '../config/servers.js';
-import {
-  MCP_SERVER_REGISTRY,
-  getAllEnvVars,
-  getAllServerIDs,
-  getRequiredEnvVars,
-  getSecretEnvVars,
-} from '../config/servers.js';
+import { getAllServerIDs, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
-import {
-  deleteNestedProperty,
-  getNestedProperty,
-  setNestedProperty,
-} from '../utils/target-config.js';
+import { getNestedProperty, setNestedProperty } from '../utils/target-config.js';
 
 interface MCPConfigOptions {
   serverId?: MCPServerID;

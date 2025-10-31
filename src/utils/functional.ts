@@ -188,8 +188,12 @@ export const sortBy =
   <A>(key: keyof A) =>
   (items: readonly A[]): A[] =>
     [...items].sort((a, b) => {
-      if (a[key] < b[key]) return -1;
-      if (a[key] > b[key]) return 1;
+      if (a[key] < b[key]) {
+        return -1;
+      }
+      if (a[key] > b[key]) {
+        return 1;
+      }
       return 0;
     });
 
@@ -243,7 +247,9 @@ export const uniqueBy =
     const seen = new Set();
     return items.filter((item) => {
       const value = item[key];
-      if (seen.has(value)) return false;
+      if (seen.has(value)) {
+        return false;
+      }
       seen.add(value);
       return true;
     });
@@ -284,7 +290,9 @@ export const groupBy =
     items.reduce(
       (acc, item) => {
         const groupKey = String(item[key]);
-        if (!acc[groupKey]) acc[groupKey] = [];
+        if (!acc[groupKey]) {
+          acc[groupKey] = [];
+        }
         acc[groupKey].push(item);
         return acc;
       },
@@ -425,7 +433,9 @@ export const tryCatchAsync = async <T, E = Error>(fn: () => Promise<T>): Promise
  * UnwrapResult - Extract value from Result or throw error
  */
 export const unwrapResult = <T, E>(result: Result<T, E>): T => {
-  if (result.ok) return result.value;
+  if (result.ok) {
+    return result.value;
+  }
   throw result.error;
 };
 
@@ -435,7 +445,9 @@ export const unwrapResult = <T, E>(result: Result<T, E>): T => {
 export const mapResult =
   <T, U, E>(fn: (value: T) => U) =>
   (result: Result<T, E>): Result<U, E> => {
-    if (result.ok) return { ok: true, value: fn(result.value) };
+    if (result.ok) {
+      return { ok: true, value: fn(result.value) };
+    }
     return result;
   };
 

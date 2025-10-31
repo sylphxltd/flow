@@ -10,6 +10,6 @@
  * - Point-free style support
  */
 
-export * as Str from './string.js';
 export * as Arr from './array.js';
 export * as Obj from './object.js';
+export * as Str from './string.js';

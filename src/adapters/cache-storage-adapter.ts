@@ -6,9 +6,8 @@
 import { StorageUtils } from '../core/unified-storage-manager.js';
 import type {
   CacheStats,
-  CacheStorageAdapter,
+  CacheStorageAdapter as ICacheStorageAdapter,
   StorageConfig,
-  StorageResult,
 } from '../interfaces/unified-storage.js';
 import { CacheStorage } from '../utils/cache-storage.js';
 import { logger } from '../utils/logger.js';
@@ -16,7 +15,7 @@ import { logger } from '../utils/logger.js';
 /**
  * Cache storage adapter implementation
  */
-export class CacheStorageAdapter implements CacheStorageAdapter {
+export class CacheStorageAdapter implements ICacheStorageAdapter {
   readonly type = 'cache';
   private storage: CacheStorage;
   private config: StorageConfig;

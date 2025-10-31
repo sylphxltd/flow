@@ -39,29 +39,31 @@ export const right = <R>(value: R): Right<R> => ({
  * Type guards
  */
 
-export const isLeft = <L, R>(either: Either<L, R>): either is Left<L> =>
-  either._tag === 'Left';
+export const isLeft = <L, R>(either: Either<L, R>): either is Left<L> => either._tag === 'Left';
 
-export const isRight = <L, R>(either: Either<L, R>): either is Right<R> =>
-  either._tag === 'Right';
+export const isRight = <L, R>(either: Either<L, R>): either is Right<R> => either._tag === 'Right';
 
 /**
  * Transformations
  */
 
-export const map = <L, R, R2>(fn: (value: R) => R2) => (either: Either<L, R>): Either<L, R2> => {
-  if (isRight(either)) {
-    return right(fn(either.right));
-  }
-  return either;
-};
+export const map =
+  <L, R, R2>(fn: (value: R) => R2) =>
+  (either: Either<L, R>): Either<L, R2> => {
+    if (isRight(either)) {
+      return right(fn(either.right));
+    }
+    return either;
+  };
 
-export const mapLeft = <L, L2, R>(fn: (value: L) => L2) => (either: Either<L, R>): Either<L2, R> => {
-  if (isLeft(either)) {
-    return left(fn(either.left));
-  }
-  return either;
-};
+export const mapLeft =
+  <L, L2, R>(fn: (value: L) => L2) =>
+  (either: Either<L, R>): Either<L2, R> => {
+    if (isLeft(either)) {
+      return left(fn(either.left));
+    }
+    return either;
+  };
 
 export const flatMap =
   <L, R, R2>(fn: (value: R) => Either<L, R2>) =>

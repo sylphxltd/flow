@@ -9,9 +9,6 @@
  * - Clear separation of interface and implementation
  */
 
-export * from './repository.interface.js';
-export * from './service.interface.js';
-
 // Re-export commonly used types from existing interfaces
 export type {
   CoreService,
@@ -21,3 +18,5 @@ export type {
   InitializationOptions,
   TargetManager,
 } from '../interfaces.js';
+export * from './repository.interface.js';
+export * from './service.interface.js';

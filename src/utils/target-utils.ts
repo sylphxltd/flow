@@ -204,7 +204,7 @@ export const yamlUtils = {
 export const pathUtils = {
   flattenPath(filePath: string): string {
     const parsed = path.parse(filePath);
-    const dir = parsed.dir.replace(/[\/\\]/g, '-');
+    const dir = parsed.dir.replace(/[/\\]/g, '-');
     return dir ? `${dir}-${parsed.name}` : parsed.name;
   },
 

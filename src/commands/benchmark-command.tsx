@@ -1,8 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { render } from 'ink';
-import React from 'react';
-import { InkMonitor, type InkMonitorProps } from '../components/benchmark-monitor.js';
+import { InkMonitor } from '../components/benchmark-monitor.js';
 import {
   DEFAULT_CONCURRENCY,
   DEFAULT_DELAY,
@@ -12,10 +10,9 @@ import {
 } from '../constants/benchmark-constants.js';
 import { getAgentList, runAgent } from '../services/agent-service.js';
 import { evaluateResults } from '../services/evaluation-service.js';
-import type { CommandConfig, CommandOptions } from '../types.js';
-import type { AgentData, BenchmarkCommandOptions, InitialInfo } from '../types/benchmark.js';
+import type { BenchmarkCommandOptions } from '../types/benchmark.js';
+import type { CommandConfig } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
-import { ProcessManager } from '../utils/process-manager.js';
 
 async function validateBenchmarkOptions(options: BenchmarkCommandOptions): Promise<void> {
   // Use default task if not provided

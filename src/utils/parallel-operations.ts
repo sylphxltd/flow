@@ -3,9 +3,8 @@
  * Provides utilities for executing async operations in parallel with proper error handling and resource management
  */
 
-import { logger } from './logger.js';
-import { ErrorHandler } from './simplified-errors.js';
 import { chunk } from './functional/array.js';
+import { logger } from './logger.js';
 
 /**
  * Configuration for parallel operations
@@ -415,7 +414,7 @@ export function createParallelQueue<T>(
   concurrency = 10
 ): ParallelQueueInstance<T> {
   // Closure-based state
-  let queue: Array<{
+  const queue: Array<{
     item: T;
     resolve: (value: unknown) => void;
     reject: (error: Error) => void;

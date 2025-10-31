@@ -28,9 +28,7 @@ export const execute = <T>(fn: () => T): Result<T, AppError> => {
 /**
  * Execute an async function and convert exceptions to Result
  */
-export const executeAsync = async <T>(
-  fn: () => Promise<T>
-): Promise<Result<T, AppError>> => {
+export const executeAsync = async <T>(fn: () => Promise<T>): Promise<Result<T, AppError>> => {
   try {
     const value = await fn();
     return success(value);
@@ -113,9 +111,7 @@ export const retry = async <T>(
  * Useful for command handlers
  */
 export const createAsyncHandler =
-  <T extends Record<string, any>>(
-    handler: (options: T) => Promise<Result<void, AppError>>
-  ) =>
+  <T extends Record<string, any>>(handler: (options: T) => Promise<Result<void, AppError>>) =>
   async (options: T): Promise<void> => {
     const result = await handler(options);
 

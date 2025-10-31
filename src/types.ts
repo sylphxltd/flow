@@ -12,31 +12,27 @@
 
 // Re-export all types for backward compatibility
 export type {
-  CommandOptions,
   CommandHandler,
+  CommandOptions,
 } from './types/cli.types.js';
-
+export type {
+  CommonOptions,
+  Resolvable,
+  SetupResult,
+} from './types/common.types.js';
 export type {
   MCPServerConfig,
+  MCPServerConfigFlags,
   MCPServerConfigHTTP,
   MCPServerConfigUnion,
-  MCPServerConfigFlags,
   OpenCodeConfig,
 } from './types/mcp.types.js';
-
 export {
-  isStdioConfig,
-  isHttpConfig,
   isCLICommandConfig,
+  isHttpConfig,
+  isStdioConfig,
 } from './types/mcp.types.js';
-
 export type {
   Target,
   TargetConfig,
 } from './types/target.types.js';
-
-export type {
-  CommonOptions,
-  SetupResult,
-  Resolvable,
-} from './types/common.types.js';

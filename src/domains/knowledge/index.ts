@@ -2,9 +2,9 @@
  * Knowledge domain - Documentation and guides
  */
 
+export { getKnowledgeContent } from './resources.js';
 export {
-  registerKnowledgeSearchTool,
   registerKnowledgeGetTool,
+  registerKnowledgeSearchTool,
   registerKnowledgeTools,
 } from './tools.js';
-export { getKnowledgeContent } from './resources.js';

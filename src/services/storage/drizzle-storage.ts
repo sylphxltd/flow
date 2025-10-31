@@ -5,7 +5,6 @@
 
 import { and, count, desc, eq, like } from 'drizzle-orm';
 import { type Database, DrizzleDatabase } from '../../db/index.js';
-import * as schema from '../../db/schema.js';
 import type {
   CodebaseFile,
   NewMemory,
@@ -13,12 +12,8 @@ import type {
   NewTfidfTerm,
   TfidfDocument,
 } from '../../db/schema.js';
-import {
-  DatabaseError,
-  ValidationError,
-  executeOperation,
-  isDatabaseError,
-} from '../../utils/database-errors.js';
+import * as schema from '../../db/schema.js';
+import { executeOperation, ValidationError } from '../../utils/database-errors.js';
 
 // Memory entry interface (backward compatibility)
 export interface MemoryEntry {
@@ -162,7 +157,7 @@ export class DrizzleMemoryStorage {
 
     // Sanitize pattern to prevent SQL injection
     // Only allow alphanumeric, spaces, and wildcards
-    const sanitizedPattern = pattern.replace(/[^a-zA-Z0-9\s*_\-]/g, '');
+    const sanitizedPattern = pattern.replace(/[^a-zA-Z0-9\s*_-]/g, '');
     if (sanitizedPattern !== pattern) {
       throw new Error('Search pattern contains invalid characters');
     }
@@ -173,7 +168,7 @@ export class DrizzleMemoryStorage {
 
     if (namespace && namespace !== 'all') {
       // Validate namespace
-      if (!/^[a-zA-Z0-9_\-]+$/.test(namespace)) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(namespace)) {
         throw new Error('Namespace contains invalid characters');
       }
       whereCondition = and(whereCondition, eq(schema.memory.namespace, namespace))!;
@@ -561,7 +556,7 @@ export class DrizzleMemoryStorage {
     }
 
     // Sanitize term pattern to prevent SQL injection
-    const sanitizedPattern = termPattern.replace(/[^a-zA-Z0-9\s_\-]/g, '');
+    const sanitizedPattern = termPattern.replace(/[^a-zA-Z0-9\s_-]/g, '');
     if (sanitizedPattern !== termPattern) {
       throw new Error('Term pattern contains invalid characters');
     }

@@ -291,13 +291,15 @@ export class InternalError extends BaseError {
 export class CLIError extends BaseError {
   public readonly code: string | undefined;
 
-  constructor(
-    message: string,
-    code?: string,
-    context?: Record<string, unknown>,
-    cause?: Error
-  ) {
-    super(message, code || 'CLI_ERROR', ErrorCategory.RUNTIME, ErrorSeverity.MEDIUM, context, cause);
+  constructor(message: string, code?: string, context?: Record<string, unknown>, cause?: Error) {
+    super(
+      message,
+      code || 'CLI_ERROR',
+      ErrorCategory.RUNTIME,
+      ErrorSeverity.MEDIUM,
+      context,
+      cause
+    );
     this.name = 'CLIError';
     this.code = code;
   }
@@ -311,43 +313,93 @@ export class CLIError extends BaseError {
  * Error factory for convenient error creation
  */
 export const createError = {
-  validation: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): ValidationError => {
+  validation: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): ValidationError => {
     return new ValidationError(message, code, context, cause);
   },
 
-  configuration: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): ConfigurationError => {
+  configuration: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): ConfigurationError => {
     return new ConfigurationError(message, code, context, cause);
   },
 
-  network: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): NetworkError => {
+  network: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): NetworkError => {
     return new NetworkError(message, code, context, cause);
   },
 
-  database: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): DatabaseError => {
+  database: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): DatabaseError => {
     return new DatabaseError(message, code, context, cause);
   },
 
-  filesystem: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): FilesystemError => {
+  filesystem: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): FilesystemError => {
     return new FilesystemError(message, code, context, cause);
   },
 
-  authentication: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): AuthenticationError => {
+  authentication: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): AuthenticationError => {
     return new AuthenticationError(message, code, context, cause);
   },
 
-  authorization: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): AuthorizationError => {
+  authorization: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): AuthorizationError => {
     return new AuthorizationError(message, code, context, cause);
   },
 
-  external: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): ExternalServiceError => {
+  external: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): ExternalServiceError => {
     return new ExternalServiceError(message, code, context, cause);
   },
 
-  internal: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): InternalError => {
+  internal: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): InternalError => {
     return new InternalError(message, code, context, cause);
   },
 
-  cli: (message: string, code?: string, context?: Record<string, unknown>, cause?: Error): CLIError => {
+  cli: (
+    message: string,
+    code?: string,
+    context?: Record<string, unknown>,
+    cause?: Error
+  ): CLIError => {
     return new CLIError(message, code, context, cause);
   },
 };
@@ -386,16 +438,20 @@ export class ErrorHandler {
   /**
    * Handle error and convert to standardized error
    */
-  static handle(error: unknown, context?: Record<string, unknown>): BaseError {
-    const standardized = this.standardizeError(error);
+  static handle(error: unknown, _context?: Record<string, unknown>): BaseError {
+    const standardized = ErrorHandler.standardizeError(error);
     return standardized;
   }
 
   /**
    * Handle error and exit process
    */
-  static handleAndExit(error: unknown, context?: Record<string, unknown>, exitCode: number = 1): never {
-    const standardized = this.handle(error, context);
+  static handleAndExit(
+    error: unknown,
+    context?: Record<string, unknown>,
+    exitCode: number = 1
+  ): never {
+    const _standardized = ErrorHandler.handle(error, context);
     process.exit(exitCode);
   }
 
@@ -414,7 +470,12 @@ export class ErrorHandler {
 
       // TypeError or ReferenceError -> InternalError
       if (error instanceof TypeError || error instanceof ReferenceError) {
-        return new InternalError(message, 'INTERNAL_TYPE_ERROR', { originalError: error.name }, error);
+        return new InternalError(
+          message,
+          'INTERNAL_TYPE_ERROR',
+          { originalError: error.name },
+          error
+        );
       }
 
       // Check message patterns for categorization
@@ -422,25 +483,41 @@ export class ErrorHandler {
 
       // Validation errors
       if (lowerMessage.includes('validation') || lowerMessage.includes('invalid')) {
-        return new ValidationError(message, 'VALIDATION_ERROR', { originalError: error.name }, error);
+        return new ValidationError(
+          message,
+          'VALIDATION_ERROR',
+          { originalError: error.name },
+          error
+        );
       }
 
       // Filesystem errors
-      if (lowerMessage.includes('enoent') || lowerMessage.includes('eacces') ||
-          lowerMessage.includes('file') || lowerMessage.includes('directory')) {
+      if (
+        lowerMessage.includes('enoent') ||
+        lowerMessage.includes('eacces') ||
+        lowerMessage.includes('file') ||
+        lowerMessage.includes('directory')
+      ) {
         return new FilesystemError(message, 'FILE_ERROR', { originalError: error.name }, error);
       }
 
       // Network errors
-      if (lowerMessage.includes('econnrefused') || lowerMessage.includes('etimedout') ||
-          lowerMessage.includes('fetch') || lowerMessage.includes('network') ||
-          lowerMessage.includes('connection')) {
+      if (
+        lowerMessage.includes('econnrefused') ||
+        lowerMessage.includes('etimedout') ||
+        lowerMessage.includes('fetch') ||
+        lowerMessage.includes('network') ||
+        lowerMessage.includes('connection')
+      ) {
         return new NetworkError(message, 'CONNECTION_ERROR', { originalError: error.name }, error);
       }
 
       // Database errors
-      if (lowerMessage.includes('database') || lowerMessage.includes('query') ||
-          lowerMessage.includes('sql')) {
+      if (
+        lowerMessage.includes('database') ||
+        lowerMessage.includes('query') ||
+        lowerMessage.includes('sql')
+      ) {
         return new DatabaseError(message, 'DATABASE_ERROR', { originalError: error.name }, error);
       }
 
@@ -454,11 +531,10 @@ export class ErrorHandler {
     }
 
     // Unknown error types
-    return new InternalError(
-      `Unknown error: ${String(error)}`,
-      'UNKNOWN_ERROR_TYPE',
-      { originalType: typeof error, originalValue: error }
-    );
+    return new InternalError(`Unknown error: ${String(error)}`, 'UNKNOWN_ERROR_TYPE', {
+      originalType: typeof error,
+      originalValue: error,
+    });
   }
 
   /**
@@ -472,7 +548,7 @@ export class ErrorHandler {
       try {
         await handler(...args);
       } catch (error) {
-        this.handleAndExit(error, context);
+        ErrorHandler.handleAndExit(error, context);
       }
     };
   }
@@ -488,7 +564,7 @@ export class ErrorHandler {
       try {
         handler(...args);
       } catch (error) {
-        this.handleAndExit(error, context);
+        ErrorHandler.handleAndExit(error, context);
       }
     };
   }
@@ -506,7 +582,7 @@ export class ErrorHandler {
       } catch (error) {
         const convertedError = errorConverter
           ? errorConverter(error)
-          : this.standardizeError(error);
+          : ErrorHandler.standardizeError(error);
         throw convertedError;
       }
     };
@@ -525,7 +601,7 @@ export class ErrorHandler {
       } catch (error) {
         const convertedError = errorConverter
           ? errorConverter(error)
-          : this.standardizeError(error);
+          : ErrorHandler.standardizeError(error);
         throw convertedError;
       }
     };
@@ -583,10 +659,7 @@ export const Result = {
   /**
    * Map result data
    */
-  map<T, U, E extends BaseError>(
-    result: Result<T, E>,
-    fn: (data: T) => U
-  ): Result<U, E> {
+  map<T, U, E extends BaseError>(result: Result<T, E>, fn: (data: T) => U): Result<U, E> {
     if (result.success) {
       return { success: true, data: fn(result.data) };
     }

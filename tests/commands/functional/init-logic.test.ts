@@ -83,7 +83,10 @@ describe('init-logic', () => {
 
       expect(result._tag).toBe('Success');
       if (result._tag === 'Success') {
-        expect(result.value.steps).toContainEqual({ type: 'validate-target', target: 'claude-code' });
+        expect(result.value.steps).toContainEqual({
+          type: 'validate-target',
+          target: 'claude-code',
+        });
         expect(result.value.steps).toContainEqual({ type: 'install-agents' });
         expect(result.value.steps).toContainEqual({ type: 'install-rules' });
         expect(result.value.steps).not.toContainEqual({ type: 'select-mcp-servers' });
@@ -128,25 +131,19 @@ describe('init-logic', () => {
 
   describe('getServersNeedingConfig', () => {
     it('should identify servers with env vars', () => {
-      const servers = getServersNeedingConfig(
-        ['server1' as any, 'server2' as any],
-        {
-          server1: { envVars: { KEY: 'value' } },
-          server2: {},
-        }
-      );
+      const servers = getServersNeedingConfig(['server1' as any, 'server2' as any], {
+        server1: { envVars: { KEY: 'value' } },
+        server2: {},
+      });
 
       expect(servers).toEqual(['server1']);
     });
 
     it('should return empty for servers without env vars', () => {
-      const servers = getServersNeedingConfig(
-        ['server1' as any, 'server2' as any],
-        {
-          server1: {},
-          server2: {},
-        }
-      );
+      const servers = getServersNeedingConfig(['server1' as any, 'server2' as any], {
+        server1: {},
+        server2: {},
+      });
 
       expect(servers).toEqual([]);
     });

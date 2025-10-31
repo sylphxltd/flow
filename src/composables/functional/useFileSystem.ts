@@ -34,20 +34,15 @@ export const extname = (filePath: string): string => path.extname(filePath);
  * File system operations (side effects, return Result)
  */
 
-export const readFile = async (
-  filePath: string
-): Promise<Result<string, FileSystemError>> => {
+export const readFile = async (filePath: string): Promise<Result<string, FileSystemError>> => {
   return tryCatchAsync(
     async () => {
       return await fsPromises.readFile(filePath, 'utf-8');
     },
     (error) =>
-      fileSystemError(
-        `Failed to read file: ${filePath}`,
-        filePath,
-        'read',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError(`Failed to read file: ${filePath}`, filePath, 'read', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };
 
@@ -60,29 +55,21 @@ export const writeFile = async (
       await fsPromises.writeFile(filePath, content, 'utf-8');
     },
     (error) =>
-      fileSystemError(
-        `Failed to write file: ${filePath}`,
-        filePath,
-        'write',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError(`Failed to write file: ${filePath}`, filePath, 'write', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };
 
-export const deleteFile = async (
-  filePath: string
-): Promise<Result<void, FileSystemError>> => {
+export const deleteFile = async (filePath: string): Promise<Result<void, FileSystemError>> => {
   return tryCatchAsync(
     async () => {
       await fsPromises.unlink(filePath);
     },
     (error) =>
-      fileSystemError(
-        `Failed to delete file: ${filePath}`,
-        filePath,
-        'delete',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError(`Failed to delete file: ${filePath}`, filePath, 'delete', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };
 
@@ -95,18 +82,13 @@ export const createDirectory = async (
       await fsPromises.mkdir(dirPath, { recursive: options?.recursive ?? true });
     },
     (error) =>
-      fileSystemError(
-        `Failed to create directory: ${dirPath}`,
-        dirPath,
-        'create',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError(`Failed to create directory: ${dirPath}`, dirPath, 'create', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };
 
-export const pathExists = async (
-  filePath: string
-): Promise<Result<boolean, FileSystemError>> => {
+export const pathExists = async (filePath: string): Promise<Result<boolean, FileSystemError>> => {
   return tryCatchAsync(
     async () => {
       try {
@@ -117,12 +99,9 @@ export const pathExists = async (
       }
     },
     (error) =>
-      fileSystemError(
-        `Failed to check if path exists: ${filePath}`,
-        filePath,
-        'stat',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError(`Failed to check if path exists: ${filePath}`, filePath, 'stat', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };
 
@@ -134,12 +113,9 @@ export const readDirectory = async (
       return await fsPromises.readdir(dirPath);
     },
     (error) =>
-      fileSystemError(
-        `Failed to read directory: ${dirPath}`,
-        dirPath,
-        'read',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError(`Failed to read directory: ${dirPath}`, dirPath, 'read', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };
 
@@ -156,11 +132,8 @@ export const getStats = async (
       };
     },
     (error) =>
-      fileSystemError(
-        `Failed to get stats for: ${filePath}`,
-        filePath,
-        'stat',
-        { cause: error instanceof Error ? error : undefined }
-      )
+      fileSystemError(`Failed to get stats for: ${filePath}`, filePath, 'stat', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };

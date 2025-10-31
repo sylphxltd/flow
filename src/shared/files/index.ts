@@ -5,8 +5,6 @@
 import path from 'node:path';
 import {
   deletePathSafe,
-  ensureDirectory,
-  fileExists,
   getFileInfo,
   readDirectorySafe,
   readFileSafe,

@@ -18,12 +18,15 @@ import { failure, success, tryCatch } from '../../core/functional/result.js';
  * Claude Code settings structure
  */
 export interface ClaudeCodeSettings {
-  hooks?: Record<string, Array<{
-    hooks: Array<{
-      type: string;
-      command: string;
-    }>;
-  }>>;
+  hooks?: Record<
+    string,
+    Array<{
+      hooks: Array<{
+        type: string;
+        command: string;
+      }>;
+    }>
+  >;
   [key: string]: unknown;
 }
 
@@ -49,10 +52,10 @@ export const DEFAULT_HOOKS: HookConfig = {
 export const parseSettings = (content: string): Result<ClaudeCodeSettings, ConfigError> => {
   return tryCatch(
     () => JSON.parse(content) as ClaudeCodeSettings,
-    (error) => configError(
-      'Failed to parse Claude Code settings',
-      { cause: error instanceof Error ? error : undefined }
-    )
+    (error) =>
+      configError('Failed to parse Claude Code settings', {
+        cause: error instanceof Error ? error : undefined,
+      })
   );
 };
 
@@ -122,9 +125,7 @@ export const mergeSettings = (
 /**
  * Create settings with hooks (pure)
  */
-export const createSettings = (
-  hookConfig: HookConfig = DEFAULT_HOOKS
-): ClaudeCodeSettings => {
+export const createSettings = (hookConfig: HookConfig = DEFAULT_HOOKS): ClaudeCodeSettings => {
   return {
     hooks: buildHookConfiguration(hookConfig),
   };
@@ -175,15 +176,11 @@ export const processSettings = (
  */
 export const validateHookConfig = (config: HookConfig): Result<HookConfig, ConfigError> => {
   if (config.sessionCommand !== undefined && config.sessionCommand.trim() === '') {
-    return failure(
-      configError('Session command cannot be empty')
-    );
+    return failure(configError('Session command cannot be empty'));
   }
 
   if (config.messageCommand !== undefined && config.messageCommand.trim() === '') {
-    return failure(
-      configError('Message command cannot be empty')
-    );
+    return failure(configError('Message command cannot be empty'));
   }
 
   return success(config);

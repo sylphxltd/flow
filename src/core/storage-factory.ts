@@ -6,11 +6,7 @@
 import { CacheStorageAdapter } from '../adapters/cache-storage-adapter.js';
 import { MemoryStorageAdapter } from '../adapters/memory-storage-adapter.js';
 import { VectorStorageAdapter } from '../adapters/vector-storage-adapter.js';
-import type {
-  StorageAdapter,
-  StorageConfig,
-  StorageFactory,
-} from '../interfaces/unified-storage.js';
+import type { StorageAdapter, StorageConfig } from '../interfaces/unified-storage.js';
 import { logger } from '../utils/logger.js';
 import { DefaultStorageFactory } from './unified-storage-manager.js';
 
@@ -94,10 +90,7 @@ export class StorageConfigBuilder {
   /**
    * Create drizzle storage configuration
    */
-  static drizzle(options?: {
-    connectionString?: string;
-    storageDir?: string;
-  }): StorageConfig {
+  static drizzle(options?: { connectionString?: string; storageDir?: string }): StorageConfig {
     return {
       type: 'drizzle',
       connectionString: options?.connectionString,

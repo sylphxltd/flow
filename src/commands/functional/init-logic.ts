@@ -9,11 +9,11 @@
  * - Composable validation and transformation
  */
 
+import type { MCPServerID } from '../../config/servers.js';
 import type { ConfigError } from '../../core/functional/error-types.js';
 import { configError } from '../../core/functional/error-types.js';
 import type { Result } from '../../core/functional/result.js';
-import { all, failure, map, pipe, success } from '../../core/functional/result.js';
-import type { MCPServerID } from '../../config/servers.js';
+import { failure, success } from '../../core/functional/result.js';
 
 /**
  * Domain types
@@ -67,9 +67,7 @@ export const validateInitOptions = (
   options: InitOptions
 ): Result<ValidatedInitOptions, ConfigError> => {
   if (!options.target) {
-    return failure(
-      configError('Target is required for initialization')
-    );
+    return failure(configError('Target is required for initialization'));
   }
 
   return success({
@@ -152,7 +150,7 @@ export const buildInitPlan = (
  */
 export const getServersNeedingConfig = (
   selectedServers: MCPServerID[],
-  serverRegistry: Record<MCPServerID, { envVars?: Record<string, any> }>
+  serverRegistry: Record<MCPServerID, { envVars?: Record<string, unknown> }>
 ): MCPServerID[] => {
   return selectedServers.filter((id) => {
     const server = serverRegistry[id];
@@ -178,7 +176,7 @@ export const includeRequiredServers = (
 export const buildMCPServerSelection = (
   selectedServers: MCPServerID[],
   allServers: MCPServerID[],
-  serverRegistry: Record<MCPServerID, { required?: boolean; envVars?: Record<string, any> }>
+  serverRegistry: Record<MCPServerID, { required?: boolean; envVars?: Record<string, unknown> }>
 ): MCPServerSelection => {
   const serversWithRequired = includeRequiredServers(selectedServers, allServers, serverRegistry);
   const serversNeedingConfig = getServersNeedingConfig(serversWithRequired, serverRegistry);
@@ -246,9 +244,7 @@ export const buildDryRunOutput = (
   if (plan.mcpServers && mcpServerRegistry) {
     sections.push({
       title: 'MCP Tools',
-      items: plan.mcpServers.selectedServers.map(
-        (id) => mcpServerRegistry[id]?.name || id
-      ),
+      items: plan.mcpServers.selectedServers.map((id) => mcpServerRegistry[id]?.name || id),
     });
   }
 

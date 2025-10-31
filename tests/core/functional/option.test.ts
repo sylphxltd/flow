@@ -66,9 +66,7 @@ describe('Option Type', () => {
 
     it('should flatMap Some value', () => {
       const option = some(10);
-      const flatMapped = flatMap((n: number) =>
-        n > 5 ? some(n * 2) : none
-      )(option);
+      const flatMapped = flatMap((n: number) => (n > 5 ? some(n * 2) : none))(option);
 
       expect(isSome(flatMapped)).toBe(true);
       if (isSome(flatMapped)) {
@@ -78,9 +76,7 @@ describe('Option Type', () => {
 
     it('should flatMap to None', () => {
       const option = some(3);
-      const flatMapped = flatMap((n: number) =>
-        n > 5 ? some(n * 2) : none
-      )(option);
+      const flatMapped = flatMap((n: number) => (n > 5 ? some(n * 2) : none))(option);
 
       expect(isNone(flatMapped)).toBe(true);
     });

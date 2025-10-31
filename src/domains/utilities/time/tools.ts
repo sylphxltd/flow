@@ -31,9 +31,7 @@ function isValidTimeFormat(time: string): boolean {
 }
 
 // Get current time in a specific timezone
-function getCurrentTime(args: {
-  timezone: string;
-}): CallToolResult {
+function getCurrentTime(args: { timezone: string }): CallToolResult {
   try {
     const { timezone } = args;
 

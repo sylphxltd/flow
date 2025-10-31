@@ -6,8 +6,8 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { type MCPServerID, MCP_SERVER_REGISTRY } from '../../config/servers.js';
-import { type MCPService, createMCPService } from '../../services/mcp-service.js';
+import { MCP_SERVER_REGISTRY, type MCPServerID } from '../../config/servers.js';
+import { createMCPService } from '../../services/mcp-service.js';
 import { targetManager } from '../target-manager.js';
 
 export interface MCPInstallResult {
@@ -136,8 +136,8 @@ export function createMCPInstaller(targetId: string): MCPInstaller {
       if (spinner) {
         spinner.succeed(
           chalk.green(
-            `Installed ${chalk.cyan(selectedServers.length)} MCP server${selectedServers.length > 1 ? 's' : ''}`,
-          ),
+            `Installed ${chalk.cyan(selectedServers.length)} MCP server${selectedServers.length > 1 ? 's' : ''}`
+          )
         );
       }
     } catch (error) {

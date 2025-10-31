@@ -1,16 +1,16 @@
 import inquirer from 'inquirer';
 import {
-  getAllTargets,
   getAllTargetIDs,
+  getAllTargets,
   getDefaultTargetUnsafe,
-  getImplementedTargets,
   getImplementedTargetIDs,
+  getImplementedTargets,
   getTarget,
   getTargetsWithMCPSupport,
   isTargetImplemented,
 } from '../config/targets.js';
-import { projectSettings } from '../utils/settings.js';
 import { getOrElse, isSome } from '../core/functional/option.js';
+import { projectSettings } from '../utils/settings.js';
 
 /**
  * Target Manager interface
@@ -104,7 +104,10 @@ export function createTargetManager(): TargetManager {
   /**
    * Resolve target with fallback to default and detection
    */
-  const resolveTarget = async (options: { target?: string; allowSelection?: boolean }): Promise<string> => {
+  const resolveTarget = async (options: {
+    target?: string;
+    allowSelection?: boolean;
+  }): Promise<string> => {
     // If target is explicitly specified, use it
     if (options.target) {
       if (!isSome(getTarget(options.target))) {

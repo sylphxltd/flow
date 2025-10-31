@@ -21,22 +21,18 @@ export type Validation<T, E = string> = Result<T, E[]>;
 /**
  * Create a successful validation
  */
-export const valid = <T, E = string>(value: T): Validation<T, E> =>
-  success(value);
+export const valid = <T, E = string>(value: T): Validation<T, E> => success(value);
 
 /**
  * Create a failed validation with one or more errors
  */
-export const invalid = <T, E = string>(...errors: E[]): Validation<T, E> =>
-  failure(errors);
+export const invalid = <T, E = string>(...errors: E[]): Validation<T, E> => failure(errors);
 
 /**
  * Combine multiple validations
  * Collects all errors if any validation fails
  */
-export const combine = <T, E = string>(
-  validations: Validation<T, E>[]
-): Validation<T[], E> => {
+export const combine = <T, E = string>(validations: Validation<T, E>[]): Validation<T[], E> => {
   const values: T[] = [];
   const errors: E[] = [];
 
@@ -82,12 +78,14 @@ export const validateAll =
  * Common validators
  */
 
-export const nonEmpty = (message: string) => (value: string): Validation<string, string> => {
-  if (value.trim().length === 0) {
-    return invalid(message);
-  }
-  return valid(value);
-};
+export const nonEmpty =
+  (message: string) =>
+  (value: string): Validation<string, string> => {
+    if (value.trim().length === 0) {
+      return invalid(message);
+    }
+    return valid(value);
+  };
 
 export const minLength =
   (min: number, message: string) =>
@@ -116,19 +114,19 @@ export const matches =
     return valid(value);
   };
 
-export const isEmail = (message: string) =>
-  matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, message);
+export const isEmail = (message: string) => matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, message);
 
-export const isUrl = (message: string) =>
-  matches(/^https?:\/\/.+/, message);
+export const isUrl = (message: string) => matches(/^https?:\/\/.+/, message);
 
-export const isNumber = (message: string) => (value: string): Validation<number, string> => {
-  const num = Number(value);
-  if (Number.isNaN(num)) {
-    return invalid(message);
-  }
-  return valid(num);
-};
+export const isNumber =
+  (message: string) =>
+  (value: string): Validation<number, string> => {
+    const num = Number(value);
+    if (Number.isNaN(num)) {
+      return invalid(message);
+    }
+    return valid(num);
+  };
 
 export const range =
   (min: number, max: number, message: string) =>

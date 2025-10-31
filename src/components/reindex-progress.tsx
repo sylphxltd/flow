@@ -1,4 +1,4 @@
-import { Box, Text, render, useApp } from 'ink';
+import { Box, render, Text, useApp } from 'ink';
 import React from 'react';
 
 export interface ReindexProgressData {

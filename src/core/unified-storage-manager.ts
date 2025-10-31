@@ -6,14 +6,11 @@
 import type {
   BatchOperation,
   BatchResult,
-  CacheStorageAdapter,
-  MemoryStorageAdapter,
   StorageAdapter,
   StorageConfig,
   StorageFactory,
   StorageManager,
   StorageResult,
-  VectorStorageAdapter,
 } from '../interfaces/unified-storage.js';
 import { logger } from '../utils/logger.js';
 

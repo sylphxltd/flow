@@ -3,30 +3,25 @@
  * Centralized access to configuration-related functionality
  */
 
-// Target configurations
-export * from './targets.js';
-
-// MCP server configurations
-export * from './servers.js';
-
 // Rules configuration
 export * from './rules.js';
-
-// Re-export commonly used configuration functions with better naming
 export {
-  getTargetDefaults,
-  configureTargetDefaults,
-  validateTargetConfiguration,
-} from './targets.js';
-
-export {
-  getServerConfigurations,
-  configureServer,
-  validateServerConfiguration,
-} from './servers.js';
-
-export {
+  getDefaultRules,
   loadRuleConfiguration,
   validateRuleConfiguration,
-  getDefaultRules,
 } from './rules.js';
+// MCP server configurations
+export * from './servers.js';
+export {
+  configureServer,
+  getServerConfigurations,
+  validateServerConfiguration,
+} from './servers.js';
+// Target configurations
+export * from './targets.js';
+// Re-export commonly used configuration functions with better naming
+export {
+  configureTargetDefaults,
+  getTargetDefaults,
+  validateTargetConfiguration,
+} from './targets.js';

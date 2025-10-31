@@ -118,7 +118,12 @@ export type AppError =
 
 export const configError = (
   message: string,
-  options?: { configKey?: string; configPath?: string; context?: Record<string, unknown>; cause?: Error }
+  options?: {
+    configKey?: string;
+    configPath?: string;
+    context?: Record<string, unknown>;
+    cause?: Error;
+  }
 ): ConfigError => ({
   kind: 'ConfigError',
   message,
@@ -181,7 +186,12 @@ export const networkError = (
 
 export const cliError = (
   message: string,
-  options?: { command?: string; exitCode?: number; context?: Record<string, unknown>; cause?: Error }
+  options?: {
+    command?: string;
+    exitCode?: number;
+    context?: Record<string, unknown>;
+    cause?: Error;
+  }
 ): CLIError => ({
   kind: 'CLIError',
   message,
@@ -248,12 +258,7 @@ export const toAppError = (error: unknown): AppError => {
  * Type guard for AppError
  */
 export const isAppError = (error: unknown): error is AppError => {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'kind' in error &&
-    'message' in error
-  );
+  return typeof error === 'object' && error !== null && 'kind' in error && 'message' in error;
 };
 
 /**

@@ -47,7 +47,9 @@ export class AdvancedCodeTokenizer {
    * 初始化 tokenizer
    */
   async initialize(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {
+      return;
+    }
 
     try {
       this.tokenizer = await AutoTokenizer.from_pretrained(this.modelPath);
@@ -120,7 +122,7 @@ export class AdvancedCodeTokenizer {
    * 直接使用 StarCoder2 嘅 token IDs，逐個解碼成文字
    */
   private async createDirectTokens(
-    decodedText: string,
+    _decodedText: string,
     inputIds: number[]
   ): Promise<AdvancedToken[]> {
     const tokens: AdvancedToken[] = [];
@@ -144,10 +146,7 @@ export class AdvancedCodeTokenizer {
             relevance: 'high' as const,
           });
         }
-      } catch (error) {
-        // 靜默跳過無法解碼嘅 token
-        continue;
-      }
+      } catch (_error) {}
     }
 
     return tokens;

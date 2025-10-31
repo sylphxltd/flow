@@ -4,40 +4,30 @@
  */
 
 export { default as benchmarkCommand } from './benchmark-command';
-export { default as codebaseCommand } from './codebase-command';
-export { default as hookCommand } from './hook-command';
-export { default as initCommand } from './init-command';
-export { default as knowledgeCommand } from './knowledge-command';
-export { default as mcpCommand } from './mcp-command';
-export { default as runCommand } from './run-command';
-
 // Re-export commonly used command functions
 export {
+  analyzeCodebase,
+  default as codebaseCommand,
   indexCodebase,
   searchCodebase,
-  analyzeCodebase,
 } from './codebase-command';
-
+export { default as hookCommand } from './hook-command';
 export {
+  default as initCommand,
   initializeProject,
   setupProject,
   validateProject,
 } from './init-command';
-
 export {
+  default as knowledgeCommand,
   manageKnowledge,
   searchKnowledge,
   updateKnowledge,
 } from './knowledge-command';
-
 export {
   configureMCP,
+  default as mcpCommand,
   installMCPServers,
   listMCPServers,
 } from './mcp-command';
-
-export {
-  runWorkflow,
-  executeFlow,
-  processRequest,
-} from './run-command';
+export { default as runCommand, executeFlow, processRequest, runWorkflow } from './run-command';

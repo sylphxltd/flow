@@ -3,7 +3,7 @@
  * Used for ranking document relevance in semantic search
  */
 
-import { AdvancedCodeTokenizer, type AdvancedToken } from '../../utils/advanced-tokenizer.js';
+import { AdvancedCodeTokenizer } from '../../utils/advanced-tokenizer.js';
 import type { SeparatedMemoryStorage } from './separated-storage.js';
 
 export interface DocumentVector {
@@ -303,7 +303,7 @@ export async function buildSearchIndex(
           fileName,
           status: 'completed',
         });
-      } catch (error) {
+      } catch (_error) {
         batchResults.push({
           uri: doc.uri,
           terms: new Map<string, number>(),

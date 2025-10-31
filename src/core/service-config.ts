@@ -2,7 +2,15 @@
  * Service configuration and registration for DI container
  */
 
-import { SERVICE_TOKENS, container } from './di-container.js';
+import { targetManager } from '../core/target-manager.js';
+import { MemoryDatabaseClient } from '../db/memory-db.js';
+import { createMCPService } from '../services/mcp-service.js';
+import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
+import { getSearchService } from '../services/search/unified-search-service.js';
+import { createLogger as createRealLogger } from '../utils/logger.js';
+// Import concrete implementations (will be updated as we refactor)
+import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
+import { container, SERVICE_TOKENS } from './di-container.js';
 import type {
   IConfiguration,
   IDatabaseConnection,
@@ -13,15 +21,6 @@ import type {
   IStorage,
   ITargetManager,
 } from './interfaces.js';
-
-import { targetManager } from '../core/target-manager.js';
-import { MemoryDatabaseClient } from '../db/memory-db.js';
-import { createMCPService } from '../services/mcp-service.js';
-import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
-import { getSearchService } from '../services/search/unified-search-service.js';
-import { createLogger as createRealLogger } from '../utils/logger.js';
-// Import concrete implementations (will be updated as we refactor)
-import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 
 /**
  * Configure and register all core services with the DI container
@@ -158,7 +157,10 @@ function createConfiguration(): IConfiguration {
     config.set('logLevel', process.env.LOG_LEVEL || 'info');
     config.set('databasePath', process.env.DATABASE_PATH || '.sylphx-flow/memory.db');
     config.set('embeddings.provider', process.env.EMBEDDINGS_PROVIDER || 'local');
-    config.set('embeddings.dimension', Number.parseInt(process.env.EMBEDDINGS_DIMENSION || '384'));
+    config.set(
+      'embeddings.dimension',
+      Number.parseInt(process.env.EMBEDDINGS_DIMENSION || '384', 10)
+    );
   };
 
   loadEnvConfig();

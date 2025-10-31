@@ -2,23 +2,14 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
-import chalk from 'chalk';
 import { FileInstaller } from '../core/installers/file-installer.js';
 import { MCPInstaller } from '../core/installers/mcp-installer.js';
+import type { AgentMetadata } from '../types/target-config.types.js';
 import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
-import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
-import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { CLIError } from '../utils/error-handler.js';
-import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';
-import { commandSecurity, sanitize } from '../utils/security.js';
-import { displayResults } from '../shared/index.js';
-import {
-  fileUtils,
-  generateHelpText,
-  pathUtils,
-  systemPromptUtils,
-  yamlUtils,
-} from '../utils/target-utils.js';
+import { getAgentsDir, getSlashCommandsDir } from '../utils/paths.js';
+import { sanitize } from '../utils/security.js';
+import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
 
 /**
  * Claude Code target - composition approach with all original functionality
@@ -358,7 +349,7 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Setup hooks for Claude Code
    * Configure session and prompt hooks for system information display
    */
-  async setupHooks(cwd: string, options: CommonOptions): Promise<SetupResult> {
+  async setupHooks(cwd: string, _options: CommonOptions): Promise<SetupResult> {
     const { processSettings } = await import('./functional/claude-code-logic.js');
     const { pathExists, createDirectory, readFile, writeFile } = await import(
       '../composables/functional/useFileSystem.js'
@@ -429,7 +420,7 @@ Please begin your response with a comprehensive summary of all the instructions 
       },
       {
         ...options,
-        showProgress: false,  // UI handled by init-command
+        showProgress: false, // UI handled by init-command
       }
     );
 
@@ -440,12 +431,12 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Setup output styles for Claude Code
    * Output styles are appended to each agent file
    */
-  async setupOutputStyles(cwd: string, options: CommonOptions): Promise<SetupResult> {
+  async setupOutputStyles(_cwd: string, _options: CommonOptions): Promise<SetupResult> {
     // Output styles are appended to each agent file during setupAgents
     // No separate installation needed
     return {
       count: 0,
-      message: 'Output styles included in agent files'
+      message: 'Output styles included in agent files',
     };
   },
 
@@ -453,12 +444,12 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Setup rules for Claude Code
    * Rules are appended to each agent file
    */
-  async setupRules(cwd: string, options: CommonOptions): Promise<SetupResult> {
+  async setupRules(_cwd: string, _options: CommonOptions): Promise<SetupResult> {
     // Rules are appended to each agent file during setupAgents
     // No separate CLAUDE.md file needed
     return {
       count: 0,
-      message: 'Rules included in agent files'
+      message: 'Rules included in agent files',
     };
   },
 
@@ -501,7 +492,7 @@ Please begin your response with a comprehensive summary of all the instructions 
       },
       {
         ...options,
-        showProgress: false,  // UI handled by init-command
+        showProgress: false, // UI handled by init-command
       }
     );
 

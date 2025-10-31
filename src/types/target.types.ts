@@ -81,10 +81,7 @@ export interface Target {
   ): Promise<string>;
 
   /** Transform MCP server configuration for the target */
-  transformMCPConfig(
-    config: MCPServerConfigUnion,
-    serverId?: string
-  ): Record<string, unknown>;
+  transformMCPConfig(config: MCPServerConfigUnion, serverId?: string): Record<string, unknown>;
 
   // Required configuration methods
   /** Get the configuration file path for the target */

@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getKnowledgeDir } from './paths.js';
-import { type SearchIndex, buildSearchIndex, processQuery } from './tfidf.js';
+import { buildSearchIndex, processQuery, type SearchIndex } from './tfidf.js';
 
 let cachedIndex: SearchIndex | null = null;
 let indexingPromise: Promise<SearchIndex> | null = null;

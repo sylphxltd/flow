@@ -1,21 +1,14 @@
-import path from 'node:path';
 import { createInterface } from 'node:readline';
 import {
-  type MCPServerID,
-  MCP_SERVER_REGISTRY,
   getAllEnvVars,
-  getAllServerIDs,
-  getDefaultServers,
   getOptionalEnvVars,
   getRequiredEnvVars,
   getSecretEnvVars,
-  getServerDefinition,
-  getServersRequiringAPIKeys,
-  isValidServerID,
+  MCP_SERVER_REGISTRY,
+  type MCPServerID,
 } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
-import { resolveConfig, resolveConfigWithParams } from '../services/mcp-service.js';
-import type { MCPServerConfigUnion } from '../types.js';
+import { resolveConfig } from '../services/mcp-service.js';
 import { deleteNestedProperty, getNestedProperty, setNestedProperty } from './object-utils.js';
 import { secretUtils } from './secret-utils.js';
 

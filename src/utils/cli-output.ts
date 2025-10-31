@@ -89,7 +89,6 @@ export class CLIOutput implements ICLIOutput {
       case 'error':
         this.error(message);
         break;
-      case 'info':
       default:
         this.info(message);
         break;

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseIndexer, type IndexingStatus } from '../../src/services/search/base-indexer';
 import type { SearchIndex } from '../../src/services/search/tfidf';
 import { searchDocuments } from '../../src/services/search/tfidf';
-import { type SearchToolConfig, buildSearchTool } from '../../src/utils/search-tool-builder';
+import { buildSearchTool, type SearchToolConfig } from '../../src/utils/search-tool-builder';
 
 // Mock the searchDocuments function - inline vi.fn() to avoid hoisting issues
 vi.mock('../../src/services/search/tfidf', () => ({

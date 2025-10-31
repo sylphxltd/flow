@@ -7,8 +7,8 @@ import { type Result, tryCatchAsync } from '../../core/functional/result.js';
 import {
   EmbeddingInitError,
   EmbeddingNotInitializedError,
-  VectorDimensionError,
   type EmbeddingsErrorType,
+  VectorDimensionError,
 } from '../../errors/embeddings-errors.js';
 import type { EmbeddingProvider } from '../../utils/embeddings.js';
 import { getDefaultEmbeddingProvider } from '../../utils/embeddings.js';
@@ -42,7 +42,9 @@ interface EmbeddingsProviderState {
  */
 export interface EmbeddingsProviderService {
   readonly initialize: () => Promise<Result<void, EmbeddingsErrorType>>;
-  readonly generateEmbeddings: (texts: string[]) => Promise<Result<number[][], EmbeddingsErrorType>>;
+  readonly generateEmbeddings: (
+    texts: string[]
+  ) => Promise<Result<number[][], EmbeddingsErrorType>>;
   readonly generateEmbedding: (text: string) => Promise<Result<number[], EmbeddingsErrorType>>;
   readonly generateEmbeddingsWithMetrics: (
     texts: string[]
@@ -50,7 +52,10 @@ export interface EmbeddingsProviderService {
   readonly isValidText: (text: string) => boolean;
   readonly preprocessText: (text: string) => string;
   readonly preprocessTexts: (texts: string[]) => string[];
-  readonly cosineSimilarity: (vecA: number[], vecB: number[]) => Result<number, VectorDimensionError>;
+  readonly cosineSimilarity: (
+    vecA: number[],
+    vecB: number[]
+  ) => Result<number, VectorDimensionError>;
   readonly findMostSimilar: (
     queryVector: number[],
     candidateVectors: number[][]
@@ -128,7 +133,9 @@ export const createEmbeddingsProviderService = (
   /**
    * 生成嵌入向量
    */
-  const generateEmbeddings = async (texts: string[]): Promise<Result<number[][], EmbeddingsErrorType>> => {
+  const generateEmbeddings = async (
+    texts: string[]
+  ): Promise<Result<number[][], EmbeddingsErrorType>> => {
     return await tryCatchAsync(
       async () => {
         const initResult = await ensureInitialized();
@@ -154,7 +161,7 @@ export const createEmbeddingsProviderService = (
         const batchResults = await Promise.all(
           batches.map(async (batch, index) => {
             try {
-              return await state.provider!.generateEmbeddings(batch);
+              return await state.provider?.generateEmbeddings(batch);
             } catch (error) {
               console.error(
                 `Failed to generate embeddings for batch ${index * batchSize}-${index * batchSize + batchSize}:`,
@@ -170,10 +177,7 @@ export const createEmbeddingsProviderService = (
         return batchResults.flat();
       },
       (error) => {
-        if (
-          error instanceof EmbeddingInitError ||
-          error instanceof EmbeddingNotInitializedError
-        ) {
+        if (error instanceof EmbeddingInitError || error instanceof EmbeddingNotInitializedError) {
           return error;
         }
         return new EmbeddingInitError(error);
@@ -184,7 +188,9 @@ export const createEmbeddingsProviderService = (
   /**
    * 生成單個文本嘅嵌入向量
    */
-  const generateEmbedding = async (text: string): Promise<Result<number[], EmbeddingsErrorType>> => {
+  const generateEmbedding = async (
+    text: string
+  ): Promise<Result<number[], EmbeddingsErrorType>> => {
     return await tryCatchAsync(
       async () => {
         const result = await generateEmbeddings([text]);
@@ -292,7 +298,10 @@ export const createEmbeddingsProviderService = (
   /**
    * 計算兩個向量嘅餘弦相似度
    */
-  const cosineSimilarity = (vecA: number[], vecB: number[]): Result<number, VectorDimensionError> => {
+  const cosineSimilarity = (
+    vecA: number[],
+    vecB: number[]
+  ): Result<number, VectorDimensionError> => {
     if (vecA.length !== vecB.length) {
       return { _tag: 'Failure', error: new VectorDimensionError(vecA.length, vecB.length) };
     }

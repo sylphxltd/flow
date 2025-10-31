@@ -41,8 +41,10 @@ describe('Result', () => {
 
   describe('flatMap', () => {
     it('should chain successful operations', () => {
-      const divide = (x: number) => (y: number): R.Result<number, string> =>
-        y === 0 ? R.failure('division by zero') : R.success(x / y);
+      const divide =
+        (x: number) =>
+        (y: number): R.Result<number, string> =>
+          y === 0 ? R.failure('division by zero') : R.success(x / y);
 
       const result = R.pipe(R.success(10))(R.flatMap(divide(20)));
 
@@ -53,8 +55,10 @@ describe('Result', () => {
     });
 
     it('should short-circuit on failure', () => {
-      const divide = (x: number) => (y: number): R.Result<number, string> =>
-        y === 0 ? R.failure('division by zero') : R.success(x / y);
+      const divide =
+        (x: number) =>
+        (y: number): R.Result<number, string> =>
+          y === 0 ? R.failure('division by zero') : R.success(x / y);
 
       const result = R.pipe(R.success(0))(R.flatMap(divide(5)));
 
@@ -65,12 +69,12 @@ describe('Result', () => {
     });
 
     it('should propagate initial failure', () => {
-      const divide = (x: number) => (y: number): R.Result<number, string> =>
-        y === 0 ? R.failure('division by zero') : R.success(x / y);
+      const divide =
+        (x: number) =>
+        (y: number): R.Result<number, string> =>
+          y === 0 ? R.failure('division by zero') : R.success(x / y);
 
-      const result = R.pipe(R.failure<number, string>('initial error'))(
-        R.flatMap(divide(5))
-      );
+      const result = R.pipe(R.failure<number, string>('initial error'))(R.flatMap(divide(5)));
 
       expect(R.isFailure(result)).toBe(true);
       if (R.isFailure(result)) {

@@ -7,7 +7,12 @@
   "bin": {
     "sylphx-flow": "dist/index.js"
   },
-  "files": ["dist", "assets", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/sylphxltd/flow.git"

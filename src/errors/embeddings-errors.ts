@@ -34,9 +34,7 @@ export class VectorDimensionError extends Error {
     public readonly expectedLength: number,
     public readonly actualLength: number
   ) {
-    super(
-      `Vectors must have the same length. Expected: ${expectedLength}, got: ${actualLength}`
-    );
+    super(`Vectors must have the same length. Expected: ${expectedLength}, got: ${actualLength}`);
     this.name = 'VectorDimensionError';
   }
 }

@@ -5,7 +5,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { Result, success, failure, tryCatchAsync } from '../core/functional/result.js';
+import { type Result, success, tryCatchAsync } from '../core/functional/result.js';
 
 export interface ProjectSettings {
   /** Default target for the project */
@@ -39,7 +39,9 @@ export const settingsExists = async (cwd: string = process.cwd()): Promise<boole
  * Load project settings from file
  * Returns Result type for explicit error handling
  */
-export const loadSettings = async (cwd: string = process.cwd()): Promise<Result<ProjectSettings, Error>> => {
+export const loadSettings = async (
+  cwd: string = process.cwd()
+): Promise<Result<ProjectSettings, Error>> => {
   const settingsPath = getSettingsPath(cwd);
 
   return tryCatchAsync(
@@ -54,7 +56,7 @@ export const loadSettings = async (cwd: string = process.cwd()): Promise<Result<
       }
       return new Error(`Failed to load settings: ${error.message}`);
     }
-  ).then(result => {
+  ).then((result) => {
     // Convert EMPTY_SETTINGS error to success with empty object
     if (result._tag === 'Failure' && result.error.message === 'EMPTY_SETTINGS') {
       return success({});
@@ -85,11 +87,7 @@ export const saveSettings = async (
       };
 
       // Write settings with proper formatting
-      await fs.writeFile(
-        settingsPath,
-        `${JSON.stringify(settingsWithVersion, null, 2)}\n`,
-        'utf8'
-      );
+      await fs.writeFile(settingsPath, `${JSON.stringify(settingsWithVersion, null, 2)}\n`, 'utf8');
     },
     (error: any) => new Error(`Failed to save settings: ${error.message}`)
   );
@@ -115,7 +113,9 @@ export const updateSettings = async (
 /**
  * Get the default target from settings
  */
-export const getDefaultTarget = async (cwd: string = process.cwd()): Promise<string | undefined> => {
+export const getDefaultTarget = async (
+  cwd: string = process.cwd()
+): Promise<string | undefined> => {
   const result = await loadSettings(cwd);
   return result._tag === 'Success' ? result.value.defaultTarget : undefined;
 };
@@ -123,16 +123,16 @@ export const getDefaultTarget = async (cwd: string = process.cwd()): Promise<str
 /**
  * Set the default target in settings
  */
-export const setDefaultTarget = async (target: string, cwd: string = process.cwd()): Promise<Result<void, Error>> =>
-  updateSettings({ defaultTarget: target }, cwd);
+export const setDefaultTarget = async (
+  target: string,
+  cwd: string = process.cwd()
+): Promise<Result<void, Error>> => updateSettings({ defaultTarget: target }, cwd);
 
 /**
  * Legacy class-based interface for backward compatibility
  * @deprecated Use functional exports instead (loadSettings, saveSettings, etc.)
  */
 export class ProjectSettings {
-  private settingsPath: string;
-
   constructor(private cwd: string = process.cwd()) {
     this.settingsPath = getSettingsPath(cwd);
   }

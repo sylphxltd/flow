@@ -6,8 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": false,
-    "ignore": ["dist/**", "node_modules/**", ".memory/**", "*.tgz", "coverage/**"]
+    "ignoreUnknown": false
   },
   "formatter": {
     "enabled": true,
@@ -18,9 +17,6 @@
     "lineWidth": 100,
     "attributePosition": "auto"
   },
-  "organizeImports": {
-    "enabled": true
-  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -28,9 +24,7 @@
       "complexity": {
         "noBannedTypes": "error",
         "noExtraBooleanCast": "error",
-        "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessCatch": "error",
-        "noWith": "error",
         "useArrowFunction": "error",
         "useLiteralKeys": "error"
       },
@@ -43,7 +37,6 @@
         "noInnerDeclarations": "error",
         "noInvalidConstructorSuper": "error",
         "noInvalidUseBeforeDeclaration": "error",
-        "noNewSymbol": "error",
         "noNonoctalDecimalEscape": "error",
         "noPrecisionLoss": "error",
         "noSelfAssign": "error",
@@ -55,18 +48,14 @@
         "noUnsafeOptionalChaining": "error",
         "noUnusedLabels": "error",
         "noUnusedVariables": "error",
-        "useArrayLiterals": "error",
         "useExhaustiveDependencies": "error",
         "useIsNan": "error",
         "useValidForDirection": "error",
         "useYield": "error"
       },
       "style": {
-        "noArguments": "error",
-        "noCommaOperator": "error",
         "noNegationElse": "error",
         "noParameterAssign": "error",
-        "noVar": "error",
         "useAsConstAssertion": "error",
         "useBlockStatements": "error",
         "useCollapsedElseIf": "error",
@@ -74,13 +63,11 @@
         "useConst": "error",
         "useExponentiationOperator": "error",
         "useImportType": "error",
-        "useShorthandArrayType": "error",
         "useShorthandAssign": "error",
         "useShorthandFunctionType": "error",
         "useSingleVarDeclarator": "error",
         "useTemplate": "error",
-        "useThrowNewError": "error",
-        "useWhile": "error"
+        "useThrowNewError": "error"
       },
       "suspicious": {
         "noAsyncPromiseExecutor": "error",
@@ -112,8 +99,7 @@
         "noUnsafeNegation": "error",
         "useAwait": "error",
         "useDefaultSwitchClauseLast": "error",
-        "useGetterReturn": "error",
-        "useValidTypeof": "error"
+        "useGetterReturn": "error"
       }
     }
   },

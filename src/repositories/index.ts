@@ -4,11 +4,10 @@
  */
 
 export { BaseRepository } from './base.repository.js';
-export { MemoryRepository } from './memory.repository.js';
-
 export type {
-  MemoryEntry,
   CreateMemoryData,
-  UpdateMemoryData,
+  MemoryEntry,
   MemorySearchParams,
+  UpdateMemoryData,
 } from './memory.repository.js';
+export { MemoryRepository } from './memory.repository.js';

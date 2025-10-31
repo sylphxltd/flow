@@ -7,18 +7,18 @@ import { describe, expect, it } from 'vitest';
 import {
   AppError,
   ConnectionError,
-  DatabaseError,
-  MigrationError,
-  ValidationError,
   createConnectionError,
   createDatabaseError,
   createMigrationError,
   createValidationError,
+  DatabaseError,
   executeOperation,
   isConnectionError,
   isDatabaseError,
   isMigrationError,
   isValidationError,
+  MigrationError,
+  ValidationError,
 } from '../../src/utils/database-errors.js';
 
 describe('Database Errors', () => {

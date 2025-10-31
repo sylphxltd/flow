@@ -366,9 +366,9 @@ export class ErrorHandler {
       switch (error.category) {
         case ErrorCategory.NETWORK:
         case ErrorCategory.EXTERNAL:
-          return Math.min(1000 * Math.pow(2, attempt), 30000); // Exponential backoff
+          return Math.min(1000 * 2 ** attempt, 30000); // Exponential backoff
         case ErrorCategory.DATABASE:
-          return Math.min(500 * Math.pow(2, attempt), 5000);
+          return Math.min(500 * 2 ** attempt, 5000);
         default:
           return 1000;
       }

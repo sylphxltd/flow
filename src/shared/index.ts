@@ -3,34 +3,30 @@
  * Provides clean access to all shared functionality
  */
 
-// Types
-export type {
-  ProcessResult,
-  CommonOptions,
-  AgentConfig,
-  AgentConfigs,
-} from './types/index.js';
-
-// Logging
-export { log } from './logging/index.js';
-
 // Agent configuration
 export {
-  getSupportedAgents,
-  getAgentConfig,
-  promptForAgent,
   detectAgentTool,
+  getAgentConfig,
+  getSupportedAgents,
+  promptForAgent,
 } from './agents/index.js';
-
 // File operations
 export {
+  clearObsoleteFiles,
   collectFiles,
   getLocalFileInfo,
-  clearObsoleteFiles,
 } from './files/index.js';
-
+// Logging
+export { log } from './logging/index.js';
 // Processing utilities
 export {
-  processBatch,
   displayResults,
+  processBatch,
 } from './processing/index.js';
+// Types
+export type {
+  AgentConfig,
+  AgentConfigs,
+  CommonOptions,
+  ProcessResult,
+} from './types/index.js';

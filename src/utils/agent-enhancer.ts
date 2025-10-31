@@ -12,7 +12,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getRulesDir, getOutputStylesDir } from './paths.js';
+import { getOutputStylesDir, getRulesDir } from './paths.js';
 import { yamlUtils } from './target-utils.js';
 
 /**
@@ -48,7 +48,7 @@ async function loadRules(): Promise<string> {
 
     // Strip YAML front matter
     return await yamlUtils.stripFrontMatter(content);
-  } catch (error) {
+  } catch (_error) {
     // If rules file doesn't exist, return empty string
     return '';
   }
@@ -61,7 +61,7 @@ async function loadOutputStyles(): Promise<string> {
   try {
     const outputStylesDir = getOutputStylesDir();
     const files = await fs.readdir(outputStylesDir);
-    const mdFiles = files.filter(f => f.endsWith('.md'));
+    const mdFiles = files.filter((f) => f.endsWith('.md'));
 
     if (mdFiles.length === 0) {
       return '';
@@ -79,7 +79,7 @@ async function loadOutputStyles(): Promise<string> {
     }
 
     return sections.join('\n\n');
-  } catch (error) {
+  } catch (_error) {
     // If output styles directory doesn't exist, return empty string
     return '';
   }

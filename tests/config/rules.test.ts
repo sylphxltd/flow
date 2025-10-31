@@ -6,9 +6,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CORE_RULES,
-  RULES_FILES,
   getAllRuleTypes,
   getRulesPath,
+  RULES_FILES,
   ruleFileExists,
 } from '../../src/config/rules.js';
 

@@ -3,20 +3,15 @@
  * Organized API-related types and interfaces
  */
 
-// Response types
+// Batch operation types
 export type {
-  ApiResponse,
-  HttpResponse,
-  PaginationInfo,
-  RateLimitInfo,
-} from './responses.js';
-
+  BatchApiResult,
+  BatchOperationResult,
+} from './batch.js';
 export {
-  PaginationInfoSchema,
-  RateLimitInfoSchema,
-  ApiResponseSchema,
-  HttpResponseSchema,
-} from './responses.js';
+  BatchApiResultSchema,
+  BatchOperationResultSchema,
+} from './batch.js';
 
 // Error types
 export type {
@@ -26,33 +21,35 @@ export type {
 } from './errors.js';
 
 export {
-  ErrorContextSchema,
   EnhancedErrorSchema,
+  ErrorContextSchema,
 } from './errors.js';
 
 // Request types
 export type { HttpRequestConfig } from './requests.js';
 
 export { HttpRequestConfigSchema } from './requests.js';
-
-// Batch operation types
+// Response types
 export type {
-  BatchApiResult,
-  BatchOperationResult,
-} from './batch.js';
-
+  ApiResponse,
+  HttpResponse,
+  PaginationInfo,
+  RateLimitInfo,
+} from './responses.js';
 export {
-  BatchOperationResultSchema,
-  BatchApiResultSchema,
-} from './batch.js';
+  ApiResponseSchema,
+  HttpResponseSchema,
+  PaginationInfoSchema,
+  RateLimitInfoSchema,
+} from './responses.js';
 
 // WebSocket types
 export type {
-  WebSocketMessage,
   WebSocketConnectionStatus,
+  WebSocketMessage,
 } from './websockets.js';
 
 export {
-  WebSocketMessageSchema,
   WebSocketConnectionStatusSchema,
+  WebSocketMessageSchema,
 } from './websockets.js';

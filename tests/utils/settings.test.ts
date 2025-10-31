@@ -3,9 +3,9 @@
  * Validates functional refactoring with Result types
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { isFailure, isSuccess } from '../../src/core/functional/result.js';
 import {
   getDefaultTarget,
@@ -113,7 +113,10 @@ describe('ProjectSettings (Functional)', () => {
 
       expect(isSuccess(result)).toBe(true);
       const settingsPath = getSettingsPath(testDir);
-      const exists = await fs.access(settingsPath).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(settingsPath)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
     });
   });

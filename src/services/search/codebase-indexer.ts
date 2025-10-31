@@ -11,26 +11,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import chokidar from 'chokidar';
-import ignore, { type Ignore } from 'ignore';
-import {
-  type ScanResult,
-  detectLanguage,
-  isTextFile,
-  loadGitignore,
-  scanFiles,
-  simpleHash,
-} from '../../utils/codebase-helpers.js';
+import type { Ignore } from 'ignore';
+import { isTextFile, loadGitignore, scanFiles, simpleHash } from '../../utils/codebase-helpers.js';
+import { logger } from '../../utils/logger.js';
 import { SeparatedMemoryStorage } from '../storage/separated-storage.js';
 import { type VectorDocument, VectorStorage } from '../storage/vector-storage.js';
-import type { EmbeddingProvider } from './embeddings.js';
-import { type SearchIndex, buildSearchIndex, buildSearchIndexFromDB } from './tfidf.js';
 import type {
   CodebaseFile,
-  IndexCache,
   CodebaseIndexerOptions,
+  IndexCache,
   IndexingStatus,
 } from './codebase-indexer-types.js';
-import { logger } from '../../utils/logger.js';
+import type { EmbeddingProvider } from './embeddings.js';
+import { buildSearchIndex, type SearchIndex } from './tfidf.js';
 
 export class CodebaseIndexer {
   private codebaseRoot: string;
@@ -38,7 +31,6 @@ export class CodebaseIndexer {
   private cache: IndexCache | null = null;
   private ig: Ignore;
   private db: SeparatedMemoryStorage;
-  private options: CodebaseIndexerOptions;
   private watcher?: chokidar.FSWatcher;
   private reindexTimer?: NodeJS.Timeout;
   private status: IndexingStatus = {
@@ -169,7 +161,7 @@ export class CodebaseIndexer {
         version,
         codebaseRoot,
         indexedAt,
-        fileCount: Number.parseInt(fileCount),
+        fileCount: Number.parseInt(fileCount, 10),
         files,
         tfidfIndex,
         vectorIndexPath,
@@ -543,7 +535,7 @@ export class CodebaseIndexer {
       // Watch all files in codebase root, respecting .gitignore
       this.watcher = chokidar.watch(this.codebaseRoot, {
         ignored: [
-          /(^|[\/\\])\../, // Ignore dotfiles
+          /(^|[/\\])\../, // Ignore dotfiles
           /node_modules/, // Ignore node_modules
           /\.git\//, // Ignore .git
           /\.sylphx-flow\//, // Ignore our own directory
@@ -653,4 +645,3 @@ export class CodebaseIndexer {
     await this.indexCodebase();
   }
 }
-

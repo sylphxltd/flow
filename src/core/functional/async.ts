@@ -124,9 +124,7 @@ export const retry = async <T>(
  * Run promises in parallel and collect results
  * Fails if any promise fails
  */
-export const allAsync = async <T>(
-  promises: Array<AsyncResult<T, AppError>>
-): AsyncResult<T[]> => {
+export const allAsync = async <T>(promises: AsyncResult<T, AppError>[]): AsyncResult<T[]> => {
   const results = await Promise.all(promises);
 
   const values: T[] = [];
@@ -146,8 +144,8 @@ export const allAsync = async <T>(
  * Returns both successes and failures
  */
 export const allSettledAsync = async <T>(
-  promises: Array<AsyncResult<T, AppError>>
-): Promise<Array<Result<T, AppError>>> => {
+  promises: AsyncResult<T, AppError>[]
+): Promise<Result<T, AppError>[]> => {
   return Promise.all(promises);
 };
 
@@ -174,9 +172,7 @@ export const sequenceAsync = async <T>(
 /**
  * Race promises - return first to complete
  */
-export const raceAsync = async <T>(
-  promises: Array<AsyncResult<T, AppError>>
-): AsyncResult<T> => {
+export const raceAsync = async <T>(promises: AsyncResult<T, AppError>[]): AsyncResult<T> => {
   return Promise.race(promises);
 };
 
@@ -195,7 +191,7 @@ export const withConcurrency = async <T>(
   concurrency: number
 ): AsyncResult<T[]> => {
   const results: T[] = [];
-  const executing: Array<Promise<void>> = [];
+  const executing: Promise<void>[] = [];
 
   for (const task of tasks) {
     const promise = (async () => {
@@ -211,10 +207,7 @@ export const withConcurrency = async <T>(
 
     if (executing.length >= concurrency) {
       await Promise.race(executing);
-      executing.splice(
-        executing.findIndex((p) => p === promise),
-        1
-      );
+      executing.splice(executing.indexOf(promise), 1);
     }
   }
 
@@ -303,12 +296,15 @@ export const throttleAsync = <Args extends any[], T>(
 
     if (!pending) {
       pending = new Promise((resolve) => {
-        setTimeout(async () => {
-          lastRun = Date.now();
-          const result = await fn(...args);
-          pending = null;
-          resolve(result);
-        }, limitMs - (now - lastRun));
+        setTimeout(
+          async () => {
+            lastRun = Date.now();
+            const result = await fn(...args);
+            pending = null;
+            resolve(result);
+          },
+          limitMs - (now - lastRun)
+        );
       }) as AsyncResult<T, AppError>;
     }
 

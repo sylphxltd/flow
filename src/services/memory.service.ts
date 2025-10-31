@@ -6,19 +6,19 @@
  * Uses functional Result type for error handling
  */
 
-import type { ILogger } from '../core/interfaces.js';
 import { type Result, tryCatchAsync } from '../core/functional/result.js';
+import type { ILogger } from '../core/interfaces.js';
 import {
   MemoryError,
+  type MemoryErrorType,
   MemoryNotFoundError,
   MemorySizeError,
   MemoryValidationError,
-  type MemoryErrorType,
 } from '../errors/memory-errors.js';
-import type { MemoryRepository } from '../repositories/memory.repository.js';
 import type {
   CreateMemoryData,
   MemoryEntry,
+  MemoryRepository,
   MemorySearchParams,
 } from '../repositories/memory.repository.js';
 import type { MemoryStatsResult, MemoryValue } from '../types/memory-types.js';
@@ -66,13 +66,20 @@ interface MemoryServiceState {
  */
 export interface MemoryService {
   readonly get: (key: string, namespace?: string) => Promise<Result<MemoryValue, MemoryErrorType>>;
-  readonly set: (key: string, value: string, namespace?: string) => Promise<Result<MemoryEntry, MemoryErrorType>>;
+  readonly set: (
+    key: string,
+    value: string,
+    namespace?: string
+  ) => Promise<Result<MemoryEntry, MemoryErrorType>>;
   readonly delete: (key: string, namespace?: string) => Promise<Result<boolean, MemoryError>>;
   readonly list: (namespace?: string) => Promise<Result<string[], MemoryError>>;
   readonly search: (params: MemorySearchParams) => Promise<Result<MemoryEntry[], MemoryError>>;
   readonly clear: (namespace?: string) => Promise<Result<number, MemoryError>>;
   readonly getStats: () => Promise<Result<MemoryStatsResult, MemoryError>>;
-  readonly bulkSet: (entries: Array<{ key: string; value: string; namespace?: string }>, namespace?: string) => Promise<Result<MemoryEntry[], MemoryError>>;
+  readonly bulkSet: (
+    entries: Array<{ key: string; value: string; namespace?: string }>,
+    namespace?: string
+  ) => Promise<Result<MemoryEntry[], MemoryError>>;
   readonly dispose: () => Promise<void>;
 }
 
@@ -257,7 +264,9 @@ export const createMemoryService = (
   /**
    * Search memory entries
    */
-  const search = async (params: MemorySearchParams): Promise<Result<MemoryEntry[], MemoryError>> => {
+  const search = async (
+    params: MemorySearchParams
+  ): Promise<Result<MemoryEntry[], MemoryError>> => {
     return await tryCatchAsync(
       async () => {
         const entries = await deps.repository.searchMemory(params);
@@ -284,10 +293,7 @@ export const createMemoryService = (
         if (serviceConfig.enableCaching) {
           // FUNCTIONAL: Use immutable cache deleteWhere, returns new state
           updateState({
-            cache: cacheDeleteWhere(
-              state.cache,
-              (key) => key.startsWith(`${namespace}:`)
-            )
+            cache: cacheDeleteWhere(state.cache, (key) => key.startsWith(`${namespace}:`)),
           });
         }
 
@@ -366,7 +372,10 @@ export const createMemoryService = (
   /**
    * Validate memory entry data
    */
-  const validateMemoryEntry = (key: string, value: string): MemoryValidationError | MemorySizeError | null => {
+  const validateMemoryEntry = (
+    key: string,
+    value: string
+  ): MemoryValidationError | MemorySizeError | null => {
     if (!key || key.trim().length === 0) {
       return new MemoryValidationError('Key cannot be empty', 'key', key);
     }

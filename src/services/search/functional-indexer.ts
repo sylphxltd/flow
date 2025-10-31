@@ -255,9 +255,13 @@ export const withLogging =
     return {
       ...baseIndexer,
       loadIndex: async () => {
-        if (verbose) console.error('[DEBUG] Loading index...');
+        if (verbose) {
+          console.error('[DEBUG] Loading index...');
+        }
         const index = await baseIndexer.loadIndex();
-        if (verbose) console.error('[DEBUG] Index loaded:', index.totalDocuments, 'documents');
+        if (verbose) {
+          console.error('[DEBUG] Index loaded:', index.totalDocuments, 'documents');
+        }
         return index;
       },
     };

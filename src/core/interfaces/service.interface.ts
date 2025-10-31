@@ -119,18 +119,12 @@ export interface IEventEmitter<EventMap extends Record<string, any>> {
   /**
    * Subscribe to an event
    */
-  on<K extends keyof EventMap>(
-    event: K,
-    handler: (data: EventMap[K]) => void
-  ): () => void;
+  on<K extends keyof EventMap>(event: K, handler: (data: EventMap[K]) => void): () => void;
 
   /**
    * Subscribe to an event once
    */
-  once<K extends keyof EventMap>(
-    event: K,
-    handler: (data: EventMap[K]) => void
-  ): () => void;
+  once<K extends keyof EventMap>(event: K, handler: (data: EventMap[K]) => void): () => void;
 
   /**
    * Remove all listeners for an event

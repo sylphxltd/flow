@@ -7,7 +7,10 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type UnifiedSearchService, createUnifiedSearchService } from '../../../src/services/search/unified-search-service.js';
+import {
+  createUnifiedSearchService,
+  type UnifiedSearchService,
+} from '../../../src/services/search/unified-search-service.js';
 
 describe('Unified Search Service', () => {
   let searchService: UnifiedSearchService;

@@ -92,7 +92,9 @@ interface CreateLoggerOptions {
 export function createLogger(options: Partial<LoggerConfig> | CreateLoggerOptions = {}): Logger {
   // Handle both old style (config object) and new style (options with config and context)
   const isOptionsStyle = 'config' in options || 'context' in options;
-  const config = isOptionsStyle ? (options as CreateLoggerOptions).config || {} : (options as Partial<LoggerConfig>);
+  const config = isOptionsStyle
+    ? (options as CreateLoggerOptions).config || {}
+    : (options as Partial<LoggerConfig>);
   const initialContext = isOptionsStyle ? (options as CreateLoggerOptions).context : undefined;
 
   const state: LoggerState = {

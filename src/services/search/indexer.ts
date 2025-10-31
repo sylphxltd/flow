@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { EmbeddingProvider } from '../../utils/embeddings.js';
 import { VectorStorage } from '../../utils/lancedb-vector-storage.js';
-import { type SearchIndex, buildSearchIndex } from '../../utils/tfidf.js';
+import { buildSearchIndex, type SearchIndex } from '../../utils/tfidf.js';
 import type { ContentMetadata } from './search-service.js';
 
 export interface IndexingOptions {
@@ -41,7 +41,10 @@ export interface IndexerService {
   readonly initialize: () => Promise<void>;
   readonly onProgress: (callback: (progress: IndexingProgress) => void) => void;
   readonly offProgress: (callback: (progress: IndexingProgress) => void) => void;
-  readonly buildIndex: (domain: 'knowledge' | 'codebase', options?: IndexingOptions) => Promise<SearchIndex>;
+  readonly buildIndex: (
+    domain: 'knowledge' | 'codebase',
+    options?: IndexingOptions
+  ) => Promise<SearchIndex>;
   readonly updateIndex: (domain: string, content: ContentMetadata) => Promise<void>;
   readonly removeFromIndex: (domain: string, uri: string) => Promise<void>;
 }
@@ -165,7 +168,9 @@ export const createIndexerService = (embeddingProvider?: EmbeddingProvider): Ind
   /**
    * 掃描指定domain嘅文件
    */
-  const scanDomainFiles = async (domain: string): Promise<Array<{ uri: string; content: string }>> => {
+  const scanDomainFiles = async (
+    domain: string
+  ): Promise<Array<{ uri: string; content: string }>> => {
     switch (domain) {
       case 'knowledge':
         return scanKnowledgeFiles();
@@ -212,7 +217,7 @@ export const createIndexerService = (embeddingProvider?: EmbeddingProvider): Ind
 
     scan(knowledgeDir, knowledgeDir);
     return files;
-  }
+  };
 
   /**
    * 掃描codebase文件
@@ -318,7 +323,7 @@ export const createIndexerService = (embeddingProvider?: EmbeddingProvider): Ind
     };
 
     return languageMap[ext] || 'unknown';
-  }
+  };
 
   /**
    * 更新索引

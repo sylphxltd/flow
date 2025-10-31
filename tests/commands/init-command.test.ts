@@ -182,7 +182,9 @@ describe('Init Command', () => {
     });
 
     it('should have no-output-styles option', () => {
-      const noOutputStylesOption = initCommand.options.find((opt) => opt.long === '--no-output-styles');
+      const noOutputStylesOption = initCommand.options.find(
+        (opt) => opt.long === '--no-output-styles'
+      );
       expect(noOutputStylesOption).toBeDefined();
     });
 

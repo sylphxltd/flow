@@ -11,9 +11,7 @@ export class AgentNotFoundError extends Error {
     public readonly agentName: string,
     public readonly availableAgents: string[]
   ) {
-    super(
-      `Invalid agent: ${agentName}. Available agents: ${availableAgents.join(', ')}`
-    );
+    super(`Invalid agent: ${agentName}. Available agents: ${availableAgents.join(', ')}`);
     this.name = 'AgentNotFoundError';
   }
 }

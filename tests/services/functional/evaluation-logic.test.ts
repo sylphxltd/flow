@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_SCORE_RANGES,
   buildEvaluationInput,
   buildEvaluationPrompt,
   calculatePerformance,
   combineAgentWork,
+  DEFAULT_SCORE_RANGES,
   extractSummaryStats,
   findScoreRange,
   formatAgentWork,
@@ -63,11 +63,7 @@ describe('evaluation-logic', () => {
 
   describe('calculatePerformance', () => {
     it('should calculate performance data', () => {
-      const data = calculatePerformance(
-        'test-agent',
-        { duration: 45 },
-        DEFAULT_SCORE_RANGES
-      );
+      const data = calculatePerformance('test-agent', { duration: 45 }, DEFAULT_SCORE_RANGES);
 
       expect(data.agent).toBe('test-agent');
       expect(data.duration).toBe(45);

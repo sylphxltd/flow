@@ -8,8 +8,6 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { Readable, Writable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 
 export interface FileOperationOptions {
   encoding?: BufferEncoding;

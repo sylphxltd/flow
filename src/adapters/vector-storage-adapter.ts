@@ -6,10 +6,8 @@
 import { StorageUtils } from '../core/unified-storage-manager.js';
 import type {
   StorageConfig,
-  StorageResult,
   VectorDocument,
   VectorSearchResult,
-  VectorStorageAdapter,
 } from '../interfaces/unified-storage.js';
 import { logger } from '../utils/logger.js';
 

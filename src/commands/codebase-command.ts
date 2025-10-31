@@ -26,7 +26,7 @@ export const codebaseSearchCommand = new Command('search')
       await searchService.initialize();
 
       const result = await searchService.searchCodebase(query, {
-        limit: Number.parseInt(options.limit) || 10,
+        limit: Number.parseInt(String(options.limit), 10) || 10,
         include_content: options.includeContent !== false,
         file_extensions: options.extensions,
         path_filter: options.path,

@@ -24,7 +24,7 @@ export const knowledgeSearchCommand = new Command('search')
       await searchService.initialize();
 
       const result = await searchService.searchKnowledge(query, {
-        limit: Number.parseInt(options.limit) || 10,
+        limit: Number.parseInt(options.limit, 10) || 10,
         include_content: options.includeContent !== false,
       });
 

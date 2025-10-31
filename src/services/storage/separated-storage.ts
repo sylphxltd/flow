@@ -15,14 +15,14 @@ import {
 } from './cache-storage.js';
 import { type MemoryEntry, MemoryStorage } from './memory-storage.js';
 
-// Re-export interfaces for backward compatibility
-export type { MemoryEntry } from './memory-storage.js';
 export type {
   CodebaseFileEntry,
-  TfidfTermEntry,
   TfidfDocumentEntry,
   TfidfIdfEntry,
+  TfidfTermEntry,
 } from './cache-storage.js';
+// Re-export interfaces for backward compatibility
+export type { MemoryEntry } from './memory-storage.js';
 
 /**
  * Separated storage implementation - Compatibility Layer
@@ -351,8 +351,8 @@ export class SeparatedMemoryStorage {
     const metadata = await this.cacheStorage.getAllMetadata();
     return {
       indexedAt: metadata.indexedAt,
-      totalFiles: Number.parseInt(metadata.totalFiles || '0'),
-      totalTerms: Number.parseInt(metadata.totalTerms || '0'),
+      totalFiles: Number.parseInt(metadata.totalFiles || '0', 10),
+      totalTerms: Number.parseInt(metadata.totalTerms || '0', 10),
     };
   }
 

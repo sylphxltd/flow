@@ -5,9 +5,7 @@
 
 // Core interfaces
 export * from './core.js';
-
-// Storage interfaces
-export * from './storage.js';
-
 // Search interfaces
 export * from './search.js';
+// Storage interfaces
+export * from './storage.js';

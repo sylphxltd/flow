@@ -3,11 +3,11 @@
  * Pure functions operating on immutable data
  */
 
+import type { Option } from '../core/functional/option.js';
+import { none, some } from '../core/functional/option.js';
 import { claudeCodeTarget } from '../targets/claude-code.js';
 import { opencodeTarget } from '../targets/opencode.js';
 import type { Target } from '../types.js';
-import type { Option } from '../core/functional/option.js';
-import { none, some } from '../core/functional/option.js';
 
 /**
  * All available targets
@@ -20,10 +20,7 @@ const initializeTargets = (): readonly Target[] => {
     return cachedTargets;
   }
 
-  cachedTargets = Object.freeze([
-    opencodeTarget,
-    claudeCodeTarget,
-  ]);
+  cachedTargets = Object.freeze([opencodeTarget, claudeCodeTarget]);
 
   return cachedTargets;
 };
@@ -42,8 +39,7 @@ export const getImplementedTargets = (): readonly Target[] =>
 /**
  * Get all target IDs
  */
-export const getAllTargetIDs = (): readonly string[] =>
-  getAllTargets().map((target) => target.id);
+export const getAllTargetIDs = (): readonly string[] => getAllTargets().map((target) => target.id);
 
 /**
  * Get implemented target IDs

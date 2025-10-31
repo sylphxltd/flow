@@ -142,8 +142,12 @@ export const sortBy =
       const aVal = a[key];
       const bVal = b[key];
 
-      if (aVal < bVal) return order === 'asc' ? -1 : 1;
-      if (aVal > bVal) return order === 'asc' ? 1 : -1;
+      if (aVal < bVal) {
+        return order === 'asc' ? -1 : 1;
+      }
+      if (aVal > bVal) {
+        return order === 'asc' ? 1 : -1;
+      }
       return 0;
     });
   };
@@ -162,7 +166,9 @@ export const uniqueBy =
     const seen = new Set();
     return arr.filter((item) => {
       const value = item[key];
-      if (seen.has(value)) return false;
+      if (seen.has(value)) {
+        return false;
+      }
       seen.add(value);
       return true;
     });
@@ -194,14 +200,17 @@ export const partition =
 export const groupBy =
   <T, K extends keyof T>(key: K) =>
   (arr: T[]): Record<string, T[]> => {
-    return arr.reduce((acc, item) => {
-      const groupKey = String(item[key]);
-      if (!acc[groupKey]) {
-        acc[groupKey] = [];
-      }
-      acc[groupKey].push(item);
-      return acc;
-    }, {} as Record<string, T[]>);
+    return arr.reduce(
+      (acc, item) => {
+        const groupKey = String(item[key]);
+        if (!acc[groupKey]) {
+          acc[groupKey] = [];
+        }
+        acc[groupKey].push(item);
+        return acc;
+      },
+      {} as Record<string, T[]>
+    );
   };
 
 /**
@@ -210,11 +219,14 @@ export const groupBy =
 export const countBy =
   <T>(fn: (item: T) => string) =>
   (arr: T[]): Record<string, number> => {
-    return arr.reduce((acc, item) => {
-      const key = fn(item);
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    return arr.reduce(
+      (acc, item) => {
+        const key = fn(item);
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
   };
 
 /**
@@ -233,9 +245,9 @@ export const chunk =
 /**
  * Zip arrays together
  */
-export const zip = <T, U>(arr1: T[], arr2: U[]): Array<[T, U]> => {
+export const zip = <T, U>(arr1: T[], arr2: U[]): [T, U][] => {
   const length = Math.min(arr1.length, arr2.length);
-  const result: Array<[T, U]> = [];
+  const result: [T, U][] = [];
 
   for (let i = 0; i < length; i++) {
     result.push([arr1[i], arr2[i]]);
@@ -247,7 +259,7 @@ export const zip = <T, U>(arr1: T[], arr2: U[]): Array<[T, U]> => {
 /**
  * Unzip array of tuples
  */
-export const unzip = <T, U>(arr: Array<[T, U]>): [T[], U[]] => {
+export const unzip = <T, U>(arr: [T, U][]): [T[], U[]] => {
   const first: T[] = [];
   const second: U[] = [];
 
@@ -265,7 +277,9 @@ export const unzip = <T, U>(arr: Array<[T, U]>): [T[], U[]] => {
 export const intersperse =
   <T>(separator: T) =>
   (arr: T[]): T[] => {
-    if (arr.length === 0) return [];
+    if (arr.length === 0) {
+      return [];
+    }
 
     const result: T[] = [arr[0]];
     for (let i = 1; i < arr.length; i++) {
@@ -314,7 +328,9 @@ export const sum = (arr: number[]): number => arr.reduce((a, b) => a + b, 0);
  * Get average of numbers in array
  */
 export const average = (arr: number[]): number => {
-  if (arr.length === 0) return 0;
+  if (arr.length === 0) {
+    return 0;
+  }
   return sum(arr) / arr.length;
 };
 
@@ -322,7 +338,9 @@ export const average = (arr: number[]): number => {
  * Get min value
  */
 export const min = (arr: number[]): number | undefined => {
-  if (arr.length === 0) return undefined;
+  if (arr.length === 0) {
+    return undefined;
+  }
   return Math.min(...arr);
 };
 
@@ -330,6 +348,8 @@ export const min = (arr: number[]): number | undefined => {
  * Get max value
  */
 export const max = (arr: number[]): number | undefined => {
-  if (arr.length === 0) return undefined;
+  if (arr.length === 0) {
+    return undefined;
+  }
   return Math.max(...arr);
 };

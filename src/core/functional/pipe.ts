@@ -16,12 +16,7 @@
 export function pipe<A>(value: A): A;
 export function pipe<A, B>(value: A, fn1: (a: A) => B): B;
 export function pipe<A, B, C>(value: A, fn1: (a: A) => B, fn2: (b: B) => C): C;
-export function pipe<A, B, C, D>(
-  value: A,
-  fn1: (a: A) => B,
-  fn2: (b: B) => C,
-  fn3: (c: C) => D
-): D;
+export function pipe<A, B, C, D>(value: A, fn1: (a: A) => B, fn2: (b: B) => C, fn3: (c: C) => D): D;
 export function pipe<A, B, C, D, E>(
   value: A,
   fn1: (a: A) => B,
@@ -89,11 +84,7 @@ export function pipe(value: any, ...fns: Array<(arg: any) => any>): any {
  */
 export function flow<A, B>(fn1: (a: A) => B): (a: A) => B;
 export function flow<A, B, C>(fn1: (a: A) => B, fn2: (b: B) => C): (a: A) => C;
-export function flow<A, B, C, D>(
-  fn1: (a: A) => B,
-  fn2: (b: B) => C,
-  fn3: (c: C) => D
-): (a: A) => D;
+export function flow<A, B, C, D>(fn1: (a: A) => B, fn2: (b: B) => C, fn3: (c: C) => D): (a: A) => D;
 export function flow<A, B, C, D, E>(
   fn1: (a: A) => B,
   fn2: (b: B) => C,

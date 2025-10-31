@@ -36,11 +36,11 @@ vi.mock('chalk', () => ({
 }));
 
 // Import logger AFTER console mock setup
-import { createLogger, type Logger, default as logger, log } from '../../src/utils/logger.js';
+import { createLogger, type Logger, log, default as logger } from '../../src/utils/logger.js';
 
 describe('Logger', () => {
-  let testLogger: Logger;  // Fresh logger instance for each test
-  let testLog: any;  // Convenience functions that use testLogger
+  let testLogger: Logger; // Fresh logger instance for each test
+  let testLog: any; // Convenience functions that use testLogger
 
   beforeEach(() => {
     // Clear output arrays
@@ -52,9 +52,12 @@ describe('Logger', () => {
 
     // Create convenience functions for testing (mirrors the exported 'log' object)
     testLog = {
-      debug: (message: string, context?: Record<string, unknown>) => testLogger.debug(message, context),
-      info: (message: string, context?: Record<string, unknown>) => testLogger.info(message, context),
-      warn: (message: string, context?: Record<string, unknown>) => testLogger.warn(message, context),
+      debug: (message: string, context?: Record<string, unknown>) =>
+        testLogger.debug(message, context),
+      info: (message: string, context?: Record<string, unknown>) =>
+        testLogger.info(message, context),
+      warn: (message: string, context?: Record<string, unknown>) =>
+        testLogger.warn(message, context),
       error: (message: string, error?: Error, context?: Record<string, unknown>) =>
         testLogger.error(message, error, context),
       time: <T>(fn: () => Promise<T>, label: string, context?: Record<string, unknown>) =>

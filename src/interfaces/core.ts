@@ -3,12 +3,7 @@
  * Defines contracts for core functionality
  */
 
-import type {
-  AgentConfig,
-  AgentConfigs,
-  CommonOptions,
-  ProcessResult,
-} from '../shared/types/index.js';
+import type { AgentConfig, CommonOptions, ProcessResult } from '../shared/types/index.js';
 
 /**
  * Core service interface

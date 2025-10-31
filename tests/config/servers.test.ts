@@ -5,7 +5,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  MCP_SERVER_REGISTRY,
   getAllEnvVars,
   getAllServerIDs,
   getDefaultServers,
@@ -19,6 +18,7 @@ import {
   getServersWithAnyAPIKeys,
   getServersWithOptionalAPIKeys,
   isValidServerID,
+  MCP_SERVER_REGISTRY,
 } from '../../src/config/servers.js';
 
 // Mock dependencies

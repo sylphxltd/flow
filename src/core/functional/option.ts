@@ -47,22 +47,22 @@ export const fromNullable = <T>(value: T | null | undefined): Option<T> => {
  * Type guards
  */
 
-export const isSome = <T>(option: Option<T>): option is Some<T> =>
-  option._tag === 'Some';
+export const isSome = <T>(option: Option<T>): option is Some<T> => option._tag === 'Some';
 
-export const isNone = <T>(option: Option<T>): option is None =>
-  option._tag === 'None';
+export const isNone = <T>(option: Option<T>): option is None => option._tag === 'None';
 
 /**
  * Transformations
  */
 
-export const map = <T, U>(fn: (value: T) => U) => (option: Option<T>): Option<U> => {
-  if (isSome(option)) {
-    return some(fn(option.value));
-  }
-  return none;
-};
+export const map =
+  <T, U>(fn: (value: T) => U) =>
+  (option: Option<T>): Option<U> => {
+    if (isSome(option)) {
+      return some(fn(option.value));
+    }
+    return none;
+  };
 
 export const flatMap =
   <T, U>(fn: (value: T) => Option<U>) =>

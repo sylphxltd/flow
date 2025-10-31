@@ -12,7 +12,7 @@
 import type { ConfigError } from '../../core/functional/error-types.js';
 import { configError } from '../../core/functional/error-types.js';
 import type { Option } from '../../core/functional/option.js';
-import { fromNullable, none, some } from '../../core/functional/option.js';
+import { fromNullable } from '../../core/functional/option.js';
 import type { Result } from '../../core/functional/result.js';
 import { failure, success } from '../../core/functional/result.js';
 
@@ -40,10 +40,7 @@ export const getEnvRequired = (key: string): Result<string, ConfigError> => {
 
   if (value === undefined || value === '') {
     return failure(
-      configError(
-        `Required environment variable is missing: ${key}`,
-        { configKey: key }
-      )
+      configError(`Required environment variable is missing: ${key}`, { configKey: key })
     );
   }
 
@@ -54,9 +51,7 @@ export const getEnvRequired = (key: string): Result<string, ConfigError> => {
  * Get multiple required environment variables
  * Returns Result with all errors if any are missing
  */
-export const getEnvRequiredAll = (
-  keys: string[]
-): Result<Record<string, string>, ConfigError> => {
+export const getEnvRequiredAll = (keys: string[]): Result<Record<string, string>, ConfigError> => {
   const missing: string[] = [];
   const values: Record<string, string> = {};
 
@@ -71,10 +66,9 @@ export const getEnvRequiredAll = (
 
   if (missing.length > 0) {
     return failure(
-      configError(
-        `Required environment variables are missing: ${missing.join(', ')}`,
-        { context: { missing } }
-      )
+      configError(`Required environment variables are missing: ${missing.join(', ')}`, {
+        context: { missing },
+      })
     );
   }
 
@@ -84,27 +78,20 @@ export const getEnvRequiredAll = (
 /**
  * Parse environment variable as number
  */
-export const getEnvNumber = (
-  key: string
-): Result<number, ConfigError> => {
+export const getEnvNumber = (key: string): Result<number, ConfigError> => {
   const value = process.env[key];
 
   if (value === undefined || value === '') {
-    return failure(
-      configError(
-        `Environment variable is missing: ${key}`,
-        { configKey: key }
-      )
-    );
+    return failure(configError(`Environment variable is missing: ${key}`, { configKey: key }));
   }
 
   const parsed = Number(value);
   if (Number.isNaN(parsed)) {
     return failure(
-      configError(
-        `Environment variable is not a valid number: ${key}`,
-        { configKey: key, context: { value } }
-      )
+      configError(`Environment variable is not a valid number: ${key}`, {
+        configKey: key,
+        context: { value },
+      })
     );
   }
 
@@ -115,18 +102,11 @@ export const getEnvNumber = (
  * Parse environment variable as boolean
  * Accepts: true, false, 1, 0, yes, no (case insensitive)
  */
-export const getEnvBoolean = (
-  key: string
-): Result<boolean, ConfigError> => {
+export const getEnvBoolean = (key: string): Result<boolean, ConfigError> => {
   const value = process.env[key]?.toLowerCase();
 
   if (value === undefined || value === '') {
-    return failure(
-      configError(
-        `Environment variable is missing: ${key}`,
-        { configKey: key }
-      )
-    );
+    return failure(configError(`Environment variable is missing: ${key}`, { configKey: key }));
   }
 
   const trueValues = ['true', '1', 'yes'];
@@ -141,10 +121,10 @@ export const getEnvBoolean = (
   }
 
   return failure(
-    configError(
-      `Environment variable is not a valid boolean: ${key}`,
-      { configKey: key, context: { value } }
-    )
+    configError(`Environment variable is not a valid boolean: ${key}`, {
+      configKey: key,
+      context: { value },
+    })
   );
 };
 
@@ -158,26 +138,18 @@ export const getEnvEnum = <T extends string>(
   const value = process.env[key];
 
   if (value === undefined || value === '') {
-    return failure(
-      configError(
-        `Environment variable is missing: ${key}`,
-        { configKey: key }
-      )
-    );
+    return failure(configError(`Environment variable is missing: ${key}`, { configKey: key }));
   }
 
   if (!allowedValues.includes(value as T)) {
     return failure(
-      configError(
-        `Environment variable has invalid value: ${key}`,
-        {
-          configKey: key,
-          context: {
-            value,
-            allowedValues: allowedValues as unknown as string[]
-          }
-        }
-      )
+      configError(`Environment variable has invalid value: ${key}`, {
+        configKey: key,
+        context: {
+          value,
+          allowedValues: allowedValues as unknown as string[],
+        },
+      })
     );
   }
 

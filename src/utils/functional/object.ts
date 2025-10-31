@@ -19,22 +19,22 @@ export const keys = <T extends object>(obj: T): Array<keyof T> => {
 /**
  * Get values of object
  */
-export const values = <T extends object>(obj: T): Array<T[keyof T]> => {
+export const values = <T extends object>(obj: T): T[keyof T][] => {
   return Object.values(obj);
 };
 
 /**
  * Get entries of object
  */
-export const entries = <T extends object>(obj: T): Array<[keyof T, T[keyof T]]> => {
-  return Object.entries(obj) as Array<[keyof T, T[keyof T]]>;
+export const entries = <T extends object>(obj: T): [keyof T, T[keyof T]][] => {
+  return Object.entries(obj) as [keyof T, T[keyof T]][];
 };
 
 /**
  * Create object from entries
  */
 export const fromEntries = <K extends string | number | symbol, V>(
-  entries: Array<[K, V]>
+  entries: [K, V][]
 ): Record<K, V> => {
   return Object.fromEntries(entries) as Record<K, V>;
 };
@@ -166,19 +166,21 @@ export const get =
 /**
  * Get nested property safely
  */
-export const getPath = (path: string) => (obj: any): any => {
-  const keys = path.split('.');
-  let current = obj;
+export const getPath =
+  (path: string) =>
+  (obj: any): any => {
+    const keys = path.split('.');
+    let current = obj;
 
-  for (const key of keys) {
-    if (current === null || current === undefined) {
-      return undefined;
+    for (const key of keys) {
+      if (current === null || current === undefined) {
+        return undefined;
+      }
+      current = current[key];
     }
-    current = current[key];
-  }
 
-  return current;
-};
+    return current;
+  };
 
 /**
  * Set property immutably
@@ -253,7 +255,7 @@ export const clone = <T>(obj: T): T => {
 
   const cloned = {} as T;
   for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+    if (Object.hasOwn(obj, key)) {
       cloned[key] = clone(obj[key]);
     }
   }

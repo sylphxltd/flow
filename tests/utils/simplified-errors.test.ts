@@ -9,6 +9,13 @@ import {
   AuthenticationError,
   BaseError,
   ConfigurationError,
+  createAuthenticationError,
+  createConfigurationError,
+  createDatabaseError,
+  createError,
+  createFilesystemError,
+  createNetworkError,
+  createValidationError,
   DatabaseError,
   ErrorCategory,
   ErrorFactory,
@@ -17,13 +24,6 @@ import {
   FilesystemError,
   NetworkError,
   ValidationError,
-  createAuthenticationError,
-  createConfigurationError,
-  createDatabaseError,
-  createError,
-  createFilesystemError,
-  createNetworkError,
-  createValidationError,
 } from '../../src/utils/simplified-errors.js';
 
 describe('Simplified Errors', () => {
