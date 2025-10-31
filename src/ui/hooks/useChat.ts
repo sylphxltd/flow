@@ -63,6 +63,7 @@ export function useChat() {
       let currentTextContent = '';
 
       // Create AI stream using our SDK and stream chunks
+      let chunkCount = 0;
       for await (const chunk of createAIStream({
         model,
         messages: messages.map((m) => ({
@@ -70,11 +71,16 @@ export function useChat() {
           content: m.content,
         })),
       })) {
+        chunkCount++;
+        console.log(`[useChat] Chunk #${chunkCount} type:`, chunk.type);
+
         if (chunk.type === 'text-delta') {
+          console.log('[useChat] text-delta chunk:', chunk.textDelta.substring(0, 50));
           fullResponse += chunk.textDelta;
           currentTextContent += chunk.textDelta;
           onChunk(chunk.textDelta);
         } else if (chunk.type === 'reasoning-delta') {
+          console.log('[useChat] reasoning-delta chunk:', chunk.textDelta.substring(0, 50));
           fullResponse += chunk.textDelta;
           currentTextContent += chunk.textDelta;
           onChunk(chunk.textDelta);

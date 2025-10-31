@@ -10,6 +10,7 @@ import { useAppStore } from '../stores/app-store.js';
 import { useChat } from '../hooks/useChat.js';
 import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
+import LogPanel from '../components/LogPanel.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -19,6 +20,13 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [showLogs, setShowLogs] = useState(true); // Show logs by default for debugging
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
+  };
 
   const navigateTo = useAppStore((state) => state.navigateTo);
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -85,11 +93,14 @@ export default function Chat() {
     setInput('');
     setIsStreaming(true);
     setStreamParts([]);
+    addLog('Starting message send...');
 
     await sendMessage(
       userMessage,
       // onChunk - text streaming
       (chunk) => {
+        const timestamp = Date.now();
+        addLog(`Chunk(${chunk.length}ch) @${timestamp}`);
         setStreamParts((prev) => {
           const newParts = [...prev];
           const lastPart = newParts[newParts.length - 1];
@@ -104,11 +115,15 @@ export default function Chat() {
             // Otherwise create new text part
             newParts.push({ type: 'text', content: chunk });
           }
+          const totalLength = newParts.reduce((sum, p) =>
+            p.type === 'text' ? sum + p.content.length : sum, 0);
+          addLog(`→ Total: ${totalLength}ch in ${newParts.length} parts`);
           return newParts;
         });
       },
       // onToolCall - tool execution started
       (toolName, args) => {
+        addLog(`Tool call: ${toolName}`);
         setStreamParts((prev) => [
           ...prev,
           { type: 'tool', name: toolName, status: 'running' },
@@ -116,6 +131,7 @@ export default function Chat() {
       },
       // onToolResult - tool execution completed
       (toolName, result, duration) => {
+        addLog(`Tool result: ${toolName} (${duration}ms)`);
         setStreamParts((prev) =>
           prev.map((part) =>
             part.type === 'tool' && part.name === toolName
@@ -126,6 +142,7 @@ export default function Chat() {
       },
       // onComplete - streaming finished
       () => {
+        addLog('Streaming complete');
         setIsStreaming(false);
         setStreamParts([]); // Clear streaming parts - they're now in message history
       }
@@ -133,14 +150,16 @@ export default function Chat() {
   };
 
   return (
-    <Box flexDirection="column" flexGrow={1}>
-      {/* Header */}
-      <Box flexShrink={0} paddingBottom={1}>
-        <Text color="#00D9FF">▌ CHAT</Text>
-      </Box>
+    <Box flexDirection="row" flexGrow={1}>
+      {/* Main chat area */}
+      <Box flexDirection="column" flexGrow={1} width="70%">
+        {/* Header */}
+        <Box flexShrink={0} paddingBottom={1}>
+          <Text color="#00D9FF">▌ CHAT</Text>
+        </Box>
 
-      {/* Messages - Scrollable area */}
-      <Box flexDirection="column" flexGrow={1} minHeight={0}>
+        {/* Messages - Scrollable area */}
+        <Box flexDirection="column" flexGrow={1} minHeight={0}>
         {currentSession.messages.length === 0 && !isStreaming ? (
           <Box paddingY={1}>
             <Text dimColor>Ready to chat...</Text>
@@ -246,30 +265,38 @@ export default function Chat() {
         )}
       </Box>
 
-      {/* Input - Fixed */}
-      <Box flexDirection="column" flexShrink={0} paddingTop={1}>
-        <Box marginBottom={1}>
-          <Text color="#00D9FF">▌ INPUT</Text>
+        {/* Input - Fixed */}
+        <Box flexDirection="column" flexShrink={0} paddingTop={1}>
+          <Box marginBottom={1}>
+            <Text color="#00D9FF">▌ INPUT</Text>
+          </Box>
+          <TextInput
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSubmit}
+            placeholder={isStreaming ? 'Waiting...' : 'Type your message...'}
+            showCursor={!isStreaming}
+          />
         </Box>
-        <TextInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          placeholder={isStreaming ? 'Waiting...' : 'Type your message...'}
-          showCursor={!isStreaming}
-        />
+
+        {/* Status Bar - Fixed at bottom */}
+        <Box flexShrink={0} paddingTop={1}>
+          <StatusBar
+            provider={currentSession.provider}
+            model={currentSession.model}
+            apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
+            messageCount={currentSession.messages.length}
+          />
+          <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
+        </Box>
       </Box>
 
-      {/* Status Bar - Fixed at bottom */}
-      <Box flexShrink={0} paddingTop={1} flexDirection="row" justifyContent="space-between">
-        <StatusBar
-          provider={currentSession.provider}
-          model={currentSession.model}
-          apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
-          messageCount={currentSession.messages.length}
-        />
-        <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
-      </Box>
+      {/* Right panel - Debug Logs */}
+      {showLogs && (
+        <Box flexDirection="column" width="30%" paddingLeft={1}>
+          <LogPanel logs={debugLogs} maxLines={50} />
+        </Box>
+      )}
     </Box>
   );
 }

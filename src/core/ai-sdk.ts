@@ -174,9 +174,14 @@ export async function* createAIStream(
   });
 
   // Convert AI SDK chunks to our chunk format
+  let aiChunkCount = 0;
   for await (const chunk of result.fullStream) {
+    aiChunkCount++;
+    console.log(`[AI SDK] Chunk #${aiChunkCount} type: ${chunk.type}`);
+
     switch (chunk.type) {
       case 'text-delta':
+        console.log('[AI SDK] text-delta:', chunk.text?.substring(0, 30));
         yield {
           type: 'text-delta',
           textDelta: chunk.text,
@@ -184,6 +189,7 @@ export async function* createAIStream(
         break;
 
       case 'reasoning-delta':
+        console.log('[AI SDK] reasoning-delta:', chunk.text?.substring(0, 30));
         yield {
           type: 'reasoning-delta',
           textDelta: chunk.text,
