@@ -8,10 +8,15 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { ProviderId } from '../config/ai-config.js';
 
+export type MessagePart =
+  | { type: 'text'; content: string }
+  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number };
+
 export interface SessionMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  parts?: MessagePart[]; // Optional for backward compatibility
 }
 
 export interface Session {

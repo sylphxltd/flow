@@ -127,7 +127,7 @@ export default function Chat() {
       // onComplete - streaming finished
       () => {
         setIsStreaming(false);
-        setStreamParts([]);
+        setStreamParts([]); // Clear streaming parts - they're now in message history
       }
     );
   };
@@ -161,7 +161,30 @@ export default function Chat() {
                     <Box marginBottom={1}>
                       <Text color="#00FF88">▌ ASSISTANT</Text>
                     </Box>
-                    <Text color="gray">{msg.content}</Text>
+                    {/* Render parts if available, otherwise fallback to content */}
+                    {msg.parts && msg.parts.length > 0 ? (
+                      msg.parts.map((part, idx) => {
+                        if (part.type === 'text') {
+                          return (
+                            <Box key={idx} marginBottom={1}>
+                              <Text color="gray">{part.content}</Text>
+                            </Box>
+                          );
+                        } else {
+                          return (
+                            <Box key={idx} marginBottom={1}>
+                              <Text color="#00FF88">● </Text>
+                              <Text color="white" bold>{part.name}</Text>
+                              {part.duration !== undefined && (
+                                <Text color="gray"> ({part.duration}ms)</Text>
+                              )}
+                            </Box>
+                          );
+                        }
+                      })
+                    ) : (
+                      <Text color="gray">{msg.content}</Text>
+                    )}
                   </>
                 )}
               </Box>

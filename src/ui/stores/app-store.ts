@@ -9,6 +9,10 @@ import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat';
 
+export type MessagePart =
+  | { type: 'text'; content: string }
+  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number };
+
 export interface Session {
   id: string;
   provider: ProviderId;
@@ -17,6 +21,7 @@ export interface Session {
     role: 'user' | 'assistant';
     content: string;
     timestamp: number;
+    parts?: MessagePart[];
   }>;
   createdAt: number;
 }
@@ -42,7 +47,7 @@ export interface AppState {
   sessions: Session[];
   currentSessionId: string | null;
   createSession: (provider: ProviderId, model: string) => string;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string) => void;
+  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, parts?: MessagePart[]) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
@@ -121,7 +126,7 @@ export const useAppStore = create<AppState>()(
       });
       return sessionId;
     },
-    addMessage: (sessionId, role, content) =>
+    addMessage: (sessionId, role, content, parts) =>
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -129,6 +134,7 @@ export const useAppStore = create<AppState>()(
             role,
             content,
             timestamp: Date.now(),
+            parts,
           });
         }
       }),
