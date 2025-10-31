@@ -142,15 +142,15 @@ export function createTargetManager(): TargetManager {
   };
 
   return {
-    getAllTargets,
-    getImplementedTargets,
-    getTarget,
+    getAllTargets: () => getAllTargets(),
+    getImplementedTargets: () => getImplementedTargets(),
+    getTarget: (id: string) => getTarget(id),
     promptForTargetSelection,
     resolveTarget,
-    isTargetImplemented,
-    getTargetsWithMCPSupport,
-    getImplementedTargetIDs,
-    getAllTargetIDs,
+    isTargetImplemented: (targetId: string) => isTargetImplemented(targetId),
+    getTargetsWithMCPSupport: () => getTargetsWithMCPSupport(),
+    getImplementedTargetIDs: () => getImplementedTargetIDs(),
+    getAllTargetIDs: () => getAllTargetIDs(),
   };
 }
 

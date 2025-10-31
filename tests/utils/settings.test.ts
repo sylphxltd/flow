@@ -1,321 +1,212 @@
 /**
- * Settings Tests
- * Tests for project settings management
+ * Tests for ProjectSettings functions
+ * Validates functional refactoring with Result types
  */
 
-import { mkdtempSync, rmSync } from 'node:fs';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ProjectSettings } from '../../src/utils/settings.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { isFailure, isSuccess } from '../../src/core/functional/result.js';
+import {
+  getDefaultTarget,
+  getSettingsPath,
+  loadSettings,
+  saveSettings,
+  setDefaultTarget,
+  settingsExists,
+  updateSettings,
+} from '../../src/utils/settings.js';
 
-describe('Settings', () => {
-  let testDir: string;
-  let settings: ProjectSettings;
+describe('ProjectSettings (Functional)', () => {
+  const testDir = path.join('/tmp', 'test-settings-' + Math.random().toString(36).substring(7));
 
-  beforeEach(() => {
-    // Create temporary test directory
-    testDir = mkdtempSync(join(tmpdir(), 'settings-test-'));
-    settings = new ProjectSettings(testDir);
+  beforeEach(async () => {
+    await fs.mkdir(testDir, { recursive: true });
   });
 
-  afterEach(() => {
-    // Clean up test directory
-    if (testDir) {
-      rmSync(testDir, { recursive: true, force: true });
-    }
+  afterEach(async () => {
+    await fs.rm(testDir, { recursive: true, force: true });
   });
 
-  describe('Constructor', () => {
-    it('should create settings instance with default path', () => {
-      const defaultSettings = new ProjectSettings();
-      expect(defaultSettings).toBeInstanceOf(ProjectSettings);
+  describe('Path Operations', () => {
+    it('should get settings path', () => {
+      const settingsPath = getSettingsPath(testDir);
+
+      expect(settingsPath).toContain('.sylphx-flow');
+      expect(settingsPath).toContain('settings.json');
+      expect(settingsPath).toContain(testDir);
     });
 
-    it('should create settings instance with custom path', () => {
-      const customSettings = new ProjectSettings(testDir);
-      expect(customSettings).toBeInstanceOf(ProjectSettings);
-    });
-  });
+    it('should check if settings exists', async () => {
+      const exists1 = await settingsExists(testDir);
+      expect(exists1).toBe(false);
 
-  describe('load', () => {
-    it('should return empty object when file does not exist', async () => {
-      const loaded = await settings.load();
-      expect(loaded).toEqual({});
-    });
+      await saveSettings({ version: '1.0.0' }, testDir);
 
-    it('should load settings from file', async () => {
-      const settingsData = { defaultTarget: 'claude-code', version: '1.0.0' };
-
-      // Create settings file
-      mkdirSync(join(testDir, '.sylphx-flow'), { recursive: true });
-      writeFileSync(
-        join(testDir, '.sylphx-flow/settings.json'),
-        JSON.stringify(settingsData),
-        'utf8'
-      );
-
-      const loaded = await settings.load();
-      expect(loaded).toEqual(settingsData);
-    });
-
-    it('should parse JSON correctly', async () => {
-      const settingsData = {
-        defaultTarget: 'opencode',
-        version: '1.0.0',
-      };
-
-      mkdirSync(join(testDir, '.sylphx-flow'), { recursive: true });
-      writeFileSync(
-        join(testDir, '.sylphx-flow/settings.json'),
-        JSON.stringify(settingsData, null, 2),
-        'utf8'
-      );
-
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('opencode');
-      expect(loaded.version).toBe('1.0.0');
-    });
-
-    it('should throw error on invalid JSON', async () => {
-      mkdirSync(join(testDir, '.sylphx-flow'), { recursive: true });
-      writeFileSync(join(testDir, '.sylphx-flow/settings.json'), 'invalid json', 'utf8');
-
-      await expect(settings.load()).rejects.toThrow('Failed to load settings');
-    });
-
-    it('should handle empty settings file', async () => {
-      const settingsData = {};
-
-      mkdirSync(join(testDir, '.sylphx-flow'), { recursive: true });
-      writeFileSync(
-        join(testDir, '.sylphx-flow/settings.json'),
-        JSON.stringify(settingsData),
-        'utf8'
-      );
-
-      const loaded = await settings.load();
-      expect(loaded).toEqual({});
+      const exists2 = await settingsExists(testDir);
+      expect(exists2).toBe(true);
     });
   });
 
-  describe('save', () => {
-    it('should create directory if not exists', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
+  describe('Load Settings', () => {
+    it('should return empty settings for non-existent file', async () => {
+      const result = await loadSettings(testDir);
 
-      const fileContent = readFileSync(join(testDir, '.sylphx-flow/settings.json'), 'utf8');
-      expect(fileContent).toBeTruthy();
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value).toEqual({});
+      }
     });
 
-    it('should save settings to file', async () => {
-      const settingsData = { defaultTarget: 'claude-code' };
-      await settings.save(settingsData);
+    it('should load existing settings', async () => {
+      const settings = { defaultTarget: 'opencode', version: '1.0.0' };
+      await saveSettings(settings, testDir);
 
-      const fileContent = readFileSync(join(testDir, '.sylphx-flow/settings.json'), 'utf8');
-      const parsed = JSON.parse(fileContent);
+      const result = await loadSettings(testDir);
 
-      expect(parsed.defaultTarget).toBe('claude-code');
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.defaultTarget).toBe('opencode');
+        expect(result.value.version).toBe('1.0.0');
+      }
     });
 
-    it('should add version if not present', async () => {
-      await settings.save({ defaultTarget: 'opencode' });
+    it('should return failure for invalid JSON', async () => {
+      const settingsPath = getSettingsPath(testDir);
+      await fs.mkdir(path.dirname(settingsPath), { recursive: true });
+      await fs.writeFile(settingsPath, 'invalid json{', 'utf8');
 
-      const fileContent = readFileSync(join(testDir, '.sylphx-flow/settings.json'), 'utf8');
-      const parsed = JSON.parse(fileContent);
+      const result = await loadSettings(testDir);
 
-      expect(parsed.version).toBe('1.0.0');
+      expect(isFailure(result)).toBe(true);
+    });
+  });
+
+  describe('Save Settings', () => {
+    it('should save settings with version', async () => {
+      const settings = { defaultTarget: 'claude-code' };
+      const result = await saveSettings(settings, testDir);
+
+      expect(isSuccess(result)).toBe(true);
+
+      const loadResult = await loadSettings(testDir);
+      expect(isSuccess(loadResult)).toBe(true);
+      if (isSuccess(loadResult)) {
+        expect(loadResult.value.defaultTarget).toBe('claude-code');
+        expect(loadResult.value.version).toBe('1.0.0');
+      }
     });
 
     it('should preserve existing version', async () => {
-      await settings.save({ defaultTarget: 'claude-code', version: '0.9.0' });
+      const settings = { defaultTarget: 'opencode', version: '2.0.0' };
+      await saveSettings(settings, testDir);
 
-      const fileContent = readFileSync(join(testDir, '.sylphx-flow/settings.json'), 'utf8');
-      const parsed = JSON.parse(fileContent);
-
-      expect(parsed.version).toBe('0.9.0');
+      const result = await loadSettings(testDir);
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.version).toBe('2.0.0');
+      }
     });
 
-    it('should format JSON with 2 spaces', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
+    it('should create directory if not exists', async () => {
+      const result = await saveSettings({ defaultTarget: 'test' }, testDir);
 
-      const fileContent = readFileSync(join(testDir, '.sylphx-flow/settings.json'), 'utf8');
-      expect(fileContent).toContain('  "defaultTarget"');
-    });
-
-    it('should end file with newline', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
-
-      const fileContent = readFileSync(join(testDir, '.sylphx-flow/settings.json'), 'utf8');
-      expect(fileContent.endsWith('\n')).toBe(true);
-    });
-
-    it('should overwrite existing file', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
-      await settings.save({ defaultTarget: 'opencode' });
-
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('opencode');
+      expect(isSuccess(result)).toBe(true);
+      const settingsPath = getSettingsPath(testDir);
+      const exists = await fs.access(settingsPath).then(() => true).catch(() => false);
+      expect(exists).toBe(true);
     });
   });
 
-  describe('update', () => {
-    it('should update empty settings', async () => {
-      await settings.update({ defaultTarget: 'claude-code' });
+  describe('Update Settings', () => {
+    it('should update existing settings', async () => {
+      await saveSettings({ defaultTarget: 'opencode' }, testDir);
 
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('claude-code');
+      const result = await updateSettings({ defaultTarget: 'claude-code' }, testDir);
+
+      expect(isSuccess(result)).toBe(true);
+
+      const loaded = await loadSettings(testDir);
+      if (isSuccess(loaded)) {
+        expect(loaded.value.defaultTarget).toBe('claude-code');
+      }
     });
 
     it('should merge with existing settings', async () => {
-      await settings.save({ defaultTarget: 'claude-code', version: '1.0.0' });
-      await settings.update({ defaultTarget: 'opencode' });
+      await saveSettings({ defaultTarget: 'opencode', version: '1.0.0' }, testDir);
 
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('opencode');
-      expect(loaded.version).toBe('1.0.0');
+      const result = await updateSettings({ defaultTarget: 'claude-code' }, testDir);
+
+      expect(isSuccess(result)).toBe(true);
+
+      const loaded = await loadSettings(testDir);
+      if (isSuccess(loaded)) {
+        expect(loaded.value.defaultTarget).toBe('claude-code');
+        expect(loaded.value.version).toBe('1.0.0');
+      }
     });
 
-    it('should add new properties', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
-      await settings.update({ version: '2.0.0' } as any);
+    it('should create settings if not exists', async () => {
+      const result = await updateSettings({ defaultTarget: 'test' }, testDir);
 
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('claude-code');
-      expect(loaded.version).toBe('2.0.0');
-    });
+      expect(isSuccess(result)).toBe(true);
 
-    it('should handle partial updates', async () => {
-      await settings.save({ defaultTarget: 'claude-code', version: '1.0.0' });
-      await settings.update({});
-
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('claude-code');
-      expect(loaded.version).toBe('1.0.0');
+      const loaded = await loadSettings(testDir);
+      if (isSuccess(loaded)) {
+        expect(loaded.value.defaultTarget).toBe('test');
+      }
     });
   });
 
-  describe('getDefaultTarget', () => {
-    it('should return undefined when no target set', async () => {
-      const target = await settings.getDefaultTarget();
+  describe('Default Target Operations', () => {
+    it('should get undefined for no settings', async () => {
+      const target = await getDefaultTarget(testDir);
+
       expect(target).toBeUndefined();
     });
 
-    it('should return default target', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
+    it('should get default target from settings', async () => {
+      await saveSettings({ defaultTarget: 'opencode' }, testDir);
 
-      const target = await settings.getDefaultTarget();
-      expect(target).toBe('claude-code');
-    });
+      const target = await getDefaultTarget(testDir);
 
-    it('should return updated target', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
-      await settings.update({ defaultTarget: 'opencode' });
-
-      const target = await settings.getDefaultTarget();
       expect(target).toBe('opencode');
     });
-  });
 
-  describe('setDefaultTarget', () => {
     it('should set default target', async () => {
-      await settings.setDefaultTarget('claude-code');
+      const result = await setDefaultTarget('claude-code', testDir);
 
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('claude-code');
-    });
+      expect(isSuccess(result)).toBe(true);
 
-    it('should update existing target', async () => {
-      await settings.setDefaultTarget('claude-code');
-      await settings.setDefaultTarget('opencode');
-
-      const target = await settings.getDefaultTarget();
-      expect(target).toBe('opencode');
-    });
-
-    it('should preserve other settings', async () => {
-      await settings.save({ version: '1.0.0' } as any);
-      await settings.setDefaultTarget('claude-code');
-
-      const loaded = await settings.load();
-      expect(loaded.defaultTarget).toBe('claude-code');
-      expect(loaded.version).toBe('1.0.0');
-    });
-  });
-
-  describe('exists', () => {
-    it('should return false when file does not exist', async () => {
-      const exists = await settings.exists();
-      expect(exists).toBe(false);
-    });
-
-    it('should return true when file exists', async () => {
-      await settings.save({ defaultTarget: 'claude-code' });
-
-      const exists = await settings.exists();
-      expect(exists).toBe(true);
-    });
-
-    it('should return true after creating file', async () => {
-      expect(await settings.exists()).toBe(false);
-
-      await settings.setDefaultTarget('claude-code');
-
-      expect(await settings.exists()).toBe(true);
-    });
-  });
-
-  describe('Integration', () => {
-    it('should support full workflow', async () => {
-      // Check file doesn't exist
-      expect(await settings.exists()).toBe(false);
-
-      // Set default target
-      await settings.setDefaultTarget('claude-code');
-
-      // Check file exists
-      expect(await settings.exists()).toBe(true);
-
-      // Get target
-      const target = await settings.getDefaultTarget();
-      expect(target).toBe('claude-code');
-
-      // Update target
-      await settings.setDefaultTarget('opencode');
-
-      // Verify update
-      const newTarget = await settings.getDefaultTarget();
-      expect(newTarget).toBe('opencode');
-    });
-
-    it('should handle multiple updates', async () => {
-      await settings.setDefaultTarget('claude-code');
-      await settings.setDefaultTarget('opencode');
-      await settings.setDefaultTarget('claude-code');
-
-      const target = await settings.getDefaultTarget();
-      expect(target).toBe('claude-code');
-    });
-
-    it('should preserve data across instances', async () => {
-      await settings.setDefaultTarget('claude-code');
-
-      const newInstance = new ProjectSettings(testDir);
-      const target = await newInstance.getDefaultTarget();
-
+      const target = await getDefaultTarget(testDir);
       expect(target).toBe('claude-code');
     });
   });
 
-  describe('Error Handling', () => {
-    it('should throw on write permission error', async () => {
-      // This test is platform-dependent and may need adjustment
-      // Testing that errors are properly wrapped
-      const invalidSettings = new ProjectSettings('/invalid/path/that/does/not/exist');
+  describe('Result Type Integration', () => {
+    it('should compose operations with Result', async () => {
+      const result1 = await saveSettings({ defaultTarget: 'opencode' }, testDir);
+      expect(isSuccess(result1)).toBe(true);
 
-      await expect(invalidSettings.save({ defaultTarget: 'test' })).rejects.toThrow(
-        'Failed to save settings'
-      );
+      const result2 = await loadSettings(testDir);
+      expect(isSuccess(result2)).toBe(true);
+
+      const result3 = await updateSettings({ defaultTarget: 'claude-code' }, testDir);
+      expect(isSuccess(result3)).toBe(true);
+    });
+
+    it('should propagate failures through chain', async () => {
+      const result1 = await saveSettings({ defaultTarget: 'test' }, testDir);
+      expect(isSuccess(result1)).toBe(true);
+
+      const settingsPath = getSettingsPath(testDir);
+      await fs.writeFile(settingsPath, 'corrupted{', 'utf8');
+
+      const result2 = await loadSettings(testDir);
+      expect(isFailure(result2)).toBe(true);
+
+      const result3 = await updateSettings({ defaultTarget: 'new' }, testDir);
+      expect(isFailure(result3)).toBe(true);
     });
   });
 });

@@ -57,7 +57,7 @@ export const getImplementedTargetIDs = (): readonly string[] =>
  */
 export const getTarget = (id: string): Option<Target> => {
   const target = getAllTargets().find((t) => t.id === id);
-  return target ? some(target) : none();
+  return target ? some(target) : none;
 };
 
 /**
@@ -78,7 +78,7 @@ export const getTargetUnsafe = (id: string): Target => {
  */
 export const getDefaultTarget = (): Option<Target> => {
   const target = getAllTargets().find((t) => t.isDefault);
-  return target ? some(target) : none();
+  return target ? some(target) : none;
 };
 
 /**
