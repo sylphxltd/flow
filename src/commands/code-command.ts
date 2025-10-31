@@ -149,7 +149,7 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
           process.stdout.write(chunk.textDelta);
           fullResponse += chunk.textDelta;
         }
-      } else if (chunk.type === 'reasoning') {
+      } else if (chunk.type === 'reasoning-delta') {
         if (!hasOutput) {
           hasOutput = true;
           // Add newline before first text output if tools were called
@@ -157,9 +157,9 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
             process.stdout.write('\n');
           }
         }
-        if (chunk.text) {
-          process.stdout.write(chunk.text);
-          fullResponse += chunk.text;
+        if (chunk.textDelta) {
+          process.stdout.write(chunk.textDelta);
+          fullResponse += chunk.textDelta;
         }
       } else if (chunk.type === 'tool-call') {
         // Flush stdout to ensure proper ordering

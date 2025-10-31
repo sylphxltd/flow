@@ -50,9 +50,9 @@ export type TextDeltaChunk = {
   textDelta: string;
 };
 
-export type ReasoningChunk = {
-  type: 'reasoning';
-  text: string;
+export type ReasoningDeltaChunk = {
+  type: 'reasoning-delta';
+  textDelta: string;
 };
 
 export type ToolCallChunk = {
@@ -69,7 +69,7 @@ export type ToolResultChunk = {
   result: unknown;
 };
 
-export type StreamChunk = TextDeltaChunk | ReasoningChunk | ToolCallChunk | ToolResultChunk;
+export type StreamChunk = TextDeltaChunk | ReasoningDeltaChunk | ToolCallChunk | ToolResultChunk;
 
 /**
  * Step info (our own)
@@ -185,8 +185,8 @@ export async function* createAIStream(
 
       case 'reasoning-delta':
         yield {
-          type: 'reasoning',
-          text: chunk.text,
+          type: 'reasoning-delta',
+          textDelta: chunk.text,
         };
         break;
 

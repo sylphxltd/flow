@@ -74,10 +74,10 @@ export function useChat() {
           fullResponse += chunk.textDelta;
           currentTextContent += chunk.textDelta;
           onChunk(chunk.textDelta);
-        } else if (chunk.type === 'reasoning') {
-          fullResponse += chunk.text;
-          currentTextContent += chunk.text;
-          onChunk(chunk.text);
+        } else if (chunk.type === 'reasoning-delta') {
+          fullResponse += chunk.textDelta;
+          currentTextContent += chunk.textDelta;
+          onChunk(chunk.textDelta);
         } else if (chunk.type === 'tool-call') {
           // Save current text part if any
           if (currentTextContent) {
