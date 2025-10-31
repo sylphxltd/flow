@@ -19,6 +19,7 @@ import { MemoryDatabaseClient } from '../db/memory-db.js';
 import { createMCPService } from '../services/mcp-service.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
+import { createLogger as createRealLogger } from '../utils/logger.js';
 // Import concrete implementations (will be updated as we refactor)
 import { SeparatedMemoryStorage } from '../utils/separated-storage.js';
 
@@ -105,35 +106,41 @@ export async function configureServices(): Promise<void> {
 }
 
 /**
- * Create a logger instance
+ * Create a logger instance that adapts our Logger to the ILogger interface
  */
 function createLogger(): ILogger {
+  const logger = createRealLogger();
+
   return {
     info(message: string, ...args: any[]): void {
-      console.error(`[INFO] ${message}`, ...args);
+      // Merge args into context for structured logging
+      const context = args.length > 0 ? { args } : undefined;
+      logger.info(message, context);
     },
 
     warn(message: string, ...args: any[]): void {
-      console.error(`[WARN] ${message}`, ...args);
+      const context = args.length > 0 ? { args } : undefined;
+      logger.warn(message, context);
     },
 
     error(message: string, error?: Error | unknown, ...args: any[]): void {
-      console.error(`[ERROR] ${message}`, ...args);
+      const context = args.length > 0 ? { args } : undefined;
       if (error instanceof Error) {
-        console.error(error.stack);
-      } else if (error) {
-        console.error(error);
+        logger.error(message, error, context);
+      } else {
+        logger.error(message, undefined, { ...context, error });
       }
     },
 
     debug(message: string, ...args: any[]): void {
-      if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
-        console.error(`[DEBUG] ${message}`, ...args);
-      }
+      const context = args.length > 0 ? { args } : undefined;
+      logger.debug(message, context);
     },
 
     success(message: string, ...args: any[]): void {
-      console.error(`[SUCCESS] ${message}`, ...args);
+      // Success is just info with different styling
+      const context = args.length > 0 ? { args, level: 'success' } : { level: 'success' };
+      logger.info(message, context);
     },
   };
 }

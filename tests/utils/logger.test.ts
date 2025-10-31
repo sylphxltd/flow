@@ -5,28 +5,24 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Console output capture arrays
-const { consoleLogOutput, consoleErrorOutput, mockConsole } = vi.hoisted(() => {
-  const consoleLogOutput: string[] = [];
-  const consoleErrorOutput: string[] = [];
+// Console output capture arrays (defined at module level)
+const consoleLogOutput: string[] = [];
+const consoleErrorOutput: string[] = [];
 
-  const mockConsole = {
-    log: (...args: any[]) => {
-      consoleLogOutput.push(args.join(' '));
-    },
-    error: (...args: any[]) => {
-      consoleErrorOutput.push(args.join(' '));
-    },
-    warn: (...args: any[]) => {},
-    info: (...args: any[]) => {},
-    debug: (...args: any[]) => {},
-  };
+const mockConsole = {
+  log: (...args: any[]) => {
+    consoleLogOutput.push(args.join(' '));
+  },
+  error: (...args: any[]) => {
+    consoleErrorOutput.push(args.join(' '));
+  },
+  warn: (...args: any[]) => {},
+  info: (...args: any[]) => {},
+  debug: (...args: any[]) => {},
+};
 
-  // Replace global console BEFORE any imports
-  globalThis.console = mockConsole as any;
-
-  return { consoleLogOutput, consoleErrorOutput, mockConsole };
-});
+// Replace global console BEFORE any imports
+globalThis.console = mockConsole as any;
 
 // Mock chalk to avoid ANSI codes in test outputs
 vi.mock('chalk', () => ({
@@ -39,12 +35,11 @@ vi.mock('chalk', () => ({
   },
 }));
 
-// Import logger AFTER hoisted console setup
-import { default as logger, log } from '../../src/utils/logger.js';
+// Import logger AFTER console mock setup
+import { createLogger, type Logger, default as logger, log } from '../../src/utils/logger.js';
 
 describe('Logger', () => {
-  let Logger: any;
-  let testLogger: any;  // Fresh logger instance for each test
+  let testLogger: Logger;  // Fresh logger instance for each test
   let testLog: any;  // Convenience functions that use testLogger
 
   beforeEach(() => {
@@ -52,11 +47,8 @@ describe('Logger', () => {
     consoleLogOutput.length = 0;
     consoleErrorOutput.length = 0;
 
-    // Use the imported Logger class
-    Logger = logger.constructor;
-
     // Create fresh logger instance that will use our mocked console
-    testLogger = new Logger();
+    testLogger = createLogger();
 
     // Create convenience functions for testing (mirrors the exported 'log' object)
     testLog = {
@@ -82,19 +74,19 @@ describe('Logger', () => {
     consoleErrorOutput.length = 0;
   });
 
-  describe('Logger Constructor', () => {
+  describe('Logger Factory', () => {
     it('should create logger with default config', () => {
-      const newLogger = new Logger();
+      const newLogger = createLogger();
       expect(newLogger).toBeDefined();
     });
 
     it('should accept custom config', () => {
-      const newLogger = new Logger({ level: 'debug', format: 'json' });
+      const newLogger = createLogger({ level: 'debug', format: 'json' });
       expect(newLogger).toBeDefined();
     });
 
     it('should use custom level', () => {
-      const newLogger = new Logger({ level: 'error' });
+      const newLogger = createLogger({ level: 'error' });
       newLogger.info('Should not log');
       expect(consoleLogOutput).toHaveLength(0);
 

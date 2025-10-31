@@ -54,79 +54,87 @@ const LEVEL_SYMBOLS: Record<LogLevel, string> = {
   error: '✗',
 };
 
-class Logger {
-  private config: LoggerConfig;
-  private context?: Record<string, unknown>;
+/**
+ * Logger interface for dependency injection and testing
+ */
+export interface Logger {
+  child(context: Record<string, unknown>): Logger;
+  module(moduleName: string): Logger;
+  setLevel(level: LogLevel): void;
+  updateConfig(config: Partial<LoggerConfig>): void;
+  debug(message: string, context?: Record<string, unknown>): void;
+  info(message: string, context?: Record<string, unknown>): void;
+  warn(message: string, context?: Record<string, unknown>): void;
+  error(message: string, error?: Error, context?: Record<string, unknown>): void;
+  time<T>(fn: () => Promise<T>, label: string, context?: Record<string, unknown>): Promise<T>;
+  timeSync<T>(fn: () => T, label: string, context?: Record<string, unknown>): T;
+}
 
-  constructor(config: Partial<LoggerConfig> = {}) {
-    this.config = {
+/**
+ * Internal state for logger instance
+ */
+interface LoggerState {
+  config: LoggerConfig;
+  context?: Record<string, unknown>;
+}
+
+/**
+ * Options for creating a logger instance
+ */
+interface CreateLoggerOptions {
+  config?: Partial<LoggerConfig>;
+  context?: Record<string, unknown>;
+}
+
+/**
+ * Create a logger instance with the specified configuration and context
+ */
+export function createLogger(options: Partial<LoggerConfig> | CreateLoggerOptions = {}): Logger {
+  // Handle both old style (config object) and new style (options with config and context)
+  const isOptionsStyle = 'config' in options || 'context' in options;
+  const config = isOptionsStyle ? (options as CreateLoggerOptions).config || {} : (options as Partial<LoggerConfig>);
+  const initialContext = isOptionsStyle ? (options as CreateLoggerOptions).context : undefined;
+
+  const state: LoggerState = {
+    config: {
       level: 'info',
       format: 'pretty',
       includeTimestamp: true,
       includeContext: true,
       colors: true,
       ...config,
-    };
-  }
-
-  /**
-   * Create a child logger with additional context
-   */
-  child(context: Record<string, unknown>): Logger {
-    const childLogger = new Logger(this.config);
-    childLogger.context = { ...this.context, ...context };
-    return childLogger;
-  }
-
-  /**
-   * Create a logger for a specific module
-   */
-  module(moduleName: string): Logger {
-    return this.child({ module: moduleName });
-  }
-
-  /**
-   * Set the log level
-   */
-  setLevel(level: LogLevel): void {
-    this.config.level = level;
-  }
-
-  /**
-   * Update logger configuration
-   */
-  updateConfig(config: Partial<LoggerConfig>): void {
-    this.config = { ...this.config, ...config };
-  }
+    },
+    context: initialContext,
+  };
 
   /**
    * Check if a log level should be output
    */
-  private shouldLog(level: LogLevel): boolean {
-    return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[this.config.level];
-  }
+  const shouldLog = (level: LogLevel): boolean => {
+    return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[state.config.level];
+  };
 
   /**
    * Create a log entry
    */
-  private createLogEntry(
+  const createLogEntry = (
     level: LogLevel,
     message: string,
     error?: Error,
     additionalContext?: Record<string, unknown>
-  ): LogEntry {
+  ): LogEntry => {
     const entry: LogEntry = {
       id: randomUUID(),
       timestamp: new Date().toISOString(),
       level,
       message,
-      module: this.context?.module,
-      function: this.context?.function,
+      module: state.context?.module,
+      function: state.context?.function,
     };
 
     // Merge contexts
-    if (this.config.includeContext) {
-      entry.context = { ...this.context, ...additionalContext };
+    if (state.config.includeContext) {
+      entry.context = { ...state.context, ...additionalContext };
     }
 
     // Add error information if provided
@@ -144,13 +152,13 @@ class Logger {
     }
 
     return entry;
-  }
+  };
 
   /**
    * Format a log entry for output
    */
-  private formatEntry(entry: LogEntry): string {
-    switch (this.config.format) {
+  const formatEntry = (entry: LogEntry): string => {
+    switch (state.config.format) {
       case 'json':
         return JSON.stringify(entry);
 
@@ -163,13 +171,13 @@ class Logger {
         const parts: string[] = [];
 
         // Timestamp
-        if (this.config.includeTimestamp) {
+        if (state.config.includeTimestamp) {
           const time = new Date(entry.timestamp).toLocaleTimeString();
           parts.push(chalk.gray(time));
         }
 
         // Level symbol and name
-        const colorFn = this.config.colors ? LEVEL_COLORS[entry.level] : (s: string) => s;
+        const colorFn = state.config.colors ? LEVEL_COLORS[entry.level] : (s: string) => s;
         parts.push(
           `${colorFn(LEVEL_SYMBOLS[entry.level])} ${colorFn(entry.level.toUpperCase().padEnd(5))}`
         );
@@ -209,23 +217,23 @@ class Logger {
         return result;
       }
     }
-  }
+  };
 
   /**
    * Internal logging method
    */
-  private log(
+  const logInternal = (
     level: LogLevel,
     message: string,
     error?: Error,
     additionalContext?: Record<string, any>
-  ): void {
-    if (!this.shouldLog(level)) {
+  ): void => {
+    if (!shouldLog(level)) {
       return;
     }
 
-    const entry = this.createLogEntry(level, message, error, additionalContext);
-    const formatted = this.formatEntry(entry);
+    const entry = createLogEntry(level, message, error, additionalContext);
+    const formatted = formatEntry(entry);
 
     // Output to appropriate stream
     if (level === 'error') {
@@ -233,81 +241,125 @@ class Logger {
     } else {
       console.log(formatted);
     }
-  }
+  };
+
+  /**
+   * Create a child logger with additional context
+   */
+  const child = (context: Record<string, unknown>): Logger => {
+    return createLogger({
+      config: state.config,
+      context: { ...state.context, ...context },
+    });
+  };
+
+  /**
+   * Create a logger for a specific module
+   */
+  const module = (moduleName: string): Logger => {
+    return child({ module: moduleName });
+  };
+
+  /**
+   * Set the log level
+   */
+  const setLevel = (level: LogLevel): void => {
+    state.config.level = level;
+  };
+
+  /**
+   * Update logger configuration
+   */
+  const updateConfig = (config: Partial<LoggerConfig>): void => {
+    state.config = { ...state.config, ...config };
+  };
 
   /**
    * Debug level logging
    */
-  debug(message: string, context?: Record<string, unknown>): void {
-    this.log('debug', message, undefined, context);
-  }
+  const debug = (message: string, context?: Record<string, unknown>): void => {
+    logInternal('debug', message, undefined, context);
+  };
 
   /**
    * Info level logging
    */
-  info(message: string, context?: Record<string, unknown>): void {
-    this.log('info', message, undefined, context);
-  }
+  const info = (message: string, context?: Record<string, unknown>): void => {
+    logInternal('info', message, undefined, context);
+  };
 
   /**
    * Warning level logging
    */
-  warn(message: string, context?: Record<string, unknown>): void {
-    this.log('warn', message, undefined, context);
-  }
+  const warn = (message: string, context?: Record<string, unknown>): void => {
+    logInternal('warn', message, undefined, context);
+  };
 
   /**
    * Error level logging
    */
-  error(message: string, error?: Error, context?: Record<string, unknown>): void {
-    this.log('error', message, error, context);
-  }
+  const error = (message: string, errorObj?: Error, context?: Record<string, unknown>): void => {
+    logInternal('error', message, errorObj, context);
+  };
 
   /**
    * Log function execution with timing
    */
-  async time<T>(
+  const time = async <T>(
     fn: () => Promise<T>,
     label: string,
     context?: Record<string, unknown>
-  ): Promise<T> {
+  ): Promise<T> => {
     const start = Date.now();
-    this.debug(`Starting ${label}`, context);
+    debug(`Starting ${label}`, context);
 
     try {
       const result = await fn();
       const duration = Date.now() - start;
-      this.info(`Completed ${label}`, { ...context, duration: `${duration}ms` });
+      info(`Completed ${label}`, { ...context, duration: `${duration}ms` });
       return result;
-    } catch (error) {
+    } catch (caughtError) {
       const duration = Date.now() - start;
-      this.error(`Failed ${label}`, error as Error, { ...context, duration: `${duration}ms` });
-      throw error;
+      error(`Failed ${label}`, caughtError as Error, { ...context, duration: `${duration}ms` });
+      throw caughtError;
     }
-  }
+  };
 
   /**
    * Log function execution (sync) with timing
    */
-  timeSync<T>(fn: () => T, label: string, context?: Record<string, unknown>): T {
+  const timeSync = <T>(fn: () => T, label: string, context?: Record<string, unknown>): T => {
     const start = Date.now();
-    this.debug(`Starting ${label}`, context);
+    debug(`Starting ${label}`, context);
 
     try {
       const result = fn();
       const duration = Date.now() - start;
-      this.info(`Completed ${label}`, { ...context, duration: `${duration}ms` });
+      info(`Completed ${label}`, { ...context, duration: `${duration}ms` });
       return result;
-    } catch (error) {
+    } catch (caughtError) {
       const duration = Date.now() - start;
-      this.error(`Failed ${label}`, error as Error, { ...context, duration: `${duration}ms` });
-      throw error;
+      error(`Failed ${label}`, caughtError as Error, { ...context, duration: `${duration}ms` });
+      throw caughtError;
     }
-  }
+  };
+
+  return {
+    child,
+    module,
+    setLevel,
+    updateConfig,
+    debug,
+    info,
+    warn,
+    error,
+    time,
+    timeSync,
+  };
 }
 
 // Default logger instance
-export const logger = new Logger();
+export const logger = createLogger();
 
 // Environment-based configuration
 if (process.env.NODE_ENV === 'production') {
