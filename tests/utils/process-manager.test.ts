@@ -71,7 +71,7 @@ describe('Process Manager', () => {
       const mockChild = new EventEmitter();
 
       manager.trackChildProcess(mockChild);
-      expect(manager['childProcesses'].has(mockChild)).toBe(true);
+      expect(manager._state?.childProcesses.has(mockChild)).toBe(true);
     });
 
     it('should remove child process on exit', () => {
@@ -79,10 +79,10 @@ describe('Process Manager', () => {
       const mockChild = new EventEmitter();
 
       manager.trackChildProcess(mockChild);
-      expect(manager['childProcesses'].has(mockChild)).toBe(true);
+      expect(manager._state?.childProcesses.has(mockChild)).toBe(true);
 
       mockChild.emit('exit');
-      expect(manager['childProcesses'].has(mockChild)).toBe(false);
+      expect(manager._state?.childProcesses.has(mockChild)).toBe(false);
     });
 
     it('should track multiple child processes', () => {
@@ -95,7 +95,7 @@ describe('Process Manager', () => {
       manager.trackChildProcess(child2);
       manager.trackChildProcess(child3);
 
-      expect(manager['childProcesses'].size).toBe(3);
+      expect(manager._state?.childProcesses.size).toBe(3);
     });
 
     it('should handle exit events for multiple children', () => {
@@ -107,11 +107,11 @@ describe('Process Manager', () => {
       manager.trackChildProcess(child2);
 
       child1.emit('exit');
-      expect(manager['childProcesses'].size).toBe(1);
-      expect(manager['childProcesses'].has(child2)).toBe(true);
+      expect(manager._state?.childProcesses.size).toBe(1);
+      expect(manager._state?.childProcesses.has(child2)).toBe(true);
 
       child2.emit('exit');
-      expect(manager['childProcesses'].size).toBe(0);
+      expect(manager._state?.childProcesses.size).toBe(0);
     });
   });
 
@@ -146,7 +146,7 @@ describe('Process Manager', () => {
       manager.trackChildProcess(child);
       await manager.killAllProcesses();
 
-      expect(manager['childProcesses'].size).toBe(0);
+      expect(manager._state?.childProcesses.size).toBe(0);
     });
 
     it('should not kill already killed processes', async () => {
@@ -164,7 +164,7 @@ describe('Process Manager', () => {
 
     it('should handle null child processes', async () => {
       const manager = ProcessManager.getInstance();
-      manager['childProcesses'].add(null);
+      manager._state?.childProcesses.add(null);
 
       await expect(manager.killAllProcesses()).resolves.toBeUndefined();
     });
@@ -195,7 +195,7 @@ describe('Process Manager', () => {
       const killPromise = manager.killAllProcesses();
 
       // Advance time past the 2 second timeout
-      await vi.advanceTimersByTimeAsync(2100);
+      await vi.runAllTimersAsync();
 
       await killPromise;
 
@@ -219,7 +219,7 @@ describe('Process Manager', () => {
       manager.trackChildProcess(child);
       const killPromise = manager.killAllProcesses();
 
-      await vi.advanceTimersByTimeAsync(2100);
+      await vi.runAllTimersAsync();
       await killPromise;
 
       expect(child.kill).toHaveBeenCalledTimes(1);
@@ -316,14 +316,14 @@ describe('Process Manager', () => {
       manager.trackChildProcess(child1);
       manager.trackChildProcess(child2);
 
-      expect(manager['childProcesses'].size).toBe(2);
+      expect(manager._state?.childProcesses.size).toBe(2);
 
       child1.emit('exit');
-      expect(manager['childProcesses'].size).toBe(1);
+      expect(manager._state?.childProcesses.size).toBe(1);
 
       await manager.killAllProcesses();
       expect(child2.kill).toHaveBeenCalled();
-      expect(manager['childProcesses'].size).toBe(0);
+      expect(manager._state?.childProcesses.size).toBe(0);
     });
 
     it('should handle shutdown with multiple processes', async () => {
