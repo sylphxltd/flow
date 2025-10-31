@@ -62,17 +62,18 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Provider Management
-          </Text>
+      <Box flexDirection="column" paddingX={2} paddingY={1}>
+        <Box marginBottom={2}>
+          <Text color="#00D9FF">▌</Text>
+          <Text bold color="white"> PROVIDER MANAGEMENT</Text>
         </Box>
 
-        <SelectInput items={items} onSelect={handleSelect} />
+        <Box paddingLeft={2}>
+          <SelectInput items={items} onSelect={handleSelect} />
+        </Box>
 
-        <Box marginTop={1}>
-          <Text dimColor>Use ↑↓ arrows to navigate, Enter to select</Text>
+        <Box marginTop={2} paddingLeft={2}>
+          <Text color="gray">↑↓ Navigate · Enter Select · Esc Back</Text>
         </Box>
       </Box>
     );
@@ -81,16 +82,16 @@ export default function ProviderManagement() {
   // View mode
   if (mode === 'view') {
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Configured Providers
-          </Text>
+      <Box flexDirection="column" paddingX={2} paddingY={1}>
+        <Box marginBottom={2}>
+          <Text color="#00D9FF">▌</Text>
+          <Text bold color="white"> CONFIGURED PROVIDERS</Text>
         </Box>
 
         {configuredProviders.length === 0 ? (
-          <Box marginBottom={1}>
-            <Text color="yellow">No providers configured yet</Text>
+          <Box paddingLeft={2} marginBottom={2}>
+            <Text color="#FFD700">▌</Text>
+            <Text color="gray"> No providers configured yet</Text>
           </Box>
         ) : (
           configuredProviders.map((id) => (
@@ -104,8 +105,8 @@ export default function ProviderManagement() {
           ))
         )}
 
-        <Box marginTop={1}>
-          <Text dimColor>Press Esc to go back</Text>
+        <Box marginTop={1} paddingLeft={2}>
+          <Text color="gray">Press Esc to go back</Text>
         </Box>
       </Box>
     );
@@ -123,17 +124,18 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Select Provider to Configure
-          </Text>
+      <Box flexDirection="column" paddingX={2} paddingY={1}>
+        <Box marginBottom={2}>
+          <Text color="#00D9FF">▌</Text>
+          <Text bold color="white"> SELECT PROVIDER</Text>
         </Box>
 
-        <SelectInput items={items} onSelect={handleSelect} />
+        <Box paddingLeft={2}>
+          <SelectInput items={items} onSelect={handleSelect} />
+        </Box>
 
-        <Box marginTop={1}>
-          <Text dimColor>Press Esc to cancel</Text>
+        <Box marginTop={2} paddingLeft={2}>
+          <Text color="gray">↑↓ Navigate · Enter Select · Esc Cancel</Text>
         </Box>
       </Box>
     );
@@ -160,31 +162,34 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Configure {provider.name}
-          </Text>
+      <Box flexDirection="column" paddingX={2} paddingY={1}>
+        <Box marginBottom={2}>
+          <Text color="#00D9FF">▌</Text>
+          <Text bold color="white"> CONFIGURE {provider.name.toUpperCase()}</Text>
         </Box>
 
-        <Box marginBottom={1}>
-          <Text>Enter {provider.keyName}:</Text>
+        <Box marginBottom={2} paddingLeft={2}>
+          <Text color="gray">Enter your {provider.keyName}</Text>
         </Box>
 
-        <Box>
-          <Text color="green">{'*'.repeat(apiKeyInput.length)}</Text>
+        <Box flexDirection="column" paddingLeft={2}>
+          <Box marginBottom={1}>
+            <Text color="gray">{'*'.repeat(apiKeyInput.length)}</Text>
+          </Box>
+
+          <Box borderStyle="round" borderColor="#00D9FF" paddingX={2} paddingY={1}>
+            <TextInput
+              value={apiKeyInput}
+              onChange={setApiKeyInput}
+              onSubmit={handleSubmit}
+              placeholder={existing ? 'Keep existing or enter new' : 'Paste your API key...'}
+              showCursor
+            />
+          </Box>
         </Box>
 
-        <TextInput
-          value={apiKeyInput}
-          onChange={setApiKeyInput}
-          onSubmit={handleSubmit}
-          placeholder={existing ? 'Press Enter to keep existing' : 'Enter API key...'}
-          showCursor
-        />
-
-        <Box marginTop={1}>
-          <Text dimColor>Enter to save, Esc to cancel</Text>
+        <Box marginTop={2} paddingLeft={2}>
+          <Text color="gray">Enter Save · Esc Cancel</Text>
         </Box>
       </Box>
     );
@@ -205,17 +210,18 @@ export default function ProviderManagement() {
     };
 
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Remove Provider
-          </Text>
+      <Box flexDirection="column" paddingX={2} paddingY={1}>
+        <Box marginBottom={2}>
+          <Text color="#FF3366">▌</Text>
+          <Text bold color="white"> REMOVE PROVIDER</Text>
         </Box>
 
-        <SelectInput items={items} onSelect={handleSelect} />
+        <Box paddingLeft={2}>
+          <SelectInput items={items} onSelect={handleSelect} />
+        </Box>
 
-        <Box marginTop={1}>
-          <Text dimColor>Select provider to remove, Esc to cancel</Text>
+        <Box marginTop={2} paddingLeft={2}>
+          <Text color="gray">↑↓ Navigate · Enter Remove · Esc Cancel</Text>
         </Box>
       </Box>
     );

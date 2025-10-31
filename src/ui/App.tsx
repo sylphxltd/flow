@@ -39,25 +39,45 @@ export default function App() {
   }, [error, setError]);
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column" paddingX={2} paddingY={1}>
       {/* Header */}
-      <Box borderStyle="round" borderColor="cyan" padding={1} marginBottom={1}>
-        <Text bold color="cyan">
-          🤖 Sylphx Flow - AI Development Assistant
-        </Text>
+      <Box flexDirection="column" marginBottom={1}>
+        <Box>
+          <Text bold color="#00D9FF">
+            ╭─────────────────────────────────────────────╮
+          </Text>
+        </Box>
+        <Box paddingLeft={2} paddingRight={2}>
+          <Text bold color="#00D9FF">
+            ⚡ SYLPHX FLOW
+          </Text>
+          <Text dimColor> │ </Text>
+          <Text color="gray">AI Development Assistant</Text>
+        </Box>
+        <Box>
+          <Text bold color="#00D9FF">
+            ╰─────────────────────────────────────────────╯
+          </Text>
+        </Box>
       </Box>
 
       {/* Error Display */}
       {error && (
-        <Box borderStyle="round" borderColor="red" padding={1} marginBottom={1}>
-          <Text color="red">❌ {error}</Text>
+        <Box marginBottom={1}>
+          <Box>
+            <Text color="#FF3366">▌</Text>
+            <Text color="#FF3366" bold> ERROR </Text>
+            <Text color="gray"> {error}</Text>
+          </Box>
         </Box>
       )}
 
       {/* Loading Indicator */}
       {isLoading && (
         <Box marginBottom={1}>
-          <Text color="yellow">⏳ Loading...</Text>
+          <Text color="#FFD700">▌</Text>
+          <Text color="#FFD700" bold> LOADING</Text>
+          <Text color="gray">...</Text>
         </Box>
       )}
 
@@ -70,10 +90,19 @@ export default function App() {
 
       {/* Global Shortcuts Help */}
       {currentScreen === 'chat' && (
-        <Box marginTop={1} borderStyle="single" borderColor="gray" padding={1}>
-          <Text dimColor>
-            Shortcuts: <Text color="cyan">Ctrl+P</Text> Providers | <Text color="cyan">Ctrl+M</Text> Models | <Text color="cyan">Ctrl+Q</Text> Quit
-          </Text>
+        <Box marginTop={1} paddingY={1} paddingX={2}>
+          <Text color="#00D9FF">◆</Text>
+          <Text color="gray"> </Text>
+          <Text color="#00D9FF" bold>Ctrl+P</Text>
+          <Text dimColor> Providers </Text>
+          <Text color="gray">│</Text>
+          <Text dimColor> </Text>
+          <Text color="#00D9FF" bold>Ctrl+M</Text>
+          <Text dimColor> Models </Text>
+          <Text color="gray">│</Text>
+          <Text dimColor> </Text>
+          <Text color="#00D9FF" bold>Ctrl+Q</Text>
+          <Text dimColor> Quit</Text>
         </Box>
       )}
     </Box>

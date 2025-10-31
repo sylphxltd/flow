@@ -22,47 +22,57 @@ export default function ProviderCard({
 }: ProviderCardProps) {
   const provider = AI_PROVIDERS[providerId];
 
-  const icons: Record<ProviderId, string> = {
-    anthropic: '🔵',
-    openai: '🟢',
-    google: '🔴',
-    openrouter: '🟣',
+  const colors: Record<ProviderId, string> = {
+    anthropic: '#00D9FF',
+    openai: '#00FF88',
+    google: '#FF6B6B',
+    openrouter: '#A855F7',
   };
 
+  const color = colors[providerId];
+
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={isDefault ? 'green' : 'gray'}
-      padding={1}
-      marginBottom={1}
-    >
+    <Box flexDirection="column" marginBottom={2} paddingX={2}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color={isDefault ? 'green' : 'white'}>
-          {icons[providerId]} {provider.name}
-          {isDefault && <Text color="green"> (Default)</Text>}
-        </Text>
+        <Text color={color}>▌</Text>
+        <Text bold color="white"> {provider.name.toUpperCase()}</Text>
+        {isDefault && (
+          <>
+            <Text color="gray"> · </Text>
+            <Text color="#FFD700">DEFAULT</Text>
+          </>
+        )}
       </Box>
 
-      {/* API Key Status */}
-      <Box>
-        <Text dimColor>API Key: </Text>
-        <Text color={apiKey ? 'green' : 'red'}>{apiKey ? '✓ Configured' : '✗ Not configured'}</Text>
-      </Box>
-
-      {/* Default Model */}
-      {defaultModel && (
+      {/* Details */}
+      <Box flexDirection="column" paddingLeft={2} gap={1}>
+        {/* API Key Status */}
         <Box>
-          <Text dimColor>Model: </Text>
-          <Text>{defaultModel}</Text>
+          <Text color="gray">API Key </Text>
+          <Text color="gray">│ </Text>
+          {apiKey ? (
+            <Text color="#00FF88">✓ Configured</Text>
+          ) : (
+            <Text color="#FF3366">✗ Not configured</Text>
+          )}
         </Box>
-      )}
 
-      {/* Model Count */}
-      <Box>
-        <Text dimColor>Available Models: </Text>
-        <Text>{provider.models.length}</Text>
+        {/* Default Model */}
+        {defaultModel && (
+          <Box>
+            <Text color="gray">Model </Text>
+            <Text color="gray">│ </Text>
+            <Text color="white">{defaultModel}</Text>
+          </Box>
+        )}
+
+        {/* Model Count */}
+        <Box>
+          <Text color="gray">Available </Text>
+          <Text color="gray">│ </Text>
+          <Text color={color}>{provider.models.length} models</Text>
+        </Box>
       </Box>
     </Box>
   );

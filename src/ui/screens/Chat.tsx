@@ -32,22 +32,34 @@ export default function Chat() {
   // Check if ready to chat
   if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Welcome to Sylphx Flow AI Chat
-          </Text>
+      <Box flexDirection="column" paddingX={2} paddingY={2}>
+        <Box marginBottom={2}>
+          <Text color="#00D9FF">▌</Text>
+          <Text bold color="white"> WELCOME</Text>
         </Box>
 
-        <Box marginBottom={1}>
-          <Text color="yellow">⚠️  No AI provider configured yet</Text>
+        <Box marginBottom={2}>
+          <Text color="#FFD700">▌</Text>
+          <Text color="gray"> No AI provider configured yet</Text>
         </Box>
 
-        <Box flexDirection="column" marginBottom={1}>
-          <Text>To get started:</Text>
-          <Text dimColor>1. Press <Text color="cyan">Ctrl+P</Text> to configure a provider</Text>
-          <Text dimColor>2. Press <Text color="cyan">Ctrl+M</Text> to select a model</Text>
-          <Text dimColor>3. Come back here to start chatting</Text>
+        <Box flexDirection="column" marginBottom={1} gap={1}>
+          <Box>
+            <Text color="#00D9FF">1.</Text>
+            <Text color="gray"> Press </Text>
+            <Text bold color="#00D9FF">Ctrl+P</Text>
+            <Text color="gray"> to configure a provider</Text>
+          </Box>
+          <Box>
+            <Text color="#00D9FF">2.</Text>
+            <Text color="gray"> Press </Text>
+            <Text bold color="#00D9FF">Ctrl+M</Text>
+            <Text color="gray"> to select a model</Text>
+          </Box>
+          <Box>
+            <Text color="#00D9FF">3.</Text>
+            <Text color="gray"> Start chatting with AI</Text>
+          </Box>
         </Box>
       </Box>
     );
@@ -82,39 +94,64 @@ export default function Chat() {
   };
 
   return (
-    <Box flexDirection="column" height="100%">
+    <Box flexDirection="column" paddingX={2} paddingY={1}>
       {/* Header */}
-      <Box marginBottom={1} flexDirection="column">
-        <Text bold color="cyan">
-          Chat Session
-        </Text>
-        <Text dimColor>
-          Provider: {currentSession.provider} | Model: {currentSession.model}
-        </Text>
+      <Box marginBottom={2} flexDirection="column">
+        <Box>
+          <Text color="#00D9FF">▌</Text>
+          <Text bold color="white"> CHAT SESSION</Text>
+        </Box>
+        <Box paddingLeft={2}>
+          <Text color="gray">
+            {currentSession.provider} · {currentSession.model}
+          </Text>
+        </Box>
       </Box>
 
       {/* Messages */}
-      <Box flexDirection="column" marginBottom={1} flexGrow={1}>
+      <Box flexDirection="column" marginBottom={2}>
         {currentSession.messages.length === 0 && !isStreaming ? (
-          <Text dimColor>Start chatting by typing a message below...</Text>
+          <Box paddingLeft={2}>
+            <Text color="gray">Ready to chat. Type your message below...</Text>
+          </Box>
         ) : (
           <>
             {currentSession.messages.map((msg, i) => (
-              <Box key={i} marginBottom={1} flexDirection="column">
-                <Text bold color={msg.role === 'user' ? 'blue' : 'green'}>
-                  {msg.role === 'user' ? '👤 You' : '🤖 Assistant'}:
-                </Text>
-                <Text>{msg.content}</Text>
+              <Box key={i} marginBottom={2} flexDirection="column">
+                {msg.role === 'user' ? (
+                  <>
+                    <Box marginBottom={1}>
+                      <Text color="#00D9FF">▌</Text>
+                      <Text bold color="#00D9FF"> YOU</Text>
+                    </Box>
+                    <Box paddingLeft={2}>
+                      <Text color="white">{msg.content}</Text>
+                    </Box>
+                  </>
+                ) : (
+                  <>
+                    <Box marginBottom={1}>
+                      <Text color="#00FF88">▌</Text>
+                      <Text bold color="#00FF88"> ASSISTANT</Text>
+                    </Box>
+                    <Box paddingLeft={2}>
+                      <Text color="gray">{msg.content}</Text>
+                    </Box>
+                  </>
+                )}
               </Box>
             ))}
 
             {isStreaming && (
-              <Box marginBottom={1} flexDirection="column">
-                <Text bold color="green">
-                  🤖 Assistant:
-                </Text>
-                <Text>{streamingContent}</Text>
-                <Text color="yellow">▊</Text>
+              <Box marginBottom={2} flexDirection="column">
+                <Box marginBottom={1}>
+                  <Text color="#00FF88">▌</Text>
+                  <Text bold color="#00FF88"> ASSISTANT</Text>
+                </Box>
+                <Box paddingLeft={2}>
+                  <Text color="gray">{streamingContent}</Text>
+                  <Text color="#FFD700">▊</Text>
+                </Box>
               </Box>
             )}
           </>
@@ -122,24 +159,20 @@ export default function Chat() {
       </Box>
 
       {/* Input */}
-      <Box
-        borderStyle="single"
-        borderColor="cyan"
-        padding={1}
-        flexDirection="column"
-      >
-        <Text dimColor>Message:</Text>
-        <TextInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          placeholder={isStreaming ? 'Please wait...' : 'Type your message...'}
-          showCursor={!isStreaming}
-        />
-      </Box>
-
-      <Box marginTop={1}>
-        <Text dimColor>Type and press Enter to send</Text>
+      <Box flexDirection="column">
+        <Box marginBottom={1}>
+          <Text color="#00D9FF">▌</Text>
+          <Text bold color="white"> INPUT</Text>
+        </Box>
+        <Box paddingLeft={2} paddingRight={2} paddingY={1} borderStyle="round" borderColor="#00D9FF">
+          <TextInput
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSubmit}
+            placeholder={isStreaming ? 'Waiting for response...' : 'Type your message...'}
+            showCursor={!isStreaming}
+          />
+        </Box>
       </Box>
     </Box>
   );
