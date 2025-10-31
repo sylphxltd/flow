@@ -140,6 +140,7 @@ async function configureAPIKeys(config: AIConfig, cwd: string): Promise<void> {
         type: 'password',
         name: 'apiKey',
         message: `Enter ${provider.keyName}:`,
+        mask: '*',
         default: existing,
         validate: (input: string) => {
           if (!input || input.trim() === '') {
@@ -385,6 +386,7 @@ export async function quickSetupAI(cwd: string = process.cwd()): Promise<boolean
       type: 'password',
       name: 'apiKey',
       message: `Enter your ${providerInfo.keyName}:`,
+      mask: '*',
       validate: (input: string) => {
         if (!input || input.trim() === '') {
           return 'API key is required';
