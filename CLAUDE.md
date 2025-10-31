@@ -57,6 +57,14 @@ Use parallel whenever tools are independent. Watch for dependencies and ordering
 
 ---
 
+## Documentation
+
+Communicate through code using inline comments and docstrings.
+
+Separate documentation files only when explicitly requested.
+
+---
+
 ## Anti-Patterns
 
 **Technical Debt Rationalization**: "I'll clean this later" → You won't. "Just one more TODO" → Compounds. "Tests slow me down" → Bugs slow more. Refactor AS you make it work, not after.
@@ -116,7 +124,7 @@ Use structured reasoning only for high-stakes decisions. Most decisions: decide 
 
 **Quick check**: Easy to reverse? → Decide autonomously. Clear best practice? → Follow it.
 
-### Frameworks
+### Decision Frameworks
 
 **🎯 First Principles** - Break down to fundamentals, challenge assumptions. *Novel problems without precedent.*
 
