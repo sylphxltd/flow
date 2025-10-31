@@ -9,11 +9,20 @@ import TextInput from 'ink-text-input';
 import { useAppStore } from '../stores/app-store.js';
 import { useChat } from '../hooks/useChat.js';
 import StatusBar from '../components/StatusBar.js';
+import Spinner from '../components/Spinner.js';
+
+interface ToolExecution {
+  name: string;
+  status: 'running' | 'completed' | 'failed';
+  startTime: number;
+  duration?: number;
+}
 
 export default function Chat() {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [activeTools, setActiveTools] = useState<ToolExecution[]>([]);
 
   const navigateTo = useAppStore((state) => state.navigateTo);
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -80,15 +89,40 @@ export default function Chat() {
     setInput('');
     setIsStreaming(true);
     setStreamingContent('');
+    setActiveTools([]);
 
     await sendMessage(
       userMessage,
+      // onChunk - text streaming
       (chunk) => {
         setStreamingContent((prev) => prev + chunk);
       },
+      // onToolCall - tool execution started
+      (toolName, args) => {
+        setActiveTools((prev) => [
+          ...prev,
+          {
+            name: toolName,
+            status: 'running',
+            startTime: Date.now(),
+          },
+        ]);
+      },
+      // onToolResult - tool execution completed
+      (toolName, result, duration) => {
+        setActiveTools((prev) =>
+          prev.map((tool) =>
+            tool.name === toolName
+              ? { ...tool, status: 'completed', duration }
+              : tool
+          )
+        );
+      },
+      // onComplete - streaming finished
       () => {
         setIsStreaming(false);
         setStreamingContent('');
+        setActiveTools([]);
       }
     );
   };
@@ -133,8 +167,46 @@ export default function Chat() {
                 <Box marginBottom={1}>
                   <Text color="#00FF88">▌ ASSISTANT</Text>
                 </Box>
-                <Text color="gray">{streamingContent}</Text>
-                <Text color="#FFD700">▊</Text>
+
+                {/* Tool executions */}
+                {activeTools.map((tool, idx) => (
+                  <Box key={`${tool.name}-${idx}`} marginBottom={1}>
+                    {tool.status === 'running' ? (
+                      <>
+                        <Spinner color="#00FF88" />
+                        <Text color="white" bold> {tool.name}</Text>
+                        <Text color="gray"> (executing...)</Text>
+                      </>
+                    ) : tool.status === 'completed' ? (
+                      <>
+                        <Text color="#00FF88">● </Text>
+                        <Text color="white" bold>{tool.name}</Text>
+                        <Text color="gray"> ({tool.duration}ms)</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text color="red">● </Text>
+                        <Text color="white" bold>{tool.name}</Text>
+                        <Text color="red"> (failed)</Text>
+                      </>
+                    )}
+                  </Box>
+                ))}
+
+                {/* Streaming text content */}
+                {streamingContent && (
+                  <Box marginBottom={1}>
+                    <Text color="gray">{streamingContent}</Text>
+                  </Box>
+                )}
+
+                {/* Animated loading indicator */}
+                {!streamingContent && activeTools.length === 0 && (
+                  <Box>
+                    <Spinner color="#FFD700" label="Thinking..." />
+                  </Box>
+                )}
+                {streamingContent && <Text color="#FFD700">▊</Text>}
               </Box>
             )}
           </Box>
