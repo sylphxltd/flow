@@ -1,5 +1,5 @@
 {
-  "name": "@sylphxltd/flow",
+  "name": "@sylphx/flow",
   "version": "0.0.3",
   "description": "Sylphx Flow - Type-safe development flow for modern web development",
   "type": "module",
