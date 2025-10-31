@@ -16,26 +16,39 @@ export interface MCPInstallResult {
 }
 
 /**
- * Composable MCP installer
+ * MCP Installer interface
+ */
+export interface MCPInstaller {
+  selectServers(options?: { quiet?: boolean }): Promise<MCPServerID[]>;
+  configureServers(
+    selectedServers: MCPServerID[],
+    options?: { quiet?: boolean }
+  ): Promise<Record<MCPServerID, Record<string, string>>>;
+  installServers(
+    selectedServers: MCPServerID[],
+    serverConfigsMap: Record<MCPServerID, Record<string, string>>,
+    options?: { quiet?: boolean }
+  ): Promise<void>;
+  setupMCP(options?: { quiet?: boolean; dryRun?: boolean }): Promise<MCPInstallResult>;
+}
+
+/**
+ * Create an MCP installer instance
  * Handles server selection, configuration, and installation
  */
-export class MCPInstaller {
-  private mcpService: MCPService;
-
-  constructor(targetId: string) {
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
-      throw new Error(`Target not found: ${targetId}`);
-    }
-    this.mcpService = createMCPService({ target });
+export function createMCPInstaller(targetId: string): MCPInstaller {
+  const target = targetManager.getTarget(targetId);
+  if (!target) {
+    throw new Error(`Target not found: ${targetId}`);
   }
+  const mcpService = createMCPService({ target });
 
   /**
    * Prompt user to select MCP servers
    */
-  async selectServers(options: { quiet?: boolean } = {}): Promise<MCPServerID[]> {
-    const allServers = this.mcpService.getAllServerIds();
-    const installedServers = await this.mcpService.getInstalledServerIds();
+  const selectServers = async (options: { quiet?: boolean } = {}): Promise<MCPServerID[]> => {
+    const allServers = mcpService.getAllServerIds();
+    const installedServers = await mcpService.getInstalledServerIds();
 
     if (!options.quiet) {
       console.log(chalk.cyan.bold('━━━ Configure MCP Tools ━━━\n'));
@@ -67,15 +80,15 @@ export class MCPInstaller {
     selectedServers = [...new Set([...requiredServers, ...selectedServers])];
 
     return selectedServers;
-  }
+  };
 
   /**
    * Configure selected servers
    */
-  async configureServers(
+  const configureServers = async (
     selectedServers: MCPServerID[],
     options: { quiet?: boolean } = {}
-  ): Promise<Record<MCPServerID, Record<string, string>>> {
+  ): Promise<Record<MCPServerID, Record<string, string>>> => {
     const serversNeedingConfig = selectedServers.filter((id) => {
       const server = MCP_SERVER_REGISTRY[id];
       return server.envVars && Object.keys(server.envVars).length > 0;
@@ -90,22 +103,22 @@ export class MCPInstaller {
 
       const collectedEnv: Record<string, string> = {};
       for (const serverId of serversNeedingConfig) {
-        const configValues = await this.mcpService.configureServer(serverId, collectedEnv);
+        const configValues = await mcpService.configureServer(serverId, collectedEnv);
         serverConfigsMap[serverId] = configValues;
       }
     }
 
     return serverConfigsMap;
-  }
+  };
 
   /**
    * Install servers with configuration
    */
-  async installServers(
+  const installServers = async (
     selectedServers: MCPServerID[],
     serverConfigsMap: Record<MCPServerID, Record<string, string>>,
     options: { quiet?: boolean } = {}
-  ): Promise<void> {
+  ): Promise<void> => {
     if (selectedServers.length === 0) {
       return;
     }
@@ -119,7 +132,7 @@ export class MCPInstaller {
         }).start();
 
     try {
-      await this.mcpService.installServers(selectedServers, serverConfigsMap);
+      await mcpService.installServers(selectedServers, serverConfigsMap);
       if (spinner) {
         spinner.succeed(
           chalk.green(
@@ -133,27 +146,70 @@ export class MCPInstaller {
       }
       throw error;
     }
-  }
+  };
 
   /**
    * Full MCP setup workflow: select, configure, and install
    */
-  async setupMCP(options: { quiet?: boolean; dryRun?: boolean } = {}): Promise<MCPInstallResult> {
+  const setupMCP = async (
+    options: { quiet?: boolean; dryRun?: boolean } = {}
+  ): Promise<MCPInstallResult> => {
     // Select servers
-    const selectedServers = await this.selectServers(options);
+    const selectedServers = await selectServers(options);
 
     if (selectedServers.length === 0) {
       return { selectedServers: [], serverConfigsMap: {} };
     }
 
     // Configure servers
-    const serverConfigsMap = await this.configureServers(selectedServers, options);
+    const serverConfigsMap = await configureServers(selectedServers, options);
 
     // Install servers
     if (!options.dryRun) {
-      await this.installServers(selectedServers, serverConfigsMap, options);
+      await installServers(selectedServers, serverConfigsMap, options);
     }
 
     return { selectedServers, serverConfigsMap };
+  };
+
+  return {
+    selectServers,
+    configureServers,
+    installServers,
+    setupMCP,
+  };
+}
+
+/**
+ * @deprecated Use createMCPInstaller() for new code
+ */
+export class MCPInstaller {
+  private installer: ReturnType<typeof createMCPInstaller>;
+
+  constructor(targetId: string) {
+    this.installer = createMCPInstaller(targetId);
+  }
+
+  async selectServers(options: { quiet?: boolean } = {}): Promise<MCPServerID[]> {
+    return this.installer.selectServers(options);
+  }
+
+  async configureServers(
+    selectedServers: MCPServerID[],
+    options: { quiet?: boolean } = {}
+  ): Promise<Record<MCPServerID, Record<string, string>>> {
+    return this.installer.configureServers(selectedServers, options);
+  }
+
+  async installServers(
+    selectedServers: MCPServerID[],
+    serverConfigsMap: Record<MCPServerID, Record<string, string>>,
+    options: { quiet?: boolean } = {}
+  ): Promise<void> {
+    return this.installer.installServers(selectedServers, serverConfigsMap, options);
+  }
+
+  async setupMCP(options: { quiet?: boolean; dryRun?: boolean } = {}): Promise<MCPInstallResult> {
+    return this.installer.setupMCP(options);
   }
 }
