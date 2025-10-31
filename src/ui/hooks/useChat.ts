@@ -100,9 +100,23 @@ export function useChat() {
 
       let fullResponse = '';
 
-      for await (const chunk of result.textStream) {
-        fullResponse += chunk;
-        onChunk(chunk);
+      // Note: Some models (like MiniMax M2) output text in reasoning stream when tools are present
+      // We need to read from fullStream to capture both text and reasoning
+      for await (const chunk of result.fullStream) {
+        if (chunk.type === 'text-delta') {
+          const delta = chunk.textDelta;
+          if (delta && typeof delta === 'string') {
+            fullResponse += delta;
+            onChunk(delta);
+          }
+        } else if (chunk.type === 'reasoning-delta') {
+          // Some models put all output in reasoning when tools are present
+          const delta = (chunk as any).text;
+          if (delta && typeof delta === 'string') {
+            fullResponse += delta;
+            onChunk(delta);
+          }
+        }
       }
 
       // Add assistant message to session

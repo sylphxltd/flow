@@ -47,7 +47,7 @@ Available tools:
 - glob_files: Search files by pattern
 - grep_content: Search content in files
 
-Use tools proactively to help users with their tasks.`;
+Use tools when necessary to complete tasks. For questions about your capabilities, respond directly with text.`;
 
 /**
  * Get or create session for headless mode
@@ -156,34 +156,65 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
       toolChoice: 'auto', // Let model decide when to use tools
       maxToolRoundtrips: 5, // Allow multiple tool calls
       onStepFinish: (step) => {
-        // Show tool calls if verbose
-        if (options.verbose && step.toolCalls && step.toolCalls.length > 0) {
-          for (const call of step.toolCalls) {
-            console.error(
-              chalk.dim(`\n🔧 Tool: ${call.toolName}(${JSON.stringify(call.args)})\n`)
-            );
+        // Debug logging in verbose mode
+        if (options.verbose) {
+          console.error(chalk.dim(`\n[Step finished]`));
+          console.error(chalk.dim(`  Finish reason: ${step.finishReason}`));
+          console.error(chalk.dim(`  Tool calls: ${step.toolCalls?.length || 0}`));
+          console.error(chalk.dim(`  Text: ${step.text?.substring(0, 100) || '(empty)'}`));
+
+          if (step.toolCalls && step.toolCalls.length > 0) {
+            for (const call of step.toolCalls) {
+              console.error(chalk.dim(`  🔧 Tool: ${call.toolName}(${JSON.stringify(call.args)})`));
+            }
+          }
+
+          if (step.toolResults && step.toolResults.length > 0) {
+            for (const result of step.toolResults) {
+              console.error(chalk.dim(`  ✓ Result: ${JSON.stringify(result.result)?.substring(0, 100)}`));
+            }
           }
         }
       },
     });
 
     // Output assistant response
+    // Note: Some models (like MiniMax M2) output text in reasoning stream when tools are present
+    // We need to read from fullStream to capture both text and reasoning
     let fullResponse = '';
     let hasOutput = false;
 
     if (options.verbose) {
-      console.error(chalk.dim('\n[Streaming text response...]'));
+      console.error(chalk.dim('\n[Streaming response...]'));
     }
 
-    for await (const chunk of result.textStream) {
-      if (!hasOutput) {
-        hasOutput = true;
-        if (options.verbose) {
-          console.error(chalk.dim('[First chunk received]'));
+    for await (const chunk of result.fullStream) {
+      if (chunk.type === 'text-delta') {
+        const delta = chunk.textDelta;
+        if (delta && typeof delta === 'string') {
+          if (!hasOutput) {
+            hasOutput = true;
+            if (options.verbose) {
+              console.error(chalk.dim('[First text chunk received]'));
+            }
+          }
+          process.stdout.write(delta);
+          fullResponse += delta;
+        }
+      } else if (chunk.type === 'reasoning-delta') {
+        // Some models put all output in reasoning when tools are present
+        const delta = (chunk as any).text;
+        if (delta && typeof delta === 'string') {
+          if (!hasOutput) {
+            hasOutput = true;
+            if (options.verbose) {
+              console.error(chalk.dim('[First reasoning chunk received - model outputting as reasoning]'));
+            }
+          }
+          process.stdout.write(delta);
+          fullResponse += delta;
         }
       }
-      process.stdout.write(chunk);
-      fullResponse += chunk;
     }
 
     if (options.verbose) {
