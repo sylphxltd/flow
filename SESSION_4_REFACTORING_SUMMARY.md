@@ -446,16 +446,173 @@ Comprehensive documentation created covering:
 
 ---
 
+### Phase 2.4: AgentService ✅
+
+**File**: `src/services/agent-service.ts`
+
+**Changes**:
+- Converted `AgentService` class with static methods → standalone exported functions
+- No class wrapper needed (no instance state)
+- 2 public static methods → 2 exported functions
+- 1 private static method → internal helper function
+
+**Pattern**:
+```typescript
+// Before: Class with static methods
+export class AgentService {
+  static async getAgentList(agentsOption: string): Promise<string[]> { }
+  static async runAgent(...): Promise<void> { }
+  private static async runSingleAgent(...): Promise<void> { }
+}
+
+// After: Standalone functions
+export async function getAgentList(agentsOption: string): Promise<string[]> { }
+export async function runAgent(...): Promise<void> { }
+async function runSingleAgent(...): Promise<void> { }
+```
+
+**Special Notes**:
+- Bug fix: Line 258 changed `stderr` → `stderrFinal` (undefined variable)
+- No state management needed
+- Functions are naturally pure (except for I/O side effects)
+
+**Test Status**: ✅ Build successful, 2002/2002 passing tests maintained
+
+---
+
+### Phase 2.5: EvaluationService ✅
+
+**File**: `src/services/evaluation-service.ts`
+
+**Changes**:
+- Converted `EvaluationService` class with static methods → standalone exported functions
+- No class wrapper needed (no instance state)
+- 1 public static method → 1 exported function
+- 1 private static method → internal helper function
+
+**Pattern**:
+```typescript
+// Before: Class with static methods
+export class EvaluationService {
+  static async evaluateResults(...): Promise<void> { }
+  private static async buildEvaluationPrompt(...): Promise<string> { }
+}
+
+// After: Standalone functions
+export async function evaluateResults(...): Promise<void> { }
+async function buildEvaluationPrompt(...): Promise<string> { }
+```
+
+**Test Status**: ✅ Build successful, 2002/2002 passing tests maintained
+
+---
+
+### Phase 2.6: IndexerService ✅
+
+**File**: `src/services/search/indexer.ts`
+
+**Changes**:
+- Converted `IndexerService` class → `createIndexerService()` factory
+- Created `IndexerService` interface for public API
+- Created `IndexerServiceState` for internal state management
+- All 13 methods (6 public + 7 internal) converted to arrow functions in closure
+- State managed immutably: Maps and Sets updated with spread operators
+- Replace singleton pattern with factory function call
+
+**State Management**:
+```typescript
+interface IndexerServiceState {
+  readonly embeddingProvider?: EmbeddingProvider;
+  readonly vectorStorages: ReadonlyMap<string, VectorStorage>;
+  readonly progressCallbacks: ReadonlySet<(progress: IndexingProgress) => void>;
+}
+
+let state: IndexerServiceState = {
+  embeddingProvider,
+  vectorStorages: new Map(),
+  progressCallbacks: new Set(),
+};
+
+const updateState = (updates: Partial<IndexerServiceState>): void => {
+  state = { ...state, ...updates };
+};
+
+// Immutable Map updates
+const newStorages = new Map(state.vectorStorages);
+newStorages.set(domain, vectorStorage);
+updateState({ vectorStorages: newStorages });
+
+// Immutable Set updates
+const newCallbacks = new Set(state.progressCallbacks);
+newCallbacks.add(callback);
+updateState({ progressCallbacks: newCallbacks });
+```
+
+**Methods Converted**:
+- Public: `initialize`, `onProgress`, `offProgress`, `buildIndex`, `updateIndex`, `removeFromIndex`
+- Internal: `reportProgress`, `scanDomainFiles`, `scanKnowledgeFiles`, `scanCodebaseFiles`, `buildVectorIndex`, `detectLanguage`
+
+**Test Status**: ✅ Build successful, 2002/2002 passing tests maintained
+**Lines Refactored**: 335
+
+---
+
+### Phase 2.7: MCPService ✅
+
+**File**: `src/services/mcp-service.ts`
+
+**Changes**:
+- Converted `MCPService` class → `createMCPService()` factory
+- Created `MCPService` interface for public API
+- Created `MCPServiceDeps` for dependency injection (target)
+- All 9 public + 2 helper methods converted to arrow functions in closure
+- No internal state needed - all methods pure or use injected deps
+
+**Dependencies**:
+```typescript
+export interface MCPServiceDeps {
+  readonly target: Target;
+}
+```
+
+**Methods Converted**:
+- Public: `getAllServerIds`, `getAvailableServers`, `getInstalledServerIds`, `getRequiringConfiguration`, `validateServer`, `configureServer`, `installServers`, `readConfig`, `writeConfig`
+- Helpers: `getNestedProperty` (pure function), `setNestedProperty` (side effect - documented)
+
+**Call Sites Updated**: 5 total
+- `src/commands/mcp-command.ts`: 3 usages
+- `src/core/installers/mcp-installer.ts`: 1 usage (MCPInstaller constructor)
+- `src/core/service-config.ts`: 1 usage (DI container)
+
+**Pattern**:
+```typescript
+// Before
+const mcpService = new MCPService(targetId);
+
+// After
+const target = targetManager.getTarget(targetId);
+if (!target) {
+  throw new Error(`Target not found: ${targetId}`);
+}
+const mcpService = createMCPService({ target });
+```
+
+**Special Notes**:
+- `setNestedProperty` has side effect (mutates config object) - explicitly documented
+- No mutable internal state
+- All methods either pure or use injected deps
+
+**Test Status**: ✅ Build successful, 2002/2002 passing tests maintained
+**Lines Refactored**: 342
+
+---
+
 ### Remaining Work - Phase 2
 
-**Services to Convert** (5 remaining):
-1. `AgentService` (267 lines) - Static methods only
-2. `EvaluationService` (272 lines)
-3. `IndexerService` (335 lines)
-4. `MCPService` (342 lines)
-5. `UnifiedSearchService` (823 lines) - Largest
+**Services to Convert** (1 remaining):
+1. `UnifiedSearchService` (823 lines) - Largest, final
 
-**Estimated Effort**: 2-3 sessions
+**Estimated Effort**: 1-2 sessions
 
 **Test Status**:
 - Current: 2002 pass / 197 fail
@@ -475,12 +632,17 @@ Comprehensive documentation created covering:
 
 ### Phase 2 (In Progress)
 - **Documentation**: 1 comprehensive guide (399 lines)
-- **Services Converted**: 2 / 7 (29%)
+- **Services Converted**: 6 / 7 (86%)
   - ✅ EmbeddingsProviderService (232 lines refactored)
   - ✅ MemoryService (275 lines refactored)
-- **Total Lines Refactored**: ~507 lines
+  - ✅ AgentService (147 lines refactored)
+  - ✅ EvaluationService (67 lines refactored)
+  - ✅ IndexerService (335 lines refactored)
+  - ✅ MCPService (342 lines refactored)
+  - ⏳ UnifiedSearchService (823 lines) - Final
+- **Total Lines Refactored**: ~1398 lines
 - **Test Coverage**: 2002/2002 passing tests maintained
-- **Commits**: 2 conversion commits + 1 Phase 1 summary
+- **Commits**: 6 conversion commits + 1 Phase 1 summary
 
 ---
 
@@ -489,11 +651,11 @@ Comprehensive documentation created covering:
 Continue Phase 2 conversions:
 1. ✅ EmbeddingsProviderService - **DONE**
 2. ✅ MemoryService - **DONE**
-3. 🔄 AgentService (static methods) - **IN PROGRESS**
-4. ⏳ EvaluationService
-5. ⏳ IndexerService
-6. ⏳ MCPService
-7. ⏳ UnifiedSearchService (largest)
+3. ✅ AgentService (static methods) - **DONE**
+4. ✅ EvaluationService - **DONE**
+5. ✅ IndexerService - **DONE**
+6. ✅ MCPService - **DONE**
+7. 🔄 UnifiedSearchService (largest) - **IN PROGRESS**
 
 After Phase 2:
 - Phase 3: Remove global singletons
@@ -505,5 +667,5 @@ After Phase 2:
 **Started**: December 30, 2024
 **Last Updated**: December 30, 2024
 **Session**: 4
-**Total Commits**: 4 (2 Phase 1 + 2 Phase 2)
-**Status**: Phase 2 in progress (2/7 services complete)
+**Total Commits**: 7 (1 Phase 1 summary + 6 Phase 2 conversions)
+**Status**: Phase 2 in progress (6/7 services complete, 86%)
