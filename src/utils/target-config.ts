@@ -418,8 +418,11 @@ export async function configureMCPServerForTarget(
  * Get target-specific help text
  */
 export function getTargetHelpText(targetId: string): string {
-  const target = targetManager.getTarget(targetId);
-  return target ? target.getHelpText() : '';
+  const targetOption = targetManager.getTarget(targetId);
+  if (targetOption._tag === 'Some') {
+    return targetOption.value.getHelpText();
+  }
+  return '';
 }
 
 /**
@@ -460,7 +463,8 @@ export function targetSupportsMCPServers(targetId: string): boolean {
  * Get targets that support MCP servers
  */
 export function getTargetsWithMCPSupport(): string[] {
-  return targetManager.getTargetsWithMCPSupport();
+  const targets = targetManager.getTargetsWithMCPSupport();
+  return targets.map((target) => target.id);
 }
 
 /**
