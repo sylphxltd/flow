@@ -104,13 +104,15 @@ export default function ModelSelection() {
 
     return (
       <Box flexDirection="column" height="100%">
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text color="#00D9FF">▌ SELECT PROVIDER</Text>
         </Box>
 
-        <SelectInput items={items} onSelect={handleSelect} />
+        <Box paddingY={1}>
+          <SelectInput items={items} onSelect={handleSelect} />
+        </Box>
 
-        <Box marginTop={1}>
+        <Box paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Select · Esc Back</Text>
         </Box>
       </Box>
@@ -170,14 +172,16 @@ export default function ModelSelection() {
 
     return (
       <Box flexDirection="column" height="100%">
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text color="#00D9FF">▌ SELECT MODEL</Text>
           <Text dimColor> · {selectedProvider && AI_PROVIDERS[selectedProvider].name}</Text>
         </Box>
 
         {/* Search input */}
-        <Box marginBottom={1} flexDirection="column">
-          <Text dimColor>Search</Text>
+        <Box paddingY={1} flexDirection="column">
+          <Box marginBottom={1}>
+            <Text dimColor>Search</Text>
+          </Box>
           <TextInput
             value={searchQuery}
             onChange={setSearchQuery}
@@ -187,23 +191,25 @@ export default function ModelSelection() {
         </Box>
 
         {/* Model list */}
-        {filteredModels.length === 0 ? (
-          <Box marginBottom={1}>
-            <Text color="#FFD700">▌</Text>
-            <Text dimColor> No models found</Text>
-          </Box>
-        ) : (
-          <>
-            <Box marginBottom={1}>
-              <Text dimColor>
-                Showing {Math.min(filteredModels.length, 20)} of {models.length} models
-              </Text>
+        <Box paddingY={1} flexDirection="column">
+          {filteredModels.length === 0 ? (
+            <Box>
+              <Text color="#FFD700">▌</Text>
+              <Text dimColor> No models found</Text>
             </Box>
-            <SelectInput items={items} onSelect={handleSelect} />
-          </>
-        )}
+          ) : (
+            <>
+              <Box marginBottom={1}>
+                <Text dimColor>
+                  Showing {Math.min(filteredModels.length, 20)} of {models.length} models
+                </Text>
+              </Box>
+              <SelectInput items={items} onSelect={handleSelect} />
+            </>
+          )}
+        </Box>
 
-        <Box marginTop={1}>
+        <Box paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Type Search · Enter Select · Esc Cancel</Text>
         </Box>
       </Box>

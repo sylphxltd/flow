@@ -39,9 +39,9 @@ export default function App() {
   }, [error, setError]);
 
   return (
-    <Box flexDirection="column" width="100%" height="100%">
+    <Box flexDirection="column" width="100%" height="100%" paddingX={1}>
       {/* Header */}
-      <Box>
+      <Box paddingY={1}>
         <Text bold color="#00D9FF">⚡ SYLPHX FLOW</Text>
         <Text dimColor> │ </Text>
         <Text dimColor>AI Development Assistant</Text>
@@ -49,7 +49,7 @@ export default function App() {
 
       {/* Error Display */}
       {error && (
-        <Box marginTop={1}>
+        <Box paddingY={1}>
           <Text color="#FF3366">▌</Text>
           <Text color="#FF3366" bold> ERROR </Text>
           <Text color="gray">{error}</Text>
@@ -58,7 +58,7 @@ export default function App() {
 
       {/* Loading Indicator */}
       {isLoading && (
-        <Box marginTop={1}>
+        <Box paddingY={1}>
           <Text color="#FFD700">▌</Text>
           <Text color="#FFD700" bold> LOADING</Text>
           <Text color="gray">...</Text>
@@ -66,7 +66,7 @@ export default function App() {
       )}
 
       {/* Screen Router */}
-      <Box flexDirection="column" flexGrow={1} marginTop={1}>
+      <Box flexDirection="column" flexGrow={1}>
         {currentScreen === 'chat' && <Chat />}
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
@@ -74,7 +74,7 @@ export default function App() {
 
       {/* Global Shortcuts Help */}
       {currentScreen === 'chat' && (
-        <Box marginTop={1}>
+        <Box paddingY={1}>
           <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
         </Box>
       )}

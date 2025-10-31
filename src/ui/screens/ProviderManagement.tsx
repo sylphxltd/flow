@@ -63,13 +63,15 @@ export default function ProviderManagement() {
 
     return (
       <Box flexDirection="column" height="100%">
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text color="#00D9FF">▌ PROVIDER MANAGEMENT</Text>
         </Box>
 
-        <SelectInput items={items} onSelect={handleSelect} />
+        <Box paddingY={1}>
+          <SelectInput items={items} onSelect={handleSelect} />
+        </Box>
 
-        <Box marginTop={1}>
+        <Box paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Select · Esc Back</Text>
         </Box>
       </Box>
@@ -80,28 +82,30 @@ export default function ProviderManagement() {
   if (mode === 'view') {
     return (
       <Box flexDirection="column" height="100%">
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text color="#00D9FF">▌ CONFIGURED PROVIDERS</Text>
         </Box>
 
-        {configuredProviders.length === 0 ? (
-          <Box marginBottom={1}>
-            <Text color="#FFD700">▌</Text>
-            <Text dimColor> No providers configured yet</Text>
-          </Box>
-        ) : (
-          configuredProviders.map((id) => (
-            <ProviderCard
-              key={id}
-              providerId={id}
-              apiKey={aiConfig?.providers?.[id]?.apiKey}
-              defaultModel={aiConfig?.providers?.[id]?.defaultModel}
-              isDefault={aiConfig?.defaultProvider === id}
-            />
-          ))
-        )}
+        <Box paddingY={1}>
+          {configuredProviders.length === 0 ? (
+            <Box>
+              <Text color="#FFD700">▌</Text>
+              <Text dimColor> No providers configured yet</Text>
+            </Box>
+          ) : (
+            configuredProviders.map((id) => (
+              <ProviderCard
+                key={id}
+                providerId={id}
+                apiKey={aiConfig?.providers?.[id]?.apiKey}
+                defaultModel={aiConfig?.providers?.[id]?.defaultModel}
+                isDefault={aiConfig?.defaultProvider === id}
+              />
+            ))
+          )}
+        </Box>
 
-        <Box marginTop={1}>
+        <Box paddingTop={1}>
           <Text dimColor>Press Esc to go back</Text>
         </Box>
       </Box>
@@ -121,13 +125,15 @@ export default function ProviderManagement() {
 
     return (
       <Box flexDirection="column" height="100%">
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text color="#00D9FF">▌ SELECT PROVIDER</Text>
         </Box>
 
-        <SelectInput items={items} onSelect={handleSelect} />
+        <Box paddingY={1}>
+          <SelectInput items={items} onSelect={handleSelect} />
+        </Box>
 
-        <Box marginTop={1}>
+        <Box paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Select · Esc Cancel</Text>
         </Box>
       </Box>
@@ -156,15 +162,15 @@ export default function ProviderManagement() {
 
     return (
       <Box flexDirection="column" height="100%">
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text color="#00D9FF">▌ CONFIGURE {provider.name.toUpperCase()}</Text>
         </Box>
 
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text dimColor>Enter your {provider.keyName}</Text>
         </Box>
 
-        <Box flexDirection="column">
+        <Box flexDirection="column" paddingY={1}>
           {apiKeyInput && (
             <Box marginBottom={1}>
               <Text dimColor>{'*'.repeat(apiKeyInput.length)}</Text>
@@ -180,7 +186,7 @@ export default function ProviderManagement() {
           />
         </Box>
 
-        <Box marginTop={1}>
+        <Box paddingTop={1}>
           <Text dimColor>Enter Save · Esc Cancel</Text>
         </Box>
       </Box>
@@ -203,13 +209,15 @@ export default function ProviderManagement() {
 
     return (
       <Box flexDirection="column" height="100%">
-        <Box marginBottom={1}>
+        <Box paddingBottom={1}>
           <Text color="#FF3366">▌ REMOVE PROVIDER</Text>
         </Box>
 
-        <SelectInput items={items} onSelect={handleSelect} />
+        <Box paddingY={1}>
+          <SelectInput items={items} onSelect={handleSelect} />
+        </Box>
 
-        <Box marginTop={1}>
+        <Box paddingTop={1}>
           <Text dimColor>↑↓ Navigate · Enter Remove · Esc Cancel</Text>
         </Box>
       </Box>

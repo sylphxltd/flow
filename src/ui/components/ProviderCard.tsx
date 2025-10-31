@@ -32,9 +32,9 @@ export default function ProviderCard({
   const color = colors[providerId];
 
   return (
-    <Box flexDirection="column" marginBottom={1}>
+    <Box flexDirection="column" paddingY={1}>
       {/* Header */}
-      <Box>
+      <Box marginBottom={1}>
         <Text color={color}>▌ {provider.name.toUpperCase()}</Text>
         {isDefault && (
           <>
@@ -45,8 +45,7 @@ export default function ProviderCard({
       </Box>
 
       {/* Details */}
-      <Box>
-        <Text dimColor>  </Text>
+      <Box paddingLeft={2}>
         {apiKey ? (
           <Text color="#00FF88">✓</Text>
         ) : (
