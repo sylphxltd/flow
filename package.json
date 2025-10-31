@@ -52,6 +52,7 @@
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:chat": "bun src/test-chat.ts",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"
   },

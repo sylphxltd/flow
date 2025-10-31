@@ -80,7 +80,7 @@ export function useChat() {
       const tools = getAISDKTools();
 
       // Stream response with tools
-      const { textStream, toolCalls } = streamText({
+      const result = await streamText({
         model,
         system: SYSTEM_PROMPT,
         messages: messages.map((m) => ({
@@ -89,11 +89,17 @@ export function useChat() {
         })),
         tools,
         maxSteps: 5, // Allow up to 5 tool calls per message
+        onStepFinish: (step) => {
+          // Log tool execution for debugging
+          if (step.toolCalls && step.toolCalls.length > 0) {
+            console.log('[Tool Calls]:', step.toolCalls.map((c) => c.toolName).join(', '));
+          }
+        },
       });
 
       let fullResponse = '';
 
-      for await (const chunk of textStream) {
+      for await (const chunk of result.textStream) {
         fullResponse += chunk;
         onChunk(chunk);
       }
@@ -102,6 +108,7 @@ export function useChat() {
       addMessage(currentSessionId, 'assistant', fullResponse);
       onComplete();
     } catch (error) {
+      console.error('[Chat Error]:', error);
       setError(error instanceof Error ? error.message : 'Failed to send message');
       onComplete();
     }
