@@ -29,7 +29,7 @@ export function createCLI(): Command {
   program
     .name('sylphx-flow')
     .description('Sylphx Flow - Type-safe development flow CLI')
-    .version(VERSION, '-v, --version', 'Show version number')
+    .version(VERSION, '-V, --version', 'Show version number')
     .helpOption('-h, --help', 'Display help for command')
     .configureHelp({
       sortSubcommands: true,

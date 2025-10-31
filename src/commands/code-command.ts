@@ -2,13 +2,12 @@ import React from 'react';
 import { render } from 'ink';
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { streamText } from 'ai';
 import {
   getConfiguredProviders,
   loadAIConfig,
 } from '../config/ai-config.js';
 import { getProvider } from '../providers/index.js';
-import { getAISDKTools } from '../tools/index.js';
+import { createAIStream } from '../core/ai-sdk.js';
 import {
   createSession,
   loadLastSession,
@@ -20,34 +19,11 @@ import App from '../ui/App.js';
 import type { CommandOptions } from '../types.js';
 
 /**
- * Code command - AI chatbot powered by Vercel AI SDK v5
+ * Code command - AI chatbot powered by Sylphx Flow AI SDK
  * Multi-provider support (Anthropic, OpenAI, Google, OpenRouter)
  * Supports both TUI and headless modes
  * Includes filesystem, shell, and search tools
  */
-
-const SYSTEM_PROMPT = `You are a helpful coding assistant with access to filesystem and shell tools. You help users with programming tasks, code review, debugging, and software development.
-
-Key capabilities:
-- Write clean, functional code
-- Read and write files using tools
-- Execute shell commands
-- Search for files and content
-- Explain complex concepts clearly
-- Debug issues systematically
-- Follow best practices
-
-Available tools:
-- read_file: Read file contents
-- write_file: Write content to files
-- list_directory: List files in directories
-- file_stats: Get file information
-- execute_bash: Run shell commands
-- get_cwd: Get current working directory
-- glob_files: Search files by pattern
-- grep_content: Search content in files
-
-Use tools when necessary to complete tasks. For questions about your capabilities, respond directly with text.`;
 
 /**
  * Get or create session for headless mode
@@ -70,9 +46,14 @@ async function getOrCreateSession(continueSession: boolean): Promise<Session | n
     return null;
   }
 
-  const providerId = config.defaultProvider || configuredProviders[0];
+  const providerId = config.defaultProvider ?? configuredProviders[0];
+  if (!providerId) {
+    console.error(chalk.yellow('\n⚠️  No provider configured\n'));
+    return null;
+  }
+
   const providerConfig = config.providers?.[providerId];
-  const modelName = config.defaultModel || providerConfig?.defaultModel;
+  const modelName = config.defaultModel ?? providerConfig?.defaultModel;
 
   if (!providerConfig?.apiKey || !modelName) {
     console.error(chalk.yellow('\n⚠️  Provider not fully configured\n'));
@@ -129,9 +110,6 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
 
   const model = providerInstance.createClient(apiKey, session.model);
 
-  // Get all tools - tools are required for this AI assistant
-  const tools = getAISDKTools();
-
   // Add user message to session
   const updatedSession = addMessage(session, 'user', prompt);
 
@@ -147,73 +125,90 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
       content: m.content,
     }));
 
-    // Stream response with tools
-    const result = await streamText({
-      model,
-      system: SYSTEM_PROMPT,
-      messages,
-      tools,
-      toolChoice: 'auto', // Let model decide when to use tools
-      maxToolRoundtrips: 5, // Allow multiple tool calls
-      onStepFinish: (step) => {
-        // Debug logging in verbose mode
-        if (options.verbose) {
-          console.error(chalk.dim(`\n[Step finished]`));
-          console.error(chalk.dim(`  Finish reason: ${step.finishReason}`));
-          console.error(chalk.dim(`  Tool calls: ${step.toolCalls?.length || 0}`));
-          console.error(chalk.dim(`  Text: ${step.text?.substring(0, 100) || '(empty)'}`));
-
-          if (step.toolCalls && step.toolCalls.length > 0) {
-            for (const call of step.toolCalls) {
-              console.error(chalk.dim(`  🔧 Tool: ${call.toolName}(${JSON.stringify(call.args)})`));
-            }
-          }
-
-          if (step.toolResults && step.toolResults.length > 0) {
-            for (const result of step.toolResults) {
-              console.error(chalk.dim(`  ✓ Result: ${JSON.stringify(result.result)?.substring(0, 100)}`));
-            }
-          }
-        }
-      },
-    });
-
     // Output assistant response
-    // Note: Some models (like MiniMax M2) output text in reasoning stream when tools are present
-    // We need to read from fullStream to capture both text and reasoning
     let fullResponse = '';
     let hasOutput = false;
 
-    if (options.verbose) {
-      console.error(chalk.dim('\n[Streaming response...]'));
-    }
+    // Track active tool calls for streaming UI
+    const activeTools = new Map<string, { name: string; args: unknown; startTime: number }>();
 
-    for await (const chunk of result.fullStream) {
+    // Create AI stream using our SDK
+    for await (const chunk of createAIStream({
+      model,
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+    })) {
       if (chunk.type === 'text-delta') {
-        const delta = chunk.textDelta;
-        if (delta && typeof delta === 'string') {
-          if (!hasOutput) {
-            hasOutput = true;
-            if (options.verbose) {
-              console.error(chalk.dim('[First text chunk received]'));
-            }
+        if (!hasOutput) {
+          hasOutput = true;
+          // Add newline before first text output if tools were called
+          if (activeTools.size > 0 || !options.quiet) {
+            process.stdout.write('\n');
           }
-          process.stdout.write(delta);
-          fullResponse += delta;
         }
-      } else if (chunk.type === 'reasoning-delta') {
-        // Some models put all output in reasoning when tools are present
-        const delta = (chunk as any).text;
-        if (delta && typeof delta === 'string') {
-          if (!hasOutput) {
-            hasOutput = true;
-            if (options.verbose) {
-              console.error(chalk.dim('[First reasoning chunk received - model outputting as reasoning]'));
-            }
+        if (chunk.textDelta) {
+          process.stdout.write(chunk.textDelta);
+          fullResponse += chunk.textDelta;
+        }
+      } else if (chunk.type === 'reasoning') {
+        if (!hasOutput) {
+          hasOutput = true;
+          // Add newline before first text output if tools were called
+          if (activeTools.size > 0 || !options.quiet) {
+            process.stdout.write('\n');
           }
-          process.stdout.write(delta);
-          fullResponse += delta;
         }
+        if (chunk.text) {
+          process.stdout.write(chunk.text);
+          fullResponse += chunk.text;
+        }
+      } else if (chunk.type === 'tool-call') {
+        // Flush stdout to ensure proper ordering
+        if (hasOutput) {
+          process.stdout.write('\n');
+        }
+
+        // Show tool call start with flashing green dot
+        activeTools.set(chunk.toolCallId, {
+          name: chunk.toolName,
+          args: chunk.args,
+          startTime: Date.now(),
+        });
+
+        if (!options.quiet) {
+          // Format arguments nicely
+          const argsStr = Object.keys(chunk.args || {}).length === 0
+            ? ''
+            : JSON.stringify(chunk.args, null, 2);
+
+          if (argsStr) {
+            const lines = argsStr.split('\n');
+            const truncatedArgs = lines.length > 5
+              ? lines.slice(0, 5).join('\n') + chalk.dim('\n     … +' + (lines.length - 5) + ' lines (ctrl+o to expand)')
+              : argsStr;
+
+            process.stderr.write(`\n${chalk.green('⏺')} ${chalk.bold(chunk.toolName)}\n`);
+            process.stderr.write(chalk.dim(`  ⎿ ${truncatedArgs.split('\n').join('\n     ')}\n`));
+          } else {
+            process.stderr.write(`\n${chalk.green('⏺')} ${chalk.bold(chunk.toolName)}\n`);
+          }
+        }
+      } else if (chunk.type === 'tool-result') {
+        // Show tool completion with green dot
+        const tool = activeTools.get(chunk.toolCallId);
+        if (tool && !options.quiet) {
+          const duration = Date.now() - tool.startTime;
+
+          // Format result nicely
+          const resultStr = JSON.stringify(chunk.result, null, 2);
+          const lines = resultStr.split('\n');
+          const truncatedResult = lines.length > 5
+            ? lines.slice(0, 5).join('\n') + chalk.dim('\n     … +' + (lines.length - 5) + ' lines (ctrl+o to expand)')
+            : resultStr;
+
+          process.stderr.write(`${chalk.green('●')} ${chalk.bold(tool.name)} ${chalk.dim(`(${duration}ms)`)}\n`);
+          process.stderr.write(chalk.dim(`  ⎿ ${truncatedResult.split('\n').join('\n     ')}\n\n`));
+        }
+        activeTools.delete(chunk.toolCallId);
       }
     }
 

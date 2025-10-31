@@ -3,7 +3,7 @@
  * Defines contract for all AI providers
  */
 
-import type { LanguageModelV1 } from 'ai';
+import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type { ProviderId } from '../config/ai-config.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
 
@@ -34,5 +34,5 @@ export interface AIProvider {
   /**
    * Create AI SDK client for this provider
    */
-  createClient(apiKey: string, modelId: string): LanguageModelV1;
+  createClient(apiKey: string, modelId: string): LanguageModelV2;
 }

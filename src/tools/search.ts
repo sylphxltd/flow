@@ -5,9 +5,8 @@
 
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tool } from 'ai';
 import { z } from 'zod';
-import type { ToolDefinition } from './base.js';
-import { success, failure } from './base.js';
 
 /**
  * Match a glob pattern
@@ -68,8 +67,7 @@ async function searchFiles(
 /**
  * Glob file search tool
  */
-export const globTool: ToolDefinition = {
-  name: 'glob_files',
+export const globTool = tool({
   description: `Search for files matching a glob pattern.
 
 Usage:
@@ -82,7 +80,7 @@ Pattern syntax:
 - ** matches any characters including /
 - ? matches single character
 - Examples: "*.ts", "src/**/*.tsx", "test?.js"`,
-  parameters: z.object({
+  inputSchema: z.object({
     pattern: z.string().describe('Glob pattern to match files'),
     directory: z
       .string()
@@ -95,27 +93,22 @@ Pattern syntax:
       .describe('Maximum number of results (default: 100)'),
   }),
   execute: async ({ pattern, directory, max_results = 100 }) => {
-    try {
-      const searchDir = directory || process.cwd();
-      const results = await searchFiles(searchDir, pattern, max_results);
+    const searchDir = directory || process.cwd();
+    const results = await searchFiles(searchDir, pattern, max_results);
 
-      return success({
-        pattern,
-        directory: searchDir,
-        files: results,
-        count: results.length,
-      });
-    } catch (error) {
-      return failure(`Glob search failed: ${(error as Error).message}`);
-    }
+    return {
+      pattern,
+      directory: searchDir,
+      files: results,
+      count: results.length,
+    };
   },
-};
+});
 
 /**
  * Grep content search tool
  */
-export const grepTool: ToolDefinition = {
-  name: 'grep_content',
+export const grepTool = tool({
   description: `Search for text content within files.
 
 Usage:
@@ -124,7 +117,7 @@ Usage:
 - Locate specific text across files
 
 Returns matching lines with line numbers and context.`,
-  parameters: z.object({
+  inputSchema: z.object({
     pattern: z.string().describe('Text or regex pattern to search for'),
     directory: z
       .string()
@@ -152,56 +145,52 @@ Returns matching lines with line numbers and context.`,
     max_results = 50,
     case_sensitive = false,
   }) => {
-    try {
-      const searchDir = directory || process.cwd();
-      const files = await searchFiles(searchDir, file_pattern, 1000);
-      const matches: Array<{
-        file: string;
-        line: number;
-        content: string;
-      }> = [];
+    const searchDir = directory || process.cwd();
+    const files = await searchFiles(searchDir, file_pattern, 1000);
+    const matches: Array<{
+      file: string;
+      line: number;
+      content: string;
+    }> = [];
 
-      const regex = new RegExp(pattern, case_sensitive ? 'g' : 'gi');
+    const regex = new RegExp(pattern, case_sensitive ? 'g' : 'gi');
 
-      for (const file of files) {
-        if (matches.length >= max_results) break;
+    for (const file of files) {
+      if (matches.length >= max_results) break;
 
-        try {
-          const stats = await stat(file);
-          // Skip large files and binary files
-          if (stats.size > 1024 * 1024) continue; // Skip files > 1MB
+      try {
+        const stats = await stat(file);
+        // Skip large files and binary files
+        if (stats.size > 1024 * 1024) continue; // Skip files > 1MB
 
-          const content = await readFile(file, 'utf8');
-          const lines = content.split('\n');
+        const content = await readFile(file, 'utf8');
+        const lines = content.split('\n');
 
-          for (let i = 0; i < lines.length; i++) {
-            if (matches.length >= max_results) break;
+        for (let i = 0; i < lines.length; i++) {
+          if (matches.length >= max_results) break;
 
-            if (regex.test(lines[i])) {
-              matches.push({
-                file,
-                line: i + 1,
-                content: lines[i].trim(),
-              });
-            }
+          if (regex.test(lines[i])) {
+            matches.push({
+              file,
+              line: i + 1,
+              content: lines[i].trim(),
+            });
           }
-        } catch {
-          // Skip files we can't read
-          continue;
         }
+      } catch {
+        // Skip files we can't read
+        continue;
       }
-
-      return success({
-        pattern,
-        directory: searchDir,
-        matches,
-        count: matches.length,
-      });
-    } catch (error) {
-      return failure(`Content search failed: ${(error as Error).message}`);
     }
+
+    return {
+      pattern,
+      directory: searchDir,
+      matches,
+      count: matches.length,
+    };
   },
-};
+});
 
 /**
  * All search tools

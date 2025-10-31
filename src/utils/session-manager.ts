@@ -6,6 +6,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import type { ProviderId } from '../config/ai-config.js';
 
 export interface SessionMessage {
   role: 'user' | 'assistant';
@@ -15,7 +16,7 @@ export interface SessionMessage {
 
 export interface Session {
   id: string;
-  provider: string;
+  provider: ProviderId;
   model: string;
   messages: SessionMessage[];
   created: number;
@@ -42,7 +43,7 @@ function getSessionPath(sessionId: string): string {
 /**
  * Create new session
  */
-export async function createSession(provider: string, model: string): Promise<Session> {
+export async function createSession(provider: ProviderId, model: string): Promise<Session> {
   await ensureSessionDir();
 
   const session: Session = {
