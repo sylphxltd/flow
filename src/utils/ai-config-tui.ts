@@ -6,6 +6,7 @@
 
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+import autocomplete from 'inquirer-autocomplete-standalone';
 import {
   AI_PROVIDERS,
   type AIConfig,
@@ -14,6 +15,7 @@ import {
   saveAIConfig,
   type ProviderId,
 } from '../config/ai-config.js';
+import { fetchModels } from './ai-model-fetcher.js';
 
 /**
  * Main configuration TUI
@@ -207,19 +209,24 @@ async function configureDefaults(
 
   const providerInfo = AI_PROVIDERS[provider as ProviderId];
 
-  // Select default model for that provider
-  const { model } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'model',
-      message: `Select default model for ${providerInfo.name}:`,
-      choices: providerInfo.models.map((m) => ({
-        name: m,
-        value: m,
-      })),
-      default: config.providers?.[provider as ProviderId]?.defaultModel || providerInfo.models[0],
+  // Fetch and select default model for that provider
+  const apiKey = config.providers?.[provider as ProviderId]?.apiKey;
+
+  console.log(chalk.dim('Fetching available models...'));
+  const models = await fetchModels(provider as ProviderId, apiKey);
+
+  const model = await autocomplete({
+    message: `Select default model for ${providerInfo.name} (type to search):`,
+    source: async (input) => {
+      const search = (input || '').toLowerCase();
+      return models
+        .filter((m) => m.id.toLowerCase().includes(search) || m.name.toLowerCase().includes(search))
+        .map((m) => ({
+          value: m.id,
+          name: m.name !== m.id ? `${m.name} (${m.id})` : m.id,
+        }));
     },
-  ]);
+  });
 
   // Update configuration
   const newConfig: AIConfig = {
@@ -396,15 +403,22 @@ export async function quickSetupAI(cwd: string = process.cwd()): Promise<boolean
     },
   ]);
 
-  const { model } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'model',
-      message: 'Select default model:',
-      choices: providerInfo.models,
-      default: providerInfo.models[0],
+  // Fetch available models
+  console.log(chalk.dim('Fetching available models...'));
+  const models = await fetchModels(provider as ProviderId, apiKey.trim());
+
+  const model = await autocomplete({
+    message: 'Select default model (type to search):',
+    source: async (input) => {
+      const search = (input || '').toLowerCase();
+      return models
+        .filter((m) => m.id.toLowerCase().includes(search) || m.name.toLowerCase().includes(search))
+        .map((m) => ({
+          value: m.id,
+          name: m.name !== m.id ? `${m.name} (${m.id})` : m.id,
+        }));
     },
-  ]);
+  });
 
   // Save configuration
   const config: AIConfig = {
