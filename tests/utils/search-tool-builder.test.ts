@@ -109,7 +109,7 @@ describe('search-tool-builder', () => {
     };
 
     // Mock successful search results
-    vi.mocked(searchDocuments).mockReturnValue([
+    (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([
       {
         uri: 'knowledge://test/doc1',
         score: 0.9,
@@ -358,7 +358,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle search errors', async () => {
-      vi.mocked(searchDocuments).mockImplementation(() => {
+      (searchDocuments as ReturnType<typeof vi.fn>).mockImplementation(() => {
         throw new Error('Search failed');
       });
 
@@ -369,7 +369,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle non-Error objects in error handling', async () => {
-      vi.mocked(searchDocuments).mockImplementation(() => {
+      (searchDocuments as ReturnType<typeof vi.fn>).mockImplementation(() => {
         throw 'String error';
       });
 
@@ -693,7 +693,7 @@ describe('search-tool-builder', () => {
 
     it('should handle console error logging', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.mocked(searchDocuments).mockImplementation(() => {
+      (searchDocuments as ReturnType<typeof vi.fn>).mockImplementation(() => {
         throw new Error('Test error');
       });
 
