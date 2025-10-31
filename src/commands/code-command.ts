@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText, streamText } from 'ai';
 import type { LanguageModelV1 } from 'ai';
 import {
@@ -17,7 +18,7 @@ import type { CommandOptions } from '../types.js';
 
 /**
  * Code command - AI chatbot powered by Vercel AI SDK v5
- * Multi-provider support (Anthropic, OpenAI, Google)
+ * Multi-provider support (Anthropic, OpenAI, Google, OpenRouter)
  * No env variables - all config via TUI
  */
 
@@ -79,6 +80,13 @@ async function getAIModel(cwd: string = process.cwd()): Promise<{
 
     case 'google':
       model = google(modelName, { apiKey: providerConfig.apiKey });
+      break;
+
+    case 'openrouter':
+      {
+        const openrouter = createOpenRouter({ apiKey: providerConfig.apiKey });
+        model = openrouter(modelName);
+      }
       break;
 
     default:

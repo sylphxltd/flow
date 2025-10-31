@@ -112,6 +112,11 @@ async function configureAPIKeys(config: AIConfig, cwd: string): Promise<void> {
           value: 'google',
           checked: !!config.providers?.google?.apiKey,
         },
+        {
+          name: '🟣 OpenRouter (300+ Models)',
+          value: 'openrouter',
+          checked: !!config.providers?.openrouter?.apiKey,
+        },
       ],
     },
   ]);
@@ -368,6 +373,7 @@ export async function quickSetupAI(cwd: string = process.cwd()): Promise<boolean
         { name: '🔵 Anthropic (Claude) - Recommended', value: 'anthropic' },
         { name: '🟢 OpenAI (GPT)', value: 'openai' },
         { name: '🔴 Google (Gemini)', value: 'google' },
+        { name: '🟣 OpenRouter (300+ Models)', value: 'openrouter' },
       ],
     },
   ]);

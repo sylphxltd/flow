@@ -50,6 +50,27 @@ export const AI_PROVIDERS = {
     requiresKey: true,
     keyName: 'GOOGLE_API_KEY',
   },
+  openrouter: {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    models: [
+      // Popular models via OpenRouter
+      'anthropic/claude-3.5-sonnet',
+      'anthropic/claude-3-opus',
+      'openai/gpt-4o',
+      'openai/gpt-4-turbo',
+      'google/gemini-2.0-flash-exp',
+      'meta-llama/llama-3.3-70b-instruct',
+      'meta-llama/llama-3.1-405b-instruct',
+      'google/gemini-pro-1.5',
+      'anthropic/claude-3-haiku',
+      'mistralai/mistral-large',
+      'deepseek/deepseek-chat',
+      'qwen/qwen-2.5-72b-instruct',
+    ],
+    requiresKey: true,
+    keyName: 'OPENROUTER_API_KEY',
+  },
 } as const;
 
 export type ProviderId = keyof typeof AI_PROVIDERS;
@@ -58,7 +79,7 @@ export type ProviderId = keyof typeof AI_PROVIDERS;
  * AI configuration schema
  */
 const aiConfigSchema = z.object({
-  defaultProvider: z.enum(['anthropic', 'openai', 'google']).optional(),
+  defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter']).optional(),
   defaultModel: z.string().optional(),
   providers: z.object({
     anthropic: z.object({
@@ -71,6 +92,10 @@ const aiConfigSchema = z.object({
       defaultModel: z.string().optional(),
     }).optional(),
     google: z.object({
+      apiKey: z.string().optional(),
+      defaultModel: z.string().optional(),
+    }).optional(),
+    openrouter: z.object({
       apiKey: z.string().optional(),
       defaultModel: z.string().optional(),
     }).optional(),
@@ -238,6 +263,9 @@ export const getConfiguredProviders = async (
   }
   if (config.providers?.google?.apiKey) {
     providers.push('google');
+  }
+  if (config.providers?.openrouter?.apiKey) {
+    providers.push('openrouter');
   }
 
   return providers;
