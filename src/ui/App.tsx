@@ -6,11 +6,11 @@
 import React, { useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { useAppStore } from './stores/app-store.js';
-import MainMenu from './screens/MainMenu.js';
 import ProviderManagement from './screens/ProviderManagement.js';
 import ModelSelection from './screens/ModelSelection.js';
 import Chat from './screens/Chat.js';
 import { useAIConfig } from './hooks/useAIConfig.js';
+import { useKeyboard } from './hooks/useKeyboard.js';
 
 export default function App() {
   const currentScreen = useAppStore((state) => state.currentScreen);
@@ -20,6 +20,9 @@ export default function App() {
 
   // Load AI config on mount
   const { loadConfig } = useAIConfig();
+
+  // Global keyboard shortcuts
+  useKeyboard();
 
   useEffect(() => {
     loadConfig();
@@ -60,11 +63,19 @@ export default function App() {
 
       {/* Screen Router */}
       <Box flexDirection="column">
-        {currentScreen === 'main-menu' && <MainMenu />}
+        {currentScreen === 'chat' && <Chat />}
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
-        {currentScreen === 'chat' && <Chat />}
       </Box>
+
+      {/* Global Shortcuts Help */}
+      {currentScreen === 'chat' && (
+        <Box marginTop={1} borderStyle="single" borderColor="gray" padding={1}>
+          <Text dimColor>
+            Shortcuts: <Text color="cyan">Ctrl+P</Text> Providers | <Text color="cyan">Ctrl+M</Text> Models | <Text color="cyan">Ctrl+Q</Text> Quit
+          </Text>
+        </Box>
+      )}
     </Box>
   );
 }

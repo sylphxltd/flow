@@ -35,8 +35,6 @@ export default function ModelSelection() {
   const setError = useAppStore((state) => state.setError);
   const { saveConfig } = useAIConfig();
 
-  useKeyboard();
-
   const configuredProviders = Object.keys(aiConfig?.providers || {}) as ProviderId[];
 
   // Load models when provider is selected
@@ -92,12 +90,12 @@ export default function ModelSelection() {
         label: `${AI_PROVIDERS[id].name}${aiConfig?.defaultProvider === id ? ' (Default)' : ''}`,
         value: id,
       })),
-      { label: '⬅️  Back to Main Menu', value: 'back' },
+      { label: '⬅️  Back to Chat', value: 'back' },
     ];
 
     const handleSelect = (item: MenuItem) => {
       if (item.value === 'back') {
-        navigateTo('main-menu');
+        navigateTo('chat');
       } else {
         setSelectedProvider(item.value as ProviderId);
         setMode('model');
@@ -169,7 +167,7 @@ export default function ModelSelection() {
       setSelectedProvider(null);
       setSearchQuery('');
       setMode('provider');
-      navigateTo('main-menu');
+      navigateTo('chat');
     };
 
     return (

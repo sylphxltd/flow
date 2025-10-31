@@ -22,8 +22,6 @@ export default function Chat() {
 
   const { sendMessage, currentSession } = useChat();
 
-  useKeyboard();
-
   // Create session if none exists
   useEffect(() => {
     if (!currentSessionId && aiConfig?.defaultProvider && aiConfig?.defaultModel) {
@@ -37,20 +35,19 @@ export default function Chat() {
       <Box flexDirection="column">
         <Box marginBottom={1}>
           <Text bold color="cyan">
-            Chat
+            Welcome to Sylphx Flow AI Chat
           </Text>
         </Box>
 
         <Box marginBottom={1}>
-          <Text color="yellow">⚠️  No default model configured</Text>
+          <Text color="yellow">⚠️  No AI provider configured yet</Text>
         </Box>
 
-        <Box>
-          <Text dimColor>Please select a provider and model first</Text>
-        </Box>
-
-        <Box marginTop={1}>
-          <Text dimColor>Press Esc to go back</Text>
+        <Box flexDirection="column" marginBottom={1}>
+          <Text>To get started:</Text>
+          <Text dimColor>1. Press <Text color="cyan">Ctrl+P</Text> to configure a provider</Text>
+          <Text dimColor>2. Press <Text color="cyan">Ctrl+M</Text> to select a model</Text>
+          <Text dimColor>3. Come back here to start chatting</Text>
         </Box>
       </Box>
     );
@@ -142,7 +139,7 @@ export default function Chat() {
       </Box>
 
       <Box marginTop={1}>
-        <Text dimColor>Type and press Enter to send, Esc to go back</Text>
+        <Text dimColor>Type and press Enter to send</Text>
       </Box>
     </Box>
   );

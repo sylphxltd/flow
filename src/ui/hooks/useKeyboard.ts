@@ -1,6 +1,6 @@
 /**
  * Keyboard Hook
- * Handle keyboard events (Esc to go back)
+ * Handle global keyboard shortcuts
  */
 
 import { useInput } from 'ink';
@@ -11,15 +11,29 @@ export function useKeyboard() {
   const currentScreen = useAppStore((state) => state.currentScreen);
 
   useInput((input, key) => {
-    // Handle Escape key
+    // Handle Escape key - go back to chat
     if (key.escape) {
-      // Go back to main menu from any screen
-      if (currentScreen !== 'main-menu') {
-        navigateTo('main-menu');
+      if (currentScreen !== 'chat') {
+        navigateTo('chat');
       }
     }
 
-    // Handle Ctrl+C
+    // Handle Ctrl+P - Provider Management
+    if (key.ctrl && input === 'p') {
+      navigateTo('provider-management');
+    }
+
+    // Handle Ctrl+M - Model Selection
+    if (key.ctrl && input === 'm') {
+      navigateTo('model-selection');
+    }
+
+    // Handle Ctrl+Q - Quit
+    if (key.ctrl && input === 'q') {
+      process.exit(0);
+    }
+
+    // Handle Ctrl+C - Quit
     if (key.ctrl && input === 'c') {
       process.exit(0);
     }

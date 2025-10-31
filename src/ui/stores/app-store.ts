@@ -56,7 +56,7 @@ export interface AppState {
 export const useAppStore = create<AppState>()(
   immer((set) => ({
     // Navigation
-    currentScreen: 'main-menu',
+    currentScreen: 'chat',
     navigateTo: (screen) =>
       set((state) => {
         state.currentScreen = screen;

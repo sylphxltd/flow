@@ -31,8 +31,6 @@ export default function ProviderManagement() {
   const removeProvider = useAppStore((state) => state.removeProvider);
   const { saveConfig } = useAIConfig();
 
-  useKeyboard();
-
   const configuredProviders = Object.keys(aiConfig?.providers || {}) as ProviderId[];
 
   // Menu mode
@@ -43,7 +41,7 @@ export default function ProviderManagement() {
       ...(configuredProviders.length > 0
         ? [{ label: '🗑️  Remove Provider', value: 'remove' }]
         : []),
-      { label: '⬅️  Back to Main Menu', value: 'back' },
+      { label: '⬅️  Back to Chat', value: 'back' },
     ];
 
     const handleSelect = (item: MenuItem) => {
@@ -58,7 +56,7 @@ export default function ProviderManagement() {
           setMode('remove');
           break;
         case 'back':
-          navigateTo('main-menu');
+          navigateTo('chat');
           break;
       }
     };
