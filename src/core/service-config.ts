@@ -16,7 +16,7 @@ import type {
 
 import { targetManager } from '../core/target-manager.js';
 import { MemoryDatabaseClient } from '../db/memory-db.js';
-import { MCPService } from '../services/mcp-service.js';
+import { createMCPService } from '../services/mcp-service.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';
 import { getSearchService } from '../services/search/unified-search-service.js';
 // Import concrete implementations (will be updated as we refactor)
@@ -93,7 +93,13 @@ export async function configureServices(): Promise<void> {
   // MCP Service - Transient (since it depends on target)
   container.register<IMCPService>(
     SERVICE_TOKENS.MCP_SERVICE,
-    (targetId: string) => new MCPService(targetId),
+    (targetId: string) => {
+      const target = targetManager.getTarget(targetId);
+      if (!target) {
+        throw new Error(`Target not found: ${targetId}`);
+      }
+      return createMCPService({ target });
+    },
     'transient'
   );
 }

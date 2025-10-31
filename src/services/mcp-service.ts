@@ -19,6 +19,29 @@ export interface InstallOptions {
 }
 
 /**
+ * MCPService Interface
+ * Service for managing MCP server installation and configuration
+ */
+export interface MCPService {
+  readonly getAllServerIds: () => MCPServerID[];
+  readonly getAvailableServers: () => Promise<MCPServerID[]>;
+  readonly getInstalledServerIds: () => Promise<MCPServerID[]>;
+  readonly getRequiringConfiguration: (serverIds: MCPServerID[]) => MCPServerID[];
+  readonly validateServer: (serverId: MCPServerID, envValues: Record<string, string>) => ValidationResult;
+  readonly configureServer: (serverId: MCPServerID, collectedEnv?: Record<string, string>) => Promise<Record<string, string>>;
+  readonly installServers: (serverIds: MCPServerID[], serverConfigs?: Record<MCPServerID, Record<string, string>>) => Promise<void>;
+  readonly readConfig: () => Promise<TargetConfigurationData>;
+  readonly writeConfig: (configData: TargetConfigurationData) => Promise<void>;
+}
+
+/**
+ * MCPService Dependencies
+ */
+export interface MCPServiceDeps {
+  readonly target: Target;
+}
+
+/**
  * Helper function to resolve static or dynamic configuration values
  */
 function resolveConfig<T>(config: Resolvable<T>): Promise<T> {
@@ -45,31 +68,34 @@ export function resolveConfigWithParams<T, P>(
 
 export { resolveConfig };
 
-export class MCPService {
-  private target: Target;
-
-  constructor(targetId: string) {
-    const target = targetManager.getTarget(targetId);
-    if (!target) {
-      throw new Error(`Target not found: ${targetId}`);
-    }
-    this.target = target;
-  }
-
-  getAllServerIds(): MCPServerID[] {
+/**
+ * Create MCP Service (Factory Function)
+ * Handles MCP server installation and configuration
+ */
+export const createMCPService = (deps: MCPServiceDeps): MCPService => {
+  /**
+   * Get all available server IDs from registry
+   */
+  const getAllServerIds = (): MCPServerID[] => {
     return Object.keys(MCP_SERVER_REGISTRY) as MCPServerID[];
-  }
+  };
 
-  async getAvailableServers(): Promise<MCPServerID[]> {
-    const existingServerIds = await this.getInstalledServerIds();
-    return this.getAllServerIds().filter((id) => !existingServerIds.includes(id));
-  }
+  /**
+   * Get servers that are not yet installed
+   */
+  const getAvailableServers = async (): Promise<MCPServerID[]> => {
+    const existingServerIds = await getInstalledServerIds();
+    return getAllServerIds().filter((id) => !existingServerIds.includes(id));
+  };
 
-  async getInstalledServerIds(): Promise<MCPServerID[]> {
+  /**
+   * Get currently installed server IDs
+   */
+  const getInstalledServerIds = async (): Promise<MCPServerID[]> => {
     try {
-      const configData = await this.target.readConfig(process.cwd());
-      const mcpConfigPath = this.target.config.mcpConfigPath;
-      const existingMcpSection = this.getNestedProperty(configData, mcpConfigPath) || {};
+      const configData = await deps.target.readConfig(process.cwd());
+      const mcpConfigPath = deps.target.config.mcpConfigPath;
+      const existingMcpSection = getNestedProperty(configData, mcpConfigPath) || {};
       const existingServerNames = Object.keys(existingMcpSection);
 
       return Object.values(MCP_SERVER_REGISTRY)
@@ -78,16 +104,22 @@ export class MCPService {
     } catch (_error) {
       return [];
     }
-  }
+  };
 
-  getRequiringConfiguration(serverIds: MCPServerID[]): MCPServerID[] {
+  /**
+   * Get servers that require configuration
+   */
+  const getRequiringConfiguration = (serverIds: MCPServerID[]): MCPServerID[] => {
     return serverIds.filter((id) => {
       const server = MCP_SERVER_REGISTRY[id];
       return !!server.envVars;
     });
-  }
+  };
 
-  validateServer(serverId: MCPServerID, envValues: Record<string, string>): ValidationResult {
+  /**
+   * Validate server configuration
+   */
+  const validateServer = (serverId: MCPServerID, envValues: Record<string, string>): ValidationResult => {
     const server = MCP_SERVER_REGISTRY[serverId];
     if (!server?.envVars) {
       return { isValid: true, missingRequired: [], invalidValues: [] };
@@ -112,12 +144,15 @@ export class MCPService {
       missingRequired,
       invalidValues,
     };
-  }
+  };
 
-  async configureServer(
+  /**
+   * Configure server through interactive prompts
+   */
+  const configureServer = async (
     serverId: MCPServerID,
     collectedEnv: Record<string, string> = {}
-  ): Promise<Record<string, string>> {
+  ): Promise<Record<string, string>> => {
     const server = MCP_SERVER_REGISTRY[serverId];
     const values: Record<string, string> = {};
 
@@ -209,25 +244,25 @@ export class MCPService {
     console.log('');
 
     return values;
-  }
+  };
 
   /**
    * Install MCP servers to config file
    * Note: Configuration should be done separately before calling this
    */
-  async installServers(
+  const installServers = async (
     serverIds: MCPServerID[],
     serverConfigs: Record<MCPServerID, Record<string, string>> = {}
-  ): Promise<void> {
+  ): Promise<void> => {
     if (serverIds.length === 0) {
       return;
     }
 
     try {
       // Read current config
-      const configData = await this.target.readConfig(process.cwd());
-      const mcpConfigPath = this.target.config.mcpConfigPath;
-      const existingMcpSection = this.getNestedProperty(configData, mcpConfigPath) || {};
+      const configData = await deps.target.readConfig(process.cwd());
+      const mcpConfigPath = deps.target.config.mcpConfigPath;
+      const existingMcpSection = getNestedProperty(configData, mcpConfigPath) || {};
       const mcpSection = { ...existingMcpSection };
 
       // Add/update each server
@@ -282,49 +317,64 @@ export class MCPService {
         }
 
         // Transform config for target-specific format
-        const transformedConfig = this.target.transformMCPConfig(configToTransform, serverId);
+        const transformedConfig = deps.target.transformMCPConfig(configToTransform, serverId);
 
         mcpSection[server.name] = transformedConfig;
       }
 
       // Write updated config
-      this.setNestedProperty(configData, mcpConfigPath, mcpSection);
-      await this.target.writeConfig(process.cwd(), configData);
+      setNestedProperty(configData, mcpConfigPath, mcpSection);
+      await deps.target.writeConfig(process.cwd(), configData);
 
       // Approve MCP servers if the target supports it
-      if (this.target.approveMCPServers) {
+      if (deps.target.approveMCPServers) {
         const serverNames = serverIds.map((id) => MCP_SERVER_REGISTRY[id].name);
-        await this.target.approveMCPServers(process.cwd(), serverNames);
+        await deps.target.approveMCPServers(process.cwd(), serverNames);
       }
     } catch (error) {
       throw new Error(
         `Failed to install MCP servers: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-  }
+  };
 
-  async readConfig(): Promise<TargetConfigurationData> {
+  /**
+   * Read target configuration
+   */
+  const readConfig = async (): Promise<TargetConfigurationData> => {
     try {
-      return (await this.target.readConfig(process.cwd())) as TargetConfigurationData;
+      return (await deps.target.readConfig(process.cwd())) as TargetConfigurationData;
     } catch (_error) {
       return { settings: {} };
     }
-  }
+  };
 
-  async writeConfig(configData: TargetConfigurationData): Promise<void> {
-    await this.target.writeConfig(process.cwd(), configData);
-  }
+  /**
+   * Write target configuration
+   */
+  const writeConfig = async (configData: TargetConfigurationData): Promise<void> => {
+    await deps.target.writeConfig(process.cwd(), configData);
+  };
 
-  private getNestedProperty(obj: TargetConfigurationData, path: string): unknown {
+  /**
+   * Get nested property from object using dot notation path
+   * Pure function - does not mutate input
+   */
+  const getNestedProperty = (obj: TargetConfigurationData, path: string): unknown => {
     return path.split('.').reduce((current: unknown, key: string) => {
       if (typeof current === 'object' && current !== null) {
         return (current as Record<string, unknown>)[key];
       }
       return undefined;
     }, obj);
-  }
+  };
 
-  private setNestedProperty(obj: TargetConfigurationData, path: string, value: unknown): void {
+  /**
+   * Set nested property in object using dot notation path
+   * SIDE EFFECT: Mutates the input object
+   * NOTE: This is intentional for config file updates
+   */
+  const setNestedProperty = (obj: TargetConfigurationData, path: string, value: unknown): void => {
     const keys = path.split('.');
     const lastKey = keys.pop();
     if (!lastKey) {
@@ -338,5 +388,18 @@ export class MCPService {
       return current[key];
     }, obj);
     target[lastKey] = value;
-  }
-}
+  };
+
+  // Return service interface
+  return {
+    getAllServerIds,
+    getAvailableServers,
+    getInstalledServerIds,
+    getRequiringConfiguration,
+    validateServer,
+    configureServer,
+    installServers,
+    readConfig,
+    writeConfig,
+  };
+};

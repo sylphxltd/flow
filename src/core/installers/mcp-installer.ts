@@ -7,7 +7,8 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../../config/servers.js';
-import { MCPService } from '../../services/mcp-service.js';
+import { type MCPService, createMCPService } from '../../services/mcp-service.js';
+import { targetManager } from '../target-manager.js';
 
 export interface MCPInstallResult {
   selectedServers: MCPServerID[];
@@ -22,7 +23,11 @@ export class MCPInstaller {
   private mcpService: MCPService;
 
   constructor(targetId: string) {
-    this.mcpService = new MCPService(targetId);
+    const target = targetManager.getTarget(targetId);
+    if (!target) {
+      throw new Error(`Target not found: ${targetId}`);
+    }
+    this.mcpService = createMCPService({ target });
   }
 
   /**

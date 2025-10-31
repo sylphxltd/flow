@@ -5,7 +5,7 @@ import ora from 'ora';
 import { type MCPServerID, MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { targetManager } from '../core/target-manager.js';
 import { startSylphxFlowMCPServer } from '../servers/mcp-server.js';
-import { MCPService } from '../services/mcp-service.js';
+import { createMCPService } from '../services/mcp-service.js';
 import type { CommandOptions } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
 import { listMCPServersForTarget, targetSupportsMCPServers } from '../utils/target-config.js';
@@ -71,7 +71,11 @@ mcpCommand
     console.log(chalk.cyan.bold('▸ Configure MCP Server'));
     console.log(chalk.gray(`  Target: ${targetId}`));
 
-    const mcpService = new MCPService(targetId);
+    const target = targetManager.getTarget(targetId);
+    if (!target) {
+      throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
+    }
+    const mcpService = createMCPService({ target });
 
     // If no server specified, show selection
     let selectedServerId: MCPServerID;
@@ -173,7 +177,11 @@ mcpCommand
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const mcpService = new MCPService(targetId);
+    const target = targetManager.getTarget(targetId);
+    if (!target) {
+      throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
+    }
+    const mcpService = createMCPService({ target });
     const allServerIds = mcpService.getAllServerIds();
 
     // Validate server names
@@ -217,7 +225,11 @@ mcpCommand
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const mcpService = new MCPService(targetId);
+    const target = targetManager.getTarget(targetId);
+    if (!target) {
+      throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
+    }
+    const mcpService = createMCPService({ target });
     const installedServerIds = mcpService.getInstalledServerIds();
 
     // Validate server names
