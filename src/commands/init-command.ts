@@ -176,8 +176,6 @@ export const initCommand = new Command('init')
         const result = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
         if (result.count > 0) {
           outputStylesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} output style${result.count !== 1 ? 's' : ''}`));
-        } else if (result.message) {
-          outputStylesSpinner.info(chalk.dim(result.message));
         } else {
           outputStylesSpinner.info(chalk.dim('No output styles to install'));
         }
@@ -194,8 +192,6 @@ export const initCommand = new Command('init')
         const result = await target.setupRules(process.cwd(), { ...options, quiet: true });
         if (result.count > 0) {
           rulesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} rule${result.count !== 1 ? 's' : ''}`));
-        } else if (result.message) {
-          rulesSpinner.info(chalk.dim(result.message));
         } else {
           rulesSpinner.info(chalk.dim('No rules to install'));
         }

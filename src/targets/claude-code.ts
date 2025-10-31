@@ -402,7 +402,7 @@ Please begin your response with a comprehensive summary of all the instructions 
     // Return 2 hooks configured (SessionStart + UserPromptSubmit)
     return {
       count: 2,
-      message: 'Configured session hooks (rules + output styles loaded dynamically)',
+      message: 'Configured session hooks for system information',
     };
   },
 
@@ -431,30 +431,66 @@ Please begin your response with a comprehensive summary of all the instructions 
 
   /**
    * Setup output styles for Claude Code
-   * Output styles are now loaded dynamically via session start hooks
-   * Static installation is no longer needed
+   * Install output styles to .claude/output-styles/ directory with YAML front matter
    */
   async setupOutputStyles(cwd: string, options: CommonOptions): Promise<SetupResult> {
-    // Output styles are loaded dynamically via session start hook
-    // No static file installation needed
-    return {
-      count: 0,
-      message: 'Output styles loaded dynamically via session hooks (no static installation)',
-    };
+    if (!this.config.outputStylesDir) {
+      return { count: 0 };
+    }
+
+    const installer = new FileInstaller();
+    const outputStylesDir = path.join(cwd, this.config.outputStylesDir);
+
+    const results = await installer.installToDirectory(
+      getOutputStylesDir(),
+      outputStylesDir,
+      async (content, sourcePath) => {
+        return await this.transformAgentContent(content, undefined, sourcePath);
+      },
+      {
+        ...options,
+        showProgress: false,  // UI handled by init-command
+      }
+    );
+
+    return { count: results.length };
   },
 
   /**
    * Setup rules for Claude Code
-   * Rules are now loaded dynamically via session start hooks
-   * Static installation is no longer needed
+   * Install rules to CLAUDE.md in project root
    */
   async setupRules(cwd: string, options: CommonOptions): Promise<SetupResult> {
-    // Rules are loaded dynamically via session start hook
-    // No static file installation needed
-    return {
-      count: 0,
-      message: 'Rules loaded dynamically via session hooks (no static installation)',
-    };
+    if (!this.config.rulesFile) {
+      return { count: 0 };
+    }
+
+    // Check if core rules file exists
+    if (!ruleFileExists('core')) {
+      throw new Error('Core rules file not found');
+    }
+
+    const installer = new FileInstaller();
+    const rulesDestPath = path.join(cwd, this.config.rulesFile);
+    const rulePath = getRulesPath('core');
+
+    await installer.installFile(
+      rulePath,
+      rulesDestPath,
+      async (content) => {
+        // Transform rules content if transformation is available
+        if (this.transformRulesContent) {
+          return await this.transformRulesContent(content);
+        }
+        return content;
+      },
+      {
+        ...options,
+        showProgress: false,  // UI handled by init-command
+      }
+    );
+
+    return { count: 1 };
   },
 
   /**

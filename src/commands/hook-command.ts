@@ -12,14 +12,11 @@
  * - Consistent: Follows sysinfo command pattern
  */
 
-import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Command } from 'commander';
 import { cli } from '../utils/cli-output.js';
-import { getRulesDir, getOutputStylesDir } from '../utils/paths.js';
-import { yamlUtils } from '../utils/target-utils.js';
 
 /**
  * Hook types supported
@@ -35,7 +32,7 @@ type TargetPlatform = 'claude-code';
  * Create the hook command
  */
 export const hookCommand = new Command('hook')
-  .description('Load dynamic content for Claude Code hooks')
+  .description('Load dynamic system information for Claude Code hooks')
   .requiredOption('--type <type>', 'Hook type (session, message)')
   .option('--target <target>', 'Target platform (claude-code)', 'claude-code')
   .option('--verbose', 'Show verbose output', false)
@@ -88,38 +85,14 @@ async function loadHookContent(
 
 /**
  * Load content for session start hook
- * Includes: rules + output styles + system info
+ * Includes: system info only (rules and output styles are static files)
  */
 async function loadSessionContent(target: TargetPlatform, verbose: boolean): Promise<string> {
-  const sections: string[] = [];
-
-  // Load rules
-  if (verbose) {
-    cli.info('Loading rules...');
-  }
-  const rulesContent = await loadRules(target);
-  if (rulesContent) {
-    sections.push(rulesContent);
-  }
-
-  // Load output styles
-  if (verbose) {
-    cli.info('Loading output styles...');
-  }
-  const outputStylesContent = await loadOutputStyles(target);
-  if (outputStylesContent) {
-    sections.push(outputStylesContent);
-  }
-
   // Load system info for session
   if (verbose) {
     cli.info('Loading system info...');
   }
-  const systemInfoContent = await getSystemInfo('session');
-  sections.push(systemInfoContent);
-
-  // Join all sections with double newline
-  return sections.join('\n\n');
+  return await getSystemInfo('session');
 }
 
 /**
@@ -131,99 +104,6 @@ async function loadMessageContent(target: TargetPlatform, verbose: boolean): Pro
     cli.info('Loading system status...');
   }
   return await getSystemInfo('message');
-}
-
-/**
- * Load rules content
- */
-async function loadRules(target: TargetPlatform): Promise<string | null> {
-  try {
-    const rulesDir = getRulesDir();
-    const coreRulesPath = path.join(rulesDir, 'core.md');
-
-    // Check if rules file exists
-    try {
-      await fs.access(coreRulesPath);
-    } catch {
-      return null;
-    }
-
-    // Read rules content
-    const content = await fs.readFile(coreRulesPath, 'utf8');
-
-    // Transform for target (strip YAML front matter for Claude Code)
-    if (target === 'claude-code') {
-      const transformed = await yamlUtils.stripFrontMatter(content);
-
-      // Wrap in markdown comment format for Claude Code
-      // Note: Content is loaded dynamically from Sylphx Flow assets, not from a static file
-      return `# claudeMd
-Codebase and user instructions are shown below. Be sure to adhere to these instructions. IMPORTANT: These instructions OVERRIDE any default behavior and you MUST follow them exactly as written.
-
-Contents of project rules (loaded dynamically via Sylphx Flow):
-
-${transformed}`;
-    }
-
-    return content;
-  } catch (error) {
-    throw new Error(
-      `Failed to load rules: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-/**
- * Load output styles content
- */
-async function loadOutputStyles(target: TargetPlatform): Promise<string | null> {
-  try {
-    const outputStylesDir = getOutputStylesDir();
-
-    // Check if output styles directory exists
-    try {
-      await fs.access(outputStylesDir);
-    } catch {
-      return null;
-    }
-
-    // Read all .md files from output styles directory
-    const files = await fs.readdir(outputStylesDir);
-    const mdFiles = files.filter(f => f.endsWith('.md'));
-
-    if (mdFiles.length === 0) {
-      return null;
-    }
-
-    // Load all output style files
-    const outputStyles: string[] = [];
-
-    for (const file of mdFiles) {
-      const filePath = path.join(outputStylesDir, file);
-      const content = await fs.readFile(filePath, 'utf8');
-
-      // Transform for target (strip YAML front matter)
-      if (target === 'claude-code') {
-        const transformed = await yamlUtils.stripFrontMatter(content);
-
-        // Extract style name from filename (without .md extension)
-        const styleName = path.basename(file, '.md');
-
-        outputStyles.push(`# Output Style: ${styleName}
-
-${transformed}`);
-      } else {
-        outputStyles.push(content);
-      }
-    }
-
-    // Join all output styles
-    return outputStyles.join('\n\n---\n\n');
-  } catch (error) {
-    throw new Error(
-      `Failed to load output styles: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
 }
 
 /**
