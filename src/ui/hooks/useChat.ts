@@ -89,6 +89,7 @@ export function useChat() {
         })),
         tools,
         toolChoice: 'auto', // Let model decide when to use tools
+        maxToolRoundtrips: 5, // Allow multiple tool calls
         onStepFinish: (step) => {
           // Log tool execution for debugging
           if (step.toolCalls && step.toolCalls.length > 0) {
