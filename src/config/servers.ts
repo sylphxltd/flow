@@ -56,7 +56,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
         // Get target config without creating circular dependency
         const targetConfig = await useTargetConfig();
 
-        const args = ['-y', 'github:sylphxltd/flow', 'mcp', 'start'];
+        const args = ['-y', '@sylphx/flow', 'mcp', 'start'];
 
         // Apply flags based on target configuration
         if (targetConfig?.disableMemory) {

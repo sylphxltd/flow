@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Build script for @sylphxltd/flow
+ * Build script for @sylphx/flow
  * Handles native module dependencies properly
  */
 

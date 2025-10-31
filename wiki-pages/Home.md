@@ -57,13 +57,13 @@ flow codebase search "ユーザーログイン処理"     # Japanese
 
 ```bash
 # 1. Initialize once
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # 2. Use anywhere, anytime
-npx github:sylphxltd/flow run "your task"
+npx @sylphx/flow run "your task"
 
 # Or enter interactive mode
-npx github:sylphxltd/flow run
+npx @sylphx/flow run
 # Then type your prompt interactively
 ```
 
@@ -128,7 +128,7 @@ flow codebase search "our authentication pattern"
 
 ### 1. Setup Once
 ```bash
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 ```
 
 ### 2. Use Forever
@@ -136,14 +136,14 @@ npx github:sylphxltd/flow init
 **Direct prompt:**
 ```bash
 # Just describe what you want
-npx github:sylphxltd/flow run "implement authentication"
-npx github:sylphxltd/flow run "review for security" --agent reviewer
+npx @sylphx/flow run "implement authentication"
+npx @sylphx/flow run "review for security" --agent reviewer
 ```
 
 **Interactive mode:**
 ```bash
 # Enter interactive Claude mode
-npx github:sylphxltd/flow run
+npx @sylphx/flow run
 
 # Then type your prompt naturally:
 User: implement authentication

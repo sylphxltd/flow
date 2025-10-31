@@ -27,31 +27,31 @@ A semantic search system that understands code by meaning, not just by keywords:
 ### Search Codebase
 ```bash
 # Basic search
-npx github:sylphxltd/flow codebase search "authentication logic"
+npx @sylphx/flow codebase search "authentication logic"
 
 # Limit results
-npx github:sylphxltd/flow codebase search "api endpoints" --limit 10
+npx @sylphx/flow codebase search "api endpoints" --limit 10
 
 # Include more content
-npx github:sylphxltd/flow codebase search "database queries" --include-content
+npx @sylphx/flow codebase search "database queries" --include-content
 
 # JSON output for scripting
-npx github:sylphxltd/flow codebase search "user validation" --output json
+npx @sylphx/flow codebase search "user validation" --output json
 ```
 
 ### Reindex Codebase
 ```bash
 # Full reindex
-npx github:sylphxltd/flow codebase reindex
+npx @sylphx/flow codebase reindex
 
 # Reindex with progress
-npx github:sylphxltd/flow codebase reindex --verbose
+npx @sylphx/flow codebase reindex --verbose
 ```
 
 ### Check Status
 ```bash
 # View indexing status
-npx github:sylphxltd/flow codebase status
+npx @sylphx/flow codebase status
 ```
 
 ## 🔌 MCP Tools for AI Assistants

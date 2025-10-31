@@ -24,12 +24,12 @@ A system of specialized AI agents, each with specific expertise:
 ### Basic Usage
 ```bash
 # Use default agent (coder)
-npx github:sylphxltd/flow run "implement user authentication"
+npx @sylphx/flow run "implement user authentication"
 
 # Specify agent explicitly
-npx github:sylphxltd/flow run "review this code" --agent reviewer
-npx github:sylphxltd/flow run "write API documentation" --agent writer
-npx github:sylphxltd/flow run "implement OAuth with tests" --agent orchestrator
+npx @sylphx/flow run "review this code" --agent reviewer
+npx @sylphx/flow run "write API documentation" --agent writer
+npx @sylphx/flow run "implement OAuth with tests" --agent orchestrator
 ```
 
 ### Agent Selection

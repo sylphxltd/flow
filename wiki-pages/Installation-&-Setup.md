@@ -17,10 +17,10 @@ No installation required - use directly via npx:
 
 ```bash
 # Use any command directly
-npx github:sylphxltd/flow init
-npx github:sylphxltd/flow knowledge search "react patterns"
-npx github:sylphxltd/flow codebase search "authentication"
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow init
+npx @sylphx/flow knowledge search "react patterns"
+npx @sylphx/flow codebase search "authentication"
+npx @sylphx/flow mcp start
 ```
 
 ### Method 2: Clone and Build
@@ -46,7 +46,7 @@ node dist/index.js --help
 
 ```bash
 # Install globally (when published to npm)
-npm install -g @sylphxltd/flow
+npm install -g @sylphx/flow
 
 # Use anywhere
 flow init
@@ -59,16 +59,16 @@ flow knowledge search "react patterns"
 
 ```bash
 # Full initialization (recommended)
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # Preview what will be installed
-npx github:sylphxltd/flow init --dry-run
+npx @sylphx/flow init --dry-run
 
 # Initialize without MCP
-npx github:sylphxltd/flow init --skip-mcp
+npx @sylphx/flow init --skip-mcp
 
 # Initialize only agents
-npx github:sylphxltd/flow init --skip-hooks --skip-mcp
+npx @sylphx/flow init --skip-hooks --skip-mcp
 ```
 
 **What Gets Installed:**
@@ -95,16 +95,16 @@ export OPENAI_BASE_URL="https://api.openai.com/v1"
 
 ```bash
 # Check CLI is working
-npx github:sylphxltd/flow --help
+npx @sylphx/flow --help
 
 # Check knowledge base
-npx github:sylphxltd/flow knowledge status
+npx @sylphx/flow knowledge status
 
 # Check codebase search
-npx github:sylphxltd/flow codebase status
+npx @sylphx/flow codebase status
 
 # Test search
-npx github:sylphxltd/flow knowledge search "react patterns"
+npx @sylphx/flow knowledge search "react patterns"
 ```
 
 ## 🔧 Configuration
@@ -135,7 +135,7 @@ Configuration in `.claude/mcp.json`:
     "sylphx-flow": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "github:sylphxltd/flow", "mcp", "start"],
+      "args": ["-y", "@sylphx/flow", "mcp", "start"],
       "env": {
         "OPENAI_API_KEY": "your-key-here",
         "EMBEDDING_MODEL": "text-embedding-3-small"
@@ -145,6 +145,8 @@ Configuration in `.claude/mcp.json`:
 }
 ```
 
+> **💡 Using latest unreleased version?** Replace `"@sylphx/flow"` with `"github:sylphxltd/flow"` in args.
+
 #### OpenCode
 Configuration in `opencode.jsonc`:
 
@@ -153,7 +155,7 @@ Configuration in `opencode.jsonc`:
   "mcp": {
     "sylphx-flow": {
       "type": "local",
-      "command": ["npx", "-y", "github:sylphxltd/flow", "mcp", "start"],
+      "command": ["npx", "-y", "@sylphx/flow", "mcp", "start"],
       "environment": {
         "OPENAI_API_KEY": "",
         "EMBEDDING_MODEL": "text-embedding-3-small"
@@ -163,6 +165,8 @@ Configuration in `opencode.jsonc`:
   "$schema": "https://opencode.ai/config.json"
 }
 ```
+
+> **💡 Using latest unreleased version?** Replace `"@sylphx/flow"` with `"github:sylphxltd/flow"` in command.
 
 ### Environment Variables
 
@@ -187,7 +191,7 @@ Claude Code has native support for Sylphx Flow:
 
 ```bash
 # 1. Initialize
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # 2. Add OpenAI key to .claude/mcp.json
 # Edit .claude/mcp.json and add your OPENAI_API_KEY
@@ -203,7 +207,7 @@ npx github:sylphxltd/flow init
 
 ```bash
 # 1. Initialize
-npx github:sylphxltd/flow init --target opencode
+npx @sylphx/flow init --target opencode
 
 # 2. Add OpenAI key to opencode.jsonc
 # Edit opencode.jsonc and add your OPENAI_API_KEY
@@ -216,7 +220,7 @@ npx github:sylphxltd/flow init --target opencode
 
 ```bash
 # 1. Initialize with Cursor support
-npx github:sylphxltd/flow init --target cursor
+npx @sylphx/flow init --target cursor
 
 # 2. Configure MCP (if supported)
 # Add MCP configuration to Cursor's settings
@@ -232,41 +236,41 @@ Knowledge base is automatically indexed when MCP server starts:
 
 ```bash
 # Start MCP server (indexes knowledge on first run)
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 
 # Verify knowledge base
-npx github:sylphxltd/flow knowledge status
-npx github:sylphxltd/flow knowledge list
+npx @sylphx/flow knowledge status
+npx @sylphx/flow knowledge list
 ```
 
 ### 2. Index Codebase (Optional)
 
 ```bash
 # Index your project's codebase
-npx github:sylphxltd/flow codebase reindex
+npx @sylphx/flow codebase reindex
 
 # Verify codebase index
-npx github:sylphxltd/flow codebase status
+npx @sylphx/flow codebase status
 
 # Test semantic search
-npx github:sylphxltd/flow codebase search "authentication logic"
+npx @sylphx/flow codebase search "authentication logic"
 ```
 
 ### 3. Test Agents
 
 ```bash
 # Test coder agent
-npx github:sylphxltd/flow run "implement hello world" --agent coder
+npx @sylphx/flow run "implement hello world" --agent coder
 
 # Test orchestrator
-npx github:sylphxltd/flow run "plan authentication system" --agent orchestrator
+npx @sylphx/flow run "plan authentication system" --agent orchestrator
 ```
 
 ## 🎯 Complete Setup Workflow
 
 ```bash
 # 1. Initialize project
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # 2. Set OpenAI API key
 export OPENAI_API_KEY="your-api-key"
@@ -275,15 +279,15 @@ export OPENAI_API_KEY="your-api-key"
 # Add your API key to .claude/mcp.json or opencode.jsonc
 
 # 4. Start MCP server (indexes knowledge base)
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 # Press Ctrl+C after indexing completes
 
 # 5. Index your codebase
-npx github:sylphxltd/flow codebase reindex
+npx @sylphx/flow codebase reindex
 
 # 6. Verify everything works
-npx github:sylphxltd/flow knowledge search "react patterns"
-npx github:sylphxltd/flow codebase search "main entry point"
+npx @sylphx/flow knowledge search "react patterns"
+npx @sylphx/flow codebase search "main entry point"
 
 # 7. Restart your AI tool (Claude Code/OpenCode)
 # MCP tools are now available
@@ -293,11 +297,11 @@ npx github:sylphxltd/flow codebase search "main entry point"
 
 Test your installation with these commands:
 
-- [ ] **CLI Works**: `npx github:sylphxltd/flow --help`
-- [ ] **Knowledge Base Ready**: `npx github:sylphxltd/flow knowledge status`
-- [ ] **Knowledge Search Works**: `npx github:sylphxltd/flow knowledge search "test"`
-- [ ] **Codebase Indexed**: `npx github:sylphxltd/flow codebase status`
-- [ ] **Codebase Search Works**: `npx github:sylphxltd/flow codebase search "test"`
+- [ ] **CLI Works**: `npx @sylphx/flow --help`
+- [ ] **Knowledge Base Ready**: `npx @sylphx/flow knowledge status`
+- [ ] **Knowledge Search Works**: `npx @sylphx/flow knowledge search "test"`
+- [ ] **Codebase Indexed**: `npx @sylphx/flow codebase status`
+- [ ] **Codebase Search Works**: `npx @sylphx/flow codebase search "test"`
 - [ ] **Agents Installed**: `ls .claude/agents/` or `ls .opencode/agents/`
 - [ ] **MCP Configured**: `cat .claude/mcp.json` or `cat opencode.jsonc`
 - [ ] **API Key Set**: `echo $OPENAI_API_KEY`
@@ -333,20 +337,20 @@ export OPENAI_API_KEY="your-key"
 ### "Knowledge base not indexed"
 ```bash
 # Start MCP server to trigger indexing
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 # Wait for indexing to complete, then Ctrl+C
 
 # Verify
-npx github:sylphxltd/flow knowledge status
+npx @sylphx/flow knowledge status
 ```
 
 ### "Codebase not indexed"
 ```bash
 # Index manually
-npx github:sylphxltd/flow codebase reindex
+npx @sylphx/flow codebase reindex
 
 # Verify
-npx github:sylphxltd/flow codebase status
+npx @sylphx/flow codebase status
 ```
 
 ### "MCP tools not available in AI tool"
@@ -359,11 +363,11 @@ cat .claude/mcp.json  # or opencode.jsonc
 # 3. Restart AI tool (Claude Code/OpenCode)
 
 # 4. Check MCP server starts
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 
 # 5. Check tools are enabled
-npx github:sylphxltd/flow knowledge status
-npx github:sylphxltd/flow codebase status
+npx @sylphx/flow knowledge status
+npx @sylphx/flow codebase status
 ```
 
 ### "Embeddings fail"
@@ -383,13 +387,13 @@ curl https://api.openai.com/v1/models \
 ```bash
 # Clean and rebuild databases
 rm -rf .sylphx-flow/
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # Reindex knowledge base
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 
 # Reindex codebase
-npx github:sylphxltd/flow codebase reindex
+npx @sylphx/flow codebase reindex
 ```
 
 ## 🎯 Advanced Configuration
@@ -416,16 +420,16 @@ export EMBEDDING_MODEL="text-embedding-3-large"
 
 ```bash
 # Disable knowledge base tools
-npx github:sylphxltd/flow mcp start --disable-knowledge
+npx @sylphx/flow mcp start --disable-knowledge
 
 # Disable codebase search
-npx github:sylphxltd/flow mcp start --disable-codebase
+npx @sylphx/flow mcp start --disable-codebase
 
 # Disable time utilities
-npx github:sylphxltd/flow mcp start --disable-time
+npx @sylphx/flow mcp start --disable-time
 
 # Multiple disables
-npx github:sylphxltd/flow mcp start --disable-codebase --disable-time
+npx @sylphx/flow mcp start --disable-codebase --disable-time
 ```
 
 ### Custom Database Location
@@ -464,7 +468,8 @@ Once installation is complete:
 - **API Key Security**: Never commit API keys to version control
 - **Performance**: Use `--disable-*` flags to disable unused MCP tools
 - **Debugging**: Use `--verbose` flag for detailed output
-- **Updates**: Pull latest changes with `npx -y github:sylphxltd/flow`
+- **Updates**: Pull latest npm version with `npx @sylphx/flow@latest`
+- **Bleeding Edge**: Use unreleased features with `npx github:sylphxltd/flow`
 
 ## 📞 Getting Help
 

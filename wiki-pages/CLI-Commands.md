@@ -5,7 +5,7 @@ Complete reference for all Sylphx Flow CLI commands.
 ## 🛠️ Command Structure
 
 ```bash
-npx github:sylphxltd/flow <command> [subcommand] [options]
+npx @sylphx/flow <command> [subcommand] [options]
 ```
 
 ## 📋 Core Commands
@@ -16,7 +16,7 @@ Initialize your project with Sylphx Flow development agents, MCP tools, hooks, a
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow init [options]
+npx @sylphx/flow init [options]
 ```
 
 #### Options
@@ -30,19 +30,19 @@ npx github:sylphxltd/flow init [options]
 #### Examples
 ```bash
 # Full initialization (default)
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # Preview changes
-npx github:sylphxltd/flow init --dry-run
+npx @sylphx/flow init --dry-run
 
 # Initialize without MCP
-npx github:sylphxltd/flow init --skip-mcp
+npx @sylphx/flow init --skip-mcp
 
 # Initialize only agents
-npx github:sylphxltd/flow init --skip-hooks --skip-mcp --skip-output-styles
+npx @sylphx/flow init --skip-hooks --skip-mcp --skip-output-styles
 
 # Force Claude Code target
-npx github:sylphxltd/flow init --target claude-code
+npx @sylphx/flow init --target claude-code
 ```
 
 #### What Gets Installed
@@ -59,14 +59,14 @@ Access and search curated development guidelines and best practices.
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow knowledge [subcommand] [options]
+npx @sylphx/flow knowledge [subcommand] [options]
 ```
 
 #### Subcommands
 
 ##### `knowledge search` - Search Knowledge Base
 ```bash
-npx github:sylphxltd/flow knowledge search <query> [options]
+npx @sylphx/flow knowledge search <query> [options]
 ```
 
 **Arguments:**
@@ -80,21 +80,21 @@ npx github:sylphxltd/flow knowledge search <query> [options]
 **Examples:**
 ```bash
 # Basic search
-npx github:sylphxltd/flow knowledge search "react hooks patterns"
+npx @sylphx/flow knowledge search "react hooks patterns"
 
 # Search with more results
-npx github:sylphxltd/flow knowledge search "nextjs routing" --limit 10
+npx @sylphx/flow knowledge search "nextjs routing" --limit 10
 
 # Include full content
-npx github:sylphxltd/flow knowledge search "security practices" --include-content
+npx @sylphx/flow knowledge search "security practices" --include-content
 
 # JSON output
-npx github:sylphxltd/flow knowledge search "testing strategies" --output json
+npx @sylphx/flow knowledge search "testing strategies" --output json
 ```
 
 ##### `knowledge get` - Get Specific Document
 ```bash
-npx github:sylphxltd/flow knowledge get <uri>
+npx @sylphx/flow knowledge get <uri>
 ```
 
 **Arguments:**
@@ -103,18 +103,18 @@ npx github:sylphxltd/flow knowledge get <uri>
 **Examples:**
 ```bash
 # Get React patterns
-npx github:sylphxltd/flow knowledge get "/stacks/react-app"
+npx @sylphx/flow knowledge get "/stacks/react-app"
 
 # Get security guidelines
-npx github:sylphxltd/flow knowledge get "/universal/security"
+npx @sylphx/flow knowledge get "/universal/security"
 
 # Get SaaS architecture guide
-npx github:sylphxltd/flow knowledge get "/guides/saas-template"
+npx @sylphx/flow knowledge get "/guides/saas-template"
 ```
 
 ##### `knowledge list` - List All Resources
 ```bash
-npx github:sylphxltd/flow knowledge list [options]
+npx @sylphx/flow knowledge list [options]
 ```
 
 **Options:**
@@ -124,18 +124,18 @@ npx github:sylphxltd/flow knowledge list [options]
 **Examples:**
 ```bash
 # List all knowledge
-npx github:sylphxltd/flow knowledge list
+npx @sylphx/flow knowledge list
 
 # List only stacks
-npx github:sylphxltd/flow knowledge list --category stacks
+npx @sylphx/flow knowledge list --category stacks
 
 # JSON output
-npx github:sylphxltd/flow knowledge list --output json
+npx @sylphx/flow knowledge list --output json
 ```
 
 ##### `knowledge status` - Check Knowledge Base Status
 ```bash
-npx github:sylphxltd/flow knowledge status
+npx @sylphx/flow knowledge status
 ```
 
 Shows:
@@ -153,14 +153,14 @@ Semantic search across your project's codebase.
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow codebase [subcommand] [options]
+npx @sylphx/flow codebase [subcommand] [options]
 ```
 
 #### Subcommands
 
 ##### `codebase search` - Search Codebase
 ```bash
-npx github:sylphxltd/flow codebase search <query> [options]
+npx @sylphx/flow codebase search <query> [options]
 ```
 
 **Arguments:**
@@ -174,28 +174,28 @@ npx github:sylphxltd/flow codebase search <query> [options]
 **Examples:**
 ```bash
 # Basic search
-npx github:sylphxltd/flow codebase search "authentication logic"
+npx @sylphx/flow codebase search "authentication logic"
 
 # Search with more results
-npx github:sylphxltd/flow codebase search "api endpoints" --limit 20
+npx @sylphx/flow codebase search "api endpoints" --limit 20
 
 # Include content
-npx github:sylphxltd/flow codebase search "database queries" --include-content
+npx @sylphx/flow codebase search "database queries" --include-content
 
 # JSON output
-npx github:sylphxltd/flow codebase search "error handling" --output json
+npx @sylphx/flow codebase search "error handling" --output json
 ```
 
 ##### `codebase reindex` - Reindex Codebase
 ```bash
-npx github:sylphxltd/flow codebase reindex
+npx @sylphx/flow codebase reindex
 ```
 
 Rebuilds the codebase search index. Run after significant code changes.
 
 ##### `codebase status` - Check Index Status
 ```bash
-npx github:sylphxltd/flow codebase status
+npx @sylphx/flow codebase status
 ```
 
 Shows:
@@ -213,7 +213,7 @@ Run AI agents with specific prompts and tasks.
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow run [prompt] [options]
+npx @sylphx/flow run [prompt] [options]
 ```
 
 #### Arguments
@@ -226,15 +226,15 @@ npx github:sylphxltd/flow run [prompt] [options]
 #### Examples
 ```bash
 # Use default agent (coder)
-npx github:sylphxltd/flow run "implement user authentication"
+npx @sylphx/flow run "implement user authentication"
 
 # Specify agent
-npx github:sylphxltd/flow run "review this code for security" --agent reviewer
-npx github:sylphxltd/flow run "document the API" --agent writer
-npx github:sylphxltd/flow run "implement OAuth with tests" --agent orchestrator
+npx @sylphx/flow run "review this code for security" --agent reviewer
+npx @sylphx/flow run "document the API" --agent writer
+npx @sylphx/flow run "implement OAuth with tests" --agent orchestrator
 
 # Interactive mode (prompts for input)
-npx github:sylphxltd/flow run --agent coder
+npx @sylphx/flow run --agent coder
 ```
 
 #### Available Agents
@@ -251,14 +251,14 @@ Manage MCP (Model Context Protocol) server and configuration.
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow mcp [subcommand] [options]
+npx @sylphx/flow mcp [subcommand] [options]
 ```
 
 #### Subcommands
 
 ##### `mcp start` - Start MCP Server
 ```bash
-npx github:sylphxltd/flow mcp start [options]
+npx @sylphx/flow mcp start [options]
 ```
 
 **Options:**
@@ -271,16 +271,16 @@ npx github:sylphxltd/flow mcp start [options]
 **Examples:**
 ```bash
 # Start with all tools (default)
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 
 # Start without knowledge tools
-npx github:sylphxltd/flow mcp start --disable-knowledge
+npx @sylphx/flow mcp start --disable-knowledge
 
 # Start with only knowledge tools
-npx github:sylphxltd/flow mcp start --disable-codebase --disable-time
+npx @sylphx/flow mcp start --disable-codebase --disable-time
 
 # Force OpenCode configuration
-npx github:sylphxltd/flow mcp start --target opencode
+npx @sylphx/flow mcp start --target opencode
 ```
 
 **Available MCP Tools:**
@@ -290,28 +290,28 @@ npx github:sylphxltd/flow mcp start --target opencode
 
 ##### `mcp config` - Configure MCP Server
 ```bash
-npx github:sylphxltd/flow mcp config [options]
+npx @sylphx/flow mcp config [options]
 ```
 
 Configure MCP server settings and API keys.
 
 ##### `mcp list` - List MCP Servers
 ```bash
-npx github:sylphxltd/flow mcp list
+npx @sylphx/flow mcp list
 ```
 
 List all configured MCP servers.
 
 ##### `mcp add` - Add MCP Servers
 ```bash
-npx github:sylphxltd/flow mcp add <servers...>
+npx @sylphx/flow mcp add <servers...>
 ```
 
 Add additional MCP servers to configuration.
 
 ##### `mcp remove` - Remove MCP Servers
 ```bash
-npx github:sylphxltd/flow mcp remove <servers...>
+npx @sylphx/flow mcp remove <servers...>
 ```
 
 Remove MCP servers from configuration.
@@ -324,7 +324,7 @@ Load dynamic content for Claude Code hooks (rules, output styles, system info).
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow hook --type <type> [options]
+npx @sylphx/flow hook --type <type> [options]
 ```
 
 #### Options
@@ -339,13 +339,13 @@ npx github:sylphxltd/flow hook --type <type> [options]
 #### Examples
 ```bash
 # Session start hook - all content
-npx github:sylphxltd/flow hook --type session --target claude-code
+npx @sylphx/flow hook --type session --target claude-code
 
 # Message hook - system status
-npx github:sylphxltd/flow hook --type message --target claude-code
+npx @sylphx/flow hook --type message --target claude-code
 
 # Verbose mode - show loading progress
-npx github:sylphxltd/flow hook --type session --verbose
+npx @sylphx/flow hook --type session --verbose
 ```
 
 #### What Gets Loaded
@@ -405,67 +405,67 @@ These options work with all commands:
 ### 1. Initial Setup
 ```bash
 # Initialize project
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # Check knowledge base
-npx github:sylphxltd/flow knowledge status
+npx @sylphx/flow knowledge status
 
 # Check codebase index
-npx github:sylphxltd/flow codebase status
+npx @sylphx/flow codebase status
 
 # Start MCP server
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 ```
 
 ### 2. Working with Knowledge Base
 ```bash
 # Search for patterns
-npx github:sylphxltd/flow knowledge search "react hooks"
+npx @sylphx/flow knowledge search "react hooks"
 
 # Get specific guide
-npx github:sylphxltd/flow knowledge get "/stacks/react-app"
+npx @sylphx/flow knowledge get "/stacks/react-app"
 
 # List all resources
-npx github:sylphxltd/flow knowledge list
+npx @sylphx/flow knowledge list
 ```
 
 ### 3. Searching Codebase
 ```bash
 # Semantic search
-npx github:sylphxltd/flow codebase search "authentication logic"
+npx @sylphx/flow codebase search "authentication logic"
 
 # Search with more results
-npx github:sylphxltd/flow codebase search "api endpoints" --limit 20
+npx @sylphx/flow codebase search "api endpoints" --limit 20
 
 # Reindex after changes
-npx github:sylphxltd/flow codebase reindex
+npx @sylphx/flow codebase reindex
 ```
 
 ### 4. Using AI Agents
 ```bash
 # Implement feature
-npx github:sylphxltd/flow run "add user authentication" --agent coder
+npx @sylphx/flow run "add user authentication" --agent coder
 
 # Review code
-npx github:sylphxltd/flow run "review for security" --agent reviewer
+npx @sylphx/flow run "review for security" --agent reviewer
 
 # Write documentation
-npx github:sylphxltd/flow run "document the API" --agent writer
+npx @sylphx/flow run "document the API" --agent writer
 
 # Complex task
-npx github:sylphxltd/flow run "implement OAuth with tests" --agent orchestrator
+npx @sylphx/flow run "implement OAuth with tests" --agent orchestrator
 ```
 
 ### 5. Managing MCP Server
 ```bash
 # Start with all tools
-npx github:sylphxltd/flow mcp start
+npx @sylphx/flow mcp start
 
 # Start with specific tools
-npx github:sylphxltd/flow mcp start --disable-codebase
+npx @sylphx/flow mcp start --disable-codebase
 
 # List configured servers
-npx github:sylphxltd/flow mcp list
+npx @sylphx/flow mcp list
 ```
 
 ## ⚙️ Environment Variables

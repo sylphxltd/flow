@@ -36,7 +36,7 @@ vs.
 #### 2. **Zero Maintenance**
 ```bash
 # With curated knowledge:
-npx github:sylphxltd/flow init  # Auto-updates to latest
+npx @sylphx/flow init  # Auto-updates to latest
 
 # With custom knowledge (if supported):
 flow knowledge add my-guide.md
@@ -155,42 +155,42 @@ flow codebase search "authentication implementation"
 ### Search Knowledge Base
 ```bash
 # Basic search
-npx github:sylphxltd/flow knowledge search "react hooks patterns"
+npx @sylphx/flow knowledge search "react hooks patterns"
 
 # Include content in results
-npx github:sylphxltd/flow knowledge search "nextjs routing" --include-content
+npx @sylphx/flow knowledge search "nextjs routing" --include-content
 
 # Limit results
-npx github:sylphxltd/flow knowledge search "security best practices" --limit 5
+npx @sylphx/flow knowledge search "security best practices" --limit 5
 
 # JSON output for scripting
-npx github:sylphxltd/flow knowledge search "testing strategies" --output json
+npx @sylphx/flow knowledge search "testing strategies" --output json
 ```
 
 ### Get Specific Document
 ```bash
 # Retrieve by URI
-npx github:sylphxltd/flow knowledge get "/stacks/react-app"
-npx github:sylphxltd/flow knowledge get "/guides/saas-template"
-npx github:sylphxltd/flow knowledge get "/universal/security"
+npx @sylphx/flow knowledge get "/stacks/react-app"
+npx @sylphx/flow knowledge get "/guides/saas-template"
+npx @sylphx/flow knowledge get "/universal/security"
 ```
 
 ### List All Resources
 ```bash
 # List all available knowledge
-npx github:sylphxltd/flow knowledge list
+npx @sylphx/flow knowledge list
 
 # Filter by category
-npx github:sylphxltd/flow knowledge list --category stacks
+npx @sylphx/flow knowledge list --category stacks
 
 # JSON output
-npx github:sylphxltd/flow knowledge list --output json
+npx @sylphx/flow knowledge list --output json
 ```
 
 ### Check Status
 ```bash
 # View knowledge base status
-npx github:sylphxltd/flow knowledge status
+npx @sylphx/flow knowledge status
 ```
 
 ## 🔌 MCP Tools for AI Assistants

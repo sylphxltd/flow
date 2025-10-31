@@ -56,7 +56,7 @@ User: "I'm using TypeScript + React + Next.js 14 App Router,
 
 ```bash
 # What you type with Sylphx Flow ✅
-npx github:sylphxltd/flow run "implement authentication"
+npx @sylphx/flow run "implement authentication"
 
 # You get: Production-ready code that:
 ✅ Uses YOUR tech stack (auto-detected)
@@ -75,21 +75,23 @@ npx github:sylphxltd/flow run "implement authentication"
 ### 1. Setup (Once)
 
 ```bash
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 ```
 
 Done. Everything configured. Never think about setup again.
+
+> **💡 Want the bleeding edge?** Use `npx github:sylphxltd/flow init` to try unreleased features.
 
 ### 2. Build (Forever)
 
 ```bash
 # Direct prompt
-npx github:sylphxltd/flow run "add password reset"
-npx github:sylphxltd/flow run "review for security" --agent reviewer
-npx github:sylphxltd/flow run "write API docs" --agent writer
+npx @sylphx/flow run "add password reset"
+npx @sylphx/flow run "review for security" --agent reviewer
+npx @sylphx/flow run "write API docs" --agent writer
 
 # Or interactive mode - just start chatting
-npx github:sylphxltd/flow run
+npx @sylphx/flow run
 > implement OAuth
 > add tests
 > optimize performance
@@ -204,7 +206,7 @@ const result = await pipe(
 
 ```bash
 # 1. Initialize (one time)
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # 2. (Optional) Set OpenAI-compatible API key to use vector search
 # Without key: Uses TF-IDF search (fast, free)
@@ -212,14 +214,16 @@ npx github:sylphxltd/flow init
 export OPENAI_API_KEY="your-key-here"  # Auto-switches search mode
 ```
 
+> **💡 Want the latest unreleased features?** Use `npx github:sylphxltd/flow` instead.
+
 ### Start Building
 
 ```bash
 # Method 1: Direct command
-npx github:sylphxltd/flow run "implement user registration"
+npx @sylphx/flow run "implement user registration"
 
 # Method 2: Interactive mode (recommended)
-npx github:sylphxltd/flow run
+npx @sylphx/flow run
 # Then just chat naturally:
 # > add authentication
 # > review the code
@@ -497,7 +501,7 @@ flow codebase reindex  # After major code changes
 
 ```bash
 # 1. Initialize
-npx github:sylphxltd/flow init
+npx @sylphx/flow init
 
 # 2. (Optional) Add OpenAI-compatible key to .claude/mcp.json
 # Enhances search quality with vector embeddings
