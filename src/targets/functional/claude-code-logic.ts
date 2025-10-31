@@ -37,7 +37,27 @@ export interface HookConfig {
 }
 
 /**
- * Default hook commands
+ * Generate hook commands based on how CLI was invoked
+ * Detects invocation method and generates matching commands
+ */
+export const generateHookCommands = async (targetId: string): Promise<HookConfig> => {
+  const { detectInvocation, generateHookCommand, loadInvocationMethod } = await import(
+    '../../utils/cli-invocation.js'
+  );
+
+  // Try to load saved invocation method, fall back to detection
+  const savedMethod = await loadInvocationMethod();
+  const method = savedMethod || detectInvocation();
+
+  return {
+    sessionCommand: generateHookCommand('session', targetId, method),
+    messageCommand: generateHookCommand('message', targetId, method),
+    notificationCommand: generateHookCommand('notification', targetId, method),
+  };
+};
+
+/**
+ * Default hook commands (fallback)
  * Now using unified hook command for all content (rules, output styles, system info)
  */
 export const DEFAULT_HOOKS: HookConfig = {

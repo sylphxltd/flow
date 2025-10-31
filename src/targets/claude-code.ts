@@ -350,7 +350,7 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Configure session and prompt hooks for system information display
    */
   async setupHooks(cwd: string, _options: CommonOptions): Promise<SetupResult> {
-    const { processSettings } = await import('./functional/claude-code-logic.js');
+    const { processSettings, generateHookCommands } = await import('./functional/claude-code-logic.js');
     const { pathExists, createDirectory, readFile, writeFile } = await import(
       '../composables/functional/useFileSystem.js'
     );
@@ -377,8 +377,11 @@ Please begin your response with a comprehensive summary of all the instructions 
       }
     }
 
+    // Generate hooks based on how CLI was invoked
+    const hookCommands = await generateHookCommands('claude-code');
+
     // Process settings using pure functions
-    const settingsResult = processSettings(existingContent);
+    const settingsResult = processSettings(existingContent, hookCommands);
 
     if (settingsResult._tag === 'Failure') {
       throw new Error(`Failed to process settings: ${settingsResult.error.message}`);

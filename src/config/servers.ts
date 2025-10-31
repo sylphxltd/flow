@@ -51,12 +51,24 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     description: 'Sylphx Flow MCP server for agent coordination and memory management',
     config: {
       type: 'stdio' as const,
-      command: 'npx',
+      command: async () => {
+        const { getMCPServerCommand, loadInvocationMethod, detectInvocation } = await import(
+          '../utils/cli-invocation.js'
+        );
+        const method = (await loadInvocationMethod()) || detectInvocation();
+        return getMCPServerCommand(method);
+      },
       args: async () => {
+        const { getMCPServerArgs, loadInvocationMethod, detectInvocation } = await import(
+          '../utils/cli-invocation.js'
+        );
+
+        // Get saved or detected invocation method
+        const method = (await loadInvocationMethod()) || detectInvocation();
+        const args = getMCPServerArgs(method);
+
         // Get target config without creating circular dependency
         const targetConfig = await useTargetConfig();
-
-        const args = ['-y', '@sylphx/flow', 'mcp', 'start'];
 
         // Apply flags based on target configuration
         if (targetConfig?.disableMemory) {
