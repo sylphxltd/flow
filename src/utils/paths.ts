@@ -74,6 +74,13 @@ export function getOutputStylesDir(): string {
 }
 
 /**
+ * Get path to slash commands directory
+ */
+export function getSlashCommandsDir(): string {
+  return path.join(ASSETS_ROOT, 'slash-commands');
+}
+
+/**
  * Get path to a specific rule file with path traversal protection
  */
 export function getRuleFile(filename: string): string {
@@ -113,5 +120,6 @@ export function getPathsInfo() {
     templates: getTemplatesDir(),
     rules: getRulesDir(),
     outputStyles: getOutputStylesDir(),
+    slashCommands: getSlashCommandsDir(),
   };
 }

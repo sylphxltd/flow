@@ -9,7 +9,7 @@ import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '.
 import type { AgentMetadata, ClaudeCodeMetadata } from '../types/target-config.types.js';
 import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { CLIError } from '../utils/error-handler.js';
-import { getAgentsDir, getOutputStylesDir } from '../utils/paths.js';
+import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';
 import { commandSecurity, sanitize } from '../utils/security.js';
 import { displayResults } from '../shared.js';
 import {
@@ -50,6 +50,7 @@ export const claudeCodeTarget: Target = {
     mcpConfigPath: 'mcpServers',
     rulesFile: 'CLAUDE.md',
     outputStylesDir: '.claude/output-styles',
+    slashCommandsDir: '.claude/commands',
     installation: {
       createAgentDir: true,
       createConfigFile: true,
@@ -472,6 +473,34 @@ Please begin your response with a comprehensive summary of all the instructions 
     }
 
     return { count: result.selectedServers.length };
+  },
+
+  /**
+   * Setup slash commands for Claude Code
+   * Install slash command templates to .claude/commands/ directory
+   */
+  async setupSlashCommands(cwd: string, options: CommonOptions): Promise<SetupResult> {
+    if (!this.config.slashCommandsDir) {
+      return { count: 0 };
+    }
+
+    const installer = new FileInstaller();
+    const slashCommandsDir = path.join(cwd, this.config.slashCommandsDir);
+
+    const results = await installer.installToDirectory(
+      getSlashCommandsDir(),
+      slashCommandsDir,
+      async (content) => {
+        // Slash commands are plain markdown with front matter - no transformation needed
+        return content;
+      },
+      {
+        ...options,
+        showProgress: false,  // UI handled by init-command
+      }
+    );
+
+    return { count: results.length };
   },
 };
 

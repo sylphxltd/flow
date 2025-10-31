@@ -7,7 +7,7 @@ import { MCPInstaller } from '../core/installers/mcp-installer.js';
 import { displayResults } from '../shared.js';
 import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
-import { getAgentsDir, getOutputStylesDir } from '../utils/paths.js';
+import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
 
@@ -41,6 +41,7 @@ export const opencodeTarget: Target = {
     mcpConfigPath: 'mcp',
     rulesFile: 'AGENTS.md',
     outputStylesDir: undefined, // OpenCode doesn't support output styles as separate files
+    slashCommandsDir: '.opencode/commands',
     installation: {
       createAgentDir: true,
       createConfigFile: true,
@@ -369,5 +370,33 @@ export const opencodeTarget: Target = {
     const result = await installer.setupMCP({ ...options, quiet: true });
 
     return { count: result.selectedServers.length };
+  },
+
+  /**
+   * Setup slash commands for OpenCode
+   * Install slash command templates to .opencode/commands/ directory
+   */
+  async setupSlashCommands(cwd: string, options: CommonOptions): Promise<SetupResult> {
+    if (!this.config.slashCommandsDir) {
+      return { count: 0 };
+    }
+
+    const installer = new FileInstaller();
+    const slashCommandsDir = path.join(cwd, this.config.slashCommandsDir);
+
+    const results = await installer.installToDirectory(
+      getSlashCommandsDir(),
+      slashCommandsDir,
+      async (content) => {
+        // Slash commands are plain markdown with front matter - no transformation needed
+        return content;
+      },
+      {
+        ...options,
+        showProgress: false,  // UI handled by init-command
+      }
+    );
+
+    return { count: results.length };
   },
 };

@@ -125,6 +125,8 @@ export interface TargetConfig {
   rulesFile?: string;
   /** Output styles directory (optional, relative to project root) */
   outputStylesDir?: string;
+  /** Slash commands directory (optional, relative to project root) */
+  slashCommandsDir?: string;
   /** Installation-specific configuration */
   installation: {
     /** Whether to create the agent directory */
@@ -248,6 +250,9 @@ export abstract class Target {
 
   /** Setup hooks for this target (optional - implement if target needs hooks like Claude Code) */
   async setupHooks?(cwd: string, options: CommonOptions): Promise<SetupResult>;
+
+  /** Setup slash commands for this target (optional - implement if target supports slash commands) */
+  async setupSlashCommands?(cwd: string, options: CommonOptions): Promise<SetupResult>;
 }
 
 export interface CommonOptions {

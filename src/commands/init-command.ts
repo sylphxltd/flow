@@ -23,6 +23,7 @@ export const initCommand = new Command('init')
   .option('--no-agents', 'Skip agents installation')
   .option('--no-rules', 'Skip rules installation')
   .option('--no-output-styles', 'Skip output styles installation')
+  .option('--no-slash-commands', 'Skip slash commands installation')
   .option('--no-hooks', 'Skip hooks setup')
   .action(async (options) => {
     let targetId = options.target;
@@ -107,6 +108,11 @@ export const initCommand = new Command('init')
       if (options.rules !== false && target.setupRules) {
         console.log(chalk.cyan.bold('\nRules:'));
         console.log(chalk.dim('  ✓ Custom rules will be installed'));
+      }
+
+      if (options.slashCommands !== false && target.setupSlashCommands) {
+        console.log(chalk.cyan.bold('\nSlash Commands:'));
+        console.log(chalk.dim('  ✓ Slash commands will be installed'));
       }
 
       if (options.hooks !== false && target.setupHooks) {
@@ -195,6 +201,24 @@ export const initCommand = new Command('init')
         }
       } catch (error) {
         rulesSpinner.fail(chalk.red('Failed to install rules'));
+        throw error;
+      }
+    }
+
+    // Install slash commands if target supports it and slash commands are not skipped
+    if (target.setupSlashCommands && options.slashCommands !== false) {
+      const slashCommandsSpinner = ora({ text: 'Installing slash commands', color: 'cyan' }).start();
+      try {
+        const result = await target.setupSlashCommands(process.cwd(), { ...options, quiet: true });
+        if (result.count > 0) {
+          slashCommandsSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} slash command${result.count !== 1 ? 's' : ''}`));
+        } else if (result.message) {
+          slashCommandsSpinner.info(chalk.dim(result.message));
+        } else {
+          slashCommandsSpinner.info(chalk.dim('No slash commands to install'));
+        }
+      } catch (error) {
+        slashCommandsSpinner.fail(chalk.red('Failed to install slash commands'));
         throw error;
       }
     }
