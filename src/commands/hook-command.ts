@@ -12,16 +12,20 @@
  * - Consistent: Follows sysinfo command pattern
  */
 
+import { exec } from 'node:child_process';
 import fsSync from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { Command } from 'commander';
 import { cli } from '../utils/cli-output.js';
+
+const execAsync = promisify(exec);
 
 /**
  * Hook types supported
  */
-type HookType = 'session' | 'message';
+type HookType = 'session' | 'message' | 'notification';
 
 /**
  * Target platforms supported
@@ -42,8 +46,8 @@ export const hookCommand = new Command('hook')
       const target = options.target as TargetPlatform;
 
       // Validate hook type
-      if (!['session', 'message'].includes(hookType)) {
-        throw new Error(`Invalid hook type: ${hookType}. Must be 'session' or 'message'`);
+      if (!['session', 'message', 'notification'].includes(hookType)) {
+        throw new Error(`Invalid hook type: ${hookType}. Must be 'session', 'message', or 'notification'`);
       }
 
       // Validate target
@@ -78,6 +82,10 @@ async function loadHookContent(
 
   if (hookType === 'message') {
     return await loadMessageContent(target, verbose);
+  }
+
+  if (hookType === 'notification') {
+    return await sendNotification(verbose);
   }
 
   return '';
@@ -285,4 +293,124 @@ function formatBytes(bytes: number): string {
 
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
+/**
+ * Send OS-level notification
+ */
+async function sendNotification(verbose: boolean): Promise<string> {
+  const title = 'Claude Code';
+  const message = 'Awaiting your input';
+  const platform = os.platform();
+
+  if (verbose) {
+    cli.info(`Sending notification on ${platform}...`);
+  }
+
+  try {
+    switch (platform) {
+      case 'darwin':
+        await sendMacNotification(title, message);
+        break;
+      case 'linux':
+        await sendLinuxNotification(title, message);
+        break;
+      case 'win32':
+        await sendWindowsNotification(title, message);
+        break;
+      default:
+        throw new Error(`Unsupported platform: ${platform}`);
+    }
+
+    return ''; // Notifications don't output to stdout
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (verbose) {
+      cli.error(`Failed to send notification: ${errorMsg}`);
+    }
+    // Don't fail the hook, just silently skip notification
+    return '';
+  }
+}
+
+/**
+ * Send notification on macOS using osascript
+ */
+async function sendMacNotification(title: string, message: string): Promise<void> {
+  const script = `display notification "${escapeForAppleScript(message)}" with title "${escapeForAppleScript(title)}"`;
+  await execAsync(`osascript -e '${script}'`);
+}
+
+/**
+ * Send notification on Linux using notify-send
+ */
+async function sendLinuxNotification(title: string, message: string): Promise<void> {
+  // Try to use notify-send, fail silently if not available
+  try {
+    await execAsync('which notify-send');
+    await execAsync(`notify-send "${escapeForShell(title)}" "${escapeForShell(message)}"`);
+  } catch {
+    // notify-send not available, skip notification silently
+  }
+}
+
+/**
+ * Send notification on Windows using PowerShell
+ */
+async function sendWindowsNotification(title: string, message: string): Promise<void> {
+  const script = `
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+
+$template = @"
+<toast>
+    <visual>
+        <binding template="ToastText02">
+            <text id="1">${escapeForXml(title)}</text>
+            <text id="2">${escapeForXml(message)}</text>
+        </binding>
+    </visual>
+</toast>
+"@
+
+$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+$xml.LoadXml($template)
+$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Claude Code").Show($toast)
+`;
+
+  await execAsync(`powershell -Command "${escapeForPowerShell(script)}"`);
+}
+
+/**
+ * Escape string for AppleScript
+ */
+function escapeForAppleScript(str: string): string {
+  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/**
+ * Escape string for shell
+ */
+function escapeForShell(str: string): string {
+  return str.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+}
+
+/**
+ * Escape string for XML
+ */
+function escapeForXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Escape string for PowerShell
+ */
+function escapeForPowerShell(str: string): string {
+  return str.replace(/"/g, '""');
 }

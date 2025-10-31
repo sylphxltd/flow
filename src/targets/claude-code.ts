@@ -399,10 +399,10 @@ Please begin your response with a comprehensive summary of all the instructions 
       throw new Error(`Failed to write settings: ${writeResult.error.message}`);
     }
 
-    // Return 2 hooks configured (SessionStart + UserPromptSubmit)
+    // Return 3 hooks configured (SessionStart + UserPromptSubmit + Notification)
     return {
-      count: 2,
-      message: 'Configured session hooks for system information',
+      count: 3,
+      message: 'Configured session, message, and notification hooks',
     };
   },
 

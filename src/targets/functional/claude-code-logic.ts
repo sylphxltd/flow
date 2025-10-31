@@ -30,6 +30,7 @@ export interface ClaudeCodeSettings {
 export interface HookConfig {
   sessionCommand?: string;
   messageCommand?: string;
+  notificationCommand?: string;
 }
 
 /**
@@ -39,6 +40,7 @@ export interface HookConfig {
 export const DEFAULT_HOOKS: HookConfig = {
   sessionCommand: 'npx -y github:sylphxltd/flow hook --type session --target claude-code',
   messageCommand: 'npx -y github:sylphxltd/flow hook --type message --target claude-code',
+  notificationCommand: 'npx -y github:sylphxltd/flow hook --type notification --target claude-code',
 };
 
 /**
@@ -62,6 +64,7 @@ export const buildHookConfiguration = (
 ): ClaudeCodeSettings['hooks'] => {
   const sessionCommand = config.sessionCommand || DEFAULT_HOOKS.sessionCommand!;
   const messageCommand = config.messageCommand || DEFAULT_HOOKS.messageCommand!;
+  const notificationCommand = config.notificationCommand || DEFAULT_HOOKS.notificationCommand!;
 
   return {
     SessionStart: [
@@ -80,6 +83,17 @@ export const buildHookConfiguration = (
           {
             type: 'command',
             command: messageCommand,
+          },
+        ],
+      },
+    ],
+    Notification: [
+      {
+        matcher: '',
+        hooks: [
+          {
+            type: 'command',
+            command: notificationCommand,
           },
         ],
       },

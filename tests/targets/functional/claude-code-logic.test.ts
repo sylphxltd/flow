@@ -37,8 +37,10 @@ describe('claude-code-logic', () => {
 
       expect(hooks.SessionStart).toBeDefined();
       expect(hooks.UserPromptSubmit).toBeDefined();
+      expect(hooks.Notification).toBeDefined();
       expect(hooks.SessionStart[0].hooks[0].command).toContain('hook --type session');
       expect(hooks.UserPromptSubmit[0].hooks[0].command).toContain('hook --type message');
+      expect(hooks.Notification[0].hooks[0].command).toContain('hook --type notification');
     });
 
     it('should build hooks with custom commands', () => {
