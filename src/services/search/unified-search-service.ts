@@ -57,53 +57,85 @@ export interface SearchServiceDependencies {
 }
 
 /**
- * Unified Search Service - shared by CLI and MCP
+ * UnifiedSearchService Interface
+ * Public API for search operations
  */
-export class UnifiedSearchService {
-  private memoryStorage: SeparatedMemoryStorage;
-  private knowledgeIndexer: ReturnType<typeof getKnowledgeIndexer>;
-  private codebaseIndexer?: CodebaseIndexer;
-  private embeddingProvider?: EmbeddingProvider;
+export interface UnifiedSearchService {
+  readonly initialize: () => Promise<void>;
+  readonly getStatus: () => Promise<SearchStatus>;
+  readonly searchCodebase: (query: string, options?: SearchOptions) => Promise<{
+    results: SearchResult[];
+    totalIndexed: number;
+    query: string;
+  }>;
+  readonly searchKnowledge: (query: string, options?: SearchOptions) => Promise<{
+    results: SearchResult[];
+    totalIndexed: number;
+    query: string;
+  }>;
+  readonly formatResultsForCLI: (results: SearchResult[], query: string, totalIndexed: number) => string;
+  readonly formatResultsForMCP: (results: SearchResult[], query: string, totalIndexed: number) => {
+    content: Array<{ type: 'text'; text: string }>;
+  };
+  readonly getAvailableKnowledgeURIs: () => Promise<string[]>;
+  readonly startCodebaseWatching: () => void;
+  readonly stopCodebaseWatching: () => void;
+}
 
-  constructor(dependencies: SearchServiceDependencies = {}) {
-    // Use provided dependencies or create defaults
-    this.memoryStorage = dependencies.memoryStorage || new SeparatedMemoryStorage();
-    this.knowledgeIndexer = dependencies.knowledgeIndexer || getKnowledgeIndexer();
-    this.codebaseIndexer = dependencies.codebaseIndexer;
-    this.embeddingProvider = dependencies.embeddingProvider;
-  }
+/**
+ * Internal state for UnifiedSearchService
+ */
+interface UnifiedSearchServiceState {
+  readonly memoryStorage: SeparatedMemoryStorage;
+  knowledgeIndexer: ReturnType<typeof getKnowledgeIndexer>;
+  codebaseIndexer?: CodebaseIndexer;
+  embeddingProvider?: EmbeddingProvider;
+}
+
+/**
+ * Create Unified Search Service (Factory Function)
+ * Shared search logic for CLI, MCP, and API
+ */
+export const createUnifiedSearchService = (dependencies: SearchServiceDependencies = {}): UnifiedSearchService => {
+  // Mutable state in closure (updated immutably where possible)
+  let state: UnifiedSearchServiceState = {
+    memoryStorage: dependencies.memoryStorage || new SeparatedMemoryStorage(),
+    knowledgeIndexer: dependencies.knowledgeIndexer || getKnowledgeIndexer(),
+    codebaseIndexer: dependencies.codebaseIndexer,
+    embeddingProvider: dependencies.embeddingProvider,
+  };
 
   /**
    * Initialize search service
    */
-  async initialize(): Promise<void> {
-    await this.memoryStorage.initialize();
+  const initialize = async (): Promise<void> => {
+    await state.memoryStorage.initialize();
 
     // Initialize embedding provider only if API key exists
-    if (!this.embeddingProvider && process.env.OPENAI_API_KEY) {
-      this.embeddingProvider = await getDefaultEmbeddingProvider();
+    if (!state.embeddingProvider && process.env.OPENAI_API_KEY) {
+      state.embeddingProvider = await getDefaultEmbeddingProvider();
     }
 
     // Reinitialize knowledge indexer with embedding provider (or undefined)
-    this.knowledgeIndexer = getKnowledgeIndexer(this.embeddingProvider);
-  }
+    state.knowledgeIndexer = getKnowledgeIndexer(state.embeddingProvider);
+  };
 
   /**
    * Get search status
    */
-  async getStatus(): Promise<SearchStatus> {
+  const getStatus = async (): Promise<SearchStatus> => {
     // Codebase status
-    const codebaseFiles = await this.memoryStorage.getAllCodebaseFiles();
-    const codebaseStats = await this.memoryStorage.getCodebaseIndexStats();
-    const codebaseIndexingStatus = this.codebaseIndexer?.getStatus();
+    const codebaseFiles = await state.memoryStorage.getAllCodebaseFiles();
+    const codebaseStats = await state.memoryStorage.getCodebaseIndexStats();
+    const codebaseIndexingStatus = state.codebaseIndexer?.getStatus();
 
     // Knowledge status
-    const knowledgeStatus = this.knowledgeIndexer.getStatus();
+    const knowledgeStatus = state.knowledgeIndexer.getStatus();
     let knowledgeIndexed = false;
     let knowledgeDocCount = 0;
 
     try {
-      const knowledgeIndex = await this.knowledgeIndexer.loadIndex();
+      const knowledgeIndex = await state.knowledgeIndexer.loadIndex();
       knowledgeIndexed = true;
       knowledgeDocCount = knowledgeIndex.totalDocuments;
     } catch {
@@ -126,19 +158,19 @@ export class UnifiedSearchService {
         progress: knowledgeStatus.progress,
       },
     };
-  }
+  };
 
   /**
    * Search codebase - shared by CLI and MCP
    */
-  async searchCodebase(
+  const searchCodebase = async (
     query: string,
     options: SearchOptions = {}
   ): Promise<{
     results: SearchResult[];
     totalIndexed: number;
     query: string;
-  }> {
+  }> => {
     const {
       limit = 10,
       include_content = true,
@@ -149,7 +181,7 @@ export class UnifiedSearchService {
     } = options;
 
     // Check if codebase is indexed
-    const allFiles = await this.memoryStorage.getAllCodebaseFiles();
+    const allFiles = await state.memoryStorage.getAllCodebaseFiles();
     if (allFiles.length === 0) {
       throw new Error('Codebase not indexed yet. Run "sylphx search reindex" first.');
     }
@@ -176,7 +208,7 @@ export class UnifiedSearchService {
 
     // Use TF-IDF index from database to avoid rebuilding
     const { buildSearchIndexFromDB } = await import('./tfidf.js');
-    const index = await buildSearchIndexFromDB(this.memoryStorage, {
+    const index = await buildSearchIndexFromDB(state.memoryStorage, {
       file_extensions,
       path_filter,
       exclude_paths,
@@ -235,7 +267,7 @@ export class UnifiedSearchService {
       let content = '';
 
       if (include_content && result.matchedTerms.length > 0) {
-        const file = await this.memoryStorage.getCodebaseFile(filename);
+        const file = await state.memoryStorage.getCodebaseFile(filename);
         if (file?.content) {
           // Find lines containing matched terms (show context)
           const lines = file.content.split('\n');
@@ -273,34 +305,34 @@ export class UnifiedSearchService {
       totalIndexed: allFiles.length,
       query,
     };
-  }
+  };
 
   /**
    * Search knowledge base - shared by CLI and MCP
    * Hybrid mode: Uses vector search if API key provided, falls back to TF-IDF otherwise
    */
-  async searchKnowledge(
+  const searchKnowledge = async (
     query: string,
     options: SearchOptions = {}
   ): Promise<{
     results: SearchResult[];
     totalIndexed: number;
     query: string;
-  }> {
+  }> => {
     const { limit = 10, include_content = true } = options;
 
     try {
-      const index = await this.knowledgeIndexer.loadIndex();
+      const index = await state.knowledgeIndexer.loadIndex();
 
       // Hybrid mode: Check if vector search is available
-      const vectorStorage = this.knowledgeIndexer.getVectorStorage();
+      const vectorStorage = state.knowledgeIndexer.getVectorStorage();
 
       let searchResults: Array<{ uri: string; score: number }>;
 
-      if (vectorStorage && this.embeddingProvider) {
+      if (vectorStorage && state.embeddingProvider) {
         // Has API key → Use vector search
         try {
-          const queryEmbeddings = await this.embeddingProvider.generateEmbeddings([query]);
+          const queryEmbeddings = await state.embeddingProvider.generateEmbeddings([query]);
           const queryEmbedding = queryEmbeddings[0];
 
           const vectorResults = await vectorStorage.search(queryEmbedding, {
@@ -351,12 +383,12 @@ export class UnifiedSearchService {
     } catch {
       throw new Error('Knowledge base not indexed yet');
     }
-  }
+  };
 
   /**
    * Format search results for CLI output
    */
-  formatResultsForCLI(results: SearchResult[], query: string, totalIndexed: number): string {
+  const formatResultsForCLI = (results: SearchResult[], query: string, totalIndexed: number): string => {
     if (results.length === 0) {
       return `📭 No results found for "${query}"\n\n**Total indexed files:** ${totalIndexed}`;
     }
@@ -384,18 +416,18 @@ export class UnifiedSearchService {
       .join('\n\n');
 
     return summary + formattedResults;
-  }
+  };
 
   /**
    * Format search results for MCP response
    */
-  formatResultsForMCP(
+  const formatResultsForMCP = (
     results: SearchResult[],
     query: string,
     _totalIndexed: number
   ): {
     content: Array<{ type: 'text'; text: string }>;
-  } {
+  } => {
     const summary = `Found ${results.length} result(s) for "${query}":\n\n`;
     const formattedResults = results
       .map((result, i) => {
@@ -426,42 +458,55 @@ export class UnifiedSearchService {
         },
       ],
     };
-  }
+  };
 
   /**
    * Get all available knowledge URIs - dynamically generated
    */
-  async getAvailableKnowledgeURIs(): Promise<string[]> {
+  const getAvailableKnowledgeURIs = async (): Promise<string[]> => {
     try {
-      const index = await this.knowledgeIndexer.loadIndex();
+      const index = await state.knowledgeIndexer.loadIndex();
       return index.documents.map((doc) => doc.uri);
     } catch {
       return [];
     }
-  }
+  };
 
   /**
    * Start codebase file watching
    * IMPORTANT: Only call when codebase tools are enabled in MCP server
    * Prevents stale codebase data from misleading users
    */
-  startCodebaseWatching(): void {
-    if (!this.codebaseIndexer) {
-      this.codebaseIndexer = new CodebaseIndexer();
+  const startCodebaseWatching = (): void => {
+    if (!state.codebaseIndexer) {
+      state.codebaseIndexer = new CodebaseIndexer();
     }
-    this.codebaseIndexer.startWatching();
-  }
+    state.codebaseIndexer.startWatching();
+  };
 
   /**
    * Stop codebase file watching
    * Called when codebase tools are disabled or MCP server shuts down
    */
-  stopCodebaseWatching(): void {
-    if (this.codebaseIndexer) {
-      this.codebaseIndexer.stopWatching();
+  const stopCodebaseWatching = (): void => {
+    if (state.codebaseIndexer) {
+      state.codebaseIndexer.stopWatching();
     }
-  }
-}
+  };
+
+  // Return service interface
+  return {
+    initialize,
+    getStatus,
+    searchCodebase,
+    searchKnowledge,
+    formatResultsForCLI,
+    formatResultsForMCP,
+    getAvailableKnowledgeURIs,
+    startCodebaseWatching,
+    stopCodebaseWatching,
+  };
+};
 
 // ============================================================================
 // FUNCTIONAL SEARCH PIPELINES (Pure Functions)
@@ -779,7 +824,7 @@ export async function searchKnowledgeFunctional(
 export const createSearchService = (
   dependencies?: SearchServiceDependencies
 ): UnifiedSearchService => {
-  return new UnifiedSearchService(dependencies);
+  return createUnifiedSearchService(dependencies);
 };
 
 /**
@@ -797,7 +842,7 @@ let _searchServiceInstance: UnifiedSearchService | null = null;
  */
 export function getSearchService(): UnifiedSearchService {
   if (!_searchServiceInstance) {
-    _searchServiceInstance = createSearchService();
+    _searchServiceInstance = createUnifiedSearchService();
   }
   return _searchServiceInstance;
 }
@@ -814,7 +859,7 @@ export function getSearchService(): UnifiedSearchService {
 export const createTestSearchService = (
   mockDependencies: Partial<SearchServiceDependencies> = {}
 ): UnifiedSearchService => {
-  return createSearchService({
+  return createUnifiedSearchService({
     memoryStorage: mockDependencies.memoryStorage,
     knowledgeIndexer: mockDependencies.knowledgeIndexer,
     codebaseIndexer: mockDependencies.codebaseIndexer,

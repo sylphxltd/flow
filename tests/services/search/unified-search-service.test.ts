@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { UnifiedSearchService } from '../../../src/services/search/unified-search-service.js';
+import { type UnifiedSearchService, createUnifiedSearchService } from '../../../src/services/search/unified-search-service.js';
 
 describe('Unified Search Service', () => {
   let searchService: UnifiedSearchService;
@@ -24,7 +24,7 @@ describe('Unified Search Service', () => {
     process.chdir(testDir);
 
     // Create fresh service instance
-    searchService = new UnifiedSearchService();
+    searchService = createUnifiedSearchService();
   });
 
   afterEach(() => {
