@@ -48,8 +48,8 @@ export const claudeCodeTarget: Target = {
     configFile: '.mcp.json',
     configSchema: null,
     mcpConfigPath: 'mcpServers',
-    rulesFile: 'CLAUDE.md',
-    outputStylesDir: undefined, // Output styles are included in CLAUDE.md
+    rulesFile: undefined, // Rules are included in agent files
+    outputStylesDir: undefined, // Output styles are included in agent files
     slashCommandsDir: '.claude/commands',
     installation: {
       createAgentDir: true,
@@ -408,9 +408,10 @@ Please begin your response with a comprehensive summary of all the instructions 
 
   /**
    * Setup agents for Claude Code
-   * Install agents to .claude/agents/ directory with YAML front matter
+   * Install agents to .claude/agents/ directory with rules and output styles appended
    */
   async setupAgents(cwd: string, options: CommonOptions): Promise<SetupResult> {
+    const { enhanceAgentContent } = await import('../utils/agent-enhancer.js');
     const installer = new FileInstaller();
     const agentsDir = path.join(cwd, this.config.agentDir);
 
@@ -418,7 +419,13 @@ Please begin your response with a comprehensive summary of all the instructions 
       getAgentsDir(),
       agentsDir,
       async (content, sourcePath) => {
-        return await this.transformAgentContent(content, undefined, sourcePath);
+        // Transform agent content (add YAML front matter, etc.)
+        const transformed = await this.transformAgentContent(content, undefined, sourcePath);
+
+        // Enhance with rules and output styles
+        const enhanced = await enhanceAgentContent(transformed);
+
+        return enhanced;
       },
       {
         ...options,
@@ -431,86 +438,28 @@ Please begin your response with a comprehensive summary of all the instructions 
 
   /**
    * Setup output styles for Claude Code
-   * Append output styles to CLAUDE.md file
+   * Output styles are appended to each agent file
    */
   async setupOutputStyles(cwd: string, options: CommonOptions): Promise<SetupResult> {
-    // Output styles are appended to CLAUDE.md during setupRules
-    // Return 0 as this is handled by setupRules
+    // Output styles are appended to each agent file during setupAgents
+    // No separate installation needed
     return {
       count: 0,
-      message: 'Output styles included in CLAUDE.md'
+      message: 'Output styles included in agent files'
     };
   },
 
   /**
    * Setup rules for Claude Code
-   * Install rules and output styles to CLAUDE.md in project root
+   * Rules are appended to each agent file
    */
   async setupRules(cwd: string, options: CommonOptions): Promise<SetupResult> {
-    if (!this.config.rulesFile) {
-      return { count: 0 };
-    }
-
-    // Check if core rules file exists
-    if (!ruleFileExists('core')) {
-      throw new Error('Core rules file not found');
-    }
-
-    const installer = new FileInstaller();
-    const rulesDestPath = path.join(cwd, this.config.rulesFile);
-    const rulePath = getRulesPath('core');
-
-    // Read rules content
-    const rulesContent = await fsPromises.readFile(rulePath, 'utf8');
-
-    // Transform rules content
-    let transformedRules = rulesContent;
-    if (this.transformRulesContent) {
-      transformedRules = await this.transformRulesContent(rulesContent);
-    }
-
-    // Read and append output styles
-    const outputStylesContent = await this.loadOutputStyles();
-
-    // Combine rules and output styles
-    const finalContent = transformedRules + '\n\n' + outputStylesContent;
-
-    // Write combined content to CLAUDE.md
-    await fsPromises.writeFile(rulesDestPath, finalContent, 'utf8');
-
-    return { count: 1, message: 'Installed rules with output styles to CLAUDE.md' };
-  },
-
-  /**
-   * Load output styles content
-   */
-  async loadOutputStyles(): Promise<string> {
-    const outputStylesSourceDir = getOutputStylesDir();
-
-    try {
-      const files = await fsPromises.readdir(outputStylesSourceDir);
-      const mdFiles = files.filter(f => f.endsWith('.md'));
-
-      if (mdFiles.length === 0) {
-        return '';
-      }
-
-      const sections: string[] = [];
-
-      for (const file of mdFiles) {
-        const filePath = path.join(outputStylesSourceDir, file);
-        const content = await fsPromises.readFile(filePath, 'utf8');
-
-        // Strip YAML front matter
-        const stripped = await yamlUtils.stripFrontMatter(content);
-        sections.push(stripped);
-      }
-
-      return sections.join('\n\n---\n\n');
-    } catch (error) {
-      // If output styles directory doesn't exist or is empty, return empty string
-      return '';
-    }
+    // Rules are appended to each agent file during setupAgents
+    // No separate CLAUDE.md file needed
+    return {
+      count: 0,
+      message: 'Rules included in agent files'
+    };
   },
 
   /**

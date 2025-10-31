@@ -7,6 +7,8 @@ import { CLIError } from '../utils/error-handler.js';
 import { getAgentsDir } from '../utils/paths.js';
 
 async function loadAgentContent(agentName: string, agentFilePath?: string): Promise<string> {
+  const { enhanceAgentContent } = await import('../utils/agent-enhancer.js');
+
   try {
     // If specific file path provided, load from there
     if (agentFilePath) {
@@ -14,19 +16,29 @@ async function loadAgentContent(agentName: string, agentFilePath?: string): Prom
       return content;
     }
 
-    // First try to load from local agents directory (for user-defined agents)
-    const localAgentPath = path.join(process.cwd(), 'agents', `${agentName}.md`);
+    // First try to load from .claude/agents/ directory (processed agents with rules and styles)
+    const claudeAgentPath = path.join(process.cwd(), '.claude', 'agents', `${agentName}.md`);
 
     try {
-      const content = await fs.readFile(localAgentPath, 'utf-8');
+      const content = await fs.readFile(claudeAgentPath, 'utf-8');
       return content;
     } catch (_error) {
-      // Try to load from the package's agents directory
-      const packageAgentsDir = getAgentsDir();
-      const packageAgentPath = path.join(packageAgentsDir, `${agentName}.md`);
+      // Try to load from local agents/ directory (user-defined agents)
+      const localAgentPath = path.join(process.cwd(), 'agents', `${agentName}.md`);
 
-      const content = await fs.readFile(packageAgentPath, 'utf-8');
-      return content;
+      try {
+        const content = await fs.readFile(localAgentPath, 'utf-8');
+        // Enhance user-defined agents with rules and styles
+        return await enhanceAgentContent(content);
+      } catch (_error2) {
+        // Try to load from the package's agents directory
+        const packageAgentsDir = getAgentsDir();
+        const packageAgentPath = path.join(packageAgentsDir, `${agentName}.md`);
+
+        const content = await fs.readFile(packageAgentPath, 'utf-8');
+        // Enhance package agents with rules and styles
+        return await enhanceAgentContent(content);
+      }
     }
   } catch (_error) {
     throw new CLIError(
