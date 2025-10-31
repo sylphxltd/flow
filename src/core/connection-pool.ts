@@ -22,141 +22,83 @@ export interface Connection<T = any> {
   isHealthy: boolean;
 }
 
-export class ConnectionPool<T> {
-  private connections = new Map<string, Connection<T>>();
-  private availableConnections: string[] = [];
-  private connectionCount = 0;
-  private healthCheckTimer?: NodeJS.Timeout;
-  private isDisposing = false;
+export interface ConnectionPoolInstance<T> {
+  acquire(): Promise<T>;
+  release(connectionInstance: T): Promise<void>;
+  getStats(): {
+    totalConnections: number;
+    activeConnections: number;
+    idleConnections: number;
+    unhealthyConnections: number;
+    maxConnections?: number;
+    minConnections?: number;
+  };
+  dispose(): Promise<void>;
+}
 
-  constructor(
-    private readonly createConnection: () => Promise<T>,
-    private readonly destroyConnection: (connection: T) => Promise<void>,
-    private readonly healthCheck: (connection: T) => Promise<boolean>,
-    private readonly config: ConnectionConfig = {}
-  ) {
-    this.config = {
-      maxConnections: 10,
-      minConnections: 2,
-      acquireTimeout: 30000,
-      idleTimeout: 300000,
-      maxLifetime: 3600000,
-      healthCheckInterval: 60000,
-      ...config,
-    };
+/**
+ * Create a connection pool for database connections
+ */
+export function createConnectionPool<T>(
+  createConnection: () => Promise<T>,
+  destroyConnection: (connection: T) => Promise<void>,
+  healthCheck: (connection: T) => Promise<boolean>,
+  configInput: ConnectionConfig = {}
+): ConnectionPoolInstance<T> {
+  // Closure-based state
+  const connections = new Map<string, Connection<T>>();
+  let availableConnections: string[] = [];
+  let connectionCount = 0;
+  let healthCheckTimer: NodeJS.Timeout | undefined;
+  let isDisposing = false;
 
-    this.startHealthCheck();
-    this.initializeMinConnections();
-  }
-
-  /**
-   * Acquire a connection from the pool
-   */
-  async acquire(): Promise<T> {
-    if (this.isDisposing) {
-      throw new Error('Connection pool is disposing');
-    }
-
-    // Try to get an available connection
-    while (this.availableConnections.length > 0) {
-      const connectionId = this.availableConnections.shift()!;
-      const connection = this.connections.get(connectionId)!;
-
-      if (this.isConnectionValid(connection)) {
-        connection.isInUse = true;
-        connection.lastUsed = Date.now();
-        return connection.instance;
-      }
-      // Remove invalid connection
-      this.connections.delete(connectionId);
-      this.connectionCount--;
-      await this.destroyConnection(connection.instance);
-    }
-
-    // Create new connection if under limit
-    if (this.connectionCount < this.config.maxConnections!) {
-      return await this.createNewConnection();
-    }
-
-    // Wait for a connection to become available
-    return await this.waitForConnection();
-  }
+  const config: Required<ConnectionConfig> = {
+    maxConnections: 10,
+    minConnections: 2,
+    acquireTimeout: 30000,
+    idleTimeout: 300000,
+    maxLifetime: 3600000,
+    healthCheckInterval: 60000,
+    ...configInput,
+  };
 
   /**
-   * Release a connection back to the pool
+   * Generate a unique connection ID
    */
-  async release(connectionInstance: T): Promise<void> {
-    for (const [id, connection] of this.connections) {
-      if (connection.instance === connectionInstance) {
-        connection.isInUse = false;
-        connection.lastUsed = Date.now();
-        this.availableConnections.push(id);
-        return;
-      }
-    }
-
-    // Connection not found in pool, destroy it
-    await this.destroyConnection(connectionInstance);
-  }
+  const generateConnectionId = (): string => {
+    return `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
 
   /**
-   * Get pool statistics
+   * Check if a connection is valid
    */
-  getStats() {
-    const activeConnections = Array.from(this.connections.values()).filter((c) => c.isInUse).length;
-    const idleConnections = this.availableConnections.length;
-    const unhealthyConnections = Array.from(this.connections.values()).filter(
-      (c) => !c.isHealthy
-    ).length;
+  const isConnectionValid = (connection: Connection<T>): boolean => {
+    const now = Date.now();
 
-    return {
-      totalConnections: this.connectionCount,
-      activeConnections,
-      idleConnections,
-      unhealthyConnections,
-      maxConnections: this.config.maxConnections,
-      minConnections: this.config.minConnections,
-    };
-  }
-
-  /**
-   * Close all connections and dispose the pool
-   */
-  async dispose(): Promise<void> {
-    this.isDisposing = true;
-
-    if (this.healthCheckTimer) {
-      clearInterval(this.healthCheckTimer);
-      this.healthCheckTimer = undefined;
+    // Check age
+    if (now - connection.createdAt > config.maxLifetime) {
+      return false;
     }
 
-    const destroyPromises = Array.from(this.connections.values()).map(async (connection) => {
-      try {
-        await this.destroyConnection(connection.instance);
-      } catch (error) {
-        console.error('Error destroying connection during pool disposal:', error);
-      }
-    });
+    // Check if it's idle for too long (but only if not in use)
+    if (!connection.isInUse && now - connection.lastUsed > config.idleTimeout) {
+      return false;
+    }
 
-    await Promise.all(destroyPromises);
-
-    this.connections.clear();
-    this.availableConnections = [];
-    this.connectionCount = 0;
-
-    console.log('Connection pool disposed');
-  }
+    // Check health
+    return connection.isHealthy;
+  };
 
   /**
    * Create a new connection
    */
-  private async createNewConnection(): Promise<T> {
+  const createNewConnection = async (): Promise<T> => {
     const startTime = Date.now();
-    const connectionInstance = await this.createConnection();
+    const connectionInstance = await createConnection();
     const createTime = Date.now() - startTime;
 
     const connection: Connection<T> = {
-      id: this.generateConnectionId(),
+      id: generateConnectionId(),
       instance: connectionInstance,
       createdAt: Date.now(),
       lastUsed: Date.now(),
@@ -164,44 +106,44 @@ export class ConnectionPool<T> {
       isHealthy: true,
     };
 
-    this.connections.set(connection.id, connection);
-    this.connectionCount++;
+    connections.set(connection.id, connection);
+    connectionCount++;
 
     console.debug(
-      `New connection created in ${createTime}ms, total connections: ${this.connectionCount}`
+      `New connection created in ${createTime}ms, total connections: ${connectionCount}`
     );
     return connectionInstance;
-  }
+  };
 
   /**
    * Wait for a connection to become available
    */
-  private async waitForConnection(): Promise<T> {
-    const timeout = this.config.acquireTimeout || 30000;
+  const waitForConnection = async (): Promise<T> => {
+    const timeout = config.acquireTimeout;
     const startTime = Date.now();
 
     return new Promise((resolve, reject) => {
       const checkInterval = setInterval(() => {
-        if (this.isDisposing) {
+        if (isDisposing) {
           clearInterval(checkInterval);
           reject(new Error('Connection pool is disposing'));
           return;
         }
 
-        if (this.availableConnections.length > 0) {
+        if (availableConnections.length > 0) {
           clearInterval(checkInterval);
-          const connectionId = this.availableConnections.shift()!;
-          const connection = this.connections.get(connectionId)!;
+          const connectionId = availableConnections.shift()!;
+          const connection = connections.get(connectionId)!;
 
-          if (this.isConnectionValid(connection)) {
+          if (isConnectionValid(connection)) {
             connection.isInUse = true;
             connection.lastUsed = Date.now();
             resolve(connection.instance);
           } else {
             // Remove invalid connection and try again
-            this.connections.delete(connectionId);
-            this.connectionCount--;
-            this.destroyConnection(connection.instance).catch(console.error);
+            connections.delete(connectionId);
+            connectionCount--;
+            destroyConnection(connection.instance).catch(console.error);
             return;
           }
         }
@@ -213,42 +155,39 @@ export class ConnectionPool<T> {
         }
       }, 100);
     });
-  }
+  };
 
   /**
-   * Check if a connection is valid
+   * Maintain minimum connections
    */
-  private isConnectionValid(connection: Connection<T>): boolean {
-    const now = Date.now();
+  const maintainMinConnections = async (): Promise<void> => {
+    const minConnections = config.minConnections;
+    const availableCount = availableConnections.length;
 
-    // Check age
-    if (now - connection.createdAt > (this.config.maxLifetime || 3600000)) {
-      return false;
+    if (availableCount < minConnections && connectionCount < config.maxConnections) {
+      const needed = minConnections - availableCount;
+      for (let i = 0; i < needed; i++) {
+        createNewConnection()
+          .then((connection) => release(connection))
+          .catch((error) => console.error('Failed to maintain minimum connection:', error));
+      }
     }
-
-    // Check if it's idle for too long (but only if not in use)
-    if (!connection.isInUse && now - connection.lastUsed > (this.config.idleTimeout || 300000)) {
-      return false;
-    }
-
-    // Check health
-    return connection.isHealthy;
-  }
+  };
 
   /**
    * Start health check timer
    */
-  private startHealthCheck(): void {
-    const interval = this.config.healthCheckInterval || 60000;
+  const startHealthCheck = (): void => {
+    const interval = config.healthCheckInterval;
 
-    this.healthCheckTimer = setInterval(async () => {
-      if (this.isDisposing) {
+    healthCheckTimer = setInterval(async () => {
+      if (isDisposing) {
         return;
       }
 
-      for (const [id, connection] of this.connections) {
+      for (const [id, connection] of connections) {
         try {
-          const isHealthy = await this.healthCheck(connection.instance);
+          const isHealthy = await healthCheck(connection.instance);
 
           if (isHealthy) {
             connection.isHealthy = true;
@@ -258,13 +197,13 @@ export class ConnectionPool<T> {
 
             // Remove unhealthy connection if not in use
             if (!connection.isInUse) {
-              this.connections.delete(id);
-              this.connectionCount--;
-              const index = this.availableConnections.indexOf(id);
+              connections.delete(id);
+              connectionCount--;
+              const index = availableConnections.indexOf(id);
               if (index > -1) {
-                this.availableConnections.splice(index, 1);
+                availableConnections.splice(index, 1);
               }
-              await this.destroyConnection(connection.instance);
+              await destroyConnection(connection.instance);
             }
           }
         } catch (error) {
@@ -274,50 +213,167 @@ export class ConnectionPool<T> {
       }
 
       // Maintain minimum connections
-      await this.maintainMinConnections();
+      await maintainMinConnections();
     }, interval);
-  }
+  };
 
   /**
    * Initialize minimum connections
    */
-  private async initializeMinConnections(): Promise<void> {
-    const minConnections = this.config.minConnections || 2;
+  const initializeMinConnections = async (): Promise<void> => {
+    const minConnections = config.minConnections;
     const promises = [];
 
     for (let i = 0; i < minConnections; i++) {
       promises.push(
-        this.createNewConnection()
-          .then((connection) => this.release(connection))
+        createNewConnection()
+          .then((connection) => release(connection))
           .catch((error) => console.error('Failed to initialize minimum connection:', error))
       );
     }
 
     await Promise.all(promises);
-  }
+  };
 
   /**
-   * Maintain minimum connections
+   * Acquire a connection from the pool
    */
-  private async maintainMinConnections(): Promise<void> {
-    const minConnections = this.config.minConnections || 2;
-    const availableCount = this.availableConnections.length;
+  const acquire = async (): Promise<T> => {
+    if (isDisposing) {
+      throw new Error('Connection pool is disposing');
+    }
 
-    if (availableCount < minConnections && this.connectionCount < this.config.maxConnections!) {
-      const needed = minConnections - availableCount;
-      for (let i = 0; i < needed; i++) {
-        this.createNewConnection()
-          .then((connection) => this.release(connection))
-          .catch((error) => console.error('Failed to maintain minimum connection:', error));
+    // Try to get an available connection
+    while (availableConnections.length > 0) {
+      const connectionId = availableConnections.shift()!;
+      const connection = connections.get(connectionId)!;
+
+      if (isConnectionValid(connection)) {
+        connection.isInUse = true;
+        connection.lastUsed = Date.now();
+        return connection.instance;
+      }
+      // Remove invalid connection
+      connections.delete(connectionId);
+      connectionCount--;
+      await destroyConnection(connection.instance);
+    }
+
+    // Create new connection if under limit
+    if (connectionCount < config.maxConnections) {
+      return await createNewConnection();
+    }
+
+    // Wait for a connection to become available
+    return await waitForConnection();
+  };
+
+  /**
+   * Release a connection back to the pool
+   */
+  const release = async (connectionInstance: T): Promise<void> => {
+    for (const [id, connection] of connections) {
+      if (connection.instance === connectionInstance) {
+        connection.isInUse = false;
+        connection.lastUsed = Date.now();
+        availableConnections.push(id);
+        return;
       }
     }
-  }
+
+    // Connection not found in pool, destroy it
+    await destroyConnection(connectionInstance);
+  };
 
   /**
-   * Generate a unique connection ID
+   * Get pool statistics
    */
-  private generateConnectionId(): string {
-    return `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const getStats = () => {
+    const activeConnections = Array.from(connections.values()).filter((c) => c.isInUse).length;
+    const idleConnections = availableConnections.length;
+    const unhealthyConnections = Array.from(connections.values()).filter(
+      (c) => !c.isHealthy
+    ).length;
+
+    return {
+      totalConnections: connectionCount,
+      activeConnections,
+      idleConnections,
+      unhealthyConnections,
+      maxConnections: config.maxConnections,
+      minConnections: config.minConnections,
+    };
+  };
+
+  /**
+   * Close all connections and dispose the pool
+   */
+  const dispose = async (): Promise<void> => {
+    isDisposing = true;
+
+    if (healthCheckTimer) {
+      clearInterval(healthCheckTimer);
+      healthCheckTimer = undefined;
+    }
+
+    const destroyPromises = Array.from(connections.values()).map(async (connection) => {
+      try {
+        await destroyConnection(connection.instance);
+      } catch (error) {
+        console.error('Error destroying connection during pool disposal:', error);
+      }
+    });
+
+    await Promise.all(destroyPromises);
+
+    connections.clear();
+    availableConnections = [];
+    connectionCount = 0;
+
+    console.log('Connection pool disposed');
+  };
+
+  // Initialize pool
+  startHealthCheck();
+  initializeMinConnections();
+
+  return {
+    acquire,
+    release,
+    getStats,
+    dispose,
+  };
+}
+
+/**
+ * @deprecated Use createConnectionPool() for new code
+ */
+export class ConnectionPool<T> {
+  private instance: ConnectionPoolInstance<T>;
+
+  constructor(
+    createConnection: () => Promise<T>,
+    destroyConnection: (connection: T) => Promise<void>,
+    healthCheck: (connection: T) => Promise<boolean>,
+    config: ConnectionConfig = {}
+  ) {
+    this.instance = createConnectionPool(createConnection, destroyConnection, healthCheck, config);
+  }
+
+  async acquire(): Promise<T> {
+    return this.instance.acquire();
+  }
+
+  async release(connectionInstance: T): Promise<void> {
+    return this.instance.release(connectionInstance);
+  }
+
+  getStats() {
+    return this.instance.getStats();
+  }
+
+  async dispose(): Promise<void> {
+    return this.instance.dispose();
   }
 }
 
@@ -329,6 +385,6 @@ export function createDatabaseConnectionPool(
   destroyDbConnection: (connection: any) => Promise<void>,
   healthCheckFn: (connection: any) => Promise<boolean>,
   config?: ConnectionConfig
-): ConnectionPool<any> {
-  return new ConnectionPool(createDbConnection, destroyDbConnection, healthCheckFn, config);
+): ConnectionPoolInstance<any> {
+  return createConnectionPool(createDbConnection, destroyDbConnection, healthCheckFn, config);
 }

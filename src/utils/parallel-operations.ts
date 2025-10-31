@@ -399,55 +399,90 @@ export async function any<T>(operations: Array<() => Promise<T>>): Promise<T> {
 }
 
 /**
+ * Parallel queue interface
+ */
+export interface ParallelQueueInstance<T> {
+  add(item: T): Promise<unknown>;
+  size(): number;
+  clear(): void;
+}
+
+/**
  * Create a parallel execution queue with controlled concurrency
  */
-export class ParallelQueue<T> {
-  private queue: Array<{
+export function createParallelQueue<T>(
+  processor: (item: T) => Promise<unknown>,
+  concurrency = 10
+): ParallelQueueInstance<T> {
+  // Closure-based state
+  let queue: Array<{
     item: T;
     resolve: (value: unknown) => void;
     reject: (error: Error) => void;
   }> = [];
-  private running = 0;
-  private concurrency: number;
-  private processor: (item: T) => Promise<unknown>;
+  let running = 0;
 
-  constructor(processor: (item: T) => Promise<unknown>, concurrency = 10) {
-    this.processor = processor;
-    this.concurrency = concurrency;
-  }
-
-  async add(item: T): Promise<unknown> {
-    return new Promise((resolve, reject) => {
-      this.queue.push({ item, resolve, reject });
-      this.process();
-    });
-  }
-
-  private async process(): Promise<void> {
-    if (this.running >= this.concurrency || this.queue.length === 0) {
+  const process = async (): Promise<void> => {
+    if (running >= concurrency || queue.length === 0) {
       return;
     }
 
-    this.running++;
-    const { item, resolve, reject } = this.queue.shift()!;
+    running++;
+    const { item, resolve, reject } = queue.shift()!;
 
     try {
-      const result = await this.processor(item);
+      const result = await processor(item);
       resolve(result);
     } catch (error) {
       reject(error as Error);
     } finally {
-      this.running--;
+      running--;
       // Process next item in queue
-      setImmediate(() => this.process());
+      setImmediate(() => process());
     }
+  };
+
+  const add = async (item: T): Promise<unknown> => {
+    return new Promise((resolve, reject) => {
+      queue.push({ item, resolve, reject });
+      process();
+    });
+  };
+
+  const size = (): number => {
+    return queue.length;
+  };
+
+  const clear = (): void => {
+    queue.length = 0;
+  };
+
+  return {
+    add,
+    size,
+    clear,
+  };
+}
+
+/**
+ * @deprecated Use createParallelQueue() for new code
+ */
+export class ParallelQueue<T> {
+  private instance: ParallelQueueInstance<T>;
+
+  constructor(processor: (item: T) => Promise<unknown>, concurrency = 10) {
+    this.instance = createParallelQueue(processor, concurrency);
+  }
+
+  async add(item: T): Promise<unknown> {
+    return this.instance.add(item);
   }
 
   size(): number {
-    return this.queue.length;
+    return this.instance.size();
   }
 
   clear(): void {
-    this.queue.length = 0;
+    return this.instance.clear();
   }
 }
