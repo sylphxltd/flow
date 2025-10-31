@@ -67,10 +67,13 @@ function executeTargetCommand(
   options: RunCommandOptions
 ): Promise<void> {
   // Get the target object
-  const target = targetManager.getTarget(targetId);
-  if (!target) {
+  const targetOption = targetManager.getTarget(targetId);
+
+  if (targetOption._tag === 'None') {
     throw new CLIError(`Target not found: ${targetId}`, 'TARGET_NOT_FOUND');
   }
+
+  const target = targetOption.value;
 
   // Check if the target is implemented
   if (!target.isImplemented) {
@@ -97,8 +100,11 @@ function executeTargetCommand(
  */
 function getExecutableTargets(): string[] {
   return targetManager.getImplementedTargetIDs().filter((targetId) => {
-    const target = targetManager.getTarget(targetId);
-    return target?.executeCommand !== undefined;
+    const targetOption = targetManager.getTarget(targetId);
+    if (targetOption._tag === 'None') {
+      return false;
+    }
+    return targetOption.value.executeCommand !== undefined;
   });
 }
 
