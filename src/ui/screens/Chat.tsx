@@ -8,7 +8,7 @@ import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
 import { useAppStore } from '../stores/app-store.js';
 import { useChat } from '../hooks/useChat.js';
-import { useKeyboard } from '../hooks/useKeyboard.js';
+import StatusBar from '../components/StatusBar.js';
 
 export default function Chat() {
   const [input, setInput] = useState('');
@@ -97,9 +97,7 @@ export default function Chat() {
     <Box flexDirection="column" flexGrow={1}>
       {/* Header */}
       <Box flexShrink={0} paddingBottom={1}>
-        <Text color="#00D9FF">▌</Text>
-        <Text bold color="white"> CHAT</Text>
-        <Text dimColor> · {currentSession.provider} · {currentSession.model}</Text>
+        <Text color="#00D9FF">▌ CHAT</Text>
       </Box>
 
       {/* Messages - Scrollable area */}
@@ -156,6 +154,14 @@ export default function Chat() {
           showCursor={!isStreaming}
         />
       </Box>
+
+      {/* Status Bar - Fixed at bottom */}
+      <StatusBar
+        provider={currentSession.provider}
+        model={currentSession.model}
+        apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
+        messageCount={currentSession.messages.length}
+      />
     </Box>
   );
 }

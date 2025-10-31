@@ -3,14 +3,9 @@
  * Handle AI chat with streaming support
  */
 
-import { anthropic } from '@ai-sdk/anthropic';
-import { openai } from '@ai-sdk/openai';
-import { google } from '@ai-sdk/google';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
-import type { LanguageModelV1 } from 'ai';
 import { useAppStore } from '../stores/app-store.js';
-import { AI_PROVIDERS, type ProviderId } from '../../config/ai-config.js';
+import { getProvider } from '../../providers/index.js';
 
 const SYSTEM_PROMPT = `You are a helpful coding assistant. You help users with programming tasks, code review, debugging, and software development.
 
@@ -29,30 +24,6 @@ export function useChat() {
   const setError = useAppStore((state) => state.setError);
 
   const currentSession = sessions.find((s) => s.id === currentSessionId);
-
-  /**
-   * Get AI model instance
-   */
-  const getModel = (provider: ProviderId, apiKey: string, modelName: string): LanguageModelV1 => {
-    switch (provider) {
-      case 'anthropic':
-        return anthropic(modelName, { apiKey });
-
-      case 'openai':
-        return openai(modelName, { apiKey });
-
-      case 'google':
-        return google(modelName, { apiKey });
-
-      case 'openrouter': {
-        const openrouter = createOpenRouter({ apiKey });
-        return openrouter(modelName);
-      }
-
-      default:
-        throw new Error(`Unknown provider: ${provider}`);
-    }
-  };
 
   /**
    * Send message and stream response
@@ -86,8 +57,9 @@ export function useChat() {
         { role: 'user' as const, content: message, timestamp: Date.now() },
       ];
 
-      // Get model
-      const model = getModel(provider, providerConfig.apiKey, modelName);
+      // Get model using provider registry
+      const providerInstance = getProvider(provider);
+      const model = providerInstance.createClient(providerConfig.apiKey, modelName);
 
       // Stream response
       const { textStream } = streamText({
