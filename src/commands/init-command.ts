@@ -170,6 +170,8 @@ export const initCommand = new Command('init')
         const result = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
         if (result.count > 0) {
           outputStylesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} output style${result.count !== 1 ? 's' : ''}`));
+        } else if (result.message) {
+          outputStylesSpinner.info(chalk.dim(result.message));
         } else {
           outputStylesSpinner.info(chalk.dim('No output styles to install'));
         }
@@ -184,7 +186,13 @@ export const initCommand = new Command('init')
       const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
       try {
         const result = await target.setupRules(process.cwd(), { ...options, quiet: true });
-        rulesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} rule${result.count !== 1 ? 's' : ''}`));
+        if (result.count > 0) {
+          rulesSpinner.succeed(chalk.green(`Installed ${chalk.cyan(result.count)} rule${result.count !== 1 ? 's' : ''}`));
+        } else if (result.message) {
+          rulesSpinner.info(chalk.dim(result.message));
+        } else {
+          rulesSpinner.info(chalk.dim('No rules to install'));
+        }
       } catch (error) {
         rulesSpinner.fail(chalk.red('Failed to install rules'));
         throw error;
@@ -197,9 +205,12 @@ export const initCommand = new Command('init')
       try {
         const result = await target.setupHooks(process.cwd(), { ...options, quiet: true });
         if (result.count > 0) {
-          hooksSpinner.succeed(chalk.green(`Configured ${chalk.cyan(result.count)} hook${result.count !== 1 ? 's' : ''}`));
+          const message = result.message
+            ? `Configured ${chalk.cyan(result.count)} hook${result.count !== 1 ? 's' : ''} - ${result.message}`
+            : `Configured ${chalk.cyan(result.count)} hook${result.count !== 1 ? 's' : ''}`;
+          hooksSpinner.succeed(chalk.green(message));
         } else {
-          hooksSpinner.info(chalk.dim('No hooks to configure'));
+          hooksSpinner.info(chalk.dim(result.message || 'No hooks to configure'));
         }
       } catch (error) {
         // Don't fail entire setup if hooks fail

@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { codebaseCommand } from './commands/codebase-command.js';
+import { hookCommand } from './commands/hook-command.js';
 import { initCommand } from './commands/init-command.js';
 import { knowledgeCommand } from './commands/knowledge-command.js';
 import { mcpCommand } from './commands/mcp-command.js';
@@ -48,6 +49,7 @@ export function createCLI(): Command {
   program.addCommand(codebaseCommand);
   program.addCommand(knowledgeCommand);
   program.addCommand(sysinfoCommand);
+  program.addCommand(hookCommand);
 
   // Default action when no command is provided
   program.action(() => {

@@ -34,10 +34,11 @@ export interface HookConfig {
 
 /**
  * Default hook commands
+ * Now using unified hook command for all content (rules, output styles, system info)
  */
 export const DEFAULT_HOOKS: HookConfig = {
-  sessionCommand: 'npx -y github:sylphxltd/flow sysinfo --hook session',
-  messageCommand: 'npx -y github:sylphxltd/flow sysinfo --hook message',
+  sessionCommand: 'npx -y github:sylphxltd/flow hook --type session --target claude-code',
+  messageCommand: 'npx -y github:sylphxltd/flow hook --type message --target claude-code',
 };
 
 /**

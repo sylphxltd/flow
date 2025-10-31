@@ -5,6 +5,7 @@
 
 export { default as benchmarkCommand } from './benchmark-command';
 export { default as codebaseCommand } from './codebase-command';
+export { default as hookCommand } from './hook-command';
 export { default as initCommand } from './init-command';
 export { default as knowledgeCommand } from './knowledge-command';
 export { default as mcpCommand } from './mcp-command';

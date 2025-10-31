@@ -37,8 +37,8 @@ describe('claude-code-logic', () => {
 
       expect(hooks.SessionStart).toBeDefined();
       expect(hooks.UserPromptSubmit).toBeDefined();
-      expect(hooks.SessionStart[0].hooks[0].command).toContain('sysinfo --hook session');
-      expect(hooks.UserPromptSubmit[0].hooks[0].command).toContain('sysinfo --hook message');
+      expect(hooks.SessionStart[0].hooks[0].command).toContain('hook --type session');
+      expect(hooks.UserPromptSubmit[0].hooks[0].command).toContain('hook --type message');
     });
 
     it('should build hooks with custom commands', () => {
@@ -88,8 +88,8 @@ describe('claude-code-logic', () => {
 
       const merged = mergeSettings(existing);
 
-      expect(merged.hooks?.SessionStart[0].hooks[0].command).toContain('sysinfo --hook session');
-      expect(merged.hooks?.UserPromptSubmit[0].hooks[0].command).toContain('sysinfo --hook message');
+      expect(merged.hooks?.SessionStart[0].hooks[0].command).toContain('hook --type session');
+      expect(merged.hooks?.UserPromptSubmit[0].hooks[0].command).toContain('hook --type message');
     });
   });
 
