@@ -339,7 +339,7 @@ async function handleComplexQuery(query: string) {
     knowledge_search(query),
     codebase_search(query),
     time_get_current(),
-    sysinfo_get()
+    getSessionContext()
   ]);
 
   // No race conditions, no locks needed

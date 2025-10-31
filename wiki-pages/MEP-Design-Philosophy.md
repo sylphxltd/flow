@@ -54,7 +54,7 @@ User: "implement authentication"
 ✅ Project environment (detected)
 ✅ Tech stack (via codebase search)
 ✅ Current time (via time tools)
-✅ System info (via sysinfo hooks)
+✅ System info (via hook command)
 ✅ Existing patterns (via codebase search)
 ✅ Best practices (via knowledge base)
 ✅ Code style (from actual codebase)
@@ -68,7 +68,7 @@ User: "implement authentication"
 
 #### System Context (Automatic)
 ```typescript
-// Via sysinfo hooks - AI knows automatically:
+// Via hook command - AI knows automatically:
 {
   platform: "darwin",
   arch: "arm64",
@@ -113,8 +113,8 @@ User: "implement authentication"
 
 // AI orchestrates tools automatically
 async function handlePrompt(userInput: string) {
-  // 1. Get system context
-  const sysinfo = await sysinfo_get();
+  // 1. Get system context (from hooks automatically)
+  const systemInfo = getSessionContext();
   const time = await time_get_current();
 
   // 2. Search knowledge for best practices
@@ -126,7 +126,7 @@ async function handlePrompt(userInput: string) {
 
   // 4. Synthesize context
   const fullContext = {
-    environment: sysinfo,
+    environment: systemInfo,
     time: time,
     bestPractices: authGuidelines,
     existingCode: existingAuth,
@@ -351,7 +351,7 @@ flow run "any task"
 ```typescript
 // Every prompt automatically enhanced with:
 interface AutoContext {
-  system: SystemInfo;      // From sysinfo hooks
+  system: SystemInfo;      // From hook command
   time: TimeInfo;          // From time tools
   knowledge: Guidelines;   // From knowledge base
   codebase: Patterns;      // From codebase search
@@ -388,7 +388,7 @@ Promise.all([
   knowledge_search("feature X patterns"),
   codebase_search("similar features"),
   time_get_current(),
-  sysinfo_get()
+  getSessionContext()
 ]).then(synthesize);
 
 // User doesn't need to know about tools

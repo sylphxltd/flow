@@ -460,9 +460,6 @@ flow knowledge get "/stacks/react-app"
 # Search your codebase
 flow codebase search "authentication logic"
 flow codebase reindex  # After major code changes
-
-# System info
-flow sysinfo  # See what AI knows about your environment
 ```
 
 ### Specialized Agents

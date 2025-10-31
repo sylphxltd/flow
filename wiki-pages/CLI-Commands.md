@@ -318,46 +318,48 @@ Remove MCP servers from configuration.
 
 ---
 
-### `flow sysinfo` - System Information
+### `flow hook` - Dynamic Hook Content
 
-Display system information and current status.
+Load dynamic content for Claude Code hooks (rules, output styles, system info).
 
 #### Syntax
 ```bash
-npx github:sylphxltd/flow sysinfo [options]
+npx github:sylphxltd/flow hook --type <type> [options]
 ```
 
 #### Options
-- `--hook <type>` - Hook type: session (static), message (dynamic)
-- `--output <format>` - Output format: markdown, standard, json
-- `--target <type>` - Force specific target (opencode, claude-code)
+- `--type <type>` - Hook type: session, message (required)
+- `--target <target>` - Target platform (default: claude-code)
+- `--verbose` - Show verbose output
 
 #### Hook Types
-- **session** - Static system info (platform, dirs, hardware) - runs once at session start
-- **message** - Dynamic status (time, CPU, memory) - runs per message
-
-#### Output Formats
-- **markdown** - Markdown format, optimized for LLM hooks (default)
-- **standard** - Colored terminal output with decorations
-- **json** - JSON format for automation
+- **session** - Loads rules + output styles + system info (platform, dirs, hardware, project)
+- **message** - Loads current system status (time, CPU, memory)
 
 #### Examples
 ```bash
-# Default output (markdown, message hook)
-npx github:sylphxltd/flow sysinfo
+# Session start hook - all content
+npx github:sylphxltd/flow hook --type session --target claude-code
 
-# Session info (runs once)
-npx github:sylphxltd/flow sysinfo --hook session
+# Message hook - system status
+npx github:sylphxltd/flow hook --type message --target claude-code
 
-# Dynamic status (per message)
-npx github:sylphxltd/flow sysinfo --hook message
-
-# Standard terminal output
-npx github:sylphxltd/flow sysinfo --output standard
-
-# JSON output for scripting
-npx github:sylphxltd/flow sysinfo --output json
+# Verbose mode - show loading progress
+npx github:sylphxltd/flow hook --type session --verbose
 ```
+
+#### What Gets Loaded
+
+**Session Hook:**
+- Project rules from `assets/rules/core.md`
+- Output styles from `assets/output-styles/*.md`
+- System information (platform, directories, CPU, memory)
+- Project information (type, package manager, name, version)
+
+**Message Hook:**
+- Current time
+- CPU usage
+- Memory usage
 
 ---
 

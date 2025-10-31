@@ -10,7 +10,6 @@ export { default as initCommand } from './init-command';
 export { default as knowledgeCommand } from './knowledge-command';
 export { default as mcpCommand } from './mcp-command';
 export { default as runCommand } from './run-command';
-export { default as sysinfoCommand } from './sysinfo-command';
 
 // Re-export commonly used command functions
 export {
