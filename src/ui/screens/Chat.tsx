@@ -11,18 +11,14 @@ import { useChat } from '../hooks/useChat.js';
 import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
 
-interface ToolExecution {
-  name: string;
-  status: 'running' | 'completed' | 'failed';
-  startTime: number;
-  duration?: number;
-}
+type StreamPart =
+  | { type: 'text'; content: string }
+  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number };
 
 export default function Chat() {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingContent, setStreamingContent] = useState('');
-  const [activeTools, setActiveTools] = useState<ToolExecution[]>([]);
+  const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
 
   const navigateTo = useAppStore((state) => state.navigateTo);
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -88,41 +84,50 @@ export default function Chat() {
     const userMessage = value.trim();
     setInput('');
     setIsStreaming(true);
-    setStreamingContent('');
-    setActiveTools([]);
+    setStreamParts([]);
+
+    let currentTextContent = '';
 
     await sendMessage(
       userMessage,
       // onChunk - text streaming
       (chunk) => {
-        setStreamingContent((prev) => prev + chunk);
+        currentTextContent += chunk;
+        setStreamParts((prev) => {
+          // Find last text part and update it, or add new one
+          const newParts = [...prev];
+          const lastPart = newParts[newParts.length - 1];
+          if (lastPart && lastPart.type === 'text') {
+            newParts[newParts.length - 1] = { type: 'text', content: currentTextContent };
+          } else {
+            newParts.push({ type: 'text', content: currentTextContent });
+          }
+          return newParts;
+        });
       },
       // onToolCall - tool execution started
       (toolName, args) => {
-        setActiveTools((prev) => [
+        // Reset current text content when tool starts
+        currentTextContent = '';
+        setStreamParts((prev) => [
           ...prev,
-          {
-            name: toolName,
-            status: 'running',
-            startTime: Date.now(),
-          },
+          { type: 'tool', name: toolName, status: 'running' },
         ]);
       },
       // onToolResult - tool execution completed
       (toolName, result, duration) => {
-        setActiveTools((prev) =>
-          prev.map((tool) =>
-            tool.name === toolName
-              ? { ...tool, status: 'completed', duration }
-              : tool
+        setStreamParts((prev) =>
+          prev.map((part) =>
+            part.type === 'tool' && part.name === toolName
+              ? { ...part, status: 'completed', duration }
+              : part
           )
         );
       },
       // onComplete - streaming finished
       () => {
         setIsStreaming(false);
-        setStreamingContent('');
-        setActiveTools([]);
+        setStreamParts([]);
       }
     );
   };
@@ -168,45 +173,50 @@ export default function Chat() {
                   <Text color="#00FF88">▌ ASSISTANT</Text>
                 </Box>
 
-                {/* Tool executions */}
-                {activeTools.map((tool, idx) => (
-                  <Box key={`${tool.name}-${idx}`} marginBottom={1}>
-                    {tool.status === 'running' ? (
-                      <>
-                        <Spinner color="#00FF88" />
-                        <Text color="white" bold> {tool.name}</Text>
-                        <Text color="gray"> (executing...)</Text>
-                      </>
-                    ) : tool.status === 'completed' ? (
-                      <>
-                        <Text color="#00FF88">● </Text>
-                        <Text color="white" bold>{tool.name}</Text>
-                        <Text color="gray"> ({tool.duration}ms)</Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text color="red">● </Text>
-                        <Text color="white" bold>{tool.name}</Text>
-                        <Text color="red"> (failed)</Text>
-                      </>
-                    )}
-                  </Box>
-                ))}
-
-                {/* Streaming text content */}
-                {streamingContent && (
-                  <Box marginBottom={1}>
-                    <Text color="gray">{streamingContent}</Text>
-                  </Box>
-                )}
-
-                {/* Animated loading indicator */}
-                {!streamingContent && activeTools.length === 0 && (
+                {/* Show loading when no parts yet */}
+                {streamParts.length === 0 && (
                   <Box>
                     <Spinner color="#FFD700" label="Thinking..." />
                   </Box>
                 )}
-                {streamingContent && <Text color="#FFD700">▊</Text>}
+
+                {/* Render parts in order */}
+                {streamParts.map((part, idx) => {
+                  if (part.type === 'text') {
+                    const isLastPart = idx === streamParts.length - 1;
+                    return (
+                      <Box key={idx} marginBottom={1} flexDirection="column">
+                        <Text color="gray">{part.content}</Text>
+                        {isLastPart && <Text color="#FFD700">▊</Text>}
+                      </Box>
+                    );
+                  } else {
+                    // Tool part
+                    return (
+                      <Box key={idx} marginBottom={1}>
+                        {part.status === 'running' ? (
+                          <>
+                            <Spinner color="#00FF88" />
+                            <Text color="white" bold> {part.name}</Text>
+                            <Text color="gray"> (executing...)</Text>
+                          </>
+                        ) : part.status === 'completed' ? (
+                          <>
+                            <Text color="#00FF88">● </Text>
+                            <Text color="white" bold>{part.name}</Text>
+                            <Text color="gray"> ({part.duration}ms)</Text>
+                          </>
+                        ) : (
+                          <>
+                            <Text color="red">● </Text>
+                            <Text color="white" bold>{part.name}</Text>
+                            <Text color="red"> (failed)</Text>
+                          </>
+                        )}
+                      </Box>
+                    );
+                  }
+                })}
               </Box>
             )}
           </Box>
