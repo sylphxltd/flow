@@ -236,7 +236,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should filter results by categories', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([
         {
           uri: 'knowledge://test/doc1',
           score: 0.9,
@@ -266,7 +266,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should filter results by multiple categories', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([
         {
           uri: 'knowledge://test/doc1',
           score: 0.9,
@@ -296,7 +296,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle no results found', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([]);
+      (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([]);
 
       const result = await searchHandler({ query: 'nonexistent' });
 
@@ -380,7 +380,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should clean file paths in results', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([
         {
           uri: 'knowledge://test/doc1',
           score: 0.9,
@@ -402,7 +402,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should format relevance percentages correctly', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([
         {
           uri: 'file://test.ts',
           score: 0.856,
@@ -416,7 +416,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should display matched terms correctly', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([
         {
           uri: 'file://test.ts',
           score: 0.9,
@@ -663,7 +663,7 @@ describe('search-tool-builder', () => {
     });
 
     it('should handle malformed URIs in category filtering', async () => {
-      vi.mocked(searchDocuments).mockReturnValue([
+      (searchDocuments as ReturnType<typeof vi.fn>).mockReturnValue([
         {
           uri: 'test/invalid', // Malformed: no protocol
           score: 0.9,

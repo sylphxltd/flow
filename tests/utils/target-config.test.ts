@@ -81,9 +81,14 @@ describe('Target Config', () => {
     it('should throw for non-implemented target', () => {
       // Mock a non-implemented target
       const originalGet = targetManager.getTarget.bind(targetManager);
+      const originalTarget = originalGet('claude-code');
+
       vi.spyOn(targetManager, 'getTarget').mockReturnValue({
-        ...originalGet('claude-code')!,
-        isImplemented: false,
+        _tag: 'Some',
+        value: {
+          ...(originalTarget._tag === 'Some' ? originalTarget.value : {}),
+          isImplemented: false,
+        },
       } as any);
 
       expect(() => validateTarget('claude-code')).toThrow('not implemented');
@@ -100,13 +105,17 @@ describe('Target Config', () => {
     it('should return false for targets without MCP support', () => {
       // Mock a target without MCP support (no setupMCP method)
       const originalGet = targetManager.getTarget.bind(targetManager);
+      const originalTarget = originalGet('claude-code');
       const mockTarget = {
-        ...originalGet('claude-code')!,
+        ...(originalTarget._tag === 'Some' ? originalTarget.value : {}),
       };
       // Remove setupMCP method to simulate target without MCP support
       delete (mockTarget as any).setupMCP;
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget as any);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
 
       expect(targetSupportsMCPServers('test')).toBe(false);
 
@@ -114,7 +123,7 @@ describe('Target Config', () => {
     });
 
     it('should return false for non-existent target', () => {
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({ _tag: 'None' } as any);
       expect(targetSupportsMCPServers('nonexistent')).toBe(false);
       vi.clearAllMocks();
     });
@@ -181,12 +190,15 @@ describe('Target Config', () => {
         setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
       vi.spyOn(mcpService, 'resolveConfig').mockResolvedValue('resolved-value');
     });
 
     it('should throw if target not found', async () => {
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({ _tag: 'None' } as any);
       await expect(addMCPServersToTarget(testDir, 'invalid', ['context7'])).rejects.toThrow(
         'Target not found'
       );
@@ -275,11 +287,14 @@ describe('Target Config', () => {
         writeConfig: vi.fn().mockResolvedValue(undefined),
       };
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
     });
 
     it('should throw if target not found', async () => {
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({ _tag: 'None' } as any);
       await expect(removeMCPServersFromTarget(testDir, 'invalid', ['context7'])).rejects.toThrow(
         'Target not found'
       );
@@ -359,11 +374,14 @@ describe('Target Config', () => {
         }),
       };
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
     });
 
     it('should throw if target not found', async () => {
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({ _tag: 'None' } as any);
       await expect(listMCPServersForTarget(testDir, 'invalid')).rejects.toThrow('Target not found');
     });
 
@@ -442,14 +460,17 @@ describe('Target Config', () => {
         close: vi.fn(),
       };
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
-      vi.mocked(readline.createInterface).mockReturnValue(readlineInterface as any);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
+      (readline.createInterface as ReturnType<typeof vi.fn>).mockReturnValue(readlineInterface as any);
       vi.spyOn(secretUtils, 'convertSecretsToFileReferences').mockResolvedValue({});
       vi.spyOn(secretUtils, 'addToGitignore').mockResolvedValue(undefined);
     });
 
     it('should throw if target not found', async () => {
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(null);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({ _tag: 'None' } as any);
       await expect(configureMCPServerForTarget(testDir, 'invalid', 'context7')).rejects.toThrow(
         'Target not found'
       );
@@ -692,7 +713,10 @@ describe('Target Config', () => {
         setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
 
       await expect(addMCPServersToTarget(testDir, 'test', ['context7'])).rejects.toThrow(
         'File read error'
@@ -713,7 +737,10 @@ describe('Target Config', () => {
         setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
       vi.spyOn(mcpService, 'resolveConfig').mockResolvedValue('resolved');
 
       await expect(addMCPServersToTarget(testDir, 'test', ['context7'])).rejects.toThrow(
@@ -740,7 +767,10 @@ describe('Target Config', () => {
         setupMCP: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
-      vi.spyOn(targetManager, 'getTarget').mockReturnValue(mockTarget);
+      vi.spyOn(targetManager, 'getTarget').mockReturnValue({
+        _tag: 'Some',
+        value: mockTarget,
+      } as any);
       vi.spyOn(mcpService, 'resolveConfig').mockResolvedValue('resolved-value');
     });
 

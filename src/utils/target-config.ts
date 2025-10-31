@@ -24,11 +24,13 @@ export async function addMCPServersToTarget(
   targetId: string,
   serverTypes: MCPServerID[]
 ): Promise<void> {
-  const target = targetManager.getTarget(targetId);
+  const targetOption = targetManager.getTarget(targetId);
 
-  if (!target) {
+  if (targetOption._tag === 'None') {
     throw new Error(`Target not found: ${targetId}`);
   }
+
+  const target = targetOption.value;
 
   if (!target.setupMCP) {
     throw new Error(`Target ${targetId} does not support MCP servers`);
@@ -97,11 +99,13 @@ export async function removeMCPServersFromTarget(
   targetId: string,
   serverTypes: MCPServerID[]
 ): Promise<void> {
-  const target = targetManager.getTarget(targetId);
+  const targetOption = targetManager.getTarget(targetId);
 
-  if (!target) {
+  if (targetOption._tag === 'None') {
     throw new Error(`Target not found: ${targetId}`);
   }
+
+  const target = targetOption.value;
 
   // Read current configuration
   const config = await target.readConfig(cwd);
@@ -150,11 +154,13 @@ export async function removeMCPServersFromTarget(
  * List currently configured MCP servers for a target
  */
 export async function listMCPServersForTarget(cwd: string, targetId: string): Promise<void> {
-  const target = targetManager.getTarget(targetId);
+  const targetOption = targetManager.getTarget(targetId);
 
-  if (!target) {
+  if (targetOption._tag === 'None') {
     throw new Error(`Target not found: ${targetId}`);
   }
+
+  const target = targetOption.value;
 
   // Read current configuration
   const config = await target.readConfig(cwd);
@@ -201,11 +207,13 @@ export async function configureMCPServerForTarget(
   targetId: string,
   serverType: MCPServerID
 ): Promise<boolean> {
-  const target = targetManager.getTarget(targetId);
+  const targetOption = targetManager.getTarget(targetId);
 
-  if (!target) {
+  if (targetOption._tag === 'None') {
     throw new Error(`Target not found: ${targetId}`);
   }
+
+  const target = targetOption.value;
 
   const server = MCP_SERVER_REGISTRY[serverType];
   if (!server) {
@@ -361,11 +369,12 @@ export async function configureMCPServerForTarget(
 
   // Convert secret API keys to file references if target supports it
   let processedSecretApiKeys = secretApiKeys;
-  const targetConfig = targetManager.getTarget(targetId);
+  const targetConfigOption = targetManager.getTarget(targetId);
 
   if (
-    targetConfig?.setupMCP &&
-    targetConfig.config.installation.useSecretFiles !== false &&
+    targetConfigOption._tag === 'Some' &&
+    targetConfigOption.value.setupMCP &&
+    targetConfigOption.value.config.installation.useSecretFiles !== false &&
     Object.keys(secretApiKeys).length > 0
   ) {
     processedSecretApiKeys = await secretUtils.convertSecretsToFileReferences(cwd, secretApiKeys);
@@ -437,12 +446,15 @@ export function getAllTargetsHelpText(): string {
  * Validate target and return target ID
  */
 export function validateTarget(targetId: string): string {
-  const target = targetManager.getTarget(targetId);
-  if (!target) {
+  const targetOption = targetManager.getTarget(targetId);
+
+  if (targetOption._tag === 'None') {
     throw new Error(
       `Unknown target: ${targetId}. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
     );
   }
+
+  const target = targetOption.value;
   if (!target.isImplemented) {
     throw new Error(
       `Target '${targetId}' is not implemented. Available targets: ${targetManager.getImplementedTargetIDs().join(', ')}`
@@ -455,8 +467,11 @@ export function validateTarget(targetId: string): string {
  * Check if target supports MCP servers
  */
 export function targetSupportsMCPServers(targetId: string): boolean {
-  const target = targetManager.getTarget(targetId);
-  return !!target?.setupMCP;
+  const targetOption = targetManager.getTarget(targetId);
+  if (targetOption._tag === 'None') {
+    return false;
+  }
+  return !!targetOption.value.setupMCP;
 }
 
 /**
