@@ -18,16 +18,6 @@ export function useKeyboard() {
       }
     }
 
-    // Handle Ctrl+P - Provider Management
-    if (key.ctrl && input === 'p') {
-      navigateTo('provider-management');
-    }
-
-    // Handle Ctrl+M - Model Selection
-    if (key.ctrl && input === 'm') {
-      navigateTo('model-selection');
-    }
-
     // Handle Ctrl+Q - Quit
     if (key.ctrl && input === 'q') {
       process.exit(0);

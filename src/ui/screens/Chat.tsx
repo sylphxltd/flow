@@ -562,14 +562,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         <Box flexDirection="column" gap={1}>
           <Box>
             <Text color="#00D9FF">1.</Text>
-            <Text color="gray"> Press </Text>
-            <Text bold color="#00D9FF">Ctrl+P</Text>
+            <Text color="gray"> Type </Text>
+            <Text bold color="#00D9FF">/provider</Text>
             <Text color="gray"> to configure a provider</Text>
           </Box>
           <Box>
             <Text color="#00D9FF">2.</Text>
-            <Text color="gray"> Press </Text>
-            <Text bold color="#00D9FF">Ctrl+M</Text>
+            <Text color="gray"> Type </Text>
+            <Text bold color="#00D9FF">/model</Text>
             <Text color="gray"> to select a model</Text>
           </Box>
           <Box>

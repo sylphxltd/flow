@@ -233,7 +233,7 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
       console.error(chalk.green('  • openai/gpt-4o'));
       console.error(chalk.green('  • google/gemini-2.0-flash-exp\n'));
       console.error(chalk.dim('💡 Tip: Ask questions that don\'t require tools, or switch to a model above'));
-      console.error(chalk.dim('To configure: Run `sylphx code` (TUI mode) then press Ctrl+P\n'));
+      console.error(chalk.dim('To configure: Run `sylphx code` (TUI mode) then type /provider\n'));
       process.exit(1);
     }
 
