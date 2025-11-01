@@ -75,6 +75,18 @@ export type ToolResultChunk = {
   result: unknown;
 };
 
+export type ToolErrorChunk = {
+  type: 'tool-error';
+  toolCallId: string;
+  toolName: string;
+  error: string;
+};
+
+export type StreamErrorChunk = {
+  type: 'error';
+  error: string;
+};
+
 export type FinishChunk = {
   type: 'finish';
   finishReason: string;
@@ -92,6 +104,8 @@ export type StreamChunk =
   | ReasoningEndChunk
   | ToolCallChunk
   | ToolResultChunk
+  | ToolErrorChunk
+  | StreamErrorChunk
   | FinishChunk;
 
 /**
@@ -263,16 +277,30 @@ export async function* createAIStream(
         break;
 
       case 'error':
-        // Stream error - throw to propagate to caller's try-catch
-        throw chunk.error instanceof Error ? chunk.error : new Error(String(chunk.error));
+        // Stream error - yield as error chunk to preserve ordering
+        yield {
+          type: 'error',
+          error: chunk.error instanceof Error ? chunk.error.message : String(chunk.error),
+        };
+        break;
 
       case 'tool-error':
-        // Tool execution error - throw to propagate to caller's try-catch
-        throw chunk.error instanceof Error ? chunk.error : new Error(`Tool error: ${String(chunk.error)}`);
+        // Tool execution error - yield as tool-error chunk to preserve ordering
+        yield {
+          type: 'tool-error',
+          toolCallId: chunk.toolCallId,
+          toolName: chunk.toolName,
+          error: chunk.error instanceof Error ? chunk.error.message : String(chunk.error),
+        };
+        break;
 
       case 'abort':
-        // Stream aborted - throw to propagate to caller's try-catch
-        throw new Error('Stream aborted');
+        // Stream aborted - yield as error chunk to preserve ordering
+        yield {
+          type: 'error',
+          error: 'Stream aborted',
+        };
+        break;
 
       // Ignore other chunk types (text-start, text-end, etc.)
       // They don't affect our streaming output

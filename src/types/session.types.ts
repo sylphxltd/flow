@@ -6,7 +6,7 @@
 import type { ProviderId } from '../config/ai-config.js';
 
 /**
- * Message part - can be text, reasoning, or tool call
+ * Message part - can be text, reasoning, tool call, or error
  */
 export type MessagePart =
   | { type: 'text'; content: string }
@@ -18,7 +18,9 @@ export type MessagePart =
       duration?: number;
       args?: unknown;
       result?: unknown;
-    };
+      error?: string; // Error message if status is 'failed'
+    }
+  | { type: 'error'; error: string }; // Stream-level errors
 
 /**
  * File attachment

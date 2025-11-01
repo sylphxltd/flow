@@ -25,7 +25,8 @@ import { useFileAttachments } from '../hooks/useFileAttachments.js';
 type StreamPart =
   | { type: 'text'; content: string }
   | { type: 'reasoning'; content: string }
-  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown };
+  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string }
+  | { type: 'error'; error: string };
 
 interface ChatProps {
   commandFromPalette?: string | null;
@@ -1125,6 +1126,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                               ))}
                             </Box>
                           );
+                        } else if (part.type === 'error') {
+                          return (
+                            <Box key={idx}>
+                              <Text color="#00FF88">▏ </Text>
+                              <Text color="red">❌ Error: {part.error}</Text>
+                            </Box>
+                          );
                         } else {
                           return (
                             <Box key={idx}>
@@ -1135,6 +1143,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                 duration={part.duration}
                                 args={part.args}
                                 result={part.result}
+                                error={part.error}
                               />
                             </Box>
                           );
@@ -1211,6 +1220,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         )}
                       </Box>
                     );
+                  } else if (part.type === 'error') {
+                    return (
+                      <Box key={idx}>
+                        <Text color="#00FF88">▏ </Text>
+                        <Text color="red">❌ Error: {part.error}</Text>
+                      </Box>
+                    );
                   } else {
                     // Tool part
                     return (
@@ -1222,6 +1238,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           duration={part.duration}
                           args={part.args}
                           result={part.result}
+                          error={part.error}
                         />
                       </Box>
                     );

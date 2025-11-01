@@ -13,6 +13,7 @@ interface ToolDisplayProps {
   duration?: number;
   args?: unknown;
   result?: unknown;
+  error?: string;
 }
 
 /**
@@ -439,7 +440,8 @@ const ResultDisplay: React.FC<{
   status: ToolDisplayProps['status'];
   result: unknown;
   toolName: string;
-}> = ({ status, result, toolName }) => {
+  error?: string;
+}> = ({ status, result, toolName, error }) => {
   if (status === 'running') {
     return (
       <Box marginLeft={2}>
@@ -451,7 +453,7 @@ const ResultDisplay: React.FC<{
   if (status === 'failed') {
     return (
       <Box marginLeft={2}>
-        <Text color="#FF3366">Failed</Text>
+        <Text color="#FF3366">Failed{error ? `: ${error}` : ''}</Text>
       </Box>
     );
   }
@@ -489,7 +491,7 @@ const ResultDisplay: React.FC<{
   return null;
 };
 
-export function ToolDisplay({ name, status, duration, args, result }: ToolDisplayProps) {
+export function ToolDisplay({ name, status, duration, args, result, error }: ToolDisplayProps) {
   const formattedArgs = formatArgs(name, args);
   const isBuiltIn = isBuiltInTool(name);
   const displayName = getDisplayName(name);
@@ -504,7 +506,7 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
         duration={duration}
         status={status}
       />
-      <ResultDisplay status={status} result={result} toolName={name} />
+      <ResultDisplay status={status} result={result} toolName={name} error={error} />
     </Box>
   );
 }

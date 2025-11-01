@@ -138,6 +138,44 @@ export async function processStream(
         break;
       }
 
+      case 'tool-error': {
+        // Save current text part if any
+        if (currentTextContent) {
+          messageParts.push({ type: 'text', content: currentTextContent });
+          currentTextContent = '';
+        }
+
+        const tool = activeTools.get(chunk.toolCallId);
+        if (tool) {
+          const duration = Date.now() - tool.startTime;
+          activeTools.delete(chunk.toolCallId);
+
+          // Update tool part status and error
+          const toolPart = messageParts.find(
+            (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
+          );
+
+          if (toolPart && toolPart.type === 'tool') {
+            toolPart.status = 'failed';
+            toolPart.duration = duration;
+            toolPart.error = chunk.error;
+          }
+        }
+        break;
+      }
+
+      case 'error': {
+        // Save current text part if any
+        if (currentTextContent) {
+          messageParts.push({ type: 'text', content: currentTextContent });
+          currentTextContent = '';
+        }
+
+        // Add error part
+        messageParts.push({ type: 'error', error: chunk.error });
+        break;
+      }
+
       case 'finish': {
         usage = chunk.usage;
         finishReason = chunk.finishReason;
