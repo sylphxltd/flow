@@ -384,23 +384,60 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           return;
         }
 
-        // Enter - fill in and execute autocomplete selection
+        // Enter - execute autocomplete selection
         if (key.return) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
-            addLog(`[useInput] Enter autocomplete execute: ${selected.label}`);
-            skipNextSubmit.current = true; // Prevent TextInput's onSubmit from executing the OLD input value
+            skipNextSubmit.current = true; // Prevent TextInput's onSubmit from also executing
 
-            // Execute the autocomplete-selected command directly
-            if (currentSessionId) {
-              addMessage(currentSessionId, 'user', selected.label);
+            // Check if this is a base command that needs args
+            const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
+            const hasArgs = selected.args && selected.args.length > 0;
+
+            if (isBaseCommand && hasArgs) {
+              // Base command with args - enter selection mode instead of executing
+              addLog(`[useInput] Enter selection mode for: ${selected.label}`);
+              setInput(selected.label); // Set input to command name (no space yet)
+
+              // Trigger selection flow by simulating handleSubmit logic
+              const firstArg = selected.args[0];
+              const cacheKey = `${selected.id}:${firstArg.name}`;
+
+              // Trigger lazy load if needed
+              if (firstArg.loadOptions && !cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
+                setCurrentlyLoading(cacheKey);
+                setLoadError(null);
+
+                firstArg.loadOptions()
+                  .then((options) => {
+                    setCachedOptions((prev) => new Map(prev).set(cacheKey, options));
+                    setCurrentlyLoading(null);
+                  })
+                  .catch((error) => {
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    addLog(`Error loading ${cacheKey}: ${errorMsg}`);
+                    setLoadError(errorMsg);
+                    setCurrentlyLoading(null);
+                  });
+              }
+
+              // Enter selection mode
+              setPendingCommand({ command: selected, currentInput: selected.label });
+              setInput('');
+              setSelectedCommandIndex(0);
+            } else {
+              // Multi-level autocomplete item or command without args - execute directly
+              addLog(`[useInput] Enter autocomplete execute: ${selected.label}`);
+              if (currentSessionId) {
+                addMessage(currentSessionId, 'user', selected.label);
+              }
+              const response = await selected.execute();
+              if (currentSessionId) {
+                addMessage(currentSessionId, 'assistant', response);
+              }
+              setInput('');
+              setSelectedCommandIndex(0);
             }
-            const response = await selected.execute();
-            if (currentSessionId) {
-              addMessage(currentSessionId, 'assistant', response);
-            }
-            setInput('');
-            setSelectedCommandIndex(0);
           }
           return;
         }
