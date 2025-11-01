@@ -20,7 +20,7 @@ const providerCommand: Command = {
       name: 'action',
       description: 'Action: "use" or "set"',
       required: false,
-      loadOptions: async () => {
+      loadOptions: async (previousArgs) => {
         return [
           { id: 'use', label: 'use', value: 'use' },
           { id: 'set', label: 'set', value: 'set' },
@@ -31,7 +31,7 @@ const providerCommand: Command = {
       name: 'provider-name',
       description: 'Provider name (anthropic, openai, google, openrouter)',
       required: false,
-      loadOptions: async () => {
+      loadOptions: async (previousArgs) => {
         const { AI_PROVIDERS } = await import('../../config/ai-config.js');
         return Object.values(AI_PROVIDERS).map((p) => ({
           id: p.id,
@@ -44,13 +44,27 @@ const providerCommand: Command = {
       name: 'key',
       description: 'Setting key (for set action)',
       required: false,
-      loadOptions: async () => {
-        // Return common keys - will be filtered based on provider in execute
-        return [
+      loadOptions: async (previousArgs) => {
+        // previousArgs: [action, provider-name]
+        // Only show keys available for the selected provider
+        const providerId = previousArgs[1]; // e.g., "anthropic", "openai", "openrouter"
+
+        // Common keys for all providers
+        const commonKeys = [
           { id: 'apiKey', label: 'apiKey', value: 'apiKey' },
           { id: 'defaultModel', label: 'defaultModel', value: 'defaultModel' },
-          { id: 'baseUrl', label: 'baseUrl', value: 'baseUrl' },
         ];
+
+        // OpenAI has additional baseUrl option
+        if (providerId === 'openai') {
+          return [
+            ...commonKeys,
+            { id: 'baseUrl', label: 'baseUrl', value: 'baseUrl' },
+          ];
+        }
+
+        // Other providers only have common keys
+        return commonKeys;
       },
     },
     {
@@ -481,7 +495,7 @@ const modelCommand: Command = {
       name: 'model-name',
       description: 'Model to switch to',
       required: true,
-      loadOptions: async () => {
+      loadOptions: async (previousArgs) => {
         // This will be replaced by Chat.tsx with actual implementation
         // that has access to aiConfig
         throw new Error('loadOptions not implemented');

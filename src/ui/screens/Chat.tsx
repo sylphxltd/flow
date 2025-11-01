@@ -157,13 +157,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       const arg = matchedCommand.args[currentArgIndex];
 
       if (arg && arg.loadOptions) {
-        const cacheKey = `${matchedCommand.id}:${arg.name}`;
+        // Include previous args in cache key to invalidate when args change
+        const cacheKey = `${matchedCommand.id}:${arg.name}:${args.join(',')}`;
 
         // Trigger load if not cached and not loading
         if (!cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
           setCurrentlyLoading(cacheKey);
 
-          arg.loadOptions()
+          arg.loadOptions(args)
             .then((options) => {
               // Use functional update to avoid dependency on cachedOptions
               setCachedOptions((prev) => new Map(prev).set(cacheKey, options));
@@ -203,7 +204,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
       const arg = matchedCommand.args[currentArgIndex];
       if (arg) {
-        const cacheKey = `${matchedCommand.id}:${arg.name}`;
+        // Use same cache key pattern as loadOptions
+        const cacheKey = `${matchedCommand.id}:${arg.name}:${args.join(',')}`;
         const options = cachedOptions.get(cacheKey) || [];
 
         if (options.length > 0) {
