@@ -44,6 +44,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
   const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
+  const lastEscapeTime = useRef<number>(0); // Track last ESC press for double-ESC detection
 
   // File attachment hook
   const {
@@ -331,6 +332,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Handle keyboard shortcuts for command menu and selection navigation
   useInput(
     async (char, key) => {
+      // Double ESC to clear input (works in any mode)
+      if (key.escape) {
+        const now = Date.now();
+        const timeSinceLastEscape = now - lastEscapeTime.current;
+
+        if (timeSinceLastEscape < 500) {
+          // Double ESC detected - clear input
+          setInput('');
+          setCursor(0);
+          lastEscapeTime.current = 0;
+          return;
+        }
+
+        // Single ESC - update timestamp and continue with normal handling
+        lastEscapeTime.current = now;
+      }
+
       // Handle pendingInput (when command calls waitForInput)
       if (pendingInput && inputResolver.current) {
         // Selection mode (unified for single and multi-question)
