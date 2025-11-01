@@ -133,26 +133,69 @@ export default function ControlledTextInput({
     { isActive: focus }
   );
 
-  // Split text at cursor position
-  const left = text.slice(0, cursor);
-  const right = text.slice(cursor);
+  // Handle multiline text with proper cursor positioning
+  if (value.length === 0 && placeholder) {
+    return (
+      <Box>
+        {showCursor && <Text inverse> </Text>}
+        <Text dimColor>{placeholder}</Text>
+      </Box>
+    );
+  }
+
+  // Split text into lines
+  const lines = text.split('\n');
+
+  // Find which line the cursor is on and position within that line
+  let remainingCursor = cursor;
+  let cursorLine = 0;
+  let cursorColumn = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineLength = lines[i].length;
+
+    if (remainingCursor <= lineLength) {
+      cursorLine = i;
+      cursorColumn = remainingCursor;
+      break;
+    }
+
+    // Account for the newline character
+    remainingCursor -= lineLength + 1;
+
+    // If we're at the last line, cursor is at the end
+    if (i === lines.length - 1) {
+      cursorLine = i;
+      cursorColumn = lineLength;
+    }
+  }
 
   return (
-    <Box>
-      {value.length === 0 && placeholder ? (
-        <>
-          {showCursor && <Text inverse> </Text>}
-          <Text dimColor>{placeholder}</Text>
-        </>
-      ) : (
-        <>
-          <Text>{left}</Text>
-          {showCursor && (
-            <Text inverse>{right.length > 0 ? right[0] : ' '}</Text>
-          )}
-          <Text>{right.slice(1)}</Text>
-        </>
-      )}
+    <Box flexDirection="column">
+      {lines.map((line, lineIndex) => {
+        const isCursorLine = lineIndex === cursorLine;
+
+        if (isCursorLine) {
+          const left = line.slice(0, cursorColumn);
+          const right = line.slice(cursorColumn);
+
+          return (
+            <Box key={lineIndex}>
+              <Text>{left}</Text>
+              {showCursor && (
+                <Text inverse>{right.length > 0 ? right[0] : ' '}</Text>
+              )}
+              <Text>{right.slice(1)}</Text>
+            </Box>
+          );
+        }
+
+        return (
+          <Box key={lineIndex}>
+            <Text>{line}</Text>
+          </Box>
+        );
+      })}
     </Box>
   );
 }
