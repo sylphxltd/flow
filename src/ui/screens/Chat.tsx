@@ -1503,7 +1503,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         </Box>
 
         {/* Status Bar - Fixed at bottom */}
-        <Box flexShrink={0} paddingTop={1} flexDirection="row" justifyContent="space-between">
+        <Box flexShrink={0} paddingTop={1} flexDirection="row" justifyContent="flex-end">
           {currentSession && (
             <StatusBar
               provider={currentSession.provider}
@@ -1512,11 +1512,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               usedTokens={usedTokens}
             />
           )}
-          <Box>
-            <Text dimColor>Type </Text>
-            <Text color="#00D9FF" bold>/</Text>
-            <Text dimColor> for commands</Text>
-          </Box>
         </Box>
       </Box>
     </Box>
