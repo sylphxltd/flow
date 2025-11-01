@@ -8,10 +8,10 @@
 
 import { AutoTokenizer } from '@huggingface/transformers';
 
-// Singleton instance for BPE tokenizer (lazy-loaded)
-let bpeTokenizer: any | null = null;
-let tokenizerInitializing = false;
-let initializationFailed = false;
+// Cache for multiple tokenizers (keyed by tokenizer name)
+const tokenizerCache = new Map<string, any>();
+const tokenizerInitializing = new Set<string>();
+const tokenizerFailed = new Set<string>();
 
 /**
  * Map provider model names to tokenizer names
@@ -85,48 +85,57 @@ function estimateFallback(text: string): number {
 }
 
 /**
- * Initialize BPE tokenizer (lazy, singleton)
+ * Initialize BPE tokenizer (lazy, cached per tokenizer name)
  * Uses Hugging Face AutoTokenizer to automatically select best tokenizer
  */
 async function ensureTokenizer(modelName?: string): Promise<any | null> {
-  // Already initialized - check if we need to reinitialize for different model
-  if (bpeTokenizer && !modelName) return bpeTokenizer;
+  // Get tokenizer name for this model
+  const tokenizerName = getTokenizerForModel(modelName);
 
-  // Previous initialization failed
-  if (initializationFailed) return null;
+  // Check if already cached
+  if (tokenizerCache.has(tokenizerName)) {
+    return tokenizerCache.get(tokenizerName);
+  }
 
-  // Wait if initialization in progress
-  while (tokenizerInitializing) {
+  // Check if previous initialization failed
+  if (tokenizerFailed.has(tokenizerName)) {
+    return null;
+  }
+
+  // Wait if initialization in progress for this tokenizer
+  while (tokenizerInitializing.has(tokenizerName)) {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   // Check again after waiting
-  if (bpeTokenizer && !modelName) return bpeTokenizer;
-  if (initializationFailed) return null;
-
-  // Get tokenizer name for this model
-  const tokenizerName = getTokenizerForModel(modelName);
+  if (tokenizerCache.has(tokenizerName)) {
+    return tokenizerCache.get(tokenizerName);
+  }
+  if (tokenizerFailed.has(tokenizerName)) {
+    return null;
+  }
 
   // Initialize with Hugging Face AutoTokenizer
   try {
-    tokenizerInitializing = true;
-    console.log(`[TokenCounter] Loading tokenizer: ${tokenizerName} (for model: ${modelName || 'default'})`);
+    tokenizerInitializing.add(tokenizerName);
+    console.log(`[TokenCounter] Loading tokenizer '${tokenizerName}' (model: ${modelName || 'default'}) - first time only`);
 
     // Let Hugging Face auto-select and load the best tokenizer
-    bpeTokenizer = await AutoTokenizer.from_pretrained(tokenizerName, {
+    const tokenizer = await AutoTokenizer.from_pretrained(tokenizerName, {
       // Cache models locally for faster subsequent loads
       cache_dir: './models/.cache',
       // Use local files if available, otherwise download
       local_files_only: false,
     });
 
-    console.log(`[TokenCounter] Tokenizer loaded successfully`);
-    tokenizerInitializing = false;
-    return bpeTokenizer;
+    console.log(`[TokenCounter] ✓ Tokenizer '${tokenizerName}' cached for future use`);
+    tokenizerCache.set(tokenizerName, tokenizer);
+    tokenizerInitializing.delete(tokenizerName);
+    return tokenizer;
   } catch (error) {
     console.warn('[TokenCounter] BPE tokenizer initialization failed, using fallback estimation:', error);
-    initializationFailed = true;
-    tokenizerInitializing = false;
+    tokenizerFailed.add(tokenizerName);
+    tokenizerInitializing.delete(tokenizerName);
     return null;
   }
 }
