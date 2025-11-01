@@ -181,18 +181,19 @@ export default function ControlledTextInput({
 
           return (
             <Box key={lineIndex}>
-              <Text>{left}</Text>
+              {left.length > 0 ? <Text>{left}</Text> : null}
               {showCursor && (
                 <Text inverse>{right.length > 0 ? right[0] : ' '}</Text>
               )}
-              <Text>{right.slice(1)}</Text>
+              {right.slice(1).length > 0 ? <Text>{right.slice(1)}</Text> : null}
             </Box>
           );
         }
 
+        // For empty lines, render at least one space to ensure line height
         return (
           <Box key={lineIndex}>
-            <Text>{line}</Text>
+            <Text>{line.length > 0 ? line : ' '}</Text>
           </Box>
         );
       })}
