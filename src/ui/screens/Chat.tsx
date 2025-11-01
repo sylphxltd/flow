@@ -13,6 +13,7 @@ import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
 import { commands } from '../commands/registry.js';
 import type { CommandContext, WaitForInputOptions, Question } from '../commands/types.js';
+import { calculateScrollViewport } from '../utils/scroll-viewport.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -921,23 +922,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                   }
 
                                   // Calculate scroll window to keep selected item visible
-                                  const pageSize = 10;
-                                  const scrollOffset = Math.max(0, Math.min(
-                                    selectedCommandIndex - Math.floor(pageSize / 2),
-                                    filteredOptions.length - pageSize
-                                  ));
-                                  const visibleOptions = filteredOptions.slice(scrollOffset, scrollOffset + pageSize);
-                                  const hasMore = filteredOptions.length > pageSize;
+                                  const viewport = calculateScrollViewport(filteredOptions, selectedCommandIndex);
 
                                   return (
                                     <>
-                                      {scrollOffset > 0 && (
+                                      {viewport.hasItemsAbove && (
                                         <Box marginBottom={1}>
-                                          <Text dimColor>... {scrollOffset} more above</Text>
+                                          <Text dimColor>... {viewport.itemsAboveCount} more above</Text>
                                         </Box>
                                       )}
-                                      {visibleOptions.map((option, idx) => {
-                                        const absoluteIdx = scrollOffset + idx;
+                                      {viewport.visibleItems.map((option, idx) => {
+                                        const absoluteIdx = viewport.scrollOffset + idx;
                                         return (
                                           <Box key={option.value || option.label} paddingY={0}>
                                             <Text
@@ -950,9 +945,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                           </Box>
                                         );
                                       })}
-                                      {scrollOffset + pageSize < filteredOptions.length && (
+                                      {viewport.hasItemsBelow && (
                                         <Box marginTop={1}>
-                                          <Text dimColor>... {filteredOptions.length - scrollOffset - pageSize} more below</Text>
+                                          <Text dimColor>... {viewport.itemsBelowCount} more below</Text>
                                         </Box>
                                       )}
                                     </>
@@ -1063,22 +1058,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 }
 
                 // Calculate scroll window to keep selected item visible
-                const pageSize = 10;
-                const scrollOffset = Math.max(0, Math.min(
-                  selectedCommandIndex - Math.floor(pageSize / 2),
-                  options.length - pageSize
-                ));
-                const visibleOptions = options.slice(scrollOffset, scrollOffset + pageSize);
+                const viewport = calculateScrollViewport(options, selectedCommandIndex);
 
                 return (
                   <>
-                    {scrollOffset > 0 && (
+                    {viewport.hasItemsAbove && (
                       <Box marginBottom={1}>
-                        <Text dimColor>... {scrollOffset} more above</Text>
+                        <Text dimColor>... {viewport.itemsAboveCount} more above</Text>
                       </Box>
                     )}
-                    {visibleOptions.map((option, idx) => {
-                      const absoluteIdx = scrollOffset + idx;
+                    {viewport.visibleItems.map((option, idx) => {
+                      const absoluteIdx = viewport.scrollOffset + idx;
                       return (
                         <Box
                           key={option.value || option.label}
@@ -1102,9 +1092,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         </Box>
                       );
                     })}
-                    {scrollOffset + pageSize < options.length && (
+                    {viewport.hasItemsBelow && (
                       <Box marginTop={1}>
-                        <Text dimColor>... {options.length - scrollOffset - pageSize} more below</Text>
+                        <Text dimColor>... {viewport.itemsBelowCount} more below</Text>
                       </Box>
                     )}
                     <Box marginTop={1}>
