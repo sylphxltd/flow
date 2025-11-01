@@ -76,11 +76,21 @@ export type ToolCallChunk = {
   args: unknown;
 };
 
-export type ToolCallDeltaChunk = {
-  type: 'tool-call-delta';
+export type ToolInputStartChunk = {
+  type: 'tool-input-start';
   toolCallId: string;
   toolName: string;
+};
+
+export type ToolInputDeltaChunk = {
+  type: 'tool-input-delta';
+  toolCallId: string;
   argsTextDelta: string;
+};
+
+export type ToolInputEndChunk = {
+  type: 'tool-input-end';
+  toolCallId: string;
 };
 
 export type ToolResultChunk = {
@@ -120,7 +130,9 @@ export type StreamChunk =
   | ReasoningDeltaChunk
   | ReasoningEndChunk
   | ToolCallChunk
-  | ToolCallDeltaChunk
+  | ToolInputStartChunk
+  | ToolInputDeltaChunk
+  | ToolInputEndChunk
   | ToolResultChunk
   | ToolErrorChunk
   | StreamErrorChunk
@@ -286,13 +298,29 @@ export async function* createAIStream(
         };
         break;
 
-      case 'tool-call-delta':
-        // Stream tool arguments as they're being generated
+      case 'tool-input-start':
+        // Tool input streaming started
         yield {
-          type: 'tool-call-delta',
-          toolCallId: chunk.toolCallId,
+          type: 'tool-input-start',
+          toolCallId: chunk.id,
           toolName: chunk.toolName,
-          argsTextDelta: chunk.argsTextDelta,
+        };
+        break;
+
+      case 'tool-input-delta':
+        // Tool input streaming (arguments being generated)
+        yield {
+          type: 'tool-input-delta',
+          toolCallId: chunk.id,
+          argsTextDelta: chunk.delta,
+        };
+        break;
+
+      case 'tool-input-end':
+        // Tool input complete (end of tool-input streaming)
+        yield {
+          type: 'tool-input-end',
+          toolCallId: chunk.id,
         };
         break;
 

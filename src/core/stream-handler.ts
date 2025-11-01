@@ -68,7 +68,11 @@ export async function processStream(
       }
 
       case 'text-end': {
-        // Text generation finished - notify immediately
+        // Text generation finished - save text part if any
+        if (currentTextContent) {
+          messageParts.push({ type: 'text', content: currentTextContent });
+          currentTextContent = '';
+        }
         onTextEnd?.();
         break;
       }
@@ -133,7 +137,12 @@ export async function processStream(
         break;
       }
 
-      case 'tool-call-delta': {
+      case 'tool-input-start': {
+        // Tool input streaming started - nothing to do, just wait for deltas
+        break;
+      }
+
+      case 'tool-input-delta': {
         // Update tool args as they stream in
         // Find the running tool part and update its args
         const toolPart = messageParts.find(
@@ -145,6 +154,11 @@ export async function processStream(
           const currentArgsText = typeof toolPart.args === 'string' ? toolPart.args : '';
           toolPart.args = currentArgsText + chunk.argsTextDelta;
         }
+        break;
+      }
+
+      case 'tool-input-end': {
+        // Tool input streaming complete - args are ready
         break;
       }
 

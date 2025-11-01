@@ -1004,7 +1004,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               newParts[newParts.length - 1] = {
                 type: 'reasoning',
                 content: lastPart.content + chunk,
-                completed: false
+                completed: false,
+                startTime: lastPart.startTime // Preserve startTime for live duration tracking
               };
             }
             return newParts;
@@ -1015,15 +1016,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           addLog(`Reasoning end: ${duration}ms`);
           setStreamParts((prev) => {
             const newParts = [...prev];
-            const lastPart = newParts[newParts.length - 1];
 
-            if (lastPart && lastPart.type === 'reasoning' && !lastPart.completed) {
-              // Mark as completed with duration (will show "Thought Xs" instead of "Thinking...")
-              newParts[newParts.length - 1] = {
-                ...lastPart,
-                completed: true,
-                duration
-              };
+            // Find the last uncompleted reasoning part
+            for (let i = newParts.length - 1; i >= 0; i--) {
+              if (newParts[i].type === 'reasoning' && 'completed' in newParts[i] && !newParts[i].completed) {
+                // Mark as completed with duration
+                newParts[i] = {
+                  ...newParts[i],
+                  completed: true,
+                  duration
+                };
+                break;
+              }
             }
             return newParts;
           });
