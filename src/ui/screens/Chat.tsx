@@ -1107,7 +1107,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             </Box>
           </Box>
         ) : currentSession.messages.length === 0 && !isStreaming ? (
-          <Box paddingY={1}>
+          <Box paddingY={1} marginLeft={2}>
             <Text dimColor>Ready to chat...</Text>
           </Box>
         ) : (
@@ -1518,34 +1518,36 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               )}
 
               {/* Text Input with inline hint */}
-              <TextInputWithHint
-                value={
-                  pendingInput?.type === 'selection'
-                    ? selectionFilter
-                    : input
-                }
-                onChange={
-                  pendingInput?.type === 'selection'
-                    ? (value) => {
-                        setSelectionFilter(value);
-                        setSelectedCommandIndex(0); // Reset selection when filter changes
-                      }
-                    : setInput
-                }
-                cursor={pendingInput?.type === 'selection' ? undefined : cursor}
-                onCursorChange={pendingInput?.type === 'selection' ? undefined : setCursor}
-                onSubmit={handleSubmit}
-                placeholder={
-                  pendingInput?.type === 'selection'
-                    ? 'Type to filter options...'
-                    : pendingInput?.type === 'text'
-                    ? (pendingInput.placeholder || 'Type your response...')
-                    : 'Type your message, / for commands, @ for files...'
-                }
-                showCursor
-                hint={hintText}
-                validTags={validTags}
-              />
+              <Box marginLeft={2}>
+                <TextInputWithHint
+                  value={
+                    pendingInput?.type === 'selection'
+                      ? selectionFilter
+                      : input
+                  }
+                  onChange={
+                    pendingInput?.type === 'selection'
+                      ? (value) => {
+                          setSelectionFilter(value);
+                          setSelectedCommandIndex(0); // Reset selection when filter changes
+                        }
+                      : setInput
+                  }
+                  cursor={pendingInput?.type === 'selection' ? undefined : cursor}
+                  onCursorChange={pendingInput?.type === 'selection' ? undefined : setCursor}
+                  onSubmit={handleSubmit}
+                  placeholder={
+                    pendingInput?.type === 'selection'
+                      ? 'Type to filter options...'
+                      : pendingInput?.type === 'text'
+                      ? (pendingInput.placeholder || 'Type your response...')
+                      : 'Type your message, / for commands, @ for files...'
+                  }
+                  showCursor
+                  hint={hintText}
+                  validTags={validTags}
+                />
+              </Box>
 
               {/* ESC hint - shows after first ESC press */}
               {showEscHint && (
