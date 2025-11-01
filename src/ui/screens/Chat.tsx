@@ -1119,7 +1119,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Box>
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
-                    <MarkdownText>{msg.content}</MarkdownText>
+                    <Box marginLeft={2}>
+                      <MarkdownText>{msg.content}</MarkdownText>
+                    </Box>
                     {/* Display attachments if any */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <Box flexDirection="column" marginTop={1}>
@@ -1150,7 +1152,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         <MessagePart key={idx} part={part} />
                       ))
                     ) : (
-                      <MarkdownText>{msg.content}</MarkdownText>
+                      <Box marginLeft={2}>
+                        <MarkdownText>{msg.content}</MarkdownText>
+                      </Box>
                     )}
                     {/* Show usage if available - simplified */}
                     {msg.usage && (
