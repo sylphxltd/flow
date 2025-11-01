@@ -7,9 +7,9 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { ProviderId } from '../config/ai-config.js';
-import type { Session, SessionMessage } from '../types/session.types.js';
+import type { Session } from '../types/session.types.js';
 
-export type { Session, SessionMessage } from '../types/session.types.js';
+export type { Session } from '../types/session.types.js';
 
 const SESSION_DIR = join(homedir(), '.sylphx', 'sessions');
 const LAST_SESSION_FILE = join(SESSION_DIR, '.last-session');

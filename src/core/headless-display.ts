@@ -47,7 +47,6 @@ function formatResult(result: unknown): string {
  */
 export function createHeadlessDisplay(quiet: boolean) {
   let hasOutput = false;
-  const activeToolNames = new Map<string, string>();
 
   return {
     onToolCall: (toolName: string, args: unknown) => {

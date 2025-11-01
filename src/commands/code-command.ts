@@ -10,7 +10,6 @@ import { createHeadlessDisplay } from '../core/headless-display.js';
 import { getOrCreateSession, showModelToolSupportError } from '../core/session-service.js';
 import { addMessage, saveSession } from '../utils/session-manager.js';
 import App from '../ui/App.js';
-import type { CommandOptions } from '../types.js';
 
 /**
  * Code command - AI chatbot powered by Sylphx Flow AI SDK
@@ -23,7 +22,7 @@ import type { CommandOptions } from '../types.js';
 /**
  * Start interactive TUI app
  */
-async function startTUIApp(options: CommandOptions): Promise<void> {
+async function startTUIApp(): Promise<void> {
   // Render React + Ink app
   render(React.createElement(App));
 }
@@ -107,7 +106,18 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
     }
   } catch (error) {
     console.error(chalk.red('\n✗ Error:'), error instanceof Error ? error.message : String(error));
+
+    // Provide helpful context for common errors
+    if (error instanceof Error && 'statusCode' in error && (error as any).statusCode === 401) {
+      console.error(chalk.yellow('\nThis usually means:'));
+      console.error(chalk.dim('  • Invalid or missing API key'));
+      console.error(chalk.dim('  • API key has expired'));
+      console.error(chalk.dim('  • Authentication credentials not found\n'));
+      console.error(chalk.green('To fix: Run `sylphx code` (TUI mode) then type /provider to configure'));
+    }
+
     if (options.verbose && error instanceof Error) {
+      console.error(chalk.dim('\nStack trace:'));
       console.error(chalk.dim(error.stack));
     }
     process.exit(1);
@@ -129,6 +139,6 @@ export const codeCommand = new Command('code')
       await runHeadless(prompt, options);
     } else {
       // Interactive TUI mode
-      await startTUIApp(options);
+      await startTUIApp();
     }
   });

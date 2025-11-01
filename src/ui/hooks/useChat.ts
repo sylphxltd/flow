@@ -100,7 +100,19 @@ export function useChat() {
       addMessage(currentSessionId, 'assistant', fullResponse, messageParts);
     } catch (error) {
       console.error('[Chat Error]:', error);
-      setError(error instanceof Error ? error.message : 'Failed to send message');
+
+      // Format error message for display
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      const displayError = `❌ Error: ${errorMessage}\n\n${
+        error instanceof Error && 'statusCode' in error && (error as any).statusCode === 401
+          ? 'This usually means:\n• Invalid or missing API key\n• API key has expired\n\nPlease check your provider configuration with /provider command.'
+          : 'Please try again or check your configuration.'
+      }`;
+
+      // Add error as assistant message so user can see it in chat
+      addMessage(currentSessionId, 'assistant', displayError);
+
+      setError(errorMessage);
       onComplete?.();
     } finally {
       // Clean up user input handler

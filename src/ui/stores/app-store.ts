@@ -143,7 +143,7 @@ export const useAppStore = create<AppState>()(
             role,
             content,
             timestamp: Date.now(),
-            parts,
+            ...(parts !== undefined && { parts }),
           });
         }
       }),
