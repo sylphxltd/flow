@@ -176,7 +176,8 @@ export function useChat() {
       onComplete?.();
     } catch (error) {
       addDebugLog('[useChat] ERROR CAUGHT!');
-      console.error('[Chat Error]:', error);
+      // Don't log to console - error will be shown as assistant message
+      addDebugLog(`[useChat] Error: ${error instanceof Error ? error.message : String(error)}`);
 
       // Get fresh session ID in case it changed
       const sessionId = currentSessionId || useAppStore.getState().currentSessionId;

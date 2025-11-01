@@ -162,15 +162,48 @@ export default function ControlledTextInput({
   const lines = text.split('\n');
   const { line: cursorLine, column: cursorColumn } = getCursorLinePosition(text, cursor);
 
+  // Get terminal width (default to reasonable value if not available)
+  const terminalWidth = process.stdout.columns || 120;
+  // Reserve some space for margins and indicators
+  const maxLineWidth = Math.max(40, terminalWidth - 10);
+
   return (
     <Box flexDirection="column">
       {lines.map((line, lineIndex) => {
         const isCursorLine = lineIndex === cursorLine;
         const cursorPosForLine = isCursorLine ? cursorColumn : undefined;
 
+        // Handle long lines by showing a viewport around the cursor
+        let displayLine = line;
+        let displayCursor = cursorPosForLine;
+
+        if (line.length > maxLineWidth && cursorPosForLine !== undefined) {
+          // Calculate viewport window centered on cursor
+          const halfWindow = Math.floor(maxLineWidth / 2);
+          let start = Math.max(0, cursorPosForLine - halfWindow);
+          let end = Math.min(line.length, start + maxLineWidth);
+
+          // Adjust if we're near the end
+          if (end === line.length && end - start < maxLineWidth) {
+            start = Math.max(0, end - maxLineWidth);
+          }
+
+          // Extract the visible portion
+          displayLine = line.slice(start, end);
+          displayCursor = cursorPosForLine - start;
+
+          // Replace first/last char with indicators for hidden content
+          if (start > 0 && displayLine.length > 0) {
+            displayLine = '‹' + displayLine.slice(1);
+          }
+          if (end < line.length && displayLine.length > 0) {
+            displayLine = displayLine.slice(0, -1) + '›';
+          }
+        }
+
         return (
           <Box key={lineIndex}>
-            {renderTextWithTags(line, cursorPosForLine, showCursor, validTags)}
+            {renderTextWithTags(displayLine, displayCursor, showCursor, validTags)}
           </Box>
         );
       })}
