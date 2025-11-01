@@ -285,20 +285,36 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 setMultiSelectionAnswers({});
                 setSelectionFilter('');
               } else {
-                // Multi-question: save answer and move to next question
-                setMultiSelectionAnswers((prev) => ({
-                  ...prev,
+                // Multi-question: save answer
+                const newAnswers = {
+                  ...multiSelectionAnswers,
                   [currentQuestion.id]: selectedOption.id,
-                }));
-                // Move to next unanswered question, or stay at last
-                const nextUnanswered = questions.findIndex(
-                  (q, idx) => idx > multiSelectionPage && !multiSelectionAnswers[q.id]
-                );
-                if (nextUnanswered !== -1) {
-                  setMultiSelectionPage(nextUnanswered);
+                };
+                setMultiSelectionAnswers(newAnswers);
+
+                // Check if all questions are answered
+                const allAnswered = questions.every((q) => newAnswers[q.id]);
+
+                if (allAnswered) {
+                  // All answered: auto-submit
+                  addLog(`[selection] All answered, auto-submitting: ${JSON.stringify(newAnswers)}`);
+                  inputResolver.current(newAnswers);
+                  inputResolver.current = null;
+                  setPendingInput(null);
+                  setMultiSelectionPage(0);
+                  setMultiSelectionAnswers({});
+                  setSelectionFilter('');
+                } else {
+                  // Move to next unanswered question
+                  const nextUnanswered = questions.findIndex(
+                    (q, idx) => idx > multiSelectionPage && !newAnswers[q.id]
+                  );
+                  if (nextUnanswered !== -1) {
+                    setMultiSelectionPage(nextUnanswered);
+                  }
+                  setSelectedCommandIndex(0);
+                  setSelectionFilter('');
                 }
-                setSelectedCommandIndex(0);
-                setSelectionFilter('');
               }
             }
             return;
@@ -806,10 +822,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             {isCurrentQuestion ? (
                               // Current question: show options
                               <Box marginLeft={4} flexDirection="column" marginTop={1}>
-                                <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━</Text>
-
                                 {/* Filter */}
-                                <Box marginY={1}>
+                                <Box marginBottom={1}>
                                   <Text dimColor>🔍 Filter: </Text>
                                   <Text color="#00FF88">{selectionFilter || '(type to search)'}</Text>
                                 </Box>
@@ -868,8 +882,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                       {/* Controls footer */}
                       <Box marginTop={1} flexDirection="column">
-                        <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</Text>
-                        <Box marginTop={1}>
+                        <Box>
                           {!isSingleQuestion && (
                             <>
                               <Text dimColor>Tab: </Text>
