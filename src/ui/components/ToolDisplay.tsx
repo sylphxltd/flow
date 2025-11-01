@@ -16,351 +16,377 @@ interface ToolDisplayProps {
 }
 
 /**
- * Truncate long strings for display
+ * Utility functions
  */
-function truncateString(str: string, maxLength: number = 60): string {
-  if (str.length <= maxLength) return str;
-  return str.slice(0, maxLength) + '...';
-}
+const truncateString = (str: string, maxLength: number = 60): string =>
+  str.length <= maxLength ? str : str.slice(0, maxLength) + '...';
+
+const getRelativePath = (filePath: string): string => {
+  const cwd = process.cwd();
+  return filePath.startsWith(cwd) ? '.' + filePath.slice(cwd.length) : filePath;
+};
+
+const isDefaultCwd = (dir: string | undefined): boolean =>
+  !dir || dir === process.cwd();
 
 /**
- * Get relative file path (shorten from cwd)
+ * Tool argument formatters
  */
-function getRelativePath(filePath: string): string {
-  const cwd = process.cwd();
-  if (filePath.startsWith(cwd)) {
-    return '.' + filePath.slice(cwd.length);
+type ArgsFormatter = (args: Record<string, unknown>) => string;
+
+const formatAskArgs: ArgsFormatter = (args) =>
+  args.question ? truncateString(String(args.question), 80) : '';
+
+const formatFilePathArgs: ArgsFormatter = (args) =>
+  args.file_path ? getRelativePath(String(args.file_path)) : '';
+
+const formatBashArgs: ArgsFormatter = (args) => {
+  const command = args.command ? String(args.command) : '';
+  const cwd = args.cwd ? String(args.cwd) : '';
+
+  if (cwd && cwd !== process.cwd()) {
+    return `${truncateString(command, 50)} [in ${getRelativePath(cwd)}]`;
   }
-  return filePath;
-}
+
+  return truncateString(command, 80);
+};
+
+const formatGrepArgs: ArgsFormatter = (args) => {
+  const pattern = args.pattern ? String(args.pattern) : '';
+  const filePattern = args.file_pattern ? String(args.file_pattern) : '';
+  const directory = args.directory ? String(args.directory) : '';
+
+  let display = `"${truncateString(pattern, 40)}"`;
+
+  if (filePattern && filePattern !== '**/*') {
+    display += ` in ${filePattern}`;
+  }
+
+  if (!isDefaultCwd(directory)) {
+    display += ` [${getRelativePath(directory)}]`;
+  }
+
+  return display;
+};
+
+const formatGlobArgs: ArgsFormatter = (args) => {
+  const pattern = args.pattern ? String(args.pattern) : '';
+  const directory = args.directory ? String(args.directory) : '';
+
+  return isDefaultCwd(directory)
+    ? pattern
+    : `${pattern} in ${getRelativePath(directory)}`;
+};
+
+/**
+ * Tool formatter registry
+ */
+const argsFormatters: Record<string, ArgsFormatter> = {
+  ask: formatAskArgs,
+  read: formatFilePathArgs,
+  write: formatFilePathArgs,
+  edit: formatFilePathArgs,
+  bash: formatBashArgs,
+  grep: formatGrepArgs,
+  glob: formatGlobArgs,
+};
 
 /**
  * Format tool args for display
  */
-function formatArgs(toolName: string, args: unknown): string {
+const formatArgs = (toolName: string, args: unknown): string => {
   if (!args || typeof args !== 'object') {
     return '';
   }
 
-  const argsObj = args as Record<string, unknown>;
+  const formatter = argsFormatters[toolName.toLowerCase()];
+  return formatter
+    ? formatter(args as Record<string, unknown>)
+    : JSON.stringify(args);
+};
 
-  // Special formatting for built-in tools
-  switch (toolName.toLowerCase()) {
-    case 'ask': {
-      // ask(question)
-      return argsObj.question ? truncateString(String(argsObj.question), 80) : '';
-    }
+/**
+ * Result formatting types and utilities
+ */
+type FormattedResult = { lines: string[]; summary?: string };
+type ResultFormatter = (result: unknown) => FormattedResult;
 
-    case 'read': {
-      // read(file_path)
-      const filePath = argsObj.file_path ? String(argsObj.file_path) : '';
-      return getRelativePath(filePath);
-    }
+const pluralize = (count: number, singular: string, plural?: string): string =>
+  count === 1 ? singular : (plural || `${singular}s`);
 
-    case 'write': {
-      // write(file_path)
-      const filePath = argsObj.file_path ? String(argsObj.file_path) : '';
-      return getRelativePath(filePath);
-    }
+const resultToLines = (result: unknown): string[] => {
+  if (result === null || result === undefined) return [];
 
-    case 'edit': {
-      // edit(file_path)
-      const filePath = argsObj.file_path ? String(argsObj.file_path) : '';
-      return getRelativePath(filePath);
-    }
+  const resultStr = typeof result === 'string'
+    ? result
+    : typeof result === 'object'
+    ? JSON.stringify(result, null, 2)
+    : String(result);
 
-    case 'bash': {
-      // bash(command)
-      const command = argsObj.command ? String(argsObj.command) : '';
-      const cwd = argsObj.cwd ? String(argsObj.cwd) : '';
+  return resultStr.split('\n').filter(line => line.trim());
+};
 
-      // If cwd is specified and different from current, show it
-      if (cwd && cwd !== process.cwd()) {
-        return `${truncateString(command, 50)} [in ${getRelativePath(cwd)}]`;
-      }
+/**
+ * Tool result formatters
+ */
+const formatReadResult: ResultFormatter = (result) => {
+  const lines = resultToLines(result);
+  return {
+    lines,
+    summary: `Read ${lines.length} ${pluralize(lines.length, 'line')}`,
+  };
+};
 
-      return truncateString(command, 80);
-    }
-
-    case 'grep': {
-      // grep(pattern, file_pattern?, directory?)
-      const pattern = argsObj.pattern ? String(argsObj.pattern) : '';
-      const filePattern = argsObj.file_pattern ? String(argsObj.file_pattern) : '';
-      const directory = argsObj.directory ? String(argsObj.directory) : '';
-
-      let display = `"${truncateString(pattern, 40)}"`;
-
-      if (filePattern && filePattern !== '**/*') {
-        display += ` in ${filePattern}`;
-      }
-
-      if (directory && directory !== process.cwd()) {
-        display += ` [${getRelativePath(directory)}]`;
-      }
-
-      return display;
-    }
-
-    case 'glob': {
-      // glob(pattern, directory?)
-      const pattern = argsObj.pattern ? String(argsObj.pattern) : '';
-      const directory = argsObj.directory ? String(argsObj.directory) : '';
-
-      let display = pattern;
-
-      if (directory && directory !== process.cwd()) {
-        display += ` in ${getRelativePath(directory)}`;
-      }
-
-      return display;
-    }
-
-    default:
-      // For other tools (like MCP), show JSON
-      return JSON.stringify(args);
+const formatEditResult: ResultFormatter = (result) => {
+  if (typeof result !== 'object' || result === null || !('diff' in result)) {
+    return { lines: resultToLines(result) };
   }
-}
+
+  const { diff, path, old_string, new_string } = result as any;
+  const fileName = path ? path.split('/').pop() : '';
+  const additions = new_string.split('\n').length;
+  const removals = old_string.split('\n').length;
+
+  return {
+    lines: diff,
+    summary: `Updated ${fileName} with ${additions} ${pluralize(additions, 'addition')} and ${removals} ${pluralize(removals, 'removal')}`,
+  };
+};
+
+const formatWriteResult: ResultFormatter = (result) => {
+  if (typeof result !== 'object' || result === null || !('preview' in result)) {
+    return { lines: resultToLines(result) };
+  }
+
+  const { fileName, lineCount, preview } = result as any;
+  return {
+    lines: preview,
+    summary: `Wrote ${fileName} (${lineCount} ${pluralize(lineCount, 'line')})`,
+  };
+};
+
+const formatGrepResult: ResultFormatter = (result) => {
+  const lines = resultToLines(result);
+  return {
+    lines,
+    summary: `Found ${lines.length} ${pluralize(lines.length, 'match', 'matches')}`,
+  };
+};
+
+const formatGlobResult: ResultFormatter = (result) => {
+  const lines = resultToLines(result);
+  return {
+    lines,
+    summary: `Found ${lines.length} ${pluralize(lines.length, 'file')}`,
+  };
+};
+
+const formatBashResult: ResultFormatter = (result) => {
+  const lines = resultToLines(result);
+  return {
+    lines,
+    summary: lines.length > 0 ? undefined : 'Command completed',
+  };
+};
+
+const formatAskResult: ResultFormatter = (result) => ({
+  lines: resultToLines(result),
+  summary: undefined,
+});
+
+/**
+ * Result formatter registry
+ */
+const resultFormatters: Record<string, ResultFormatter> = {
+  read: formatReadResult,
+  edit: formatEditResult,
+  write: formatWriteResult,
+  grep: formatGrepResult,
+  glob: formatGlobResult,
+  bash: formatBashResult,
+  ask: formatAskResult,
+};
 
 /**
  * Format tool result for display
  */
-function formatResult(toolName: string, result: unknown): { lines: string[]; summary?: string } {
+const formatResult = (toolName: string, result: unknown): FormattedResult => {
   if (result === null || result === undefined) {
     return { lines: [] };
   }
 
-  // Convert result to string
-  let resultStr: string;
-  if (typeof result === 'string') {
-    resultStr = result;
-  } else if (typeof result === 'object') {
-    resultStr = JSON.stringify(result, null, 2);
-  } else {
-    resultStr = String(result);
-  }
-
-  const lines = resultStr.split('\n').filter(line => line.trim());
-
-  // Special handling for built-in tools
-  switch (toolName) {
-    case 'read':
-      return {
-        lines,
-        summary: `Read ${lines.length} lines`,
-      };
-    case 'edit':
-      // Parse result to show diff
-      if (typeof result === 'object' && result !== null && 'diff' in result) {
-        const diff = (result as any).diff as string[];
-        const path = (result as any).path;
-        const fileName = path ? path.split('/').pop() : '';
-        const oldString = (result as any).old_string;
-        const newString = (result as any).new_string;
-        const additions = newString.split('\n').length;
-        const removals = oldString.split('\n').length;
-
-        return {
-          lines: diff,
-          summary: `Updated ${fileName} with ${additions} addition${additions !== 1 ? 's' : ''} and ${removals} removal${removals !== 1 ? 's' : ''}`,
-        };
-      }
-      return { lines };
-    case 'write':
-      // Parse result to show file info and preview
-      if (typeof result === 'object' && result !== null && 'preview' in result) {
-        const fileName = (result as any).fileName;
-        const lineCount = (result as any).lineCount;
-        const preview = (result as any).preview as string[];
-
-        return {
-          lines: preview,
-          summary: `Wrote ${fileName} (${lineCount} line${lineCount !== 1 ? 's' : ''})`,
-        };
-      }
-      return { lines };
-    case 'grep':
-      return {
-        lines,
-        summary: `Found ${lines.length} matches`,
-      };
-    case 'glob':
-      return {
-        lines,
-        summary: `Found ${lines.length} files`,
-      };
-    case 'bash':
-      return {
-        lines,
-        summary: lines.length > 0 ? undefined : 'Command completed',
-      };
-    case 'ask':
-      return {
-        lines,
-        summary: undefined,
-      };
-    default:
-      return { lines };
-  }
-}
+  const formatter = resultFormatters[toolName.toLowerCase()];
+  return formatter
+    ? formatter(result)
+    : { lines: resultToLines(result) };
+};
 
 /**
  * Truncate lines to max 5, showing first and last with count
  */
-function truncateLines(lines: string[], maxLines: number = 5): string[] {
-  if (lines.length <= maxLines) {
-    return lines;
-  }
+const truncateLines = (lines: string[], maxLines: number = 5): string[] => {
+  if (lines.length <= maxLines) return lines;
 
-  const hiddenCount = lines.length - 2; // First and last are shown
+  const hiddenCount = lines.length - 2;
   return [
     lines[0],
-    `... ${hiddenCount} more lines ...`,
+    `... ${hiddenCount} more ${pluralize(hiddenCount, 'line')} ...`,
     lines[lines.length - 1],
   ];
-}
+};
+
+/**
+ * Display name registry
+ */
+const displayNames: Record<string, string> = {
+  read: 'Read',
+  write: 'Write',
+  edit: 'Update',
+  bash: 'Bash',
+  grep: 'Search',
+  glob: 'Search',
+  ask: 'Ask',
+};
 
 /**
  * Get display name for tool
  */
-function getDisplayName(toolName: string): string {
-  const displayNames: Record<string, string> = {
-    'read': 'Read',
-    'write': 'Write',
-    'edit': 'Update',
-    'bash': 'Bash',
-    'grep': 'Search',
-    'glob': 'Search',
-    'ask': 'Ask',
-  };
+const getDisplayName = (toolName: string): string =>
+  displayNames[toolName.toLowerCase()] || toolName;
 
-  return displayNames[toolName.toLowerCase()] || toolName;
-}
+/**
+ * Component rendering helpers
+ */
+const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'grep', 'glob']);
 
-export function ToolDisplay({ name, status, duration, args, result }: ToolDisplayProps) {
-  const formattedArgs = formatArgs(name, args);
-  const isBuiltIn = ['ask', 'read', 'write', 'edit', 'bash', 'grep', 'glob'].includes(name.toLowerCase());
-  const displayName = getDisplayName(name);
+const isBuiltInTool = (name: string): boolean =>
+  builtInTools.has(name.toLowerCase());
 
-  // Status indicator
-  const statusIndicator = status === 'running' ? (
-    <>
-      <Spinner color="#FFD700" />
-      <Text> </Text>
-    </>
-  ) : status === 'completed' ? (
-    <Text color="#00FF88">✓ </Text>
-  ) : (
-    <Text color="#FF3366">✗ </Text>
-  );
-
-  // Tool name and args display
-  const toolHeader = isBuiltIn ? (
-    <Box>
-      {statusIndicator}
-      <Text color="white" bold>{displayName}</Text>
-      <Text color="white">(</Text>
-      <Text color="white">{formattedArgs}</Text>
-      <Text color="white">)</Text>
-      {duration !== undefined && status === 'completed' && (
-        <Text color="gray" dimColor> {duration}ms</Text>
-      )}
-    </Box>
-  ) : (
-    <Box>
-      {statusIndicator}
-      <Text color="white" bold>{displayName}</Text>
-      <Text color="white">(</Text>
-      <Text color="white" dimColor>{formattedArgs}</Text>
-      <Text color="white">)</Text>
-      {duration !== undefined && status === 'completed' && (
-        <Text color="gray" dimColor> {duration}ms</Text>
-      )}
-    </Box>
-  );
-
-  // Result display - only show if there's actual content
-  let resultDisplay: React.ReactNode = null;
-
+const StatusIndicator: React.FC<{ status: ToolDisplayProps['status'] }> = ({ status }) => {
   if (status === 'running') {
-    resultDisplay = (
+    return (
+      <>
+        <Spinner color="#FFD700" />
+        <Text> </Text>
+      </>
+    );
+  }
+
+  return status === 'completed'
+    ? <Text color="#00FF88">✓ </Text>
+    : <Text color="#FF3366">✗ </Text>;
+};
+
+const ToolHeader: React.FC<{
+  statusIndicator: React.ReactNode;
+  displayName: string;
+  formattedArgs: string;
+  isBuiltIn: boolean;
+  duration?: number;
+  status: ToolDisplayProps['status'];
+}> = ({ statusIndicator, displayName, formattedArgs, isBuiltIn, duration, status }) => (
+  <Box>
+    {statusIndicator}
+    <Text color="white" bold>{displayName}</Text>
+    <Text color="white">(</Text>
+    <Text color="white" dimColor={!isBuiltIn}>{formattedArgs}</Text>
+    <Text color="white">)</Text>
+    {duration !== undefined && status === 'completed' && (
+      <Text color="gray" dimColor> {duration}ms</Text>
+    )}
+  </Box>
+);
+
+const getDiffLineColor = (line: string): string | undefined => {
+  const match = line.match(/^\s*\d+\s+([-+])/);
+  if (!match) return undefined;
+
+  return match[1] === '-' ? '#FF3366' : '#00FF88';
+};
+
+const DiffLine: React.FC<{ line: string; index: number; isEditTool: boolean }> = ({ line, index, isEditTool }) => {
+  const color = isEditTool ? getDiffLineColor(line) : undefined;
+  return <Text key={index} color={color || 'gray'}>{line}</Text>;
+};
+
+const ResultLines: React.FC<{ lines: string[]; isEditTool: boolean }> = ({ lines, isEditTool }) => (
+  <Box flexDirection="column" paddingTop={1}>
+    {truncateLines(lines).map((line, idx) => (
+      <DiffLine key={idx} line={line} index={idx} isEditTool={isEditTool} />
+    ))}
+  </Box>
+);
+
+const ResultDisplay: React.FC<{
+  status: ToolDisplayProps['status'];
+  result: unknown;
+  toolName: string;
+}> = ({ status, result, toolName }) => {
+  if (status === 'running') {
+    return (
       <Box marginLeft={2}>
         <Text dimColor>... waiting for result</Text>
       </Box>
     );
-  } else if (status === 'completed' && result !== undefined) {
-    const { lines, summary } = formatResult(name, result);
+  }
 
-    if (summary && lines.length === 0) {
-      // Show summary only (no lines to display)
-      resultDisplay = (
-        <Box marginLeft={2}>
-          <Text color="gray">{summary}</Text>
-        </Box>
-      );
-    } else if (summary && lines.length > 0) {
-      // Show summary with lines below
-      resultDisplay = (
-        <Box flexDirection="column" marginLeft={2}>
-          <Text color="gray">{summary}</Text>
-          <Box flexDirection="column" paddingTop={1}>
-            {truncateLines(lines).map((line, idx) => {
-              // For edit tool, colorize based on diff markers
-              if (name.toLowerCase() === 'edit' && typeof line === 'string') {
-                const match = line.match(/^\s*\d+\s+([-+])/);
-                if (match) {
-                  const marker = match[1];
-                  if (marker === '-') {
-                    return <Text key={idx} color="#FF3366">{line}</Text>;
-                  } else if (marker === '+') {
-                    return <Text key={idx} color="#00FF88">{line}</Text>;
-                  }
-                }
-              }
-              return <Text key={idx} color="gray">{line}</Text>;
-            })}
-          </Box>
-        </Box>
-      );
-    } else if (lines.length > 0) {
-      // Show truncated result with special handling for edit tool diff
-      const displayLines = truncateLines(lines);
-      const isEditTool = name.toLowerCase() === 'edit';
-
-      resultDisplay = (
-        <Box flexDirection="column" marginLeft={2}>
-          {displayLines.map((line, idx) => {
-            // For edit tool, colorize based on diff markers
-            if (isEditTool && typeof line === 'string') {
-              // Check if line contains - or + after line number
-              const match = line.match(/^\s*\d+\s+([-+])/);
-              if (match) {
-                const marker = match[1];
-                if (marker === '-') {
-                  return <Text key={idx} color="#FF3366">{line}</Text>; // Red for removals
-                } else if (marker === '+') {
-                  return <Text key={idx} color="#00FF88">{line}</Text>; // Green for additions
-                }
-              }
-            }
-            // Default gray for context lines or other tools
-            return <Text key={idx} color="gray">{line}</Text>;
-          })}
-        </Box>
-      );
-    }
-    // If no summary and no lines, resultDisplay stays null (no empty space)
-  } else if (status === 'failed') {
-    resultDisplay = (
+  if (status === 'failed') {
+    return (
       <Box marginLeft={2}>
         <Text color="#FF3366">Failed</Text>
       </Box>
     );
   }
 
+  if (status === 'completed' && result !== undefined) {
+    const { lines, summary } = formatResult(toolName, result);
+    const isEditTool = toolName.toLowerCase() === 'edit';
+
+    if (summary && lines.length === 0) {
+      return (
+        <Box marginLeft={2}>
+          <Text color="gray">{summary}</Text>
+        </Box>
+      );
+    }
+
+    if (summary && lines.length > 0) {
+      return (
+        <Box flexDirection="column" marginLeft={2}>
+          <Text color="gray">{summary}</Text>
+          <ResultLines lines={lines} isEditTool={isEditTool} />
+        </Box>
+      );
+    }
+
+    if (lines.length > 0) {
+      return (
+        <Box flexDirection="column" marginLeft={2}>
+          <ResultLines lines={lines} isEditTool={isEditTool} />
+        </Box>
+      );
+    }
+  }
+
+  return null;
+};
+
+export function ToolDisplay({ name, status, duration, args, result }: ToolDisplayProps) {
+  const formattedArgs = formatArgs(name, args);
+  const isBuiltIn = isBuiltInTool(name);
+  const displayName = getDisplayName(name);
+
   return (
     <Box flexDirection="column" paddingBottom={1}>
-      {toolHeader}
-      {resultDisplay}
+      <ToolHeader
+        statusIndicator={<StatusIndicator status={status} />}
+        displayName={displayName}
+        formattedArgs={formattedArgs}
+        isBuiltIn={isBuiltIn}
+        duration={duration}
+        status={status}
+      />
+      <ResultDisplay status={status} result={result} toolName={name} />
     </Box>
   );
 }
