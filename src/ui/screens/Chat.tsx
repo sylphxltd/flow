@@ -916,24 +916,43 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                       (option.value && option.value.toLowerCase().includes(selectionFilter.toLowerCase()))
                                   );
 
-                                  return filteredOptions.length === 0 ? (
-                                    <Text color="yellow">⚠ No matches found</Text>
-                                  ) : (
+                                  if (filteredOptions.length === 0) {
+                                    return <Text color="yellow">⚠ No matches found</Text>;
+                                  }
+
+                                  // Calculate scroll window to keep selected item visible
+                                  const pageSize = 10;
+                                  const scrollOffset = Math.max(0, Math.min(
+                                    selectedCommandIndex - Math.floor(pageSize / 2),
+                                    filteredOptions.length - pageSize
+                                  ));
+                                  const visibleOptions = filteredOptions.slice(scrollOffset, scrollOffset + pageSize);
+                                  const hasMore = filteredOptions.length > pageSize;
+
+                                  return (
                                     <>
-                                      {filteredOptions.slice(0, 10).map((option, idx) => (
-                                        <Box key={option.value || option.label} paddingY={0}>
-                                          <Text
-                                            color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                                            bold={idx === selectedCommandIndex}
-                                          >
-                                            {idx === selectedCommandIndex ? '▶ ' : '  '}
-                                            {option.label}
-                                          </Text>
+                                      {scrollOffset > 0 && (
+                                        <Box marginBottom={1}>
+                                          <Text dimColor>... {scrollOffset} more above</Text>
                                         </Box>
-                                      ))}
-                                      {filteredOptions.length > 10 && (
+                                      )}
+                                      {visibleOptions.map((option, idx) => {
+                                        const absoluteIdx = scrollOffset + idx;
+                                        return (
+                                          <Box key={option.value || option.label} paddingY={0}>
+                                            <Text
+                                              color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                                              bold={absoluteIdx === selectedCommandIndex}
+                                            >
+                                              {absoluteIdx === selectedCommandIndex ? '▶ ' : '  '}
+                                              {option.label}
+                                            </Text>
+                                          </Box>
+                                        );
+                                      })}
+                                      {scrollOffset + pageSize < filteredOptions.length && (
                                         <Box marginTop={1}>
-                                          <Text dimColor>... and {filteredOptions.length - 10} more</Text>
+                                          <Text dimColor>... {filteredOptions.length - scrollOffset - pageSize} more below</Text>
                                         </Box>
                                       )}
                                     </>
@@ -1043,33 +1062,53 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   );
                 }
 
+                // Calculate scroll window to keep selected item visible
+                const pageSize = 10;
+                const scrollOffset = Math.max(0, Math.min(
+                  selectedCommandIndex - Math.floor(pageSize / 2),
+                  options.length - pageSize
+                ));
+                const visibleOptions = options.slice(scrollOffset, scrollOffset + pageSize);
+
                 return (
                   <>
-                    {options.slice(0, 10).map((option, idx) => (
-                      <Box
-                        key={option.value || option.label}
-                        paddingY={0}
-                        onClick={async () => {
-                          const response = await pendingCommand.command.execute(createCommandContext([option.value || option.label]));
-                          if (currentSessionId) {
-                            addMessage(currentSessionId, 'assistant', response);
-                          }
-                          setPendingCommand(null);
-                          setSelectedCommandIndex(0);
-                        }}
-                      >
-                        <Text
-                          color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                          bold={idx === selectedCommandIndex}
-                        >
-                          {idx === selectedCommandIndex ? '> ' : '  '}
-                          {option.label}
-                        </Text>
+                    {scrollOffset > 0 && (
+                      <Box marginBottom={1}>
+                        <Text dimColor>... {scrollOffset} more above</Text>
                       </Box>
-                    ))}
+                    )}
+                    {visibleOptions.map((option, idx) => {
+                      const absoluteIdx = scrollOffset + idx;
+                      return (
+                        <Box
+                          key={option.value || option.label}
+                          paddingY={0}
+                          onClick={async () => {
+                            const response = await pendingCommand.command.execute(createCommandContext([option.value || option.label]));
+                            if (currentSessionId) {
+                              addMessage(currentSessionId, 'assistant', response);
+                            }
+                            setPendingCommand(null);
+                            setSelectedCommandIndex(0);
+                          }}
+                        >
+                          <Text
+                            color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                            bold={absoluteIdx === selectedCommandIndex}
+                          >
+                            {absoluteIdx === selectedCommandIndex ? '> ' : '  '}
+                            {option.label}
+                          </Text>
+                        </Box>
+                      );
+                    })}
+                    {scrollOffset + pageSize < options.length && (
+                      <Box marginTop={1}>
+                        <Text dimColor>... {options.length - scrollOffset - pageSize} more below</Text>
+                      </Box>
+                    )}
                     <Box marginTop={1}>
                       <Text dimColor>
-                        {options.length > 10 ? `Showing 10 of ${options.length} · ` : ''}
                         ↑↓ Navigate · Enter Select · Esc Cancel
                       </Text>
                     </Box>
