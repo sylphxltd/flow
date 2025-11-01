@@ -46,7 +46,7 @@ export class AnthropicProvider implements AIProvider {
   getConfigSchema(): ConfigField[] {
     return [
       {
-        key: 'apiKey',
+        key: 'api-key',
         label: 'API Key',
         type: 'string',
         required: true,
@@ -58,7 +58,7 @@ export class AnthropicProvider implements AIProvider {
   }
 
   isConfigured(config: ProviderConfig): boolean {
-    return !!config.apiKey;
+    return !!config['api-key'];
   }
 
   async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {
@@ -86,6 +86,6 @@ export class AnthropicProvider implements AIProvider {
   }
 
   createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
-    return anthropic(modelId, { apiKey: config.apiKey as string });
+    return anthropic(modelId, { apiKey: config['api-key'] as string });
   }
 }

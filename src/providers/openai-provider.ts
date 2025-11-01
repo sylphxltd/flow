@@ -46,7 +46,7 @@ export class OpenAIProvider implements AIProvider {
   getConfigSchema(): ConfigField[] {
     return [
       {
-        key: 'apiKey',
+        key: 'api-key',
         label: 'API Key',
         type: 'string',
         required: true,
@@ -55,7 +55,7 @@ export class OpenAIProvider implements AIProvider {
         placeholder: 'sk-...',
       },
       {
-        key: 'baseUrl',
+        key: 'base-url',
         label: 'Base URL',
         type: 'string',
         required: false,
@@ -66,17 +66,17 @@ export class OpenAIProvider implements AIProvider {
   }
 
   isConfigured(config: ProviderConfig): boolean {
-    return !!config.apiKey;
+    return !!config['api-key'];
   }
 
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
-    const apiKey = config.apiKey as string | undefined;
+    const apiKey = config['api-key'] as string | undefined;
     if (!apiKey) {
       // No API key - return known models (can't fetch from API without auth)
       return OPENAI_MODELS;
     }
 
-    const baseUrl = (config.baseUrl as string) || 'https://api.openai.com/v1';
+    const baseUrl = (config['base-url'] as string) || 'https://api.openai.com/v1';
     const response = await fetch(`${baseUrl}/models`, {
       headers: { Authorization: `Bearer ${apiKey}` },
       signal: AbortSignal.timeout(10000),
@@ -122,8 +122,8 @@ export class OpenAIProvider implements AIProvider {
   }
 
   createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
-    const apiKey = config.apiKey as string;
-    const baseUrl = config.baseUrl as string | undefined;
+    const apiKey = config['api-key'] as string;
+    const baseUrl = config['base-url'] as string | undefined;
     return openai(modelId, { apiKey, baseURL: baseUrl });
   }
 }

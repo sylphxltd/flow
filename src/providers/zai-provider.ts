@@ -15,7 +15,7 @@ export class ZaiProvider implements AIProvider {
   getConfigSchema(): ConfigField[] {
     return [
       {
-        key: 'apiKey',
+        key: 'api-key',
         label: 'API Key',
         type: 'string',
         required: true,
@@ -24,7 +24,7 @@ export class ZaiProvider implements AIProvider {
         placeholder: 'zai-...',
       },
       {
-        key: 'codingPlan',
+        key: 'coding-plan',
         label: 'Coding Plan',
         type: 'boolean',
         required: false,
@@ -34,12 +34,12 @@ export class ZaiProvider implements AIProvider {
   }
 
   isConfigured(config: ProviderConfig): boolean {
-    return !!config.apiKey;
+    return !!config['api-key'];
   }
 
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
-    const apiKey = config.apiKey as string | undefined;
-    const codingPlan = config.codingPlan as boolean | undefined;
+    const apiKey = config['api-key'] as string | undefined;
+    const codingPlan = config['coding-plan'] as boolean | undefined;
 
     if (!apiKey) {
       throw new Error('API key is required to fetch Z.ai models');
@@ -108,8 +108,8 @@ export class ZaiProvider implements AIProvider {
   }
 
   createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
-    const apiKey = config.apiKey as string;
-    const codingPlan = config.codingPlan as boolean | undefined;
+    const apiKey = config['api-key'] as string;
+    const codingPlan = config['coding-plan'] as boolean | undefined;
 
     // Use different base URL for coding plan
     const baseURL = codingPlan

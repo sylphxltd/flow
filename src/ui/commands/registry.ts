@@ -58,18 +58,18 @@ const providerCommand: Command = {
           const provider = getProvider(providerId as any);
           const schema = provider.getConfigSchema();
 
-          // Convert schema fields to options and add defaultModel
+          // Convert schema fields to options and add default-model
           const keys = schema.map(field => ({
             id: field.key,
             label: field.label,
             value: field.key,
           }));
 
-          // Add defaultModel as a special key (not in provider schema)
+          // Add default-model as a special key (not in provider schema)
           keys.push({
-            id: 'defaultModel',
+            id: 'default-model',
             label: 'Default Model',
-            value: 'defaultModel',
+            value: 'default-model',
           });
 
           return keys;
@@ -83,6 +83,48 @@ const providerCommand: Command = {
       name: 'value',
       description: 'Setting value (for set action)',
       required: false,
+      loadOptions: async (previousArgs) => {
+        // previousArgs: [action, provider-name, key]
+        const providerId = previousArgs[1];
+        const key = previousArgs[2];
+
+        if (!providerId || !key) {
+          return [];
+        }
+
+        try {
+          const { getProvider } = await import('../../providers/index.js');
+          const provider = getProvider(providerId as any);
+          const schema = provider.getConfigSchema();
+
+          // Find the field
+          const field = schema.find(f => f.key === key);
+
+          // If boolean type, provide true/false options
+          if (field?.type === 'boolean') {
+            return [
+              { id: 'true', label: 'true', value: 'true' },
+              { id: 'false', label: 'false', value: 'false' },
+            ];
+          }
+
+          // If default-model, load models from provider
+          if (key === 'default-model') {
+            try {
+              const aiConfig = (await import('../../config/ai-config.js')).loadAIConfig;
+              // This would need context to get current config...
+              // For now, return empty - users can type the model name
+              return [];
+            } catch {
+              return [];
+            }
+          }
+
+          return [];
+        } catch (error) {
+          return [];
+        }
+      },
     },
   ],
   execute: async (context) => {
@@ -164,7 +206,7 @@ const providerCommand: Command = {
         await context.saveConfig(newConfig);
 
         // Update current session's provider (preserve history)
-        let defaultModel = providerConfig.defaultModel;
+        let defaultModel = providerConfig['default-model'] as string | undefined;
         if (!defaultModel) {
           // Fetch first model from provider
           const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
@@ -191,10 +233,10 @@ const providerCommand: Command = {
           value: field.key,
         }));
 
-        // Add defaultModel as a special key
+        // Add default-model as a special key
         availableKeys.push({
           label: 'Default Model',
-          value: 'defaultModel',
+          value: 'default-model',
         });
 
         context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
@@ -304,7 +346,7 @@ const providerCommand: Command = {
       await context.saveConfig(newConfig);
 
       // Update current session's provider (preserve history)
-      let defaultModel = providerConfig.defaultModel;
+      let defaultModel = providerConfig['default-model'] as string | undefined;
       if (!defaultModel) {
         // Fetch first model from provider
         const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
@@ -347,7 +389,7 @@ const providerCommand: Command = {
       await context.saveConfig(newConfig);
 
       // Update current session's provider (preserve history)
-      let defaultModel = providerConfig.defaultModel;
+      let defaultModel = providerConfig['default-model'] as string | undefined;
       if (!defaultModel) {
         // Fetch first model from provider
         const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
@@ -399,10 +441,10 @@ const providerCommand: Command = {
         value: field.key,
       }));
 
-      // Add defaultModel as a special key
+      // Add default-model as a special key
       availableKeys.push({
         label: 'Default Model',
-        value: 'defaultModel',
+        value: 'default-model',
       });
 
       context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
@@ -478,10 +520,10 @@ const providerCommand: Command = {
         value: field.key,
       }));
 
-      // Add defaultModel as a special key
+      // Add default-model as a special key
       availableKeys.push({
         label: 'Default Model',
-        value: 'defaultModel',
+        value: 'default-model',
       });
 
       context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
@@ -554,7 +596,7 @@ const providerCommand: Command = {
       const provider = getProvider(providerId as any);
       const schema = provider.getConfigSchema();
 
-      const validKeys = [...schema.map(f => f.key), 'defaultModel'];
+      const validKeys = [...schema.map(f => f.key), 'default-model'];
       if (!validKeys.includes(key)) {
         return `Invalid key: ${key}. Valid keys for ${providerId}: ${validKeys.join(', ')}`;
       }
@@ -718,7 +760,7 @@ const modelCommand: Command = {
     }
 
     // Update model
-    context.updateProvider(provider, { defaultModel: modelId });
+    context.updateProvider(provider, { 'default-model': modelId });
     const newConfig = {
       ...aiConfig!,
       defaultModel: modelId,
@@ -726,7 +768,7 @@ const modelCommand: Command = {
         ...aiConfig!.providers,
         [provider]: {
           ...aiConfig!.providers?.[provider],
-          defaultModel: modelId,
+          'default-model': modelId,
         },
       },
     };
