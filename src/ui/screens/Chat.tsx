@@ -24,7 +24,7 @@ import { useFileAttachments } from '../hooks/useFileAttachments.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
-  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown };
+  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown };
 
 interface ChatProps {
   commandFromPalette?: string | null;
@@ -45,6 +45,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
   const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
   const lastEscapeTime = useRef<number>(0); // Track last ESC press for double-ESC detection
+  const [showEscHint, setShowEscHint] = useState(false); // Show "Press ESC again to clear" hint
 
   // File attachment hook
   const {
@@ -337,15 +338,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         const now = Date.now();
         const timeSinceLastEscape = now - lastEscapeTime.current;
 
-        if (timeSinceLastEscape < 500) {
+        if (timeSinceLastEscape < 500 && lastEscapeTime.current > 0) {
           // Double ESC detected - clear input
           setInput('');
           setCursor(0);
           lastEscapeTime.current = 0;
+          setShowEscHint(false);
           return;
         }
 
-        // Single ESC - update timestamp and continue with normal handling
+        // Single ESC - show hint and update timestamp
+        if (input.length > 0) {
+          setShowEscHint(true);
+          // Auto-hide hint after 2 seconds
+          setTimeout(() => {
+            setShowEscHint(false);
+          }, 2000);
+        }
         lastEscapeTime.current = now;
       }
 
@@ -896,19 +905,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         });
       },
       // onToolCall - tool execution started
-      (toolName, args) => {
-        addLog(`Tool call: ${toolName}`);
+      (toolCallId, toolName, args) => {
+        addLog(`Tool call: ${toolName} (${toolCallId})`);
         setStreamParts((prev) => [
           ...prev,
-          { type: 'tool', name: toolName, status: 'running', args },
+          { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args },
         ]);
       },
       // onToolResult - tool execution completed
-      (toolName, result, duration) => {
-        addLog(`Tool result: ${toolName} (${duration}ms)`);
+      (toolCallId, toolName, result, duration) => {
+        addLog(`Tool result: ${toolName} (${toolCallId}, ${duration}ms)`);
         setStreamParts((prev) =>
           prev.map((part) =>
-            part.type === 'tool' && part.name === toolName
+            part.type === 'tool' && part.toolId === toolCallId
               ? { ...part, status: 'completed', duration, result }
               : part
           )
@@ -1497,6 +1506,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 hint={hintText}
                 validTags={validTags}
               />
+
+              {/* ESC hint - shows after first ESC press */}
+              {showEscHint && (
+                <Box marginTop={1}>
+                  <Text color="yellow">Press ESC again to clear input</Text>
+                </Box>
+              )}
 
               {/* File Autocomplete - Shows below input when typing @ */}
               {filteredFileInfo.hasAt && filteredFileInfo.files.length > 0 && !filesLoading ? (

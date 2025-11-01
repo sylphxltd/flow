@@ -11,8 +11,8 @@ import type { MessagePart } from '../types/session.types.js';
  */
 export interface StreamCallbacks {
   onTextDelta?: (text: string) => void;
-  onToolCall?: (toolName: string, args: unknown) => void;
-  onToolResult?: (toolName: string, result: unknown, duration: number) => void;
+  onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
+  onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
   onComplete?: () => void;
 }
 
@@ -70,7 +70,7 @@ export async function processStream(
           args: chunk.args,
         });
 
-        onToolCall?.(chunk.toolName, chunk.args);
+        onToolCall?.(chunk.toolCallId, chunk.toolName, chunk.args);
         break;
       }
 
@@ -91,7 +91,7 @@ export async function processStream(
             toolPart.result = chunk.result;
           }
 
-          onToolResult?.(chunk.toolName, chunk.result, duration);
+          onToolResult?.(chunk.toolCallId, chunk.toolName, chunk.result, duration);
         }
         break;
       }

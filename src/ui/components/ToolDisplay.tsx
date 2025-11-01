@@ -156,7 +156,7 @@ const formatReadResult: ResultFormatter = (result) => {
 
   const lines = content.split('\n').filter(line => line.trim());
   return {
-    lines,
+    lines: [], // Don't show content for read operations
     summary: `Read ${lines.length} ${pluralize(lines.length, 'line')}`,
   };
 };
@@ -495,7 +495,7 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
   const displayName = getDisplayName(name);
 
   return (
-    <Box flexDirection="column" paddingTop={1} paddingBottom={1}>
+    <Box flexDirection="column" paddingTop={1}>
       <ToolHeader
         statusIndicator={<StatusIndicator status={status} />}
         displayName={displayName}

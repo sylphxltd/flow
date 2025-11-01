@@ -29,8 +29,8 @@ export function useChat() {
   const sendMessage = async (
     message: string,
     onChunk: (chunk: string) => void,
-    onToolCall?: (toolName: string, args: unknown) => void,
-    onToolResult?: (toolName: string, result: unknown, duration: number) => void,
+    onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void,
+    onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void,
     onComplete?: () => void,
     onUserInputRequest?: (request: UserInputRequest) => Promise<string>,
     attachments?: Array<{ path: string; relativePath: string; size?: number }>
@@ -153,13 +153,13 @@ export function useChat() {
           addDebugLog(`[useChat] text-delta: ${text.substring(0, 50)}`);
           onChunk(text);
         },
-        onToolCall: (toolName, args) => {
-          addDebugLog(`[useChat] tool-call: ${toolName}`);
-          onToolCall?.(toolName, args);
+        onToolCall: (toolCallId, toolName, args) => {
+          addDebugLog(`[useChat] tool-call: ${toolName} (${toolCallId})`);
+          onToolCall?.(toolCallId, toolName, args);
         },
-        onToolResult: (toolName, result, duration) => {
-          addDebugLog(`[useChat] tool-result: ${toolName} (${duration}ms)`);
-          onToolResult?.(toolName, result, duration);
+        onToolResult: (toolCallId, toolName, result, duration) => {
+          addDebugLog(`[useChat] tool-result: ${toolName} (${toolCallId}, ${duration}ms)`);
+          onToolResult?.(toolCallId, toolName, result, duration);
         },
       });
 
