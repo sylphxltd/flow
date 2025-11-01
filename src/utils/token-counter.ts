@@ -118,7 +118,6 @@ async function ensureTokenizer(modelName?: string): Promise<any | null> {
   // Initialize with Hugging Face AutoTokenizer
   try {
     tokenizerInitializing.add(tokenizerName);
-    console.log(`[TokenCounter] Loading tokenizer '${tokenizerName}' (model: ${modelName || 'default'}) - first time only`);
 
     // Let Hugging Face auto-select and load the best tokenizer
     const tokenizer = await AutoTokenizer.from_pretrained(tokenizerName, {
@@ -128,7 +127,6 @@ async function ensureTokenizer(modelName?: string): Promise<any | null> {
       local_files_only: false,
     });
 
-    console.log(`[TokenCounter] ✓ Tokenizer '${tokenizerName}' cached for future use`);
     tokenizerCache.set(tokenizerName, tokenizer);
     tokenizerInitializing.delete(tokenizerName);
     return tokenizer;
