@@ -56,6 +56,68 @@ export default function ControlledTextInput({
         return;
       }
 
+      // Up arrow - move cursor to previous line
+      if (key.upArrow) {
+        const lines = value.split('\n');
+        let charCount = 0;
+        let currentLine = 0;
+        let currentColumn = 0;
+
+        // Find current line and column
+        for (let i = 0; i < lines.length; i++) {
+          if (charCount + lines[i].length >= cursor) {
+            currentLine = i;
+            currentColumn = cursor - charCount;
+            break;
+          }
+          charCount += lines[i].length + 1; // +1 for \n
+        }
+
+        // Move to previous line if exists
+        if (currentLine > 0) {
+          const prevLine = lines[currentLine - 1];
+          const targetColumn = Math.min(currentColumn, prevLine.length);
+          let newCursor = 0;
+          for (let i = 0; i < currentLine - 1; i++) {
+            newCursor += lines[i].length + 1;
+          }
+          newCursor += targetColumn;
+          safeSetCursor(newCursor);
+        }
+        return;
+      }
+
+      // Down arrow - move cursor to next line
+      if (key.downArrow) {
+        const lines = value.split('\n');
+        let charCount = 0;
+        let currentLine = 0;
+        let currentColumn = 0;
+
+        // Find current line and column
+        for (let i = 0; i < lines.length; i++) {
+          if (charCount + lines[i].length >= cursor) {
+            currentLine = i;
+            currentColumn = cursor - charCount;
+            break;
+          }
+          charCount += lines[i].length + 1; // +1 for \n
+        }
+
+        // Move to next line if exists
+        if (currentLine < lines.length - 1) {
+          const nextLine = lines[currentLine + 1];
+          const targetColumn = Math.min(currentColumn, nextLine.length);
+          let newCursor = 0;
+          for (let i = 0; i <= currentLine; i++) {
+            newCursor += lines[i].length + 1;
+          }
+          newCursor += targetColumn;
+          safeSetCursor(newCursor);
+        }
+        return;
+      }
+
       // Home - move to start
       if (key.home || (key.ctrl && input?.toLowerCase() === 'a')) {
         safeSetCursor(0);
