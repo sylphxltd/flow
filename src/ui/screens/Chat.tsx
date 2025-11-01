@@ -70,6 +70,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     placeholder?: string;
   } | null>(null);
   const inputResolver = useRef<((value: string) => void) | null>(null);
+  const [selectionFilter, setSelectionFilter] = useState(''); // Filter text for selection mode
 
   const addLog = (message: string) => {
     addDebugLog(message);
@@ -379,8 +380,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       // Handle pendingInput (when command calls waitForInput)
       if (pendingInput && inputResolver.current) {
         if (pendingInput.type === 'selection' && pendingInput.options) {
-          const options = pendingInput.options;
-          const maxIndex = options.length - 1;
+          // Filter options based on selectionFilter
+          const filteredOptions = pendingInput.options.filter(
+            (option) =>
+              option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+              option.name.toLowerCase().includes(selectionFilter.toLowerCase())
+          );
+          const maxIndex = filteredOptions.length - 1;
 
           // Arrow down - next option
           if (key.downArrow) {
@@ -394,13 +400,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           }
           // Enter - select option
           if (key.return) {
-            const selectedOption = options[selectedCommandIndex];
+            const selectedOption = filteredOptions[selectedCommandIndex];
             if (selectedOption) {
               addLog(`[pendingInput] User selected: ${selectedOption.id}`);
               inputResolver.current(selectedOption.id);
               inputResolver.current = null;
               setPendingInput(null);
               setSelectedCommandIndex(0);
+              setSelectionFilter('');
             }
             return;
           }
@@ -411,8 +418,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             inputResolver.current = null;
             setPendingInput(null);
             setSelectedCommandIndex(0);
+            setSelectionFilter('');
             return;
           }
+          // Let other keys fall through to TextInput for filtering
         }
         // For text input, handleSubmit will handle it
         return;
@@ -855,26 +864,53 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               )}
 
               {pendingInput.type === 'selection' && pendingInput.options ? (
-                // Selection UI
-                <>
-                  {pendingInput.options.slice(0, 10).map((option, idx) => (
-                    <Box key={option.id} paddingY={0}>
-                      <Text
-                        color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                        bold={idx === selectedCommandIndex}
-                      >
-                        {idx === selectedCommandIndex ? '> ' : '  '}
-                        {option.id}
-                      </Text>
-                      {option.name !== option.id && (
-                        <Text dimColor> - {option.name}</Text>
+                // Selection UI with filtering
+                (() => {
+                  // Filter options based on selectionFilter
+                  const filteredOptions = pendingInput.options.filter(
+                    (option) =>
+                      option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+                      option.name.toLowerCase().includes(selectionFilter.toLowerCase())
+                  );
+
+                  return (
+                    <>
+                      {/* Filter input */}
+                      <Box marginBottom={1}>
+                        <Text dimColor>Filter: </Text>
+                        <Text>{selectionFilter || '(type to filter)'}</Text>
+                      </Box>
+
+                      {/* Filtered options */}
+                      {filteredOptions.length === 0 ? (
+                        <Box marginBottom={1}>
+                          <Text color="yellow">No matches found</Text>
+                        </Box>
+                      ) : (
+                        filteredOptions.slice(0, 10).map((option, idx) => (
+                          <Box key={option.id} paddingY={0}>
+                            <Text
+                              color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                              bold={idx === selectedCommandIndex}
+                            >
+                              {idx === selectedCommandIndex ? '> ' : '  '}
+                              {option.id}
+                            </Text>
+                            {option.name !== option.id && (
+                              <Text dimColor> - {option.name}</Text>
+                            )}
+                          </Box>
+                        ))
                       )}
-                    </Box>
-                  ))}
-                  <Box marginTop={1}>
-                    <Text dimColor>↑↓ Navigate · Enter Select · Esc Cancel</Text>
-                  </Box>
-                </>
+
+                      <Box marginTop={1}>
+                        <Text dimColor>
+                          Type to filter · ↑↓ Navigate · Enter Select · Esc Cancel
+                        </Text>
+                      </Box>
+                    </>
+                  );
+                })()
               ) : (
                 // Text input UI - TextInput below will handle it
                 <Box marginBottom={1}>
@@ -975,10 +1011,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               {/* Text Input with inline hint */}
               <TextInputWithHint
                 key={inputKey}
-                value={input}
-                onChange={setInput}
+                value={pendingInput?.type === 'selection' ? selectionFilter : input}
+                onChange={pendingInput?.type === 'selection' ? (value) => {
+                  setSelectionFilter(value);
+                  setSelectedCommandIndex(0); // Reset selection when filter changes
+                } : setInput}
                 onSubmit={handleSubmit}
-                placeholder="Type your message or / for commands..."
+                placeholder={
+                  pendingInput?.type === 'selection'
+                    ? 'Type to filter options...'
+                    : pendingInput?.type === 'text'
+                    ? (pendingInput.placeholder || 'Type your response...')
+                    : 'Type your message or / for commands...'
+                }
                 showCursor
                 hint={hintText}
               />
