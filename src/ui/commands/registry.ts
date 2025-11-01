@@ -9,6 +9,98 @@ import type { Command, CommandContext } from './types.js';
 const optionsCache = new Map<string, Array<{ id: string; name: string }>>();
 
 /**
+ * Helper function to configure a provider
+ */
+async function configureProvider(context: CommandContext, providerId: string): Promise<string> {
+  const { AI_PROVIDERS } = await import('../../config/ai-config.js');
+  const { getProvider } = await import('../../providers/index.js');
+  const aiConfig = context.getConfig();
+
+  const provider = getProvider(providerId as any);
+  const schema = provider.getConfigSchema();
+
+  const availableKeys = schema.map(field => ({
+    label: field.label,
+    value: field.key,
+  }));
+
+  context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
+  const keyAnswers = await context.waitForInput({
+    type: 'selection',
+    questions: [
+      {
+        id: 'key',
+        question: 'Which setting do you want to configure?',
+        options: availableKeys,
+      },
+    ],
+  });
+
+  const key = typeof keyAnswers === 'object' && !Array.isArray(keyAnswers) ? keyAnswers['key'] : '';
+  if (!key) {
+    return 'Configuration cancelled.';
+  }
+
+  // Ask for value - check if boolean type for selection
+  const field = schema.find(f => f.key === key);
+  let value: string;
+
+  if (field?.type === 'boolean') {
+    context.sendMessage(`Select value for ${key}:`);
+    const boolAnswers = await context.waitForInput({
+      type: 'selection',
+      questions: [
+        {
+          id: 'value',
+          question: `${field.label}:`,
+          options: [
+            { label: 'true', value: 'true' },
+            { label: 'false', value: 'false' },
+          ],
+        },
+      ],
+    });
+    value = typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
+  } else {
+    context.sendMessage(`Enter value for ${key}:`);
+    const valueAnswers = await context.waitForInput({
+      type: 'text',
+      prompt: `${key}:`,
+    });
+    value = typeof valueAnswers === 'string' ? valueAnswers : '';
+  }
+
+  if (!value) {
+    return 'Value is required.';
+  }
+
+  // Update config
+  const newConfig = {
+    ...aiConfig!,
+    providers: {
+      ...aiConfig!.providers,
+      [providerId]: {
+        ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
+        [key]: value,
+      },
+    },
+  };
+
+  if (!aiConfig?.defaultProvider) {
+    newConfig.defaultProvider = providerId;
+  }
+
+  context.setAIConfig(newConfig);
+  await context.saveConfig(newConfig);
+
+  // Mask secret values in response
+  const displayField = schema.find(f => f.key === key);
+  const displayValue = displayField?.secret ? '***' : value;
+
+  return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
+}
+
+/**
  * Provider command - Configure AI provider
  */
 const providerCommand: Command = {
@@ -175,7 +267,79 @@ const providerCommand: Command = {
         const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
 
         if (!providerConfig || !provider.isConfigured(providerConfig)) {
-          return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId}`;
+          // Provider not configured - ask if user wants to configure now
+          context.sendMessage(`${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured yet.`);
+          const configureAnswers = await context.waitForInput({
+            type: 'selection',
+            questions: [
+              {
+                id: 'configure',
+                question: 'Do you want to configure it now?',
+                options: [
+                  { label: 'Yes, configure now', value: 'yes' },
+                  { label: 'No, cancel', value: 'no' },
+                ],
+              },
+            ],
+          });
+
+          const shouldConfigure = typeof configureAnswers === 'object' && !Array.isArray(configureAnswers)
+            ? configureAnswers['configure'] === 'yes'
+            : false;
+
+          if (!shouldConfigure) {
+            return 'Cancelled. You can configure later using: /provider set';
+          }
+
+          // Configure the provider
+          const configResult = await configureProvider(context, providerId);
+
+          // After configuration, check if it's now configured
+          const updatedConfig = context.getConfig();
+          const updatedProviderConfig = updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
+          if (!updatedProviderConfig || !provider.isConfigured(updatedProviderConfig)) {
+            return `${configResult}\n\nProvider still not fully configured. Please continue configuration with: /provider set ${providerId}`;
+          }
+
+          // Continue with "use" flow - update to use this provider
+          context.sendMessage(configResult);
+          const providerConfigToUse = updatedProviderConfig;
+
+          // Now proceed to set as default provider
+          const newConfig = {
+            ...updatedConfig!,
+            defaultProvider: providerId,
+          };
+
+          // Get default model and update config
+          const { getDefaultModel } = await import('../../core/session-service.js');
+          const defaultModel = await getDefaultModel(providerId as any, providerConfigToUse);
+          if (!defaultModel) {
+            return `Provider configured but failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+          }
+
+          // Save default model to config
+          newConfig.providers = {
+            ...newConfig.providers,
+            [providerId]: {
+              ...providerConfigToUse,
+              'default-model': defaultModel,
+            },
+          };
+
+          context.setAIConfig(newConfig);
+          await context.saveConfig(newConfig);
+
+          // Update current session's provider (preserve history)
+          const currentSessionId = context.getCurrentSessionId();
+          if (currentSessionId) {
+            context.updateSessionProvider(currentSessionId, providerId, defaultModel);
+          } else {
+            // Fallback: create new session if no active session
+            context.createSession(providerId, defaultModel);
+          }
+
+          return `Now using ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} with model: ${defaultModel}`;
         }
 
         const newConfig = {
@@ -213,92 +377,8 @@ const providerCommand: Command = {
 
         return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
       } else {
-        // Set provider - ask for key
-        const { getProvider } = await import('../../providers/index.js');
-        const provider = getProvider(providerId as any);
-        const schema = provider.getConfigSchema();
-
-        const availableKeys = schema.map(field => ({
-          label: field.label,
-          value: field.key,
-        }));
-
-        context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
-        const keyAnswers = await context.waitForInput({
-          type: 'selection',
-          questions: [
-            {
-              id: 'key',
-              question: 'Which setting do you want to configure?',
-              options: availableKeys,
-            },
-          ],
-        });
-
-        const key = typeof keyAnswers === 'object' && !Array.isArray(keyAnswers) ? keyAnswers['key'] : '';
-        if (!key) {
-          return 'Configuration cancelled.';
-        }
-
-        // Ask for value - check if boolean type for selection
-        {
-          const field = schema.find(f => f.key === key);
-          let value: string;
-
-          if (field?.type === 'boolean') {
-            context.sendMessage(`Select value for ${key}:`);
-            const boolAnswers = await context.waitForInput({
-              type: 'selection',
-              questions: [
-                {
-                  id: 'value',
-                  question: `${field.label}:`,
-                  options: [
-                    { label: 'true', value: 'true' },
-                    { label: 'false', value: 'false' },
-                  ],
-                },
-              ],
-            });
-            value = typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
-          } else {
-            context.sendMessage(`Enter value for ${key}:`);
-            const valueAnswers = await context.waitForInput({
-              type: 'text',
-              prompt: `${key}:`,
-            });
-            value = typeof valueAnswers === 'string' ? valueAnswers : '';
-          }
-
-          if (!value) {
-            return 'Value is required.';
-          }
-
-          // Update config
-          const newConfig = {
-            ...aiConfig!,
-            providers: {
-              ...aiConfig!.providers,
-              [providerId]: {
-                ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
-                [key]: value,
-              },
-            },
-          };
-
-          if (!aiConfig?.defaultProvider) {
-            newConfig.defaultProvider = providerId;
-          }
-
-          context.setAIConfig(newConfig);
-          await context.saveConfig(newConfig);
-
-          // Mask secret values in response
-          const displayField = schema.find(f => f.key === key);
-          const displayValue = displayField?.secret ? '***' : value;
-
-          return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
-        }
+        // Set provider - use helper function
+        return await configureProvider(context, providerId);
       }
     }
 
@@ -341,7 +421,79 @@ const providerCommand: Command = {
       const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
 
       if (!providerConfig || !provider.isConfigured(providerConfig)) {
-        return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId}`;
+        // Provider not configured - ask if user wants to configure now
+        context.sendMessage(`${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured yet.`);
+        const configureAnswers = await context.waitForInput({
+          type: 'selection',
+          questions: [
+            {
+              id: 'configure',
+              question: 'Do you want to configure it now?',
+              options: [
+                { label: 'Yes, configure now', value: 'yes' },
+                { label: 'No, cancel', value: 'no' },
+              ],
+            },
+          ],
+        });
+
+        const shouldConfigure = typeof configureAnswers === 'object' && !Array.isArray(configureAnswers)
+          ? configureAnswers['configure'] === 'yes'
+          : false;
+
+        if (!shouldConfigure) {
+          return 'Cancelled. You can configure later using: /provider set';
+        }
+
+        // Configure the provider
+        const configResult = await configureProvider(context, providerId);
+
+        // After configuration, check if it's now configured
+        const updatedConfig = context.getConfig();
+        const updatedProviderConfig = updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
+        if (!updatedProviderConfig || !provider.isConfigured(updatedProviderConfig)) {
+          return `${configResult}\n\nProvider still not fully configured. Please continue configuration with: /provider set ${providerId}`;
+        }
+
+        // Continue with "use" flow - update to use this provider
+        context.sendMessage(configResult);
+        const providerConfigToUse = updatedProviderConfig;
+
+        // Now proceed to set as default provider
+        const newConfig = {
+          ...updatedConfig!,
+          defaultProvider: providerId,
+        };
+
+        // Get default model and update config
+        const { getDefaultModel } = await import('../../core/session-service.js');
+        const defaultModel = await getDefaultModel(providerId as any, providerConfigToUse);
+        if (!defaultModel) {
+          return `Provider configured but failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+        }
+
+        // Save default model to config
+        newConfig.providers = {
+          ...newConfig.providers,
+          [providerId]: {
+            ...providerConfigToUse,
+            'default-model': defaultModel,
+          },
+        };
+
+        context.setAIConfig(newConfig);
+        await context.saveConfig(newConfig);
+
+        // Update current session's provider (preserve history)
+        const currentSessionId = context.getCurrentSessionId();
+        if (currentSessionId) {
+          context.updateSessionProvider(currentSessionId, providerId, defaultModel);
+        } else {
+          // Fallback: create new session if no active session
+          context.createSession(providerId, defaultModel);
+        }
+
+        return `Now using ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} with model: ${defaultModel}`;
       }
 
       const newConfig = {
