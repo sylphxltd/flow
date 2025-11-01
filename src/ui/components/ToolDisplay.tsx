@@ -16,6 +16,25 @@ interface ToolDisplayProps {
 }
 
 /**
+ * Truncate long strings for display
+ */
+function truncateString(str: string, maxLength: number = 60): string {
+  if (str.length <= maxLength) return str;
+  return str.slice(0, maxLength) + '...';
+}
+
+/**
+ * Get relative file path (shorten from cwd)
+ */
+function getRelativePath(filePath: string): string {
+  const cwd = process.cwd();
+  if (filePath.startsWith(cwd)) {
+    return '.' + filePath.slice(cwd.length);
+  }
+  return filePath;
+}
+
+/**
  * Format tool args for display
  */
 function formatArgs(toolName: string, args: unknown): string {
@@ -26,19 +45,76 @@ function formatArgs(toolName: string, args: unknown): string {
   const argsObj = args as Record<string, unknown>;
 
   // Special formatting for built-in tools
-  switch (toolName) {
-    case 'ask':
-      return argsObj.question ? String(argsObj.question) : '';
-    case 'read':
-    case 'write':
-    case 'edit':
-      return argsObj.file_path ? String(argsObj.file_path) : '';
-    case 'bash':
-      return argsObj.command ? String(argsObj.command) : '';
-    case 'grep':
-      return argsObj.pattern ? String(argsObj.pattern) : '';
-    case 'glob':
-      return argsObj.pattern ? String(argsObj.pattern) : '';
+  switch (toolName.toLowerCase()) {
+    case 'ask': {
+      // ask(question)
+      return argsObj.question ? truncateString(String(argsObj.question), 80) : '';
+    }
+
+    case 'read': {
+      // read(file_path)
+      const filePath = argsObj.file_path ? String(argsObj.file_path) : '';
+      return getRelativePath(filePath);
+    }
+
+    case 'write': {
+      // write(file_path)
+      const filePath = argsObj.file_path ? String(argsObj.file_path) : '';
+      return getRelativePath(filePath);
+    }
+
+    case 'edit': {
+      // edit(file_path)
+      const filePath = argsObj.file_path ? String(argsObj.file_path) : '';
+      return getRelativePath(filePath);
+    }
+
+    case 'bash': {
+      // bash(command)
+      const command = argsObj.command ? String(argsObj.command) : '';
+      const cwd = argsObj.cwd ? String(argsObj.cwd) : '';
+
+      // If cwd is specified and different from current, show it
+      if (cwd && cwd !== process.cwd()) {
+        return `${truncateString(command, 50)} [in ${getRelativePath(cwd)}]`;
+      }
+
+      return truncateString(command, 80);
+    }
+
+    case 'grep': {
+      // grep(pattern, file_pattern?, directory?)
+      const pattern = argsObj.pattern ? String(argsObj.pattern) : '';
+      const filePattern = argsObj.file_pattern ? String(argsObj.file_pattern) : '';
+      const directory = argsObj.directory ? String(argsObj.directory) : '';
+
+      let display = `"${truncateString(pattern, 40)}"`;
+
+      if (filePattern && filePattern !== '**/*') {
+        display += ` in ${filePattern}`;
+      }
+
+      if (directory && directory !== process.cwd()) {
+        display += ` [${getRelativePath(directory)}]`;
+      }
+
+      return display;
+    }
+
+    case 'glob': {
+      // glob(pattern, directory?)
+      const pattern = argsObj.pattern ? String(argsObj.pattern) : '';
+      const directory = argsObj.directory ? String(argsObj.directory) : '';
+
+      let display = pattern;
+
+      if (directory && directory !== process.cwd()) {
+        display += ` in ${getRelativePath(directory)}`;
+      }
+
+      return display;
+    }
+
     default:
       // For other tools (like MCP), show JSON
       return JSON.stringify(args);
