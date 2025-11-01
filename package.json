@@ -81,6 +81,7 @@
     "commander": "^14.0.2",
     "drizzle-orm": "^0.44.7",
     "gradient-string": "^3.0.0",
+    "gray-matter": "^4.0.3",
     "ignore": "^7.0.5",
     "immer": "^10.2.0",
     "ink": "^6.4.0",

@@ -7,8 +7,10 @@
 import { streamText, stepCountIs } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import { getAISDKTools } from '../tools/index.js';
+import { getCurrentSystemPrompt } from './agent-manager.js';
 
-const SYSTEM_PROMPT = `You are a helpful coding assistant.
+// Legacy system prompt - kept for backwards compatibility and fallback
+const LEGACY_SYSTEM_PROMPT = `You are a helpful coding assistant.
 
 You help users with:
 - Programming tasks and code review
@@ -22,6 +24,21 @@ Guidelines:
 - Explain complex concepts clearly
 - Follow language-specific best practices
 - Test and verify your work when possible`;
+
+/**
+ * Get the system prompt to use (from current agent or fallback to legacy)
+ */
+export function getSystemPrompt(): string {
+  try {
+    return getCurrentSystemPrompt();
+  } catch {
+    // Fallback to legacy if agent manager not initialized
+    return LEGACY_SYSTEM_PROMPT;
+  }
+}
+
+// Export for backwards compatibility
+export const SYSTEM_PROMPT = LEGACY_SYSTEM_PROMPT;
 
 /**
  * Our own Language Model interface
@@ -200,7 +217,7 @@ function toAISDKMessages(messages: SylphxMessage[]) {
 export async function* createAIStream(
   options: CreateAIStreamOptions
 ): AsyncIterable<StreamChunk> {
-  const { systemPrompt = SYSTEM_PROMPT, model, messages, onStepFinish } = options;
+  const { systemPrompt = getSystemPrompt(), model, messages, onStepFinish } = options;
 
   // Convert our types to AI SDK types
   const aiModel = toAISDKModel(model);
@@ -381,6 +398,7 @@ export async function* createAIStream(
 }
 
 /**
- * Export system prompt and tools getter
+ * Export tools getter for backwards compatibility
+ * SYSTEM_PROMPT and getSystemPrompt are exported earlier in the file
  */
-export { SYSTEM_PROMPT, getAISDKTools };
+export { getAISDKTools };

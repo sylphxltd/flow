@@ -8,6 +8,7 @@ import { Box, Text } from 'ink';
 import type { ProviderId } from '../../config/ai-config.js';
 import { getProvider } from '../../providers/index.js';
 import { getTokenizerInfo } from '../../utils/token-counter.js';
+import { getCurrentAgent } from '../../core/agent-manager.js';
 
 interface StatusBarProps {
   provider: ProviderId;
@@ -25,6 +26,17 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
     loaded: boolean;
     failed: boolean;
   } | null>(null);
+  const [agentName, setAgentName] = useState<string>('');
+
+  // Get current agent
+  useEffect(() => {
+    try {
+      const agent = getCurrentAgent();
+      setAgentName(agent.metadata.name);
+    } catch (error) {
+      setAgentName('');
+    }
+  }, []);
 
   useEffect(() => {
     async function loadModelDetails() {
@@ -64,10 +76,10 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
 
   return (
     <Box flexGrow={1} justifyContent="space-between">
-      {/* Left side: Provider and Model */}
+      {/* Left side: Agent, Provider and Model */}
       <Box>
         <Text dimColor>
-          {provider} · {model}
+          {agentName && `${agentName} · `}{provider} · {model}
         </Text>
       </Box>
 
