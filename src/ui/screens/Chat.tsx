@@ -964,10 +964,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Box>
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
-                    <Box>
-                      <Text color="#00D9FF">▏ </Text>
-                      <Text color="white">{msg.content}</Text>
-                    </Box>
+                    <MarkdownText prefix="▏ " prefixColor="#00D9FF">{msg.content}</MarkdownText>
                     {/* Display attachments if any */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <Box flexDirection="column" marginTop={1}>
@@ -998,10 +995,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       msg.parts.map((part, idx) => {
                         if (part.type === 'text') {
                           return (
-                            <Box key={idx}>
-                              <Text color="#00FF88">▏ </Text>
-                              <MarkdownText>{part.content}</MarkdownText>
-                            </Box>
+                            <MarkdownText key={idx} prefix="▏ " prefixColor="#00FF88">
+                              {part.content}
+                            </MarkdownText>
                           );
                         } else {
                           return (
@@ -1019,10 +1015,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         }
                       })
                     ) : (
-                      <Box>
-                        <Text color="#00FF88">▏ </Text>
-                        <MarkdownText>{msg.content}</MarkdownText>
-                      </Box>
+                      <MarkdownText prefix="▏ " prefixColor="#00FF88">{msg.content}</MarkdownText>
                     )}
                   </>
                 )}
@@ -1049,10 +1042,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     const isLastPart = idx === streamParts.length - 1;
                     return (
                       <Box key={idx} flexDirection="column">
-                        <Box>
-                          <Text color="#00FF88">▏ </Text>
-                          <MarkdownText>{part.content}</MarkdownText>
-                        </Box>
+                        <MarkdownText prefix="▏ " prefixColor="#00FF88">
+                          {part.content}
+                        </MarkdownText>
                         {isLastPart && (
                           <Box>
                             <Text color="#00FF88">▏ </Text>
