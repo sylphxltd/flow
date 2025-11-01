@@ -33,7 +33,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadConfig();
+    loadConfig().catch((err) => {
+      console.error('Failed to load config:', err);
+    });
   }, []);
 
   // Clear error after 5 seconds
