@@ -865,7 +865,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           </Box>
 
           {/* PendingInput Mode - when command calls waitForInput */}
-          {pendingInput ? (
+          {pendingInput && pendingInput.type === 'selection' ? (
             <Box flexDirection="column">
               {pendingInput.prompt && (
                 <Box marginBottom={1}>
@@ -873,20 +873,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 </Box>
               )}
 
-              {pendingInput.type === 'selection' ? (
-                // Selection UI (vertical list style - all questions visible)
-                (() => {
-                  const questions = pendingInput.questions;
-                  const isSingleQuestion = questions.length === 1;
-                  const currentQuestion = questions[multiSelectionPage];
+              {/* Selection UI (vertical list style - all questions visible) */}
+              {(() => {
+                const questions = pendingInput.questions;
+                const isSingleQuestion = questions.length === 1;
+                const currentQuestion = questions[multiSelectionPage];
 
-                  // Calculate progress
-                  const answeredCount = Object.keys(multiSelectionAnswers).length;
-                  const totalQuestions = questions.length;
-                  const allAnswered = questions.every((q) => multiSelectionAnswers[q.id]);
+                // Calculate progress
+                const answeredCount = Object.keys(multiSelectionAnswers).length;
+                const totalQuestions = questions.length;
+                const allAnswered = questions.every((q) => multiSelectionAnswers[q.id]);
 
-                  return (
-                    <>
+                return (
+                  <>
                       {/* Queue status */}
                       {askQueueLength > 0 && (
                         <Box marginBottom={1}>
@@ -1037,13 +1036,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       </Box>
                     </>
                   );
-                })()
-              ) : (
-                // Text input UI - TextInput below will handle it
-                <Box marginBottom={1}>
-                  <Text dimColor>{pendingInput.placeholder || 'Type your response...'}</Text>
-                </Box>
-              )}
+              })()}
             </Box>
           ) : /* Selection Mode - when a command is pending and needs args */
           pendingCommand ? (
@@ -1147,6 +1140,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             </Box>
           ) : (
             <>
+              {/* Show prompt for text input mode */}
+              {pendingInput?.type === 'text' && pendingInput.prompt && (
+                <Box marginBottom={1}>
+                  <Text dimColor>{pendingInput.prompt}</Text>
+                </Box>
+              )}
+
               {/* Text Input with inline hint */}
               <TextInputWithHint
                 key={inputKey}

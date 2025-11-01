@@ -345,10 +345,10 @@ const providerCommand: Command = {
       }
 
       // Ask for value
-      context.sendMessage(`Enter value for ${key}:`);
       const valueAnswers = await context.waitForInput({
         type: 'text',
-        prompt: `${key}:`,
+        prompt: `Enter value for ${key}:`,
+        placeholder: `Enter ${key}...`,
       });
 
       const value = typeof valueAnswers === 'string' ? valueAnswers : '';
@@ -410,10 +410,10 @@ const providerCommand: Command = {
       }
 
       // Ask for value
-      context.sendMessage(`Enter value for ${key}:`);
       const valueAnswers = await context.waitForInput({
         type: 'text',
-        prompt: `${key}:`,
+        prompt: `Enter value for ${key}:`,
+        placeholder: `Enter ${key}...`,
       });
 
       const value = typeof valueAnswers === 'string' ? valueAnswers : '';
