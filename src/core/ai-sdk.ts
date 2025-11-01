@@ -144,6 +144,9 @@ export async function* createAIStream(
     system: systemPrompt,
     tools: getAISDKTools(),
     stopWhen: stepCountIs(1000),
+    onError: (_) => {
+      return;
+    },
     ...(onStepFinish && {
       onStepFinish: (step) => {
         const usage = step.usage;
