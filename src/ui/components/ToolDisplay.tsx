@@ -406,15 +406,15 @@ const ToolHeader: React.FC<{
 }> = ({ statusIndicator, displayName, formattedArgs, isBuiltIn, duration, status }) => (
   <Box>
     {statusIndicator}
-    <Text dimColor>{displayName}</Text>
+    <Text color="white">{displayName}</Text>
     {formattedArgs && (
       <>
-        <Text dimColor> </Text>
-        <Text dimColor>{formattedArgs}</Text>
+        <Text color="white"> </Text>
+        <Text color="white">{formattedArgs}</Text>
       </>
     )}
     {duration !== undefined && status === 'completed' && (
-      <Text dimColor> • {duration}ms</Text>
+      <Text dimColor> {duration}ms</Text>
     )}
   </Box>
 );
@@ -445,7 +445,7 @@ const ResultDisplay: React.FC<{
   toolName: string;
   error?: string;
 }> = ({ status, result, toolName, error }) => {
-  // Don't show anything for running or completed tools (info is in header)
+  // Don't show anything for running tools
   if (status === 'running') {
     return null;
   }
@@ -453,13 +453,25 @@ const ResultDisplay: React.FC<{
   if (status === 'failed') {
     return (
       <Box marginLeft={2}>
-        <Text color="#FF3366">✗ {error || 'Failed'}</Text>
+        <Text color="#FF3366">{error || 'Failed'}</Text>
       </Box>
     );
   }
 
-  // For completed tools, only show result if it's truly important
-  // Most tools don't need to show results (the summary in formatResult handles this)
+  // For completed tools, show summary if available
+  if (status === 'completed' && result !== undefined) {
+    const { lines, summary } = formatResult(toolName, result);
+
+    // Only show summary, not full output
+    if (summary) {
+      return (
+        <Box marginLeft={2}>
+          <Text dimColor>{summary}</Text>
+        </Box>
+      );
+    }
+  }
+
   return null;
 };
 

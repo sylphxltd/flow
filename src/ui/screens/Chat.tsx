@@ -1112,11 +1112,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             </MarkdownText>
                           );
                         } else if (part.type === 'reasoning') {
-                          // Simplified reasoning display - just show that it happened
+                          // Show completed reasoning with duration
                           return (
                             <Box key={idx}>
                               <Text color="#00FF88">▏ </Text>
-                              <Text dimColor>💭 Thinking{part.duration ? ` • ${Math.round(part.duration / 1000)}s` : ''}</Text>
+                              <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
                             </Box>
                           );
                         } else if (part.type === 'error') {
