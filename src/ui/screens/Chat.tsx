@@ -790,7 +790,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           );
                         } else {
                           return (
-                            <Box key={idx} marginBottom={1}>
+                            <Box key={idx}>
                               <ToolDisplay
                                 name={part.name}
                                 status={part.status}
@@ -836,7 +836,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   } else {
                     // Tool part
                     return (
-                      <Box key={idx} marginBottom={1}>
+                      <Box key={idx}>
                         <ToolDisplay
                           name={part.name}
                           status={part.status}

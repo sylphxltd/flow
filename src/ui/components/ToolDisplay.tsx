@@ -232,7 +232,7 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
   }
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingBottom={1}>
       {toolHeader}
       {resultDisplay}
     </Box>
