@@ -400,11 +400,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return;
           }
 
-          // Escape - clear filter and exit filter mode
-          if (key.escape && isFilterMode) {
-            setSelectionFilter('');
-            setIsFilterMode(false);
-            setSelectedCommandIndex(0);
+          // Escape - exit filter mode (keep filter text) or clear filter
+          if (key.escape && (isFilterMode || selectionFilter.length > 0)) {
+            if (isFilterMode) {
+              // First Esc: exit filter mode but keep filter text
+              setIsFilterMode(false);
+              addLog('[filter] Exited filter mode, filter text preserved');
+            } else if (selectionFilter.length > 0) {
+              // Second Esc: clear filter text
+              setSelectionFilter('');
+              setSelectedCommandIndex(0);
+              addLog('[filter] Cleared filter text');
+            }
             return;
           }
 
@@ -1437,10 +1444,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                     <>
                                       <Text color="#00FF88">{selectionFilter}</Text>
                                       <Text color="#00FF88">▊</Text>
-                                      <Text dimColor> (Esc to exit filter)</Text>
+                                      <Text dimColor> (Esc to exit, type to continue)</Text>
+                                    </>
+                                  ) : selectionFilter ? (
+                                    <>
+                                      <Text color="#00D9FF">{selectionFilter}</Text>
+                                      <Text dimColor> (type to edit, Esc to clear)</Text>
                                     </>
                                   ) : (
-                                    <Text dimColor>{selectionFilter || '(type to filter)'}</Text>
+                                    <Text dimColor>(type to filter)</Text>
                                   )}
                                 </Box>
 
@@ -1554,7 +1566,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             </>
                           ) : (
                             <>
-                              <Text dimColor> · Type: </Text>
+                              <Text dimColor> · Space/Type: </Text>
                               <Text color="#00FF88">Filter</Text>
                             </>
                           )}
@@ -1568,7 +1580,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             </>
                           )}
                           <Text dimColor> · Esc: </Text>
-                          <Text color="#FF3366">{isFilterMode ? 'Exit filter' : 'Cancel'}</Text>
+                          <Text color="#FF3366">
+                            {isFilterMode ? 'Exit filter' : selectionFilter ? 'Clear filter' : 'Cancel'}
+                          </Text>
                         </Box>
                       </Box>
                     </>
