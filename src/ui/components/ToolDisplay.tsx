@@ -219,13 +219,29 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
         </Box>
       );
     } else if (lines.length > 0) {
-      // Show truncated result
+      // Show truncated result with special handling for edit tool diff
       const displayLines = truncateLines(lines);
+      const isEditTool = name.toLowerCase() === 'edit';
+
       resultDisplay = (
         <Box flexDirection="column" marginLeft={2}>
-          {displayLines.map((line, idx) => (
-            <Text key={idx} color="gray">{line}</Text>
-          ))}
+          {displayLines.map((line, idx) => {
+            // For edit tool, colorize based on diff markers
+            if (isEditTool && typeof line === 'string') {
+              // Check if line contains - or + after line number
+              const match = line.match(/^\s*\d+\s+([-+])/);
+              if (match) {
+                const marker = match[1];
+                if (marker === '-') {
+                  return <Text key={idx} color="#FF3366">{line}</Text>; // Red for removals
+                } else if (marker === '+') {
+                  return <Text key={idx} color="#00FF88">{line}</Text>; // Green for additions
+                }
+              }
+            }
+            // Default gray for context lines or other tools
+            return <Text key={idx} color="gray">{line}</Text>;
+          })}
         </Box>
       );
     }
