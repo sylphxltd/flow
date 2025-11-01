@@ -90,6 +90,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (options.type === 'selection') {
           setMultiSelectionPage(0);
           setMultiSelectionAnswers({});
+          setSelectedCommandIndex(0);
         }
       });
     },
@@ -529,6 +530,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         setMultiSelectionPage(0);
         setMultiSelectionAnswers({});
         setSelectionFilter('');
+        setSelectedCommandIndex(0);
       });
     });
 
