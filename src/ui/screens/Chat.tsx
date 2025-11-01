@@ -743,6 +743,22 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     calculateTokens();
   }, [currentSession, currentSession?.messages.length]);
 
+  // Sync pending attachments with @file references in input
+  useEffect(() => {
+    // Extract all @file references from input
+    const fileRefs = new Set<string>();
+    const regex = /@([^\s]+)/g;
+    let match;
+    while ((match = regex.exec(input)) !== null) {
+      fileRefs.add(match[1]);
+    }
+
+    // Remove attachments that are no longer in input
+    setPendingAttachments((prev) => {
+      return prev.filter((att) => fileRefs.has(att.relativePath));
+    });
+  }, [input]);
+
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
 

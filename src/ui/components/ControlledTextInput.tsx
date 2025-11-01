@@ -232,30 +232,109 @@ export default function ControlledTextInput({
     }
   }
 
+  // Helper function to render text with @file highlighting
+  const renderTextWithTags = (text: string, cursorPos?: number) => {
+    if (text.length === 0) {
+      return <Text> </Text>;
+    }
+
+    const parts: React.ReactNode[] = [];
+    const regex = /@([^\s]+)/g;
+    let lastIndex = 0;
+    let match;
+    let partIndex = 0;
+    let cursorRendered = cursorPos === undefined;
+
+    while ((match = regex.exec(text)) !== null) {
+      const matchStart = match.index;
+      const matchEnd = matchStart + match[0].length;
+
+      // Add text before match
+      if (matchStart > lastIndex) {
+        const beforeText = text.slice(lastIndex, matchStart);
+
+        // Check if cursor is in this segment
+        if (!cursorRendered && cursorPos >= lastIndex && cursorPos < matchStart) {
+          const leftPart = beforeText.slice(0, cursorPos - lastIndex);
+          const rightPart = beforeText.slice(cursorPos - lastIndex);
+          parts.push(
+            <Text key={`before-${partIndex}`}>
+              {leftPart}
+              {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
+              {rightPart.slice(1)}
+            </Text>
+          );
+          cursorRendered = true;
+        } else {
+          parts.push(<Text key={`before-${partIndex}`}>{beforeText}</Text>);
+        }
+        partIndex++;
+      }
+
+      // Add @file tag with background
+      if (!cursorRendered && cursorPos >= matchStart && cursorPos < matchEnd) {
+        // Cursor is inside the tag
+        const tagText = match[0];
+        const leftPart = tagText.slice(0, cursorPos - matchStart);
+        const rightPart = tagText.slice(cursorPos - matchStart);
+        parts.push(
+          <Text key={`tag-${partIndex}`} backgroundColor="#1a472a" color="#00FF88">
+            {leftPart}
+            {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
+            {rightPart.slice(1)}
+          </Text>
+        );
+        cursorRendered = true;
+      } else {
+        parts.push(
+          <Text key={`tag-${partIndex}`} backgroundColor="#1a472a" color="#00FF88">
+            {match[0]}
+          </Text>
+        );
+      }
+      partIndex++;
+
+      lastIndex = matchEnd;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      const remainingText = text.slice(lastIndex);
+
+      if (!cursorRendered && cursorPos >= lastIndex && cursorPos <= text.length) {
+        const leftPart = remainingText.slice(0, cursorPos - lastIndex);
+        const rightPart = remainingText.slice(cursorPos - lastIndex);
+        parts.push(
+          <Text key={`after-${partIndex}`}>
+            {leftPart}
+            {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
+            {rightPart.slice(1)}
+          </Text>
+        );
+        cursorRendered = true;
+      } else {
+        parts.push(<Text key={`after-${partIndex}`}>{remainingText}</Text>);
+      }
+    }
+
+    // If cursor is at the end and hasn't been rendered
+    if (!cursorRendered && showCursor) {
+      parts.push(<Text key="cursor-end" inverse> </Text>);
+    }
+
+    return <>{parts}</>;
+  };
+
   return (
     <Box flexDirection="column">
       {lines.map((line, lineIndex) => {
         const isCursorLine = lineIndex === cursorLine;
 
-        if (isCursorLine) {
-          const left = line.slice(0, cursorColumn);
-          const right = line.slice(cursorColumn);
-
-          return (
-            <Box key={lineIndex}>
-              {left.length > 0 ? <Text>{left}</Text> : null}
-              {showCursor && (
-                <Text inverse>{right.length > 0 ? right[0] : ' '}</Text>
-              )}
-              {right.slice(1).length > 0 ? <Text>{right.slice(1)}</Text> : null}
-            </Box>
-          );
-        }
-
-        // For empty lines, render at least one space to ensure line height
         return (
           <Box key={lineIndex}>
-            <Text>{line.length > 0 ? line : ' '}</Text>
+            {isCursorLine
+              ? renderTextWithTags(line, cursorColumn)
+              : renderTextWithTags(line)}
           </Box>
         );
       })}
