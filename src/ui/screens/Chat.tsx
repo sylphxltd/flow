@@ -12,7 +12,7 @@ import { useAIConfig } from '../hooks/useAIConfig.js';
 import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
 import { commands } from '../commands/registry.js';
-import type { CommandContext } from '../commands/types.js';
+import type { CommandContext, WaitForInputOptions, Question } from '../commands/types.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -36,14 +36,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
 
   // For command interactive flow - when command calls waitForInput()
-  const [pendingInput, setPendingInput] = useState<{
-    type: 'text' | 'selection';
-    prompt?: string;
-    options?: Array<{ id: string; name: string }>;
-    placeholder?: string;
-  } | null>(null);
-  const inputResolver = useRef<((value: string) => void) | null>(null);
+  const [pendingInput, setPendingInput] = useState<WaitForInputOptions | null>(null);
+  const inputResolver = useRef<((value: string | Record<string, string>) => void) | null>(null);
   const [selectionFilter, setSelectionFilter] = useState(''); // Filter text for selection mode
+
+  // Multi-selection state
+  const [multiSelectionPage, setMultiSelectionPage] = useState(0); // Current page index (0 = Q1, 1 = Q2, ..., n = Review)
+  const [multiSelectionAnswers, setMultiSelectionAnswers] = useState<Record<string, string>>({}); // question id -> answer id
 
   const addLog = (message: string) => {
     addDebugLog(message);
@@ -81,9 +80,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         inputResolver.current = resolve;
         setPendingInput(options);
 
-        // If it's a selection type and has options, also set up selection mode
-        if (options.type === 'selection' && options.options) {
-          setCachedOptions((prev) => new Map(prev).set('__pending_input__', options.options!));
+        // If it's selection, reset state
+        if (options.type === 'selection') {
+          setMultiSelectionPage(0);
+          setMultiSelectionAnswers({});
         }
       });
     },
@@ -211,9 +211,57 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     async (input, key) => {
       // Handle pendingInput (when command calls waitForInput)
       if (pendingInput && inputResolver.current) {
-        if (pendingInput.type === 'selection' && pendingInput.options) {
-          // Filter options based on selectionFilter
-          const filteredOptions = pendingInput.options.filter(
+        // Selection mode (unified for single and multi-question)
+        if (pendingInput.type === 'selection') {
+          const questions = pendingInput.questions;
+          const isSingleQuestion = questions.length === 1;
+          const currentQuestion = questions[multiSelectionPage];
+          const totalPages = isSingleQuestion ? 1 : questions.length + 1; // +1 for review page
+          const isReviewPage = !isSingleQuestion && multiSelectionPage === questions.length;
+
+          // Multi-question: Tab navigation between pages
+          if (!isSingleQuestion) {
+            if (key.tab && !key.shift) {
+              setMultiSelectionPage((prev) => (prev + 1) % totalPages);
+              setSelectedCommandIndex(0);
+              setSelectionFilter('');
+              return;
+            }
+            if (key.shift && key.tab) {
+              setMultiSelectionPage((prev) => (prev - 1 + totalPages) % totalPages);
+              setSelectedCommandIndex(0);
+              setSelectionFilter('');
+              return;
+            }
+          }
+
+          // Review page (only for multi-question)
+          if (isReviewPage) {
+            if (key.return) {
+              addLog(`[selection] Submitting answers: ${JSON.stringify(multiSelectionAnswers)}`);
+              inputResolver.current(multiSelectionAnswers);
+              inputResolver.current = null;
+              setPendingInput(null);
+              setMultiSelectionPage(0);
+              setMultiSelectionAnswers({});
+              setSelectionFilter('');
+              return;
+            }
+            if (key.escape) {
+              addLog(`[selection] Cancelled`);
+              inputResolver.current({});
+              inputResolver.current = null;
+              setPendingInput(null);
+              setMultiSelectionPage(0);
+              setMultiSelectionAnswers({});
+              setSelectionFilter('');
+              return;
+            }
+            return; // Don't process other handlers on review page
+          }
+
+          // Question page (both single and multi)
+          const filteredOptions = currentQuestion.options.filter(
             (option) =>
               option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
               option.name.toLowerCase().includes(selectionFilter.toLowerCase())
@@ -234,28 +282,44 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           if (key.return) {
             const selectedOption = filteredOptions[selectedCommandIndex];
             if (selectedOption) {
-              addLog(`[pendingInput] User selected: ${selectedOption.id}`);
-              inputResolver.current(selectedOption.id);
-              inputResolver.current = null;
-              setPendingInput(null);
-              setSelectedCommandIndex(0);
-              setSelectionFilter('');
+              addLog(`[selection] Q${multiSelectionPage + 1}: ${selectedOption.id}`);
+
+              if (isSingleQuestion) {
+                // Single question: submit immediately
+                inputResolver.current({ [currentQuestion.id]: selectedOption.id });
+                inputResolver.current = null;
+                setPendingInput(null);
+                setMultiSelectionPage(0);
+                setMultiSelectionAnswers({});
+                setSelectionFilter('');
+              } else {
+                // Multi-question: save answer and move to next page
+                setMultiSelectionAnswers((prev) => ({
+                  ...prev,
+                  [currentQuestion.id]: selectedOption.id,
+                }));
+                setMultiSelectionPage((prev) => prev + 1);
+                setSelectedCommandIndex(0);
+                setSelectionFilter('');
+              }
             }
             return;
           }
           // Escape - cancel
           if (key.escape) {
-            addLog(`[pendingInput] User cancelled`);
-            inputResolver.current('');
+            addLog(`[selection] Cancelled`);
+            inputResolver.current({});
             inputResolver.current = null;
             setPendingInput(null);
-            setSelectedCommandIndex(0);
+            setMultiSelectionPage(0);
+            setMultiSelectionAnswers({});
             setSelectionFilter('');
             return;
           }
           // For other keys (text input), don't handle here - let TextInput handle it via onChange
-          // This enables typing to filter the selection list
+          return; // Don't process other handlers
         }
+        // Text input mode - no special handling here, let TextInput handle it
         // Note: We don't return here for pendingInput text mode
         // This allows TextInput to handle the input normally
       }
@@ -696,51 +760,116 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 </Box>
               )}
 
-              {pendingInput.type === 'selection' && pendingInput.options ? (
-                // Selection UI with filtering
+              {pendingInput.type === 'selection' ? (
+                // Selection UI (unified for single and multi-question)
                 (() => {
-                  // Filter options based on selectionFilter
-                  const filteredOptions = pendingInput.options.filter(
-                    (option) =>
-                      option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
-                      option.name.toLowerCase().includes(selectionFilter.toLowerCase())
-                  );
+                  const questions = pendingInput.questions;
+                  const isSingleQuestion = questions.length === 1;
+                  const currentQuestion = questions[multiSelectionPage];
+                  const isReviewPage = !isSingleQuestion && multiSelectionPage === questions.length;
 
                   return (
                     <>
-                      {/* Filter input */}
-                      <Box marginBottom={1}>
-                        <Text dimColor>Filter: </Text>
-                        <Text>{selectionFilter || '(type to filter)'}</Text>
-                      </Box>
-
-                      {/* Filtered options */}
-                      {filteredOptions.length === 0 ? (
-                        <Box marginBottom={1}>
-                          <Text color="yellow">No matches found</Text>
-                        </Box>
-                      ) : (
-                        filteredOptions.slice(0, 10).map((option, idx) => (
-                          <Box key={option.id} paddingY={0}>
+                      {/* Tab navigation (only for multi-question) */}
+                      {!isSingleQuestion && (
+                        <Box marginBottom={1} gap={1}>
+                          {questions.map((q, idx) => (
                             <Text
-                              color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                              bold={idx === selectedCommandIndex}
+                              key={q.id}
+                              color={idx === multiSelectionPage ? '#00FF88' : 'gray'}
+                              bold={idx === multiSelectionPage}
                             >
-                              {idx === selectedCommandIndex ? '> ' : '  '}
-                              {option.id}
+                              {idx === multiSelectionPage ? '[*' : '['}Q{idx + 1}
+                              {multiSelectionAnswers[q.id] ? '✓' : ''}
+                              {idx === multiSelectionPage ? ']' : ']'}
                             </Text>
-                            {option.name !== option.id && (
-                              <Text dimColor> - {option.name}</Text>
-                            )}
-                          </Box>
-                        ))
+                          ))}
+                          <Text
+                            color={isReviewPage ? '#00FF88' : 'gray'}
+                            bold={isReviewPage}
+                          >
+                            {isReviewPage ? '[*Review]' : '[Review]'}
+                          </Text>
+                        </Box>
                       )}
 
-                      <Box marginTop={1}>
-                        <Text dimColor>
-                          Type to filter · ↑↓ Navigate · Enter Select · Esc Cancel
-                        </Text>
-                      </Box>
+                      {/* Review page (only for multi-question) */}
+                      {isReviewPage ? (
+                        <>
+                          <Box marginBottom={1}>
+                            <Text bold color="#00D9FF">
+                              Review Your Answers
+                            </Text>
+                          </Box>
+
+                          {questions.map((q) => (
+                            <Box key={q.id} marginBottom={1} flexDirection="column">
+                              <Text dimColor>{q.question}</Text>
+                              <Text color="#00FF88">
+                                → {multiSelectionAnswers[q.id] || '(not answered)'}
+                              </Text>
+                            </Box>
+                          ))}
+
+                          <Box marginTop={1}>
+                            <Text dimColor>Tab Previous page · Enter Submit · Esc Cancel</Text>
+                          </Box>
+                        </>
+                      ) : (
+                        // Question page (both single and multi)
+                        <>
+                          {/* Question text */}
+                          <Box marginBottom={1}>
+                            <Text bold color="#00D9FF">
+                              {currentQuestion.question}
+                            </Text>
+                          </Box>
+
+                          {/* Filter input */}
+                          <Box marginBottom={1}>
+                            <Text dimColor>Filter: </Text>
+                            <Text>{selectionFilter || '(type to filter)'}</Text>
+                          </Box>
+
+                          {/* Filtered options */}
+                          {(() => {
+                            const filteredOptions = currentQuestion.options.filter(
+                              (option) =>
+                                option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+                                option.name.toLowerCase().includes(selectionFilter.toLowerCase())
+                            );
+
+                            return filteredOptions.length === 0 ? (
+                              <Box marginBottom={1}>
+                                <Text color="yellow">No matches found</Text>
+                              </Box>
+                            ) : (
+                              filteredOptions.slice(0, 10).map((option, idx) => (
+                                <Box key={option.id} paddingY={0}>
+                                  <Text
+                                    color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                                    bold={idx === selectedCommandIndex}
+                                  >
+                                    {idx === selectedCommandIndex ? '> ' : '  '}
+                                    {option.id}
+                                  </Text>
+                                  {option.name !== option.id && (
+                                    <Text dimColor> - {option.name}</Text>
+                                  )}
+                                </Box>
+                              ))
+                            );
+                          })()}
+
+                          <Box marginTop={1}>
+                            <Text dimColor>
+                              {isSingleQuestion
+                                ? 'Type to filter · ↑↓ Navigate · Enter Select · Esc Cancel'
+                                : 'Tab Next page · Type to filter · ↑↓ Navigate · Enter Select · Esc Cancel'}
+                            </Text>
+                          </Box>
+                        </>
+                      )}
                     </>
                   );
                 })()
@@ -844,14 +973,22 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               {/* Text Input with inline hint */}
               <TextInputWithHint
                 key={inputKey}
-                value={pendingInput?.type === 'selection' ? selectionFilter : input}
-                onChange={pendingInput?.type === 'selection' ? (value) => {
-                  setSelectionFilter(value);
-                  setSelectedCommandIndex(0); // Reset selection when filter changes
-                } : setInput}
+                value={
+                  pendingInput?.type === 'selection' || pendingInput?.type === 'multi-selection'
+                    ? selectionFilter
+                    : input
+                }
+                onChange={
+                  pendingInput?.type === 'selection' || pendingInput?.type === 'multi-selection'
+                    ? (value) => {
+                        setSelectionFilter(value);
+                        setSelectedCommandIndex(0); // Reset selection when filter changes
+                      }
+                    : setInput
+                }
                 onSubmit={handleSubmit}
                 placeholder={
-                  pendingInput?.type === 'selection'
+                  pendingInput?.type === 'selection' || pendingInput?.type === 'multi-selection'
                     ? 'Type to filter options...'
                     : pendingInput?.type === 'text'
                     ? (pendingInput.placeholder || 'Type your response...')

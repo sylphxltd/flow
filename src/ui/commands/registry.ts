@@ -65,10 +65,19 @@ const modelCommand: Command = {
 
         // Ask user to select
         context.sendMessage('Which model do you want to use?');
-        modelId = await context.waitForInput({
+        const answers = await context.waitForInput({
           type: 'selection',
-          options: allModels,
+          questions: [
+            {
+              id: 'model',
+              question: 'Which model do you want to use?',
+              options: allModels,
+            },
+          ],
         });
+
+        // Extract answer from Record
+        modelId = typeof answers === 'object' && !Array.isArray(answers) ? answers['model'] : '';
       } catch (error) {
         return `Failed to load models: ${error instanceof Error ? error.message : String(error)}`;
       }
@@ -169,6 +178,66 @@ const helpCommand: Command = {
 };
 
 /**
+ * Survey command - Test multi-selection feature
+ */
+const surveyCommand: Command = {
+  id: 'survey',
+  label: '/survey',
+  description: 'Test multi-question selection (demo)',
+  execute: async (context) => {
+    context.sendMessage('Let me ask you a few questions...');
+
+    const answers = await context.waitForInput({
+      type: 'selection',
+      questions: [
+        {
+          id: 'language',
+          question: 'What is your favorite programming language?',
+          options: [
+            { id: 'typescript', name: 'TypeScript' },
+            { id: 'javascript', name: 'JavaScript' },
+            { id: 'python', name: 'Python' },
+            { id: 'rust', name: 'Rust' },
+            { id: 'go', name: 'Go' },
+          ],
+        },
+        {
+          id: 'framework',
+          question: 'Which framework do you prefer?',
+          options: [
+            { id: 'react', name: 'React' },
+            { id: 'vue', name: 'Vue' },
+            { id: 'angular', name: 'Angular' },
+            { id: 'svelte', name: 'Svelte' },
+            { id: 'solid', name: 'Solid' },
+          ],
+        },
+        {
+          id: 'editor',
+          question: 'What is your favorite code editor?',
+          options: [
+            { id: 'vscode', name: 'Visual Studio Code' },
+            { id: 'vim', name: 'Vim/Neovim' },
+            { id: 'emacs', name: 'Emacs' },
+            { id: 'sublime', name: 'Sublime Text' },
+            { id: 'atom', name: 'Atom' },
+          ],
+        },
+      ],
+    });
+
+    if (typeof answers === 'object' && !Array.isArray(answers)) {
+      const summary = Object.entries(answers)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+      return `Survey completed! Your answers: ${summary}`;
+    }
+
+    return 'Survey cancelled.';
+  },
+};
+
+/**
  * All registered commands
  */
 export const commands: Command[] = [
@@ -176,6 +245,7 @@ export const commands: Command[] = [
   logsCommand,
   clearCommand,
   helpCommand,
+  surveyCommand,
 ];
 
 /**

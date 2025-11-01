@@ -17,6 +17,31 @@ export interface CommandArg {
 }
 
 /**
+ * Question for selection
+ */
+export interface Question {
+  id: string;
+  question: string;
+  options: Array<{ id: string; name: string }>;
+}
+
+/**
+ * Input options for waitForInput
+ */
+export type WaitForInputOptions =
+  | {
+      type: 'text';
+      prompt?: string;
+      placeholder?: string;
+    }
+  | {
+      type: 'selection';
+      // Questions array - can be 1 question (single selection) or multiple (multi-selection)
+      // Asking 1 question or 10 questions should use the same interface
+      questions: Question[];
+    };
+
+/**
  * Command execution context
  * Provides methods for commands to interact with the system
  */
@@ -28,12 +53,9 @@ export interface CommandContext {
   sendMessage: (content: string) => void;
 
   // Wait for user input (text or selection)
-  waitForInput: (options: {
-    type: 'text' | 'selection';
-    prompt?: string;
-    options?: Array<{ id: string; name: string }>;
-    placeholder?: string;
-  }) => Promise<string>;
+  // Returns: string for text, Record<string, string> for selection (question id -> answer id)
+  // Note: selection with 1 question and 10 questions use the same interface
+  waitForInput: (options: WaitForInputOptions) => Promise<string | Record<string, string>>;
 
   // Get current AI config
   getConfig: () => AIConfig | null;
