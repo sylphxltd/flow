@@ -421,14 +421,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             setSelectionFilter('');
             return;
           }
-          // Let other keys fall through to TextInput for filtering
+          // For other keys (text input), don't handle here - let TextInput handle it via onChange
+          // This enables typing to filter the selection list
         }
-        // For text input, handleSubmit will handle it
-        return;
+        // Note: We don't return here for pendingInput text mode
+        // This allows TextInput to handle the input normally
       }
 
       // Handle pending command selection (e.g., model selection, provider selection)
-      if (pendingCommand) {
+      if (pendingCommand && !pendingInput) {
         // Get options for the pending command's first arg
         const firstArg = pendingCommand.command.args?.[0];
         const cacheKey = firstArg ? `${pendingCommand.command.id}:${firstArg.name}` : '';
@@ -470,7 +471,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       }
 
       // Handle command autocomplete navigation
-      else if (filteredCommands.length > 0) {
+      else if (filteredCommands.length > 0 && !pendingInput) {
         // Arrow down - next command
         if (key.downArrow) {
           setSelectedCommandIndex((prev) =>
