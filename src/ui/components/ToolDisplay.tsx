@@ -43,13 +43,23 @@ const formatFilePathArgs: ArgsFormatter = (args) =>
 const formatBashArgs: ArgsFormatter = (args) => {
   const command = args.command ? String(args.command) : '';
   const cwd = args.cwd ? String(args.cwd) : '';
+  const runInBackground = args.run_in_background;
 
-  if (cwd && cwd !== process.cwd()) {
-    return `${truncateString(command, 50)} [in ${getRelativePath(cwd)}]`;
+  let display = truncateString(command, 80);
+
+  if (runInBackground) {
+    display += ' [background]';
   }
 
-  return truncateString(command, 80);
+  if (cwd && cwd !== process.cwd()) {
+    display += ` [in ${getRelativePath(cwd)}]`;
+  }
+
+  return display;
 };
+
+const formatBashIdArgs: ArgsFormatter = (args) =>
+  args.bash_id ? String(args.bash_id) : '';
 
 const formatGrepArgs: ArgsFormatter = (args) => {
   const pattern = args.pattern ? String(args.pattern) : '';
@@ -87,6 +97,9 @@ const argsFormatters: Record<string, ArgsFormatter> = {
   write: formatFilePathArgs,
   edit: formatFilePathArgs,
   bash: formatBashArgs,
+  'bash-output': formatBashIdArgs,
+  'kill-bash': formatBashIdArgs,
+  'list-bash': () => '',
   grep: formatGrepArgs,
   glob: formatGlobArgs,
 };
@@ -208,7 +221,16 @@ const formatGlobResult: ResultFormatter = (result) => {
 };
 
 const formatBashResult: ResultFormatter = (result) => {
-  // Extract stdout/stderr from { command, stdout, stderr, exitCode } structure
+  // Handle background mode: { bash_id, command, mode, message }
+  if (typeof result === 'object' && result !== null && 'mode' in result && (result as any).mode === 'background') {
+    const { bash_id, message } = result as any;
+    return {
+      lines: [`bash_id: ${bash_id}`],
+      summary: message,
+    };
+  }
+
+  // Handle foreground mode: { command, stdout, stderr, exitCode }
   if (typeof result === 'object' && result !== null && 'stdout' in result) {
     const { stdout, stderr, exitCode } = result as any;
     const output = stderr && exitCode !== 0 ? stderr : stdout;
@@ -231,6 +253,57 @@ const formatAskResult: ResultFormatter = (result) => ({
   summary: undefined,
 });
 
+const formatBashOutputResult: ResultFormatter = (result) => {
+  // Handle bash-output result: { bash_id, command, stdout, stderr, exitCode, isRunning, duration }
+  if (typeof result === 'object' && result !== null && 'bash_id' in result) {
+    const { stdout, stderr, exitCode, isRunning, duration } = result as any;
+    const output = stderr && exitCode !== 0 ? stderr : stdout;
+    const lines = output ? output.split('\n').filter((line: string) => line.trim()) : [];
+
+    const status = isRunning ? 'Still running' : `Completed (exit: ${exitCode})`;
+    const durationSec = Math.floor((duration as number) / 1000);
+
+    return {
+      lines,
+      summary: `${status} - ${durationSec}s`,
+    };
+  }
+
+  return { lines: resultToLines(result) };
+};
+
+const formatKillBashResult: ResultFormatter = (result) => {
+  // Handle kill-bash result: { bash_id, status, message }
+  if (typeof result === 'object' && result !== null && 'message' in result) {
+    const { message } = result as any;
+    return {
+      lines: [],
+      summary: message,
+    };
+  }
+
+  return { lines: resultToLines(result) };
+};
+
+const formatListBashResult: ResultFormatter = (result) => {
+  // Handle list-bash result: { processes, count, running, completed }
+  if (typeof result === 'object' && result !== null && 'processes' in result) {
+    const { processes, running, completed } = result as any;
+    const lines = (processes as Array<any>).map((proc) => {
+      const status = proc.isRunning ? '🟢' : '🔴';
+      const duration = Math.floor(proc.duration / 1000);
+      return `${status} [${duration}s] ${proc.command}`;
+    });
+
+    return {
+      lines,
+      summary: `${running} running, ${completed} completed`,
+    };
+  }
+
+  return { lines: resultToLines(result) };
+};
+
 /**
  * Result formatter registry
  */
@@ -241,6 +314,9 @@ const resultFormatters: Record<string, ResultFormatter> = {
   grep: formatGrepResult,
   glob: formatGlobResult,
   bash: formatBashResult,
+  'bash-output': formatBashOutputResult,
+  'kill-bash': formatKillBashResult,
+  'list-bash': formatListBashResult,
   ask: formatAskResult,
 };
 
@@ -280,6 +356,9 @@ const displayNames: Record<string, string> = {
   write: 'Write',
   edit: 'Update',
   bash: 'Bash',
+  'bash-output': 'BashOutput',
+  'kill-bash': 'KillBash',
+  'list-bash': 'ListBash',
   grep: 'Search',
   glob: 'Search',
   ask: 'Ask',
@@ -294,7 +373,7 @@ const getDisplayName = (toolName: string): string =>
 /**
  * Component rendering helpers
  */
-const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'grep', 'glob']);
+const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'bash-output', 'kill-bash', 'list-bash', 'grep', 'glob']);
 
 const isBuiltInTool = (name: string): boolean =>
   builtInTools.has(name.toLowerCase());
