@@ -8,7 +8,8 @@ import { Box, Text } from 'ink';
 import type { ProviderId } from '../../config/ai-config.js';
 import { getProvider } from '../../providers/index.js';
 import { getTokenizerInfo } from '../../utils/token-counter.js';
-import { getCurrentAgent } from '../../core/agent-manager.js';
+import { getAgentById } from '../../core/agent-manager.js';
+import { useAppStore } from '../stores/app-store.js';
 
 interface StatusBarProps {
   provider: ProviderId;
@@ -26,27 +27,11 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
     loaded: boolean;
     failed: boolean;
   } | null>(null);
-  const [agentName, setAgentName] = useState<string>('');
 
-  // Get current agent and update periodically
-  useEffect(() => {
-    const updateAgent = () => {
-      try {
-        const agent = getCurrentAgent();
-        setAgentName(agent.metadata.name);
-      } catch (error) {
-        setAgentName('');
-      }
-    };
-
-    // Initial update
-    updateAgent();
-
-    // Update every second to reflect agent changes
-    const interval = setInterval(updateAgent, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // Subscribe to current agent from store (event-driven, no polling!)
+  const currentAgentId = useAppStore((state) => state.currentAgentId);
+  const currentAgent = getAgentById(currentAgentId);
+  const agentName = currentAgent?.metadata.name || '';
 
   useEffect(() => {
     async function loadModelDetails() {

@@ -47,6 +47,10 @@ export interface AppState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
+  // Agent State
+  currentAgentId: string;
+  setCurrentAgentId: (agentId: string) => void;
+
   // Debug Logs
   debugLogs: string[];
   addDebugLog: (message: string) => void;
@@ -183,6 +187,13 @@ export const useAppStore = create<AppState>()(
     setError: (error) =>
       set((state) => {
         state.error = error;
+      }),
+
+    // Agent State
+    currentAgentId: 'coder',
+    setCurrentAgentId: (agentId) =>
+      set((state) => {
+        state.currentAgentId = agentId;
       }),
 
     // Debug Logs

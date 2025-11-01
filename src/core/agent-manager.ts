@@ -12,11 +12,22 @@ import { getBuiltinAgents, DEFAULT_AGENT_ID } from './builtin-agents.js';
  */
 interface AgentManagerState {
   agents: Map<string, Agent>;
-  currentAgentId: string;
   cwd: string;
 }
 
 let state: AgentManagerState | null = null;
+
+/**
+ * Get the app store (lazy import to avoid circular dependencies)
+ */
+let getAppStore: (() => any) | null = null;
+
+/**
+ * Set the app store getter (called during initialization)
+ */
+export function setAppStoreGetter(getter: () => any): void {
+  getAppStore = getter;
+}
 
 /**
  * Initialize agent manager
@@ -32,9 +43,20 @@ export async function initializeAgentManager(cwd: string): Promise<void> {
 
   state = {
     agents: agentMap,
-    currentAgentId: DEFAULT_AGENT_ID,
     cwd,
   };
+
+  // Initialize store with default agent if store is available
+  if (getAppStore) {
+    const store = getAppStore();
+    if (store.getState) {
+      const currentAgentId = store.getState().currentAgentId || DEFAULT_AGENT_ID;
+      // Ensure the current agent exists, fallback to default if not
+      if (!agentMap.has(currentAgentId)) {
+        store.getState().setCurrentAgentId(DEFAULT_AGENT_ID);
+      }
+    }
+  }
 }
 
 /**
@@ -62,17 +84,27 @@ export function getAgentById(id: string): Agent | null {
  * Get current agent
  */
 export function getCurrentAgent(): Agent {
+  const currentAgentId = getCurrentAgentId();
+
   if (!state) {
     return getBuiltinAgents()[0]; // Return default coder agent
   }
-  return state.agents.get(state.currentAgentId) || getBuiltinAgents()[0];
+  return state.agents.get(currentAgentId) || getBuiltinAgents()[0];
 }
 
 /**
  * Get current agent ID
  */
 export function getCurrentAgentId(): string {
-  return state?.currentAgentId || DEFAULT_AGENT_ID;
+  // Try to get from store first
+  if (getAppStore) {
+    const store = getAppStore();
+    if (store.getState) {
+      return store.getState().currentAgentId || DEFAULT_AGENT_ID;
+    }
+  }
+  // Fallback to default
+  return DEFAULT_AGENT_ID;
 }
 
 /**
@@ -88,7 +120,14 @@ export function switchAgent(agentId: string): boolean {
     return false;
   }
 
-  state.currentAgentId = agentId;
+  // Update store if available (this triggers reactive updates)
+  if (getAppStore) {
+    const store = getAppStore();
+    if (store.getState) {
+      store.getState().setCurrentAgentId(agentId);
+    }
+  }
+
   return true;
 }
 
@@ -101,13 +140,18 @@ export async function reloadAgents(): Promise<void> {
   }
 
   const cwd = state.cwd;
-  const currentAgentId = state.currentAgentId;
+  const currentAgentId = getCurrentAgentId();
 
   await initializeAgentManager(cwd);
 
-  // Restore current agent if it still exists
-  if (state && state.agents.has(currentAgentId)) {
-    state.currentAgentId = currentAgentId;
+  // Restore current agent if it still exists, otherwise reset to default
+  if (state && !state.agents.has(currentAgentId)) {
+    if (getAppStore) {
+      const store = getAppStore();
+      if (store.getState) {
+        store.getState().setCurrentAgentId(DEFAULT_AGENT_ID);
+      }
+    }
   }
 }
 

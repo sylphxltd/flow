@@ -14,7 +14,7 @@ import Logs from './screens/Logs.js';
 import { useAIConfig } from './hooks/useAIConfig.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useSessionPersistence } from './hooks/useSessionPersistence.js';
-import { initializeAgentManager } from '../core/agent-manager.js';
+import { initializeAgentManager, setAppStoreGetter } from '../core/agent-manager.js';
 
 export default function App() {
   const currentScreen = useAppStore((state) => state.currentScreen);
@@ -38,6 +38,9 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Set up agent manager to use app store
+    setAppStoreGetter(() => useAppStore);
+
     // Initialize agent manager
     const cwd = process.cwd();
     initializeAgentManager(cwd).catch((err) => {
