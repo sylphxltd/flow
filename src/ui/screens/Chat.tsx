@@ -901,7 +901,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           <Box key={q.id} marginBottom={1} flexDirection="column">
                             {/* Question header */}
                             <Box>
-                              <Text color="#00D9FF">Q{qIdx + 1}. </Text>
+                              {!isSingleQuestion && (
+                                <Text color="#00D9FF">Q{qIdx + 1}. </Text>
+                              )}
                               <Text bold={isCurrentQuestion} color={isCurrentQuestion ? '#00D9FF' : 'gray'}>
                                 {q.question}
                               </Text>
