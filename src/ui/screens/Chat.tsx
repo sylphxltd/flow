@@ -500,50 +500,24 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
 
-            if (isBaseCommand && hasArgs) {
-              // Base command with args - enter selection mode instead of executing
-              addLog(`[useInput] Enter selection mode for: ${selected.label}`);
-              setInput(selected.label); // Set input to command name (no space yet)
+            // Execute command directly - let command handle interaction via CommandContext
+            addLog(`[useInput] Enter autocomplete execute: ${selected.label}`);
 
-              // Trigger selection flow by simulating handleSubmit logic
-              const firstArg = selected.args[0];
-              const cacheKey = `${selected.id}:${firstArg.name}`;
-
-              // Trigger lazy load if needed
-              if (firstArg.loadOptions && !cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
-                setCurrentlyLoading(cacheKey);
-                setLoadError(null);
-
-                firstArg.loadOptions()
-                  .then((options) => {
-                    setCachedOptions((prev) => new Map(prev).set(cacheKey, options));
-                    setCurrentlyLoading(null);
-                  })
-                  .catch((error) => {
-                    const errorMsg = error instanceof Error ? error.message : String(error);
-                    addLog(`Error loading ${cacheKey}: ${errorMsg}`);
-                    setLoadError(errorMsg);
-                    setCurrentlyLoading(null);
-                  });
-              }
-
-              // Enter selection mode
-              setPendingCommand({ command: selected, currentInput: selected.label });
-              setInput('');
-              setSelectedCommandIndex(0);
-            } else {
-              // Multi-level autocomplete item or command without args - execute directly
-              addLog(`[useInput] Enter autocomplete execute: ${selected.label}`);
-              if (currentSessionId) {
-                addMessage(currentSessionId, 'user', selected.label);
-              }
-              const response = await selected.execute(createCommandContext([]));
-              if (currentSessionId) {
-                addMessage(currentSessionId, 'assistant', response);
-              }
-              setInput('');
-              setSelectedCommandIndex(0);
+            // Add user message to conversation
+            if (currentSessionId) {
+              addMessage(currentSessionId, 'user', selected.label);
             }
+
+            // Execute command - it will use waitForInput if needed
+            const response = await selected.execute(createCommandContext([]));
+
+            // Add final response if any
+            if (response && currentSessionId) {
+              addMessage(currentSessionId, 'assistant', response);
+            }
+
+            setInput('');
+            setSelectedCommandIndex(0);
           }
           return;
         }
@@ -668,38 +642,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         addMessage(currentSessionId, 'user', userMessage);
       }
 
-      // Check if command needs args but none provided
-      if (command.args && command.args.length > 0 && args.length === 0) {
-        const firstArg = command.args[0];
-        const cacheKey = `${command.id}:${firstArg.name}`;
-
-        // Trigger lazy load if arg has loadOptions
-        if (firstArg.loadOptions && !cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
-          setCurrentlyLoading(cacheKey);
-          setLoadError(null);
-
-          firstArg.loadOptions()
-            .then((options) => {
-              setCachedOptions((prev) => new Map(prev).set(cacheKey, options));
-              setCurrentlyLoading(null);
-            })
-            .catch((error) => {
-              const errorMsg = error instanceof Error ? error.message : String(error);
-              addLog(`Error loading ${cacheKey}: ${errorMsg}`);
-              setLoadError(errorMsg);
-              setCurrentlyLoading(null);
-            });
-        }
-
-        // Save pending command and show selection UI
-        setPendingCommand({ command, currentInput: commandName });
-        return;
-      }
-
-      // Execute command
+      // Execute command - let command handle interaction via CommandContext
       try {
         const response = await command.execute(createCommandContext(args));
-        if (currentSessionId) {
+
+        // Add final response if any
+        if (response && currentSessionId) {
           addMessage(currentSessionId, 'assistant', response);
         }
       } catch (error) {
