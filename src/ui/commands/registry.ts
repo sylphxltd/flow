@@ -1024,53 +1024,51 @@ const contextCommand: Command = {
     const freePercent = ((realFreeTokens / contextLimit) * 100).toFixed(1);
     const bufferPercent = ((autocompactBuffer / contextLimit) * 100).toFixed(1);
 
-    // Create visual bar (10 blocks) - using simple ASCII characters
-    const createBar = (used: number, limit: number): string => {
-      const blocks = 10;
-      const usedBlocks = Math.floor((used / limit) * blocks);
-      const freeBlocks = blocks - usedBlocks;
+    // Create visual bar chart (30 blocks for better resolution)
+    const createBarChart = (): string[] => {
+      const totalBlocks = 30;
+      const systemPromptBlocks = Math.floor((systemPromptTokens / contextLimit) * totalBlocks);
+      const toolsBlocks = Math.floor((toolsTokensTotal / contextLimit) * totalBlocks);
+      const messagesBlocks = Math.floor((messagesTokens / contextLimit) * totalBlocks);
+      const usedBlocks = systemPromptBlocks + toolsBlocks + messagesBlocks;
+      const freeBlocks = totalBlocks - usedBlocks;
 
-      const filled = '█'.repeat(usedBlocks);
-      const empty = '░'.repeat(freeBlocks);
+      // Line 1: System prompt (blue)
+      const line1 = '█'.repeat(systemPromptBlocks) + '░'.repeat(totalBlocks - systemPromptBlocks);
 
-      return filled + empty;
+      // Line 2: Tools (green)
+      const line2 = '░'.repeat(systemPromptBlocks) + '█'.repeat(toolsBlocks) + '░'.repeat(totalBlocks - systemPromptBlocks - toolsBlocks);
+
+      // Line 3: Messages (yellow)
+      const line3 = '░'.repeat(systemPromptBlocks + toolsBlocks) + '█'.repeat(messagesBlocks) + '░'.repeat(freeBlocks);
+
+      return [line1, line2, line3];
     };
 
-    const bar = createBar(usedTokens, contextLimit);
+    const [bar1, bar2, bar3] = createBarChart();
 
-    // Format tool list with tokens
+    // Format tool list with tokens (sorted by size)
     const toolList = Object.entries(toolTokens)
-      .map(([name, tokens]) => `  └ ${name}: ${formatTokenCount(tokens)} tokens`)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, tokens]) => `    ${name}: ${formatTokenCount(tokens)} tokens`)
       .join('\n');
 
-    // Format output with better structure
+    // Format output with clean visual hierarchy
     const output = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Context Usage
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+Context Usage: ${formatTokenCount(usedTokens)}/${formatTokenCount(contextLimit)} tokens (${usedPercent}%)
 Model: ${modelName}
-Limit: ${formatTokenCount(contextLimit)} tokens
 
-Usage Bar: [${bar}] ${usedPercent}%
+Visual Breakdown:
+  ${bar1}  System prompt: ${formatTokenCount(systemPromptTokens)} (${systemPromptPercent}%)
+  ${bar2}  Tools:         ${formatTokenCount(toolsTokensTotal)} (${toolsPercent}%)
+  ${bar3}  Messages:      ${formatTokenCount(messagesTokens)} (${messagesPercent}%)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Token Breakdown
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Available Space:
+  • Free: ${formatTokenCount(realFreeTokens)} tokens (${freePercent}%)
+  • Buffer: ${formatTokenCount(autocompactBuffer)} tokens (${bufferPercent}%)
 
-• System prompt: ${formatTokenCount(systemPromptTokens)} tokens (${systemPromptPercent}%)
-• System tools:  ${formatTokenCount(toolsTokensTotal)} tokens (${toolsPercent}%)
-• Messages:      ${formatTokenCount(messagesTokens)} tokens (${messagesPercent}%)
-• Free space:    ${formatTokenCount(realFreeTokens)} tokens (${freePercent}%)
-• Buffer:        ${formatTokenCount(autocompactBuffer)} tokens (${bufferPercent}%)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  System Tools (${Object.keys(tools).length} tools)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+System Tools (${Object.keys(tools).length} total):
 ${toolList}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `.trim();
 
     return output;
