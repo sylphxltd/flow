@@ -73,16 +73,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [currentlyLoading, setCurrentlyLoading] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Shared session ID ref for command execution
+  const commandSessionRef = useRef<string | null>(null);
+
   // Create command context for execute functions
   const createCommandContext = (args: string[]): CommandContext => ({
     args,
     sendMessage: (content: string) => {
-      // Create a temporary session if none exists (for setup commands)
-      let sessionId = currentSessionId;
-      if (!sessionId) {
-        sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+      // Reuse existing command session or create one
+      if (!commandSessionRef.current) {
+        commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
-      addMessage(sessionId, 'assistant', content);
+      addMessage(commandSessionRef.current, 'assistant', content);
     },
     waitForInput: (options) => {
       return new Promise((resolve) => {
@@ -336,11 +338,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               addLog(`[selection] Q${multiSelectionPage + 1}: ${selectedValue}`);
 
               // Add user's answer to chat history immediately (like shell)
-              let sessionId = currentSessionId;
-              if (!sessionId) {
-                sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+              if (!commandSessionRef.current) {
+                commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
               }
-              addMessage(sessionId, 'user', selectedOption.label);
+              addMessage(commandSessionRef.current, 'user', selectedOption.label);
 
               if (isSingleQuestion) {
                 // Single question: submit immediately
@@ -565,11 +566,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       addLog(`[handleSubmit] Resolving text input: ${value}`);
 
       // Add user's text input to chat history
-      let sessionId = currentSessionId;
-      if (!sessionId) {
-        sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+      if (!commandSessionRef.current) {
+        commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
-      addMessage(sessionId, 'user', value.trim());
+      addMessage(commandSessionRef.current, 'user', value.trim());
 
       inputResolver.current(value.trim());
       inputResolver.current = null;
