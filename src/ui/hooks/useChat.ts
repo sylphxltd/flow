@@ -102,21 +102,22 @@ export function useChat() {
             messageParts.push({ type: 'text', content: currentTextContent });
             currentTextContent = '';
           }
-          // Add tool part
-          messageParts.push({ type: 'tool', name: chunk.toolName, status: 'running' });
+          // Add tool part with args
+          messageParts.push({ type: 'tool', name: chunk.toolName, status: 'running', args: chunk.args });
           activeTools.set(chunk.toolCallId, Date.now());
           onToolCall?.(chunk.toolName, chunk.args);
         } else if (chunk.type === 'tool-result') {
           const startTime = activeTools.get(chunk.toolCallId);
           const duration = startTime ? Date.now() - startTime : 0;
           activeTools.delete(chunk.toolCallId);
-          // Update tool part status
+          // Update tool part status and result
           const toolPart = messageParts.find(
             (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
           );
           if (toolPart && toolPart.type === 'tool') {
             toolPart.status = 'completed';
             toolPart.duration = duration;
+            toolPart.result = chunk.result;
           }
           onToolResult?.(chunk.toolName, chunk.result, duration);
         }

@@ -11,7 +11,7 @@ export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | '
 
 export type MessagePart =
   | { type: 'text'; content: string }
-  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number };
+  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown };
 
 export interface Session {
   id: string;

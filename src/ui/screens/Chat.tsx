@@ -15,10 +15,11 @@ import { commands } from '../commands/registry.js';
 import type { CommandContext, WaitForInputOptions, Question } from '../commands/types.js';
 import { calculateScrollViewport } from '../utils/scroll-viewport.js';
 import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from '../../tools/interaction.js';
+import { ToolDisplay } from '../components/ToolDisplay.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
-  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number };
+  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown };
 
 interface ChatProps {
   commandFromPalette?: string | null;
@@ -707,7 +708,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         addLog(`Tool call: ${toolName}`);
         setStreamParts((prev) => [
           ...prev,
-          { type: 'tool', name: toolName, status: 'running' },
+          { type: 'tool', name: toolName, status: 'running', args },
         ]);
       },
       // onToolResult - tool execution completed
@@ -716,7 +717,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         setStreamParts((prev) =>
           prev.map((part) =>
             part.type === 'tool' && part.name === toolName
-              ? { ...part, status: 'completed', duration }
+              ? { ...part, status: 'completed', duration, result }
               : part
           )
         );
@@ -774,11 +775,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         } else {
                           return (
                             <Box key={idx} marginBottom={1}>
-                              <Text color="#00FF88">● </Text>
-                              <Text color="white" bold>{part.name}</Text>
-                              {part.duration !== undefined && (
-                                <Text color="gray"> ({part.duration}ms)</Text>
-                              )}
+                              <ToolDisplay
+                                name={part.name}
+                                status={part.status}
+                                duration={part.duration}
+                                args={part.args}
+                                result={part.result}
+                              />
                             </Box>
                           );
                         }
@@ -818,25 +821,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     // Tool part
                     return (
                       <Box key={idx} marginBottom={1}>
-                        {part.status === 'running' ? (
-                          <>
-                            <Spinner color="#00FF88" />
-                            <Text color="white" bold> {part.name}</Text>
-                            <Text color="gray"> (executing...)</Text>
-                          </>
-                        ) : part.status === 'completed' ? (
-                          <>
-                            <Text color="#00FF88">● </Text>
-                            <Text color="white" bold>{part.name}</Text>
-                            <Text color="gray"> ({part.duration}ms)</Text>
-                          </>
-                        ) : (
-                          <>
-                            <Text color="red">● </Text>
-                            <Text color="white" bold>{part.name}</Text>
-                            <Text color="red"> (failed)</Text>
-                          </>
-                        )}
+                        <ToolDisplay
+                          name={part.name}
+                          status={part.status}
+                          duration={part.duration}
+                          args={part.args}
+                          result={part.result}
+                        />
                       </Box>
                     );
                   }
