@@ -360,34 +360,24 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
           return;
         }
-        // Tab or Enter - autocomplete selected command
+        // Tab or Enter - fill in autocomplete text (don't execute yet)
         if (key.tab || key.return) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
-            // Check if this is a base command or multi-level autocomplete
+            // Always just fill in the text, never execute here
+            // This matches shell behavior: autocomplete fills, Enter on final text executes
             const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
-            const isMultiLevel = !isBaseCommand && selected.id.includes(':');
+            const completedText = (isBaseCommand && hasArgs) ? `${selected.label} ` : selected.label;
 
-            if (isMultiLevel && key.return) {
-              // Multi-level autocomplete + Enter: execute directly
-              addLog(`[useInput] Executing autocomplete: ${selected.label}`);
-              skipNextSubmit.current = true; // Prevent TextInput's onSubmit from also firing
-              if (currentSessionId) {
-                addMessage(currentSessionId, 'user', selected.label);
-              }
-              const response = await selected.execute();
-              if (currentSessionId) {
-                addMessage(currentSessionId, 'assistant', response);
-              }
-              setInput('');
-              setSelectedCommandIndex(0);
-            } else {
-              // Base command or Tab: fill in text
-              const completedText = (isBaseCommand && hasArgs) ? `${selected.label} ` : selected.label;
-              setInput(completedText);
-              setInputKey((prev) => prev + 1); // Force remount to move cursor to end
-              setSelectedCommandIndex(0);
+            addLog(`[useInput] Autocomplete fill: ${completedText}`);
+            setInput(completedText);
+            setInputKey((prev) => prev + 1); // Force remount to move cursor to end
+            setSelectedCommandIndex(0);
+
+            // Prevent Enter from also submitting (let user verify and press Enter again)
+            if (key.return) {
+              skipNextSubmit.current = true;
             }
           }
           return;
