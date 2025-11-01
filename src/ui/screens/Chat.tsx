@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Box, Text } from 'ink';
-import TextInput from 'ink-text-input';
+import { Box, Text, useInput } from 'ink';
+import TextInputWithHint from '../components/TextInputWithHint.js';
 import { useAppStore } from '../stores/app-store.js';
 import { useChat } from '../hooks/useChat.js';
 import StatusBar from '../components/StatusBar.js';
@@ -16,12 +16,35 @@ type StreamPart =
   | { type: 'text'; content: string }
   | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number };
 
-export default function Chat() {
+interface CommandArg {
+  name: string;
+  type: 'string' | 'model' | 'provider';
+  description: string;
+  required?: boolean;
+}
+
+interface Command {
+  id: string;
+  label: string;
+  description: string;
+  args?: CommandArg[];
+  execute: (args?: string[]) => Promise<string>; // Returns response message
+}
+
+interface ChatProps {
+  commandFromPalette?: string | null;
+}
+
+export default function Chat({ commandFromPalette }: ChatProps) {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const [showLogs, setShowLogs] = useState(true); // Show logs by default for debugging
+  const [showLogs, setShowLogs] = useState(false); // Hide logs by default
+  const [ctrlPressed, setCtrlPressed] = useState(false);
+  const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -32,8 +55,313 @@ export default function Chat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
   const createSession = useAppStore((state) => state.createSession);
+  const sessions = useAppStore((state) => state.sessions);
+  const updateProvider = useAppStore((state) => state.updateProvider);
+  const setAIConfig = useAppStore((state) => state.setAIConfig);
+  const addMessage = useAppStore((state) => state.addMessage);
 
   const { sendMessage, currentSession } = useChat();
+
+  // Define available commands with args configuration
+  const baseCommands: Command[] = [
+    {
+      id: 'model',
+      label: '/model',
+      description: 'Switch AI model',
+      args: [
+        {
+          name: 'model-name',
+          type: 'model',
+          description: 'Model to switch to',
+          required: true,
+        },
+      ],
+      execute: async (args) => {
+        if (!args || args.length === 0) {
+          return 'Please provide a model name. Example: /model claude-3-5-sonnet';
+        }
+
+        const modelId = args[0];
+        const provider = currentSession?.provider || aiConfig?.defaultProvider;
+
+        if (!provider) {
+          return 'No provider configured. Please configure a provider first.';
+        }
+
+        // Update model
+        updateProvider(provider, { defaultModel: modelId });
+        const newConfig = {
+          ...aiConfig!,
+          defaultModel: modelId,
+          providers: {
+            ...aiConfig!.providers,
+            [provider]: {
+              ...aiConfig!.providers?.[provider],
+              defaultModel: modelId,
+            },
+          },
+        };
+        setAIConfig(newConfig);
+
+        return `Switched to model: ${modelId}`;
+      },
+    },
+    {
+      id: 'logs',
+      label: '/logs',
+      description: 'Toggle debug logs',
+      execute: async () => {
+        setShowLogs((prev) => !prev);
+        return showLogs ? 'Debug logs hidden' : 'Debug logs enabled';
+      },
+    },
+    {
+      id: 'clear',
+      label: '/clear',
+      description: 'Clear chat history',
+      execute: async () => {
+        if (currentSessionId) {
+          const session = sessions.find((s) => s.id === currentSessionId);
+          if (session) {
+            session.messages = [];
+          }
+        }
+        return 'Chat history cleared';
+      },
+    },
+    {
+      id: 'help',
+      label: '/help',
+      description: 'Show available commands',
+      execute: async () => {
+        const commandList = baseCommands
+          .map((cmd) => {
+            const argsText = cmd.args
+              ? ` ${cmd.args.map((a) => `[${a.name}]`).join(' ')}`
+              : '';
+            return `${cmd.label}${argsText} - ${cmd.description}`;
+          })
+          .join('\n');
+        return `Available commands:\n${commandList}`;
+      },
+    },
+  ];
+
+  // Get all available models for autocomplete
+  const [availableModels, setAvailableModels] = useState<Array<{ id: string; name: string }>>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+
+  useEffect(() => {
+    // Fetch models from all configured providers
+    const fetchAllModels = async () => {
+      if (!aiConfig?.providers) return;
+
+      setIsLoadingModels(true);
+      const allModels: Array<{ id: string; name: string }> = [];
+
+      for (const [providerId, config] of Object.entries(aiConfig.providers)) {
+        if (config.apiKey) {
+          try {
+            const { fetchModels } = await import('../utils/ai-model-fetcher.js');
+            const models = await fetchModels(providerId as any, config.apiKey);
+            allModels.push(...models.map(m => ({ id: m.id, name: m.name })));
+          } catch (error) {
+            console.error(`Failed to fetch models for ${providerId}:`, error);
+          }
+        }
+      }
+
+      setAvailableModels(allModels);
+      setIsLoadingModels(false);
+    };
+
+    fetchAllModels();
+  }, [aiConfig]);
+
+  // Get available options for a command arg type
+  const getArgOptions = (argType: string): Array<{ id: string; name: string }> => {
+    switch (argType) {
+      case 'model':
+        return availableModels;
+      case 'provider':
+        return Object.keys(aiConfig?.providers || {}).map((id) => ({
+          id,
+          name: id,
+        }));
+      default:
+        return [];
+    }
+  };
+
+  // Generate hint text for current input
+  const getHintText = (): string | undefined => {
+    if (!input.startsWith('/')) return undefined;
+
+    const parts = input.split(' ');
+    const commandName = parts[0];
+
+    // Find matching base command
+    const matchedCommand = baseCommands.find((cmd) => cmd.label === commandName);
+    if (matchedCommand && matchedCommand.args && matchedCommand.args.length > 0) {
+      const currentArgIndex = parts.length - 1;
+      if (currentArgIndex < matchedCommand.args.length) {
+        const arg = matchedCommand.args[currentArgIndex];
+        return arg.required ? `[${arg.name}]` : `<${arg.name}>`;
+      }
+    }
+
+    return undefined;
+  };
+
+  // Filter commands based on input
+  const getFilteredCommands = () => {
+    if (!input.startsWith('/')) return [];
+
+    const parts = input.split(' ');
+    const commandName = parts[0];
+    const argInput = parts.slice(1).join(' ');
+
+    const matchedCommand = baseCommands.find((cmd) => cmd.label === commandName);
+
+    // Multi-level autocomplete: if command has args and user is typing args
+    if (matchedCommand && matchedCommand.args && parts.length > 1) {
+      const currentArgIndex = 0;
+      const arg = matchedCommand.args[currentArgIndex];
+
+      // Get options for this arg type
+      const options = getArgOptions(arg.type);
+
+      if (options.length > 0) {
+        return options
+          .filter((option) =>
+            option.id.toLowerCase().includes(argInput.toLowerCase()) ||
+            option.name.toLowerCase().includes(argInput.toLowerCase())
+          )
+          .map((option) => ({
+            id: `${arg.type}-${option.id}`,
+            label: `${commandName} ${option.id}`,
+            description: option.name !== option.id ? option.name : '',
+            args: matchedCommand.args,
+            execute: async () => {
+              return await matchedCommand.execute([option.id]);
+            },
+          }));
+      }
+    }
+
+    // Base command filtering
+    const query = input.slice(1).toLowerCase();
+    return baseCommands.filter(
+      (cmd) =>
+        cmd.label.toLowerCase().includes(`/${query}`) ||
+        cmd.description.toLowerCase().includes(query)
+    );
+  };
+
+  const filteredCommands = getFilteredCommands();
+  const hintText = getHintText();
+
+  // Handle keyboard shortcuts for command menu and selection navigation
+  useInput(
+    async (input, key) => {
+      // Handle pending command selection (e.g., model selection, provider selection)
+      if (pendingCommand) {
+        // Get options for the pending command's first arg
+        const firstArg = pendingCommand.command.args?.[0];
+        const options = firstArg ? getArgOptions(firstArg.type) : [];
+        const maxIndex = options.length - 1;
+
+        // Arrow down - next option
+        if (key.downArrow) {
+          setSelectedCommandIndex((prev) => (prev < maxIndex ? prev + 1 : prev));
+          return;
+        }
+        // Arrow up - previous option
+        if (key.upArrow) {
+          setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
+          return;
+        }
+        // Enter - select option
+        if (key.return) {
+          const selectedOption = options[selectedCommandIndex];
+          if (selectedOption) {
+            const response = await pendingCommand.command.execute([selectedOption.id]);
+            if (currentSessionId) {
+              addMessage(currentSessionId, 'assistant', response);
+            }
+            setPendingCommand(null);
+            setSelectedCommandIndex(0);
+          }
+          return;
+        }
+        // Escape - cancel
+        if (key.escape) {
+          if (currentSessionId) {
+            addMessage(currentSessionId, 'assistant', 'Command cancelled');
+          }
+          setPendingCommand(null);
+          setSelectedCommandIndex(0);
+          return;
+        }
+      }
+
+      // Handle command autocomplete navigation
+      else if (filteredCommands.length > 0) {
+        // Arrow down - next command
+        if (key.downArrow) {
+          setSelectedCommandIndex((prev) =>
+            prev < filteredCommands.length - 1 ? prev + 1 : prev
+          );
+          return;
+        }
+        // Arrow up - previous command
+        if (key.upArrow) {
+          setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
+          return;
+        }
+        // Tab - select command (autocomplete text)
+        if (key.tab) {
+          const selected = filteredCommands[selectedCommandIndex];
+          if (selected) {
+            setInput(selected.label);
+            setSelectedCommandIndex(0);
+          }
+          return;
+        }
+        // Enter - execute selected command (for multi-level autocomplete)
+        if (key.return) {
+          const selected = filteredCommands[selectedCommandIndex];
+          // Check if this is a multi-level autocomplete item (has arg type prefix)
+          const isArgAutocomplete = selected && (
+            selected.id.startsWith('model-') ||
+            selected.id.startsWith('provider-') ||
+            selected.id.includes('-')
+          );
+
+          if (isArgAutocomplete) {
+            // This is a multi-level autocomplete item - execute directly
+            if (currentSessionId) {
+              addMessage(currentSessionId, 'user', selected.label);
+            }
+            const response = await selected.execute();
+            if (currentSessionId) {
+              addMessage(currentSessionId, 'assistant', response);
+            }
+            setInput('');
+            setSelectedCommandIndex(0);
+          }
+          return;
+        }
+        // Escape - cancel command mode
+        if (key.escape) {
+          setInput('');
+          setSelectedCommandIndex(0);
+          return;
+        }
+      }
+    },
+    { isActive: true }
+  );
 
   // Create session if none exists
   useEffect(() => {
@@ -41,6 +369,11 @@ export default function Chat() {
       createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
     }
   }, [currentSessionId, aiConfig, createSession]);
+
+  // Reset selected command index when filtered commands change
+  useEffect(() => {
+    setSelectedCommandIndex(0);
+  }, [filteredCommands.length]);
 
   // Check if ready to chat
   if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
@@ -91,6 +424,54 @@ export default function Chat() {
 
     const userMessage = value.trim();
     setInput('');
+
+    // Check if it's a command
+    if (userMessage.startsWith('/')) {
+      const parts = userMessage.split(' ');
+      const commandName = parts[0];
+      const args = parts.slice(1);
+
+      // Find matching command
+      const command = baseCommands.find((cmd) => cmd.label === commandName);
+
+      if (!command) {
+        // Unknown command - add to conversation
+        if (currentSessionId) {
+          addMessage(currentSessionId, 'user', userMessage);
+          addMessage(currentSessionId, 'assistant', `Unknown command: ${commandName}. Type /help for available commands.`);
+        }
+        return;
+      }
+
+      // Add user command to conversation
+      if (currentSessionId) {
+        addMessage(currentSessionId, 'user', userMessage);
+      }
+
+      // Check if command needs args but none provided
+      if (command.args && command.args.length > 0 && args.length === 0) {
+        // Save pending command and show selection UI
+        setPendingCommand({ command, currentInput: commandName });
+        return;
+      }
+
+      // Execute command
+      try {
+        const response = await command.execute(args.length > 0 ? args : undefined);
+        if (currentSessionId) {
+          addMessage(currentSessionId, 'assistant', response);
+        }
+      } catch (error) {
+        if (currentSessionId) {
+          addMessage(currentSessionId, 'assistant', `Error: ${error instanceof Error ? error.message : 'Command failed'}`);
+        }
+      }
+
+      setPendingCommand(null);
+      return;
+    }
+
+    // Regular message - send to AI
     setIsStreaming(true);
     setStreamParts([]);
     addLog('Starting message send...');
@@ -265,18 +646,92 @@ export default function Chat() {
         )}
       </Box>
 
-        {/* Input - Fixed */}
+
+        {/* Input Area */}
         <Box flexDirection="column" flexShrink={0} paddingTop={1}>
           <Box marginBottom={1}>
             <Text color="#00D9FF">▌ INPUT</Text>
+            {!input.startsWith('/') && !isStreaming && !pendingCommand && (
+              <Text dimColor> (Type / for commands)</Text>
+            )}
           </Box>
-          <TextInput
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSubmit}
-            placeholder={isStreaming ? 'Waiting...' : 'Type your message...'}
-            showCursor={!isStreaming}
-          />
+
+          {/* Selection Mode - when a command is pending and needs args */}
+          {pendingCommand ? (
+            <Box flexDirection="column">
+              <Box marginBottom={1}>
+                <Text dimColor>
+                  Select {pendingCommand.command.args?.[0]?.name || 'option'}:
+                </Text>
+              </Box>
+              {(() => {
+                const firstArg = pendingCommand.command.args?.[0];
+                const options = firstArg ? getArgOptions(firstArg.type) : [];
+                return options.slice(0, 10).map((option, idx) => (
+                  <Box
+                    key={option.id}
+                    paddingY={0}
+                    onClick={async () => {
+                      const response = await pendingCommand.command.execute([option.id]);
+                      if (currentSessionId) {
+                        addMessage(currentSessionId, 'assistant', response);
+                      }
+                      setPendingCommand(null);
+                      setSelectedCommandIndex(0);
+                    }}
+                  >
+                    <Text
+                      color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                      bold={idx === selectedCommandIndex}
+                    >
+                      {idx === selectedCommandIndex ? '> ' : '  '}
+                      {option.id}
+                    </Text>
+                    {option.name !== option.id && (
+                      <Text dimColor> - {option.name}</Text>
+                    )}
+                  </Box>
+                ));
+              })()}
+              <Box marginTop={1}>
+                <Text dimColor>↑↓ Navigate · Enter Select · Esc Cancel</Text>
+              </Box>
+            </Box>
+          ) : isStreaming ? (
+            <Box>
+              <Text dimColor>Waiting for response...</Text>
+            </Box>
+          ) : (
+            <>
+              {/* Text Input with inline hint */}
+              <TextInputWithHint
+                value={input}
+                onChange={setInput}
+                onSubmit={handleSubmit}
+                placeholder="Type your message or / for commands..."
+                showCursor
+                hint={hintText}
+              />
+
+              {/* Command Autocomplete - Shows below input when typing / */}
+              {filteredCommands.length > 0 && (
+                <Box flexDirection="column" marginTop={1}>
+                  {filteredCommands.slice(0, 5).map((cmd, idx) => (
+                    <Box key={cmd.id}>
+                      <Text
+                        color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                        bold={idx === selectedCommandIndex}
+                      >
+                        {idx === selectedCommandIndex ? '> ' : '  '}
+                        {cmd.label}
+                      </Text>
+                      <Text dimColor> {cmd.description}</Text>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </>
+          )}
         </Box>
 
         {/* Status Bar - Fixed at bottom */}
@@ -287,7 +742,11 @@ export default function Chat() {
             apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
             messageCount={currentSession.messages.length}
           />
-          <Text dimColor>Ctrl+P Providers │ Ctrl+M Models │ Ctrl+Q Quit</Text>
+          <Box>
+            <Text dimColor>Type </Text>
+            <Text color="#00D9FF" bold>/</Text>
+            <Text dimColor> for commands</Text>
+          </Box>
         </Box>
       </Box>
 
