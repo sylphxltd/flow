@@ -90,7 +90,7 @@ export default function ModelSelection() {
         label: `${AI_PROVIDERS[id].name}${aiConfig?.defaultProvider === id ? ' (Default)' : ''}`,
         value: id,
       })),
-      { label: '⬅️  Back to Chat', value: 'back' },
+      { label: 'Back to Chat', value: 'back' },
     ];
 
     const handleSelect = (item: MenuItem) => {
@@ -124,7 +124,7 @@ export default function ModelSelection() {
     if (isLoadingModels) {
       return (
         <Box>
-          <Text color="yellow">⏳ Loading models...</Text>
+          <Text color="yellow">Loading models...</Text>
         </Box>
       );
     }

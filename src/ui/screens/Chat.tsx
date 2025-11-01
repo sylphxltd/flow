@@ -357,7 +357,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (key.tab) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
-            setInput(selected.label);
+            // Check if this is a base command or multi-level autocomplete
+            const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
+            const hasArgs = selected.args && selected.args.length > 0;
+
+            // Add space after base command if it has args (so user can continue typing args)
+            const completedText = (isBaseCommand && hasArgs) ? `${selected.label} ` : selected.label;
+
+            setInput(completedText);
             setInputKey((prev) => prev + 1); // Force remount to move cursor to end
             setSelectedCommandIndex(0);
           }

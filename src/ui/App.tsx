@@ -3,11 +3,12 @@
  * Root React + Ink component with screen routing
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import { useAppStore } from './stores/app-store.js';
 import ProviderManagement from './screens/ProviderManagement.js';
 import ModelSelection from './screens/ModelSelection.js';
+import CommandPalette from './screens/CommandPalette.js';
 import Chat from './screens/Chat.js';
 import { useAIConfig } from './hooks/useAIConfig.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
@@ -17,12 +18,18 @@ export default function App() {
   const isLoading = useAppStore((state) => state.isLoading);
   const error = useAppStore((state) => state.error);
   const setError = useAppStore((state) => state.setError);
+  const [commandPaletteCommand, setCommandPaletteCommand] = useState<string | null>(null);
 
   // Load AI config on mount
   const { loadConfig } = useAIConfig();
 
-  // Global keyboard shortcuts
-  useKeyboard();
+  // Note: useKeyboard is disabled - shortcuts are handled in each screen to avoid conflicts with TextInput
+  // useKeyboard();
+
+  // Handle command palette commands
+  const handleCommand = (command: string) => {
+    setCommandPaletteCommand(command);
+  };
 
   useEffect(() => {
     loadConfig();
@@ -67,9 +74,10 @@ export default function App() {
 
       {/* Screen Router */}
       <Box flexDirection="column" flexGrow={1} minHeight={0}>
-        {currentScreen === 'chat' && <Chat />}
+        {currentScreen === 'chat' && <Chat commandFromPalette={commandPaletteCommand} />}
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
+        {currentScreen === 'command-palette' && <CommandPalette onCommand={handleCommand} />}
       </Box>
     </Box>
   );

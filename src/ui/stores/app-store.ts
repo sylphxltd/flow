@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 
-export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat';
+export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette';
 
 export type MessagePart =
   | { type: 'text'; content: string }

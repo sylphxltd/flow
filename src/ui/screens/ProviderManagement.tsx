@@ -36,12 +36,12 @@ export default function ProviderManagement() {
   // Menu mode
   if (mode === 'menu') {
     const items: MenuItem[] = [
-      { label: '➕ Add/Update Provider', value: 'add' },
-      { label: '📋 View Providers', value: 'view' },
+      { label: 'Add/Update Provider', value: 'add' },
+      { label: 'View Providers', value: 'view' },
       ...(configuredProviders.length > 0
-        ? [{ label: '🗑️  Remove Provider', value: 'remove' }]
+        ? [{ label: 'Remove Provider', value: 'remove' }]
         : []),
-      { label: '⬅️  Back to Chat', value: 'back' },
+      { label: 'Back to Chat', value: 'back' },
     ];
 
     const handleSelect = (item: MenuItem) => {
