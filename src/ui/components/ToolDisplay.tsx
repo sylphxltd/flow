@@ -130,7 +130,14 @@ const resultToLines = (result: unknown): string[] => {
  * Tool result formatters
  */
 const formatReadResult: ResultFormatter = (result) => {
-  const lines = resultToLines(result);
+  // Extract content from { path, content, encoding } structure
+  const content = typeof result === 'object' && result !== null && 'content' in result
+    ? String((result as any).content)
+    : typeof result === 'string'
+    ? result
+    : JSON.stringify(result);
+
+  const lines = content.split('\n').filter(line => line.trim());
   return {
     lines,
     summary: `Read ${lines.length} ${pluralize(lines.length, 'line')}`,
@@ -166,6 +173,16 @@ const formatWriteResult: ResultFormatter = (result) => {
 };
 
 const formatGrepResult: ResultFormatter = (result) => {
+  // Extract matches from { pattern, directory, matches } structure
+  if (typeof result === 'object' && result !== null && 'matches' in result) {
+    const matches = (result as any).matches as Array<{ file: string; line: number; content: string }>;
+    const lines = matches.map(m => `${m.file}:${m.line}: ${m.content}`);
+    return {
+      lines,
+      summary: `Found ${matches.length} ${pluralize(matches.length, 'match', 'matches')}`,
+    };
+  }
+
   const lines = resultToLines(result);
   return {
     lines,
@@ -174,6 +191,15 @@ const formatGrepResult: ResultFormatter = (result) => {
 };
 
 const formatGlobResult: ResultFormatter = (result) => {
+  // Extract files from { pattern, directory, files, count } structure
+  if (typeof result === 'object' && result !== null && 'files' in result) {
+    const files = (result as any).files as string[];
+    return {
+      lines: files,
+      summary: `Found ${files.length} ${pluralize(files.length, 'file')}`,
+    };
+  }
+
   const lines = resultToLines(result);
   return {
     lines,
@@ -182,6 +208,17 @@ const formatGlobResult: ResultFormatter = (result) => {
 };
 
 const formatBashResult: ResultFormatter = (result) => {
+  // Extract stdout/stderr from { command, stdout, stderr, exitCode } structure
+  if (typeof result === 'object' && result !== null && 'stdout' in result) {
+    const { stdout, stderr, exitCode } = result as any;
+    const output = stderr && exitCode !== 0 ? stderr : stdout;
+    const lines = output ? output.split('\n').filter((line: string) => line.trim()) : [];
+    return {
+      lines,
+      summary: lines.length > 0 ? undefined : 'Command completed',
+    };
+  }
+
   const lines = resultToLines(result);
   return {
     lines,
@@ -377,7 +414,7 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
   const displayName = getDisplayName(name);
 
   return (
-    <Box flexDirection="column" paddingBottom={1}>
+    <Box flexDirection="column" paddingTop={1} paddingBottom={1}>
       <ToolHeader
         statusIndicator={<StatusIndicator status={status} />}
         displayName={displayName}
