@@ -1,6 +1,6 @@
 {
   "name": "@sylphx/flow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Sylphx Flow - Type-safe development flow for modern web development",
   "type": "module",
   "main": "dist/index.js",
