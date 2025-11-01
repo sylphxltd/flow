@@ -359,44 +359,33 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
           return;
         }
-        // Tab - select command (autocomplete text)
-        if (key.tab) {
+        // Tab or Enter - autocomplete selected command
+        if (key.tab || key.return) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
             // Check if this is a base command or multi-level autocomplete
             const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
+            const isMultiLevel = !isBaseCommand && selected.id.includes(':');
 
-            // Add space after base command if it has args (so user can continue typing args)
-            const completedText = (isBaseCommand && hasArgs) ? `${selected.label} ` : selected.label;
-
-            setInput(completedText);
-            setInputKey((prev) => prev + 1); // Force remount to move cursor to end
-            setSelectedCommandIndex(0);
-          }
-          return;
-        }
-        // Enter - execute selected command (for multi-level autocomplete)
-        if (key.return) {
-          const selected = filteredCommands[selectedCommandIndex];
-          // Check if this is a multi-level autocomplete item (has arg type prefix)
-          const isArgAutocomplete = selected && (
-            selected.id.startsWith('model-') ||
-            selected.id.startsWith('provider-') ||
-            selected.id.includes('-')
-          );
-
-          if (isArgAutocomplete) {
-            // This is a multi-level autocomplete item - execute directly
-            if (currentSessionId) {
-              addMessage(currentSessionId, 'user', selected.label);
+            if (isMultiLevel && key.return) {
+              // Multi-level autocomplete + Enter: execute directly
+              if (currentSessionId) {
+                addMessage(currentSessionId, 'user', selected.label);
+              }
+              const response = await selected.execute();
+              if (currentSessionId) {
+                addMessage(currentSessionId, 'assistant', response);
+              }
+              setInput('');
+              setSelectedCommandIndex(0);
+            } else {
+              // Base command or Tab: fill in text
+              const completedText = (isBaseCommand && hasArgs) ? `${selected.label} ` : selected.label;
+              setInput(completedText);
+              setInputKey((prev) => prev + 1); // Force remount to move cursor to end
+              setSelectedCommandIndex(0);
             }
-            const response = await selected.execute();
-            if (currentSessionId) {
-              addMessage(currentSessionId, 'assistant', response);
-            }
-            setInput('');
-            setSelectedCommandIndex(0);
           }
           return;
         }
