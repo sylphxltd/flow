@@ -14,22 +14,59 @@ let tokenizerInitializing = false;
 let initializationFailed = false;
 
 /**
- * Tokenizer model options
+ * Map provider model names to tokenizer names
+ * AutoTokenizer will automatically find the right tokenizer for each model
  */
-export const TOKENIZER_MODELS = {
-  GPT4: 'Xenova/gpt-4',           // GPT-4 tokenizer (most accurate for general use)
-  STARCODER: 'bigcode/starcoder2-3b', // Code-optimized (best for code)
-  GPT2: 'gpt2',                    // Fast, general purpose
-  CLAUDE: 'Xenova/claude-tokenizer', // Claude tokenizer (if available)
-} as const;
+const MODEL_TO_TOKENIZER: Record<string, string> = {
+  // OpenAI models
+  'gpt-4': 'Xenova/gpt-4',
+  'gpt-4-turbo': 'Xenova/gpt-4',
+  'gpt-4o': 'Xenova/gpt-4',
+  'gpt-3.5-turbo': 'Xenova/gpt-3.5-turbo',
+  'gpt-3.5': 'Xenova/gpt-3.5-turbo',
+
+  // Anthropic Claude models
+  'claude-3-opus': 'Xenova/claude-tokenizer',
+  'claude-3-sonnet': 'Xenova/claude-tokenizer',
+  'claude-3-haiku': 'Xenova/claude-tokenizer',
+  'claude-3.5-sonnet': 'Xenova/claude-tokenizer',
+  'claude-3.5-haiku': 'Xenova/claude-tokenizer',
+
+  // Code models
+  'starcoder': 'bigcode/starcoder',
+  'starcoder2': 'bigcode/starcoder2-3b',
+  'codellama': 'codellama/CodeLlama-7b-hf',
+
+  // Google models
+  'gemini': 'Xenova/gpt-4', // Fallback to GPT-4 (no official Gemini tokenizer)
+
+  // Fallback
+  'default': 'Xenova/gpt-4',
+};
 
 /**
- * Default tokenizer model
- * Can be overridden via environment variable: TOKENIZER_MODEL
+ * Get tokenizer name for a model
+ * AutoTokenizer will find the right tokenizer automatically
  */
-const DEFAULT_TOKENIZER_MODEL =
-  (process.env.TOKENIZER_MODEL as keyof typeof TOKENIZER_MODELS)
-  || TOKENIZER_MODELS.GPT4;
+function getTokenizerForModel(modelName?: string): string {
+  if (!modelName) return MODEL_TO_TOKENIZER['default'];
+
+  // Direct match
+  if (MODEL_TO_TOKENIZER[modelName]) {
+    return MODEL_TO_TOKENIZER[modelName];
+  }
+
+  // Fuzzy match (e.g., "gpt-4-turbo-preview" → "gpt-4")
+  const modelLower = modelName.toLowerCase();
+  for (const [key, tokenizer] of Object.entries(MODEL_TO_TOKENIZER)) {
+    if (modelLower.includes(key)) {
+      return tokenizer;
+    }
+  }
+
+  // Default fallback
+  return MODEL_TO_TOKENIZER['default'];
+}
 
 /**
  * Fast fallback estimation (only when BPE tokenizer unavailable)
@@ -51,9 +88,9 @@ function estimateFallback(text: string): number {
  * Initialize BPE tokenizer (lazy, singleton)
  * Uses Hugging Face AutoTokenizer to automatically select best tokenizer
  */
-async function ensureTokenizer(): Promise<any | null> {
-  // Already initialized
-  if (bpeTokenizer) return bpeTokenizer;
+async function ensureTokenizer(modelName?: string): Promise<any | null> {
+  // Already initialized - check if we need to reinitialize for different model
+  if (bpeTokenizer && !modelName) return bpeTokenizer;
 
   // Previous initialization failed
   if (initializationFailed) return null;
@@ -64,16 +101,19 @@ async function ensureTokenizer(): Promise<any | null> {
   }
 
   // Check again after waiting
-  if (bpeTokenizer) return bpeTokenizer;
+  if (bpeTokenizer && !modelName) return bpeTokenizer;
   if (initializationFailed) return null;
+
+  // Get tokenizer name for this model
+  const tokenizerName = getTokenizerForModel(modelName);
 
   // Initialize with Hugging Face AutoTokenizer
   try {
     tokenizerInitializing = true;
-    console.log(`[TokenCounter] Loading tokenizer: ${DEFAULT_TOKENIZER_MODEL}`);
+    console.log(`[TokenCounter] Loading tokenizer: ${tokenizerName} (for model: ${modelName || 'default'})`);
 
     // Let Hugging Face auto-select and load the best tokenizer
-    bpeTokenizer = await AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER_MODEL, {
+    bpeTokenizer = await AutoTokenizer.from_pretrained(tokenizerName, {
       // Cache models locally for faster subsequent loads
       cache_dir: './models/.cache',
       // Use local files if available, otherwise download
@@ -95,12 +135,14 @@ async function ensureTokenizer(): Promise<any | null> {
  * Count tokens using BPE tokenizer (Hugging Face AutoTokenizer)
  * Falls back to estimation if tokenizer unavailable
  *
- * This is the primary token counting method.
+ * @param text Text to count tokens for
+ * @param modelName Optional model name to use specific tokenizer
+ * @returns Token count
  */
-export async function countTokens(text: string): Promise<number> {
+export async function countTokens(text: string, modelName?: string): Promise<number> {
   if (!text) return 0;
 
-  const tokenizer = await ensureTokenizer();
+  const tokenizer = await ensureTokenizer(modelName);
 
   if (!tokenizer) {
     // Tokenizer unavailable, use fallback
@@ -161,19 +203,19 @@ export function formatTokenCount(count: number): string {
 }
 
 /**
- * Alias for countTokens (for clarity)
- * Uses BPE tokenizer
+ * Count tokens for specific model
+ * Uses the correct tokenizer for that model
  */
-export async function countTokensPrecise(text: string): Promise<number> {
-  return countTokens(text);
+export async function countTokensForModel(text: string, modelName: string): Promise<number> {
+  return countTokens(text, modelName);
 }
 
 /**
  * Count tokens with display formatting
  * Uses BPE tokenizer (async)
  */
-export async function countAndFormat(text: string): Promise<string> {
-  const count = await countTokens(text);
+export async function countAndFormat(text: string, modelName?: string): Promise<string> {
+  const count = await countTokens(text, modelName);
   return `${formatTokenCount(count)} Tokens`;
 }
 
@@ -190,8 +232,8 @@ export function countAndFormatSync(text: string): string {
  * Batch count tokens for multiple texts
  * Uses BPE tokenizer
  */
-export async function countTokensBatch(texts: string[]): Promise<number[]> {
-  return Promise.all(texts.map(countTokens));
+export async function countTokensBatch(texts: string[], modelName?: string): Promise<number[]> {
+  return Promise.all(texts.map(text => countTokens(text, modelName)));
 }
 
 /**
@@ -204,23 +246,26 @@ export function estimateTokensBatch(texts: string[]): number[] {
 /**
  * Get tokenizer info (for debugging)
  */
-export async function getTokenizerInfo(): Promise<{
-  model: string;
+export async function getTokenizerInfo(modelName?: string): Promise<{
+  modelName: string;
+  tokenizerName: string;
   loaded: boolean;
   failed: boolean;
 } | null> {
-  const tokenizer = await ensureTokenizer();
+  const tokenizerName = getTokenizerForModel(modelName);
+  const tokenizer = await ensureTokenizer(modelName);
 
   return {
-    model: DEFAULT_TOKENIZER_MODEL,
+    modelName: modelName || 'default',
+    tokenizerName,
     loaded: tokenizer !== null,
     failed: initializationFailed,
   };
 }
 
 /**
- * Get available tokenizer models
+ * Get supported models
  */
-export function getAvailableTokenizers(): typeof TOKENIZER_MODELS {
-  return TOKENIZER_MODELS;
+export function getSupportedModels(): string[] {
+  return Object.keys(MODEL_TO_TOKENIZER).filter(k => k !== 'default');
 }
