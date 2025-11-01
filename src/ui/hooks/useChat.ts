@@ -62,14 +62,81 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
-      // Add user message with attachments if any
+      // Read file contents if attachments provided
+      let messageForLLM = message;
+      if (attachments && attachments.length > 0) {
+        try {
+          const { readFile } = await import('node:fs/promises');
+          const fileContents = await Promise.all(
+            attachments.map(async (att) => {
+              try {
+                const content = await readFile(att.path, 'utf8');
+                return { path: att.relativePath, content, success: true };
+              } catch (error) {
+                return {
+                  path: att.relativePath,
+                  content: `[Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}]`,
+                  success: false
+                };
+              }
+            })
+          );
+
+          // Format message with file contents for LLM
+          const fileContentsText = fileContents
+            .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
+            .join('');
+
+          messageForLLM = `${message}${fileContentsText}`;
+        } catch (error) {
+          console.error('Failed to read attachments:', error);
+        }
+      }
+
+      // Add user message to session (original message without file contents)
       addMessage(currentSessionId, 'user', message, undefined, attachments);
 
       // Get all messages for context
-      const messages = [
-        ...currentSession.messages,
-        { role: 'user' as const, content: message, timestamp: Date.now() },
-      ];
+      // For messages with attachments, we need to read files and add content
+      const messages = await Promise.all(
+        [...currentSession.messages, { role: 'user' as const, content: message, timestamp: Date.now(), attachments }].map(async (msg) => {
+          if (msg.attachments && msg.attachments.length > 0) {
+            // Read file contents for this message
+            try {
+              const { readFile } = await import('node:fs/promises');
+              const fileContents = await Promise.all(
+                msg.attachments.map(async (att) => {
+                  try {
+                    const content = await readFile(att.path, 'utf8');
+                    return { path: att.relativePath, content };
+                  } catch {
+                    return { path: att.relativePath, content: '[Error reading file]' };
+                  }
+                })
+              );
+
+              const fileContentsText = fileContents
+                .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
+                .join('');
+
+              return {
+                role: msg.role as 'user' | 'assistant',
+                content: `${msg.content}${fileContentsText}`,
+              };
+            } catch {
+              return {
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
+              };
+            }
+          }
+
+          return {
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          };
+        })
+      );
 
       // Get model using provider registry with full config
       const model = providerInstance.createClient(providerConfig, modelName);
@@ -77,10 +144,7 @@ export function useChat() {
       // Create AI stream
       const stream = createAIStream({
         model,
-        messages: messages.map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
+        messages,
       });
 
       // Process stream with unified handler

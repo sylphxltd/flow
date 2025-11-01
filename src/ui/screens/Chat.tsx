@@ -749,42 +749,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
-    // Process attachments - read file contents
-    let messageWithAttachments = userMessage;
+    // Get attachments for this message
     const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];
 
-    if (pendingAttachments.length > 0) {
-      try {
-        // Read all file contents
-        const { readFile } = await import('node:fs/promises');
-        const fileContents = await Promise.all(
-          pendingAttachments.map(async (att) => {
-            try {
-              const content = await readFile(att.path, 'utf8');
-              return { path: att.relativePath, content, success: true };
-            } catch (error) {
-              return {
-                path: att.relativePath,
-                content: `[Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}]`,
-                success: false
-              };
-            }
-          })
-        );
-
-        // Format message with file contents for LLM
-        const fileContentsText = fileContents
-          .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
-          .join('');
-
-        messageWithAttachments = `${userMessage}${fileContentsText}`;
-      } catch (error) {
-        console.error('Failed to read attachments:', error);
-      }
-
-      // Clear pending attachments after processing
-      setPendingAttachments([]);
-    }
+    // Clear pending attachments after capturing them
+    setPendingAttachments([]);
 
     setIsStreaming(true);
     setStreamParts([]);
@@ -792,7 +761,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     try {
       await sendMessage(
-        messageWithAttachments,
+        userMessage,
         // onChunk - text streaming
         (chunk) => {
         const timestamp = Date.now();
