@@ -240,6 +240,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             const allAnswered = questions.every((q) => multiSelectionAnswers[q.id]);
             if (allAnswered) {
               addLog(`[selection] Submitting answers: ${JSON.stringify(multiSelectionAnswers)}`);
+
+              // Add user's answers to chat history
+              if (currentSessionId) {
+                const answerText = questions
+                  .map((q) => {
+                    const answerId = multiSelectionAnswers[q.id];
+                    const answerOption = q.options.find((opt) => opt.id === answerId);
+                    return answerOption?.name || answerId;
+                  })
+                  .join(', ');
+                addMessage(currentSessionId, 'user', answerText);
+              }
+
               inputResolver.current(multiSelectionAnswers);
               inputResolver.current = null;
               setPendingInput(null);
@@ -278,6 +291,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               if (isSingleQuestion) {
                 // Single question: submit immediately
+                // Add user's answer to chat history
+                if (currentSessionId) {
+                  addMessage(currentSessionId, 'user', selectedOption.name || selectedOption.id);
+                }
+
                 inputResolver.current({ [currentQuestion.id]: selectedOption.id });
                 inputResolver.current = null;
                 setPendingInput(null);
@@ -298,6 +316,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 if (allAnswered) {
                   // All answered: auto-submit
                   addLog(`[selection] All answered, auto-submitting: ${JSON.stringify(newAnswers)}`);
+
+                  // Add user's answers to chat history
+                  if (currentSessionId) {
+                    const answerText = questions
+                      .map((q) => {
+                        const answerId = newAnswers[q.id];
+                        const answerOption = q.options.find((opt) => opt.id === answerId);
+                        return answerOption?.name || answerId;
+                      })
+                      .join(', ');
+                    addMessage(currentSessionId, 'user', answerText);
+                  }
+
                   inputResolver.current(newAnswers);
                   inputResolver.current = null;
                   setPendingInput(null);
@@ -514,6 +545,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Handle pendingInput for text type
     if (pendingInput && pendingInput.type === 'text' && inputResolver.current) {
       addLog(`[handleSubmit] Resolving text input: ${value}`);
+
+      // Add user's text input to chat history
+      if (currentSessionId) {
+        addMessage(currentSessionId, 'user', value.trim());
+      }
+
       inputResolver.current(value.trim());
       inputResolver.current = null;
       setPendingInput(null);
