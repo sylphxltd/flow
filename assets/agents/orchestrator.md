@@ -1,5 +1,5 @@
 ---
-name: orchestrator
+name: Orchestrator
 description: Task coordination and agent delegation
 mode: primary
 temperature: 0.3
