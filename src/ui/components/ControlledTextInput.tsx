@@ -149,8 +149,8 @@ export default function ControlledTextInput({
     <Box>
       {value.length === 0 && placeholder ? (
         <>
-          <Text dimColor>{placeholder}</Text>
           {showCursor && <Text inverse> </Text>}
+          <Text dimColor>{placeholder}</Text>
         </>
       ) : (
         <>
