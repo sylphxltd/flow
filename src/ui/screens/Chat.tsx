@@ -1072,12 +1072,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               <TextInputWithHint
                 key={inputKey}
                 value={
-                  pendingInput?.type === 'selection' || pendingInput?.type === 'multi-selection'
+                  pendingInput?.type === 'selection'
                     ? selectionFilter
                     : input
                 }
                 onChange={
-                  pendingInput?.type === 'selection' || pendingInput?.type === 'multi-selection'
+                  pendingInput?.type === 'selection'
                     ? (value) => {
                         setSelectionFilter(value);
                         setSelectedCommandIndex(0); // Reset selection when filter changes
@@ -1086,7 +1086,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 }
                 onSubmit={handleSubmit}
                 placeholder={
-                  pendingInput?.type === 'selection' || pendingInput?.type === 'multi-selection'
+                  pendingInput?.type === 'selection'
                     ? 'Type to filter options...'
                     : pendingInput?.type === 'text'
                     ? (pendingInput.placeholder || 'Type your response...')
