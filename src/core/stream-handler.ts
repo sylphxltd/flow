@@ -10,7 +10,9 @@ import type { MessagePart, TokenUsage } from '../types/session.types.js';
  * Callbacks for stream events
  */
 export interface StreamCallbacks {
+  onTextStart?: () => void;
   onTextDelta?: (text: string) => void;
+  onTextEnd?: () => void;
   onReasoningStart?: () => void;
   onReasoningDelta?: (text: string) => void;
   onReasoningEnd?: () => void;
@@ -39,7 +41,7 @@ export async function processStream(
   stream: AsyncIterable<StreamChunk>,
   callbacks: StreamCallbacks = {}
 ): Promise<StreamResult> {
-  const { onTextDelta, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolResult, onToolError, onError, onFinish, onComplete } = callbacks;
+  const { onTextStart, onTextDelta, onTextEnd, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolResult, onToolError, onError, onFinish, onComplete } = callbacks;
 
   let fullResponse = '';
   const messageParts: MessagePart[] = [];
@@ -52,10 +54,22 @@ export async function processStream(
 
   for await (const chunk of stream) {
     switch (chunk.type) {
+      case 'text-start': {
+        // Text generation started - notify immediately
+        onTextStart?.();
+        break;
+      }
+
       case 'text-delta': {
         fullResponse += chunk.textDelta;
         currentTextContent += chunk.textDelta;
         onTextDelta?.(chunk.textDelta);
+        break;
+      }
+
+      case 'text-end': {
+        // Text generation finished - notify immediately
+        onTextEnd?.();
         break;
       }
 

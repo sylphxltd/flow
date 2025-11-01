@@ -43,9 +43,17 @@ export interface SylphxMessage {
 /**
  * Stream chunk types (our own)
  */
+export type TextStartChunk = {
+  type: 'text-start';
+};
+
 export type TextDeltaChunk = {
   type: 'text-delta';
   textDelta: string;
+};
+
+export type TextEndChunk = {
+  type: 'text-end';
 };
 
 export type ReasoningStartChunk = {
@@ -105,7 +113,9 @@ export type FinishChunk = {
 };
 
 export type StreamChunk =
+  | TextStartChunk
   | TextDeltaChunk
+  | TextEndChunk
   | ReasoningStartChunk
   | ReasoningDeltaChunk
   | ReasoningEndChunk
@@ -227,10 +237,24 @@ export async function* createAIStream(
   // Handle all chunk types to ensure proper error flow
   for await (const chunk of fullStream) {
     switch (chunk.type) {
+      case 'text-start':
+        // Text generation started - immediately show typing indicator
+        yield {
+          type: 'text-start',
+        };
+        break;
+
       case 'text-delta':
         yield {
           type: 'text-delta',
           textDelta: chunk.text,
+        };
+        break;
+
+      case 'text-end':
+        // Text generation finished
+        yield {
+          type: 'text-end',
         };
         break;
 

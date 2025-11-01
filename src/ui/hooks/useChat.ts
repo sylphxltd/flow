@@ -158,9 +158,17 @@ export function useChat() {
 
       // Process stream with unified handler
       const { fullResponse, messageParts, usage, finishReason } = await processStream(stream, {
+        onTextStart: () => {
+          addDebugLog(`[useChat] text-start`);
+          // Text generation started - could show typing indicator
+        },
         onTextDelta: (text) => {
           addDebugLog(`[useChat] text-delta: ${text.substring(0, 50)}`);
           onChunk(text);
+        },
+        onTextEnd: () => {
+          addDebugLog(`[useChat] text-end`);
+          // Text generation finished
         },
         onReasoningStart: () => {
           addDebugLog(`[useChat] reasoning-start`);
