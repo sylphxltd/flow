@@ -137,86 +137,78 @@ export async function* createAIStream(
   const aiModel = toAISDKModel(model);
   const aiMessages = toAISDKMessages(messages);
 
-  try {
-    // Build streamText options conditionally to satisfy exactOptionalPropertyTypes
-    // Call AI SDK with proper types
-    const { fullStream } = streamText({
-      model: aiModel,
-      messages: aiMessages,
-      system: systemPrompt,
-      tools: getAISDKTools(),
-      stopWhen: stepCountIs(1000),
-      ...(onStepFinish && {
-        onStepFinish: (step) => {
-          const usage = step.usage;
-          onStepFinish({
-            finishReason: step.finishReason,
-            usage: {
-              promptTokens: usage.inputTokens ?? 0,
-              completionTokens: usage.outputTokens ?? 0,
-              totalTokens: usage.totalTokens ?? 0,
-            },
-            text: step.text ?? '',
-            toolCalls: (step.toolCalls ?? []).map((call) => ({
-              toolCallId: call.toolCallId,
-              toolName: call.toolName,
-              args: call.input,
-            })),
-            toolResults: (step.toolResults ?? []).map((result) => ({
-              toolCallId: result.toolCallId,
-              toolName: result.toolName,
-              result: result.output,
-            })),
-          });
-        },
-      }),
-    });
+  // Call AI SDK - errors from the API call will propagate naturally
+  const result = streamText({
+    model: aiModel,
+    messages: aiMessages,
+    system: systemPrompt,
+    tools: getAISDKTools(),
+    stopWhen: stepCountIs(1000),
+    ...(onStepFinish && {
+      onStepFinish: (step) => {
+        const usage = step.usage;
+        onStepFinish({
+          finishReason: step.finishReason,
+          usage: {
+            promptTokens: usage.inputTokens ?? 0,
+            completionTokens: usage.outputTokens ?? 0,
+            totalTokens: usage.totalTokens ?? 0,
+          },
+          text: step.text ?? '',
+          toolCalls: (step.toolCalls ?? []).map((call) => ({
+            toolCallId: call.toolCallId,
+            toolName: call.toolName,
+            args: call.input,
+          })),
+          toolResults: (step.toolResults ?? []).map((result) => ({
+            toolCallId: result.toolCallId,
+            toolName: result.toolName,
+            result: result.output,
+          })),
+        });
+      },
+    }),
+  });
 
-    // Convert AI SDK chunks to our chunk format
-    // Wrap in try-catch to ensure errors during iteration are caught
-    try {
-      for await (const chunk of fullStream) {
-        switch (chunk.type) {
-          case 'text-delta':
-            yield {
-              type: 'text-delta',
-              textDelta: chunk.text,
-            };
-            break;
+  // Destructure to get fullStream
+  const { fullStream } = result;
 
-          case 'reasoning-delta':
-            yield {
-              type: 'reasoning-delta',
-              textDelta: chunk.text,
-            };
-            break;
+  // Convert AI SDK chunks to our chunk format
+  // Errors during iteration will propagate to caller's try-catch
+  for await (const chunk of fullStream) {
+    switch (chunk.type) {
+      case 'text-delta':
+        yield {
+          type: 'text-delta',
+          textDelta: chunk.text,
+        };
+        break;
 
-          case 'tool-call':
-            yield {
-              type: 'tool-call',
-              toolCallId: chunk.toolCallId,
-              toolName: chunk.toolName,
-              args: chunk.input,
-            };
-            break;
+      case 'reasoning-delta':
+        yield {
+          type: 'reasoning-delta',
+          textDelta: chunk.text,
+        };
+        break;
 
-          case 'tool-result':
-            yield {
-              type: 'tool-result',
-              toolCallId: chunk.toolCallId,
-              toolName: chunk.toolName,
-              result: chunk.output,
-            };
-            break;
-        }
-      }
-    } catch (streamError) {
-      // Re-throw to be caught by outer catch or caller
-      throw streamError;
+      case 'tool-call':
+        yield {
+          type: 'tool-call',
+          toolCallId: chunk.toolCallId,
+          toolName: chunk.toolName,
+          args: chunk.input,
+        };
+        break;
+
+      case 'tool-result':
+        yield {
+          type: 'tool-result',
+          toolCallId: chunk.toolCallId,
+          toolName: chunk.toolName,
+          result: chunk.output,
+        };
+        break;
     }
-  } catch (error) {
-    // Ensure any errors are properly propagated
-    throw error;
   }
 }
 

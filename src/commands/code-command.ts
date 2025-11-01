@@ -23,22 +23,6 @@ import App from '../ui/App.js';
  * Start interactive TUI app
  */
 async function startTUIApp(): Promise<void> {
-  // Remove ALL global error handlers for TUI mode
-  // TUI will handle errors internally and display them in the UI
-  process.removeAllListeners('unhandledRejection');
-  process.removeAllListeners('uncaughtException');
-
-  // Add TUI-specific silent error handlers that don't output to console
-  process.on('unhandledRejection', (reason, promise) => {
-    // Silently ignore - error will be shown in chat UI via useChat error handling
-    // Do NOT output to console as it would break the TUI interface
-  });
-
-  process.on('uncaughtException', (error) => {
-    // Silently ignore - error will be shown in chat UI
-    // Do NOT output to console as it would break the TUI interface
-  });
-
   // Render React + Ink app
   render(React.createElement(App));
 }
