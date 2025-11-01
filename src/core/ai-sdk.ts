@@ -26,14 +26,20 @@ Guidelines:
 - Test and verify your work when possible`;
 
 /**
+ * Base system prompt - introduces Sylphx
+ */
+const BASE_SYSTEM_PROMPT = `You are Sylphx, an AI development assistant.`;
+
+/**
  * Get the system prompt to use (from current agent or fallback to legacy)
  */
 export function getSystemPrompt(): string {
   try {
-    return getCurrentSystemPrompt();
+    const agentPrompt = getCurrentSystemPrompt();
+    return `${BASE_SYSTEM_PROMPT}\n\n${agentPrompt}`;
   } catch {
     // Fallback to legacy if agent manager not initialized
-    return LEGACY_SYSTEM_PROMPT;
+    return `${BASE_SYSTEM_PROMPT}\n\n${LEGACY_SYSTEM_PROMPT}`;
   }
 }
 
