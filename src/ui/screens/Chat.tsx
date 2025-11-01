@@ -146,8 +146,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     // If command has args with loadOptions and user is typing args
     if (matchedCommand && matchedCommand.args && parts.length > 1) {
-      const arg = matchedCommand.args[0];
-      if (arg.loadOptions) {
+      // Determine which arg we're currently on
+      const args = parts.slice(1).filter(p => p.trim() !== '');
+      const lastPart = parts[parts.length - 1];
+      const isTypingNewArg = lastPart === ''; // User just typed space
+
+      // If typing new arg, load next arg's options
+      // If typing existing arg, load current arg's options
+      const currentArgIndex = isTypingNewArg ? args.length : Math.max(0, args.length - 1);
+      const arg = matchedCommand.args[currentArgIndex];
+
+      if (arg && arg.loadOptions) {
         const cacheKey = `${matchedCommand.id}:${arg.name}`;
 
         // Trigger load if not cached and not loading
@@ -177,31 +186,48 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     const parts = input.split(' ');
     const commandName = parts[0];
-    const argInput = parts.slice(1).join(' ');
 
     const matchedCommand = commands.find((cmd) => cmd.label === commandName);
 
     // Multi-level autocomplete: if command has args and user is typing args
     if (matchedCommand && matchedCommand.args && parts.length > 1) {
-      const arg = matchedCommand.args[0];
-      const cacheKey = `${matchedCommand.id}:${arg.name}`;
-      const options = cachedOptions.get(cacheKey) || [];
+      // Determine which arg we're currently on
+      const args = parts.slice(1).filter(p => p.trim() !== '');
+      const lastPart = parts[parts.length - 1];
+      const isTypingNewArg = lastPart === ''; // User just typed space
 
-      if (options.length > 0) {
-        return options
-          .filter((option) =>
-            option.label.toLowerCase().includes(argInput.toLowerCase()) ||
-            (option.value && option.value.toLowerCase().includes(argInput.toLowerCase()))
-          )
-          .map((option) => ({
-            id: `${cacheKey}-${option.value || option.label}`,
-            label: `${commandName} ${option.label}`,
-            description: option.value ? `Value: ${option.value}` : '',
-            args: matchedCommand.args,
-            execute: async (context) => {
-              return await matchedCommand.execute(createCommandContext([option.value || option.label]));
-            },
-          }));
+      // If typing new arg, load next arg's options
+      // If typing existing arg, load current arg's options and filter
+      const currentArgIndex = isTypingNewArg ? args.length : Math.max(0, args.length - 1);
+      const currentArgInput = isTypingNewArg ? '' : lastPart;
+
+      const arg = matchedCommand.args[currentArgIndex];
+      if (arg) {
+        const cacheKey = `${matchedCommand.id}:${arg.name}`;
+        const options = cachedOptions.get(cacheKey) || [];
+
+        if (options.length > 0) {
+          return options
+            .filter((option) =>
+              option.label.toLowerCase().includes(currentArgInput.toLowerCase()) ||
+              (option.value && option.value.toLowerCase().includes(currentArgInput.toLowerCase()))
+            )
+            .map((option) => {
+              // Build the full command string with all args
+              const allArgs = isTypingNewArg
+                ? [...args, option.value || option.label]
+                : [...args.slice(0, -1), option.value || option.label];
+              return {
+                id: `${cacheKey}-${option.value || option.label}`,
+                label: `${commandName} ${allArgs.join(' ')}`,
+                description: option.value ? `Value: ${option.value}` : '',
+                args: matchedCommand.args,
+                execute: async (context) => {
+                  return await matchedCommand.execute(createCommandContext(allArgs));
+                },
+              };
+            });
+        }
       }
     }
 

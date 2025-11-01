@@ -20,16 +20,38 @@ const providerCommand: Command = {
       name: 'action',
       description: 'Action: "use" or "set"',
       required: false,
+      loadOptions: async () => {
+        return [
+          { id: 'use', label: 'use', value: 'use' },
+          { id: 'set', label: 'set', value: 'set' },
+        ];
+      },
     },
     {
       name: 'provider-name',
       description: 'Provider name (anthropic, openai, google, openrouter)',
       required: false,
+      loadOptions: async () => {
+        const { AI_PROVIDERS } = await import('../../config/ai-config.js');
+        return Object.values(AI_PROVIDERS).map((p) => ({
+          id: p.id,
+          label: p.name,
+          value: p.id,
+        }));
+      },
     },
     {
       name: 'key',
       description: 'Setting key (for set action)',
       required: false,
+      loadOptions: async () => {
+        // Return common keys - will be filtered based on provider in execute
+        return [
+          { id: 'apiKey', label: 'apiKey', value: 'apiKey' },
+          { id: 'defaultModel', label: 'defaultModel', value: 'defaultModel' },
+          { id: 'baseUrl', label: 'baseUrl', value: 'baseUrl' },
+        ];
+      },
     },
     {
       name: 'value',
