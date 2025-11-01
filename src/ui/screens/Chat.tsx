@@ -1117,9 +1117,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                 <Text color="#00FF88">▏ </Text>
                                 <Text dimColor>💭 Reasoning{part.duration ? ` (${part.duration}ms)` : ''}</Text>
                               </Box>
-                              <MarkdownText prefix="  " prefixColor="gray">
-                                <Text dimColor>{part.content}</Text>
-                              </MarkdownText>
+                              {part.content.split('\n').map((line, lineIdx) => (
+                                <Box key={`${idx}-${lineIdx}`}>
+                                  <Text color="gray">  </Text>
+                                  <Text dimColor>{line}</Text>
+                                </Box>
+                              ))}
                             </Box>
                           );
                         } else {
@@ -1194,11 +1197,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           <Text color="#00FF88">▏ </Text>
                           <Text dimColor>💭 Reasoning...</Text>
                         </Box>
-                        {part.content && (
-                          <MarkdownText prefix="  " prefixColor="gray">
-                            <Text dimColor>{part.content}</Text>
-                          </MarkdownText>
-                        )}
+                        {part.content && part.content.split('\n').map((line, lineIdx) => (
+                          <Box key={`stream-${idx}-${lineIdx}`}>
+                            <Text color="gray">  </Text>
+                            <Text dimColor>{line}</Text>
+                          </Box>
+                        ))}
                         {isLastPart && (
                           <Box>
                             <Text color="gray">  </Text>
