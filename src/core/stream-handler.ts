@@ -4,15 +4,19 @@
  */
 
 import type { StreamChunk } from './ai-sdk.js';
-import type { MessagePart } from '../types/session.types.js';
+import type { MessagePart, TokenUsage } from '../types/session.types.js';
 
 /**
  * Callbacks for stream events
  */
 export interface StreamCallbacks {
   onTextDelta?: (text: string) => void;
+  onReasoningStart?: () => void;
+  onReasoningDelta?: (text: string) => void;
+  onReasoningEnd?: () => void;
   onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
   onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
+  onFinish?: (usage: TokenUsage, finishReason: string) => void;
   onComplete?: () => void;
 }
 
@@ -22,6 +26,8 @@ export interface StreamCallbacks {
 export interface StreamResult {
   fullResponse: string;
   messageParts: MessagePart[];
+  usage?: TokenUsage;
+  finishReason?: string;
 }
 
 /**
@@ -31,20 +37,56 @@ export async function processStream(
   stream: AsyncIterable<StreamChunk>,
   callbacks: StreamCallbacks = {}
 ): Promise<StreamResult> {
-  const { onTextDelta, onToolCall, onToolResult, onComplete } = callbacks;
+  const { onTextDelta, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolResult, onFinish, onComplete } = callbacks;
 
   let fullResponse = '';
   const messageParts: MessagePart[] = [];
   const activeTools = new Map<string, { name: string; startTime: number; args: unknown }>();
   let currentTextContent = '';
+  let currentReasoningContent = '';
+  let reasoningStartTime: number | null = null;
+  let usage: TokenUsage | undefined;
+  let finishReason: string | undefined;
 
   for await (const chunk of stream) {
     switch (chunk.type) {
-      case 'text-delta':
-      case 'reasoning-delta': {
+      case 'text-delta': {
         fullResponse += chunk.textDelta;
         currentTextContent += chunk.textDelta;
         onTextDelta?.(chunk.textDelta);
+        break;
+      }
+
+      case 'reasoning-start': {
+        // Save current text part if any
+        if (currentTextContent) {
+          messageParts.push({ type: 'text', content: currentTextContent });
+          currentTextContent = '';
+        }
+        reasoningStartTime = Date.now();
+        onReasoningStart?.();
+        break;
+      }
+
+      case 'reasoning-delta': {
+        currentReasoningContent += chunk.textDelta;
+        onReasoningDelta?.(chunk.textDelta);
+        break;
+      }
+
+      case 'reasoning-end': {
+        // Save reasoning part with duration
+        if (currentReasoningContent) {
+          const duration = reasoningStartTime ? Date.now() - reasoningStartTime : undefined;
+          messageParts.push({
+            type: 'reasoning',
+            content: currentReasoningContent,
+            duration
+          });
+          currentReasoningContent = '';
+          reasoningStartTime = null;
+        }
+        onReasoningEnd?.();
         break;
       }
 
@@ -95,6 +137,13 @@ export async function processStream(
         }
         break;
       }
+
+      case 'finish': {
+        usage = chunk.usage;
+        finishReason = chunk.finishReason;
+        onFinish?.(chunk.usage, chunk.finishReason);
+        break;
+      }
     }
   }
 
@@ -106,5 +155,7 @@ export async function processStream(
   return {
     fullResponse,
     messageParts,
+    usage,
+    finishReason,
   };
 }

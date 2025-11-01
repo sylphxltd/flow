@@ -48,9 +48,17 @@ export type TextDeltaChunk = {
   textDelta: string;
 };
 
+export type ReasoningStartChunk = {
+  type: 'reasoning-start';
+};
+
 export type ReasoningDeltaChunk = {
   type: 'reasoning-delta';
   textDelta: string;
+};
+
+export type ReasoningEndChunk = {
+  type: 'reasoning-end';
 };
 
 export type ToolCallChunk = {
@@ -67,7 +75,24 @@ export type ToolResultChunk = {
   result: unknown;
 };
 
-export type StreamChunk = TextDeltaChunk | ReasoningDeltaChunk | ToolCallChunk | ToolResultChunk;
+export type FinishChunk = {
+  type: 'finish';
+  finishReason: string;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+};
+
+export type StreamChunk =
+  | TextDeltaChunk
+  | ReasoningStartChunk
+  | ReasoningDeltaChunk
+  | ReasoningEndChunk
+  | ToolCallChunk
+  | ToolResultChunk
+  | FinishChunk;
 
 /**
  * Step info (our own)
@@ -187,10 +212,22 @@ export async function* createAIStream(
         };
         break;
 
+      case 'reasoning-start':
+        yield {
+          type: 'reasoning-start',
+        };
+        break;
+
       case 'reasoning-delta':
         yield {
           type: 'reasoning-delta',
           textDelta: chunk.text,
+        };
+        break;
+
+      case 'reasoning-end':
+        yield {
+          type: 'reasoning-end',
         };
         break;
 
@@ -212,6 +249,19 @@ export async function* createAIStream(
         };
         break;
 
+      case 'finish':
+        // Final usage statistics
+        yield {
+          type: 'finish',
+          finishReason: chunk.finishReason,
+          usage: {
+            promptTokens: chunk.totalUsage.inputTokens ?? 0,
+            completionTokens: chunk.totalUsage.outputTokens ?? 0,
+            totalTokens: chunk.totalUsage.totalTokens ?? 0,
+          },
+        };
+        break;
+
       case 'error':
         // Stream error - throw to propagate to caller's try-catch
         throw chunk.error instanceof Error ? chunk.error : new Error(String(chunk.error));
@@ -224,7 +274,7 @@ export async function* createAIStream(
         // Stream aborted - throw to propagate to caller's try-catch
         throw new Error('Stream aborted');
 
-      // Ignore other chunk types (text-start, text-end, finish, etc.)
+      // Ignore other chunk types (text-start, text-end, etc.)
       // They don't affect our streaming output
       default:
         break;

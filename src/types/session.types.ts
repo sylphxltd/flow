@@ -6,10 +6,11 @@
 import type { ProviderId } from '../config/ai-config.js';
 
 /**
- * Message part - can be text or tool call
+ * Message part - can be text, reasoning, or tool call
  */
 export type MessagePart =
   | { type: 'text'; content: string }
+  | { type: 'reasoning'; content: string; duration?: number }
   | {
       type: 'tool';
       name: string;
@@ -29,6 +30,15 @@ export interface FileAttachment {
 }
 
 /**
+ * Token usage statistics
+ */
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+/**
  * Session message
  */
 export interface SessionMessage {
@@ -37,6 +47,8 @@ export interface SessionMessage {
   timestamp: number;
   parts?: MessagePart[];
   attachments?: FileAttachment[];
+  usage?: TokenUsage;
+  finishReason?: string;
 }
 
 /**
