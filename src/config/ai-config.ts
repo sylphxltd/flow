@@ -1,11 +1,17 @@
 /**
  * AI Configuration Management
- * Stores API keys, provider preferences, and model selections
- * No environment variables - all stored in local config file
+ *
+ * Three-tier configuration system:
+ * 1. Global: ~/.sylphx-flow/settings.json (user defaults, contains API keys)
+ * 2. Project: ./.sylphx-flow/settings.json (project preferences, no secrets)
+ * 3. Local: ./.sylphx-flow/settings.local.json (local overrides, gitignored)
+ *
+ * Priority: local > project > global
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import { z } from 'zod';
 import { type Result, success, tryCatchAsync } from '../core/functional/result.js';
 
@@ -104,61 +110,167 @@ const aiConfigSchema = z.object({
 
 export type AIConfig = z.infer<typeof aiConfigSchema>;
 
-const CONFIG_FILE = '.sylphx-flow/ai-config.json';
+/**
+ * Configuration file paths
+ */
+const GLOBAL_CONFIG_FILE = path.join(os.homedir(), '.sylphx-flow', 'settings.json');
+const PROJECT_CONFIG_FILE = '.sylphx-flow/settings.json';
+const LOCAL_CONFIG_FILE = '.sylphx-flow/settings.local.json';
 
 /**
- * Get AI config file path
+ * Deprecated config file (for migration)
  */
-export const getAIConfigPath = (cwd: string = process.cwd()): string =>
-  path.join(cwd, CONFIG_FILE);
+const LEGACY_CONFIG_FILE = '.sylphx-flow/ai-config.json';
 
 /**
- * Check if AI config exists
+ * Get AI config file paths in priority order
  */
-export const aiConfigExists = async (cwd: string = process.cwd()): Promise<boolean> => {
+export const getAIConfigPaths = (cwd: string = process.cwd()): {
+  global: string;
+  project: string;
+  local: string;
+  legacy: string;
+} => ({
+  global: GLOBAL_CONFIG_FILE,
+  project: path.join(cwd, PROJECT_CONFIG_FILE),
+  local: path.join(cwd, LOCAL_CONFIG_FILE),
+  legacy: path.join(cwd, LEGACY_CONFIG_FILE),
+});
+
+/**
+ * Load config from a single file
+ */
+const loadConfigFile = async (filePath: string): Promise<AIConfig | null> => {
   try {
-    await fs.access(getAIConfigPath(cwd));
-    return true;
-  } catch {
-    return false;
+    const content = await fs.readFile(filePath, 'utf8');
+    const parsed = JSON.parse(content);
+    return aiConfigSchema.parse(parsed);
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return null; // File doesn't exist
+    }
+    throw error; // Re-throw other errors
   }
 };
 
 /**
- * Load AI configuration
+ * Deep merge two configs (b overwrites a)
  */
-export const loadAIConfig = async (cwd: string = process.cwd()): Promise<Result<AIConfig, Error>> => {
-  const configPath = getAIConfigPath(cwd);
-
-  return tryCatchAsync(
-    async () => {
-      const content = await fs.readFile(configPath, 'utf8');
-      const parsed = JSON.parse(content);
-      return aiConfigSchema.parse(parsed);
+const mergeConfigs = (a: AIConfig, b: AIConfig): AIConfig => {
+  return {
+    defaultProvider: b.defaultProvider ?? a.defaultProvider,
+    defaultModel: b.defaultModel ?? a.defaultModel,
+    providers: {
+      anthropic: {
+        ...a.providers?.anthropic,
+        ...b.providers?.anthropic,
+      },
+      openai: {
+        ...a.providers?.openai,
+        ...b.providers?.openai,
+      },
+      google: {
+        ...a.providers?.google,
+        ...b.providers?.google,
+      },
+      openrouter: {
+        ...a.providers?.openrouter,
+        ...b.providers?.openrouter,
+      },
     },
-    (error: any) => {
-      if (error.code === 'ENOENT') {
-        return new Error('AI_CONFIG_NOT_FOUND');
-      }
-      return new Error(`Failed to load AI config: ${error.message}`);
-    }
-  ).then((result) => {
-    // Convert NOT_FOUND to success with empty config
-    if (result._tag === 'Failure' && result.error.message === 'AI_CONFIG_NOT_FOUND') {
-      return success({});
-    }
-    return result;
-  });
+  };
 };
 
 /**
- * Save AI configuration
+ * Check if any AI config exists
+ */
+export const aiConfigExists = async (cwd: string = process.cwd()): Promise<boolean> => {
+  const paths = getAIConfigPaths(cwd);
+  try {
+    // Check any of the config files
+    await fs.access(paths.global).catch(() => {});
+    return true;
+  } catch {}
+
+  try {
+    await fs.access(paths.project);
+    return true;
+  } catch {}
+
+  try {
+    await fs.access(paths.local);
+    return true;
+  } catch {}
+
+  try {
+    await fs.access(paths.legacy);
+    return true;
+  } catch {}
+
+  return false;
+};
+
+/**
+ * Load AI configuration
+ * Merges global, project, and local configs with priority: local > project > global
+ * Automatically migrates legacy config on first load
+ */
+export const loadAIConfig = async (cwd: string = process.cwd()): Promise<Result<AIConfig, Error>> => {
+  return tryCatchAsync(
+    async () => {
+      const paths = getAIConfigPaths(cwd);
+
+      // Load all config files
+      const [globalConfig, projectConfig, localConfig, legacyConfig] = await Promise.all([
+        loadConfigFile(paths.global),
+        loadConfigFile(paths.project),
+        loadConfigFile(paths.local),
+        loadConfigFile(paths.legacy),
+      ]);
+
+      // Auto-migrate legacy config if it exists and global doesn't
+      if (legacyConfig && !globalConfig) {
+        await migrateLegacyConfig(cwd);
+        // Reload global config after migration
+        const migratedGlobal = await loadConfigFile(paths.global);
+        if (migratedGlobal) {
+          // Start with empty config
+          let merged: AIConfig = {};
+
+          // Merge in priority order: global < project < local
+          merged = mergeConfigs(merged, migratedGlobal);
+          if (projectConfig) merged = mergeConfigs(merged, projectConfig);
+          if (localConfig) merged = mergeConfigs(merged, localConfig);
+
+          return merged;
+        }
+      }
+
+      // Start with empty config
+      let merged: AIConfig = {};
+
+      // Merge in priority order: global < project < local < legacy (for backwards compat)
+      if (globalConfig) merged = mergeConfigs(merged, globalConfig);
+      if (projectConfig) merged = mergeConfigs(merged, projectConfig);
+      if (localConfig) merged = mergeConfigs(merged, localConfig);
+      if (legacyConfig) merged = mergeConfigs(merged, legacyConfig);
+
+      return merged;
+    },
+    (error: any) => new Error(`Failed to load AI config: ${error.message}`)
+  );
+};
+
+/**
+ * Save AI configuration to global settings
+ * By default, all configuration (including API keys) goes to ~/.sylphx-flow/settings.json
  */
 export const saveAIConfig = async (
   config: AIConfig,
   cwd: string = process.cwd()
 ): Promise<Result<void, Error>> => {
-  const configPath = getAIConfigPath(cwd);
+  const paths = getAIConfigPaths(cwd);
+  const configPath = paths.global; // Save to global by default
 
   return tryCatchAsync(
     async () => {
@@ -172,6 +284,32 @@ export const saveAIConfig = async (
       await fs.writeFile(configPath, JSON.stringify(validated, null, 2) + '\n', 'utf8');
     },
     (error: any) => new Error(`Failed to save AI config: ${error.message}`)
+  );
+};
+
+/**
+ * Save AI configuration to a specific location
+ */
+export const saveAIConfigTo = async (
+  config: AIConfig,
+  location: 'global' | 'project' | 'local',
+  cwd: string = process.cwd()
+): Promise<Result<void, Error>> => {
+  const paths = getAIConfigPaths(cwd);
+  const configPath = paths[location];
+
+  return tryCatchAsync(
+    async () => {
+      // Ensure directory exists
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+
+      // Validate config
+      const validated = aiConfigSchema.parse(config);
+
+      // Write config
+      await fs.writeFile(configPath, JSON.stringify(validated, null, 2) + '\n', 'utf8');
+    },
+    (error: any) => new Error(`Failed to save AI config to ${location}: ${error.message}`)
   );
 };
 
@@ -269,4 +407,39 @@ export const getConfiguredProviders = async (
   }
 
   return providers;
+};
+
+/**
+ * Migrate legacy ai-config.json to new settings system
+ * Automatically called on first load if legacy config exists
+ */
+export const migrateLegacyConfig = async (cwd: string = process.cwd()): Promise<Result<void, Error>> => {
+  return tryCatchAsync(
+    async () => {
+      const paths = getAIConfigPaths(cwd);
+
+      // Check if legacy config exists
+      const legacyConfig = await loadConfigFile(paths.legacy);
+      if (!legacyConfig) {
+        return; // No legacy config to migrate
+      }
+
+      // Check if global config already exists
+      const globalConfig = await loadConfigFile(paths.global);
+      if (globalConfig) {
+        // Global config exists, don't overwrite it
+        console.log('Legacy config found but global config already exists. Skipping migration.');
+        console.log(`You can manually delete ${paths.legacy} if migration is complete.`);
+        return;
+      }
+
+      // Migrate to global config
+      await fs.mkdir(path.dirname(paths.global), { recursive: true });
+      await fs.writeFile(paths.global, JSON.stringify(legacyConfig, null, 2) + '\n', 'utf8');
+
+      console.log(`✓ Migrated configuration from ${paths.legacy} to ${paths.global}`);
+      console.log(`  You can now safely delete the legacy file: ${paths.legacy}`);
+    },
+    (error: any) => new Error(`Failed to migrate legacy config: ${error.message}`)
+  );
 };
