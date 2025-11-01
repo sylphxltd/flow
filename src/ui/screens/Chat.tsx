@@ -20,6 +20,7 @@ import { ToolDisplay } from '../components/ToolDisplay.js';
 import { scanProjectFiles, filterFiles } from '../../utils/file-scanner.js';
 import type { FileAttachment } from '../../types/session.types.js';
 import { formatTokenCount } from '../../utils/token-counter.js';
+import { useFileAttachments } from '../hooks/useFileAttachments.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -44,12 +45,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
   const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
 
-  // File attachment state
-  const [pendingAttachments, setPendingAttachments] = useState<FileAttachment[]>([]);
+  // File attachment hook
+  const {
+    pendingAttachments,
+    attachmentTokens,
+    validTags,
+    addAttachment,
+    clearAttachments,
+    setAttachmentTokenCount,
+  } = useFileAttachments(input);
+
   const [projectFiles, setProjectFiles] = useState<Array<{ path: string; relativePath: string; size: number }>>([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
-  const [attachmentTokens, setAttachmentTokens] = useState<Map<string, number>>(new Map());
 
   // For command interactive flow - when command calls waitForInput()
   const [pendingInput, setPendingInput] = useState<WaitForInputOptions | null>(null);
@@ -537,16 +545,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           const selected = filteredFileInfo.files[selectedFileIndex];
           if (selected) {
             // Add to pending attachments
-            setPendingAttachments((prev) => {
-              // Check if already attached
-              if (prev.some((a) => a.path === selected.path)) {
-                return prev;
-              }
-              return [...prev, {
-                path: selected.path,
-                relativePath: selected.relativePath,
-                size: selected.size,
-              }];
+            addAttachment({
+              path: selected.path,
+              relativePath: selected.relativePath,
+              size: selected.size,
             });
 
             // Calculate token count for this file using model-aware BPE tokenizer
@@ -556,7 +558,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 const { countTokens } = await import('../../utils/token-counter.js');
                 const content = await readFile(selected.path, 'utf8');
                 const tokenCount = await countTokens(content, currentSession?.model);
-                setAttachmentTokens((prev) => new Map(prev).set(selected.path, tokenCount));
+                setAttachmentTokenCount(selected.path, tokenCount);
               } catch (error) {
                 console.error('Failed to count tokens:', error);
               }
@@ -743,22 +745,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     calculateTokens();
   }, [currentSession, currentSession?.messages.length]);
 
-  // Sync pending attachments with @file references in input
-  useEffect(() => {
-    // Extract all @file references from input
-    const fileRefs = new Set<string>();
-    const regex = /@([^\s]+)/g;
-    let match;
-    while ((match = regex.exec(input)) !== null) {
-      fileRefs.add(match[1]);
-    }
-
-    // Remove attachments that are no longer in input
-    setPendingAttachments((prev) => {
-      return prev.filter((att) => fileRefs.has(att.relativePath));
-    });
-  }, [input]);
-
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
 
@@ -858,7 +844,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];
 
     // Clear pending attachments after capturing them
-    setPendingAttachments([]);
+    clearAttachments();
 
     setIsStreaming(true);
     setStreamParts([]);
@@ -1491,7 +1477,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 }
                 showCursor
                 hint={hintText}
-                validTags={new Set(pendingAttachments.map(att => att.relativePath))}
+                validTags={validTags}
               />
 
               {/* File Autocomplete - Shows below input when typing @ */}
