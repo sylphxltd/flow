@@ -178,8 +178,8 @@ const providerCommand: Command = {
         },
       };
 
-      // If this is the first time setting apiKey, make it default provider
-      if (key === 'apiKey' && !aiConfig?.defaultProvider) {
+      // If no default provider set yet, make this one the default
+      if (!aiConfig?.defaultProvider) {
         newConfig.defaultProvider = providerId;
       }
 
@@ -218,8 +218,8 @@ const providerCommand: Command = {
         },
       };
 
-      // If this is the first time setting apiKey, make it default provider
-      if (key === 'apiKey' && !aiConfig?.defaultProvider) {
+      // If no default provider set yet, make this one the default
+      if (!aiConfig?.defaultProvider) {
         newConfig.defaultProvider = providerId;
       }
 
