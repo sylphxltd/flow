@@ -16,6 +16,8 @@ export interface StreamCallbacks {
   onReasoningEnd?: () => void;
   onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
   onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
+  onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void;
+  onError?: (error: string) => void;
   onFinish?: (usage: TokenUsage, finishReason: string) => void;
   onComplete?: () => void;
 }
@@ -37,7 +39,7 @@ export async function processStream(
   stream: AsyncIterable<StreamChunk>,
   callbacks: StreamCallbacks = {}
 ): Promise<StreamResult> {
-  const { onTextDelta, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolResult, onFinish, onComplete } = callbacks;
+  const { onTextDelta, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolResult, onToolError, onError, onFinish, onComplete } = callbacks;
 
   let fullResponse = '';
   const messageParts: MessagePart[] = [];
@@ -175,6 +177,9 @@ export async function processStream(
             toolPart.duration = duration;
             toolPart.error = chunk.error;
           }
+
+          // Notify callback
+          onToolError?.(chunk.toolCallId, chunk.toolName, chunk.error, duration);
         }
         break;
       }
@@ -188,6 +193,9 @@ export async function processStream(
 
         // Add error part
         messageParts.push({ type: 'error', error: chunk.error });
+
+        // Notify callback
+        onError?.(chunk.error);
         break;
       }
 

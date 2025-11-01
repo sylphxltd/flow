@@ -24,7 +24,7 @@ import { useFileAttachments } from '../hooks/useFileAttachments.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
-  | { type: 'reasoning'; content: string }
+  | { type: 'reasoning'; content: string; completed?: boolean; duration?: number }
   | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string }
   | { type: 'error'; error: string };
 
@@ -988,7 +988,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onReasoningStart - reasoning started
         () => {
           addLog('Reasoning start');
-          setStreamParts((prev) => [...prev, { type: 'reasoning', content: '' }]);
+          setStreamParts((prev) => [...prev, { type: 'reasoning', content: '', completed: false }]);
         },
         // onReasoningDelta - reasoning chunk
         (chunk) => {
@@ -997,10 +997,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             const newParts = [...prev];
             const lastPart = newParts[newParts.length - 1];
 
-            if (lastPart && lastPart.type === 'reasoning') {
+            if (lastPart && lastPart.type === 'reasoning' && !lastPart.completed) {
               newParts[newParts.length - 1] = {
                 type: 'reasoning',
-                content: lastPart.content + chunk
+                content: lastPart.content + chunk,
+                completed: false
               };
             }
             return newParts;
@@ -1009,6 +1010,40 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onReasoningEnd - reasoning finished
         () => {
           addLog('Reasoning end');
+          setStreamParts((prev) => {
+            const newParts = [...prev];
+            const lastPart = newParts[newParts.length - 1];
+
+            if (lastPart && lastPart.type === 'reasoning' && !lastPart.completed) {
+              // Mark as completed (will show "Thought Xs" instead of "Thinking...")
+              newParts[newParts.length - 1] = {
+                ...lastPart,
+                completed: true
+              };
+            }
+            return newParts;
+          });
+        },
+        // onToolError - tool failed
+        (toolCallId, toolName, error, duration) => {
+          addLog(`Tool error: ${toolName} (${toolCallId})`);
+          setStreamParts((prev) => {
+            const newParts = [...prev];
+            const toolPart = newParts.find(p => p.type === 'tool' && p.toolId === toolCallId);
+
+            if (toolPart && toolPart.type === 'tool') {
+              toolPart.status = 'failed';
+              toolPart.error = error;
+              toolPart.duration = duration;
+            }
+
+            return [...newParts];
+          });
+        },
+        // onError - stream error
+        (error) => {
+          addLog(`Stream error: ${error}`);
+          setStreamParts((prev) => [...prev, { type: 'error', error }]);
         }
       );
     } catch (error) {
@@ -1192,14 +1227,25 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       </Box>
                     );
                   } else if (part.type === 'reasoning') {
-                    // Simplified streaming reasoning - just show indicator
-                    return (
-                      <Box key={idx}>
-                        <Text color="#00FF88">▏ </Text>
-                        <Spinner color="#FFD700" />
-                        <Text dimColor> Thinking...</Text>
-                      </Box>
-                    );
+                    // Check if reasoning is completed
+                    if (part.completed) {
+                      // Show completed reasoning with duration
+                      return (
+                        <Box key={idx}>
+                          <Text color="#00FF88">▏ </Text>
+                          <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
+                        </Box>
+                      );
+                    } else {
+                      // Still streaming - show spinner
+                      return (
+                        <Box key={idx}>
+                          <Text color="#00FF88">▏ </Text>
+                          <Spinner color="#FFD700" />
+                          <Text dimColor> Thinking...</Text>
+                        </Box>
+                      );
+                    }
                   } else if (part.type === 'error') {
                     return (
                       <Box key={idx}>

@@ -36,7 +36,9 @@ export function useChat() {
     attachments?: Array<{ path: string; relativePath: string; size?: number }>,
     onReasoningStart?: () => void,
     onReasoningDelta?: (text: string) => void,
-    onReasoningEnd?: () => void
+    onReasoningEnd?: () => void,
+    onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void,
+    onError?: (error: string) => void
   ) => {
     if (!currentSession || !currentSessionId) {
       // Don't use setError - this should never happen in normal flow
@@ -179,6 +181,14 @@ export function useChat() {
         onToolResult: (toolCallId, toolName, result, duration) => {
           addDebugLog(`[useChat] tool-result: ${toolName} (${toolCallId}, ${duration}ms)`);
           onToolResult?.(toolCallId, toolName, result, duration);
+        },
+        onToolError: (toolCallId, toolName, error, duration) => {
+          addDebugLog(`[useChat] tool-error: ${toolName} (${toolCallId}, ${duration}ms) - ${error}`);
+          onToolError?.(toolCallId, toolName, error, duration);
+        },
+        onError: (error) => {
+          addDebugLog(`[useChat] error: ${error}`);
+          onError?.(error);
         },
       });
 
