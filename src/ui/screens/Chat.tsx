@@ -662,10 +662,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setStreamParts([]);
     addLog('Starting message send...');
 
-    await sendMessage(
-      userMessage,
-      // onChunk - text streaming
-      (chunk) => {
+    try {
+      await sendMessage(
+        userMessage,
+        // onChunk - text streaming
+        (chunk) => {
         const timestamp = Date.now();
         addLog(`Chunk(${chunk.length}ch) @${timestamp}`);
         setStreamParts((prev) => {
@@ -707,14 +708,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           )
         );
       },
-      // onComplete - streaming finished
-      () => {
-        addLog('Streaming complete');
-        setIsStreaming(false);
-        setStreamParts([]); // Clear streaming parts - they're now in message history
-      }
-      // NOTE: onUserInputRequest removed - handler is set globally in useEffect
-    );
+        // onComplete - streaming finished
+        () => {
+          addLog('Streaming complete');
+          setIsStreaming(false);
+          setStreamParts([]); // Clear streaming parts - they're now in message history
+        }
+        // NOTE: onUserInputRequest removed - handler is set globally in useEffect
+      );
+    } catch (error) {
+      // Error is already handled in useChat hook and added as assistant message
+      // This catch prevents unhandled promise rejection
+      addLog(`[handleSubmit] Caught error (already handled in useChat): ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   return (

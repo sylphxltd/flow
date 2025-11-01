@@ -100,10 +100,20 @@ export function useChat() {
       // Then trigger UI update
       onComplete?.();
     } catch (error) {
+      addDebugLog('[useChat] ERROR CAUGHT!');
       console.error('[Chat Error]:', error);
+
+      if (!currentSessionId) {
+        addDebugLog('[useChat] ERROR: No currentSessionId!');
+        setError('No active session');
+        onComplete?.();
+        return;
+      }
 
       // Format error message for display
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      addDebugLog(`[useChat] Adding error message to session: ${currentSessionId}`);
+
       const displayError = `❌ Error: ${errorMessage}\n\n${
         error instanceof Error && 'statusCode' in error && (error as any).statusCode === 401
           ? 'This usually means:\n• Invalid or missing API key\n• API key has expired\n\nPlease check your provider configuration with /provider command.'
@@ -112,9 +122,11 @@ export function useChat() {
 
       // Add error as assistant message so user can see it in chat
       addMessage(currentSessionId, 'assistant', displayError);
+      addDebugLog('[useChat] Error message added, calling onComplete');
 
       // Trigger UI update after adding error message
       onComplete?.();
+      addDebugLog('[useChat] onComplete called');
     } finally {
       // Clean up user input handler
       clearUserInputHandler();
