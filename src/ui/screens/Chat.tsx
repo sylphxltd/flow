@@ -1491,6 +1491,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 }
                 showCursor
                 hint={hintText}
+                validTags={new Set(pendingAttachments.map(att => att.relativePath))}
               />
 
               {/* File Autocomplete - Shows below input when typing @ */}

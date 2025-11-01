@@ -16,6 +16,7 @@ export interface ControlledTextInputProps {
   maskChar?: string; // Optional: display * like password input
   showCursor?: boolean;
   focus?: boolean;
+  validTags?: Set<string>; // Set of valid @file references (e.g., "src/file.ts")
 }
 
 export default function ControlledTextInput({
@@ -28,6 +29,7 @@ export default function ControlledTextInput({
   maskChar,
   showCursor = true,
   focus = true,
+  validTags,
 }: ControlledTextInputProps) {
   const text = maskChar ? maskChar.repeat(value.length) : value;
 
@@ -271,26 +273,47 @@ export default function ControlledTextInput({
         partIndex++;
       }
 
-      // Add @file tag with background
+      // Check if this tag is valid (exists in validTags)
+      const fileName = match[1]; // The captured group (filename without @)
+      const isValidTag = validTags ? validTags.has(fileName) : false;
+
+      // Add @file tag with background (only if valid)
       if (!cursorRendered && cursorPos >= matchStart && cursorPos < matchEnd) {
         // Cursor is inside the tag
         const tagText = match[0];
         const leftPart = tagText.slice(0, cursorPos - matchStart);
         const rightPart = tagText.slice(cursorPos - matchStart);
-        parts.push(
-          <Text key={`tag-${partIndex}`} backgroundColor="#1a472a" color="#00FF88">
-            {leftPart}
-            {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
-            {rightPart.slice(1)}
-          </Text>
-        );
+
+        if (isValidTag) {
+          parts.push(
+            <Text key={`tag-${partIndex}`} backgroundColor="#1a472a" color="#00FF88">
+              {leftPart}
+              {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
+              {rightPart.slice(1)}
+            </Text>
+          );
+        } else {
+          // Invalid tag - render as normal text with cursor
+          parts.push(
+            <Text key={`tag-${partIndex}`}>
+              {leftPart}
+              {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
+              {rightPart.slice(1)}
+            </Text>
+          );
+        }
         cursorRendered = true;
       } else {
-        parts.push(
-          <Text key={`tag-${partIndex}`} backgroundColor="#1a472a" color="#00FF88">
-            {match[0]}
-          </Text>
-        );
+        if (isValidTag) {
+          parts.push(
+            <Text key={`tag-${partIndex}`} backgroundColor="#1a472a" color="#00FF88">
+              {match[0]}
+            </Text>
+          );
+        } else {
+          // Invalid tag - render as normal text
+          parts.push(<Text key={`tag-${partIndex}`}>{match[0]}</Text>);
+        }
       }
       partIndex++;
 

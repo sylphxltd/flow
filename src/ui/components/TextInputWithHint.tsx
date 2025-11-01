@@ -17,6 +17,7 @@ interface TextInputWithHintProps {
   cursor?: number; // Optional controlled cursor position
   onCursorChange?: (cursor: number) => void;
   focus?: boolean; // Whether to handle input (for autocomplete)
+  validTags?: Set<string>; // Set of valid @file references
 }
 
 export default function TextInputWithHint({
@@ -29,6 +30,7 @@ export default function TextInputWithHint({
   cursor: controlledCursor,
   onCursorChange: controlledOnCursorChange,
   focus = true,
+  validTags,
 }: TextInputWithHintProps) {
   // Internal cursor state (used when not controlled from parent)
   const [internalCursor, setInternalCursor] = useState(0);
@@ -59,6 +61,7 @@ export default function TextInputWithHint({
         placeholder={placeholder}
         showCursor={showCursor}
         focus={focus}
+        validTags={validTags}
       />
       {hint && value.length > 0 && (
         <Text color="#444444">{hint}</Text>
