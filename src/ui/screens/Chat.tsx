@@ -80,6 +80,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
   const createSession = useAppStore((state) => state.createSession);
+  const updateSessionModel = useAppStore((state) => state.updateSessionModel);
   const sessions = useAppStore((state) => state.sessions);
   const updateProvider = useAppStore((state) => state.updateProvider);
   const setAIConfig = useAppStore((state) => state.setAIConfig);
@@ -221,8 +222,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // Save config to file
         await saveConfig(newConfig);
 
-        // Create new session with the new model
-        createSession(provider, modelId);
+        // Update current session's model (preserve history)
+        if (currentSessionId) {
+          updateSessionModel(currentSessionId, modelId);
+        } else {
+          // Fallback: create new session if no active session
+          createSession(provider, modelId);
+        }
 
         return `Switched to model: ${modelId}`;
       },
