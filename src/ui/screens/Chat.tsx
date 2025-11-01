@@ -224,6 +224,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     if (atIndex === -1) return { files: [], query: '', hasAt: false, atIndex: -1 };
 
+    // Check character before @ to avoid triggering on emails (user@example.com)
+    // Only trigger if @ is at start OR preceded by whitespace/newline
+    if (atIndex > 0) {
+      const charBeforeAt = textBeforeCursor[atIndex - 1];
+      const isWhitespace = /\s/.test(charBeforeAt); // space, tab, newline, etc.
+      if (!isWhitespace) {
+        // @ is preceded by non-whitespace (likely email), don't trigger
+        return { files: [], query: '', hasAt: false, atIndex };
+      }
+    }
+
     // Extract query after @ up to cursor
     const query = textBeforeCursor.slice(atIndex + 1);
 
