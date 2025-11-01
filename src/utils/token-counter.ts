@@ -1,44 +1,99 @@
 /**
  * Token Counter Utility
- * Fast token counting for UI display
+ * BPE-based token counting using StarCoder2
  *
- * Supports:
- * - Fast estimation (for UI)
- * - Precise counting with StarCoder2 (when needed)
+ * Primary method: BPE tokenizer (StarCoder2)
+ * Fallback: Fast estimation when tokenizer unavailable
  */
 
 import { AdvancedCodeTokenizer } from './advanced-tokenizer.js';
 
-// Singleton instance for StarCoder2 tokenizer (lazy-loaded)
-let starCoderTokenizer: AdvancedCodeTokenizer | null = null;
+// Singleton instance for StarCoder2 BPE tokenizer (lazy-loaded)
+let bpeTokenizer: AdvancedCodeTokenizer | null = null;
 let tokenizerInitializing = false;
+let initializationFailed = false;
 
 /**
- * Fast token estimation (good for UI)
- * Based on OpenAI's rule of thumb: ~4 chars per token for English
- * Code is typically ~3-4 chars per token
+ * Fast fallback estimation (only when BPE tokenizer unavailable)
+ * Based on ~3.5 chars per token for code
  */
-export function estimateTokens(text: string): number {
+function estimateFallback(text: string): number {
   if (!text) return 0;
-
-  // Simple heuristic:
-  // - Count words (split by whitespace)
-  // - Add punctuation and symbols
-  // - Average ~0.75 tokens per word for code/English mix
 
   const words = text.split(/\s+/).filter(Boolean).length;
   const chars = text.length;
 
-  // Use character-based estimation as baseline
-  // Code is denser: ~3.5 chars per token
   const charBasedEstimate = Math.ceil(chars / 3.5);
-
-  // Word-based estimate (more accurate for natural text)
-  // Avg 1.3 tokens per word (accounts for punctuation)
   const wordBasedEstimate = Math.ceil(words * 1.3);
 
-  // Return the average of both methods
   return Math.round((charBasedEstimate + wordBasedEstimate) / 2);
+}
+
+/**
+ * Initialize BPE tokenizer (lazy, singleton)
+ */
+async function ensureTokenizer(): Promise<AdvancedCodeTokenizer | null> {
+  // Already initialized
+  if (bpeTokenizer) return bpeTokenizer;
+
+  // Previous initialization failed
+  if (initializationFailed) return null;
+
+  // Wait if initialization in progress
+  while (tokenizerInitializing) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // Check again after waiting
+  if (bpeTokenizer) return bpeTokenizer;
+  if (initializationFailed) return null;
+
+  // Initialize
+  try {
+    tokenizerInitializing = true;
+    bpeTokenizer = new AdvancedCodeTokenizer();
+    await bpeTokenizer.initialize();
+    tokenizerInitializing = false;
+    return bpeTokenizer;
+  } catch (error) {
+    console.warn('BPE tokenizer initialization failed, using fallback estimation:', error);
+    initializationFailed = true;
+    tokenizerInitializing = false;
+    return null;
+  }
+}
+
+/**
+ * Count tokens using BPE tokenizer (StarCoder2)
+ * Falls back to estimation if tokenizer unavailable
+ *
+ * This is the primary token counting method.
+ */
+export async function countTokens(text: string): Promise<number> {
+  if (!text) return 0;
+
+  const tokenizer = await ensureTokenizer();
+
+  if (!tokenizer) {
+    // Tokenizer unavailable, use fallback
+    return estimateFallback(text);
+  }
+
+  try {
+    const result = await tokenizer.tokenize(text);
+    return result.metadata.totalTokens;
+  } catch (error) {
+    console.warn('Token counting failed, using fallback:', error);
+    return estimateFallback(text);
+  }
+}
+
+/**
+ * Synchronous token estimation (for cases where async is not possible)
+ * Uses fallback estimation only
+ */
+export function estimateTokens(text: string): number {
+  return estimateFallback(text);
 }
 
 /**
@@ -60,68 +115,42 @@ export function formatTokenCount(count: number): string {
 }
 
 /**
- * Get precise token count using StarCoder2
- * This is async and may take longer - use for final/accurate counts
+ * Alias for countTokens (for clarity)
+ * Uses BPE tokenizer
  */
 export async function countTokensPrecise(text: string): Promise<number> {
-  if (!text) return 0;
-
-  try {
-    // Initialize tokenizer if needed (lazy)
-    if (!starCoderTokenizer && !tokenizerInitializing) {
-      tokenizerInitializing = true;
-      starCoderTokenizer = new AdvancedCodeTokenizer();
-      await starCoderTokenizer.initialize();
-      tokenizerInitializing = false;
-    }
-
-    // Wait for initialization if in progress
-    while (tokenizerInitializing) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    if (!starCoderTokenizer) {
-      // Fallback to estimation if tokenizer failed
-      return estimateTokens(text);
-    }
-
-    const result = await starCoderTokenizer.tokenize(text);
-    return result.metadata.totalTokens;
-  } catch (error) {
-    console.warn('Precise token counting failed, falling back to estimation:', error);
-    return estimateTokens(text);
-  }
+  return countTokens(text);
 }
 
 /**
  * Count tokens with display formatting
- * Fast version using estimation
+ * Uses BPE tokenizer (async)
  */
-export function countAndFormat(text: string): string {
+export async function countAndFormat(text: string): Promise<string> {
+  const count = await countTokens(text);
+  return `${formatTokenCount(count)} Tokens`;
+}
+
+/**
+ * Count tokens with display formatting (sync, estimation only)
+ * Use this only when async is not possible
+ */
+export function countAndFormatSync(text: string): string {
   const count = estimateTokens(text);
   return `${formatTokenCount(count)} Tokens`;
 }
 
 /**
- * Count tokens with display formatting (precise)
- * Async version using StarCoder2
+ * Batch count tokens for multiple texts
+ * Uses BPE tokenizer
  */
-export async function countAndFormatPrecise(text: string): Promise<string> {
-  const count = await countTokensPrecise(text);
-  return `${formatTokenCount(count)} Tokens`;
+export async function countTokensBatch(texts: string[]): Promise<number[]> {
+  return Promise.all(texts.map(countTokens));
 }
 
 /**
- * Batch count tokens for multiple texts
- * Returns array of token counts
+ * Batch count tokens (sync estimation fallback)
  */
 export function estimateTokensBatch(texts: string[]): number[] {
   return texts.map(estimateTokens);
-}
-
-/**
- * Batch count tokens (precise) for multiple texts
- */
-export async function countTokensBatchPrecise(texts: string[]): Promise<number[]> {
-  return Promise.all(texts.map(countTokensPrecise));
 }

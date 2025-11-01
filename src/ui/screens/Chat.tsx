@@ -18,7 +18,7 @@ import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } fr
 import { ToolDisplay } from '../components/ToolDisplay.js';
 import { scanProjectFiles, filterFiles } from '../../utils/file-scanner.js';
 import type { FileAttachment } from '../../types/session.types.js';
-import { estimateTokens, formatTokenCount } from '../../utils/token-counter.js';
+import { formatTokenCount } from '../../utils/token-counter.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -529,12 +529,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               }];
             });
 
-            // Calculate token count for this file
+            // Calculate token count for this file using BPE tokenizer
             (async () => {
               try {
                 const { readFile } = await import('node:fs/promises');
+                const { countTokens } = await import('../../utils/token-counter.js');
                 const content = await readFile(selected.path, 'utf8');
-                const tokenCount = estimateTokens(content);
+                const tokenCount = await countTokens(content);
                 setAttachmentTokens((prev) => new Map(prev).set(selected.path, tokenCount));
               } catch (error) {
                 console.error('Failed to count tokens:', error);
