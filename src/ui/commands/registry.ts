@@ -1493,12 +1493,79 @@ const agentCommand: Command = {
 };
 
 /**
+ * Rules command - Toggle shared system prompt rules
+ */
+const rulesCommand: Command = {
+  id: 'rules',
+  label: '/rules',
+  description: 'Toggle shared system prompt rules',
+  execute: async (context) => {
+    const { getAllRules, getEnabledRuleIds, toggleRule } = await import('../../core/rule-manager.js');
+
+    const allRules = getAllRules();
+    const enabledIds = getEnabledRuleIds();
+
+    if (allRules.length === 0) {
+      return 'No rules available.';
+    }
+
+    // Create options with enabled/disabled indicators
+    const ruleOptions = allRules.map((rule) => {
+      const isEnabled = enabledIds.includes(rule.id);
+      const status = isEnabled ? '✓' : '○';
+      const label = `${status} ${rule.metadata.name} - ${rule.metadata.description}`;
+
+      return {
+        label,
+        value: rule.id,
+      };
+    });
+
+    context.sendMessage('Select rules to toggle (✓ = enabled, ○ = disabled):');
+    const answers = await context.waitForInput({
+      type: 'selection',
+      questions: [
+        {
+          id: 'rule',
+          question: 'Which rule do you want to toggle?',
+          options: ruleOptions,
+        },
+      ],
+    });
+
+    const ruleId = typeof answers === 'object' && !Array.isArray(answers) ? answers['rule'] : '';
+
+    if (!ruleId) {
+      return 'Rule selection cancelled.';
+    }
+
+    // Toggle the rule
+    const success = toggleRule(ruleId);
+
+    if (!success) {
+      return `Failed to toggle rule: ${ruleId}`;
+    }
+
+    const rule = allRules.find((r) => r.id === ruleId);
+    if (!rule) {
+      return 'Rule not found.';
+    }
+
+    const newEnabledIds = getEnabledRuleIds();
+    const isNowEnabled = newEnabledIds.includes(ruleId);
+
+    return `${isNowEnabled ? 'Enabled' : 'Disabled'} rule: ${rule.metadata.name}\n${rule.metadata.description}`;
+  },
+};
+
+/**
  * All registered commands
  */
 export const commands: Command[] = [
   providerCommand,
   modelCommand,
   agentCommand,
+  rulesCommand,
   logsCommand,
   helpCommand,
   surveyCommand,

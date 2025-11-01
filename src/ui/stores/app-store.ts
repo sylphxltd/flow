@@ -51,6 +51,10 @@ export interface AppState {
   currentAgentId: string;
   setCurrentAgentId: (agentId: string) => void;
 
+  // Rule State
+  enabledRuleIds: string[];
+  setEnabledRuleIds: (ruleIds: string[]) => void;
+
   // Debug Logs
   debugLogs: string[];
   addDebugLog: (message: string) => void;
@@ -194,6 +198,13 @@ export const useAppStore = create<AppState>()(
     setCurrentAgentId: (agentId) =>
       set((state) => {
         state.currentAgentId = agentId;
+      }),
+
+    // Rule State
+    enabledRuleIds: [],
+    setEnabledRuleIds: (ruleIds) =>
+      set((state) => {
+        state.enabledRuleIds = ruleIds;
       }),
 
     // Debug Logs

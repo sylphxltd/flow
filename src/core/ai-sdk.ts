@@ -8,6 +8,7 @@ import { streamText, stepCountIs } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import { getAISDKTools } from '../tools/index.js';
 import { getCurrentSystemPrompt } from './agent-manager.js';
+import { getEnabledRulesContent } from './rule-manager.js';
 
 // Legacy system prompt - kept for backwards compatibility and fallback
 const LEGACY_SYSTEM_PROMPT = `You are a helpful coding assistant.
@@ -31,16 +32,34 @@ Guidelines:
 const BASE_SYSTEM_PROMPT = `You are Sylphx, an AI development assistant.`;
 
 /**
- * Get the system prompt to use (from current agent or fallback to legacy)
+ * Get the system prompt to use (combines base + rules + agent)
  */
 export function getSystemPrompt(): string {
+  const parts: string[] = [];
+
+  // 1. Base prompt (introduces Sylphx)
+  parts.push(BASE_SYSTEM_PROMPT);
+
+  // 2. Enabled rules (shared across all agents)
+  try {
+    const rulesContent = getEnabledRulesContent();
+    if (rulesContent) {
+      parts.push(rulesContent);
+    }
+  } catch {
+    // Rule manager not initialized or no rules enabled
+  }
+
+  // 3. Agent-specific prompt
   try {
     const agentPrompt = getCurrentSystemPrompt();
-    return `${BASE_SYSTEM_PROMPT}\n\n${agentPrompt}`;
+    parts.push(agentPrompt);
   } catch {
     // Fallback to legacy if agent manager not initialized
-    return `${BASE_SYSTEM_PROMPT}\n\n${LEGACY_SYSTEM_PROMPT}`;
+    parts.push(LEGACY_SYSTEM_PROMPT);
   }
+
+  return parts.join('\n\n');
 }
 
 // Export for backwards compatibility

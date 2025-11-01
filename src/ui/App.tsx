@@ -15,6 +15,7 @@ import { useAIConfig } from './hooks/useAIConfig.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useSessionPersistence } from './hooks/useSessionPersistence.js';
 import { initializeAgentManager, setAppStoreGetter } from '../core/agent-manager.js';
+import { initializeRuleManager, setRuleAppStoreGetter } from '../core/rule-manager.js';
 
 export default function App() {
   const currentScreen = useAppStore((state) => state.currentScreen);
@@ -38,13 +39,20 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Set up agent manager to use app store
+    const cwd = process.cwd();
+
+    // Set up agent and rule managers to use app store
     setAppStoreGetter(() => useAppStore);
+    setRuleAppStoreGetter(() => useAppStore);
 
     // Initialize agent manager
-    const cwd = process.cwd();
     initializeAgentManager(cwd).catch((err) => {
       console.error('Failed to initialize agent manager:', err);
+    });
+
+    // Initialize rule manager
+    initializeRuleManager(cwd).catch((err) => {
+      console.error('Failed to initialize rule manager:', err);
     });
 
     // Load AI config
