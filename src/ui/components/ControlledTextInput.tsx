@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { Box, useInput } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import { clampCursor, moveCursorUp, moveCursorDown, getCursorLinePosition } from '../utils/cursor-utils.js';
 import { renderTextWithTags } from '../utils/text-rendering-utils.js';
 
