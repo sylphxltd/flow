@@ -681,19 +681,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     { isActive: true }
   );
 
-  // Create or restore session on mount
+  // Create new session on mount (don't restore old sessions automatically)
   useEffect(() => {
-    if (!currentSessionId) {
-      // Check if there are any loaded sessions from persistence
-      if (sessions.length > 0) {
-        // Use the most recent session (sessions are sorted by updated time)
-        setCurrentSession(sessions[0].id);
-      } else if (aiConfig?.defaultProvider && aiConfig?.defaultModel) {
-        // No sessions loaded, create a new one
-        createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
-      }
+    if (!currentSessionId && aiConfig?.defaultProvider && aiConfig?.defaultModel) {
+      // Always create a new session on app start
+      // Old sessions are loaded and available in the store but not auto-selected
+      createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
     }
-  }, [currentSessionId, sessions, aiConfig, createSession, setCurrentSession]);
+  }, [currentSessionId, aiConfig, createSession]);
 
   // Register user input handler for ask tool
   useEffect(() => {
