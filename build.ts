@@ -4,7 +4,7 @@
  * Handles native module dependencies properly
  */
 
-import { chmodSync, existsSync, rmSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import boxen from 'boxen';
 import { type BuildOutput, build } from 'bun';
@@ -77,6 +77,20 @@ try {
   }
 } catch (error) {
   execSpinner.fail('Failed to make executable');
+  throw error;
+}
+
+// Copy assets folder
+const assetsSpinner = ora('Copying assets folder').start();
+try {
+  if (existsSync('./assets')) {
+    cpSync('./assets', './dist/assets', { recursive: true });
+    assetsSpinner.succeed('Copied assets folder');
+  } else {
+    assetsSpinner.warn('assets folder not found');
+  }
+} catch (error) {
+  assetsSpinner.fail('Failed to copy assets');
   throw error;
 }
 

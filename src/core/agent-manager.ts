@@ -5,7 +5,7 @@
 
 import type { Agent } from '../types/agent.types.js';
 import { loadAllAgents } from './agent-loader.js';
-import { getBuiltinAgents, DEFAULT_AGENT_ID } from './builtin-agents.js';
+import { DEFAULT_AGENT_ID } from './builtin-agents.js';
 
 /**
  * Agent manager state
@@ -23,6 +23,19 @@ let state: AgentManagerState | null = null;
 let getAppStore: (() => any) | null = null;
 
 /**
+ * Fallback agent when state is not initialized
+ */
+const FALLBACK_AGENT: Agent = {
+  id: DEFAULT_AGENT_ID,
+  metadata: {
+    name: 'Coder',
+    description: 'Fallback agent (agent manager not initialized)',
+  },
+  systemPrompt: 'You are a helpful coding assistant.',
+  isBuiltin: true,
+};
+
+/**
  * Set the app store getter (called during initialization)
  */
 export function setAppStoreGetter(getter: () => any): void {
@@ -33,8 +46,7 @@ export function setAppStoreGetter(getter: () => any): void {
  * Initialize agent manager
  */
 export async function initializeAgentManager(cwd: string): Promise<void> {
-  const builtinAgents = getBuiltinAgents();
-  const allAgents = await loadAllAgents(cwd, builtinAgents);
+  const allAgents = await loadAllAgents(cwd);
 
   const agentMap = new Map<string, Agent>();
   for (const agent of allAgents) {
@@ -64,7 +76,7 @@ export async function initializeAgentManager(cwd: string): Promise<void> {
  */
 export function getAllAgents(): Agent[] {
   if (!state) {
-    return getBuiltinAgents();
+    return [FALLBACK_AGENT];
   }
   return Array.from(state.agents.values());
 }
@@ -74,8 +86,7 @@ export function getAllAgents(): Agent[] {
  */
 export function getAgentById(id: string): Agent | null {
   if (!state) {
-    const builtins = getBuiltinAgents();
-    return builtins.find((a) => a.id === id) || null;
+    return id === DEFAULT_AGENT_ID ? FALLBACK_AGENT : null;
   }
   return state.agents.get(id) || null;
 }
@@ -87,9 +98,9 @@ export function getCurrentAgent(): Agent {
   const currentAgentId = getCurrentAgentId();
 
   if (!state) {
-    return getBuiltinAgents()[0]; // Return default coder agent
+    return FALLBACK_AGENT;
   }
-  return state.agents.get(currentAgentId) || getBuiltinAgents()[0];
+  return state.agents.get(currentAgentId) || FALLBACK_AGENT;
 }
 
 /**

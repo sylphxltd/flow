@@ -3,7 +3,7 @@
  * Loads agent definitions from markdown files with front matter
  */
 
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, access } from 'node:fs/promises';
 import { join, parse, relative } from 'node:path';
 import { homedir } from 'node:os';
 import matter from 'gray-matter';
@@ -78,6 +78,27 @@ export async function loadAgentsFromDirectory(dirPath: string, isBuiltin: boolea
 }
 
 /**
+ * Get system agents path (bundled with the app)
+ */
+export async function getSystemAgentsPath(): Promise<string> {
+  // Get the directory of the current module
+  const currentDir = new URL('.', import.meta.url).pathname;
+
+  // In production (dist), assets are at dist/assets/agents
+  // In development (src), go up to project root: src/core -> project root
+  const distPath = join(currentDir, '..', 'assets', 'agents');
+  const devPath = join(currentDir, '..', '..', 'assets', 'agents');
+
+  // Check which one exists (try dist first, then dev)
+  try {
+    await access(distPath);
+    return distPath;
+  } catch {
+    return devPath;
+  }
+}
+
+/**
  * Get all agent search paths
  */
 export function getAgentSearchPaths(cwd: string): string[] {
@@ -90,29 +111,31 @@ export function getAgentSearchPaths(cwd: string): string[] {
 /**
  * Load all available agents from all sources
  */
-export async function loadAllAgents(cwd: string, builtinAgents: Agent[]): Promise<Agent[]> {
+export async function loadAllAgents(cwd: string): Promise<Agent[]> {
+  const systemPath = await getSystemAgentsPath();
   const [globalPath, projectPath] = getAgentSearchPaths(cwd);
 
-  const [globalAgents, projectAgents] = await Promise.all([
+  const [systemAgents, globalAgents, projectAgents] = await Promise.all([
+    loadAgentsFromDirectory(systemPath, true),  // System agents are marked as builtin
     loadAgentsFromDirectory(globalPath, false),
     loadAgentsFromDirectory(projectPath, false),
   ]);
 
-  // Priority: builtin < global < project
+  // Priority: system < global < project
   // Use Map to deduplicate by ID (later entries override earlier ones)
   const agentMap = new Map<string, Agent>();
 
-  // Add builtin agents first
-  for (const agent of builtinAgents) {
+  // Add system agents first (lowest priority)
+  for (const agent of systemAgents) {
     agentMap.set(agent.id, agent);
   }
 
-  // Add global agents (override builtins)
+  // Add global agents (override system)
   for (const agent of globalAgents) {
     agentMap.set(agent.id, agent);
   }
 
-  // Add project agents (override globals and builtins)
+  // Add project agents (override globals and system)
   for (const agent of projectAgents) {
     agentMap.set(agent.id, agent);
   }
