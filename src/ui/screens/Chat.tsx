@@ -484,6 +484,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           if (selected) {
             skipNextSubmit.current = true; // Prevent TextInput's onSubmit from also executing
 
+            // Clear input immediately before execution
+            setInput('');
+            setSelectedCommandIndex(0);
+
             // Check if this is a base command that needs args
             const isCommand = commands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
@@ -492,20 +496,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             addLog(`[useInput] Enter autocomplete execute: ${selected.label}`);
 
             // Add user message to conversation
-            if (currentSessionId) {
-              addMessage(currentSessionId, 'user', selected.label);
+            if (!commandSessionRef.current) {
+              commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
             }
+            addMessage(commandSessionRef.current, 'user', selected.label);
 
             // Execute command - it will use waitForInput if needed
             const response = await selected.execute(createCommandContext([]));
 
             // Add final response if any
-            if (response && currentSessionId) {
-              addMessage(currentSessionId, 'assistant', response);
+            if (response) {
+              addMessage(commandSessionRef.current, 'assistant', response);
             }
-
-            setInput('');
-            setSelectedCommandIndex(0);
           }
           return;
         }
@@ -594,7 +596,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     addLog(`[handleSubmit] Processing: ${value}`);
     const userMessage = value.trim();
-    setInput('');
 
     // Check if it's a command
     if (userMessage.startsWith('/')) {
@@ -607,35 +608,42 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
       if (!command) {
         // Unknown command - add to conversation
-        if (currentSessionId) {
-          addMessage(currentSessionId, 'user', userMessage);
-          addMessage(currentSessionId, 'assistant', `Unknown command: ${commandName}. Type /help for available commands.`);
+        setInput('');
+        if (!commandSessionRef.current) {
+          commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
         }
+        addMessage(commandSessionRef.current, 'user', userMessage);
+        addMessage(commandSessionRef.current, 'assistant', `Unknown command: ${commandName}. Type /help for available commands.`);
         return;
       }
 
+      // Clear input immediately
+      setInput('');
+
       // Add user command to conversation
-      if (currentSessionId) {
-        addMessage(currentSessionId, 'user', userMessage);
+      if (!commandSessionRef.current) {
+        commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
+      addMessage(commandSessionRef.current, 'user', userMessage);
 
       // Execute command - let command handle interaction via CommandContext
       try {
         const response = await command.execute(createCommandContext(args));
 
         // Add final response if any
-        if (response && currentSessionId) {
-          addMessage(currentSessionId, 'assistant', response);
+        if (response) {
+          addMessage(commandSessionRef.current, 'assistant', response);
         }
       } catch (error) {
-        if (currentSessionId) {
-          addMessage(currentSessionId, 'assistant', `Error: ${error instanceof Error ? error.message : 'Command failed'}`);
-        }
+        addMessage(commandSessionRef.current, 'assistant', `Error: ${error instanceof Error ? error.message : 'Command failed'}`);
       }
 
       setPendingCommand(null);
       return;
     }
+
+    // For regular messages, clear input after getting the value
+    setInput('');
 
     // Regular message - send to AI
     // Block if no provider configured
