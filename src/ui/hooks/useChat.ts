@@ -90,14 +90,15 @@ export function useChat() {
           addDebugLog(`[useChat] tool-result: ${toolName} (${duration}ms)`);
           onToolResult?.(toolName, result, duration);
         },
-        onComplete: () => {
-          addDebugLog('[useChat] stream complete');
-          onComplete?.();
-        },
       });
 
-      // Add assistant message to session with parts
+      addDebugLog('[useChat] stream complete');
+
+      // Add assistant message to session with parts first
       addMessage(currentSessionId, 'assistant', fullResponse, messageParts);
+
+      // Then trigger UI update
+      onComplete?.();
     } catch (error) {
       console.error('[Chat Error]:', error);
 
@@ -112,7 +113,7 @@ export function useChat() {
       // Add error as assistant message so user can see it in chat
       addMessage(currentSessionId, 'assistant', displayError);
 
-      setError(errorMessage);
+      // Trigger UI update after adding error message
       onComplete?.();
     } finally {
       // Clean up user input handler
