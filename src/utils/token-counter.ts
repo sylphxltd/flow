@@ -1,17 +1,35 @@
 /**
  * Token Counter Utility
- * BPE-based token counting using StarCoder2
+ * BPE-based token counting using Hugging Face AutoTokenizer
  *
- * Primary method: BPE tokenizer (StarCoder2)
+ * Primary method: BPE tokenizer (auto-selected by Hugging Face)
  * Fallback: Fast estimation when tokenizer unavailable
  */
 
-import { AdvancedCodeTokenizer } from './advanced-tokenizer.js';
+import { AutoTokenizer } from '@huggingface/transformers';
 
-// Singleton instance for StarCoder2 BPE tokenizer (lazy-loaded)
-let bpeTokenizer: AdvancedCodeTokenizer | null = null;
+// Singleton instance for BPE tokenizer (lazy-loaded)
+let bpeTokenizer: any | null = null;
 let tokenizerInitializing = false;
 let initializationFailed = false;
+
+/**
+ * Tokenizer model options
+ */
+export const TOKENIZER_MODELS = {
+  GPT4: 'Xenova/gpt-4',           // GPT-4 tokenizer (most accurate for general use)
+  STARCODER: 'bigcode/starcoder2-3b', // Code-optimized (best for code)
+  GPT2: 'gpt2',                    // Fast, general purpose
+  CLAUDE: 'Xenova/claude-tokenizer', // Claude tokenizer (if available)
+} as const;
+
+/**
+ * Default tokenizer model
+ * Can be overridden via environment variable: TOKENIZER_MODEL
+ */
+const DEFAULT_TOKENIZER_MODEL =
+  (process.env.TOKENIZER_MODEL as keyof typeof TOKENIZER_MODELS)
+  || TOKENIZER_MODELS.GPT4;
 
 /**
  * Fast fallback estimation (only when BPE tokenizer unavailable)
@@ -31,8 +49,9 @@ function estimateFallback(text: string): number {
 
 /**
  * Initialize BPE tokenizer (lazy, singleton)
+ * Uses Hugging Face AutoTokenizer to automatically select best tokenizer
  */
-async function ensureTokenizer(): Promise<AdvancedCodeTokenizer | null> {
+async function ensureTokenizer(): Promise<any | null> {
   // Already initialized
   if (bpeTokenizer) return bpeTokenizer;
 
@@ -48,15 +67,24 @@ async function ensureTokenizer(): Promise<AdvancedCodeTokenizer | null> {
   if (bpeTokenizer) return bpeTokenizer;
   if (initializationFailed) return null;
 
-  // Initialize
+  // Initialize with Hugging Face AutoTokenizer
   try {
     tokenizerInitializing = true;
-    bpeTokenizer = new AdvancedCodeTokenizer();
-    await bpeTokenizer.initialize();
+    console.log(`[TokenCounter] Loading tokenizer: ${DEFAULT_TOKENIZER_MODEL}`);
+
+    // Let Hugging Face auto-select and load the best tokenizer
+    bpeTokenizer = await AutoTokenizer.from_pretrained(DEFAULT_TOKENIZER_MODEL, {
+      // Cache models locally for faster subsequent loads
+      cache_dir: './models/.cache',
+      // Use local files if available, otherwise download
+      local_files_only: false,
+    });
+
+    console.log(`[TokenCounter] Tokenizer loaded successfully`);
     tokenizerInitializing = false;
     return bpeTokenizer;
   } catch (error) {
-    console.warn('BPE tokenizer initialization failed, using fallback estimation:', error);
+    console.warn('[TokenCounter] BPE tokenizer initialization failed, using fallback estimation:', error);
     initializationFailed = true;
     tokenizerInitializing = false;
     return null;
@@ -64,7 +92,7 @@ async function ensureTokenizer(): Promise<AdvancedCodeTokenizer | null> {
 }
 
 /**
- * Count tokens using BPE tokenizer (StarCoder2)
+ * Count tokens using BPE tokenizer (Hugging Face AutoTokenizer)
  * Falls back to estimation if tokenizer unavailable
  *
  * This is the primary token counting method.
@@ -80,10 +108,28 @@ export async function countTokens(text: string): Promise<number> {
   }
 
   try {
-    const result = await tokenizer.tokenize(text);
-    return result.metadata.totalTokens;
+    // Use Hugging Face tokenizer API
+    const encoded = await tokenizer(text);
+
+    // Get token count from encoded result
+    if (encoded.input_ids && encoded.input_ids.size) {
+      return encoded.input_ids.size;
+    }
+
+    // Fallback: count array length
+    if (Array.isArray(encoded.input_ids)) {
+      return encoded.input_ids.length;
+    }
+
+    // Fallback: if it's a tensor, get its length
+    if (encoded.input_ids.data) {
+      return encoded.input_ids.data.length;
+    }
+
+    // Last resort fallback
+    return estimateFallback(text);
   } catch (error) {
-    console.warn('Token counting failed, using fallback:', error);
+    console.warn('[TokenCounter] Token counting failed, using fallback:', error);
     return estimateFallback(text);
   }
 }
@@ -153,4 +199,28 @@ export async function countTokensBatch(texts: string[]): Promise<number[]> {
  */
 export function estimateTokensBatch(texts: string[]): number[] {
   return texts.map(estimateTokens);
+}
+
+/**
+ * Get tokenizer info (for debugging)
+ */
+export async function getTokenizerInfo(): Promise<{
+  model: string;
+  loaded: boolean;
+  failed: boolean;
+} | null> {
+  const tokenizer = await ensureTokenizer();
+
+  return {
+    model: DEFAULT_TOKENIZER_MODEL,
+    loaded: tokenizer !== null,
+    failed: initializationFailed,
+  };
+}
+
+/**
+ * Get available tokenizer models
+ */
+export function getAvailableTokenizers(): typeof TOKENIZER_MODELS {
+  return TOKENIZER_MODELS;
 }

@@ -56,3 +56,6 @@ hive-mind-prompt-*.txt
 ## AI configuration with sensitive keys
 .sylphx-flow/ai-config.json
 .sylphx-flow/settings.local.json
+
+# Hugging Face tokenizer cache
+models/.cache/
