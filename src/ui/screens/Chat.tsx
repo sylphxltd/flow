@@ -77,9 +77,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const createCommandContext = (args: string[]): CommandContext => ({
     args,
     sendMessage: (content: string) => {
-      if (currentSessionId) {
-        addMessage(currentSessionId, 'assistant', content);
+      // Create a temporary session if none exists (for setup commands)
+      let sessionId = currentSessionId;
+      if (!sessionId) {
+        sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
+      addMessage(sessionId, 'assistant', content);
     },
     waitForInput: (options) => {
       return new Promise((resolve) => {
@@ -314,18 +317,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               addLog(`[selection] Submitting answers: ${JSON.stringify(multiSelectionAnswers)}`);
 
               // Add user's answers to chat history
-              if (currentSessionId) {
-                const answerText = questions
-                  .map((q) => {
-                    const answerValue = multiSelectionAnswers[q.id];
-                    const answerOption = q.options.find((opt) =>
-                      (opt.value || opt.label) === answerValue
-                    );
-                    return answerOption?.label || answerValue;
-                  })
-                  .join(', ');
-                addMessage(currentSessionId, 'user', answerText);
+              let sessionId = currentSessionId;
+              if (!sessionId) {
+                sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
               }
+              const answerText = questions
+                .map((q) => {
+                  const answerValue = multiSelectionAnswers[q.id];
+                  const answerOption = q.options.find((opt) =>
+                    (opt.value || opt.label) === answerValue
+                  );
+                  return answerOption?.label || answerValue;
+                })
+                .join(', ');
+              addMessage(sessionId, 'user', answerText);
 
               inputResolver.current(multiSelectionAnswers);
               inputResolver.current = null;
@@ -349,9 +354,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               if (isSingleQuestion) {
                 // Single question: submit immediately
                 // Add user's answer to chat history
-                if (currentSessionId) {
-                  addMessage(currentSessionId, 'user', selectedOption.label);
+                let sessionId = currentSessionId;
+                if (!sessionId) {
+                  sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
                 }
+                addMessage(sessionId, 'user', selectedOption.label);
 
                 inputResolver.current({ [currentQuestion.id]: selectedValue });
                 inputResolver.current = null;
@@ -375,18 +382,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   addLog(`[selection] All answered, auto-submitting: ${JSON.stringify(newAnswers)}`);
 
                   // Add user's answers to chat history
-                  if (currentSessionId) {
-                    const answerText = questions
-                      .map((q) => {
-                        const answerValue = newAnswers[q.id];
-                        const answerOption = q.options.find((opt) =>
-                          (opt.value || opt.label) === answerValue
-                        );
-                        return answerOption?.label || answerValue;
-                      })
-                      .join(', ');
-                    addMessage(currentSessionId, 'user', answerText);
+                  let sessionId = currentSessionId;
+                  if (!sessionId) {
+                    sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
                   }
+                  const answerText = questions
+                    .map((q) => {
+                      const answerValue = newAnswers[q.id];
+                      const answerOption = q.options.find((opt) =>
+                        (opt.value || opt.label) === answerValue
+                      );
+                      return answerOption?.label || answerValue;
+                    })
+                    .join(', ');
+                  addMessage(sessionId, 'user', answerText);
 
                   inputResolver.current(newAnswers);
                   inputResolver.current = null;
@@ -588,9 +597,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       addLog(`[handleSubmit] Resolving text input: ${value}`);
 
       // Add user's text input to chat history
-      if (currentSessionId) {
-        addMessage(currentSessionId, 'user', value.trim());
+      let sessionId = currentSessionId;
+      if (!sessionId) {
+        sessionId = createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
+      addMessage(sessionId, 'user', value.trim());
 
       inputResolver.current(value.trim());
       inputResolver.current = null;
