@@ -4,7 +4,7 @@
  */
 
 import { readFile, readdir } from 'node:fs/promises';
-import { join, parse } from 'node:path';
+import { join, parse, relative } from 'node:path';
 import { homedir } from 'node:os';
 import matter from 'gray-matter';
 import type { Agent, AgentMetadata } from '../types/agent.types.js';
@@ -12,7 +12,11 @@ import type { Agent, AgentMetadata } from '../types/agent.types.js';
 /**
  * Load a single agent from a markdown file
  */
-export async function loadAgentFromFile(filePath: string, isBuiltin: boolean = false): Promise<Agent | null> {
+export async function loadAgentFromFile(
+  filePath: string,
+  isBuiltin: boolean = false,
+  agentId?: string
+): Promise<Agent | null> {
   try {
     const content = await readFile(filePath, 'utf-8');
     const { data, content: systemPrompt } = matter(content);
@@ -28,11 +32,11 @@ export async function loadAgentFromFile(filePath: string, isBuiltin: boolean = f
       description: data.description || '',
     };
 
-    // Get agent ID from filename
-    const { name: fileName } = parse(filePath);
+    // Get agent ID from parameter or filename
+    const id = agentId || parse(filePath).name;
 
     return {
-      id: fileName,
+      id,
       metadata,
       systemPrompt: systemPrompt.trim(),
       isBuiltin,
@@ -45,15 +49,25 @@ export async function loadAgentFromFile(filePath: string, isBuiltin: boolean = f
 }
 
 /**
- * Load all agents from a directory
+ * Load all agents from a directory (recursively)
  */
 export async function loadAgentsFromDirectory(dirPath: string, isBuiltin: boolean = false): Promise<Agent[]> {
   try {
-    const files = await readdir(dirPath);
-    const agentFiles = files.filter((f) => f.endsWith('.md'));
+    // Read directory recursively to support subdirectories
+    const files = await readdir(dirPath, { recursive: true, withFileTypes: true });
+
+    // Filter for .md files and calculate agent IDs from relative paths
+    const agentFiles = files
+      .filter((f) => f.isFile() && f.name.endsWith('.md'))
+      .map((f) => {
+        const fullPath = join(f.parentPath || f.path, f.name);
+        // Calculate relative path from dirPath and remove .md extension
+        const relativePath = relative(dirPath, fullPath).replace(/\.md$/, '');
+        return { fullPath, agentId: relativePath };
+      });
 
     const agents = await Promise.all(
-      agentFiles.map((file) => loadAgentFromFile(join(dirPath, file), isBuiltin))
+      agentFiles.map(({ fullPath, agentId }) => loadAgentFromFile(fullPath, isBuiltin, agentId))
     );
 
     return agents.filter((agent): agent is Agent => agent !== null);
