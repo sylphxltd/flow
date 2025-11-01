@@ -91,12 +91,7 @@ export const AI_PROVIDERS = {
   zai: {
     id: 'zai',
     name: 'Z.ai',
-    models: [
-      'glm-4.6',
-      'glm-4-flash',
-      'glm-4-plus',
-      'glm-4-air',
-    ],
+    models: [], // Models loaded dynamically from API
     requiresKey: true,
     keyName: 'ZAI_API_KEY',
   },

@@ -14,9 +14,12 @@ export class ZaiProvider implements AIProvider {
   readonly keyName = 'ZAI_API_KEY';
 
   async fetchModels(apiKey?: string): Promise<ModelInfo[]> {
+    console.log(`[ZaiProvider] fetchModels called with apiKey: ${apiKey ? 'present' : 'missing'}`);
+
     // Try fetching from Z.ai API
     if (apiKey) {
       try {
+        console.log('[ZaiProvider] Fetching models from Z.ai API...');
         const response = await fetch('https://api.z.ai/api/paas/v4/models', {
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -24,24 +27,29 @@ export class ZaiProvider implements AIProvider {
           signal: AbortSignal.timeout(10000),
         });
 
+        console.log(`[ZaiProvider] API response status: ${response.status}`);
+
         if (response.ok) {
           const data = (await response.json()) as {
             data?: Array<{ id: string; name?: string }>;
           };
 
           if (data.data) {
+            console.log(`[ZaiProvider] Fetched ${data.data.length} models from API`);
             return data.data.map((model) => ({
               id: model.id,
               name: model.name || model.id,
             }));
           }
         }
-      } catch {
+      } catch (error) {
+        console.log(`[ZaiProvider] Error fetching from API: ${error instanceof Error ? error.message : String(error)}`);
         // Fall through to default models
       }
     }
 
     // Return known Z.ai models as fallback
+    console.log('[ZaiProvider] Returning fallback models');
     return [
       { id: 'glm-4.6', name: 'GLM-4.6' },
       { id: 'glm-4-flash', name: 'GLM-4 Flash' },

@@ -66,7 +66,9 @@ export default function ProviderCard({
             <Text dimColor> │ </Text>
           </>
         )}
-        <Text color={color}>{provider.models.length} models</Text>
+        <Text color={color}>
+          {provider.models.length > 0 ? `${provider.models.length} models` : 'Dynamic models'}
+        </Text>
       </Box>
     </Box>
   );
