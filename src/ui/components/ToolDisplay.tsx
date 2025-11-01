@@ -413,7 +413,7 @@ const ToolHeader: React.FC<{
         <Text color="white">{formattedArgs}</Text>
       </>
     )}
-    {duration !== undefined && status === 'completed' && (
+    {duration !== undefined && (status === 'completed' || status === 'running') && (
       <Text dimColor> {duration}ms</Text>
     )}
   </Box>

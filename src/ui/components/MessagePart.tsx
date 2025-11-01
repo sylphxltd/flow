@@ -3,7 +3,7 @@
  * Unified rendering for both streaming and completed message parts
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
 import MarkdownText from './MarkdownText.js';
@@ -18,11 +18,33 @@ interface MessagePartProps {
 // Extended type for streaming parts
 type StreamingPart =
   | { type: 'text'; content: string }
-  | { type: 'reasoning'; content: string; completed?: boolean; duration?: number }
-  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string }
+  | { type: 'reasoning'; content: string; completed?: boolean; duration?: number; startTime?: number }
+  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
   | { type: 'error'; error: string };
 
 export function MessagePart({ part, isLastInStream = false }: MessagePartProps) {
+  // Live duration tracking for streaming parts
+  const [liveDuration, setLiveDuration] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    // Only track live duration for running parts with startTime
+    if (part.type === 'reasoning' && !('completed' in part && part.completed) && 'startTime' in part && part.startTime) {
+      // Update every second
+      const interval = setInterval(() => {
+        setLiveDuration(Date.now() - part.startTime!);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else if (part.type === 'tool' && part.status === 'running' && 'startTime' in part && part.startTime) {
+      // Update every second
+      const interval = setInterval(() => {
+        setLiveDuration(Date.now() - part.startTime!);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      // Clear live duration when part completes
+      setLiveDuration(undefined);
+    }
+  }, [part.type, part.type === 'reasoning' ? (('completed' in part && part.completed) ? 'completed' : 'running') : (part.type === 'tool' ? part.status : ''), part.type === 'reasoning' || part.type === 'tool' ? ('startTime' in part ? part.startTime : undefined) : undefined]);
   if (part.type === 'text') {
     return (
       <Box flexDirection="column">
@@ -44,24 +66,26 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
 
     if (isCompleted) {
       // Show completed reasoning with duration
+      const seconds = part.duration ? Math.round(part.duration / 1000) : 0;
       return (
         <Box flexDirection="column">
           <Box />
           <Box>
             <Text color="#00FF88">▏ </Text>
-            <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
+            <Text dimColor>Thought {seconds}s</Text>
           </Box>
         </Box>
       );
     } else {
-      // Still streaming - show spinner
+      // Still streaming - show spinner with live duration
+      const seconds = liveDuration ? Math.round(liveDuration / 1000) : 0;
       return (
         <Box flexDirection="column">
           <Box />
           <Box>
             <Text color="#00FF88">▏ </Text>
             <Spinner color="#FFD700" />
-            <Text dimColor> Thinking...</Text>
+            <Text dimColor> Thinking... {seconds}s</Text>
           </Box>
         </Box>
       );
@@ -79,13 +103,16 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
 
   // Tool part
   if (part.type === 'tool') {
+    // Use liveDuration for running tools, part.duration for completed/failed
+    const displayDuration = part.status === 'running' ? liveDuration : part.duration;
+
     return (
       <Box>
         <Text color="#00FF88">▏ </Text>
         <ToolDisplay
           name={part.name}
           status={part.status}
-          duration={part.duration}
+          duration={displayDuration}
           args={part.args}
           result={part.result}
           error={part.error}

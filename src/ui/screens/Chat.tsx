@@ -25,8 +25,8 @@ import { MessagePart } from '../components/MessagePart.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
-  | { type: 'reasoning'; content: string; completed?: boolean; duration?: number }
-  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string }
+  | { type: 'reasoning'; content: string; completed?: boolean; duration?: number; startTime?: number }
+  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
   | { type: 'error'; error: string };
 
 interface ChatProps {
@@ -912,7 +912,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         addLog(`Tool call: ${toolName} (${toolCallId})`);
         setStreamParts((prev) => [
           ...prev,
-          { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args },
+          { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() },
         ]);
       },
       // onToolResult - tool execution completed
@@ -989,7 +989,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onReasoningStart - reasoning started
         () => {
           addLog('Reasoning start');
-          setStreamParts((prev) => [...prev, { type: 'reasoning', content: '', completed: false }]);
+          setStreamParts((prev) => [...prev, { type: 'reasoning', content: '', completed: false, startTime: Date.now() }]);
         },
         // onReasoningDelta - reasoning chunk
         (chunk) => {
