@@ -95,6 +95,9 @@ export interface CommandContext {
   // Get current session ID
   getCurrentSessionId: () => string | null;
 
+  // Set current session
+  setCurrentSession: (sessionId: string | null) => void;
+
   // Navigate to different screen
   navigateTo: (screen: 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs') => void;
 

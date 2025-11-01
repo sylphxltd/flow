@@ -71,9 +71,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const createSession = useAppStore((state) => state.createSession);
   const updateSessionModel = useAppStore((state) => state.updateSessionModel);
   const updateSessionProvider = useAppStore((state) => state.updateSessionProvider);
+  const updateSessionTitle = useAppStore((state) => state.updateSessionTitle);
   const sessions = useAppStore((state) => state.sessions);
   const updateProvider = useAppStore((state) => state.updateProvider);
   const setAIConfig = useAppStore((state) => state.setAIConfig);
+  const setCurrentSession = useAppStore((state) => state.setCurrentSession);
   const addMessage = useAppStore((state) => state.addMessage);
 
   const { sendMessage, currentSession } = useChat();
@@ -121,6 +123,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     createSession: (provider, model) => createSession(provider, model),
     getSessions: () => sessions,
     getCurrentSessionId: () => currentSessionId,
+    setCurrentSession: (sessionId) => setCurrentSession(sessionId),
     navigateTo: (screen) => navigateTo(screen),
     addLog: (message) => addLog(message),
   });
@@ -779,6 +782,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         addMessage(currentSessionId, 'assistant', 'No AI provider configured. Use /provider to configure a provider first.');
       }
       return;
+    }
+
+    // Generate title if this is first message in session
+    if (currentSessionId && currentSession) {
+      const isFirstMessage = currentSession.messages.filter(m => m.role === 'user').length === 0;
+      if (isFirstMessage) {
+        const { generateSessionTitle } = await import('../../utils/session-title.js');
+        const title = generateSessionTitle(userMessage);
+        updateSessionTitle(currentSessionId, title);
+      }
     }
 
     // Get attachments for this message

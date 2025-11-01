@@ -34,6 +34,7 @@ export interface AppState {
   createSession: (provider: ProviderId, model: string) => string;
   updateSessionModel: (sessionId: string, model: string) => void;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
+  updateSessionTitle: (sessionId: string, title: string) => void;
   addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, parts?: MessagePart[], attachments?: FileAttachment[]) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
@@ -133,6 +134,13 @@ export const useAppStore = create<AppState>()(
         if (session) {
           session.provider = provider;
           session.model = model;
+        }
+      }),
+    updateSessionTitle: (sessionId, title) =>
+      set((state) => {
+        const session = state.sessions.find((s) => s.id === sessionId);
+        if (session) {
+          session.title = title;
         }
       }),
     addMessage: (sessionId, role, content, parts, attachments) =>

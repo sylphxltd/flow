@@ -44,6 +44,7 @@ export interface SessionMessage {
  */
 export interface Session {
   id: string;
+  title?: string; // Auto-generated from first user message
   provider: ProviderId;
   model: string;
   messages: SessionMessage[];
