@@ -216,28 +216,29 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           const questions = pendingInput.questions;
           const isSingleQuestion = questions.length === 1;
           const currentQuestion = questions[multiSelectionPage];
-          const totalPages = isSingleQuestion ? 1 : questions.length + 1; // +1 for review page
-          const isReviewPage = !isSingleQuestion && multiSelectionPage === questions.length;
+          const totalQuestions = questions.length;
 
-          // Multi-question: Tab navigation between pages
+          // Multi-question: Tab navigation between questions
           if (!isSingleQuestion) {
             if (key.tab && !key.shift) {
-              setMultiSelectionPage((prev) => (prev + 1) % totalPages);
+              setMultiSelectionPage((prev) => (prev + 1) % totalQuestions);
               setSelectedCommandIndex(0);
               setSelectionFilter('');
               return;
             }
             if (key.shift && key.tab) {
-              setMultiSelectionPage((prev) => (prev - 1 + totalPages) % totalPages);
+              setMultiSelectionPage((prev) => (prev - 1 + totalQuestions) % totalQuestions);
               setSelectedCommandIndex(0);
               setSelectionFilter('');
               return;
             }
           }
 
-          // Review page (only for multi-question)
-          if (isReviewPage) {
-            if (key.return) {
+          // Ctrl+Enter - submit all answers (only for multi-question)
+          if (!isSingleQuestion && key.ctrl && key.return) {
+            // Check if all questions are answered
+            const allAnswered = questions.every((q) => multiSelectionAnswers[q.id]);
+            if (allAnswered) {
               addLog(`[selection] Submitting answers: ${JSON.stringify(multiSelectionAnswers)}`);
               inputResolver.current(multiSelectionAnswers);
               inputResolver.current = null;
@@ -245,22 +246,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               setMultiSelectionPage(0);
               setMultiSelectionAnswers({});
               setSelectionFilter('');
-              return;
+            } else {
+              addLog(`[selection] Cannot submit: not all questions answered`);
             }
-            if (key.escape) {
-              addLog(`[selection] Cancelled`);
-              inputResolver.current({});
-              inputResolver.current = null;
-              setPendingInput(null);
-              setMultiSelectionPage(0);
-              setMultiSelectionAnswers({});
-              setSelectionFilter('');
-              return;
-            }
-            return; // Don't process other handlers on review page
+            return;
           }
 
-          // Question page (both single and multi)
+          // Question page - option selection
           const filteredOptions = currentQuestion.options.filter(
             (option) =>
               option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
@@ -293,12 +285,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 setMultiSelectionAnswers({});
                 setSelectionFilter('');
               } else {
-                // Multi-question: save answer and move to next page
+                // Multi-question: save answer and move to next question
                 setMultiSelectionAnswers((prev) => ({
                   ...prev,
                   [currentQuestion.id]: selectedOption.id,
                 }));
-                setMultiSelectionPage((prev) => prev + 1);
+                // Move to next unanswered question, or stay at last
+                const nextUnanswered = questions.findIndex(
+                  (q, idx) => idx > multiSelectionPage && !multiSelectionAnswers[q.id]
+                );
+                if (nextUnanswered !== -1) {
+                  setMultiSelectionPage(nextUnanswered);
+                }
                 setSelectedCommandIndex(0);
                 setSelectionFilter('');
               }
@@ -761,217 +759,143 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               )}
 
               {pendingInput.type === 'selection' ? (
-                // Selection UI (unified for single and multi-question)
+                // Selection UI (vertical list style - all questions visible)
                 (() => {
                   const questions = pendingInput.questions;
                   const isSingleQuestion = questions.length === 1;
                   const currentQuestion = questions[multiSelectionPage];
-                  const isReviewPage = !isSingleQuestion && multiSelectionPage === questions.length;
-
-                  // Extract short labels from questions (first 10 chars or first word)
-                  const getShortLabel = (question: string) => {
-                    const firstWord = question.split(' ')[0];
-                    const label = firstWord.length > 12 ? question.substring(0, 12) : firstWord;
-                    return label.replace(/[?:]/g, '');
-                  };
 
                   // Calculate progress
                   const answeredCount = Object.keys(multiSelectionAnswers).length;
                   const totalQuestions = questions.length;
-                  const progressPercent = Math.round((answeredCount / totalQuestions) * 100);
-                  const progressBarLength = 30;
-                  const filledLength = Math.round((answeredCount / totalQuestions) * progressBarLength);
-                  const progressBar = '━'.repeat(filledLength) + '░'.repeat(progressBarLength - filledLength);
+                  const allAnswered = questions.every((q) => multiSelectionAnswers[q.id]);
 
                   return (
                     <>
                       {/* Progress header (only for multi-question) */}
                       {!isSingleQuestion && (
-                        <Box flexDirection="column" marginBottom={1}>
-                          {/* Progress text */}
-                          <Box marginBottom={1}>
-                            <Text color="#00D9FF">Progress: </Text>
-                            <Text color="#00FF88" bold>
-                              {answeredCount}/{totalQuestions}
-                            </Text>
-                            <Text dimColor> completed</Text>
-                            <Text dimColor> · </Text>
-                            <Text color="#FFD700">{progressPercent}%</Text>
-                          </Box>
-
-                          {/* Tab navigation with short labels */}
-                          <Box marginBottom={1} gap={1}>
-                            {questions.map((q, idx) => {
-                              const isActive = idx === multiSelectionPage;
-                              const isAnswered = multiSelectionAnswers[q.id];
-                              const label = getShortLabel(q.question);
-
-                              return (
-                                <Text key={q.id}>
-                                  <Text color={isActive ? '#00FF88' : 'gray'} bold={isActive}>
-                                    {label}
-                                  </Text>
-                                  <Text color={isAnswered ? '#00FF88' : 'gray'}>
-                                    {isAnswered ? '✓' : ''}
-                                  </Text>
-                                  <Text color={isActive ? '#00FF88' : 'gray'} bold={isActive}>
-                                    {isActive ? '▶' : ''}
-                                  </Text>
-                                </Text>
-                              );
-                            })}
-                            <Text>
-                              <Text color={isReviewPage ? '#FFD700' : 'gray'} bold={isReviewPage}>
-                                ⚡Review
-                              </Text>
-                              <Text color={isReviewPage ? '#FFD700' : 'gray'} bold={isReviewPage}>
-                                {isReviewPage ? '▶' : ''}
-                              </Text>
-                            </Text>
-                          </Box>
-
-                          {/* Progress bar */}
-                          <Box>
-                            <Text color="#00FF88">{progressBar}</Text>
-                            <Text dimColor> {progressPercent}%</Text>
-                          </Box>
+                        <Box marginBottom={1}>
+                          <Text color="#00D9FF">Progress: </Text>
+                          <Text color="#00FF88" bold>
+                            {answeredCount}/{totalQuestions}
+                          </Text>
+                          <Text dimColor> completed</Text>
                         </Box>
                       )}
 
-                      {/* Review page (only for multi-question) */}
-                      {isReviewPage ? (
-                        <>
-                          {/* Review header */}
-                          <Box marginBottom={1} flexDirection="column">
-                            <Text bold color="#FFD700">
-                              ⚡ Review Your Answers
-                            </Text>
-                            <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</Text>
-                          </Box>
+                      {/* Vertical list - all questions */}
+                      {questions.map((q, qIdx) => {
+                        const isCurrentQuestion = qIdx === multiSelectionPage;
+                        const answer = multiSelectionAnswers[q.id];
+                        const answerOption = answer ? q.options.find((opt) => opt.id === answer) : null;
 
-                          {/* Review items */}
-                          {questions.map((q, idx) => {
-                            const answer = multiSelectionAnswers[q.id];
-                            const answerOption = q.options.find((opt) => opt.id === answer);
-
-                            return (
-                              <Box key={q.id} marginBottom={1} flexDirection="column">
-                                <Box>
-                                  <Text color="#00D9FF">{idx + 1}. </Text>
-                                  <Text dimColor>{getShortLabel(q.question)}</Text>
-                                </Box>
-                                <Box marginLeft={3}>
-                                  {answer ? (
-                                    <>
-                                      <Text color="#00FF88">✓ </Text>
-                                      <Text color="#00FF88" bold>
-                                        {answerOption?.name || answer}
-                                      </Text>
-                                    </>
-                                  ) : (
-                                    <Text color="yellow">⚠ Not answered</Text>
-                                  )}
-                                </Box>
-                              </Box>
-                            );
-                          })}
-
-                          {/* Review footer */}
-                          <Box marginTop={1} flexDirection="column">
-                            <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</Text>
-                            <Box marginTop={1}>
-                              <Text dimColor>Tab: </Text>
-                              <Text color="#00D9FF">Back</Text>
-                              <Text dimColor> · Enter: </Text>
-                              <Text color="#00FF88">Submit</Text>
-                              <Text dimColor> · Esc: </Text>
-                              <Text color="#FF3366">Cancel</Text>
+                        return (
+                          <Box key={q.id} marginBottom={1} flexDirection="column">
+                            {/* Question header */}
+                            <Box>
+                              <Text color="#00D9FF">Q{qIdx + 1}. </Text>
+                              <Text bold={isCurrentQuestion} color={isCurrentQuestion ? '#00D9FF' : 'gray'}>
+                                {q.question}
+                              </Text>
+                              {isCurrentQuestion && !isSingleQuestion && (
+                                <Text color="#00FF88"> ← </Text>
+                              )}
                             </Box>
-                          </Box>
-                        </>
-                      ) : (
-                        // Question page (both single and multi)
-                        <>
-                          {/* Question header */}
-                          <Box marginBottom={1} flexDirection="column">
-                            {!isSingleQuestion && (
-                              <Box marginBottom={1}>
-                                <Text color="#00D9FF">Question {multiSelectionPage + 1}</Text>
-                                <Text dimColor> of {totalQuestions}</Text>
-                              </Box>
-                            )}
-                            <Text bold color="#00D9FF">
-                              {currentQuestion.question}
-                            </Text>
-                            <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</Text>
-                          </Box>
 
-                          {/* Filter input */}
-                          <Box marginBottom={1}>
-                            <Text dimColor>🔍 Filter: </Text>
-                            <Text color="#00FF88">{selectionFilter || '(type to search)'}</Text>
-                          </Box>
+                            {/* Answer or expanded options */}
+                            {isCurrentQuestion ? (
+                              // Current question: show options
+                              <Box marginLeft={4} flexDirection="column" marginTop={1}>
+                                <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━</Text>
 
-                          {/* Filtered options */}
-                          {(() => {
-                            const filteredOptions = currentQuestion.options.filter(
-                              (option) =>
-                                option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
-                                option.name.toLowerCase().includes(selectionFilter.toLowerCase())
-                            );
+                                {/* Filter */}
+                                <Box marginY={1}>
+                                  <Text dimColor>🔍 Filter: </Text>
+                                  <Text color="#00FF88">{selectionFilter || '(type to search)'}</Text>
+                                </Box>
 
-                            return filteredOptions.length === 0 ? (
-                              <Box marginBottom={1}>
-                                <Text color="yellow">⚠ No matches found</Text>
+                                {/* Options */}
+                                {(() => {
+                                  const filteredOptions = q.options.filter(
+                                    (option) =>
+                                      option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+                                      option.name.toLowerCase().includes(selectionFilter.toLowerCase())
+                                  );
+
+                                  return filteredOptions.length === 0 ? (
+                                    <Text color="yellow">⚠ No matches found</Text>
+                                  ) : (
+                                    <>
+                                      {filteredOptions.slice(0, 10).map((option, idx) => (
+                                        <Box key={option.id} paddingY={0}>
+                                          <Text
+                                            color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                                            bold={idx === selectedCommandIndex}
+                                          >
+                                            {idx === selectedCommandIndex ? '▶ ' : '  '}
+                                            {option.id}
+                                          </Text>
+                                          {option.name !== option.id && (
+                                            <Text dimColor> - {option.name}</Text>
+                                          )}
+                                        </Box>
+                                      ))}
+                                      {filteredOptions.length > 10 && (
+                                        <Box marginTop={1}>
+                                          <Text dimColor>... and {filteredOptions.length - 10} more</Text>
+                                        </Box>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </Box>
                             ) : (
-                              <>
-                                {filteredOptions.slice(0, 10).map((option, idx) => (
-                                  <Box key={option.id} paddingY={0}>
-                                    <Text
-                                      color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                                      bold={idx === selectedCommandIndex}
-                                    >
-                                      {idx === selectedCommandIndex ? '▶ ' : '  '}
-                                      {option.id}
-                                    </Text>
-                                    {option.name !== option.id && (
-                                      <Text dimColor> - {option.name}</Text>
-                                    )}
-                                  </Box>
-                                ))}
-                                {filteredOptions.length > 10 && (
-                                  <Box marginTop={1}>
-                                    <Text dimColor>... and {filteredOptions.length - 10} more</Text>
-                                  </Box>
+                              // Other questions: show answer or not answered
+                              <Box marginLeft={4}>
+                                {answer ? (
+                                  <>
+                                    <Text color="#00FF88">✓ </Text>
+                                    <Text color="#00FF88">{answerOption?.name || answer}</Text>
+                                  </>
+                                ) : (
+                                  <Text dimColor>(not answered yet)</Text>
                                 )}
-                              </>
-                            );
-                          })()}
-
-                          {/* Controls */}
-                          <Box marginTop={1} flexDirection="column">
-                            <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</Text>
-                            <Box marginTop={1}>
-                              {!isSingleQuestion && (
-                                <>
-                                  <Text dimColor>Tab: </Text>
-                                  <Text color="#00D9FF">Next</Text>
-                                  <Text dimColor> · </Text>
-                                </>
-                              )}
-                              <Text dimColor>Type: </Text>
-                              <Text color="#00D9FF">Filter</Text>
-                              <Text dimColor> · ↑↓: </Text>
-                              <Text color="#00D9FF">Navigate</Text>
-                              <Text dimColor> · Enter: </Text>
-                              <Text color="#00FF88">Select</Text>
-                              <Text dimColor> · Esc: </Text>
-                              <Text color="#FF3366">Cancel</Text>
-                            </Box>
+                              </Box>
+                            )}
                           </Box>
-                        </>
-                      )}
+                        );
+                      })}
+
+                      {/* Controls footer */}
+                      <Box marginTop={1} flexDirection="column">
+                        <Text dimColor>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</Text>
+                        <Box marginTop={1}>
+                          {!isSingleQuestion && (
+                            <>
+                              <Text dimColor>Tab: </Text>
+                              <Text color="#00D9FF">Next</Text>
+                              <Text dimColor> · Shift+Tab: </Text>
+                              <Text color="#00D9FF">Previous</Text>
+                              <Text dimColor> · </Text>
+                            </>
+                          )}
+                          <Text dimColor>↑↓: </Text>
+                          <Text color="#00D9FF">Navigate</Text>
+                          <Text dimColor> · Enter: </Text>
+                          <Text color="#00FF88">Select</Text>
+                          {!isSingleQuestion && (
+                            <>
+                              <Text dimColor> · </Text>
+                              <Text dimColor>Ctrl+Enter: </Text>
+                              <Text color={allAnswered ? '#00FF88' : 'gray'}>
+                                Submit{!allAnswered && ' (answer all first)'}
+                              </Text>
+                            </>
+                          )}
+                          <Text dimColor> · Esc: </Text>
+                          <Text color="#FF3366">Cancel</Text>
+                        </Box>
+                      </Box>
                     </>
                   );
                 })()
