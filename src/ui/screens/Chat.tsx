@@ -18,6 +18,7 @@ import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } fr
 import { ToolDisplay } from '../components/ToolDisplay.js';
 import { scanProjectFiles, filterFiles } from '../../utils/file-scanner.js';
 import type { FileAttachment } from '../../types/session.types.js';
+import { estimateTokens, formatTokenCount } from '../../utils/token-counter.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -45,6 +46,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [projectFiles, setProjectFiles] = useState<Array<{ path: string; relativePath: string; size: number }>>([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [attachmentTokens, setAttachmentTokens] = useState<Map<string, number>>(new Map());
 
   // For command interactive flow - when command calls waitForInput()
   const [pendingInput, setPendingInput] = useState<WaitForInputOptions | null>(null);
@@ -527,6 +529,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               }];
             });
 
+            // Calculate token count for this file
+            (async () => {
+              try {
+                const { readFile } = await import('node:fs/promises');
+                const content = await readFile(selected.path, 'utf8');
+                const tokenCount = estimateTokens(content);
+                setAttachmentTokens((prev) => new Map(prev).set(selected.path, tokenCount));
+              } catch (error) {
+                console.error('Failed to count tokens:', error);
+              }
+            })();
+
             // Replace @query with the file name
             const atIndex = input.lastIndexOf('@');
             const newInput = input.slice(0, atIndex) + `@${selected.relativePath} `;
@@ -876,6 +890,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             <Text dimColor>Attached(</Text>
                             <Text color="#00D9FF">{att.relativePath}</Text>
                             <Text dimColor>)</Text>
+                            {attachmentTokens.has(att.path) && (
+                              <>
+                                <Text dimColor> </Text>
+                                <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                              </>
+                            )}
                           </Box>
                         ))}
                       </Box>
@@ -1255,7 +1275,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   {pendingAttachments.map((att, idx) => (
                     <Box key={idx} marginLeft={2}>
                       <Text color="#00D9FF">{att.relativePath}</Text>
-                      <Text dimColor> ({att.size ? `${(att.size / 1024).toFixed(1)}KB` : 'unknown'})</Text>
+                      <Text dimColor> (</Text>
+                      {att.size && (
+                        <>
+                          <Text dimColor>{(att.size / 1024).toFixed(1)}KB</Text>
+                          {attachmentTokens.has(att.path) && <Text dimColor>, </Text>}
+                        </>
+                      )}
+                      {attachmentTokens.has(att.path) && (
+                        <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                      )}
+                      <Text dimColor>)</Text>
                     </Box>
                   ))}
                 </Box>
