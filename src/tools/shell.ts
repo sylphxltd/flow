@@ -105,19 +105,34 @@ Usage:
 The output is cumulative - shows all output since process started.`,
   inputSchema: z.object({
     bash_id: z.string().describe('The bash_id returned from a background bash command'),
+    filter: z.string().optional().describe('Optional regex to filter output lines'),
   }),
-  execute: async ({ bash_id }) => {
+  execute: async ({ bash_id, filter }) => {
     const output = bashManager.getOutput(bash_id);
 
     if (!output) {
       throw new Error(`Bash process not found: ${bash_id}`);
     }
 
+    let stdout = output.stdout;
+    let stderr = output.stderr;
+
+    // Apply filter if provided
+    if (filter) {
+      try {
+        const regex = new RegExp(filter);
+        stdout = stdout.split('\n').filter(line => regex.test(line)).join('\n');
+        stderr = stderr.split('\n').filter(line => regex.test(line)).join('\n');
+      } catch (error) {
+        throw new Error(`Invalid regex filter: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
     return {
       bash_id,
       command: output.command,
-      stdout: output.stdout,
-      stderr: output.stderr,
+      stdout,
+      stderr,
       exitCode: output.exitCode,
       isRunning: output.isRunning,
       duration: output.duration,
@@ -156,36 +171,10 @@ The process will be sent SIGTERM first, then SIGKILL if it doesn't exit within 5
 });
 
 /**
- * List all background bash processes
- */
-export const listBashTool = tool({
-  description: `List all background bash processes.
-
-Usage:
-- See all running and completed background processes
-- Monitor background process status
-- Get bash_id for processes to check output or kill
-
-Returns list of processes with their ID, command, status, and duration.`,
-  inputSchema: z.object({}),
-  execute: async () => {
-    const processes = bashManager.list();
-
-    return {
-      processes,
-      count: processes.length,
-      running: processes.filter((p) => p.isRunning).length,
-      completed: processes.filter((p) => !p.isRunning).length,
-    };
-  },
-});
-
-/**
  * All shell tools
  */
 export const shellTools = {
   bash: executeBashTool,
   'bash-output': bashOutputTool,
   'kill-bash': killBashTool,
-  'list-bash': listBashTool,
 };

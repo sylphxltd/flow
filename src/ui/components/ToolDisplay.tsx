@@ -99,7 +99,6 @@ const argsFormatters: Record<string, ArgsFormatter> = {
   bash: formatBashArgs,
   'bash-output': formatBashIdArgs,
   'kill-bash': formatBashIdArgs,
-  'list-bash': () => '',
   grep: formatGrepArgs,
   glob: formatGlobArgs,
 };
@@ -285,25 +284,6 @@ const formatKillBashResult: ResultFormatter = (result) => {
   return { lines: resultToLines(result) };
 };
 
-const formatListBashResult: ResultFormatter = (result) => {
-  // Handle list-bash result: { processes, count, running, completed }
-  if (typeof result === 'object' && result !== null && 'processes' in result) {
-    const { processes, running, completed } = result as any;
-    const lines = (processes as Array<any>).map((proc) => {
-      const status = proc.isRunning ? '[*]' : '[x]';
-      const duration = Math.floor(proc.duration / 1000);
-      return `${status} [${duration}s] ${proc.command}`;
-    });
-
-    return {
-      lines,
-      summary: `${running} running, ${completed} completed`,
-    };
-  }
-
-  return { lines: resultToLines(result) };
-};
-
 /**
  * Result formatter registry
  */
@@ -316,7 +296,6 @@ const resultFormatters: Record<string, ResultFormatter> = {
   bash: formatBashResult,
   'bash-output': formatBashOutputResult,
   'kill-bash': formatKillBashResult,
-  'list-bash': formatListBashResult,
   ask: formatAskResult,
 };
 
@@ -358,7 +337,6 @@ const displayNames: Record<string, string> = {
   bash: 'Bash',
   'bash-output': 'BashOutput',
   'kill-bash': 'KillBash',
-  'list-bash': 'ListBash',
   grep: 'Search',
   glob: 'Search',
   ask: 'Ask',
@@ -373,7 +351,7 @@ const getDisplayName = (toolName: string): string =>
 /**
  * Component rendering helpers
  */
-const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'bash-output', 'kill-bash', 'list-bash', 'grep', 'glob']);
+const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'bash-output', 'kill-bash', 'grep', 'glob']);
 
 const isBuiltInTool = (name: string): boolean =>
   builtInTools.has(name.toLowerCase());
