@@ -117,7 +117,7 @@ function getDisplayName(toolName: string): string {
     'edit': 'Edit',
     'bash': 'Bash',
     'grep': 'Search',
-    'glob': 'List',
+    'glob': 'Search',
     'ask': 'Ask',
   };
 
