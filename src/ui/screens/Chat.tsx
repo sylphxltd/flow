@@ -34,6 +34,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [cursor, setCursor] = useState(0); // Controlled cursor position
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
+  const [isTitleStreaming, setIsTitleStreaming] = useState(false);
+  const [streamingTitle, setStreamingTitle] = useState('');
   const debugLogs = useAppStore((state) => state.debugLogs);
   const addDebugLog = useAppStore((state) => state.addDebugLog);
   const [ctrlPressed, setCtrlPressed] = useState(false);
@@ -836,16 +838,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
-    // Generate title if this is first message in session
-    if (currentSessionId && currentSession) {
-      const isFirstMessage = currentSession.messages.filter(m => m.role === 'user').length === 0;
-      if (isFirstMessage) {
-        const { generateSessionTitle } = await import('../../utils/session-title.js');
-        const title = generateSessionTitle(userMessage);
-        updateSessionTitle(currentSessionId, title);
-      }
-    }
-
     // Get attachments for this message
     const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];
 
@@ -903,10 +895,47 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         );
       },
         // onComplete - streaming finished
-        () => {
+        async () => {
           addLog('Streaming complete');
           setIsStreaming(false);
           setStreamParts([]); // Clear streaming parts - they're now in message history
+
+          // Generate title with streaming if this is first message
+          if (currentSessionId && currentSession) {
+            const isFirstMessage = currentSession.messages.filter(m => m.role === 'user').length === 1;
+            if (isFirstMessage && !currentSession.title) {
+              const { generateSessionTitleWithStreaming } = await import('../../utils/session-title.js');
+              const provider = currentSession.provider;
+              const modelName = currentSession.model;
+              const providerConfig = aiConfig?.providers?.[provider];
+
+              if (providerConfig) {
+                setIsTitleStreaming(true);
+                setStreamingTitle('');
+
+                try {
+                  const finalTitle = await generateSessionTitleWithStreaming(
+                    userMessage,
+                    provider,
+                    modelName,
+                    providerConfig,
+                    (chunk) => {
+                      setStreamingTitle(prev => prev + chunk);
+                    }
+                  );
+
+                  setIsTitleStreaming(false);
+                  updateSessionTitle(currentSessionId, finalTitle);
+                } catch (error) {
+                  setIsTitleStreaming(false);
+                  // Fallback to simple title
+                  const { generateSessionTitle } = await import('../../utils/session-title.js');
+                  const title = generateSessionTitle(userMessage);
+                  updateSessionTitle(currentSessionId, title);
+                }
+              }
+            }
+          }
         },
         // NOTE: onUserInputRequest removed - handler is set globally in useEffect
         undefined, // onUserInputRequest
@@ -926,6 +955,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         {/* Header */}
         <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ CHAT</Text>
+          {currentSession && (
+            <>
+              <Text color="#00D9FF"> · </Text>
+              {isTitleStreaming ? (
+                <>
+                  <Text color="white">{streamingTitle}</Text>
+                  <Text color="#FFD700">▊</Text>
+                </>
+              ) : (
+                <Text color="white">{currentSession.title || 'New Chat'}</Text>
+              )}
+            </>
+          )}
         </Box>
 
         {/* Messages - Scrollable area */}

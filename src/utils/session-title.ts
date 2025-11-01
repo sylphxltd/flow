@@ -3,6 +3,9 @@
  * Generate concise titles from user messages
  */
 
+import { createAIStream } from '../core/ai-sdk.js';
+import type { ProviderId } from '../types/config.types.js';
+
 /**
  * Generate a session title from the first user message
  * Takes the first 50 characters and adds ellipsis if truncated
@@ -32,6 +35,50 @@ export function generateSessionTitle(firstMessage: string): string {
 
   // Otherwise just truncate and add ellipsis
   return truncated + '...';
+}
+
+/**
+ * Generate a session title using LLM with streaming
+ */
+export async function generateSessionTitleWithStreaming(
+  firstMessage: string,
+  provider: ProviderId,
+  modelName: string,
+  providerConfig: any,
+  onChunk: (chunk: string) => void
+): Promise<string> {
+  if (!firstMessage || firstMessage.trim().length === 0) {
+    return 'New Chat';
+  }
+
+  try {
+    const stream = createAIStream(
+      provider,
+      modelName,
+      providerConfig,
+      [
+        {
+          role: 'user',
+          content: `Generate a concise, descriptive title (max 50 characters) for a chat that starts with this message. Only respond with the title, nothing else:\n\n${firstMessage}`,
+        },
+      ],
+      [], // no tools for title generation
+    );
+
+    let fullTitle = '';
+
+    for await (const chunk of stream.textStream) {
+      fullTitle += chunk;
+      onChunk(chunk);
+    }
+
+    // Clean up title
+    const cleaned = fullTitle.trim().replace(/["\n]/g, '');
+    return cleaned.length > 50 ? cleaned.substring(0, 50) + '...' : cleaned;
+  } catch (error) {
+    // Fallback to simple title generation
+    return generateSessionTitle(firstMessage);
+  }
 }
 
 /**
