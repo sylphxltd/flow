@@ -521,27 +521,35 @@ const modelCommand: Command = {
             return [];
           }
 
-          // Fetch models from all configured providers
-          const allModels: Array<{ id: string; label: string; value: string }> = [];
+          // Get current session's provider
+          const currentSessionId = context?.getCurrentSessionId();
+          const currentSession = currentSessionId ? context?.getSession(currentSessionId) : null;
+          const currentProviderId = currentSession?.provider || aiConfig.defaultProvider;
 
-          for (const [providerId, config] of Object.entries(aiConfig.providers)) {
-            try {
-              const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-              const models = await fetchModels(providerId as any, config);
-              allModels.push(...models.map(m => ({
-                id: m.id,
-                label: `${m.name} (${providerId})`,
-                value: m.id,
-              })));
-            } catch (error) {
-              // Silently skip providers that fail
-              if (context) {
-                context.addLog(`Failed to fetch models for ${providerId}: ${error instanceof Error ? error.message : String(error)}`);
-              }
-            }
+          if (!currentProviderId) {
+            return [];
           }
 
-          return allModels;
+          // Fetch models from current provider only
+          const config = aiConfig.providers[currentProviderId];
+          if (!config) {
+            return [];
+          }
+
+          try {
+            const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+            const models = await fetchModels(currentProviderId as any, config);
+            return models.map(m => ({
+              id: m.id,
+              label: m.name,
+              value: m.id,
+            }));
+          } catch (error) {
+            if (context) {
+              context.addLog(`Failed to fetch models for ${currentProviderId}: ${error instanceof Error ? error.message : String(error)}`);
+            }
+            return [];
+          }
         } catch (error) {
           if (context) {
             context.addLog(`Error loading models: ${error instanceof Error ? error.message : String(error)}`);
@@ -557,32 +565,41 @@ const modelCommand: Command = {
     // If no args provided, ask user to select
     if (context.args.length === 0) {
       try {
-        // Load models using the arg's loadOptions
+        // Load models from current provider only
         const aiConfig = context.getConfig();
         if (!aiConfig?.providers) {
           return 'No providers configured. Please configure a provider first.';
         }
 
-        // Fetch models from all configured providers
-        const allModels: Array<{ label: string; value: string }> = [];
-        const errors: string[] = [];
+        // Get current session's provider
+        const currentSessionId = context.getCurrentSessionId();
+        const currentSession = currentSessionId ? context.getSession(currentSessionId) : null;
+        const currentProviderId = currentSession?.provider || aiConfig.defaultProvider;
 
-        for (const [providerId, config] of Object.entries(aiConfig.providers)) {
-          try {
-            const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-            const models = await fetchModels(providerId as any, config);
-            allModels.push(...models.map(m => ({ label: m.name, value: m.id })));
-            context.addLog(`Loaded ${models.length} models from ${providerId}`);
-          } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            errors.push(`${providerId}: ${errorMsg}`);
-            context.addLog(`Failed to fetch models for ${providerId}: ${errorMsg}`);
-          }
+        if (!currentProviderId) {
+          return 'No provider selected. Use /provider to select a provider first.';
+        }
+
+        const config = aiConfig.providers[currentProviderId];
+        if (!config) {
+          return `Provider ${currentProviderId} is not configured.`;
+        }
+
+        // Fetch models from current provider
+        let allModels: Array<{ label: string; value: string }> = [];
+        try {
+          const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+          const models = await fetchModels(currentProviderId as any, config);
+          allModels = models.map(m => ({ label: m.name, value: m.id }));
+          context.addLog(`Loaded ${models.length} models from ${currentProviderId}`);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          context.addLog(`Failed to fetch models for ${currentProviderId}: ${errorMsg}`);
+          return `Failed to load models from ${currentProviderId}: ${errorMsg}`;
         }
 
         if (allModels.length === 0) {
-          const errorMsg = errors.length > 0 ? errors.join('; ') : 'No models available';
-          return `Failed to load models: ${errorMsg}`;
+          return `No models available for ${currentProviderId}`;
         }
 
         // Ask user to select
