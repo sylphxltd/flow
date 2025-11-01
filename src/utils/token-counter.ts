@@ -268,7 +268,7 @@ export async function getTokenizerInfo(modelName?: string): Promise<{
     modelName: modelName || 'default',
     tokenizerName,
     loaded: tokenizer !== null,
-    failed: initializationFailed,
+    failed: tokenizerFailed.has(tokenizerName),
   };
 }
 

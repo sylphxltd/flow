@@ -60,6 +60,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Ask queue state
   const [askQueueLength, setAskQueueLength] = useState(0);
+  const [usedTokens, setUsedTokens] = useState(0);
 
   const addLog = (message: string) => {
     addDebugLog(message);
@@ -688,6 +689,57 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   useEffect(() => {
     setSelectedFileIndex(0);
   }, [filteredFileInfo.files.length]);
+
+  // Calculate total token usage for current session
+  useEffect(() => {
+    if (!currentSession) {
+      setUsedTokens(0);
+      return;
+    }
+
+    const calculateTokens = async () => {
+      try {
+        const { countTokens } = await import('../../utils/token-counter.js');
+        const { SYSTEM_PROMPT } = await import('../../core/ai-sdk.js');
+        const { getAISDKTools } = await import('../../tools/index.js');
+
+        let total = 0;
+
+        // System prompt tokens
+        total += await countTokens(SYSTEM_PROMPT, currentSession.model);
+
+        // Tools tokens
+        const tools = getAISDKTools();
+        const toolsJson = JSON.stringify(tools);
+        total += await countTokens(toolsJson, currentSession.model);
+
+        // Messages tokens
+        for (const msg of currentSession.messages) {
+          // Count main content
+          total += await countTokens(msg.content, currentSession.model);
+
+          // Count attachments if any
+          if (msg.attachments && msg.attachments.length > 0) {
+            for (const att of msg.attachments) {
+              try {
+                const { readFile } = await import('node:fs/promises');
+                const content = await readFile(att.path, 'utf8');
+                total += await countTokens(content, currentSession.model);
+              } catch (error) {
+                // File might not exist anymore, skip
+              }
+            }
+          }
+        }
+
+        setUsedTokens(total);
+      } catch (error) {
+        console.error('Failed to calculate token usage:', error);
+      }
+    };
+
+    calculateTokens();
+  }, [currentSession, currentSession?.messages.length]);
 
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
@@ -1457,7 +1509,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               provider={currentSession.provider}
               model={currentSession.model}
               apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
-              messageCount={currentSession.messages.length}
+              usedTokens={usedTokens}
             />
           )}
           <Box>

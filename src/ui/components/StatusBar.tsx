@@ -12,10 +12,10 @@ interface StatusBarProps {
   provider: ProviderId;
   model: string;
   apiKey?: string;
-  messageCount: number;
+  usedTokens?: number;
 }
 
-export default function StatusBar({ provider, model, apiKey, messageCount }: StatusBarProps) {
+export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: StatusBarProps) {
   const [contextLength, setContextLength] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,19 +46,30 @@ export default function StatusBar({ provider, model, apiKey, messageCount }: Sta
     return num.toString();
   };
 
+  // Calculate usage percentage
+  const usagePercent = contextLength && usedTokens > 0
+    ? Math.round((usedTokens / contextLength) * 100)
+    : 0;
+
   return (
     <Box>
       <Text dimColor>
         {provider} · {model}
       </Text>
-      {!loading && contextLength && (
+      {!loading && contextLength && usedTokens > 0 && (
+        <>
+          <Text dimColor> │ </Text>
+          <Text dimColor>
+            Context: {formatNumber(usedTokens)}/{formatNumber(contextLength)} ({usagePercent}%)
+          </Text>
+        </>
+      )}
+      {!loading && contextLength && usedTokens === 0 && (
         <>
           <Text dimColor> │ </Text>
           <Text dimColor>Context: {formatNumber(contextLength)}</Text>
         </>
       )}
-      <Text dimColor> │ </Text>
-      <Text dimColor>Messages: {messageCount}</Text>
     </Box>
   );
 }
