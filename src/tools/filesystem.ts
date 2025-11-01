@@ -123,6 +123,16 @@ IMPORTANT:
       }
     }
 
+    // Find line number where replacement occurs
+    const lines = content.split('\n');
+    const beforeContent = content.substring(0, content.indexOf(old_string));
+    const lineNumber = beforeContent.split('\n').length;
+
+    // Get context lines (few lines before and after)
+    const contextSize = 2;
+    const startLine = Math.max(0, lineNumber - contextSize - 1);
+    const endLine = Math.min(lines.length, lineNumber + contextSize);
+
     // Perform replacement
     const newContent = replace_all
       ? content.split(old_string).join(new_string)
@@ -136,11 +146,42 @@ IMPORTANT:
       ? content.split(old_string).length - 1
       : 1;
 
+    // Generate diff lines for display
+    const contextLines = lines.slice(startLine, endLine);
+    const diffLines: string[] = [];
+
+    for (let i = 0; i < contextLines.length; i++) {
+      const currentLineNum = startLine + i + 1;
+      const line = contextLines[i];
+
+      if (currentLineNum === lineNumber) {
+        // This is the changed line
+        const oldLines = old_string.split('\n');
+        const newLines = new_string.split('\n');
+
+        // Show removed lines
+        oldLines.forEach((oldLine) => {
+          diffLines.push(`${currentLineNum.toString().padStart(6)} - ${oldLine}`);
+        });
+
+        // Show added lines
+        newLines.forEach((newLine) => {
+          diffLines.push(`${currentLineNum.toString().padStart(6)} + ${newLine}`);
+        });
+      } else {
+        // Context line
+        diffLines.push(`${currentLineNum.toString().padStart(6)}   ${line}`);
+      }
+    }
+
     return {
       path: file_path,
       replacements: occurrences,
       old_length: old_string.length,
       new_length: new_string.length,
+      diff: diffLines,
+      old_string,
+      new_string,
     };
   },
 });

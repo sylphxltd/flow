@@ -73,14 +73,19 @@ function formatResult(toolName: string, result: unknown): { lines: string[]; sum
         summary: `Read ${lines.length} lines`,
       };
     case 'edit':
-      // Parse result to show replacement count and file path
-      if (typeof result === 'object' && result !== null && 'replacements' in result) {
-        const replacements = (result as any).replacements;
+      // Parse result to show diff
+      if (typeof result === 'object' && result !== null && 'diff' in result) {
+        const diff = (result as any).diff as string[];
         const path = (result as any).path;
         const fileName = path ? path.split('/').pop() : '';
+        const oldString = (result as any).old_string;
+        const newString = (result as any).new_string;
+        const additions = newString.split('\n').length;
+        const removals = oldString.split('\n').length;
+
         return {
-          lines: [],
-          summary: `Updated ${fileName} with ${replacements} replacement${replacements > 1 ? 's' : ''}`,
+          lines: diff,
+          summary: `Updated ${fileName} with ${additions} addition${additions !== 1 ? 's' : ''} and ${removals} removal${removals !== 1 ? 's' : ''}`,
         };
       }
       return { lines };
