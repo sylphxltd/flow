@@ -376,6 +376,48 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Handle keyboard shortcuts for command menu and selection navigation
   useInput(
     async (input, key) => {
+      // Handle pendingInput (when command calls waitForInput)
+      if (pendingInput && inputResolver.current) {
+        if (pendingInput.type === 'selection' && pendingInput.options) {
+          const options = pendingInput.options;
+          const maxIndex = options.length - 1;
+
+          // Arrow down - next option
+          if (key.downArrow) {
+            setSelectedCommandIndex((prev) => (prev < maxIndex ? prev + 1 : prev));
+            return;
+          }
+          // Arrow up - previous option
+          if (key.upArrow) {
+            setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
+            return;
+          }
+          // Enter - select option
+          if (key.return) {
+            const selectedOption = options[selectedCommandIndex];
+            if (selectedOption) {
+              addLog(`[pendingInput] User selected: ${selectedOption.id}`);
+              inputResolver.current(selectedOption.id);
+              inputResolver.current = null;
+              setPendingInput(null);
+              setSelectedCommandIndex(0);
+            }
+            return;
+          }
+          // Escape - cancel
+          if (key.escape) {
+            addLog(`[pendingInput] User cancelled`);
+            inputResolver.current('');
+            inputResolver.current = null;
+            setPendingInput(null);
+            setSelectedCommandIndex(0);
+            return;
+          }
+        }
+        // For text input, handleSubmit will handle it
+        return;
+      }
+
       // Handle pending command selection (e.g., model selection, provider selection)
       if (pendingCommand) {
         // Get options for the pending command's first arg
@@ -574,6 +616,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
+
+    // Handle pendingInput for text type
+    if (pendingInput && pendingInput.type === 'text' && inputResolver.current) {
+      addLog(`[handleSubmit] Resolving text input: ${value}`);
+      inputResolver.current(value.trim());
+      inputResolver.current = null;
+      setPendingInput(null);
+      setInput('');
+      return;
+    }
 
     // If we're in command mode with active autocomplete, don't handle here
     // Let useInput handle the autocomplete selection
@@ -845,8 +897,45 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             )}
           </Box>
 
-          {/* Selection Mode - when a command is pending and needs args */}
-          {pendingCommand ? (
+          {/* PendingInput Mode - when command calls waitForInput */}
+          {pendingInput ? (
+            <Box flexDirection="column">
+              {pendingInput.prompt && (
+                <Box marginBottom={1}>
+                  <Text dimColor>{pendingInput.prompt}</Text>
+                </Box>
+              )}
+
+              {pendingInput.type === 'selection' && pendingInput.options ? (
+                // Selection UI
+                <>
+                  {pendingInput.options.slice(0, 10).map((option, idx) => (
+                    <Box key={option.id} paddingY={0}>
+                      <Text
+                        color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                        bold={idx === selectedCommandIndex}
+                      >
+                        {idx === selectedCommandIndex ? '> ' : '  '}
+                        {option.id}
+                      </Text>
+                      {option.name !== option.id && (
+                        <Text dimColor> - {option.name}</Text>
+                      )}
+                    </Box>
+                  ))}
+                  <Box marginTop={1}>
+                    <Text dimColor>↑↓ Navigate · Enter Select · Esc Cancel</Text>
+                  </Box>
+                </>
+              ) : (
+                // Text input UI - TextInput below will handle it
+                <Box marginBottom={1}>
+                  <Text dimColor>{pendingInput.placeholder || 'Type your response...'}</Text>
+                </Box>
+              )}
+            </Box>
+          ) : /* Selection Mode - when a command is pending and needs args */
+          pendingCommand ? (
             <Box flexDirection="column">
               <Box marginBottom={1}>
                 <Text dimColor>
