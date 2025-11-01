@@ -901,37 +901,51 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           setStreamParts([]); // Clear streaming parts - they're now in message history
 
           // Generate title with streaming if this is first message
-          if (currentSessionId && currentSession) {
-            const isFirstMessage = currentSession.messages.filter(m => m.role === 'user').length === 1;
-            if (isFirstMessage && !currentSession.title) {
-              const { generateSessionTitleWithStreaming } = await import('../../utils/session-title.js');
-              const provider = currentSession.provider;
-              const modelName = currentSession.model;
-              const providerConfig = aiConfig?.providers?.[provider];
+          if (currentSessionId) {
+            // Get fresh session from store (currentSession might be stale)
+            const sessions = useAppStore.getState().sessions;
+            const freshSession = sessions.find(s => s.id === currentSessionId);
 
-              if (providerConfig) {
-                setIsTitleStreaming(true);
-                setStreamingTitle('');
+            if (freshSession) {
+              const userMessageCount = freshSession.messages.filter(m => m.role === 'user').length;
+              const hasTitle = !!freshSession.title && freshSession.title !== 'New Chat';
 
-                try {
-                  const finalTitle = await generateSessionTitleWithStreaming(
-                    userMessage,
-                    provider,
-                    modelName,
-                    providerConfig,
-                    (chunk) => {
-                      setStreamingTitle(prev => prev + chunk);
-                    }
-                  );
+              addLog(`[Title] User messages: ${userMessageCount}, Has title: ${hasTitle}, Current title: ${freshSession.title || 'none'}`);
 
-                  setIsTitleStreaming(false);
-                  updateSessionTitle(currentSessionId, finalTitle);
-                } catch (error) {
-                  setIsTitleStreaming(false);
-                  // Fallback to simple title
-                  const { generateSessionTitle } = await import('../../utils/session-title.js');
-                  const title = generateSessionTitle(userMessage);
-                  updateSessionTitle(currentSessionId, title);
+              const isFirstMessage = userMessageCount === 1;
+              if (isFirstMessage && !hasTitle) {
+                addLog('[Title] Generating title with streaming...');
+                const { generateSessionTitleWithStreaming } = await import('../../utils/session-title.js');
+                const provider = freshSession.provider;
+                const modelName = freshSession.model;
+                const providerConfig = aiConfig?.providers?.[provider];
+
+                if (providerConfig) {
+                  setIsTitleStreaming(true);
+                  setStreamingTitle('');
+
+                  try {
+                    const finalTitle = await generateSessionTitleWithStreaming(
+                      userMessage,
+                      provider,
+                      modelName,
+                      providerConfig,
+                      (chunk) => {
+                        setStreamingTitle(prev => prev + chunk);
+                      }
+                    );
+
+                    addLog(`[Title] Generated: ${finalTitle}`);
+                    setIsTitleStreaming(false);
+                    updateSessionTitle(currentSessionId, finalTitle);
+                  } catch (error) {
+                    addLog(`[Title] Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+                    setIsTitleStreaming(false);
+                    // Fallback to simple title
+                    const { generateSessionTitle } = await import('../../utils/session-title.js');
+                    const title = generateSessionTitle(userMessage);
+                    updateSessionTitle(currentSessionId, title);
+                  }
                 }
               }
             }
