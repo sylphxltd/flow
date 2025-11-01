@@ -20,6 +20,15 @@ export type MessagePart =
     };
 
 /**
+ * File attachment
+ */
+export interface FileAttachment {
+  path: string;
+  relativePath: string;
+  size?: number;
+}
+
+/**
  * Session message
  */
 export interface SessionMessage {
@@ -27,6 +36,7 @@ export interface SessionMessage {
   content: string;
   timestamp: number;
   parts?: MessagePart[];
+  attachments?: FileAttachment[];
 }
 
 /**

@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
-import type { Session, MessagePart } from '../../types/session.types.js';
+import type { Session, MessagePart, FileAttachment } from '../../types/session.types.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
 export type { Session, MessagePart } from '../../types/session.types.js';
@@ -34,7 +34,7 @@ export interface AppState {
   createSession: (provider: ProviderId, model: string) => string;
   updateSessionModel: (sessionId: string, model: string) => void;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, parts?: MessagePart[]) => void;
+  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, parts?: MessagePart[], attachments?: FileAttachment[]) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
@@ -135,7 +135,7 @@ export const useAppStore = create<AppState>()(
           session.model = model;
         }
       }),
-    addMessage: (sessionId, role, content, parts) =>
+    addMessage: (sessionId, role, content, parts, attachments) =>
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -144,6 +144,7 @@ export const useAppStore = create<AppState>()(
             content,
             timestamp: Date.now(),
             ...(parts !== undefined && { parts }),
+            ...(attachments !== undefined && attachments.length > 0 && { attachments }),
           });
         }
       }),

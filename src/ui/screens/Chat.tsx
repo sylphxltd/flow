@@ -16,6 +16,8 @@ import type { CommandContext, WaitForInputOptions, Question } from '../commands/
 import { calculateScrollViewport } from '../utils/scroll-viewport.js';
 import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from '../../tools/interaction.js';
 import { ToolDisplay } from '../components/ToolDisplay.js';
+import { scanProjectFiles, filterFiles } from '../../utils/file-scanner.js';
+import type { FileAttachment } from '../../types/session.types.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -37,6 +39,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
   const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
+
+  // File attachment state
+  const [pendingAttachments, setPendingAttachments] = useState<FileAttachment[]>([]);
+  const [projectFiles, setProjectFiles] = useState<Array<{ path: string; relativePath: string; size: number }>>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
 
   // For command interactive flow - when command calls waitForInput()
   const [pendingInput, setPendingInput] = useState<WaitForInputOptions | null>(null);
@@ -141,6 +149,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setLoadError(null);
   }, [input]);
 
+  // Load project files on mount for @file auto-completion
+  useEffect(() => {
+    const loadFiles = async () => {
+      setFilesLoading(true);
+      try {
+        const files = await scanProjectFiles(process.cwd());
+        setProjectFiles(files);
+      } catch (error) {
+        console.error('Failed to load project files:', error);
+      } finally {
+        setFilesLoading(false);
+      }
+    };
+
+    loadFiles();
+  }, []);
+
   // Trigger option loading when needed
   useEffect(() => {
     if (!input.startsWith('/')) return;
@@ -188,6 +213,25 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       }
     }
   }, [input, currentlyLoading]); // cachedOptions removed from deps to prevent loop, commands are stable
+
+  // Get file auto-completion suggestions when @ is typed
+  const getFilteredFiles = () => {
+    // Check if input contains @ for file completion
+    const atIndex = input.lastIndexOf('@');
+    if (atIndex === -1) return { files: [], query: '', hasAt: false };
+
+    // Extract query after @
+    const query = input.slice(atIndex + 1);
+
+    // Don't show suggestions if there's a space after the query
+    // (user has moved to next part of message)
+    if (query.includes(' ')) return { files: [], query: '', hasAt: false };
+
+    // Filter files based on query
+    const filtered = filterFiles(projectFiles, query);
+
+    return { files: filtered.slice(0, 10), query, hasAt: true }; // Limit to 10 results
+  };
 
   // Filter commands based on input
   const getFilteredCommands = () => {
@@ -251,6 +295,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   };
 
   const filteredCommands = getFilteredCommands();
+  const filteredFileInfo = getFilteredFiles();
   const hintText = getHintText();
 
   // Handle keyboard shortcuts for command menu and selection navigation
@@ -451,6 +496,47 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         }
       }
 
+      // Handle file autocomplete navigation
+      if (filteredFileInfo.hasAt && filteredFileInfo.files.length > 0 && !pendingInput) {
+        // Arrow down - next file
+        if (key.downArrow) {
+          setSelectedFileIndex((prev) =>
+            prev < filteredFileInfo.files.length - 1 ? prev + 1 : prev
+          );
+          return;
+        }
+        // Arrow up - previous file
+        if (key.upArrow) {
+          setSelectedFileIndex((prev) => (prev > 0 ? prev - 1 : 0));
+          return;
+        }
+        // Tab or Enter - select file and add to attachments
+        if (key.tab || key.return) {
+          const selected = filteredFileInfo.files[selectedFileIndex];
+          if (selected) {
+            // Add to pending attachments
+            setPendingAttachments((prev) => {
+              // Check if already attached
+              if (prev.some((a) => a.path === selected.path)) {
+                return prev;
+              }
+              return [...prev, {
+                path: selected.path,
+                relativePath: selected.relativePath,
+                size: selected.size,
+              }];
+            });
+
+            // Replace @query with the file name
+            const atIndex = input.lastIndexOf('@');
+            const newInput = input.slice(0, atIndex) + `@${selected.relativePath} `;
+            setInput(newInput);
+            setSelectedFileIndex(0);
+          }
+          return;
+        }
+      }
+
       // Handle command autocomplete navigation
       else if (filteredCommands.length > 0 && !pendingInput) {
         // Arrow down - next command
@@ -563,6 +649,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setSelectedCommandIndex(0);
   }, [filteredCommands.length]);
 
+  // Reset selected file index when filtered files change
+  useEffect(() => {
+    setSelectedFileIndex(0);
+  }, [filteredFileInfo.files.length]);
+
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
 
@@ -658,13 +749,50 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
+    // Process attachments - read file contents
+    let messageWithAttachments = userMessage;
+    const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];
+
+    if (pendingAttachments.length > 0) {
+      try {
+        // Read all file contents
+        const { readFile } = await import('node:fs/promises');
+        const fileContents = await Promise.all(
+          pendingAttachments.map(async (att) => {
+            try {
+              const content = await readFile(att.path, 'utf8');
+              return { path: att.relativePath, content, success: true };
+            } catch (error) {
+              return {
+                path: att.relativePath,
+                content: `[Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}]`,
+                success: false
+              };
+            }
+          })
+        );
+
+        // Format message with file contents for LLM
+        const fileContentsText = fileContents
+          .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
+          .join('');
+
+        messageWithAttachments = `${userMessage}${fileContentsText}`;
+      } catch (error) {
+        console.error('Failed to read attachments:', error);
+      }
+
+      // Clear pending attachments after processing
+      setPendingAttachments([]);
+    }
+
     setIsStreaming(true);
     setStreamParts([]);
     addLog('Starting message send...');
 
     try {
       await sendMessage(
-        userMessage,
+        messageWithAttachments,
         // onChunk - text streaming
         (chunk) => {
         const timestamp = Date.now();
@@ -713,8 +841,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           addLog('Streaming complete');
           setIsStreaming(false);
           setStreamParts([]); // Clear streaming parts - they're now in message history
-        }
+        },
         // NOTE: onUserInputRequest removed - handler is set globally in useEffect
+        undefined, // onUserInputRequest
+        attachmentsForMessage.length > 0 ? attachmentsForMessage : undefined // attachments
       );
     } catch (error) {
       // Error is already handled in useChat hook and added as assistant message
@@ -769,6 +899,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
                     <Text color="white">{msg.content}</Text>
+                    {/* Display attachments if any */}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <Box flexDirection="column" marginTop={1}>
+                        {msg.attachments.map((att, attIdx) => (
+                          <Box key={attIdx}>
+                            <Text dimColor>Attached(</Text>
+                            <Text color="#00D9FF">{att.relativePath}</Text>
+                            <Text dimColor>)</Text>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
                   </>
                 ) : (
                   <>
@@ -1135,6 +1277,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             </Box>
           ) : (
             <>
+              {/* Show pending attachments */}
+              {pendingAttachments.length > 0 && (
+                <Box flexDirection="column" marginBottom={1}>
+                  <Box marginBottom={1}>
+                    <Text dimColor>Attachments ({pendingAttachments.length}):</Text>
+                  </Box>
+                  {pendingAttachments.map((att, idx) => (
+                    <Box key={idx} marginLeft={2}>
+                      <Text color="#00D9FF">{att.relativePath}</Text>
+                      <Text dimColor> ({att.size ? `${(att.size / 1024).toFixed(1)}KB` : 'unknown'})</Text>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
               {/* Show prompt for text input mode */}
               {pendingInput?.type === 'text' && pendingInput.prompt && (
                 <Box marginBottom={1}>
@@ -1170,8 +1327,31 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 hint={hintText}
               />
 
-              {/* Command Autocomplete - Shows below input when typing / */}
-              {input.startsWith('/') && input.includes(' ') && currentlyLoading ? (
+              {/* File Autocomplete - Shows below input when typing @ */}
+              {filteredFileInfo.hasAt && filteredFileInfo.files.length > 0 && !filesLoading ? (
+                <Box flexDirection="column" marginTop={1}>
+                  <Box marginBottom={1}>
+                    <Text dimColor>Files (↑↓ to select, Tab/Enter to attach):</Text>
+                  </Box>
+                  {filteredFileInfo.files.map((file, idx) => (
+                    <Box key={file.path} marginLeft={2}>
+                      <Text
+                        color={idx === selectedFileIndex ? '#00FF88' : 'gray'}
+                        bold={idx === selectedFileIndex}
+                      >
+                        {idx === selectedFileIndex ? '> ' : '  '}
+                        {file.relativePath}
+                      </Text>
+                    </Box>
+                  ))}
+                </Box>
+              ) : filteredFileInfo.hasAt && filesLoading ? (
+                <Box marginTop={1}>
+                  <Spinner color="#FFD700" />
+                  <Text color="gray"> Loading files...</Text>
+                </Box>
+              ) : /* Command Autocomplete - Shows below input when typing / */
+              input.startsWith('/') && input.includes(' ') && currentlyLoading ? (
                 <Box marginTop={1}>
                   <Spinner color="#FFD700" />
                   <Text color="gray"> Loading options...</Text>

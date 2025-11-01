@@ -32,7 +32,8 @@ export function useChat() {
     onToolCall?: (toolName: string, args: unknown) => void,
     onToolResult?: (toolName: string, result: unknown, duration: number) => void,
     onComplete?: () => void,
-    onUserInputRequest?: (request: UserInputRequest) => Promise<string>
+    onUserInputRequest?: (request: UserInputRequest) => Promise<string>,
+    attachments?: Array<{ path: string; relativePath: string; size?: number }>
   ) => {
     if (!currentSession || !currentSessionId) {
       setError('No active session');
@@ -61,8 +62,8 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
-      // Add user message
-      addMessage(currentSessionId, 'user', message);
+      // Add user message with attachments if any
+      addMessage(currentSessionId, 'user', message, undefined, attachments);
 
       // Get all messages for context
       const messages = [
