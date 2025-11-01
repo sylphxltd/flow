@@ -1119,13 +1119,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Box>
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
-                    <MarkdownText prefix="▏ " prefixColor="#00D9FF">{msg.content}</MarkdownText>
+                    <MarkdownText>{msg.content}</MarkdownText>
                     {/* Display attachments if any */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <Box flexDirection="column" marginTop={1}>
                         {msg.attachments.map((att, attIdx) => (
-                          <Box key={attIdx}>
-                            <Text color="#00D9FF">▏ </Text>
+                          <Box key={attIdx} marginLeft={2}>
                             <Text dimColor>Attached(</Text>
                             <Text color="#00D9FF">{att.relativePath}</Text>
                             <Text dimColor>)</Text>
@@ -1151,12 +1150,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         <MessagePart key={idx} part={part} />
                       ))
                     ) : (
-                      <MarkdownText prefix="▏ " prefixColor="#00FF88">{msg.content}</MarkdownText>
+                      <MarkdownText>{msg.content}</MarkdownText>
                     )}
                     {/* Show usage if available - simplified */}
                     {msg.usage && (
-                      <Box>
-                        <Text color="#00FF88">▏ </Text>
+                      <Box marginLeft={2}>
                         <Text dimColor>
                           {msg.usage.totalTokens.toLocaleString()} tokens
                         </Text>
@@ -1175,8 +1173,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                 {/* Show loading when no parts yet */}
                 {streamParts.length === 0 && (
-                  <Box>
-                    <Text color="#00FF88">▏ </Text>
+                  <Box marginLeft={2}>
                     <Spinner color="#FFD700" />
                     <Text dimColor> Thinking...</Text>
                   </Box>
