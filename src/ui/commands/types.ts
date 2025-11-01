@@ -83,6 +83,9 @@ export interface CommandContext {
   // Update session model (preserve history)
   updateSessionModel: (sessionId: string, model: string) => void;
 
+  // Update session provider and model (preserve history)
+  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
+
   // Create new session
   createSession: (provider: ProviderId, model: string) => string;
 

@@ -58,6 +58,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const currentSessionId = useAppStore((state) => state.currentSessionId);
   const createSession = useAppStore((state) => state.createSession);
   const updateSessionModel = useAppStore((state) => state.updateSessionModel);
+  const updateSessionProvider = useAppStore((state) => state.updateSessionProvider);
   const sessions = useAppStore((state) => state.sessions);
   const updateProvider = useAppStore((state) => state.updateProvider);
   const setAIConfig = useAppStore((state) => state.setAIConfig);
@@ -98,6 +99,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     updateProvider: (provider, data) => updateProvider(provider, data),
     setAIConfig: (config) => setAIConfig(config),
     updateSessionModel: (sessionId, model) => updateSessionModel(sessionId, model),
+    updateSessionProvider: (sessionId, provider, model) => updateSessionProvider(sessionId, provider, model),
     createSession: (provider, model) => createSession(provider, model),
     getSessions: () => sessions,
     getCurrentSessionId: () => currentSessionId,

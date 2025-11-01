@@ -104,8 +104,15 @@ const providerCommand: Command = {
         context.setAIConfig(newConfig);
         await context.saveConfig(newConfig);
 
+        // Update current session's provider (preserve history)
         const defaultModel = providerConfig.defaultModel || AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].models[0];
-        context.createSession(providerId, defaultModel);
+        const currentSessionId = context.getCurrentSessionId();
+        if (currentSessionId) {
+          context.updateSessionProvider(currentSessionId, providerId, defaultModel);
+        } else {
+          // Fallback: create new session if no active session
+          context.createSession(providerId, defaultModel);
+        }
 
         return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
       } else {
@@ -207,8 +214,15 @@ const providerCommand: Command = {
       context.setAIConfig(newConfig);
       await context.saveConfig(newConfig);
 
+      // Update current session's provider (preserve history)
       const defaultModel = providerConfig.defaultModel || AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].models[0];
-      context.createSession(providerId, defaultModel);
+      const currentSessionId = context.getCurrentSessionId();
+      if (currentSessionId) {
+        context.updateSessionProvider(currentSessionId, providerId, defaultModel);
+      } else {
+        // Fallback: create new session if no active session
+        context.createSession(providerId, defaultModel);
+      }
 
       return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
     }
@@ -234,8 +248,15 @@ const providerCommand: Command = {
       context.setAIConfig(newConfig);
       await context.saveConfig(newConfig);
 
+      // Update current session's provider (preserve history)
       const defaultModel = providerConfig.defaultModel || AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].models[0];
-      context.createSession(providerId, defaultModel);
+      const currentSessionId = context.getCurrentSessionId();
+      if (currentSessionId) {
+        context.updateSessionProvider(currentSessionId, providerId, defaultModel);
+      } else {
+        // Fallback: create new session if no active session
+        context.createSession(providerId, defaultModel);
+      }
 
       return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
     }
