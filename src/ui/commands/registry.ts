@@ -1135,6 +1135,28 @@ const sessionsCommand: Command = {
 };
 
 /**
+ * New command - Create a new chat session
+ */
+const newCommand: Command = {
+  id: 'new',
+  label: '/new',
+  description: 'Create a new chat session',
+  execute: async (context) => {
+    const aiConfig = context.getConfig();
+
+    if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
+      return 'No AI provider configured. Use /provider to configure a provider first.';
+    }
+
+    // Create new session with current provider and model
+    const newSessionId = context.createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
+    context.setCurrentSession(newSessionId);
+
+    return `Created new chat session with ${aiConfig.defaultProvider} (${aiConfig.defaultModel})`;
+  },
+};
+
+/**
  * All registered commands
  */
 export const commands: Command[] = [
@@ -1146,6 +1168,7 @@ export const commands: Command[] = [
   surveyCommand,
   contextCommand,
   sessionsCommand,
+  newCommand,
 ];
 
 /**
