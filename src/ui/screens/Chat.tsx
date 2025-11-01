@@ -853,11 +853,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
         {/* Input Area */}
         <Box flexDirection="column" flexShrink={0} paddingTop={1}>
-          <Box marginBottom={1} flexDirection="row" justifyContent="space-between">
+          <Box marginBottom={1}>
             <Text color="#00D9FF">▌ INPUT</Text>
-            {!input.startsWith('/') && !isStreaming && !pendingCommand && (
-              <Text dimColor>Type / for commands</Text>
-            )}
           </Box>
 
           {/* PendingInput Mode - when command calls waitForInput */}
@@ -1243,7 +1240,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         </Box>
 
         {/* Status Bar - Fixed at bottom */}
-        <Box flexShrink={0} paddingTop={1}>
+        <Box flexShrink={0} paddingTop={1} flexDirection="row" justifyContent="space-between">
           {currentSession && (
             <StatusBar
               provider={currentSession.provider}
