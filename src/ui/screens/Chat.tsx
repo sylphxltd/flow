@@ -965,7 +965,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
                     <Box>
-                      <Text color="#00D9FF">│ </Text>
+                      <Text color="#00D9FF">▏ </Text>
                       <Text color="white">{msg.content}</Text>
                     </Box>
                     {/* Display attachments if any */}
@@ -973,7 +973,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       <Box flexDirection="column" marginTop={1}>
                         {msg.attachments.map((att, attIdx) => (
                           <Box key={attIdx}>
-                            <Text color="#00D9FF">│ </Text>
+                            <Text color="#00D9FF">▏ </Text>
                             <Text dimColor>Attached(</Text>
                             <Text color="#00D9FF">{att.relativePath}</Text>
                             <Text dimColor>)</Text>
@@ -999,14 +999,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         if (part.type === 'text') {
                           return (
                             <Box key={idx}>
-                              <Text color="#00FF88">│ </Text>
+                              <Text color="#00FF88">▏ </Text>
                               <MarkdownText>{part.content}</MarkdownText>
                             </Box>
                           );
                         } else {
                           return (
                             <Box key={idx}>
-                              <Text color="#00FF88">│ </Text>
+                              <Text color="#00FF88">▏ </Text>
                               <ToolDisplay
                                 name={part.name}
                                 status={part.status}
@@ -1020,7 +1020,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       })
                     ) : (
                       <Box>
-                        <Text color="#00FF88">│ </Text>
+                        <Text color="#00FF88">▏ </Text>
                         <MarkdownText>{msg.content}</MarkdownText>
                       </Box>
                     )}
@@ -1038,7 +1038,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 {/* Show loading when no parts yet */}
                 {streamParts.length === 0 && (
                   <Box>
-                    <Text color="#00FF88">│ </Text>
+                    <Text color="#00FF88">▏ </Text>
                     <Spinner color="#FFD700" label="Thinking..." />
                   </Box>
                 )}
@@ -1050,12 +1050,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     return (
                       <Box key={idx} flexDirection="column">
                         <Box>
-                          <Text color="#00FF88">│ </Text>
+                          <Text color="#00FF88">▏ </Text>
                           <MarkdownText>{part.content}</MarkdownText>
                         </Box>
                         {isLastPart && (
                           <Box>
-                            <Text color="#00FF88">│ </Text>
+                            <Text color="#00FF88">▏ </Text>
                             <Text color="#FFD700">▊</Text>
                           </Box>
                         )}
@@ -1065,7 +1065,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     // Tool part
                     return (
                       <Box key={idx}>
-                        <Text color="#00FF88">│ </Text>
+                        <Text color="#00FF88">▏ </Text>
                         <ToolDisplay
                           name={part.name}
                           status={part.status}
