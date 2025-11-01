@@ -345,9 +345,9 @@ const providerCommand: Command = {
       }
 
       // Ask for value
+      context.sendMessage(`Enter value for ${key}:`);
       const valueAnswers = await context.waitForInput({
         type: 'text',
-        prompt: `Enter value for ${key}:`,
         placeholder: `Enter ${key}...`,
       });
 
@@ -410,9 +410,9 @@ const providerCommand: Command = {
       }
 
       // Ask for value
+      context.sendMessage(`Enter value for ${key}:`);
       const valueAnswers = await context.waitForInput({
         type: 'text',
-        prompt: `Enter value for ${key}:`,
         placeholder: `Enter ${key}...`,
       });
 
