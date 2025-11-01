@@ -1,11 +1,11 @@
 /**
  * Text Input With Hint
- * TextInput with inline ghost text hint
+ * TextInput with inline ghost text hint and cursor control
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Text } from 'ink';
-import TextInput from 'ink-text-input';
+import ControlledTextInput from './ControlledTextInput.js';
 
 interface TextInputWithHintProps {
   value: string;
@@ -14,6 +14,8 @@ interface TextInputWithHintProps {
   placeholder?: string;
   showCursor?: boolean;
   hint?: string; // Ghost text to show after cursor
+  cursor?: number; // Optional controlled cursor position
+  onCursorChange?: (cursor: number) => void;
 }
 
 export default function TextInputWithHint({
@@ -23,12 +25,30 @@ export default function TextInputWithHint({
   placeholder,
   showCursor = true,
   hint,
+  cursor: controlledCursor,
+  onCursorChange: controlledOnCursorChange,
 }: TextInputWithHintProps) {
+  // Internal cursor state (used when not controlled from parent)
+  const [internalCursor, setInternalCursor] = useState(value.length);
+
+  // Use controlled cursor if provided, otherwise use internal state
+  const cursor = controlledCursor !== undefined ? controlledCursor : internalCursor;
+  const onCursorChange = controlledOnCursorChange || setInternalCursor;
+
+  // Sync internal cursor when value changes (for uncontrolled mode)
+  React.useEffect(() => {
+    if (controlledCursor === undefined) {
+      setInternalCursor(value.length);
+    }
+  }, [value, controlledCursor]);
+
   return (
     <Box>
-      <TextInput
+      <ControlledTextInput
         value={value}
         onChange={onChange}
+        cursor={cursor}
+        onCursorChange={onCursorChange}
         onSubmit={onSubmit}
         placeholder={placeholder}
         showCursor={showCursor}

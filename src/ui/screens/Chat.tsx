@@ -30,7 +30,7 @@ interface ChatProps {
 
 export default function Chat({ commandFromPalette }: ChatProps) {
   const [input, setInput] = useState('');
-  const [inputKey, setInputKey] = useState(0); // Force TextInput remount for cursor position
+  const [cursor, setCursor] = useState(0); // Controlled cursor position
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
   const debugLogs = useAppStore((state) => state.debugLogs);
@@ -546,8 +546,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             const beforeAt = input.slice(0, filteredFileInfo.atIndex);
             const afterQuery = input.slice(filteredFileInfo.atIndex + 1 + filteredFileInfo.query.length);
             const newInput = `${beforeAt}@${selected.relativePath} ${afterQuery}`;
+            const newCursorPos = beforeAt.length + selected.relativePath.length + 2; // +2 for @ and space
             setInput(newInput);
-            setInputKey((prev) => prev + 1); // Force remount to move cursor to end
+            setCursor(newCursorPos); // Position cursor right after the inserted file name + space
             setSelectedFileIndex(0);
           }
           return;
@@ -578,7 +579,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
             addLog(`[useInput] Tab autocomplete fill: ${completedText}`);
             setInput(completedText);
-            setInputKey((prev) => prev + 1); // Force remount to move cursor to end
+            setCursor(completedText.length); // Move cursor to end
             setSelectedCommandIndex(0);
           }
           return;
@@ -1303,7 +1304,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               {/* Text Input with inline hint */}
               <TextInputWithHint
-                key={inputKey}
                 value={
                   pendingInput?.type === 'selection'
                     ? selectionFilter
@@ -1317,6 +1317,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       }
                     : setInput
                 }
+                cursor={pendingInput?.type === 'selection' ? undefined : cursor}
+                onCursorChange={pendingInput?.type === 'selection' ? undefined : setCursor}
                 onSubmit={handleSubmit}
                 placeholder={
                   pendingInput?.type === 'selection'
