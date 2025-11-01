@@ -522,8 +522,7 @@ const modelCommand: Command = {
           }
 
           // Get current session's provider
-          const currentSessionId = context?.getCurrentSessionId();
-          const currentSession = currentSessionId ? context?.getSession(currentSessionId) : null;
+          const currentSession = context?.getCurrentSession();
           const currentProviderId = currentSession?.provider || aiConfig.defaultProvider;
 
           if (!currentProviderId) {
@@ -572,8 +571,7 @@ const modelCommand: Command = {
         }
 
         // Get current session's provider
-        const currentSessionId = context.getCurrentSessionId();
-        const currentSession = currentSessionId ? context.getSession(currentSessionId) : null;
+        const currentSession = context.getCurrentSession();
         const currentProviderId = currentSession?.provider || aiConfig.defaultProvider;
 
         if (!currentProviderId) {
