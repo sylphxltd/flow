@@ -218,15 +218,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Get file auto-completion suggestions when @ is typed
   const getFilteredFiles = () => {
-    // Check if input contains @ for file completion
-    const atIndex = input.lastIndexOf('@');
+    // Find @ symbol before cursor position
+    const textBeforeCursor = input.slice(0, cursor);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+
     if (atIndex === -1) return { files: [], query: '', hasAt: false, atIndex: -1 };
 
-    // Extract query after @
-    const query = input.slice(atIndex + 1);
+    // Extract query after @ up to cursor
+    const query = textBeforeCursor.slice(atIndex + 1);
 
-    // Don't show suggestions if there's a space after the query
-    // (user has moved to next part of message)
+    // Don't show suggestions if there's a space in the query
+    // (user has moved past this @ token)
     if (query.includes(' ')) return { files: [], query: '', hasAt: false, atIndex };
 
     // Filter files based on query
@@ -551,16 +553,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             setCursor(newCursorPos); // Position cursor right after the inserted file name + space
             setSelectedFileIndex(0);
           }
-          return;
-        }
-        // Allow typing to continue filtering files
-        if (char && !key.ctrl && !key.meta && !key.escape && !key.return && !key.tab) {
-          const inputState = input; // Current input state
-          const beforeCursor = inputState.slice(0, cursor);
-          const afterCursor = inputState.slice(cursor);
-          const newInputValue = beforeCursor + char + afterCursor;
-          setInput(newInputValue);
-          setCursor(cursor + char.length);
           return;
         }
       }
@@ -1339,7 +1331,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 }
                 showCursor
                 hint={hintText}
-                focus={!filteredFileInfo.hasAt && filteredCommands.length === 0 && !pendingCommand}
               />
 
               {/* File Autocomplete - Shows below input when typing @ */}
