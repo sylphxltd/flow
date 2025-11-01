@@ -964,6 +964,95 @@ const surveyCommand: Command = {
 };
 
 /**
+ * Context command - Display context window usage
+ */
+const contextCommand: Command = {
+  id: 'context',
+  label: '/context',
+  description: 'Display context window usage and token breakdown',
+  execute: async (context) => {
+    const { countTokens, formatTokenCount } = await import('../../utils/token-counter.js');
+    const { SYSTEM_PROMPT } = await import('../../core/ai-sdk.js');
+    const { getAISDKTools } = await import('../../tools/index.js');
+
+    const currentSession = context.getCurrentSession();
+    if (!currentSession) {
+      return 'No active session. Start chatting first to see context usage.';
+    }
+
+    const modelName = currentSession.model;
+
+    // Get model context limit (default to 200k for Claude Sonnet 4.5)
+    // TODO: Get actual limit from model metadata
+    const contextLimit = 200000;
+
+    // Calculate token counts
+    context.addLog('[Context] Calculating token counts...');
+
+    // System prompt tokens
+    const systemPromptTokens = await countTokens(SYSTEM_PROMPT, modelName);
+
+    // System tools tokens (serialize tool definitions)
+    const tools = getAISDKTools();
+    const toolsJson = JSON.stringify(tools);
+    const toolsTokens = await countTokens(toolsJson, modelName);
+
+    // Messages tokens
+    let messagesTokens = 0;
+    for (const msg of currentSession.messages) {
+      const msgTokens = await countTokens(msg.content, modelName);
+      messagesTokens += msgTokens;
+    }
+
+    // Calculate totals and percentages
+    const usedTokens = systemPromptTokens + toolsTokens + messagesTokens;
+    const freeTokens = contextLimit - usedTokens;
+    const autocompactBuffer = Math.floor(contextLimit * 0.225); // 22.5%
+    const realFreeTokens = freeTokens - autocompactBuffer;
+
+    const usedPercent = ((usedTokens / contextLimit) * 100).toFixed(1);
+    const systemPromptPercent = ((systemPromptTokens / contextLimit) * 100).toFixed(1);
+    const toolsPercent = ((toolsTokens / contextLimit) * 100).toFixed(1);
+    const messagesPercent = ((messagesTokens / contextLimit) * 100).toFixed(1);
+    const freePercent = ((realFreeTokens / contextLimit) * 100).toFixed(1);
+    const bufferPercent = ((autocompactBuffer / contextLimit) * 100).toFixed(1);
+
+    // Create visual bar (10 blocks)
+    const createBar = (used: number, limit: number): string => {
+      const blocks = 10;
+      const usedBlocks = Math.floor((used / limit) * blocks);
+      const freeBlocks = blocks - usedBlocks;
+
+      const filled = '⛁'.repeat(usedBlocks);
+      const empty = '⛶'.repeat(freeBlocks);
+
+      return filled + empty;
+    };
+
+    const bar1 = createBar(usedTokens, contextLimit);
+    const bar2 = '⛶'.repeat(10); // For alignment
+    const bar3 = '⛝'.repeat(10); // Buffer section
+
+    // Format output
+    const output = `
+Context Usage
+${bar1}   ${modelName} · ${formatTokenCount(usedTokens)}/${formatTokenCount(contextLimit)} tokens (${usedPercent}%)
+${bar2}
+${bar2}   ⛁ System prompt: ${formatTokenCount(systemPromptTokens)} tokens (${systemPromptPercent}%)
+${bar2}   ⛁ System tools: ${formatTokenCount(toolsTokens)} tokens (${toolsPercent}%)
+${bar2}   ⛁ Messages: ${formatTokenCount(messagesTokens)} tokens (${messagesPercent}%)
+${bar2}   ⛶ Free space: ${formatTokenCount(realFreeTokens)} (${freePercent}%)
+${bar3}   ⛝ Autocompact buffer: ${formatTokenCount(autocompactBuffer)} tokens (${bufferPercent}%)
+
+System Tools
+${Object.keys(tools).map(name => `└ ${name}`).join('\n')}
+`.trim();
+
+    return output;
+  },
+};
+
+/**
  * All registered commands
  */
 export const commands: Command[] = [
@@ -973,6 +1062,7 @@ export const commands: Command[] = [
   clearCommand,
   helpCommand,
   surveyCommand,
+  contextCommand,
 ];
 
 /**
