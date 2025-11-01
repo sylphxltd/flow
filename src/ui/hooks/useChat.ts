@@ -13,6 +13,7 @@ export function useChat() {
   const sessions = useAppStore((state) => state.sessions);
   const addMessage = useAppStore((state) => state.addMessage);
   const setError = useAppStore((state) => state.setError);
+  const addDebugLog = useAppStore((state) => state.addDebugLog);
 
   const currentSession = sessions.find((s) => s.id === currentSessionId);
 
@@ -72,15 +73,15 @@ export function useChat() {
         })),
       })) {
         chunkCount++;
-        console.log(`[useChat] Chunk #${chunkCount} type:`, chunk.type);
+        addDebugLog(`[useChat] Chunk #${chunkCount} type: ${chunk.type}`);
 
         if (chunk.type === 'text-delta') {
-          console.log('[useChat] text-delta chunk:', chunk.textDelta.substring(0, 50));
+          addDebugLog(`[useChat] text-delta chunk: ${chunk.textDelta.substring(0, 50)}`);
           fullResponse += chunk.textDelta;
           currentTextContent += chunk.textDelta;
           onChunk(chunk.textDelta);
         } else if (chunk.type === 'reasoning-delta') {
-          console.log('[useChat] reasoning-delta chunk:', chunk.textDelta.substring(0, 50));
+          addDebugLog(`[useChat] reasoning-delta chunk: ${chunk.textDelta.substring(0, 50)}`);
           fullResponse += chunk.textDelta;
           currentTextContent += chunk.textDelta;
           onChunk(chunk.textDelta);
