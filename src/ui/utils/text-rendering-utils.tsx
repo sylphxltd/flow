@@ -17,7 +17,12 @@ export function renderTextWithTags(
   showCursor: boolean,
   validTags?: Set<string>
 ): React.ReactNode {
+  // Handle empty text
   if (text.length === 0) {
+    // If cursor should be shown at position 0 (empty line with cursor)
+    if (cursorPos === 0 && showCursor) {
+      return <Text inverse> </Text>;
+    }
     return <Text> </Text>;
   }
 
@@ -101,29 +106,39 @@ export function renderTextWithTags(
     lastIndex = matchEnd;
   }
 
-  // Add remaining text
-  if (lastIndex < text.length) {
-    const remainingText = text.slice(lastIndex);
-
-    if (!cursorRendered && cursorPos !== undefined && cursorPos >= lastIndex && cursorPos <= text.length) {
+  // Add remaining text and handle cursor at/after last index
+  if (lastIndex <= text.length) {
+    if (!cursorRendered && cursorPos !== undefined && cursorPos >= lastIndex) {
+      // Cursor is in remaining text or at end
+      const remainingText = text.slice(lastIndex);
       const leftPart = remainingText.slice(0, cursorPos - lastIndex);
       const rightPart = remainingText.slice(cursorPos - lastIndex);
-      parts.push(
-        <Text key={`after-${partIndex}`}>
-          {leftPart}
-          {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
-          {rightPart.slice(1)}
-        </Text>
-      );
+
+      if (leftPart.length > 0 || rightPart.length > 0) {
+        parts.push(
+          <Text key={`after-${partIndex}`}>
+            {leftPart}
+            {showCursor && <Text inverse>{rightPart.length > 0 ? rightPart[0] : ' '}</Text>}
+            {rightPart.slice(1)}
+          </Text>
+        );
+      } else {
+        // Cursor at end with no remaining text
+        if (showCursor) {
+          parts.push(<Text key="cursor-end" inverse> </Text>);
+        }
+      }
       cursorRendered = true;
-    } else {
+    } else if (lastIndex < text.length) {
+      // No cursor in remaining text
+      const remainingText = text.slice(lastIndex);
       parts.push(<Text key={`after-${partIndex}`}>{remainingText}</Text>);
     }
   }
 
-  // If cursor is at the end and hasn't been rendered
-  if (!cursorRendered && showCursor) {
-    parts.push(<Text key="cursor-end" inverse> </Text>);
+  // Final fallback: cursor not rendered yet
+  if (!cursorRendered && showCursor && cursorPos !== undefined) {
+    parts.push(<Text key="cursor-fallback" inverse> </Text>);
   }
 
   return <>{parts}</>;

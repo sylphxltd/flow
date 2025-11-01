@@ -16,16 +16,20 @@ export function getCursorLinePosition(text: string, cursor: number): LinePositio
   let charCount = 0;
 
   for (let i = 0; i < lines.length; i++) {
-    if (charCount + lines[i].length >= cursor) {
+    const lineLength = lines[i].length;
+
+    // Cursor is within this line (including at line end before \n)
+    if (cursor <= charCount + lineLength) {
       return {
         line: i,
         column: cursor - charCount,
       };
     }
-    charCount += lines[i].length + 1; // +1 for \n
+
+    charCount += lineLength + 1; // +1 for \n
   }
 
-  // Cursor at end
+  // Cursor at end (should not reach here normally)
   return {
     line: lines.length - 1,
     column: lines[lines.length - 1]?.length || 0,
