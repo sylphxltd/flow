@@ -24,9 +24,11 @@ export type UserInputRequest = {
 /**
  * Global user input request handler
  * This will be set by the Chat component to handle user input requests
- * Returns: string for single question, Record<questionId, answer> for multiple questions
+ * Returns: string for single question, Record<questionId, answer | answer[]> for multiple questions
+ *   - Single-select: answer is string
+ *   - Multi-select: answer is string[]
  */
-let userInputHandler: ((request: UserInputRequest) => Promise<string | Record<string, string>>) | null = null;
+let userInputHandler: ((request: UserInputRequest) => Promise<string | Record<string, string | string[]>>) | null = null;
 
 /**
  * Ask call queue
@@ -35,6 +37,7 @@ interface AskCall {
   id: string;
   question: string;
   options: SelectOption[];
+  multiSelect?: boolean;
   resolve: (answer: string) => void;
 }
 
@@ -70,7 +73,7 @@ export function getQueueLength() {
  * Set the user input handler
  * Called by the Chat component to register the handler
  */
-export function setUserInputHandler(handler: (request: UserInputRequest) => Promise<string | Record<string, string>>) {
+export function setUserInputHandler(handler: (request: UserInputRequest) => Promise<string | Record<string, string | string[]>>) {
   userInputHandler = handler;
 }
 
@@ -111,11 +114,13 @@ async function processNextAsk() {
         id: ask.id,
         question: ask.question,
         options: ask.options,
+        multiSelect: ask.multiSelect,
       }],
     });
 
-    // Extract answer
-    const answer = typeof result === 'string' ? result : result[ask.id] || '';
+    // Extract answer (handle both string and string[] for multi-select)
+    const rawAnswer = typeof result === 'string' ? result : result[ask.id];
+    const answer = Array.isArray(rawAnswer) ? rawAnswer.join(', ') : (rawAnswer || '');
     console.error('[processAsk] Got answer:', answer);
 
     // Resolve this ask's promise
@@ -166,8 +171,9 @@ Note: For free-form text questions, just respond normally in your message and wa
       label: z.string().describe('Display text for this option (what user sees)'),
       value: z.string().optional().describe('Optional value to return (defaults to label if not provided)'),
     })).min(2).max(10).describe('List of options for the user to choose from (2-10 options)'),
+    multiSelect: z.boolean().optional().describe('Allow user to select multiple options (default: false). When true, user can select multiple options with Space and confirm with Enter. Returns array of selected values.'),
   }),
-  execute: async ({ question, options }) => {
+  execute: async ({ question, options, multiSelect }) => {
     if (!userInputHandler) {
       throw new Error('User input handler not available. This tool can only be used in interactive mode.');
     }
@@ -180,6 +186,7 @@ Note: For free-form text questions, just respond normally in your message and wa
         id: callId,
         question: question.substring(0, 50),
         optionsCount: options?.length || 0,
+        multiSelect: multiSelect || false,
         queueLength: askQueue.length,
         isProcessing: isProcessingAsk,
       });
@@ -189,6 +196,7 @@ Note: For free-form text questions, just respond normally in your message and wa
         id: callId,
         question,
         options,
+        multiSelect,
         resolve,
       });
 

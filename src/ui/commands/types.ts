@@ -31,6 +31,7 @@ export interface Question {
   id: string;
   question: string;
   options: SelectOption[];
+  multiSelect?: boolean; // If true, user can select multiple options (returns string[])
 }
 
 /**
@@ -61,9 +62,11 @@ export interface CommandContext {
   sendMessage: (content: string) => void;
 
   // Wait for user input (text or selection)
-  // Returns: string for text, Record<string, string> for selection (question id -> answer id)
+  // Returns: string for text, Record<string, string | string[]> for selection
+  //   - Single-select: question id -> answer id (string)
+  //   - Multi-select: question id -> answer ids (string[])
   // Note: selection with 1 question and 10 questions use the same interface
-  waitForInput: (options: WaitForInputOptions) => Promise<string | Record<string, string>>;
+  waitForInput: (options: WaitForInputOptions) => Promise<string | Record<string, string | string[]>>;
 
   // Get current AI config
   getConfig: () => AIConfig | null;

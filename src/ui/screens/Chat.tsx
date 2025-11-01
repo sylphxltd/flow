@@ -66,12 +66,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // For command interactive flow - when command calls waitForInput()
   const [pendingInput, setPendingInput] = useState<WaitForInputOptions | null>(null);
-  const inputResolver = useRef<((value: string | Record<string, string>) => void) | null>(null);
+  const inputResolver = useRef<((value: string | Record<string, string | string[]>) => void) | null>(null);
   const [selectionFilter, setSelectionFilter] = useState(''); // Filter text for selection mode
 
   // Multi-selection state
   const [multiSelectionPage, setMultiSelectionPage] = useState(0); // Current page index (0 = Q1, 1 = Q2, ..., n = Review)
-  const [multiSelectionAnswers, setMultiSelectionAnswers] = useState<Record<string, string>>({}); // question id -> answer id
+  const [multiSelectionAnswers, setMultiSelectionAnswers] = useState<Record<string, string | string[]>>({}); // question id -> answer id(s)
+  const [multiSelectChoices, setMultiSelectChoices] = useState<Set<string>>(new Set()); // Current question's selected choices (for multi-select mode)
 
   // Ask queue state
   const [askQueueLength, setAskQueueLength] = useState(0);
@@ -125,6 +126,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (options.type === 'selection') {
           setMultiSelectionPage(0);
           setMultiSelectionAnswers({});
+          setMultiSelectChoices(new Set());
           setSelectedCommandIndex(0);
         }
       });
@@ -409,12 +411,30 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               setMultiSelectionPage((prev) => (prev + 1) % totalQuestions);
               setSelectedCommandIndex(0);
               setSelectionFilter('');
+              // Restore choices for the new question if it's multi-select
+              const nextPage = (multiSelectionPage + 1) % totalQuestions;
+              const nextQuestion = questions[nextPage];
+              if (nextQuestion.multiSelect && multiSelectionAnswers[nextQuestion.id]) {
+                const savedAnswer = multiSelectionAnswers[nextQuestion.id];
+                setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
+              } else {
+                setMultiSelectChoices(new Set());
+              }
               return;
             }
             if (key.shift && key.tab) {
               setMultiSelectionPage((prev) => (prev - 1 + totalQuestions) % totalQuestions);
               setSelectedCommandIndex(0);
               setSelectionFilter('');
+              // Restore choices for the new question if it's multi-select
+              const prevPage = (multiSelectionPage - 1 + totalQuestions) % totalQuestions;
+              const prevQuestion = questions[prevPage];
+              if (prevQuestion.multiSelect && multiSelectionAnswers[prevQuestion.id]) {
+                const savedAnswer = multiSelectionAnswers[prevQuestion.id];
+                setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
+              } else {
+                setMultiSelectChoices(new Set());
+              }
               return;
             }
           }
@@ -431,6 +451,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               setPendingInput(null);
               setMultiSelectionPage(0);
               setMultiSelectionAnswers({});
+              setMultiSelectChoices(new Set());
               setSelectionFilter('');
             } else {
               addLog(`[selection] Cannot submit: not all questions answered`);
@@ -438,34 +459,61 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return;
           }
 
-          // Enter - select option
-          if (key.return) {
+          // Space - toggle multi-select choice (only for multi-select questions)
+          if (char === ' ' && currentQuestion.multiSelect) {
             const selectedOption = filteredOptions[selectedCommandIndex];
             if (selectedOption) {
               const selectedValue = selectedOption.value || selectedOption.label;
-              addLog(`[selection] Q${multiSelectionPage + 1}: ${selectedValue}`);
+              setMultiSelectChoices((prev) => {
+                const newChoices = new Set(prev);
+                if (newChoices.has(selectedValue)) {
+                  newChoices.delete(selectedValue);
+                  addLog(`[multi-select] Unchecked: ${selectedValue}`);
+                } else {
+                  newChoices.add(selectedValue);
+                  addLog(`[multi-select] Checked: ${selectedValue}`);
+                }
+                return newChoices;
+              });
+            }
+            return;
+          }
 
-              // Add user's answer to chat history immediately (like shell)
+          // Enter - select option / confirm multi-select
+          if (key.return) {
+            // Multi-select mode: confirm current choices
+            if (currentQuestion.multiSelect) {
+              if (multiSelectChoices.size === 0) {
+                addLog(`[multi-select] No choices selected, skipping`);
+                return;
+              }
+
+              const choicesArray = Array.from(multiSelectChoices);
+              addLog(`[multi-select] Q${multiSelectionPage + 1}: ${choicesArray.join(', ')}`);
+
+              // Add user's answer to chat history
               if (!commandSessionRef.current) {
                 commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
               }
-              addMessage(commandSessionRef.current, 'user', selectedOption.label);
+              addMessage(commandSessionRef.current, 'user', choicesArray.join(', '));
 
               if (isSingleQuestion) {
                 // Single question: submit immediately
-                inputResolver.current({ [currentQuestion.id]: selectedValue });
+                inputResolver.current({ [currentQuestion.id]: choicesArray });
                 inputResolver.current = null;
                 setPendingInput(null);
                 setMultiSelectionPage(0);
                 setMultiSelectionAnswers({});
+                setMultiSelectChoices(new Set());
                 setSelectionFilter('');
               } else {
                 // Multi-question: save answer
                 const newAnswers = {
                   ...multiSelectionAnswers,
-                  [currentQuestion.id]: selectedValue,
+                  [currentQuestion.id]: choicesArray,
                 };
                 setMultiSelectionAnswers(newAnswers);
+                setMultiSelectChoices(new Set()); // Clear choices for next question
 
                 // Check if all questions are answered
                 const allAnswered = questions.every((q) => newAnswers[q.id]);
@@ -492,6 +540,61 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   setSelectionFilter('');
                 }
               }
+            } else {
+              // Single-select mode: select one option
+              const selectedOption = filteredOptions[selectedCommandIndex];
+              if (selectedOption) {
+                const selectedValue = selectedOption.value || selectedOption.label;
+                addLog(`[selection] Q${multiSelectionPage + 1}: ${selectedValue}`);
+
+                // Add user's answer to chat history immediately (like shell)
+                if (!commandSessionRef.current) {
+                  commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+                }
+                addMessage(commandSessionRef.current, 'user', selectedOption.label);
+
+                if (isSingleQuestion) {
+                  // Single question: submit immediately
+                  inputResolver.current({ [currentQuestion.id]: selectedValue });
+                  inputResolver.current = null;
+                  setPendingInput(null);
+                  setMultiSelectionPage(0);
+                  setMultiSelectionAnswers({});
+                  setSelectionFilter('');
+                } else {
+                  // Multi-question: save answer
+                  const newAnswers = {
+                    ...multiSelectionAnswers,
+                    [currentQuestion.id]: selectedValue,
+                  };
+                  setMultiSelectionAnswers(newAnswers);
+
+                  // Check if all questions are answered
+                  const allAnswered = questions.every((q) => newAnswers[q.id]);
+
+                  if (allAnswered) {
+                    // All answered: auto-submit
+                    addLog(`[selection] All answered, auto-submitting: ${JSON.stringify(newAnswers)}`);
+
+                    inputResolver.current(newAnswers);
+                    inputResolver.current = null;
+                    setPendingInput(null);
+                    setMultiSelectionPage(0);
+                    setMultiSelectionAnswers({});
+                    setSelectionFilter('');
+                  } else {
+                    // Move to next unanswered question
+                    const nextUnanswered = questions.findIndex(
+                      (q, idx) => idx > multiSelectionPage && !newAnswers[q.id]
+                    );
+                    if (nextUnanswered !== -1) {
+                      setMultiSelectionPage(nextUnanswered);
+                    }
+                    setSelectedCommandIndex(0);
+                    setSelectionFilter('');
+                  }
+                }
+              }
             }
             return;
           }
@@ -503,6 +606,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             setPendingInput(null);
             setMultiSelectionPage(0);
             setMultiSelectionAnswers({});
+            setMultiSelectChoices(new Set());
             setSelectionFilter('');
             return;
           }
@@ -1312,14 +1416,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                       )}
                                       {viewport.visibleItems.map((option, idx) => {
                                         const absoluteIdx = viewport.scrollOffset + idx;
+                                        const optionValue = option.value || option.label;
+                                        const isChecked = q.multiSelect && multiSelectChoices.has(optionValue);
+                                        const cursor = absoluteIdx === selectedCommandIndex ? '▶ ' : '  ';
+                                        const checkbox = q.multiSelect ? (isChecked ? '[✓] ' : '[ ] ') : '';
+
                                         return (
                                           <Box key={option.value || option.label} paddingY={0}>
                                             <Text
                                               color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
                                               bold={absoluteIdx === selectedCommandIndex}
                                             >
-                                              {absoluteIdx === selectedCommandIndex ? '▶ ' : '  '}
-                                              {option.label}
+                                              {cursor}{checkbox}{option.label}
                                             </Text>
                                           </Box>
                                         );
@@ -1339,7 +1447,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                 {answer ? (
                                   <>
                                     <Text color="#00FF88">✓ </Text>
-                                    <Text color="#00FF88">{answerOption?.label || answer}</Text>
+                                    <Text color="#00FF88">
+                                      {Array.isArray(answer)
+                                        ? answer.join(', ')
+                                        : (answerOption?.label || answer)}
+                                    </Text>
                                   </>
                                 ) : (
                                   <Text dimColor>(not answered yet)</Text>
@@ -1364,8 +1476,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           )}
                           <Text dimColor>↑↓: </Text>
                           <Text color="#00D9FF">Navigate</Text>
-                          <Text dimColor> · Enter: </Text>
-                          <Text color="#00FF88">Select</Text>
+                          {questions[multiSelectionPage]?.multiSelect ? (
+                            <>
+                              <Text dimColor> · Space: </Text>
+                              <Text color="#00FF88">Toggle</Text>
+                              <Text dimColor> · Enter: </Text>
+                              <Text color={multiSelectChoices.size > 0 ? '#00FF88' : 'gray'}>
+                                Confirm{multiSelectChoices.size === 0 && ' (select at least one)'}
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <Text dimColor> · Enter: </Text>
+                              <Text color="#00FF88">Select</Text>
+                            </>
+                          )}
                           {!isSingleQuestion && (
                             <>
                               <Text dimColor> · </Text>
