@@ -24,6 +24,7 @@ import { useFileAttachments } from '../hooks/useFileAttachments.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
+  | { type: 'reasoning'; content: string }
   | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown };
 
 interface ChatProps {
@@ -982,7 +983,32 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // NOTE: onUserInputRequest removed - handler is set globally in useEffect
         undefined, // onUserInputRequest
-        attachmentsForMessage.length > 0 ? attachmentsForMessage : undefined // attachments
+        attachmentsForMessage.length > 0 ? attachmentsForMessage : undefined, // attachments
+        // onReasoningStart - reasoning started
+        () => {
+          addLog('Reasoning start');
+          setStreamParts((prev) => [...prev, { type: 'reasoning', content: '' }]);
+        },
+        // onReasoningDelta - reasoning chunk
+        (chunk) => {
+          addLog(`Reasoning chunk: ${chunk.substring(0, 50)}`);
+          setStreamParts((prev) => {
+            const newParts = [...prev];
+            const lastPart = newParts[newParts.length - 1];
+
+            if (lastPart && lastPart.type === 'reasoning') {
+              newParts[newParts.length - 1] = {
+                type: 'reasoning',
+                content: lastPart.content + chunk
+              };
+            }
+            return newParts;
+          });
+        },
+        // onReasoningEnd - reasoning finished
+        () => {
+          addLog('Reasoning end');
+        }
       );
     } catch (error) {
       // Error is already handled in useChat hook and added as assistant message
