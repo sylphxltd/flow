@@ -14,6 +14,7 @@ import Spinner from '../components/Spinner.js';
 import { commands } from '../commands/registry.js';
 import type { CommandContext, WaitForInputOptions, Question } from '../commands/types.js';
 import { calculateScrollViewport } from '../utils/scroll-viewport.js';
+import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from '../../tools/interaction.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -44,6 +45,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Multi-selection state
   const [multiSelectionPage, setMultiSelectionPage] = useState(0); // Current page index (0 = Q1, 1 = Q2, ..., n = Review)
   const [multiSelectionAnswers, setMultiSelectionAnswers] = useState<Record<string, string>>({}); // question id -> answer id
+
+  // Ask queue state
+  const [askQueueLength, setAskQueueLength] = useState(0);
 
   const addLog = (message: string) => {
     addDebugLog(message);
@@ -511,6 +515,31 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     }
   }, [currentSessionId, aiConfig, createSession]);
 
+  // Register user input handler for ask tool
+  useEffect(() => {
+    setUserInputHandler((request) => {
+      return new Promise((resolve) => {
+        addDebugLog(`[ask tool] Waiting for user selection (${request.questions.length} question${request.questions.length > 1 ? 's' : ''})`);
+        inputResolver.current = resolve;
+        setPendingInput(request);
+
+        // Reset selection state
+        setMultiSelectionPage(0);
+        setMultiSelectionAnswers({});
+        setSelectionFilter('');
+      });
+    });
+
+    // Set queue update callback
+    setQueueUpdateCallback((count) => {
+      setAskQueueLength(count);
+    });
+
+    return () => {
+      clearUserInputHandler();
+    };
+  }, [addDebugLog]);
+
   // Reset selected command index when filtered commands change
   useEffect(() => {
     setSelectedCommandIndex(0);
@@ -693,30 +722,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         addLog('Streaming complete');
         setIsStreaming(false);
         setStreamParts([]); // Clear streaming parts - they're now in message history
-      },
-      // onUserInputRequest - AI asking for user input
-      async (request) => {
-        addLog(`AI asking: ${request.question}`);
-
-        // Convert UserInputRequest to WaitForInputOptions
-        const waitOptions: WaitForInputOptions = {
-          type: 'selection',
-          questions: [{
-            id: 'ai_question',
-            question: request.question,
-            options: request.options,
-          }],
-        };
-
-        return new Promise<string>((resolve) => {
-          inputResolver.current = (value: string | Record<string, string>) => {
-            const answer = typeof value === 'string' ? value : value['ai_question'] || '';
-            addLog(`User answered: ${answer}`);
-            resolve(answer);
-          };
-          setPendingInput(waitOptions);
-        });
       }
+      // NOTE: onUserInputRequest removed - handler is set globally in useEffect
     );
   };
 
@@ -869,6 +876,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                   return (
                     <>
+                      {/* Queue status */}
+                      {askQueueLength > 0 && (
+                        <Box marginBottom={1}>
+                          <Text color="#FFD700">[+{askQueueLength} pending]</Text>
+                        </Box>
+                      )}
+
                       {/* Progress header (only for multi-question) */}
                       {!isSingleQuestion && (
                         <Box marginBottom={1}>
@@ -911,6 +925,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                                 {/* Options */}
                                 {(() => {
+                                  // Safety check: ensure options exist
+                                  if (!q.options || !Array.isArray(q.options)) {
+                                    return (
+                                      <Box>
+                                        <Text color="red">⚠ Error: No options available for this question</Text>
+                                        <Text dimColor>Question data: {JSON.stringify(q)}</Text>
+                                      </Box>
+                                    );
+                                  }
+
                                   const filteredOptions = q.options.filter(
                                     (option) =>
                                       option.label.toLowerCase().includes(selectionFilter.toLowerCase()) ||

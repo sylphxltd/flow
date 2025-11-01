@@ -6,7 +6,11 @@
 import { useAppStore } from '../stores/app-store.js';
 import { getProvider } from '../../providers/index.js';
 import { createAIStream } from '../../core/ai-sdk.js';
-import { setUserInputHandler, clearUserInputHandler, type UserInputRequest } from '../../tools/interaction.js';
+import {
+  setUserInputHandler,
+  clearUserInputHandler,
+  type UserInputRequest
+} from '../../tools/interaction.js';
 
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);

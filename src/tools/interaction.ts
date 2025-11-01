@@ -5,6 +5,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import type { Question } from '../ui/commands/types.js';
 
 export interface SelectOption {
   label: string;
@@ -12,22 +13,64 @@ export interface SelectOption {
 }
 
 /**
+ * User input request - matches WaitForInputOptions from command system
+ * This allows the ask tool to use the same selection UI as commands
+ */
+export type UserInputRequest = {
+  type: 'selection';
+  questions: Question[];
+};
+
+/**
  * Global user input request handler
  * This will be set by the Chat component to handle user input requests
+ * Returns: string for single question, Record<questionId, answer> for multiple questions
  */
-let userInputHandler: ((request: UserInputRequest) => Promise<string>) | null = null;
+let userInputHandler: ((request: UserInputRequest) => Promise<string | Record<string, string>>) | null = null;
 
-export interface UserInputRequest {
-  type: 'selection';
+/**
+ * Ask call queue
+ */
+interface AskCall {
+  id: string;
   question: string;
   options: SelectOption[];
+  resolve: (answer: string) => void;
+}
+
+let askQueue: AskCall[] = [];
+let isProcessingAsk = false;
+let queueUpdateCallback: ((count: number) => void) | null = null;
+
+/**
+ * Notify queue update
+ */
+function notifyQueueUpdate() {
+  if (queueUpdateCallback) {
+    queueUpdateCallback(askQueue.length);
+  }
+}
+
+/**
+ * Set queue update callback
+ * Called by Chat component to receive queue length updates
+ */
+export function setQueueUpdateCallback(callback: (count: number) => void) {
+  queueUpdateCallback = callback;
+}
+
+/**
+ * Get current queue length
+ */
+export function getQueueLength() {
+  return askQueue.length;
 }
 
 /**
  * Set the user input handler
  * Called by the Chat component to register the handler
  */
-export function setUserInputHandler(handler: (request: UserInputRequest) => Promise<string>) {
+export function setUserInputHandler(handler: (request: UserInputRequest) => Promise<string | Record<string, string>>) {
   userInputHandler = handler;
 }
 
@@ -36,6 +79,59 @@ export function setUserInputHandler(handler: (request: UserInputRequest) => Prom
  */
 export function clearUserInputHandler() {
   userInputHandler = null;
+  askQueue = [];
+  isProcessingAsk = false;
+  queueUpdateCallback = null;
+}
+
+/**
+ * Process next ask in queue
+ */
+async function processNextAsk() {
+  // If already processing or queue empty, do nothing
+  if (isProcessingAsk || askQueue.length === 0 || !userInputHandler) {
+    return;
+  }
+
+  isProcessingAsk = true;
+  const ask = askQueue.shift()!; // Take first from queue
+  notifyQueueUpdate(); // Notify queue changed
+
+  console.error('[processAsk] Processing:', {
+    id: ask.id,
+    question: ask.question.substring(0, 50),
+    queueRemaining: askQueue.length,
+  });
+
+  try {
+    // Show single question to user
+    const result = await userInputHandler({
+      type: 'selection',
+      questions: [{
+        id: ask.id,
+        question: ask.question,
+        options: ask.options,
+      }],
+    });
+
+    // Extract answer
+    const answer = typeof result === 'string' ? result : result[ask.id] || '';
+    console.error('[processAsk] Got answer:', answer);
+
+    // Resolve this ask's promise
+    ask.resolve(answer);
+  } catch (error) {
+    console.error('[processAsk] Error:', error);
+    ask.resolve(''); // Resolve with empty on error
+  } finally {
+    isProcessingAsk = false;
+
+    // Process next ask in queue if any
+    if (askQueue.length > 0) {
+      console.error('[processAsk] Processing next in queue...');
+      processNextAsk();
+    }
+  }
 }
 
 /**
@@ -44,22 +140,24 @@ export function clearUserInputHandler() {
 export const askUserSelectionTool = tool({
   description: `Ask the user a multiple choice question and wait for their selection.
 
-This tool can be called multiple times to ask multiple questions sequentially.
+You can call this tool multiple times in the same response to ask multiple questions at once - they will be presented together for better user experience.
 
 When to use:
 - You have specific options for the user to choose from
 - You need user to select between different approaches
 - You need to confirm which file/component/feature to work on
-- You want to gather multiple pieces of information step by step
+- You want to gather multiple pieces of information
 
 How to use:
-1. Call this tool with your question and options
+1. Call this tool (can call multiple times in same message)
 2. Wait for the user's answer (returned as a string)
-3. You can call this tool again to ask another question
-4. Continue your task with the gathered information
+3. Continue your task with the gathered information
 
-Example workflow:
-- Ask which file to modify → get answer → Ask which function → get answer → Proceed with changes
+Example - multiple questions in one response:
+- Call ask() for "which file?"
+- Call ask() for "which function?"
+- Call ask() for "which approach?"
+→ User sees all 3 questions together and answers them all at once
 
 Note: For free-form text questions, just respond normally in your message and wait for the user's next input. Only use this tool when you have specific options to present.`,
   inputSchema: z.object({
@@ -74,14 +172,37 @@ Note: For free-form text questions, just respond normally in your message and wa
       throw new Error('User input handler not available. This tool can only be used in interactive mode.');
     }
 
-    const answer = await userInputHandler({
-      type: 'selection',
-      question,
-      options,
-    });
+    // Create a promise that will be resolved when this ask is processed
+    return new Promise<string>((resolve) => {
+      const callId = `ask_${Date.now()}_${Math.random()}`;
 
-    // Return simple string answer - LLM can easily understand and use this
-    return answer;
+      console.error('[ask execute] Adding to queue:', {
+        id: callId,
+        question: question.substring(0, 50),
+        optionsCount: options?.length || 0,
+        queueLength: askQueue.length,
+        isProcessing: isProcessingAsk,
+      });
+
+      // Add to queue
+      askQueue.push({
+        id: callId,
+        question,
+        options,
+        resolve,
+      });
+
+      // Notify queue changed
+      notifyQueueUpdate();
+
+      // Start processing if not already processing
+      if (!isProcessingAsk) {
+        console.error('[ask execute] Starting queue processing...');
+        processNextAsk();
+      } else {
+        console.error('[ask execute] Already processing, will queue');
+      }
+    });
   },
 });
 
