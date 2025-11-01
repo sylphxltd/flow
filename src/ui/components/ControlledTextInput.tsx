@@ -135,7 +135,7 @@ export default function ControlledTextInput({
       if (input) {
         const next = value.slice(0, cursor) + input + value.slice(cursor);
         onChange(next);
-        safeSetCursor(cursor + input.length);
+        onCursorChange(cursor + input.length); // Don't use safeSetCursor - new value is longer
       }
     },
     { isActive: focus }
@@ -149,14 +149,16 @@ export default function ControlledTextInput({
     <Box>
       {value.length === 0 && placeholder ? (
         <>
-          {showCursor && <Text color="#00FF88">▊</Text>}
           <Text dimColor>{placeholder}</Text>
+          {showCursor && <Text inverse> </Text>}
         </>
       ) : (
         <>
           <Text>{left}</Text>
-          {showCursor && <Text color="#00FF88">▊</Text>}
-          <Text>{right}</Text>
+          {showCursor && (
+            <Text inverse>{right.length > 0 ? right[0] : ' '}</Text>
+          )}
+          <Text>{right.slice(1)}</Text>
         </>
       )}
     </Box>
