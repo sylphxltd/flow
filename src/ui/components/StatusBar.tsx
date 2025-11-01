@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import type { ProviderId } from '../../config/ai-config.js';
 import { getProvider } from '../../providers/index.js';
+import { getTokenizerInfo } from '../../utils/token-counter.js';
 
 interface StatusBarProps {
   provider: ProviderId;
@@ -18,6 +19,12 @@ interface StatusBarProps {
 export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: StatusBarProps) {
   const [contextLength, setContextLength] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tokenizerInfo, setTokenizerInfo] = useState<{
+    modelName: string;
+    tokenizerName: string;
+    loaded: boolean;
+    failed: boolean;
+  } | null>(null);
 
   useEffect(() => {
     async function loadModelDetails() {
@@ -26,6 +33,10 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
         const providerInstance = getProvider(provider);
         const details = await providerInstance.getModelDetails(model, apiKey);
         setContextLength(details?.contextLength || null);
+
+        // Get tokenizer info
+        const tokInfo = await getTokenizerInfo(model);
+        setTokenizerInfo(tokInfo);
       } catch (error) {
         console.error('Failed to load model details:', error);
       } finally {
@@ -52,24 +63,34 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
     : 0;
 
   return (
-    <Box>
-      <Text dimColor>
-        {provider} · {model}
-      </Text>
-      {!loading && contextLength && usedTokens > 0 && (
-        <>
-          <Text dimColor> │ </Text>
+    <Box flexGrow={1} justifyContent="space-between">
+      {/* Left side: Provider and Model */}
+      <Box>
+        <Text dimColor>
+          {provider} · {model}
+        </Text>
+      </Box>
+
+      {/* Right side: Tokenizer and Context */}
+      <Box>
+        {!loading && tokenizerInfo && (
+          <>
+            <Text dimColor>
+              {tokenizerInfo.tokenizerName}
+              {tokenizerInfo.failed && ' (fallback)'}
+            </Text>
+            {contextLength && <Text dimColor> │ </Text>}
+          </>
+        )}
+        {!loading && contextLength && usedTokens > 0 && (
           <Text dimColor>
             Context: {formatNumber(usedTokens)}/{formatNumber(contextLength)} ({usagePercent}%)
           </Text>
-        </>
-      )}
-      {!loading && contextLength && usedTokens === 0 && (
-        <>
-          <Text dimColor> │ </Text>
+        )}
+        {!loading && contextLength && usedTokens === 0 && (
           <Text dimColor>Context: {formatNumber(contextLength)}</Text>
-        </>
-      )}
+        )}
+      </Box>
     </Box>
   );
 }

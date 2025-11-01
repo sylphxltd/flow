@@ -1570,7 +1570,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         </Box>
 
         {/* Status Bar - Fixed at bottom */}
-        <Box flexShrink={0} paddingTop={1} flexDirection="row" justifyContent="flex-end">
+        <Box flexShrink={0} paddingTop={1} flexDirection="row">
           {currentSession && (
             <StatusBar
               provider={currentSession.provider}
