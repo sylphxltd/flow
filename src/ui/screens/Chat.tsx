@@ -1110,6 +1110,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                               {part.content}
                             </MarkdownText>
                           );
+                        } else if (part.type === 'reasoning') {
+                          return (
+                            <Box key={idx} flexDirection="column">
+                              <Box>
+                                <Text color="#00FF88">▏ </Text>
+                                <Text dimColor>💭 Reasoning{part.duration ? ` (${part.duration}ms)` : ''}</Text>
+                              </Box>
+                              <MarkdownText prefix="  " prefixColor="gray">
+                                <Text dimColor>{part.content}</Text>
+                              </MarkdownText>
+                            </Box>
+                          );
                         } else {
                           return (
                             <Box key={idx}>
@@ -1127,6 +1139,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       })
                     ) : (
                       <MarkdownText prefix="▏ " prefixColor="#00FF88">{msg.content}</MarkdownText>
+                    )}
+                    {/* Show usage if available */}
+                    {msg.usage && (
+                      <Box>
+                        <Text color="#00FF88">▏ </Text>
+                        <Text dimColor>
+                          📊 {msg.usage.promptTokens}+{msg.usage.completionTokens}={msg.usage.totalTokens} tokens
+                          {msg.finishReason && ` · ${msg.finishReason}`}
+                        </Text>
+                      </Box>
                     )}
                   </>
                 )}
@@ -1160,6 +1182,27 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           <Box>
                             <Text color="#00FF88">▏ </Text>
                             <Text color="#FFD700">▊</Text>
+                          </Box>
+                        )}
+                      </Box>
+                    );
+                  } else if (part.type === 'reasoning') {
+                    const isLastPart = idx === streamParts.length - 1;
+                    return (
+                      <Box key={idx} flexDirection="column">
+                        <Box>
+                          <Text color="#00FF88">▏ </Text>
+                          <Text dimColor>💭 Reasoning...</Text>
+                        </Box>
+                        {part.content && (
+                          <MarkdownText prefix="  " prefixColor="gray">
+                            <Text dimColor>{part.content}</Text>
+                          </MarkdownText>
+                        )}
+                        {isLastPart && (
+                          <Box>
+                            <Text color="gray">  </Text>
+                            <Text color="#FFD700" dimColor>▊</Text>
                           </Box>
                         )}
                       </Box>
