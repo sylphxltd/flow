@@ -1186,7 +1186,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 <Box flexDirection="column" marginTop={1}>
                   {(() => {
                     // Calculate visible window based on selection
-                    const maxVisible = 10;
+                    const maxVisible = 5;
                     const totalCommands = filteredCommands.length;
 
                     // Center the selection in the visible window
