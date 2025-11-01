@@ -38,11 +38,8 @@ export function useSessionPersistence() {
         const setState = useAppStore.setState;
         setState({ sessions: validSessions });
 
-        // Set current session to most recent if none set
-        const currentSessionId = useAppStore.getState().currentSessionId;
-        if (!currentSessionId && validSessions.length > 0) {
-          setState({ currentSessionId: validSessions[0].id });
-        }
+        // Don't auto-set current session - let user start fresh or choose from history
+        // Sessions are loaded and available but not automatically opened
       } catch (error) {
         // Directory might not exist yet, that's ok
         if ((error as any).code !== 'ENOENT') {

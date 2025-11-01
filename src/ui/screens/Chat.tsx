@@ -681,12 +681,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     { isActive: true }
   );
 
-  // Create session if none exists
+  // Create or restore session on mount
   useEffect(() => {
-    if (!currentSessionId && aiConfig?.defaultProvider && aiConfig?.defaultModel) {
-      createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
+    if (!currentSessionId) {
+      // Check if there are any loaded sessions from persistence
+      if (sessions.length > 0) {
+        // Use the most recent session (sessions are sorted by updated time)
+        setCurrentSession(sessions[0].id);
+      } else if (aiConfig?.defaultProvider && aiConfig?.defaultModel) {
+        // No sessions loaded, create a new one
+        createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
+      }
     }
-  }, [currentSessionId, aiConfig, createSession]);
+  }, [currentSessionId, sessions, aiConfig, createSession, setCurrentSession]);
 
   // Register user input handler for ask tool
   useEffect(() => {
