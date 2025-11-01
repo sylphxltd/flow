@@ -3,7 +3,7 @@
  * AI chat interface with session management
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import { useAppStore } from '../stores/app-store.js';
@@ -18,9 +18,9 @@ type StreamPart =
 
 interface CommandArg {
   name: string;
-  type: 'string' | 'model' | 'provider';
   description: string;
   required?: boolean;
+  loadOptions?: () => Promise<Array<{ id: string; name: string }>>; // Async loader - each command manages its own loading logic
 }
 
 interface Command {
@@ -62,6 +62,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   const { sendMessage, currentSession } = useChat();
 
+  // Options cache and loading states (keyed by command.id + arg.name)
+  const optionsCacheRef = useRef<Map<string, Array<{ id: string; name: string }>>>(new Map());
+  const [currentlyLoading, setCurrentlyLoading] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
+
   // Define available commands with args configuration
   const baseCommands: Command[] = [
     {
@@ -71,9 +77,49 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       args: [
         {
           name: 'model-name',
-          type: 'model',
           description: 'Model to switch to',
           required: true,
+          loadOptions: async () => {
+            // Each command manages its own loading logic
+            const cacheKey = 'model';
+
+            // Return cached if available
+            if (optionsCacheRef.current.has(cacheKey)) {
+              return optionsCacheRef.current.get(cacheKey)!;
+            }
+
+            if (!aiConfig?.providers) {
+              throw new Error('No providers configured');
+            }
+
+            const allModels: Array<{ id: string; name: string }> = [];
+            const errors: string[] = [];
+
+            // Fetch models from each provider sequentially
+            for (const [providerId, config] of Object.entries(aiConfig.providers)) {
+              if (config.apiKey) {
+                try {
+                  const { fetchModels } = await import('../utils/ai-model-fetcher.js');
+                  const models = await fetchModels(providerId as any, config.apiKey);
+                  allModels.push(...models.map(m => ({ id: m.id, name: m.name })));
+                  addLog(`Loaded ${models.length} models from ${providerId}`);
+                } catch (error) {
+                  const errorMsg = error instanceof Error ? error.message : String(error);
+                  errors.push(`${providerId}: ${errorMsg}`);
+                  addLog(`Failed to fetch models for ${providerId}: ${errorMsg}`);
+                }
+              }
+            }
+
+            if (allModels.length === 0) {
+              const errorMsg = errors.length > 0 ? errors.join('; ') : 'No models available';
+              throw new Error(errorMsg);
+            }
+
+            // Cache the result
+            optionsCacheRef.current.set(cacheKey, allModels);
+            return allModels;
+          },
         },
       ],
       execute: async (args) => {
@@ -147,58 +193,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     },
   ];
 
-  // Get all available models for autocomplete
-  const [availableModels, setAvailableModels] = useState<Array<{ id: string; name: string }>>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
-
-  useEffect(() => {
-    // Fetch models from all configured providers
-    const fetchAllModels = async () => {
-      if (!aiConfig?.providers) return;
-
-      setIsLoadingModels(true);
-      const allModels: Array<{ id: string; name: string }> = [];
-
-      // Fetch models from each provider sequentially to avoid race conditions
-      for (const [providerId, config] of Object.entries(aiConfig.providers)) {
-        if (config.apiKey) {
-          try {
-            const { fetchModels } = await import('../utils/ai-model-fetcher.js');
-            const models = await fetchModels(providerId as any, config.apiKey);
-            allModels.push(...models.map(m => ({ id: m.id, name: m.name })));
-            addLog(`Loaded ${models.length} models from ${providerId}`);
-          } catch (error) {
-            // Log full error details for debugging
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            const errorName = error?.constructor?.name || 'Error';
-            console.error(`Failed to fetch models for ${providerId}:`, error);
-            addLog(`Failed to fetch models for ${providerId}: [${errorName}] ${errorMsg}`);
-          }
-        }
-      }
-
-      setAvailableModels(allModels);
-      setIsLoadingModels(false);
-    };
-
-    fetchAllModels();
-  }, [aiConfig]);
-
-  // Get available options for a command arg type
-  const getArgOptions = (argType: string): Array<{ id: string; name: string }> => {
-    switch (argType) {
-      case 'model':
-        return availableModels;
-      case 'provider':
-        return Object.keys(aiConfig?.providers || {}).map((id) => ({
-          id,
-          name: id,
-        }));
-      default:
-        return [];
-    }
-  };
-
   // Generate hint text for current input
   const getHintText = (): string | undefined => {
     if (!input.startsWith('/')) return undefined;
@@ -219,6 +213,40 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     return undefined;
   };
 
+  // Trigger option loading when needed
+  useEffect(() => {
+    if (!input.startsWith('/')) return;
+
+    const parts = input.split(' ');
+    const commandName = parts[0];
+    const matchedCommand = baseCommands.find((cmd) => cmd.label === commandName);
+
+    // If command has args with loadOptions and user is typing args
+    if (matchedCommand && matchedCommand.args && parts.length > 1) {
+      const arg = matchedCommand.args[0];
+      if (arg.loadOptions) {
+        const cacheKey = `${matchedCommand.id}:${arg.name}`;
+
+        // Trigger load if not cached and not loading
+        if (!cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
+          setCurrentlyLoading(cacheKey);
+          setLoadError(null);
+
+          arg.loadOptions()
+            .then((options) => {
+              setCachedOptions(new Map(cachedOptions).set(cacheKey, options));
+              setCurrentlyLoading(null);
+            })
+            .catch((error) => {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              setLoadError(errorMsg);
+              setCurrentlyLoading(null);
+            });
+        }
+      }
+    }
+  }, [input, baseCommands, cachedOptions, currentlyLoading]);
+
   // Filter commands based on input
   const getFilteredCommands = () => {
     if (!input.startsWith('/')) return [];
@@ -231,11 +259,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     // Multi-level autocomplete: if command has args and user is typing args
     if (matchedCommand && matchedCommand.args && parts.length > 1) {
-      const currentArgIndex = 0;
-      const arg = matchedCommand.args[currentArgIndex];
-
-      // Get options for this arg type
-      const options = getArgOptions(arg.type);
+      const arg = matchedCommand.args[0];
+      const cacheKey = `${matchedCommand.id}:${arg.name}`;
+      const options = cachedOptions.get(cacheKey) || [];
 
       if (options.length > 0) {
         return options
@@ -244,7 +270,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             option.name.toLowerCase().includes(argInput.toLowerCase())
           )
           .map((option) => ({
-            id: `${arg.type}-${option.id}`,
+            id: `${cacheKey}-${option.id}`,
             label: `${commandName} ${option.id}`,
             description: option.name !== option.id ? option.name : '',
             args: matchedCommand.args,
@@ -274,7 +300,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       if (pendingCommand) {
         // Get options for the pending command's first arg
         const firstArg = pendingCommand.command.args?.[0];
-        const options = firstArg ? getArgOptions(firstArg.type) : [];
+        const cacheKey = firstArg ? `${pendingCommand.command.id}:${firstArg.name}` : '';
+        const options = cacheKey ? (cachedOptions.get(cacheKey) || []) : [];
         const maxIndex = options.length - 1;
 
         // Arrow down - next option
@@ -456,6 +483,26 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
       // Check if command needs args but none provided
       if (command.args && command.args.length > 0 && args.length === 0) {
+        const firstArg = command.args[0];
+        const cacheKey = `${command.id}:${firstArg.name}`;
+
+        // Trigger lazy load if arg has loadOptions
+        if (firstArg.loadOptions && !cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
+          setCurrentlyLoading(cacheKey);
+          setLoadError(null);
+
+          firstArg.loadOptions()
+            .then((options) => {
+              setCachedOptions(new Map(cachedOptions).set(cacheKey, options));
+              setCurrentlyLoading(null);
+            })
+            .catch((error) => {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              setLoadError(errorMsg);
+              setCurrentlyLoading(null);
+            });
+        }
+
         // Save pending command and show selection UI
         setPendingCommand({ command, currentInput: commandName });
         return;
@@ -670,38 +717,81 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   Select {pendingCommand.command.args?.[0]?.name || 'option'}:
                 </Text>
               </Box>
-              {(() => {
-                const firstArg = pendingCommand.command.args?.[0];
-                const options = firstArg ? getArgOptions(firstArg.type) : [];
-                return options.slice(0, 10).map((option, idx) => (
-                  <Box
-                    key={option.id}
-                    paddingY={0}
-                    onClick={async () => {
-                      const response = await pendingCommand.command.execute([option.id]);
-                      if (currentSessionId) {
-                        addMessage(currentSessionId, 'assistant', response);
-                      }
-                      setPendingCommand(null);
-                      setSelectedCommandIndex(0);
-                    }}
-                  >
-                    <Text
-                      color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                      bold={idx === selectedCommandIndex}
-                    >
-                      {idx === selectedCommandIndex ? '> ' : '  '}
-                      {option.id}
-                    </Text>
-                    {option.name !== option.id && (
-                      <Text dimColor> - {option.name}</Text>
-                    )}
+
+              {/* Loading state */}
+              {currentlyLoading ? (
+                <Box>
+                  <Spinner color="#FFD700" />
+                  <Text color="gray"> Loading options...</Text>
+                </Box>
+              ) : loadError ? (
+                /* Error state */
+                <Box flexDirection="column">
+                  <Box marginBottom={1}>
+                    <Text color="red">Failed to load options</Text>
                   </Box>
-                ));
+                  <Box marginBottom={1}>
+                    <Text dimColor>{loadError}</Text>
+                  </Box>
+                  <Box>
+                    <Text dimColor>Press Esc to cancel</Text>
+                  </Box>
+                </Box>
+              ) : (() => {
+                /* Options list */
+                const firstArg = pendingCommand.command.args?.[0];
+                const cacheKey = firstArg ? `${pendingCommand.command.id}:${firstArg.name}` : '';
+                const options = cacheKey ? (cachedOptions.get(cacheKey) || []) : [];
+
+                if (options.length === 0) {
+                  return (
+                    <Box flexDirection="column">
+                      <Box marginBottom={1}>
+                        <Text color="yellow">No options available</Text>
+                      </Box>
+                      <Box>
+                        <Text dimColor>Press Esc to cancel</Text>
+                      </Box>
+                    </Box>
+                  );
+                }
+
+                return (
+                  <>
+                    {options.slice(0, 10).map((option, idx) => (
+                      <Box
+                        key={option.id}
+                        paddingY={0}
+                        onClick={async () => {
+                          const response = await pendingCommand.command.execute([option.id]);
+                          if (currentSessionId) {
+                            addMessage(currentSessionId, 'assistant', response);
+                          }
+                          setPendingCommand(null);
+                          setSelectedCommandIndex(0);
+                        }}
+                      >
+                        <Text
+                          color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                          bold={idx === selectedCommandIndex}
+                        >
+                          {idx === selectedCommandIndex ? '> ' : '  '}
+                          {option.id}
+                        </Text>
+                        {option.name !== option.id && (
+                          <Text dimColor> - {option.name}</Text>
+                        )}
+                      </Box>
+                    ))}
+                    <Box marginTop={1}>
+                      <Text dimColor>
+                        {options.length > 10 ? `Showing 10 of ${options.length} · ` : ''}
+                        ↑↓ Navigate · Enter Select · Esc Cancel
+                      </Text>
+                    </Box>
+                  </>
+                );
               })()}
-              <Box marginTop={1}>
-                <Text dimColor>↑↓ Navigate · Enter Select · Esc Cancel</Text>
-              </Box>
             </Box>
           ) : isStreaming ? (
             <Box>
@@ -720,7 +810,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               />
 
               {/* Command Autocomplete - Shows below input when typing / */}
-              {filteredCommands.length > 0 && (
+              {input.startsWith('/') && input.includes(' ') && currentlyLoading ? (
+                <Box marginTop={1}>
+                  <Spinner color="#FFD700" />
+                  <Text color="gray"> Loading options...</Text>
+                </Box>
+              ) : filteredCommands.length > 0 ? (
                 <Box flexDirection="column" marginTop={1}>
                   {filteredCommands.slice(0, 5).map((cmd, idx) => (
                     <Box key={cmd.id}>
@@ -735,7 +830,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     </Box>
                   ))}
                 </Box>
-              )}
+              ) : null}
             </>
           )}
         </Box>

@@ -16,7 +16,7 @@ export class OpenRouterProvider implements AIProvider {
   async fetchModels(apiKey?: string): Promise<ModelInfo[]> {
     // Retry logic for transient network issues
     const maxRetries = 2;
-    let lastError: unknown;
+    let lastError: Error | unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -26,7 +26,7 @@ export class OpenRouterProvider implements AIProvider {
         });
 
         if (!response.ok) {
-          throw new Error(`OpenRouter API error: ${response.status}`);
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
 
         const data = (await response.json()) as {
@@ -54,8 +54,9 @@ export class OpenRouterProvider implements AIProvider {
       }
     }
 
-    // All retries failed - throw error
-    throw lastError;
+    // All retries failed - throw detailed error
+    const errorMsg = lastError instanceof Error ? lastError.message : String(lastError);
+    throw new Error(`Failed to fetch models after ${maxRetries + 1} attempts: ${errorMsg}`);
   }
 
   async getModelDetails(modelId: string, apiKey?: string): Promise<ProviderModelDetails | null> {
