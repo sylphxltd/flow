@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
+import MarkdownText from '../components/MarkdownText.js';
 import { useAppStore } from '../stores/app-store.js';
 import { useChat } from '../hooks/useChat.js';
 import { useAIConfig } from '../hooks/useAIConfig.js';
@@ -929,7 +930,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         if (part.type === 'text') {
                           return (
                             <Box key={idx}>
-                              <Text color="white">{part.content}</Text>
+                              <MarkdownText>{part.content}</MarkdownText>
                             </Box>
                           );
                         } else {
@@ -947,7 +948,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         }
                       })
                     ) : (
-                      <Text color="white">{msg.content}</Text>
+                      <MarkdownText>{msg.content}</MarkdownText>
                     )}
                   </>
                 )}
@@ -973,7 +974,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     const isLastPart = idx === streamParts.length - 1;
                     return (
                       <Box key={idx} flexDirection="column">
-                        <Text color="white">{part.content}</Text>
+                        <MarkdownText>{part.content}</MarkdownText>
                         {isLastPart && <Text color="#FFD700">▊</Text>}
                       </Box>
                     );
