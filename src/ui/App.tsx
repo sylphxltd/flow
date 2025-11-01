@@ -13,6 +13,7 @@ import Chat from './screens/Chat.js';
 import Logs from './screens/Logs.js';
 import { useAIConfig } from './hooks/useAIConfig.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
+import { useSessionPersistence } from './hooks/useSessionPersistence.js';
 
 export default function App() {
   const currentScreen = useAppStore((state) => state.currentScreen);
@@ -23,6 +24,9 @@ export default function App() {
 
   // Load AI config on mount
   const { loadConfig } = useAIConfig();
+
+  // Load sessions from disk on mount
+  useSessionPersistence();
 
   // Note: useKeyboard is disabled - shortcuts are handled in each screen to avoid conflicts with TextInput
   // useKeyboard();

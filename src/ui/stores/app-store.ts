@@ -5,8 +5,10 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { subscribeWithSelector } from 'zustand/middleware';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 import type { Session, MessagePart, FileAttachment, TokenUsage } from '../../types/session.types.js';
+import { saveSession as saveSessionToFile } from '../../utils/session-manager.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
 export type { Session, MessagePart } from '../../types/session.types.js';
@@ -52,7 +54,8 @@ export interface AppState {
 }
 
 export const useAppStore = create<AppState>()(
-  immer((set) => ({
+  subscribeWithSelector(
+    immer((set) => ({
     // Navigation
     currentScreen: 'chat',
     navigateTo: (screen) =>
@@ -193,5 +196,22 @@ export const useAppStore = create<AppState>()(
       set((state) => {
         state.debugLogs = [];
       }),
-  }))
+    }))
+  )
+);
+
+// Subscribe to sessions changes and persist to disk
+useAppStore.subscribe(
+  (state) => state.sessions,
+  (sessions) => {
+    // Save all sessions to disk whenever sessions array changes
+    sessions.forEach(async (session) => {
+      try {
+        await saveSessionToFile(session);
+      } catch (error) {
+        console.error(`Failed to persist session ${session.id}:`, error);
+      }
+    });
+  },
+  { fireImmediately: false } // Don't fire on initialization
 );
