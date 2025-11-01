@@ -1404,7 +1404,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     ? 'Type to filter options...'
                     : pendingInput?.type === 'text'
                     ? (pendingInput.placeholder || 'Type your response...')
-                    : 'Type your message or / for commands...'
+                    : 'Type your message, / for commands, @ for files...'
                 }
                 showCursor
                 hint={hintText}
