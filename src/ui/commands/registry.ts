@@ -240,42 +240,65 @@ const providerCommand: Command = {
           return 'Configuration cancelled.';
         }
 
-        // Ask for value
-        context.sendMessage(`Enter value for ${key}:`);
-        const valueAnswers = await context.waitForInput({
-          type: 'text',
-          prompt: `${key}:`,
-        });
+        // Ask for value - check if boolean type for selection
+        {
+          const field = schema.find(f => f.key === key);
+          let value: string;
 
-        const value = typeof valueAnswers === 'string' ? valueAnswers : '';
-        if (!value) {
-          return 'Value is required.';
-        }
+          if (field?.type === 'boolean') {
+            context.sendMessage(`Select value for ${key}:`);
+            const boolAnswers = await context.waitForInput({
+              type: 'selection',
+              questions: [
+                {
+                  id: 'value',
+                  question: `${field.label}:`,
+                  options: [
+                    { label: 'true', value: 'true' },
+                    { label: 'false', value: 'false' },
+                  ],
+                },
+              ],
+            });
+            value = typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
+          } else {
+            context.sendMessage(`Enter value for ${key}:`);
+            const valueAnswers = await context.waitForInput({
+              type: 'text',
+              prompt: `${key}:`,
+            });
+            value = typeof valueAnswers === 'string' ? valueAnswers : '';
+          }
 
-        // Update config
-        const newConfig = {
-          ...aiConfig!,
-          providers: {
-            ...aiConfig!.providers,
-            [providerId]: {
-              ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
-              [key]: value,
+          if (!value) {
+            return 'Value is required.';
+          }
+
+          // Update config
+          const newConfig = {
+            ...aiConfig!,
+            providers: {
+              ...aiConfig!.providers,
+              [providerId]: {
+                ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
+                [key]: value,
+              },
             },
-          },
-        };
+          };
 
-        if (!aiConfig?.defaultProvider) {
-          newConfig.defaultProvider = providerId;
+          if (!aiConfig?.defaultProvider) {
+            newConfig.defaultProvider = providerId;
+          }
+
+          context.setAIConfig(newConfig);
+          await context.saveConfig(newConfig);
+
+          // Mask secret values in response
+          const displayField = schema.find(f => f.key === key);
+          const displayValue = displayField?.secret ? '***' : value;
+
+          return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
         }
-
-        context.setAIConfig(newConfig);
-        await context.saveConfig(newConfig);
-
-        // Mask secret values in response
-        const field = schema.find(f => f.key === key);
-        const displayValue = field?.secret ? '***' : value;
-
-        return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
       }
     }
 
@@ -461,42 +484,65 @@ const providerCommand: Command = {
         return 'Configuration cancelled.';
       }
 
-      // Ask for value
-      context.sendMessage(`Enter value for ${key}:`);
-      const valueAnswers = await context.waitForInput({
-        type: 'text',
-        placeholder: `Enter ${key}...`,
-      });
+      // Ask for value - check if boolean type for selection
+      {
+        const field = schema.find(f => f.key === key);
+        let value: string;
 
-      const value = typeof valueAnswers === 'string' ? valueAnswers : '';
-      if (!value) {
-        return 'Value is required.';
-      }
+        if (field?.type === 'boolean') {
+          context.sendMessage(`Select value for ${key}:`);
+          const boolAnswers = await context.waitForInput({
+            type: 'selection',
+            questions: [
+              {
+                id: 'value',
+                question: `${field.label}:`,
+                options: [
+                  { label: 'true', value: 'true' },
+                  { label: 'false', value: 'false' },
+                ],
+              },
+            ],
+          });
+          value = typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
+        } else {
+          context.sendMessage(`Enter value for ${key}:`);
+          const valueAnswers = await context.waitForInput({
+            type: 'text',
+            placeholder: `Enter ${key}...`,
+          });
+          value = typeof valueAnswers === 'string' ? valueAnswers : '';
+        }
 
-      // Update config
-      const newConfig = {
-        ...aiConfig!,
-        providers: {
-          ...aiConfig!.providers,
-          [providerId]: {
-            ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
-            [key]: value,
+        if (!value) {
+          return 'Value is required.';
+        }
+
+        // Update config
+        const newConfig = {
+          ...aiConfig!,
+          providers: {
+            ...aiConfig!.providers,
+            [providerId]: {
+              ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
+              [key]: value,
+            },
           },
-        },
-      };
+        };
 
-      if (!aiConfig?.defaultProvider) {
-        newConfig.defaultProvider = providerId;
+        if (!aiConfig?.defaultProvider) {
+          newConfig.defaultProvider = providerId;
+        }
+
+        context.setAIConfig(newConfig);
+        await context.saveConfig(newConfig);
+
+        // Mask secret values in response
+        const displayField = schema.find(f => f.key === key);
+        const displayValue = displayField?.secret ? '***' : value;
+
+        return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
       }
-
-      context.setAIConfig(newConfig);
-      await context.saveConfig(newConfig);
-
-      // Mask secret values in response
-      const field = schema.find(f => f.key === key);
-      const displayValue = field?.secret ? '***' : value;
-
-      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
     }
 
     // Case 5: /provider set [name] - ask which key to set
@@ -535,42 +581,65 @@ const providerCommand: Command = {
         return 'Configuration cancelled.';
       }
 
-      // Ask for value
-      context.sendMessage(`Enter value for ${key}:`);
-      const valueAnswers = await context.waitForInput({
-        type: 'text',
-        placeholder: `Enter ${key}...`,
-      });
+      // Ask for value - check if boolean type for selection
+      {
+        const field = schema.find(f => f.key === key);
+        let value: string;
 
-      const value = typeof valueAnswers === 'string' ? valueAnswers : '';
-      if (!value) {
-        return 'Value is required.';
-      }
+        if (field?.type === 'boolean') {
+          context.sendMessage(`Select value for ${key}:`);
+          const boolAnswers = await context.waitForInput({
+            type: 'selection',
+            questions: [
+              {
+                id: 'value',
+                question: `${field.label}:`,
+                options: [
+                  { label: 'true', value: 'true' },
+                  { label: 'false', value: 'false' },
+                ],
+              },
+            ],
+          });
+          value = typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
+        } else {
+          context.sendMessage(`Enter value for ${key}:`);
+          const valueAnswers = await context.waitForInput({
+            type: 'text',
+            placeholder: `Enter ${key}...`,
+          });
+          value = typeof valueAnswers === 'string' ? valueAnswers : '';
+        }
 
-      // Update config
-      const newConfig = {
-        ...aiConfig!,
-        providers: {
-          ...aiConfig!.providers,
-          [providerId]: {
-            ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
-            [key]: value,
+        if (!value) {
+          return 'Value is required.';
+        }
+
+        // Update config
+        const newConfig = {
+          ...aiConfig!,
+          providers: {
+            ...aiConfig!.providers,
+            [providerId]: {
+              ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
+              [key]: value,
+            },
           },
-        },
-      };
+        };
 
-      if (!aiConfig?.defaultProvider) {
-        newConfig.defaultProvider = providerId;
+        if (!aiConfig?.defaultProvider) {
+          newConfig.defaultProvider = providerId;
+        }
+
+        context.setAIConfig(newConfig);
+        await context.saveConfig(newConfig);
+
+        // Mask secret values in response
+        const displayField = schema.find(f => f.key === key);
+        const displayValue = displayField?.secret ? '***' : value;
+
+        return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
       }
-
-      context.setAIConfig(newConfig);
-      await context.saveConfig(newConfig);
-
-      // Mask secret values in response
-      const field = schema.find(f => f.key === key);
-      const displayValue = field?.secret ? '***' : value;
-
-      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
     }
 
     // Case 6: /provider set [name] [key] [value] - direct configuration
