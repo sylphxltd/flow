@@ -494,12 +494,7 @@ const modelCommand: Command = {
     {
       name: 'model-name',
       description: 'Model to switch to',
-      required: true,
-      loadOptions: async (previousArgs) => {
-        // This will be replaced by Chat.tsx with actual implementation
-        // that has access to aiConfig
-        throw new Error('loadOptions not implemented');
-      },
+      required: false,
     },
   ],
   execute: async (context) => {
