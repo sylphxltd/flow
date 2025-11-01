@@ -992,10 +992,17 @@ const contextCommand: Command = {
     // System prompt tokens
     const systemPromptTokens = await countTokens(SYSTEM_PROMPT, modelName);
 
-    // System tools tokens (serialize tool definitions)
+    // System tools tokens (calculate individual tool tokens)
     const tools = getAISDKTools();
-    const toolsJson = JSON.stringify(tools);
-    const toolsTokens = await countTokens(toolsJson, modelName);
+    const toolTokens: Record<string, number> = {};
+    let toolsTokensTotal = 0;
+
+    for (const [toolName, toolDef] of Object.entries(tools)) {
+      const toolJson = JSON.stringify(toolDef);
+      const tokens = await countTokens(toolJson, modelName);
+      toolTokens[toolName] = tokens;
+      toolsTokensTotal += tokens;
+    }
 
     // Messages tokens
     let messagesTokens = 0;
@@ -1005,47 +1012,65 @@ const contextCommand: Command = {
     }
 
     // Calculate totals and percentages
-    const usedTokens = systemPromptTokens + toolsTokens + messagesTokens;
+    const usedTokens = systemPromptTokens + toolsTokensTotal + messagesTokens;
     const freeTokens = contextLimit - usedTokens;
     const autocompactBuffer = Math.floor(contextLimit * 0.225); // 22.5%
     const realFreeTokens = freeTokens - autocompactBuffer;
 
     const usedPercent = ((usedTokens / contextLimit) * 100).toFixed(1);
     const systemPromptPercent = ((systemPromptTokens / contextLimit) * 100).toFixed(1);
-    const toolsPercent = ((toolsTokens / contextLimit) * 100).toFixed(1);
+    const toolsPercent = ((toolsTokensTotal / contextLimit) * 100).toFixed(1);
     const messagesPercent = ((messagesTokens / contextLimit) * 100).toFixed(1);
     const freePercent = ((realFreeTokens / contextLimit) * 100).toFixed(1);
     const bufferPercent = ((autocompactBuffer / contextLimit) * 100).toFixed(1);
 
-    // Create visual bar (10 blocks)
+    // Create visual bar (10 blocks) - using simple ASCII characters
     const createBar = (used: number, limit: number): string => {
       const blocks = 10;
       const usedBlocks = Math.floor((used / limit) * blocks);
       const freeBlocks = blocks - usedBlocks;
 
-      const filled = '⛁'.repeat(usedBlocks);
-      const empty = '⛶'.repeat(freeBlocks);
+      const filled = '█'.repeat(usedBlocks);
+      const empty = '░'.repeat(freeBlocks);
 
       return filled + empty;
     };
 
-    const bar1 = createBar(usedTokens, contextLimit);
-    const bar2 = '⛶'.repeat(10); // For alignment
-    const bar3 = '⛝'.repeat(10); // Buffer section
+    const bar = createBar(usedTokens, contextLimit);
 
-    // Format output
+    // Format tool list with tokens
+    const toolList = Object.entries(toolTokens)
+      .map(([name, tokens]) => `  └ ${name}: ${formatTokenCount(tokens)} tokens`)
+      .join('\n');
+
+    // Format output with better structure
     const output = `
-Context Usage
-${bar1}   ${modelName} · ${formatTokenCount(usedTokens)}/${formatTokenCount(contextLimit)} tokens (${usedPercent}%)
-${bar2}
-${bar2}   ⛁ System prompt: ${formatTokenCount(systemPromptTokens)} tokens (${systemPromptPercent}%)
-${bar2}   ⛁ System tools: ${formatTokenCount(toolsTokens)} tokens (${toolsPercent}%)
-${bar2}   ⛁ Messages: ${formatTokenCount(messagesTokens)} tokens (${messagesPercent}%)
-${bar2}   ⛶ Free space: ${formatTokenCount(realFreeTokens)} (${freePercent}%)
-${bar3}   ⛝ Autocompact buffer: ${formatTokenCount(autocompactBuffer)} tokens (${bufferPercent}%)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Context Usage
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-System Tools
-${Object.keys(tools).map(name => `└ ${name}`).join('\n')}
+Model: ${modelName}
+Limit: ${formatTokenCount(contextLimit)} tokens
+
+Usage Bar: [${bar}] ${usedPercent}%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Token Breakdown
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• System prompt: ${formatTokenCount(systemPromptTokens)} tokens (${systemPromptPercent}%)
+• System tools:  ${formatTokenCount(toolsTokensTotal)} tokens (${toolsPercent}%)
+• Messages:      ${formatTokenCount(messagesTokens)} tokens (${messagesPercent}%)
+• Free space:    ${formatTokenCount(realFreeTokens)} tokens (${freePercent}%)
+• Buffer:        ${formatTokenCount(autocompactBuffer)} tokens (${bufferPercent}%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  System Tools (${Object.keys(tools).length} tools)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${toolList}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `.trim();
 
     return output;
