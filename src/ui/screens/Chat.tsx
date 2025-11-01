@@ -100,7 +100,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             for (const [providerId, config] of Object.entries(aiConfig.providers)) {
               if (config.apiKey) {
                 try {
-                  const { fetchModels } = await import('../utils/ai-model-fetcher.js');
+                  const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
                   const models = await fetchModels(providerId as any, config.apiKey);
                   allModels.push(...models.map(m => ({ id: m.id, name: m.name })));
                   addLog(`Loaded ${models.length} models from ${providerId}`);
