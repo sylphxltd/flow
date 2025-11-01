@@ -77,6 +77,17 @@ export const AI_PROVIDERS = {
     requiresKey: true,
     keyName: 'OPENROUTER_API_KEY',
   },
+  'claude-code': {
+    id: 'claude-code',
+    name: 'Claude Code',
+    models: [
+      'opus',
+      'sonnet',
+      'haiku',
+    ],
+    requiresKey: false,
+    keyName: 'CLAUDE_CODE_AUTH',
+  },
 } as const;
 
 export type ProviderId = keyof typeof AI_PROVIDERS;
@@ -85,7 +96,7 @@ export type ProviderId = keyof typeof AI_PROVIDERS;
  * AI configuration schema
  */
 const aiConfigSchema = z.object({
-  defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter']).optional(),
+  defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code']).optional(),
   defaultModel: z.string().optional(),
   providers: z.object({
     anthropic: z.object({
@@ -103,6 +114,11 @@ const aiConfigSchema = z.object({
     }).optional(),
     openrouter: z.object({
       apiKey: z.string().optional(),
+      defaultModel: z.string().optional(),
+    }).optional(),
+    'claude-code': z.object({
+      // Claude Code uses CLI authentication, no API key needed
+      authenticated: z.boolean().optional(),
       defaultModel: z.string().optional(),
     }).optional(),
   }).optional(),
@@ -176,6 +192,10 @@ const mergeConfigs = (a: AIConfig, b: AIConfig): AIConfig => {
       openrouter: {
         ...a.providers?.openrouter,
         ...b.providers?.openrouter,
+      },
+      'claude-code': {
+        ...a.providers?.['claude-code'],
+        ...b.providers?.['claude-code'],
       },
     },
   };

@@ -140,10 +140,59 @@ export default function ProviderManagement() {
     );
   }
 
-  // Add mode - enter API key
+  // Add mode - enter API key (or configure CLI auth for Claude Code)
   if (mode === 'add' && selectedProvider) {
     const provider = AI_PROVIDERS[selectedProvider];
     const existing = aiConfig?.providers?.[selectedProvider]?.apiKey;
+
+    // Claude Code uses CLI authentication
+    if (selectedProvider === 'claude-code') {
+      useKeyboard({
+        onEscape: () => {
+          setSelectedProvider(null);
+          setMode('menu');
+        },
+      });
+
+      return (
+        <Box flexDirection="column" flexGrow={1}>
+          <Box flexShrink={0} paddingBottom={1}>
+            <Text color="#00D9FF">▌ CONFIGURE {provider.name.toUpperCase()}</Text>
+          </Box>
+
+          <Box flexShrink={0} paddingBottom={2}>
+            <Text dimColor>Claude Code uses CLI authentication. To set up:</Text>
+          </Box>
+
+          <Box flexShrink={0} paddingLeft={2} flexDirection="column">
+            <Box paddingBottom={1}>
+              <Text color="#00FF88">1.</Text>
+              <Text dimColor> Install the Claude Code CLI globally:</Text>
+            </Box>
+            <Box paddingBottom={1} paddingLeft={3}>
+              <Text color="white">npm install -g @anthropic-ai/claude-code</Text>
+            </Box>
+
+            <Box paddingBottom={1}>
+              <Text color="#00FF88">2.</Text>
+              <Text dimColor> Login to Claude:</Text>
+            </Box>
+            <Box paddingBottom={1} paddingLeft={3}>
+              <Text color="white">claude login</Text>
+            </Box>
+
+            <Box paddingBottom={1}>
+              <Text color="#00FF88">3.</Text>
+              <Text dimColor> You can now use Claude Code models (opus, sonnet, haiku)</Text>
+            </Box>
+          </Box>
+
+          <Box flexShrink={0} paddingTop={1}>
+            <Text dimColor>Press Esc to go back</Text>
+          </Box>
+        </Box>
+      );
+    }
 
     const handleSubmit = async (value: string) => {
       if (!value.trim()) {

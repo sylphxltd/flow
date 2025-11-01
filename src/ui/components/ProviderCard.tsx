@@ -27,6 +27,7 @@ export default function ProviderCard({
     openai: '#00FF88',
     google: '#FF6B6B',
     openrouter: '#A855F7',
+    'claude-code': '#FF9500',
   };
 
   const color = colors[providerId];
@@ -46,7 +47,13 @@ export default function ProviderCard({
 
       {/* Details */}
       <Box paddingLeft={2}>
-        {apiKey ? (
+        {/* Claude Code doesn't need API key, it uses CLI auth */}
+        {providerId === 'claude-code' ? (
+          <>
+            <Text color="#00FF88">✓</Text>
+            <Text dimColor> CLI Auth</Text>
+          </>
+        ) : apiKey ? (
           <Text color="#00FF88">✓</Text>
         ) : (
           <Text color="#FF3366">✗</Text>

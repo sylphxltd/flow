@@ -9,6 +9,7 @@ import { AnthropicProvider } from './anthropic-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
 import { GoogleProvider } from './google-provider.js';
 import { OpenRouterProvider } from './openrouter-provider.js';
+import { ClaudeCodeProvider } from './claude-code-provider.js';
 
 /**
  * Registry of all available providers
@@ -18,6 +19,7 @@ export const PROVIDER_REGISTRY: Record<ProviderId, AIProvider> = {
   openai: new OpenAIProvider(),
   google: new GoogleProvider(),
   openrouter: new OpenRouterProvider(),
+  'claude-code': new ClaudeCodeProvider(),
 };
 
 /**
