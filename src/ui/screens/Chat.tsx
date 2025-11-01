@@ -126,7 +126,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (options.type === 'selection') {
           setMultiSelectionPage(0);
           setMultiSelectionAnswers({});
-          setMultiSelectChoices(new Set());
+          // Initialize pre-selected choices for first question if multi-select
+          const firstQuestion = options.questions[0];
+          if (firstQuestion?.multiSelect && firstQuestion.preSelected) {
+            setMultiSelectChoices(new Set(firstQuestion.preSelected));
+          } else {
+            setMultiSelectChoices(new Set());
+          }
           setSelectedCommandIndex(0);
         }
       });
@@ -414,9 +420,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               // Restore choices for the new question if it's multi-select
               const nextPage = (multiSelectionPage + 1) % totalQuestions;
               const nextQuestion = questions[nextPage];
-              if (nextQuestion.multiSelect && multiSelectionAnswers[nextQuestion.id]) {
-                const savedAnswer = multiSelectionAnswers[nextQuestion.id];
-                setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
+              if (nextQuestion.multiSelect) {
+                // If question was already answered, restore the answer
+                if (multiSelectionAnswers[nextQuestion.id]) {
+                  const savedAnswer = multiSelectionAnswers[nextQuestion.id];
+                  setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
+                }
+                // Otherwise, use preSelected if available
+                else if (nextQuestion.preSelected) {
+                  setMultiSelectChoices(new Set(nextQuestion.preSelected));
+                } else {
+                  setMultiSelectChoices(new Set());
+                }
               } else {
                 setMultiSelectChoices(new Set());
               }
@@ -429,9 +444,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               // Restore choices for the new question if it's multi-select
               const prevPage = (multiSelectionPage - 1 + totalQuestions) % totalQuestions;
               const prevQuestion = questions[prevPage];
-              if (prevQuestion.multiSelect && multiSelectionAnswers[prevQuestion.id]) {
-                const savedAnswer = multiSelectionAnswers[prevQuestion.id];
-                setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
+              if (prevQuestion.multiSelect) {
+                // If question was already answered, restore the answer
+                if (multiSelectionAnswers[prevQuestion.id]) {
+                  const savedAnswer = multiSelectionAnswers[prevQuestion.id];
+                  setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
+                }
+                // Otherwise, use preSelected if available
+                else if (prevQuestion.preSelected) {
+                  setMultiSelectChoices(new Set(prevQuestion.preSelected));
+                } else {
+                  setMultiSelectChoices(new Set());
+                }
               } else {
                 setMultiSelectChoices(new Set());
               }

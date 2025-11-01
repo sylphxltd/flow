@@ -32,6 +32,7 @@ export interface Question {
   question: string;
   options: SelectOption[];
   multiSelect?: boolean; // If true, user can select multiple options (returns string[])
+  preSelected?: string[]; // Pre-selected values for multi-select mode (option values)
 }
 
 /**

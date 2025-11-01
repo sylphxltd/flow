@@ -1493,14 +1493,14 @@ const agentCommand: Command = {
 };
 
 /**
- * Rules command - Toggle shared system prompt rules
+ * Rules command - Select enabled shared system prompt rules
  */
 const rulesCommand: Command = {
   id: 'rules',
   label: '/rules',
-  description: 'Toggle shared system prompt rules',
+  description: 'Select enabled shared system prompt rules',
   execute: async (context) => {
-    const { getAllRules, getEnabledRuleIds, toggleRule } = await import('../../core/rule-manager.js');
+    const { getAllRules, getEnabledRuleIds, setEnabledRules } = await import('../../core/rule-manager.js');
 
     const allRules = getAllRules();
     const enabledIds = getEnabledRuleIds();
@@ -1509,52 +1509,54 @@ const rulesCommand: Command = {
       return 'No rules available.';
     }
 
-    // Create options with enabled/disabled indicators
-    const ruleOptions = allRules.map((rule) => {
-      const isEnabled = enabledIds.includes(rule.id);
-      const status = isEnabled ? '✓' : '○';
-      const label = `${status} ${rule.metadata.name} - ${rule.metadata.description}`;
+    // Create options without status indicators (checkboxes will show selection)
+    const ruleOptions = allRules.map((rule) => ({
+      label: `${rule.metadata.name} - ${rule.metadata.description}`,
+      value: rule.id,
+    }));
 
-      return {
-        label,
-        value: rule.id,
-      };
-    });
-
-    context.sendMessage('Select rules to toggle (✓ = enabled, ○ = disabled):');
+    context.sendMessage(`Select rules to enable (currently ${enabledIds.length} enabled):`);
     const answers = await context.waitForInput({
       type: 'selection',
       questions: [
         {
-          id: 'rule',
-          question: 'Which rule do you want to toggle?',
+          id: 'rules',
+          question: 'Select all rules you want to enable:',
           options: ruleOptions,
+          multiSelect: true,
+          preSelected: enabledIds, // Pre-select currently enabled rules
         },
       ],
     });
 
-    const ruleId = typeof answers === 'object' && !Array.isArray(answers) ? answers['rule'] : '';
+    // Extract selected rule IDs
+    const selectedRuleIds = typeof answers === 'object' && !Array.isArray(answers)
+      ? (Array.isArray(answers['rules']) ? answers['rules'] : [])
+      : [];
 
-    if (!ruleId) {
+    if (!Array.isArray(selectedRuleIds)) {
       return 'Rule selection cancelled.';
     }
 
-    // Toggle the rule
-    const success = toggleRule(ruleId);
+    // Update enabled rules
+    const success = setEnabledRules(selectedRuleIds);
 
     if (!success) {
-      return `Failed to toggle rule: ${ruleId}`;
+      return 'Failed to update rules.';
     }
 
-    const rule = allRules.find((r) => r.id === ruleId);
-    if (!rule) {
-      return 'Rule not found.';
-    }
+    // Build summary message
+    const enabledCount = selectedRuleIds.length;
+    const disabledCount = allRules.length - enabledCount;
 
-    const newEnabledIds = getEnabledRuleIds();
-    const isNowEnabled = newEnabledIds.includes(ruleId);
+    const enabledRules = allRules.filter((r) => selectedRuleIds.includes(r.id));
+    const enabledNames = enabledRules.map((r) => `  • ${r.metadata.name}`).join('\n');
 
-    return `${isNowEnabled ? 'Enabled' : 'Disabled'} rule: ${rule.metadata.name}\n${rule.metadata.description}`;
+    return `Updated rules configuration:
+${enabledCount} enabled, ${disabledCount} disabled
+
+Enabled rules:
+${enabledNames || '  (none)'}`;
   },
 };
 

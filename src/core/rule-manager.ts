@@ -205,6 +205,28 @@ export async function reloadRules(): Promise<void> {
 }
 
 /**
+ * Set enabled rules (replaces current enabled rules)
+ */
+export function setEnabledRules(ruleIds: string[]): boolean {
+  if (!state) {
+    return false;
+  }
+
+  // Validate all rule IDs exist
+  const validRuleIds = ruleIds.filter((id) => state!.rules.has(id));
+
+  if (getAppStore) {
+    const store = getAppStore();
+    if (store.getState) {
+      store.getState().setEnabledRuleIds(validRuleIds);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Get combined content of all enabled rules
  */
 export function getEnabledRulesContent(): string {
