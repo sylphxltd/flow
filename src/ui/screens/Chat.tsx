@@ -8,6 +8,7 @@ import { Box, Text, useInput } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import { useAppStore } from '../stores/app-store.js';
 import { useChat } from '../hooks/useChat.js';
+import { useAIConfig } from '../hooks/useAIConfig.js';
 import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
 import LogPanel from '../components/LogPanel.js';
@@ -63,6 +64,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const addMessage = useAppStore((state) => state.addMessage);
 
   const { sendMessage, currentSession } = useChat();
+  const { saveConfig } = useAIConfig();
 
   // Options cache and loading states (keyed by command.id + arg.name)
   const optionsCacheRef = useRef<Map<string, Array<{ id: string; name: string }>>>(new Map());
@@ -150,6 +152,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           },
         };
         setAIConfig(newConfig);
+
+        // Save config to file
+        await saveConfig(newConfig);
+
+        // Create new session with the new model
+        createSession(provider, modelId);
 
         return `Switched to model: ${modelId}`;
       },
