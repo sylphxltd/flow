@@ -3,7 +3,7 @@
  * Supports explicit cursor positioning via props
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { clampCursor, moveCursorUp, moveCursorDown, getCursorLinePosition } from '../utils/cursor-utils.js';
 import { renderTextWithTags } from '../utils/text-rendering-utils.js';
@@ -35,8 +35,19 @@ export default function ControlledTextInput({
 }: ControlledTextInputProps) {
   const text = maskChar ? maskChar.repeat(value.length) : value;
 
+  // Use refs to track latest value and cursor for paste handling
+  // This prevents race conditions when multiple characters arrive quickly
+  const latestValueRef = useRef(value);
+  const latestCursorRef = useRef(cursor);
+
+  // Update refs when props change
+  useEffect(() => {
+    latestValueRef.current = value;
+    latestCursorRef.current = cursor;
+  }, [value, cursor]);
+
   // Safe cursor position setter (clamp to valid range)
-  const safeSetCursor = (n: number) => onCursorChange(clampCursor(n, value.length));
+  const safeSetCursor = (n: number) => onCursorChange(clampCursor(n, latestValueRef.current.length));
 
   // Auto-correct cursor if value changes and cursor is out of bounds
   useEffect(() => {
@@ -47,27 +58,31 @@ export default function ControlledTextInput({
 
   useInput(
     (input, key) => {
+      // Use latest values from refs to handle fast paste operations
+      const currentValue = latestValueRef.current;
+      const currentCursor = latestCursorRef.current;
+
       // Left arrow - move cursor left
       if (key.leftArrow) {
-        safeSetCursor(cursor - 1);
+        safeSetCursor(currentCursor - 1);
         return;
       }
 
       // Right arrow - move cursor right
       if (key.rightArrow) {
-        safeSetCursor(cursor + 1);
+        safeSetCursor(currentCursor + 1);
         return;
       }
 
       // Up arrow - move cursor to previous line
       if (key.upArrow) {
-        safeSetCursor(moveCursorUp(value, cursor));
+        safeSetCursor(moveCursorUp(currentValue, currentCursor));
         return;
       }
 
       // Down arrow - move cursor to next line
       if (key.downArrow) {
-        safeSetCursor(moveCursorDown(value, cursor));
+        safeSetCursor(moveCursorDown(currentValue, currentCursor));
         return;
       }
 
@@ -79,7 +94,7 @@ export default function ControlledTextInput({
 
       // End - move to end
       if (key.end || (key.ctrl && input?.toLowerCase() === 'e')) {
-        safeSetCursor(value.length);
+        safeSetCursor(currentValue.length);
         return;
       }
 
@@ -90,23 +105,23 @@ export default function ControlledTextInput({
       // - Also check \x7F and \b character codes for compatibility
       if (key.backspace || key.delete || input === '\x7F' || input === '\b') {
         // Backward delete (delete char before cursor)
-        if (cursor > 0) {
-          const next = value.slice(0, cursor - 1) + value.slice(cursor);
+        if (currentCursor > 0) {
+          const next = currentValue.slice(0, currentCursor - 1) + currentValue.slice(currentCursor);
           onChange(next);
-          safeSetCursor(cursor - 1);
+          safeSetCursor(currentCursor - 1);
         }
         return;
       }
 
       // Enter - submit
       if (key.return) {
-        onSubmit?.(value);
+        onSubmit?.(currentValue);
         return;
       }
 
       // Ctrl+U - delete from cursor to start (Unix convention)
       if (key.ctrl && input?.toLowerCase() === 'u') {
-        const next = value.slice(cursor);
+        const next = currentValue.slice(currentCursor);
         onChange(next);
         safeSetCursor(0);
         return;
@@ -114,7 +129,7 @@ export default function ControlledTextInput({
 
       // Ctrl+K - delete from cursor to end (Unix convention)
       if (key.ctrl && input?.toLowerCase() === 'k') {
-        const next = value.slice(0, cursor);
+        const next = currentValue.slice(0, currentCursor);
         onChange(next);
         // cursor stays at same position
         return;
@@ -122,15 +137,15 @@ export default function ControlledTextInput({
 
       // Ctrl+W - delete word before cursor (Unix convention)
       if (key.ctrl && input?.toLowerCase() === 'w') {
-        const before = value.slice(0, cursor);
-        const after = value.slice(cursor);
+        const before = currentValue.slice(0, currentCursor);
+        const after = currentValue.slice(currentCursor);
         // Find last word boundary
         const match = before.match(/\s*\S*$/);
         if (match) {
           const deleteCount = match[0].length;
           const next = before.slice(0, -deleteCount) + after;
           onChange(next);
-          safeSetCursor(cursor - deleteCount);
+          safeSetCursor(currentCursor - deleteCount);
         }
         return;
       }
@@ -139,10 +154,18 @@ export default function ControlledTextInput({
       if (key.ctrl || key.meta) return;
 
       // Insert regular character at cursor position
+      // Use refs to handle fast paste - each character uses latest value
       if (input) {
-        const next = value.slice(0, cursor) + input + value.slice(cursor);
+        const next = currentValue.slice(0, currentCursor) + input + currentValue.slice(currentCursor);
+        const newCursor = currentCursor + input.length;
+
+        // Update refs immediately for next character
+        latestValueRef.current = next;
+        latestCursorRef.current = newCursor;
+
+        // Then update parent state
         onChange(next);
-        onCursorChange(cursor + input.length); // Don't use safeSetCursor - new value is longer
+        onCursorChange(newCursor);
       }
     },
     { isActive: focus }
