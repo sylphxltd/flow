@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
-import type { Session, MessagePart, FileAttachment } from '../../types/session.types.js';
+import type { Session, MessagePart, FileAttachment, TokenUsage } from '../../types/session.types.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
 export type { Session, MessagePart } from '../../types/session.types.js';
@@ -35,7 +35,7 @@ export interface AppState {
   updateSessionModel: (sessionId: string, model: string) => void;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, parts?: MessagePart[], attachments?: FileAttachment[]) => void;
+  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, parts?: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
@@ -143,7 +143,7 @@ export const useAppStore = create<AppState>()(
           session.title = title;
         }
       }),
-    addMessage: (sessionId, role, content, parts, attachments) =>
+    addMessage: (sessionId, role, content, parts, attachments, usage, finishReason) =>
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -153,6 +153,8 @@ export const useAppStore = create<AppState>()(
             timestamp: Date.now(),
             ...(parts !== undefined && { parts }),
             ...(attachments !== undefined && attachments.length > 0 && { attachments }),
+            ...(usage !== undefined && { usage }),
+            ...(finishReason !== undefined && { finishReason }),
           });
         }
       }),

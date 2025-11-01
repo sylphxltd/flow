@@ -33,7 +33,10 @@ export function useChat() {
     onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void,
     onComplete?: () => void,
     onUserInputRequest?: (request: UserInputRequest) => Promise<string>,
-    attachments?: Array<{ path: string; relativePath: string; size?: number }>
+    attachments?: Array<{ path: string; relativePath: string; size?: number }>,
+    onReasoningStart?: () => void,
+    onReasoningDelta?: (text: string) => void,
+    onReasoningEnd?: () => void
   ) => {
     if (!currentSession || !currentSessionId) {
       // Don't use setError - this should never happen in normal flow
@@ -152,10 +155,22 @@ export function useChat() {
       });
 
       // Process stream with unified handler
-      const { fullResponse, messageParts } = await processStream(stream, {
+      const { fullResponse, messageParts, usage, finishReason } = await processStream(stream, {
         onTextDelta: (text) => {
           addDebugLog(`[useChat] text-delta: ${text.substring(0, 50)}`);
           onChunk(text);
+        },
+        onReasoningStart: () => {
+          addDebugLog(`[useChat] reasoning-start`);
+          onReasoningStart?.();
+        },
+        onReasoningDelta: (text) => {
+          addDebugLog(`[useChat] reasoning-delta: ${text.substring(0, 50)}`);
+          onReasoningDelta?.(text);
+        },
+        onReasoningEnd: () => {
+          addDebugLog(`[useChat] reasoning-end`);
+          onReasoningEnd?.();
         },
         onToolCall: (toolCallId, toolName, args) => {
           addDebugLog(`[useChat] tool-call: ${toolName} (${toolCallId})`);
@@ -169,8 +184,8 @@ export function useChat() {
 
       addDebugLog('[useChat] stream complete');
 
-      // Add assistant message to session with parts first
-      addMessage(currentSessionId, 'assistant', fullResponse, messageParts);
+      // Add assistant message to session with parts and usage
+      addMessage(currentSessionId, 'assistant', fullResponse, messageParts, undefined, usage, finishReason);
 
       // Then trigger UI update
       onComplete?.();
