@@ -33,6 +33,9 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
   const currentAgent = getAgentById(currentAgentId);
   const agentName = currentAgent?.metadata.name || '';
 
+  // Subscribe to enabled rules count
+  const enabledRulesCount = useAppStore((state) => state.enabledRuleIds.length);
+
   useEffect(() => {
     async function loadModelDetails() {
       setLoading(true);
@@ -71,10 +74,10 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
 
   return (
     <Box flexGrow={1} justifyContent="space-between">
-      {/* Left side: Agent, Provider and Model */}
+      {/* Left side: Agent, Rules, Provider and Model */}
       <Box>
         <Text dimColor>
-          {agentName && `${agentName} · `}{provider} · {model}
+          {agentName && `${agentName} · `}{enabledRulesCount} {enabledRulesCount === 1 ? 'rule' : 'rules'} · {provider} · {model}
         </Text>
       </Box>
 
