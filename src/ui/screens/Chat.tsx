@@ -853,10 +853,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
         {/* Input Area */}
         <Box flexDirection="column" flexShrink={0} paddingTop={1}>
-          <Box marginBottom={1}>
+          <Box marginBottom={1} flexDirection="row" justifyContent="space-between">
             <Text color="#00D9FF">▌ INPUT</Text>
             {!input.startsWith('/') && !isStreaming && !pendingCommand && (
-              <Text dimColor> (Type / for commands)</Text>
+              <Text dimColor>Type / for commands</Text>
             )}
           </Box>
 
