@@ -126,7 +126,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         }
       });
     },
-    getConfig: () => aiConfig,
+    getConfig: () => useAppStore.getState().aiConfig,
     saveConfig: (config) => saveConfig(config),
     getCurrentSession: () => currentSession,
     updateProvider: (provider, data) => updateProvider(provider, data),

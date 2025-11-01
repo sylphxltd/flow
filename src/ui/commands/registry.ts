@@ -294,9 +294,11 @@ const providerCommand: Command = {
           // Configure the provider
           const configResult = await configureProvider(context, providerId);
 
-          // After configuration, check if it's now configured
+          // After configuration, get fresh config from store
           const updatedConfig = context.getConfig();
           const updatedProviderConfig = updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
+
+          // Check if fully configured
           if (!updatedProviderConfig || !provider.isConfigured(updatedProviderConfig)) {
             return `${configResult}\n\nProvider still not fully configured. Please continue configuration with: /provider set ${providerId}`;
           }
