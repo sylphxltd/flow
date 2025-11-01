@@ -36,5 +36,5 @@ export function getToolCategories() {
  * Get all tool names
  */
 export function getAllToolNames(): string[] {
-  return Object.keys(ALL_TOOLS);
+  return Object.keys(getAISDKTools());
 }

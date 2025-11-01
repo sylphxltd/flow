@@ -6,25 +6,10 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
+import type { Session, MessagePart } from '../../types/session.types.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
-
-export type MessagePart =
-  | { type: 'text'; content: string }
-  | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown };
-
-export interface Session {
-  id: string;
-  provider: ProviderId;
-  model: string;
-  messages: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: number;
-    parts?: MessagePart[];
-  }>;
-  createdAt: number;
-}
+export type { Session, MessagePart } from '../../types/session.types.js';
 
 export interface AppState {
   // Navigation
@@ -121,13 +106,15 @@ export const useAppStore = create<AppState>()(
     currentSessionId: null,
     createSession: (provider, model) => {
       const sessionId = `session-${Date.now()}`;
+      const now = Date.now();
       set((state) => {
         state.sessions.push({
           id: sessionId,
           provider,
           model,
           messages: [],
-          createdAt: Date.now(),
+          created: now,
+          updated: now,
         });
         state.currentSessionId = sessionId;
       });
