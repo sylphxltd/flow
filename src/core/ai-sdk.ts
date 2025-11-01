@@ -8,7 +8,7 @@ import { streamText, stepCountIs } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import { getAISDKTools } from '../tools/index.js';
 
-const SYSTEM_PROMPT = `You are a helpful coding assistant with access to filesystem, shell, and interaction tools.
+const SYSTEM_PROMPT = `You are a helpful coding assistant.
 
 You help users with:
 - Programming tasks and code review
@@ -21,15 +21,7 @@ Guidelines:
 - Use tools proactively when needed to complete tasks
 - Explain complex concepts clearly
 - Follow language-specific best practices
-- Test and verify your work when possible
-
-Available Tools:
-- Filesystem tools: read/write files, list directories
-- Shell tools: execute commands
-- Search tools: find files and search content
-- Interaction tools: ask_user_text (ask questions), ask_user_selection (multiple choice)
-
-When you need clarification or additional information from the user, use the ask_user_text or ask_user_selection tools to ask questions directly. This helps you gather the information you need to complete tasks accurately.`;
+- Test and verify your work when possible`;
 
 /**
  * Our own Language Model interface
