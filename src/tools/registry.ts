@@ -6,6 +6,7 @@
 import { filesystemTools } from './filesystem.js';
 import { shellTools } from './shell.js';
 import { searchTools } from './search.js';
+import { interactionTools } from './interaction.js';
 
 /**
  * Get all tools in AI SDK Tool format
@@ -15,6 +16,7 @@ export function getAISDKTools() {
     ...filesystemTools,
     ...shellTools,
     ...searchTools,
+    ...interactionTools,
   };
 }
 
@@ -26,6 +28,7 @@ export function getToolCategories() {
     filesystem: Object.keys(filesystemTools),
     shell: Object.keys(shellTools),
     search: Object.keys(searchTools),
+    interaction: Object.keys(interactionTools),
   };
 }
 

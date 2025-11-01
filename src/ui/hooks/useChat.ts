@@ -6,6 +6,7 @@
 import { useAppStore } from '../stores/app-store.js';
 import { getProvider } from '../../providers/index.js';
 import { createAIStream } from '../../core/ai-sdk.js';
+import { setUserInputHandler, clearUserInputHandler, type UserInputRequest } from '../../tools/interaction.js';
 
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -25,7 +26,8 @@ export function useChat() {
     onChunk: (chunk: string) => void,
     onToolCall?: (toolName: string, args: unknown) => void,
     onToolResult?: (toolName: string, result: unknown, duration: number) => void,
-    onComplete?: () => void
+    onComplete?: () => void,
+    onUserInputRequest?: (request: UserInputRequest) => Promise<string>
   ) => {
     if (!currentSession || !currentSessionId) {
       setError('No active session');
@@ -42,6 +44,11 @@ export function useChat() {
     }
 
     try {
+      // Set up user input handler for AI tools
+      if (onUserInputRequest) {
+        setUserInputHandler(onUserInputRequest);
+      }
+
       // Add user message
       addMessage(currentSessionId, 'user', message);
 
@@ -123,6 +130,9 @@ export function useChat() {
       console.error('[Chat Error]:', error);
       setError(error instanceof Error ? error.message : 'Failed to send message');
       onComplete?.();
+    } finally {
+      // Clean up user input handler
+      clearUserInputHandler();
     }
   };
 

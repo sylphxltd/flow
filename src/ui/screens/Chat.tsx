@@ -672,6 +672,38 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         addLog('Streaming complete');
         setIsStreaming(false);
         setStreamParts([]); // Clear streaming parts - they're now in message history
+      },
+      // onUserInputRequest - AI asking for user input
+      async (request) => {
+        addLog(`AI requesting user input: ${request.type} - ${request.question}`);
+
+        // Convert UserInputRequest to WaitForInputOptions
+        const waitOptions: WaitForInputOptions = request.type === 'text'
+          ? {
+              type: 'text',
+              prompt: request.question,
+            }
+          : {
+              type: 'selection',
+              questions: [{
+                id: 'ai_question',
+                question: request.question,
+                options: request.options || [],
+              }],
+            };
+
+        return new Promise<string>((resolve) => {
+          inputResolver.current = (value: string | Record<string, string>) => {
+            // Extract answer based on type
+            const answer = typeof value === 'string'
+              ? value
+              : value['ai_question'] || '';
+
+            addLog(`User answered AI question: ${answer}`);
+            resolve(answer);
+          };
+          setPendingInput(waitOptions);
+        });
       }
     );
   };
