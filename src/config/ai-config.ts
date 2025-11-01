@@ -207,6 +207,7 @@ export const loadAIConfig = async (cwd: string = process.cwd()): Promise<Result<
 /**
  * Save AI configuration to global settings
  * By default, all configuration (including API keys) goes to ~/.sylphx-flow/settings.json
+ * Automatically sets default provider if not set
  */
 export const saveAIConfig = async (
   config: AIConfig,
@@ -220,8 +221,32 @@ export const saveAIConfig = async (
       // Ensure directory exists
       await fs.mkdir(path.dirname(configPath), { recursive: true });
 
+      // Auto-set default provider if not set
+      const configToSave = { ...config };
+      if (!configToSave.defaultProvider && configToSave.providers) {
+        // Get configured providers (those that pass isConfigured check)
+        const { getProvider } = await import('../providers/index.js');
+        const configuredProviders: ProviderId[] = [];
+
+        for (const [providerId, providerConfig] of Object.entries(configToSave.providers)) {
+          try {
+            const provider = getProvider(providerId as ProviderId);
+            if (provider.isConfigured(providerConfig)) {
+              configuredProviders.push(providerId as ProviderId);
+            }
+          } catch {
+            // Skip unknown providers
+          }
+        }
+
+        // Use last configured provider as default
+        if (configuredProviders.length > 0) {
+          configToSave.defaultProvider = configuredProviders[configuredProviders.length - 1];
+        }
+      }
+
       // Validate config
-      const validated = aiConfigSchema.parse(config);
+      const validated = aiConfigSchema.parse(configToSave);
 
       // Write config
       await fs.writeFile(configPath, JSON.stringify(validated, null, 2) + '\n', 'utf8');
@@ -258,6 +283,7 @@ export const saveAIConfigTo = async (
 
 /**
  * Update AI configuration (merge with existing)
+ * Default provider is auto-set by saveAIConfig to last configured provider
  */
 export const updateAIConfig = async (
   updates: Partial<AIConfig>,
@@ -278,6 +304,7 @@ export const updateAIConfig = async (
     },
   };
 
+  // saveAIConfig will auto-set default provider if not set
   return saveAIConfig(merged, cwd);
 };
 

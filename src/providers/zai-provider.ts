@@ -33,40 +33,33 @@ export class ZaiProvider implements AIProvider {
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
     const apiKey = config.apiKey as string | undefined;
 
-    // Try fetching from Z.ai API
-    if (apiKey) {
-      try {
-        const response = await fetch('https://api.z.ai/api/paas/v4/models', {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          signal: AbortSignal.timeout(10000),
-        });
-
-        if (response.ok) {
-          const data = (await response.json()) as {
-            data?: Array<{ id: string; name?: string }>;
-          };
-
-          if (data.data) {
-            return data.data.map((model) => ({
-              id: model.id,
-              name: model.name || model.id,
-            }));
-          }
-        }
-      } catch {
-        // Fall through to default models
-      }
+    if (!apiKey) {
+      throw new Error('API key is required to fetch Z.ai models');
     }
 
-    // Return known Z.ai models as fallback
-    return [
-      { id: 'glm-4.6', name: 'GLM-4.6' },
-      { id: 'glm-4-flash', name: 'GLM-4 Flash' },
-      { id: 'glm-4-plus', name: 'GLM-4 Plus' },
-      { id: 'glm-4-air', name: 'GLM-4 Air' },
-    ];
+    const response = await fetch('https://api.z.ai/api/paas/v4/models', {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Z.ai API returned ${response.status}: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as {
+      data?: Array<{ id: string; name?: string }>;
+    };
+
+    if (!data.data || data.data.length === 0) {
+      throw new Error('No models returned from Z.ai API');
+    }
+
+    return data.data.map((model) => ({
+      id: model.id,
+      name: model.name || model.id,
+    }));
   }
 
   async getModelDetails(modelId: string, _config?: ProviderConfig): Promise<ProviderModelDetails | null> {

@@ -72,29 +72,33 @@ export class OpenAIProvider implements AIProvider {
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
     const apiKey = config.apiKey as string | undefined;
     if (!apiKey) {
+      // No API key - return known models (can't fetch from API without auth)
       return OPENAI_MODELS;
     }
 
-    try {
-      const baseUrl = (config.baseUrl as string) || 'https://api.openai.com/v1';
-      const response = await fetch(`${baseUrl}/models`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-      });
+    const baseUrl = (config.baseUrl as string) || 'https://api.openai.com/v1';
+    const response = await fetch(`${baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
 
-      if (!response.ok) {
-        return OPENAI_MODELS;
-      }
-
-      const data = (await response.json()) as { data: Array<{ id: string }> };
-      return data.data
-        .filter((model) => model.id.startsWith('gpt-'))
-        .map((model) => ({
-          id: model.id,
-          name: model.id,
-        }));
-    } catch {
-      return OPENAI_MODELS;
+    if (!response.ok) {
+      throw new Error(`OpenAI API returned ${response.status}: ${response.statusText}`);
     }
+
+    const data = (await response.json()) as { data: Array<{ id: string }> };
+    const models = data.data
+      .filter((model) => model.id.startsWith('gpt-'))
+      .map((model) => ({
+        id: model.id,
+        name: model.id,
+      }));
+
+    if (models.length === 0) {
+      throw new Error('No GPT models found in OpenAI API response');
+    }
+
+    return models;
   }
 
   async getModelDetails(modelId: string, _config?: ProviderConfig): Promise<ProviderModelDetails | null> {
