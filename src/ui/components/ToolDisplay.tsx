@@ -290,7 +290,7 @@ const formatListBashResult: ResultFormatter = (result) => {
   if (typeof result === 'object' && result !== null && 'processes' in result) {
     const { processes, running, completed } = result as any;
     const lines = (processes as Array<any>).map((proc) => {
-      const status = proc.isRunning ? '🟢' : '🔴';
+      const status = proc.isRunning ? '[*]' : '[x]';
       const duration = Math.floor(proc.duration / 1000);
       return `${status} [${duration}s] ${proc.command}`;
     });

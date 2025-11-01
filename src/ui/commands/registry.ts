@@ -1305,7 +1305,7 @@ const bashesCommand: Command = {
 
     // Format process list
     const processOptions = processes.map((proc) => {
-      const status = proc.isRunning ? '🟢 Running' : '🔴 Completed';
+      const status = proc.isRunning ? '[*] Running' : '[x] Completed';
       const duration = Math.floor(proc.duration / 1000);
       const durationStr = duration > 60
         ? `${Math.floor(duration / 60)}m ${duration % 60}s`
