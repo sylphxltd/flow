@@ -546,6 +546,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             const atIndex = input.lastIndexOf('@');
             const newInput = input.slice(0, atIndex) + `@${selected.relativePath} `;
             setInput(newInput);
+            setInputKey((prev) => prev + 1); // Force remount to move cursor to end
             setSelectedFileIndex(0);
           }
           return;
