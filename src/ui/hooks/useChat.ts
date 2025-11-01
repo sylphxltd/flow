@@ -43,8 +43,15 @@ export function useChat() {
     const modelName = currentSession.model;
     const providerConfig = aiConfig?.providers?.[provider];
 
-    if (!providerConfig?.apiKey) {
-      setError('API key not configured');
+    if (!providerConfig) {
+      setError('Provider not configured');
+      return;
+    }
+
+    // Check if provider is properly configured using provider's own logic
+    const providerInstance = getProvider(provider);
+    if (!providerInstance.isConfigured(providerConfig)) {
+      setError(`${providerInstance.name} is not properly configured. Please check your settings with /provider command.`);
       return;
     }
 
@@ -63,9 +70,8 @@ export function useChat() {
         { role: 'user' as const, content: message, timestamp: Date.now() },
       ];
 
-      // Get model using provider registry
-      const providerInstance = getProvider(provider);
-      const model = providerInstance.createClient(providerConfig.apiKey, modelName);
+      // Get model using provider registry with full config
+      const model = providerInstance.createClient(providerConfig, modelName);
 
       // Create AI stream
       const stream = createAIStream({

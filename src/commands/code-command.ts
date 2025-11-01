@@ -46,13 +46,19 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
   }
 
   const config = configResult.value;
-  const apiKey = config.providers?.[session.provider]?.apiKey;
-  if (!apiKey) {
-    console.error(chalk.red('✗ No API key found'));
+  const providerConfig = config.providers?.[session.provider];
+  if (!providerConfig) {
+    console.error(chalk.red(`✗ Provider ${session.provider} not configured`));
     process.exit(1);
   }
 
-  const model = providerInstance.createClient(apiKey, session.model);
+  // Check if provider is properly configured
+  if (!providerInstance.isConfigured(providerConfig)) {
+    console.error(chalk.red(`✗ ${providerInstance.name} is not properly configured`));
+    process.exit(1);
+  }
+
+  const model = providerInstance.createClient(providerConfig, session.model);
 
   // Add user message to session
   const updatedSession = addMessage(session, 'user', prompt);

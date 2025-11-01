@@ -52,10 +52,19 @@ async function testChat() {
 
   const provider = config.defaultProvider;
   const modelName = config.defaultModel;
-  const apiKey = config.providers?.[provider]?.apiKey;
+  const providerConfig = config.providers?.[provider];
 
-  if (!apiKey) {
-    console.error(`❌ No API key configured for ${provider}`);
+  if (!providerConfig) {
+    console.error(`❌ Provider ${provider} not configured`);
+    console.error('\nRun: sylphx code init');
+    process.exit(1);
+  }
+
+  // Create model client
+  const providerInstance = getProvider(provider);
+
+  if (!providerInstance.isConfigured(providerConfig)) {
+    console.error(`❌ ${providerInstance.name} is not properly configured`);
     console.error('\nRun: sylphx code init');
     process.exit(1);
   }
@@ -64,9 +73,7 @@ async function testChat() {
   console.log(`Provider: ${provider}`);
   console.log(`Model: ${modelName}\n`);
 
-  // Create model client
-  const providerInstance = getProvider(provider);
-  const model = providerInstance.createClient(apiKey, modelName);
+  const model = providerInstance.createClient(providerConfig, modelName);
 
   // Get tools
   const tools = getAISDKTools();
