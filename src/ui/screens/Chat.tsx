@@ -41,7 +41,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const [showLogs, setShowLogs] = useState(false); // Hide logs by default
+  const [showLogs, setShowLogs] = useState(true); // Show logs for debugging
   const [ctrlPressed, setCtrlPressed] = useState(false);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -371,6 +371,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
             if (isMultiLevel && key.return) {
               // Multi-level autocomplete + Enter: execute directly
+              addLog(`[useInput] Executing autocomplete: ${selected.label}`);
               skipNextSubmit.current = true; // Prevent TextInput's onSubmit from also firing
               if (currentSessionId) {
                 addMessage(currentSessionId, 'user', selected.label);
@@ -463,10 +464,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     // Skip if we just handled this in autocomplete (prevent double execution)
     if (skipNextSubmit.current) {
+      addLog(`[handleSubmit] Skipping due to skipNextSubmit flag: ${value}`);
       skipNextSubmit.current = false;
       return;
     }
 
+    addLog(`[handleSubmit] Processing: ${value}`);
     const userMessage = value.trim();
     setInput('');
 
