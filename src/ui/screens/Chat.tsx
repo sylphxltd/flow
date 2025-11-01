@@ -21,6 +21,7 @@ import { scanProjectFiles, filterFiles } from '../../utils/file-scanner.js';
 import type { FileAttachment } from '../../types/session.types.js';
 import { formatTokenCount } from '../../utils/token-counter.js';
 import { useFileAttachments } from '../hooks/useFileAttachments.js';
+import { MessagePart } from '../components/MessagePart.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -1140,47 +1141,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     </Box>
                     {/* Render parts if available, otherwise fallback to content */}
                     {msg.parts && msg.parts.length > 0 ? (
-                      msg.parts.map((part, idx) => {
-                        if (part.type === 'text') {
-                          return (
-                            <MarkdownText key={idx} prefix="▏ " prefixColor="#00FF88">
-                              {part.content}
-                            </MarkdownText>
-                          );
-                        } else if (part.type === 'reasoning') {
-                          // Show completed reasoning with duration
-                          return (
-                            <Box key={idx} flexDirection="column">
-                              <Box />
-                              <Box>
-                                <Text color="#00FF88">▏ </Text>
-                                <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
-                              </Box>
-                            </Box>
-                          );
-                        } else if (part.type === 'error') {
-                          return (
-                            <Box key={idx}>
-                              <Text color="#00FF88">▏ </Text>
-                              <Text color="red">❌ Error: {part.error}</Text>
-                            </Box>
-                          );
-                        } else {
-                          return (
-                            <Box key={idx}>
-                              <Text color="#00FF88">▏ </Text>
-                              <ToolDisplay
-                                name={part.name}
-                                status={part.status}
-                                duration={part.duration}
-                                args={part.args}
-                                result={part.result}
-                                error={part.error}
-                              />
-                            </Box>
-                          );
-                        }
-                      })
+                      msg.parts.map((part, idx) => (
+                        <MessagePart key={idx} part={part} />
+                      ))
                     ) : (
                       <MarkdownText prefix="▏ " prefixColor="#00FF88">{msg.content}</MarkdownText>
                     )}
@@ -1215,70 +1178,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                 {/* Render parts in order */}
                 {streamParts.map((part, idx) => {
-                  if (part.type === 'text') {
-                    const isLastPart = idx === streamParts.length - 1;
-                    return (
-                      <Box key={idx} flexDirection="column">
-                        <MarkdownText prefix="▏ " prefixColor="#00FF88">
-                          {part.content}
-                        </MarkdownText>
-                        {isLastPart && (
-                          <Box>
-                            <Text color="#00FF88">▏ </Text>
-                            <Text color="#FFD700">▊</Text>
-                          </Box>
-                        )}
-                      </Box>
-                    );
-                  } else if (part.type === 'reasoning') {
-                    // Check if reasoning is completed
-                    if (part.completed) {
-                      // Show completed reasoning with duration
-                      return (
-                        <Box key={idx} flexDirection="column">
-                          <Box />
-                          <Box>
-                            <Text color="#00FF88">▏ </Text>
-                            <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
-                          </Box>
-                        </Box>
-                      );
-                    } else {
-                      // Still streaming - show spinner
-                      return (
-                        <Box key={idx} flexDirection="column">
-                          <Box />
-                          <Box>
-                            <Text color="#00FF88">▏ </Text>
-                            <Spinner color="#FFD700" />
-                            <Text dimColor> Thinking...</Text>
-                          </Box>
-                        </Box>
-                      );
-                    }
-                  } else if (part.type === 'error') {
-                    return (
-                      <Box key={idx}>
-                        <Text color="#00FF88">▏ </Text>
-                        <Text color="red">❌ Error: {part.error}</Text>
-                      </Box>
-                    );
-                  } else {
-                    // Tool part
-                    return (
-                      <Box key={idx}>
-                        <Text color="#00FF88">▏ </Text>
-                        <ToolDisplay
-                          name={part.name}
-                          status={part.status}
-                          duration={part.duration}
-                          args={part.args}
-                          result={part.result}
-                          error={part.error}
-                        />
-                      </Box>
-                    );
-                  }
+                  const isLastPart = idx === streamParts.length - 1;
+                  return (
+                    <MessagePart
+                      key={idx}
+                      part={part}
+                      isLastInStream={isLastPart && part.type === 'text'}
+                    />
+                  );
                 })}
               </Box>
             )}
