@@ -218,8 +218,27 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           const currentQuestion = questions[multiSelectionPage];
           const totalQuestions = questions.length;
 
+          // Calculate filtered options first (needed for arrow key navigation)
+          const filteredOptions = currentQuestion.options.filter(
+            (option) =>
+              option.label.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+              (option.value && option.value.toLowerCase().includes(selectionFilter.toLowerCase()))
+          );
+          const maxIndex = filteredOptions.length - 1;
+
+          // Arrow down - next option (handle FIRST before text input)
+          if (key.downArrow) {
+            setSelectedCommandIndex((prev) => (prev < maxIndex ? prev + 1 : prev));
+            return;
+          }
+          // Arrow up - previous option
+          if (key.upArrow) {
+            setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
+            return;
+          }
+
           // Handle text input for filtering
-          if (input && !key.upArrow && !key.downArrow && !key.return && !key.escape && !key.tab && !key.ctrl) {
+          if (input && !key.return && !key.escape && !key.tab && !key.ctrl) {
             setSelectionFilter((prev) => prev + input);
             setSelectedCommandIndex(0);
             return;
@@ -281,24 +300,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return;
           }
 
-          // Question page - option selection
-          const filteredOptions = currentQuestion.options.filter(
-            (option) =>
-              option.label.toLowerCase().includes(selectionFilter.toLowerCase()) ||
-              (option.value && option.value.toLowerCase().includes(selectionFilter.toLowerCase()))
-          );
-          const maxIndex = filteredOptions.length - 1;
-
-          // Arrow down - next option
-          if (key.downArrow) {
-            setSelectedCommandIndex((prev) => (prev < maxIndex ? prev + 1 : prev));
-            return;
-          }
-          // Arrow up - previous option
-          if (key.upArrow) {
-            setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
-            return;
-          }
           // Enter - select option
           if (key.return) {
             const selectedOption = filteredOptions[selectedCommandIndex];
