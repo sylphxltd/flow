@@ -68,6 +68,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [pendingInput, setPendingInput] = useState<WaitForInputOptions | null>(null);
   const inputResolver = useRef<((value: string | Record<string, string | string[]>) => void) | null>(null);
   const [selectionFilter, setSelectionFilter] = useState(''); // Filter text for selection mode
+  const [isFilterMode, setIsFilterMode] = useState(false); // Whether user is actively filtering (typing)
 
   // Multi-selection state
   const [multiSelectionPage, setMultiSelectionPage] = useState(0); // Current page index (0 = Q1, 1 = Q2, ..., n = Review)
@@ -134,6 +135,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             setMultiSelectChoices(new Set());
           }
           setSelectedCommandIndex(0);
+          setSelectionFilter('');
+          setIsFilterMode(false);
         }
       });
     },
@@ -386,29 +389,48 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           );
           const maxIndex = filteredOptions.length - 1;
 
-          // Arrow down - next option (handle FIRST before text input)
+          // Arrow down - next option (works in both modes)
           if (key.downArrow) {
             setSelectedCommandIndex((prev) => (prev < maxIndex ? prev + 1 : prev));
             return;
           }
-          // Arrow up - previous option
+          // Arrow up - previous option (works in both modes)
           if (key.upArrow) {
             setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
             return;
           }
 
-          // Handle text input for filtering
-          if (char && !key.return && !key.escape && !key.tab && !key.ctrl) {
-            setSelectionFilter((prev) => prev + char);
+          // Escape - clear filter and exit filter mode
+          if (key.escape && isFilterMode) {
+            setSelectionFilter('');
+            setIsFilterMode(false);
             setSelectedCommandIndex(0);
             return;
           }
 
+          // Handle text input for filtering
+          if (char && !key.return && !key.escape && !key.tab && !key.ctrl) {
+            // In filter mode or any alphanumeric char: enter/stay in filter mode
+            if (isFilterMode || char !== ' ') {
+              setSelectionFilter((prev) => prev + char);
+              setIsFilterMode(true);
+              setSelectedCommandIndex(0);
+              return;
+            }
+            // Not in filter mode and char is space: don't filter (will be handled by space toggle below)
+          }
+
           // Handle backspace for filtering
           if (key.backspace || key.delete) {
-            setSelectionFilter((prev) => prev.slice(0, -1));
-            setSelectedCommandIndex(0);
-            return;
+            if (selectionFilter.length > 0) {
+              setSelectionFilter((prev) => prev.slice(0, -1));
+              // Exit filter mode if filter becomes empty
+              if (selectionFilter.length === 1) {
+                setIsFilterMode(false);
+              }
+              setSelectedCommandIndex(0);
+              return;
+            }
           }
 
           // Multi-question: Tab navigation between questions
@@ -417,6 +439,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               setMultiSelectionPage((prev) => (prev + 1) % totalQuestions);
               setSelectedCommandIndex(0);
               setSelectionFilter('');
+              setIsFilterMode(false);
               // Restore choices for the new question if it's multi-select
               const nextPage = (multiSelectionPage + 1) % totalQuestions;
               const nextQuestion = questions[nextPage];
@@ -441,6 +464,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               setMultiSelectionPage((prev) => (prev - 1 + totalQuestions) % totalQuestions);
               setSelectedCommandIndex(0);
               setSelectionFilter('');
+              setIsFilterMode(false);
               // Restore choices for the new question if it's multi-select
               const prevPage = (multiSelectionPage - 1 + totalQuestions) % totalQuestions;
               const prevQuestion = questions[prevPage];
@@ -477,14 +501,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               setMultiSelectionAnswers({});
               setMultiSelectChoices(new Set());
               setSelectionFilter('');
+              setIsFilterMode(false);
             } else {
               addLog(`[selection] Cannot submit: not all questions answered`);
             }
             return;
           }
 
-          // Space - toggle multi-select choice (only for multi-select questions)
-          if (char === ' ' && currentQuestion.multiSelect) {
+          // Space - toggle multi-select choice (only for multi-select questions and NOT in filter mode)
+          if (char === ' ' && currentQuestion.multiSelect && !isFilterMode) {
             const selectedOption = filteredOptions[selectedCommandIndex];
             if (selectedOption) {
               const selectedValue = selectedOption.value || selectedOption.label;
@@ -530,6 +555,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 setMultiSelectionAnswers({});
                 setMultiSelectChoices(new Set());
                 setSelectionFilter('');
+                setIsFilterMode(false);
               } else {
                 // Multi-question: save answer
                 const newAnswers = {
@@ -552,6 +578,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   setMultiSelectionPage(0);
                   setMultiSelectionAnswers({});
                   setSelectionFilter('');
+                  setIsFilterMode(false);
                 } else {
                   // Move to next unanswered question
                   const nextUnanswered = questions.findIndex(
@@ -585,6 +612,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   setMultiSelectionPage(0);
                   setMultiSelectionAnswers({});
                   setSelectionFilter('');
+                  setIsFilterMode(false);
                 } else {
                   // Multi-question: save answer
                   const newAnswers = {
@@ -606,6 +634,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     setMultiSelectionPage(0);
                     setMultiSelectionAnswers({});
                     setSelectionFilter('');
+                    setIsFilterMode(false);
                   } else {
                     // Move to next unanswered question
                     const nextUnanswered = questions.findIndex(
@@ -622,7 +651,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             }
             return;
           }
-          // Escape - cancel
+          // Escape - cancel (only if not in filter mode, which was handled earlier)
           if (key.escape) {
             addLog(`[selection] Cancelled`);
             inputResolver.current({});
@@ -632,6 +661,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             setMultiSelectionAnswers({});
             setMultiSelectChoices(new Set());
             setSelectionFilter('');
+            setIsFilterMode(false);
             return;
           }
           // For other keys (text input), let TextInput handle it via onChange
@@ -1402,8 +1432,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                               <Box marginLeft={4} flexDirection="column" marginTop={1}>
                                 {/* Filter */}
                                 <Box marginBottom={1}>
-                                  <Text dimColor>🔍 Filter: </Text>
-                                  <Text color="#00FF88">{selectionFilter || '(type to search)'}</Text>
+                                  <Text dimColor>🔍 </Text>
+                                  {isFilterMode ? (
+                                    <>
+                                      <Text color="#00FF88">{selectionFilter}</Text>
+                                      <Text color="#00FF88">▊</Text>
+                                      <Text dimColor> (Esc to exit filter)</Text>
+                                    </>
+                                  ) : (
+                                    <Text dimColor>{selectionFilter || '(type to filter)'}</Text>
+                                  )}
                                 </Box>
 
                                 {/* Options */}
@@ -1489,7 +1527,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       {/* Controls footer */}
                       <Box marginTop={1} flexDirection="column">
                         <Box>
-                          {!isSingleQuestion && (
+                          {!isSingleQuestion && !isFilterMode && (
                             <>
                               <Text dimColor>Tab: </Text>
                               <Text color="#00D9FF">Next</Text>
@@ -1500,7 +1538,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           )}
                           <Text dimColor>↑↓: </Text>
                           <Text color="#00D9FF">Navigate</Text>
-                          {questions[multiSelectionPage]?.multiSelect ? (
+                          {!isFilterMode && questions[multiSelectionPage]?.multiSelect ? (
                             <>
                               <Text dimColor> · Space: </Text>
                               <Text color="#00FF88">Toggle</Text>
@@ -1509,13 +1547,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                 Confirm{multiSelectChoices.size === 0 && ' (select at least one)'}
                               </Text>
                             </>
-                          ) : (
+                          ) : !isFilterMode ? (
                             <>
                               <Text dimColor> · Enter: </Text>
                               <Text color="#00FF88">Select</Text>
                             </>
+                          ) : (
+                            <>
+                              <Text dimColor> · Type: </Text>
+                              <Text color="#00FF88">Filter</Text>
+                            </>
                           )}
-                          {!isSingleQuestion && (
+                          {!isSingleQuestion && !isFilterMode && (
                             <>
                               <Text dimColor> · </Text>
                               <Text dimColor>Ctrl+Enter: </Text>
@@ -1525,7 +1568,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             </>
                           )}
                           <Text dimColor> · Esc: </Text>
-                          <Text color="#FF3366">Cancel</Text>
+                          <Text color="#FF3366">{isFilterMode ? 'Exit filter' : 'Cancel'}</Text>
                         </Box>
                       </Box>
                     </>
