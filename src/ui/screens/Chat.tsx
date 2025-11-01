@@ -37,6 +37,7 @@ interface ChatProps {
 
 export default function Chat({ commandFromPalette }: ChatProps) {
   const [input, setInput] = useState('');
+  const [inputKey, setInputKey] = useState(0); // Force TextInput remount for cursor position
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
@@ -357,6 +358,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
             setInput(selected.label);
+            setInputKey((prev) => prev + 1); // Force remount to move cursor to end
             setSelectedCommandIndex(0);
           }
           return;
@@ -801,6 +803,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             <>
               {/* Text Input with inline hint */}
               <TextInputWithHint
+                key={inputKey}
                 value={input}
                 onChange={setInput}
                 onSubmit={handleSubmit}
