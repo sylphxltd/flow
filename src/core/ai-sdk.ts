@@ -170,33 +170,11 @@ export async function* createAIStream(
     }),
   });
 
-  // Attach error handlers to all promises in result to prevent unhandled rejections
-  // These promises are part of the AI SDK result but we only use fullStream
-  // We need to attach catch handlers so they don't cause unhandled rejection warnings
-  if ('text' in result && result.text && typeof result.text.then === 'function') {
-    result.text.catch(() => {}); // Errors will be caught via fullStream iteration
-  }
-  if ('toolCalls' in result && result.toolCalls && typeof result.toolCalls.then === 'function') {
-    result.toolCalls.catch(() => {});
-  }
-  if ('toolResults' in result && result.toolResults && typeof result.toolResults.then === 'function') {
-    result.toolResults.catch(() => {});
-  }
-  if ('usage' in result && result.usage && typeof result.usage.then === 'function') {
-    result.usage.catch(() => {});
-  }
-  if ('finishReason' in result && result.finishReason && typeof result.finishReason.then === 'function') {
-    result.finishReason.catch(() => {});
-  }
-  if ('warnings' in result && result.warnings && typeof result.warnings.then === 'function') {
-    result.warnings.catch(() => {});
-  }
-
   // Destructure to get fullStream
   const { fullStream } = result;
 
   // Convert AI SDK chunks to our chunk format
-  // Errors during iteration will propagate to caller's try-catch
+  // Handle all chunk types to ensure proper error flow
   for await (const chunk of fullStream) {
     switch (chunk.type) {
       case 'text-delta':
@@ -229,6 +207,23 @@ export async function* createAIStream(
           toolName: chunk.toolName,
           result: chunk.output,
         };
+        break;
+
+      case 'error':
+        // Stream error - throw to propagate to caller's try-catch
+        throw chunk.error instanceof Error ? chunk.error : new Error(String(chunk.error));
+
+      case 'tool-error':
+        // Tool execution error - throw to propagate to caller's try-catch
+        throw chunk.error instanceof Error ? chunk.error : new Error(`Tool error: ${String(chunk.error)}`);
+
+      case 'abort':
+        // Stream aborted - throw to propagate to caller's try-catch
+        throw new Error('Stream aborted');
+
+      // Ignore other chunk types (text-start, text-end, finish, etc.)
+      // They don't affect our streaming output
+      default:
         break;
     }
   }
