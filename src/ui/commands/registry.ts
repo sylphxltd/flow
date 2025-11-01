@@ -495,17 +495,10 @@ const modelCommand: Command = {
       name: 'model-name',
       description: 'Model to switch to',
       required: false,
-      loadOptions: async (previousArgs) => {
+      loadOptions: async (previousArgs, context) => {
         try {
-          // Load AI config
-          const { loadAIConfig } = await import('../../config/ai-config.js');
-          const configResult = await loadAIConfig();
-
-          if (!configResult.ok) {
-            throw new Error('Failed to load AI config');
-          }
-
-          const aiConfig = configResult.value;
+          // Get AI config from context
+          const aiConfig = context?.getConfig();
           if (!aiConfig?.providers) {
             return [];
           }
@@ -525,14 +518,18 @@ const modelCommand: Command = {
                 })));
               } catch (error) {
                 // Silently skip providers that fail
-                console.error(`Failed to fetch models for ${providerId}:`, error);
+                if (context) {
+                  context.addLog(`Failed to fetch models for ${providerId}: ${error instanceof Error ? error.message : String(error)}`);
+                }
               }
             }
           }
 
           return allModels;
         } catch (error) {
-          console.error('Error loading models:', error);
+          if (context) {
+            context.addLog(`Error loading models: ${error instanceof Error ? error.message : String(error)}`);
+          }
           return [];
         }
       },

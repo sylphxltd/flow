@@ -169,7 +169,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (!cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
           setCurrentlyLoading(cacheKey);
 
-          arg.loadOptions(args)
+          // Create context for loadOptions
+          const context = createCommandContext([]);
+
+          arg.loadOptions(args, context)
             .then((options) => {
               // Use functional update to avoid dependency on cachedOptions
               setCachedOptions((prev) => new Map(prev).set(cacheKey, options));

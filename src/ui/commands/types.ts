@@ -21,7 +21,7 @@ export interface CommandArg {
   name: string;
   description: string;
   required?: boolean;
-  loadOptions?: (previousArgs: string[]) => Promise<SelectOption[]>;
+  loadOptions?: (previousArgs: string[], context?: CommandContext) => Promise<SelectOption[]>;
 }
 
 /**
