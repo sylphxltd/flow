@@ -769,14 +769,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               <Box key={i} paddingY={1} flexDirection="column">
                 {msg.role === 'user' ? (
                   <>
-                    <Box marginBottom={1}>
+                    <Box>
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
                     <Text color="white">{msg.content}</Text>
                   </>
                 ) : (
                   <>
-                    <Box marginBottom={1}>
+                    <Box>
                       <Text color="#00FF88">▌ ASSISTANT</Text>
                     </Box>
                     {/* Render parts if available, otherwise fallback to content */}
@@ -812,7 +812,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
             {isStreaming && (
               <Box paddingY={1} flexDirection="column">
-                <Box marginBottom={1}>
+                <Box>
                   <Text color="#00FF88">▌ ASSISTANT</Text>
                 </Box>
 
