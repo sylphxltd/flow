@@ -784,7 +784,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       msg.parts.map((part, idx) => {
                         if (part.type === 'text') {
                           return (
-                            <Box key={idx} marginBottom={1}>
+                            <Box key={idx}>
                               <Text color="white">{part.content}</Text>
                             </Box>
                           );
@@ -828,7 +828,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   if (part.type === 'text') {
                     const isLastPart = idx === streamParts.length - 1;
                     return (
-                      <Box key={idx} marginBottom={1} flexDirection="column">
+                      <Box key={idx} flexDirection="column">
                         <Text color="white">{part.content}</Text>
                         {isLastPart && <Text color="#FFD700">▊</Text>}
                       </Box>
