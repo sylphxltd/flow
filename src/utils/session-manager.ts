@@ -54,9 +54,13 @@ export async function createSession(provider: ProviderId, model: string): Promis
  */
 export async function saveSession(session: Session): Promise<void> {
   await ensureSessionDir();
-  session.updated = Date.now();
+  // Create a new object with updated timestamp (don't mutate readonly session from Zustand)
+  const sessionToSave = {
+    ...session,
+    updated: Date.now(),
+  };
   const path = getSessionPath(session.id);
-  await writeFile(path, JSON.stringify(session, null, 2), 'utf8');
+  await writeFile(path, JSON.stringify(sessionToSave, null, 2), 'utf8');
 }
 
 /**
