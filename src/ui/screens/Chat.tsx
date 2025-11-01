@@ -988,7 +988,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 ) : (
                   <>
                     <Box>
-                      <Text color="#00FF88">▌ ASSISTANT</Text>
+                      <Text color="#00FF88">▌ SYLPHX</Text>
                     </Box>
                     {/* Render parts if available, otherwise fallback to content */}
                     {msg.parts && msg.parts.length > 0 ? (
@@ -1025,7 +1025,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             {isStreaming && (
               <Box paddingY={1} flexDirection="column">
                 <Box>
-                  <Text color="#00FF88">▌ ASSISTANT</Text>
+                  <Text color="#00FF88">▌ SYLPHX</Text>
                 </Box>
 
                 {/* Show loading when no parts yet */}
