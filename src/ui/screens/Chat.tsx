@@ -466,6 +466,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
 
+    // If we're in command mode with active autocomplete, don't handle here
+    // Let useInput handle the autocomplete selection
+    if (value.startsWith('/') && filteredCommands.length > 0) {
+      addLog(`[handleSubmit] Skipping, autocomplete active (${filteredCommands.length} suggestions)`);
+      return;
+    }
+
     // Skip if we just handled this in autocomplete (prevent double execution)
     if (skipNextSubmit.current) {
       addLog(`[handleSubmit] Skipping due to skipNextSubmit flag: ${value}`);
