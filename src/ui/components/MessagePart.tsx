@@ -26,22 +26,20 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
   // Live duration tracking for streaming parts
   const [liveDuration, setLiveDuration] = useState<number | undefined>(undefined);
 
+  // Extract stable values for dependencies
+  const partType = part.type;
+  const isReasoningCompleted = part.type === 'reasoning' && 'completed' in part ? part.completed : true;
+  const toolStatus = part.type === 'tool' ? part.status : null;
+  const startTime = (part.type === 'reasoning' || part.type === 'tool') && 'startTime' in part ? part.startTime : null;
+
   useEffect(() => {
     // Check if this is a running reasoning part
-    const isRunningReasoning = part.type === 'reasoning' &&
-                                !('completed' in part && part.completed) &&
-                                'startTime' in part &&
-                                part.startTime;
+    const isRunningReasoning = partType === 'reasoning' && !isReasoningCompleted && startTime;
 
     // Check if this is a running tool part
-    const isRunningTool = part.type === 'tool' &&
-                          part.status === 'running' &&
-                          'startTime' in part &&
-                          part.startTime;
+    const isRunningTool = partType === 'tool' && toolStatus === 'running' && startTime;
 
-    if (isRunningReasoning || isRunningTool) {
-      const startTime = (part as any).startTime;
-
+    if ((isRunningReasoning || isRunningTool) && startTime) {
       // Set initial duration
       setLiveDuration(Date.now() - startTime);
 
@@ -56,12 +54,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
       setLiveDuration(undefined);
       return undefined;
     }
-  }, [
-    part.type,
-    part.type === 'reasoning' ? ('completed' in part ? part.completed : true) : null,
-    part.type === 'tool' ? part.status : null,
-    part.type === 'reasoning' || part.type === 'tool' ? ('startTime' in part ? part.startTime : null) : null
-  ]);
+  }, [partType, isReasoningCompleted, toolStatus, startTime]);
   if (part.type === 'text') {
     return (
       <Box flexDirection="column">
@@ -85,8 +78,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
       // Show completed reasoning with duration
       const seconds = part.duration ? Math.round(part.duration / 1000) : 0;
       return (
-        <Box flexDirection="column">
-          <Box />
+        <Box flexDirection="column" paddingTop={1}>
           <Box>
             <Text color="#00FF88">▏ </Text>
             <Text dimColor>Thought {seconds}s</Text>
@@ -97,8 +89,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
       // Still streaming - show spinner with live duration
       const seconds = liveDuration ? Math.round(liveDuration / 1000) : 0;
       return (
-        <Box flexDirection="column">
-          <Box />
+        <Box flexDirection="column" paddingTop={1}>
           <Box>
             <Text color="#00FF88">▏ </Text>
             <Spinner color="#FFD700" />
