@@ -36,7 +36,7 @@ export function useChat() {
     attachments?: Array<{ path: string; relativePath: string; size?: number }>,
     onReasoningStart?: () => void,
     onReasoningDelta?: (text: string) => void,
-    onReasoningEnd?: () => void,
+    onReasoningEnd?: (duration: number) => void,
     onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void,
     onError?: (error: string) => void
   ) => {
@@ -178,9 +178,9 @@ export function useChat() {
           addDebugLog(`[useChat] reasoning-delta: ${text.substring(0, 50)}`);
           onReasoningDelta?.(text);
         },
-        onReasoningEnd: () => {
-          addDebugLog(`[useChat] reasoning-end`);
-          onReasoningEnd?.();
+        onReasoningEnd: (duration) => {
+          addDebugLog(`[useChat] reasoning-end: ${duration}ms`);
+          onReasoningEnd?.(duration);
         },
         onToolCall: (toolCallId, toolName, args) => {
           addDebugLog(`[useChat] tool-call: ${toolName} (${toolCallId})`);

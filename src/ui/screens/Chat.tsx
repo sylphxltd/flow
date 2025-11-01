@@ -1008,17 +1008,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           });
         },
         // onReasoningEnd - reasoning finished
-        () => {
-          addLog('Reasoning end');
+        (duration) => {
+          addLog(`Reasoning end: ${duration}ms`);
           setStreamParts((prev) => {
             const newParts = [...prev];
             const lastPart = newParts[newParts.length - 1];
 
             if (lastPart && lastPart.type === 'reasoning' && !lastPart.completed) {
-              // Mark as completed (will show "Thought Xs" instead of "Thinking...")
+              // Mark as completed with duration (will show "Thought Xs" instead of "Thinking...")
               newParts[newParts.length - 1] = {
                 ...lastPart,
-                completed: true
+                completed: true,
+                duration
               };
             }
             return newParts;
@@ -1149,9 +1150,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         } else if (part.type === 'reasoning') {
                           // Show completed reasoning with duration
                           return (
-                            <Box key={idx}>
-                              <Text color="#00FF88">▏ </Text>
-                              <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
+                            <Box key={idx} flexDirection="column">
+                              <Box />
+                              <Box>
+                                <Text color="#00FF88">▏ </Text>
+                                <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
+                              </Box>
                             </Box>
                           );
                         } else if (part.type === 'error') {
@@ -1231,18 +1235,24 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     if (part.completed) {
                       // Show completed reasoning with duration
                       return (
-                        <Box key={idx}>
-                          <Text color="#00FF88">▏ </Text>
-                          <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
+                        <Box key={idx} flexDirection="column">
+                          <Box />
+                          <Box>
+                            <Text color="#00FF88">▏ </Text>
+                            <Text dimColor>Thought{part.duration ? ` ${Math.round(part.duration / 1000)}s` : ''}</Text>
+                          </Box>
                         </Box>
                       );
                     } else {
                       // Still streaming - show spinner
                       return (
-                        <Box key={idx}>
-                          <Text color="#00FF88">▏ </Text>
-                          <Spinner color="#FFD700" />
-                          <Text dimColor> Thinking...</Text>
+                        <Box key={idx} flexDirection="column">
+                          <Box />
+                          <Box>
+                            <Text color="#00FF88">▏ </Text>
+                            <Spinner color="#FFD700" />
+                            <Text dimColor> Thinking...</Text>
+                          </Box>
                         </Box>
                       );
                     }

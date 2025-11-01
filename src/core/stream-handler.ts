@@ -15,7 +15,7 @@ export interface StreamCallbacks {
   onTextEnd?: () => void;
   onReasoningStart?: () => void;
   onReasoningDelta?: (text: string) => void;
-  onReasoningEnd?: () => void;
+  onReasoningEnd?: (duration: number) => void;
   onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
   onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
   onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void;
@@ -92,8 +92,8 @@ export async function processStream(
 
       case 'reasoning-end': {
         // Save reasoning part with duration
-        if (currentReasoningContent) {
-          const duration = reasoningStartTime ? Date.now() - reasoningStartTime : undefined;
+        const duration = reasoningStartTime ? Date.now() - reasoningStartTime : 0;
+        if (currentReasoningContent || reasoningStartTime) {
           messageParts.push({
             type: 'reasoning',
             content: currentReasoningContent,
@@ -102,7 +102,8 @@ export async function processStream(
           currentReasoningContent = '';
           reasoningStartTime = null;
         }
-        onReasoningEnd?.();
+        // Pass duration to callback so UI can display it
+        onReasoningEnd?.(duration);
         break;
       }
 
