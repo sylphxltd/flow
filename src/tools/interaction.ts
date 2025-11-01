@@ -44,12 +44,22 @@ export function clearUserInputHandler() {
 export const askUserSelectionTool = tool({
   description: `Ask the user a multiple choice question and wait for their selection.
 
-Usage:
-- When you have a specific set of options for the user to choose from
-- When you need user to select between different approaches
-- When you need to confirm which file/component/feature to work on
+This tool can be called multiple times to ask multiple questions sequentially.
 
-The user will see your question with the options and can select one.
+When to use:
+- You have specific options for the user to choose from
+- You need user to select between different approaches
+- You need to confirm which file/component/feature to work on
+- You want to gather multiple pieces of information step by step
+
+How to use:
+1. Call this tool with your question and options
+2. Wait for the user's answer (returned as a string)
+3. You can call this tool again to ask another question
+4. Continue your task with the gathered information
+
+Example workflow:
+- Ask which file to modify → get answer → Ask which function → get answer → Proceed with changes
 
 Note: For free-form text questions, just respond normally in your message and wait for the user's next input. Only use this tool when you have specific options to present.`,
   inputSchema: z.object({
@@ -57,19 +67,11 @@ Note: For free-form text questions, just respond normally in your message and wa
     options: z.array(z.object({
       label: z.string().describe('Display text for this option (what user sees)'),
       value: z.string().optional().describe('Optional value to return (defaults to label if not provided)'),
-    })).describe('List of options for the user to choose from (2-10 options)'),
+    })).min(2).max(10).describe('List of options for the user to choose from (2-10 options)'),
   }),
   execute: async ({ question, options }) => {
     if (!userInputHandler) {
       throw new Error('User input handler not available. This tool can only be used in interactive mode.');
-    }
-
-    if (options.length < 2) {
-      throw new Error('Selection questions must have at least 2 options');
-    }
-
-    if (options.length > 10) {
-      throw new Error('Selection questions can have at most 10 options');
     }
 
     const answer = await userInputHandler({
@@ -78,11 +80,8 @@ Note: For free-form text questions, just respond normally in your message and wa
       options,
     });
 
-    return {
-      question,
-      selectedOption: answer,
-      options,
-    };
+    // Return simple string answer - LLM can easily understand and use this
+    return answer;
   },
 });
 
