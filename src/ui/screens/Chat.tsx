@@ -230,7 +230,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               return {
                 id: `${cacheKey}-${option.value || option.label}`,
                 label: `${commandName} ${allArgs.join(' ')}`,
-                description: option.value ? `Value: ${option.value}` : '',
+                description: '',
                 args: matchedCommand.args,
                 execute: async (context) => {
                   return await matchedCommand.execute(createCommandContext(allArgs));
@@ -1184,18 +1184,52 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 </Box>
               ) : filteredCommands.length > 0 ? (
                 <Box flexDirection="column" marginTop={1}>
-                  {filteredCommands.slice(0, 5).map((cmd, idx) => (
-                    <Box key={cmd.id}>
-                      <Text
-                        color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                        bold={idx === selectedCommandIndex}
-                      >
-                        {idx === selectedCommandIndex ? '> ' : '  '}
-                        {cmd.label}
-                      </Text>
-                      <Text dimColor> {cmd.description}</Text>
-                    </Box>
-                  ))}
+                  {(() => {
+                    // Calculate visible window based on selection
+                    const maxVisible = 10;
+                    const totalCommands = filteredCommands.length;
+
+                    // Center the selection in the visible window
+                    let startIdx = Math.max(0, selectedCommandIndex - Math.floor(maxVisible / 2));
+                    let endIdx = Math.min(totalCommands, startIdx + maxVisible);
+
+                    // Adjust if we're at the end
+                    if (endIdx === totalCommands) {
+                      startIdx = Math.max(0, endIdx - maxVisible);
+                    }
+
+                    const visibleCommands = filteredCommands.slice(startIdx, endIdx);
+
+                    return (
+                      <>
+                        {startIdx > 0 && (
+                          <Box>
+                            <Text dimColor>  ↑ {startIdx} more above</Text>
+                          </Box>
+                        )}
+                        {visibleCommands.map((cmd, idx) => {
+                          const actualIdx = startIdx + idx;
+                          return (
+                            <Box key={cmd.id}>
+                              <Text
+                                color={actualIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                                bold={actualIdx === selectedCommandIndex}
+                              >
+                                {actualIdx === selectedCommandIndex ? '> ' : '  '}
+                                {cmd.label}
+                              </Text>
+                              {cmd.description && <Text dimColor> {cmd.description}</Text>}
+                            </Box>
+                          );
+                        })}
+                        {endIdx < totalCommands && (
+                          <Box>
+                            <Text dimColor>  ↓ {totalCommands - endIdx} more below</Text>
+                          </Box>
+                        )}
+                      </>
+                    );
+                  })()}
                 </Box>
               ) : null}
             </>
