@@ -36,7 +36,8 @@ export function useChat() {
     attachments?: Array<{ path: string; relativePath: string; size?: number }>
   ) => {
     if (!currentSession || !currentSessionId) {
-      setError('No active session');
+      // Don't use setError - this should never happen in normal flow
+      console.error('[useChat] No active session');
       return;
     }
 
@@ -44,15 +45,18 @@ export function useChat() {
     const modelName = currentSession.model;
     const providerConfig = aiConfig?.providers?.[provider];
 
+    // Handle configuration errors as assistant messages
     if (!providerConfig) {
-      setError('Provider not configured');
+      addMessage(currentSessionId, 'assistant', '❌ Error: Provider not configured\n\nPlease configure your provider using the /provider command.');
+      onComplete?.();
       return;
     }
 
     // Check if provider is properly configured using provider's own logic
     const providerInstance = getProvider(provider);
     if (!providerInstance.isConfigured(providerConfig)) {
-      setError(`${providerInstance.name} is not properly configured. Please check your settings with /provider command.`);
+      addMessage(currentSessionId, 'assistant', `❌ Error: ${providerInstance.name} is not properly configured\n\nPlease check your settings with the /provider command.`);
+      onComplete?.();
       return;
     }
 
@@ -174,16 +178,18 @@ export function useChat() {
       addDebugLog('[useChat] ERROR CAUGHT!');
       console.error('[Chat Error]:', error);
 
-      if (!currentSessionId) {
-        addDebugLog('[useChat] ERROR: No currentSessionId!');
-        setError('No active session');
-        onComplete?.();
+      // Get fresh session ID in case it changed
+      const sessionId = currentSessionId || useAppStore.getState().currentSessionId;
+
+      if (!sessionId) {
+        addDebugLog('[useChat] ERROR: No sessionId available!');
+        console.error('[useChat] Cannot display error - no active session');
         return;
       }
 
       // Format error message for display
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
-      addDebugLog(`[useChat] Adding error message to session: ${currentSessionId}`);
+      addDebugLog(`[useChat] Adding error message to session: ${sessionId}`);
 
       const displayError = `❌ Error: ${errorMessage}\n\n${
         error instanceof Error && 'statusCode' in error && (error as any).statusCode === 401
@@ -192,7 +198,7 @@ export function useChat() {
       }`;
 
       // Add error as assistant message so user can see it in chat
-      addMessage(currentSessionId, 'assistant', displayError);
+      addMessage(sessionId, 'assistant', displayError);
       addDebugLog('[useChat] Error message added, calling onComplete');
 
       // Trigger UI update after adding error message
