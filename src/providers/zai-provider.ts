@@ -23,6 +23,13 @@ export class ZaiProvider implements AIProvider {
         description: 'Get your API key from Z.ai',
         placeholder: 'zai-...',
       },
+      {
+        key: 'codingPlan',
+        label: 'Coding Plan',
+        type: 'boolean',
+        required: false,
+        description: 'Enable Coding Plan mode (uses different API endpoint)',
+      },
     ];
   }
 
@@ -32,12 +39,18 @@ export class ZaiProvider implements AIProvider {
 
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
     const apiKey = config.apiKey as string | undefined;
+    const codingPlan = config.codingPlan as boolean | undefined;
 
     if (!apiKey) {
       throw new Error('API key is required to fetch Z.ai models');
     }
 
-    const response = await fetch('https://api.z.ai/api/paas/v4/models', {
+    // Use different base URL for coding plan
+    const baseUrl = codingPlan
+      ? 'https://api.z.ai/api/coding/paas/v4'
+      : 'https://api.z.ai/api/paas/v4';
+
+    const response = await fetch(`${baseUrl}/models`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -96,8 +109,15 @@ export class ZaiProvider implements AIProvider {
 
   createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
     const apiKey = config.apiKey as string;
+    const codingPlan = config.codingPlan as boolean | undefined;
+
+    // Use different base URL for coding plan
+    const baseURL = codingPlan
+      ? 'https://api.z.ai/api/coding/paas/v4/'
+      : 'https://api.z.ai/api/paas/v4/';
+
     const zai = createOpenAICompatible({
-      baseURL: 'https://api.z.ai/api/paas/v4/',
+      baseURL,
       apiKey,
       name: 'zai',
     });
