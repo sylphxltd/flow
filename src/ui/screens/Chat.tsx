@@ -159,14 +159,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       setIsLoadingModels(true);
       const allModels: Array<{ id: string; name: string }> = [];
 
+      // Fetch models from each provider sequentially to avoid race conditions
       for (const [providerId, config] of Object.entries(aiConfig.providers)) {
         if (config.apiKey) {
           try {
             const { fetchModels } = await import('../utils/ai-model-fetcher.js');
             const models = await fetchModels(providerId as any, config.apiKey);
             allModels.push(...models.map(m => ({ id: m.id, name: m.name })));
+            addLog(`Loaded ${models.length} models from ${providerId}`);
           } catch (error) {
+            // Log full error details for debugging
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            const errorName = error?.constructor?.name || 'Error';
             console.error(`Failed to fetch models for ${providerId}:`, error);
+            addLog(`Failed to fetch models for ${providerId}: [${errorName}] ${errorMsg}`);
           }
         }
       }

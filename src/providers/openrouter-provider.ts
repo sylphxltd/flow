@@ -14,43 +14,48 @@ export class OpenRouterProvider implements AIProvider {
   readonly keyName = 'OPENROUTER_API_KEY';
 
   async fetchModels(apiKey?: string): Promise<ModelInfo[]> {
-    try {
-      const response = await fetch('https://openrouter.ai/api/v1/models', {
-        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
-      });
+    // Retry logic for transient network issues
+    const maxRetries = 2;
+    let lastError: unknown;
 
-      if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.status}`);
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/models', {
+          headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+          signal: AbortSignal.timeout(10000), // 10s timeout
+        });
+
+        if (!response.ok) {
+          throw new Error(`OpenRouter API error: ${response.status}`);
+        }
+
+        const data = (await response.json()) as {
+          data: Array<{
+            id: string;
+            name: string;
+            context_length?: number;
+            pricing?: {
+              prompt: string;
+              completion: string;
+            };
+          }>;
+        };
+
+        return data.data.map((model) => ({
+          id: model.id,
+          name: model.name || model.id,
+        }));
+      } catch (error) {
+        lastError = error;
+        // Wait before retry (exponential backoff)
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt)));
+        }
       }
-
-      const data = (await response.json()) as {
-        data: Array<{
-          id: string;
-          name: string;
-          context_length?: number;
-          pricing?: {
-            prompt: string;
-            completion: string;
-          };
-        }>;
-      };
-
-      return data.data.map((model) => ({
-        id: model.id,
-        name: model.name || model.id,
-      }));
-    } catch (error) {
-      console.error('Failed to fetch OpenRouter models:', error);
-      // Return popular models as fallback
-      return [
-        { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
-        { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus' },
-        { id: 'openai/gpt-4o', name: 'GPT-4o' },
-        { id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo' },
-        { id: 'google/gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash' },
-        { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B' },
-      ];
     }
+
+    // All retries failed - throw error
+    throw lastError;
   }
 
   async getModelDetails(modelId: string, apiKey?: string): Promise<ProviderModelDetails | null> {
