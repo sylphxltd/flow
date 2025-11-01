@@ -119,7 +119,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Find matching command
     const matchedCommand = commands.find((cmd) => cmd.label === commandName);
     if (matchedCommand && matchedCommand.args && matchedCommand.args.length > 0) {
-      const currentArgIndex = parts.length - 1;
+      // Count non-empty args after command name
+      const args = parts.slice(1).filter(p => p.trim() !== '');
+      const currentArgIndex = args.length;
       if (currentArgIndex < matchedCommand.args.length) {
         const arg = matchedCommand.args[currentArgIndex];
         return arg.required ? `[${arg.name}]` : `<${arg.name}>`;
