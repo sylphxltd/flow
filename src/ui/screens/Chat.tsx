@@ -302,7 +302,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Handle keyboard shortcuts for command menu and selection navigation
   useInput(
-    async (input, key) => {
+    async (char, key) => {
       // Handle pendingInput (when command calls waitForInput)
       if (pendingInput && inputResolver.current) {
         // Selection mode (unified for single and multi-question)
@@ -332,8 +332,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           }
 
           // Handle text input for filtering
-          if (input && !key.return && !key.escape && !key.tab && !key.ctrl) {
-            setSelectionFilter((prev) => prev + input);
+          if (char && !key.return && !key.escape && !key.tab && !key.ctrl) {
+            setSelectionFilter((prev) => prev + char);
             setSelectedCommandIndex(0);
             return;
           }
@@ -551,6 +551,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             setCursor(newCursorPos); // Position cursor right after the inserted file name + space
             setSelectedFileIndex(0);
           }
+          return;
+        }
+        // Allow typing to continue filtering files
+        if (char && !key.ctrl && !key.meta && !key.escape && !key.return && !key.tab) {
+          const inputState = input; // Current input state
+          const beforeCursor = inputState.slice(0, cursor);
+          const afterCursor = inputState.slice(cursor);
+          const newInputValue = beforeCursor + char + afterCursor;
+          setInput(newInputValue);
+          setCursor(cursor + char.length);
           return;
         }
       }
@@ -1329,6 +1339,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 }
                 showCursor
                 hint={hintText}
+                focus={!filteredFileInfo.hasAt && filteredCommands.length === 0 && !pendingCommand}
               />
 
               {/* File Autocomplete - Shows below input when typing @ */}

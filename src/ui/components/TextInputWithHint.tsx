@@ -16,6 +16,7 @@ interface TextInputWithHintProps {
   hint?: string; // Ghost text to show after cursor
   cursor?: number; // Optional controlled cursor position
   onCursorChange?: (cursor: number) => void;
+  focus?: boolean; // Whether to handle input (for autocomplete)
 }
 
 export default function TextInputWithHint({
@@ -27,20 +28,25 @@ export default function TextInputWithHint({
   hint,
   cursor: controlledCursor,
   onCursorChange: controlledOnCursorChange,
+  focus = true,
 }: TextInputWithHintProps) {
   // Internal cursor state (used when not controlled from parent)
-  const [internalCursor, setInternalCursor] = useState(value.length);
+  const [internalCursor, setInternalCursor] = useState(0);
 
   // Use controlled cursor if provided, otherwise use internal state
   const cursor = controlledCursor !== undefined ? controlledCursor : internalCursor;
   const onCursorChange = controlledOnCursorChange || setInternalCursor;
 
-  // Sync internal cursor when value changes (for uncontrolled mode)
+  // For uncontrolled mode, sync cursor when value changes
+  // But preserve cursor position if it's still valid
   React.useEffect(() => {
     if (controlledCursor === undefined) {
-      setInternalCursor(value.length);
+      // If cursor is beyond new value length, move it to end
+      if (internalCursor > value.length) {
+        setInternalCursor(value.length);
+      }
     }
-  }, [value, controlledCursor]);
+  }, [value.length, controlledCursor, internalCursor]);
 
   return (
     <Box>
@@ -52,6 +58,7 @@ export default function TextInputWithHint({
         onSubmit={onSubmit}
         placeholder={placeholder}
         showCursor={showCursor}
+        focus={focus}
       />
       {hint && value.length > 0 && (
         <Text color="#444444">{hint}</Text>
