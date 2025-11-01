@@ -107,9 +107,27 @@ function truncateLines(lines: string[], maxLines: number = 3): string[] {
   ];
 }
 
+/**
+ * Get display name for tool
+ */
+function getDisplayName(toolName: string): string {
+  const displayNames: Record<string, string> = {
+    'read': 'Read',
+    'write': 'Write',
+    'edit': 'Edit',
+    'bash': 'Bash',
+    'grep': 'Search',
+    'glob': 'List',
+    'ask': 'Ask',
+  };
+
+  return displayNames[toolName.toLowerCase()] || toolName;
+}
+
 export function ToolDisplay({ name, status, duration, args, result }: ToolDisplayProps) {
   const formattedArgs = formatArgs(name, args);
   const isBuiltIn = ['ask', 'read', 'write', 'edit', 'bash', 'grep', 'glob'].includes(name);
+  const displayName = getDisplayName(name);
 
   // Status indicator
   const statusIndicator = status === 'running' ? (
@@ -127,9 +145,9 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
   const toolHeader = isBuiltIn ? (
     <Box>
       {statusIndicator}
-      <Text color="white" bold>{name}</Text>
+      <Text color="white" bold>{displayName}</Text>
       <Text color="gray">(</Text>
-      <Text color="#00D9FF">{formattedArgs}</Text>
+      <Text color="white">{formattedArgs}</Text>
       <Text color="gray">)</Text>
       {duration !== undefined && status === 'completed' && (
         <Text color="gray" dimColor> {duration}ms</Text>
@@ -138,9 +156,9 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
   ) : (
     <Box>
       {statusIndicator}
-      <Text color="white" bold>{name}</Text>
+      <Text color="white" bold>{displayName}</Text>
       <Text color="gray">(</Text>
-      <Text color="gray" dimColor>{formattedArgs}</Text>
+      <Text color="white" dimColor>{formattedArgs}</Text>
       <Text color="gray">)</Text>
       {duration !== undefined && status === 'completed' && (
         <Text color="gray" dimColor> {duration}ms</Text>

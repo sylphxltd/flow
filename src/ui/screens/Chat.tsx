@@ -785,7 +785,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         if (part.type === 'text') {
                           return (
                             <Box key={idx} marginBottom={1}>
-                              <Text color="gray">{part.content}</Text>
+                              <Text color="white">{part.content}</Text>
                             </Box>
                           );
                         } else {
@@ -803,7 +803,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         }
                       })
                     ) : (
-                      <Text color="gray">{msg.content}</Text>
+                      <Text color="white">{msg.content}</Text>
                     )}
                   </>
                 )}
@@ -829,7 +829,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     const isLastPart = idx === streamParts.length - 1;
                     return (
                       <Box key={idx} marginBottom={1} flexDirection="column">
-                        <Text color="gray">{part.content}</Text>
+                        <Text color="white">{part.content}</Text>
                         {isLastPart && <Text color="#FFD700">▊</Text>}
                       </Box>
                     );
