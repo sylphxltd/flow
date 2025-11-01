@@ -57,7 +57,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
   }, [partType, isReasoningCompleted, toolStatus, startTime]);
   if (part.type === 'text') {
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginLeft={2}>
         <MarkdownText>
           {part.content}
         </MarkdownText>
@@ -77,7 +77,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
       // Show completed reasoning with duration
       const seconds = part.duration ? Math.round(part.duration / 1000) : 0;
       return (
-        <Box flexDirection="column" paddingTop={1}>
+        <Box flexDirection="column" marginTop={1} marginLeft={2}>
           <Box>
             <Text dimColor>Thought {seconds}s</Text>
           </Box>
@@ -87,7 +87,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
       // Still streaming - show spinner with live duration
       const seconds = liveDuration ? Math.round(liveDuration / 1000) : 0;
       return (
-        <Box flexDirection="column" paddingTop={1}>
+        <Box flexDirection="column" marginTop={1} marginLeft={2}>
           <Box>
             <Spinner color="#FFD700" />
             <Text dimColor> Thinking... {seconds}s</Text>
@@ -99,7 +99,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
 
   if (part.type === 'error') {
     return (
-      <Box>
+      <Box marginTop={1} marginLeft={2}>
         <Text color="red">❌ Error: {part.error}</Text>
       </Box>
     );
@@ -111,7 +111,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
     const displayDuration = part.status === 'running' ? liveDuration : part.duration;
 
     return (
-      <Box>
+      <Box marginTop={1} marginLeft={2}>
         <ToolDisplay
           name={part.name}
           status={part.status}
