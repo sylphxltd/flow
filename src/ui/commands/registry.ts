@@ -58,19 +58,12 @@ const providerCommand: Command = {
           const provider = getProvider(providerId as any);
           const schema = provider.getConfigSchema();
 
-          // Convert schema fields to options and add default-model
+          // Convert schema fields to options
           const keys = schema.map(field => ({
             id: field.key,
             label: field.label,
             value: field.key,
           }));
-
-          // Add default-model as a special key (not in provider schema)
-          keys.push({
-            id: 'default-model',
-            label: 'Default Model',
-            value: 'default-model',
-          });
 
           return keys;
         } catch (error) {
@@ -106,18 +99,6 @@ const providerCommand: Command = {
               { id: 'true', label: 'true', value: 'true' },
               { id: 'false', label: 'false', value: 'false' },
             ];
-          }
-
-          // If default-model, load models from provider
-          if (key === 'default-model') {
-            try {
-              const aiConfig = (await import('../../config/ai-config.js')).loadAIConfig;
-              // This would need context to get current config...
-              // For now, return empty - users can type the model name
-              return [];
-            } catch {
-              return [];
-            }
           }
 
           return [];
@@ -202,17 +183,26 @@ const providerCommand: Command = {
           defaultProvider: providerId,
         };
 
+        // Get default model and update config
+        const { getDefaultModel } = await import('../../core/session-service.js');
+        const defaultModel = await getDefaultModel(providerId as any, providerConfig);
+        if (!defaultModel) {
+          return `Failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+        }
+
+        // Save default model to config
+        newConfig.providers = {
+          ...newConfig.providers,
+          [providerId]: {
+            ...providerConfig,
+            'default-model': defaultModel,
+          },
+        };
+
         context.setAIConfig(newConfig);
         await context.saveConfig(newConfig);
 
         // Update current session's provider (preserve history)
-        let defaultModel = providerConfig['default-model'] as string | undefined;
-        if (!defaultModel) {
-          // Fetch first model from provider
-          const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-          const models = await fetchModels(providerId as any, providerConfig);
-          defaultModel = models[0]?.id || 'default';
-        }
         const currentSessionId = context.getCurrentSessionId();
         if (currentSessionId) {
           context.updateSessionProvider(currentSessionId, providerId, defaultModel);
@@ -232,12 +222,6 @@ const providerCommand: Command = {
           label: field.label,
           value: field.key,
         }));
-
-        // Add default-model as a special key
-        availableKeys.push({
-          label: 'Default Model',
-          value: 'default-model',
-        });
 
         context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
         const keyAnswers = await context.waitForInput({
@@ -342,17 +326,26 @@ const providerCommand: Command = {
         defaultProvider: providerId,
       };
 
+      // Get default model and update config
+      const { getDefaultModel } = await import('../../core/session-service.js');
+      const defaultModel = await getDefaultModel(providerId as any, providerConfig);
+      if (!defaultModel) {
+        return `Failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+      }
+
+      // Save default model to config
+      newConfig.providers = {
+        ...newConfig.providers,
+        [providerId]: {
+          ...providerConfig,
+          'default-model': defaultModel,
+        },
+      };
+
       context.setAIConfig(newConfig);
       await context.saveConfig(newConfig);
 
       // Update current session's provider (preserve history)
-      let defaultModel = providerConfig['default-model'] as string | undefined;
-      if (!defaultModel) {
-        // Fetch first model from provider
-        const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-        const models = await fetchModels(providerId as any, providerConfig);
-        defaultModel = models[0]?.id || 'default';
-      }
       const currentSessionId = context.getCurrentSessionId();
       if (currentSessionId) {
         context.updateSessionProvider(currentSessionId, providerId, defaultModel);
@@ -385,17 +378,26 @@ const providerCommand: Command = {
         defaultProvider: providerId,
       };
 
+      // Get default model and update config
+      const { getDefaultModel } = await import('../../core/session-service.js');
+      const defaultModel = await getDefaultModel(providerId as any, providerConfig);
+      if (!defaultModel) {
+        return `Failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+      }
+
+      // Save default model to config
+      newConfig.providers = {
+        ...newConfig.providers,
+        [providerId]: {
+          ...providerConfig,
+          'default-model': defaultModel,
+        },
+      };
+
       context.setAIConfig(newConfig);
       await context.saveConfig(newConfig);
 
       // Update current session's provider (preserve history)
-      let defaultModel = providerConfig['default-model'] as string | undefined;
-      if (!defaultModel) {
-        // Fetch first model from provider
-        const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-        const models = await fetchModels(providerId as any, providerConfig);
-        defaultModel = models[0]?.id || 'default';
-      }
       const currentSessionId = context.getCurrentSessionId();
       if (currentSessionId) {
         context.updateSessionProvider(currentSessionId, providerId, defaultModel);
@@ -441,11 +443,6 @@ const providerCommand: Command = {
         value: field.key,
       }));
 
-      // Add default-model as a special key
-      availableKeys.push({
-        label: 'Default Model',
-        value: 'default-model',
-      });
 
       context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
       const keyAnswers = await context.waitForInput({
@@ -520,11 +517,6 @@ const providerCommand: Command = {
         value: field.key,
       }));
 
-      // Add default-model as a special key
-      availableKeys.push({
-        label: 'Default Model',
-        value: 'default-model',
-      });
 
       context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
       const keyAnswers = await context.waitForInput({
@@ -596,7 +588,7 @@ const providerCommand: Command = {
       const provider = getProvider(providerId as any);
       const schema = provider.getConfigSchema();
 
-      const validKeys = [...schema.map(f => f.key), 'default-model'];
+      const validKeys = schema.map(f => f.key);
       if (!validKeys.includes(key)) {
         return `Invalid key: ${key}. Valid keys for ${providerId}: ${validKeys.join(', ')}`;
       }
@@ -759,8 +751,7 @@ const modelCommand: Command = {
       return 'No provider configured. Please configure a provider first.';
     }
 
-    // Update model
-    context.updateProvider(provider, { 'default-model': modelId });
+    // Update model and save to provider config
     const newConfig = {
       ...aiConfig!,
       defaultModel: modelId,

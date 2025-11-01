@@ -5,8 +5,31 @@
 
 import chalk from 'chalk';
 import { loadAIConfig, getConfiguredProviders } from '../config/ai-config.js';
+import type { ProviderId, ProviderConfig } from '../config/ai-config.js';
 import { createSession, loadLastSession } from '../utils/session-manager.js';
 import type { Session } from '../types/session.types.js';
+import { getProvider } from '../providers/index.js';
+import { fetchModels } from '../utils/ai-model-fetcher.js';
+
+/**
+ * Get default model for a provider
+ * Priority: config default-model > first available model
+ */
+export async function getDefaultModel(providerId: ProviderId, providerConfig: ProviderConfig): Promise<string | null> {
+  // Try config first
+  const configModel = providerConfig['default-model'] as string | undefined;
+  if (configModel) {
+    return configModel;
+  }
+
+  // Fetch first available model
+  try {
+    const models = await fetchModels(providerId, providerConfig);
+    return models[0]?.id || null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get or create session for headless mode
@@ -36,10 +59,16 @@ export async function getOrCreateSession(continueSession: boolean): Promise<Sess
   }
 
   const providerConfig = config.providers?.[providerId];
-  const modelName = config.defaultModel ?? providerConfig?.defaultModel;
+  if (!providerConfig) {
+    console.error(chalk.yellow('\n⚠️  Provider not configured\n'));
+    return null;
+  }
 
-  if (!providerConfig?.apiKey || !modelName) {
-    console.error(chalk.yellow('\n⚠️  Provider not fully configured\n'));
+  // Check if provider is properly configured
+  const provider = getProvider(providerId);
+  if (!provider.isConfigured(providerConfig)) {
+    console.error(chalk.yellow(`\n⚠️  ${provider.name} is not properly configured\n`));
+    console.error(chalk.dim('Run: sylphx code (to configure AI)\n'));
     return null;
   }
 
@@ -52,6 +81,13 @@ export async function getOrCreateSession(continueSession: boolean): Promise<Sess
       return lastSession;
     }
     console.error(chalk.yellow('No previous session found, creating new one\n'));
+  }
+
+  // Get default model (last used or first available)
+  const modelName = await getDefaultModel(providerId, providerConfig);
+  if (!modelName) {
+    console.error(chalk.yellow('\n⚠️  No models available for this provider\n'));
+    return null;
   }
 
   // Create new session
