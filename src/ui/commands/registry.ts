@@ -495,6 +495,47 @@ const modelCommand: Command = {
       name: 'model-name',
       description: 'Model to switch to',
       required: false,
+      loadOptions: async (previousArgs) => {
+        try {
+          // Load AI config
+          const { loadAIConfig } = await import('../../config/ai-config.js');
+          const configResult = await loadAIConfig();
+
+          if (!configResult.ok) {
+            throw new Error('Failed to load AI config');
+          }
+
+          const aiConfig = configResult.value;
+          if (!aiConfig?.providers) {
+            return [];
+          }
+
+          // Fetch models from all configured providers
+          const allModels: Array<{ id: string; label: string; value: string }> = [];
+
+          for (const [providerId, config] of Object.entries(aiConfig.providers)) {
+            if (config.apiKey) {
+              try {
+                const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+                const models = await fetchModels(providerId as any, config.apiKey);
+                allModels.push(...models.map(m => ({
+                  id: m.id,
+                  label: `${m.name} (${providerId})`,
+                  value: m.id,
+                })));
+              } catch (error) {
+                // Silently skip providers that fail
+                console.error(`Failed to fetch models for ${providerId}:`, error);
+              }
+            }
+          }
+
+          return allModels;
+        } catch (error) {
+          console.error('Error loading models:', error);
+          return [];
+        }
+      },
     },
   ],
   execute: async (context) => {
