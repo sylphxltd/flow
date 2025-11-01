@@ -23,12 +23,26 @@ interface CommandArg {
   loadOptions?: () => Promise<Array<{ id: string; name: string }>>; // Async loader - each command manages its own loading logic
 }
 
+// Command execution context - provides methods for command to interact with user
+interface CommandContext {
+  args: string[];
+  // Send message to chat (like AI response)
+  sendMessage: (content: string) => void;
+  // Wait for user input
+  waitForInput: (options: {
+    type: 'text' | 'selection';
+    prompt?: string;
+    options?: Array<{ id: string; name: string }>;
+    placeholder?: string;
+  }) => Promise<string>;
+}
+
 interface Command {
   id: string;
   label: string;
   description: string;
   args?: CommandArg[];
-  execute: (args?: string[]) => Promise<string>; // Returns response message
+  execute: (context: CommandContext) => Promise<string>; // Returns final response message
 }
 
 interface ChatProps {
@@ -47,6 +61,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
   const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
+
+  // For command interactive flow - when command calls waitForInput()
+  const [pendingInput, setPendingInput] = useState<{
+    type: 'text' | 'selection';
+    prompt?: string;
+    options?: Array<{ id: string; name: string }>;
+    placeholder?: string;
+  } | null>(null);
+  const inputResolver = useRef<((value: string) => void) | null>(null);
 
   const addLog = (message: string) => {
     addDebugLog(message);
@@ -69,6 +92,28 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [currentlyLoading, setCurrentlyLoading] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
+
+  // Create command context for execute functions
+  const createCommandContext = (args: string[]): CommandContext => ({
+    args,
+    sendMessage: (content: string) => {
+      if (currentSessionId) {
+        addMessage(currentSessionId, 'assistant', content);
+      }
+    },
+    waitForInput: (options) => {
+      return new Promise((resolve) => {
+        addLog(`[waitForInput] Waiting for ${options.type} input`);
+        inputResolver.current = resolve;
+        setPendingInput(options);
+
+        // If it's a selection type and has options, also set up selection mode
+        if (options.type === 'selection' && options.options) {
+          setCachedOptions((prev) => new Map(prev).set('__pending_input__', options.options!));
+        }
+      });
+    },
+  });
 
   // Define available commands with args configuration
   const baseCommands: Command[] = [
@@ -124,12 +169,33 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           },
         },
       ],
-      execute: async (args) => {
-        if (!args || args.length === 0) {
-          return 'Please provide a model name. Example: /model claude-3-5-sonnet';
+      execute: async (context) => {
+        let modelId: string;
+
+        // If no args provided, ask user to select
+        if (context.args.length === 0) {
+          // Load models
+          const firstArg = baseCommands.find(cmd => cmd.id === 'model')?.args?.[0];
+          if (!firstArg?.loadOptions) {
+            return 'Failed to load models';
+          }
+
+          try {
+            const models = await firstArg.loadOptions();
+
+            // Ask user to select
+            context.sendMessage('Which model do you want to use?');
+            modelId = await context.waitForInput({
+              type: 'selection',
+              options: models,
+            });
+          } catch (error) {
+            return `Failed to load models: ${error instanceof Error ? error.message : String(error)}`;
+          }
+        } else {
+          modelId = context.args[0];
         }
 
-        const modelId = args[0];
         const provider = currentSession?.provider || aiConfig?.defaultProvider;
 
         if (!provider) {
@@ -164,7 +230,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       id: 'logs',
       label: '/logs',
       description: 'View debug logs',
-      execute: async () => {
+      execute: async (context) => {
         navigateTo('logs');
         return 'Opening debug logs...';
       },
@@ -173,7 +239,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       id: 'clear',
       label: '/clear',
       description: 'Clear chat history',
-      execute: async () => {
+      execute: async (context) => {
         if (currentSessionId) {
           const session = sessions.find((s) => s.id === currentSessionId);
           if (session) {
@@ -187,7 +253,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       id: 'help',
       label: '/help',
       description: 'Show available commands',
-      execute: async () => {
+      execute: async (context) => {
         const commandList = baseCommands
           .map((cmd) => {
             const argsText = cmd.args
@@ -288,8 +354,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             label: `${commandName} ${option.id}`,
             description: option.name !== option.id ? option.name : '',
             args: matchedCommand.args,
-            execute: async () => {
-              return await matchedCommand.execute([option.id]);
+            execute: async (context) => {
+              return await matchedCommand.execute(createCommandContext([option.id]));
             },
           }));
       }
@@ -332,7 +398,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (key.return) {
           const selectedOption = options[selectedCommandIndex];
           if (selectedOption) {
-            const response = await pendingCommand.command.execute([selectedOption.id]);
+            const response = await pendingCommand.command.execute(createCommandContext([selectedOption.id]));
             if (currentSessionId) {
               addMessage(currentSessionId, 'assistant', response);
             }
@@ -429,7 +495,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               if (currentSessionId) {
                 addMessage(currentSessionId, 'user', selected.label);
               }
-              const response = await selected.execute();
+              const response = await selected.execute(createCommandContext([]));
               if (currentSessionId) {
                 addMessage(currentSessionId, 'assistant', response);
               }
@@ -580,7 +646,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
       // Execute command
       try {
-        const response = await command.execute(args.length > 0 ? args : undefined);
+        const response = await command.execute(createCommandContext(args));
         if (currentSessionId) {
           addMessage(currentSessionId, 'assistant', response);
         }
@@ -833,7 +899,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         key={option.id}
                         paddingY={0}
                         onClick={async () => {
-                          const response = await pendingCommand.command.execute([option.id]);
+                          const response = await pendingCommand.command.execute(createCommandContext([option.id]));
                           if (currentSessionId) {
                             addMessage(currentSessionId, 'assistant', response);
                           }
