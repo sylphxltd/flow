@@ -11,39 +11,12 @@ import { useChat } from '../hooks/useChat.js';
 import { useAIConfig } from '../hooks/useAIConfig.js';
 import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
+import { commands } from '../commands/registry.js';
+import type { CommandContext } from '../commands/types.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
   | { type: 'tool'; name: string; status: 'running' | 'completed' | 'failed'; duration?: number };
-
-interface CommandArg {
-  name: string;
-  description: string;
-  required?: boolean;
-  loadOptions?: () => Promise<Array<{ id: string; name: string }>>; // Async loader - each command manages its own loading logic
-}
-
-// Command execution context - provides methods for command to interact with user
-interface CommandContext {
-  args: string[];
-  // Send message to chat (like AI response)
-  sendMessage: (content: string) => void;
-  // Wait for user input
-  waitForInput: (options: {
-    type: 'text' | 'selection';
-    prompt?: string;
-    options?: Array<{ id: string; name: string }>;
-    placeholder?: string;
-  }) => Promise<string>;
-}
-
-interface Command {
-  id: string;
-  label: string;
-  description: string;
-  args?: CommandArg[];
-  execute: (context: CommandContext) => Promise<string>; // Returns final response message
-}
 
 interface ChatProps {
   commandFromPalette?: string | null;
@@ -89,11 +62,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
 
-  // Options cache and loading states (keyed by command.id + arg.name)
-  const optionsCacheRef = useRef<Map<string, Array<{ id: string; name: string }>>>(new Map());
+  // Options cache for selection mode and autocomplete
+  const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
   const [currentlyLoading, setCurrentlyLoading] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
 
   // Create command context for execute functions
   const createCommandContext = (args: string[]): CommandContext => ({
@@ -115,164 +87,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         }
       });
     },
+    getConfig: () => aiConfig,
+    saveConfig: (config) => saveConfig(config),
+    getCurrentSession: () => currentSession,
+    updateProvider: (provider, data) => updateProvider(provider, data),
+    setAIConfig: (config) => setAIConfig(config),
+    updateSessionModel: (sessionId, model) => updateSessionModel(sessionId, model),
+    createSession: (provider, model) => createSession(provider, model),
+    getSessions: () => sessions,
+    getCurrentSessionId: () => currentSessionId,
+    navigateTo: (screen) => navigateTo(screen),
+    addLog: (message) => addLog(message),
   });
-
-  // Define available commands with args configuration
-  const baseCommands: Command[] = [
-    {
-      id: 'model',
-      label: '/model',
-      description: 'Switch AI model',
-      args: [
-        {
-          name: 'model-name',
-          description: 'Model to switch to',
-          required: true,
-          loadOptions: async () => {
-            // Each command manages its own loading logic
-            const cacheKey = 'model';
-
-            // Return cached if available
-            if (optionsCacheRef.current.has(cacheKey)) {
-              return optionsCacheRef.current.get(cacheKey)!;
-            }
-
-            if (!aiConfig?.providers) {
-              throw new Error('No providers configured');
-            }
-
-            const allModels: Array<{ id: string; name: string }> = [];
-            const errors: string[] = [];
-
-            // Fetch models from each provider sequentially
-            for (const [providerId, config] of Object.entries(aiConfig.providers)) {
-              if (config.apiKey) {
-                try {
-                  const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-                  const models = await fetchModels(providerId as any, config.apiKey);
-                  allModels.push(...models.map(m => ({ id: m.id, name: m.name })));
-                  addLog(`Loaded ${models.length} models from ${providerId}`);
-                } catch (error) {
-                  const errorMsg = error instanceof Error ? error.message : String(error);
-                  errors.push(`${providerId}: ${errorMsg}`);
-                  addLog(`Failed to fetch models for ${providerId}: ${errorMsg}`);
-                }
-              }
-            }
-
-            if (allModels.length === 0) {
-              const errorMsg = errors.length > 0 ? errors.join('; ') : 'No models available';
-              throw new Error(errorMsg);
-            }
-
-            // Cache the result
-            optionsCacheRef.current.set(cacheKey, allModels);
-            return allModels;
-          },
-        },
-      ],
-      execute: async (context) => {
-        let modelId: string;
-
-        // If no args provided, ask user to select
-        if (context.args.length === 0) {
-          // Load models
-          const firstArg = baseCommands.find(cmd => cmd.id === 'model')?.args?.[0];
-          if (!firstArg?.loadOptions) {
-            return 'Failed to load models';
-          }
-
-          try {
-            const models = await firstArg.loadOptions();
-
-            // Ask user to select
-            context.sendMessage('Which model do you want to use?');
-            modelId = await context.waitForInput({
-              type: 'selection',
-              options: models,
-            });
-          } catch (error) {
-            return `Failed to load models: ${error instanceof Error ? error.message : String(error)}`;
-          }
-        } else {
-          modelId = context.args[0];
-        }
-
-        const provider = currentSession?.provider || aiConfig?.defaultProvider;
-
-        if (!provider) {
-          return 'No provider configured. Please configure a provider first.';
-        }
-
-        // Update model
-        updateProvider(provider, { defaultModel: modelId });
-        const newConfig = {
-          ...aiConfig!,
-          defaultModel: modelId,
-          providers: {
-            ...aiConfig!.providers,
-            [provider]: {
-              ...aiConfig!.providers?.[provider],
-              defaultModel: modelId,
-            },
-          },
-        };
-        setAIConfig(newConfig);
-
-        // Save config to file
-        await saveConfig(newConfig);
-
-        // Update current session's model (preserve history)
-        if (currentSessionId) {
-          updateSessionModel(currentSessionId, modelId);
-        } else {
-          // Fallback: create new session if no active session
-          createSession(provider, modelId);
-        }
-
-        return `Switched to model: ${modelId}`;
-      },
-    },
-    {
-      id: 'logs',
-      label: '/logs',
-      description: 'View debug logs',
-      execute: async (context) => {
-        navigateTo('logs');
-        return 'Opening debug logs...';
-      },
-    },
-    {
-      id: 'clear',
-      label: '/clear',
-      description: 'Clear chat history',
-      execute: async (context) => {
-        if (currentSessionId) {
-          const session = sessions.find((s) => s.id === currentSessionId);
-          if (session) {
-            session.messages = [];
-          }
-        }
-        return 'Chat history cleared';
-      },
-    },
-    {
-      id: 'help',
-      label: '/help',
-      description: 'Show available commands',
-      execute: async (context) => {
-        const commandList = baseCommands
-          .map((cmd) => {
-            const argsText = cmd.args
-              ? ` ${cmd.args.map((a) => `[${a.name}]`).join(' ')}`
-              : '';
-            return `${cmd.label}${argsText} - ${cmd.description}`;
-          })
-          .join('\n');
-        return `Available commands:\n${commandList}`;
-      },
-    },
-  ];
 
   // Generate hint text for current input
   const getHintText = (): string | undefined => {
@@ -281,8 +107,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     const parts = input.split(' ');
     const commandName = parts[0];
 
-    // Find matching base command
-    const matchedCommand = baseCommands.find((cmd) => cmd.label === commandName);
+    // Find matching command
+    const matchedCommand = commands.find((cmd) => cmd.label === commandName);
     if (matchedCommand && matchedCommand.args && matchedCommand.args.length > 0) {
       const currentArgIndex = parts.length - 1;
       if (currentArgIndex < matchedCommand.args.length) {
@@ -305,7 +131,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     const parts = input.split(' ');
     const commandName = parts[0];
-    const matchedCommand = baseCommands.find((cmd) => cmd.label === commandName);
+    const matchedCommand = commands.find((cmd) => cmd.label === commandName);
 
     // If command has args with loadOptions and user is typing args
     if (matchedCommand && matchedCommand.args && parts.length > 1) {
@@ -332,7 +158,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         }
       }
     }
-  }, [input, baseCommands, currentlyLoading]); // Remove cachedOptions from deps to prevent loop
+  }, [input, currentlyLoading]); // cachedOptions removed from deps to prevent loop, commands are stable
 
   // Filter commands based on input
   const getFilteredCommands = () => {
@@ -342,7 +168,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     const commandName = parts[0];
     const argInput = parts.slice(1).join(' ');
 
-    const matchedCommand = baseCommands.find((cmd) => cmd.label === commandName);
+    const matchedCommand = commands.find((cmd) => cmd.label === commandName);
 
     // Multi-level autocomplete: if command has args and user is typing args
     if (matchedCommand && matchedCommand.args && parts.length > 1) {
@@ -368,9 +194,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       }
     }
 
-    // Base command filtering
+    // Command filtering
     const query = input.slice(1).toLowerCase();
-    return baseCommands.filter(
+    return commands.filter(
       (cmd) =>
         cmd.label.toLowerCase().includes(`/${query}`) ||
         cmd.description.toLowerCase().includes(query)
@@ -494,9 +320,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (key.tab) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
-            const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
+            const isCommand = commands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
-            const completedText = (isBaseCommand && hasArgs) ? `${selected.label} ` : selected.label;
+            const completedText = (isCommand && hasArgs) ? `${selected.label} ` : selected.label;
 
             addLog(`[useInput] Tab autocomplete fill: ${completedText}`);
             setInput(completedText);
@@ -513,7 +339,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             skipNextSubmit.current = true; // Prevent TextInput's onSubmit from also executing
 
             // Check if this is a base command that needs args
-            const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
+            const isCommand = commands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
 
             // Execute command directly - let command handle interaction via CommandContext
@@ -642,7 +468,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       const args = parts.slice(1);
 
       // Find matching command
-      const command = baseCommands.find((cmd) => cmd.label === commandName);
+      const command = commands.find((cmd) => cmd.label === commandName);
 
       if (!command) {
         // Unknown command - add to conversation
