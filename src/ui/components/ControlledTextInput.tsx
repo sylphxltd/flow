@@ -68,11 +68,16 @@ export default function ControlledTextInput({
         return;
       }
 
-      // Backspace - delete char at cursor position (block cursor deletes the char it's on)
-      const isBackspace = key.backspace || input === '\x7F';
-      if (isBackspace) {
+      // Backspace/Delete handling
+      // On Mac, backspace key is often recognized as key.delete
+      // We treat plain delete as backspace (backward delete)
+      // and only Fn+Delete or forward-delete specific keys as forward delete
+      const isBackspace = key.backspace || input === '\x7F' || input === '\b';
+      const isForwardDelete = key.delete && !isBackspace;
+
+      if (isBackspace || (key.delete && !key.shift)) {
+        // Backspace: delete char before cursor
         if (cursor > 0) {
-          // Delete the character before cursor (since cursor is between chars)
           const next = value.slice(0, cursor - 1) + value.slice(cursor);
           onChange(next);
           safeSetCursor(cursor - 1);
@@ -80,10 +85,9 @@ export default function ControlledTextInput({
         return;
       }
 
-      // Delete - delete char after cursor
-      if (key.delete) {
+      // Forward Delete (Fn+Delete on Mac): delete char at cursor
+      if (isForwardDelete) {
         if (cursor < value.length) {
-          // Delete the character at cursor position
           const next = value.slice(0, cursor) + value.slice(cursor + 1);
           onChange(next);
           // cursor stays at same position
