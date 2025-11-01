@@ -52,3 +52,6 @@ src/utils/simple-vector-storage.ts
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
 .secrets/
+
+## AI configuration with sensitive keys
+.sylphx-flow/ai-config.json
