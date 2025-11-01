@@ -118,16 +118,17 @@ function formatResult(toolName: string, result: unknown): { lines: string[]; sum
 }
 
 /**
- * Truncate lines to max 3, showing first and last
+ * Truncate lines to max 5, showing first and last with count
  */
-function truncateLines(lines: string[], maxLines: number = 3): string[] {
+function truncateLines(lines: string[], maxLines: number = 5): string[] {
   if (lines.length <= maxLines) {
     return lines;
   }
 
+  const hiddenCount = lines.length - 2; // First and last are shown
   return [
     lines[0],
-    '...',
+    `... ${hiddenCount} more lines ...`,
     lines[lines.length - 1],
   ];
 }
@@ -171,9 +172,9 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
     <Box>
       {statusIndicator}
       <Text color="white" bold>{displayName}</Text>
-      <Text color="gray">(</Text>
+      <Text color="white">(</Text>
       <Text color="white">{formattedArgs}</Text>
-      <Text color="gray">)</Text>
+      <Text color="white">)</Text>
       {duration !== undefined && status === 'completed' && (
         <Text color="gray" dimColor> {duration}ms</Text>
       )}
@@ -182,16 +183,16 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
     <Box>
       {statusIndicator}
       <Text color="white" bold>{displayName}</Text>
-      <Text color="gray">(</Text>
+      <Text color="white">(</Text>
       <Text color="white" dimColor>{formattedArgs}</Text>
-      <Text color="gray">)</Text>
+      <Text color="white">)</Text>
       {duration !== undefined && status === 'completed' && (
         <Text color="gray" dimColor> {duration}ms</Text>
       )}
     </Box>
   );
 
-  // Result display
+  // Result display - only show if there's actual content
   let resultDisplay: React.ReactNode = null;
 
   if (status === 'running') {
@@ -221,6 +222,7 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
         </Box>
       );
     }
+    // If no summary and no lines, resultDisplay stays null (no empty space)
   } else if (status === 'failed') {
     resultDisplay = (
       <Box marginLeft={2}>
