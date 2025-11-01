@@ -550,50 +550,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setSelectedCommandIndex(0);
   }, [filteredCommands.length]);
 
-  // Check if ready to chat
-  if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
-    return (
-      <Box flexDirection="column" flexGrow={1} paddingY={2}>
-        <Box paddingBottom={2}>
-          <Text color="#00D9FF">▌</Text>
-          <Text bold color="white"> WELCOME</Text>
-        </Box>
-
-        <Box paddingBottom={2}>
-          <Text color="#FFD700">▌</Text>
-          <Text color="gray"> No AI provider configured yet</Text>
-        </Box>
-
-        <Box flexDirection="column" gap={1}>
-          <Box>
-            <Text color="#00D9FF">1.</Text>
-            <Text color="gray"> Type </Text>
-            <Text bold color="#00D9FF">/provider</Text>
-            <Text color="gray"> to configure a provider</Text>
-          </Box>
-          <Box>
-            <Text color="#00D9FF">2.</Text>
-            <Text color="gray"> Type </Text>
-            <Text bold color="#00D9FF">/model</Text>
-            <Text color="gray"> to select a model</Text>
-          </Box>
-          <Box>
-            <Text color="#00D9FF">3.</Text>
-            <Text color="gray"> Start chatting with AI</Text>
-          </Box>
-        </Box>
-      </Box>
-    );
-  }
-
-  if (!currentSession) {
-    return (
-      <Box>
-        <Text color="yellow">⏳ Creating session...</Text>
-      </Box>
-    );
-  }
-
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
 
@@ -673,6 +629,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     }
 
     // Regular message - send to AI
+    // Block if no provider configured
+    if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
+      if (currentSessionId) {
+        addMessage(currentSessionId, 'user', userMessage);
+        addMessage(currentSessionId, 'assistant', 'No AI provider configured. Use /provider to configure a provider first.');
+      }
+      return;
+    }
+
     setIsStreaming(true);
     setStreamParts([]);
     addLog('Starting message send...');
@@ -743,7 +708,28 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
         {/* Messages - Scrollable area */}
         <Box flexDirection="column" flexGrow={1} minHeight={0}>
-        {currentSession.messages.length === 0 && !isStreaming ? (
+        {!currentSession ? (
+          <Box paddingY={1} flexDirection="column">
+            <Box paddingBottom={2}>
+              <Text color="#00D9FF">▌</Text>
+              <Text bold color="white"> WELCOME</Text>
+            </Box>
+            <Box paddingBottom={1}>
+              <Text dimColor>No AI provider configured yet.</Text>
+            </Box>
+            <Box paddingBottom={1}>
+              <Text dimColor>Configure a provider to start chatting:</Text>
+            </Box>
+            <Box paddingLeft={2} paddingBottom={1}>
+              <Text color="#00D9FF">/provider</Text>
+              <Text dimColor> - Manage AI providers</Text>
+            </Box>
+            <Box paddingLeft={2} paddingBottom={1}>
+              <Text color="#00D9FF">/help</Text>
+              <Text dimColor> - Show all available commands</Text>
+            </Box>
+          </Box>
+        ) : currentSession.messages.length === 0 && !isStreaming ? (
           <Box paddingY={1}>
             <Text dimColor>Ready to chat...</Text>
           </Box>
@@ -1196,12 +1182,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
         {/* Status Bar - Fixed at bottom */}
         <Box flexShrink={0} paddingTop={1}>
-          <StatusBar
-            provider={currentSession.provider}
-            model={currentSession.model}
-            apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
-            messageCount={currentSession.messages.length}
-          />
+          {currentSession && (
+            <StatusBar
+              provider={currentSession.provider}
+              model={currentSession.model}
+              apiKey={aiConfig?.providers?.[currentSession.provider]?.apiKey}
+              messageCount={currentSession.messages.length}
+            />
+          )}
           <Box>
             <Text dimColor>Type </Text>
             <Text color="#00D9FF" bold>/</Text>
