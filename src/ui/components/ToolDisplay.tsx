@@ -72,10 +72,35 @@ function formatResult(toolName: string, result: unknown): { lines: string[]; sum
         lines,
         summary: `Read ${lines.length} lines`,
       };
+    case 'edit':
+      // Parse result to show replacement count
+      if (typeof result === 'object' && result !== null && 'replacements' in result) {
+        const replacements = (result as any).replacements;
+        return {
+          lines: [],
+          summary: `Replaced ${replacements} occurrence${replacements > 1 ? 's' : ''}`,
+        };
+      }
+      return { lines };
+    case 'write':
+      // Parse result to show bytes written
+      if (typeof result === 'object' && result !== null && 'bytes' in result) {
+        const bytes = (result as any).bytes;
+        return {
+          lines: [],
+          summary: `Wrote ${bytes} bytes`,
+        };
+      }
+      return { lines };
     case 'grep':
       return {
         lines,
         summary: `Found ${lines.length} matches`,
+      };
+    case 'glob':
+      return {
+        lines,
+        summary: `Found ${lines.length} files`,
       };
     case 'bash':
       return {
@@ -126,7 +151,7 @@ function getDisplayName(toolName: string): string {
 
 export function ToolDisplay({ name, status, duration, args, result }: ToolDisplayProps) {
   const formattedArgs = formatArgs(name, args);
-  const isBuiltIn = ['ask', 'read', 'write', 'edit', 'bash', 'grep', 'glob'].includes(name);
+  const isBuiltIn = ['ask', 'read', 'write', 'edit', 'bash', 'grep', 'glob'].includes(name.toLowerCase());
   const displayName = getDisplayName(name);
 
   // Status indicator
