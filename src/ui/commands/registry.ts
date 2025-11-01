@@ -864,26 +864,6 @@ const logsCommand: Command = {
 };
 
 /**
- * Clear command - Clear chat history
- */
-const clearCommand: Command = {
-  id: 'clear',
-  label: '/clear',
-  description: 'Clear chat history',
-  execute: async (context) => {
-    const currentSessionId = context.getCurrentSessionId();
-    if (currentSessionId) {
-      const sessions = context.getSessions();
-      const session = sessions.find((s) => s.id === currentSessionId);
-      if (session) {
-        session.messages = [];
-      }
-    }
-    return 'Chat history cleared';
-  },
-};
-
-/**
  * Help command - Show available commands
  */
 const helpCommand: Command = {
@@ -1163,7 +1143,6 @@ export const commands: Command[] = [
   providerCommand,
   modelCommand,
   logsCommand,
-  clearCommand,
   helpCommand,
   surveyCommand,
   contextCommand,
