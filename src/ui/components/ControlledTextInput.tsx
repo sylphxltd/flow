@@ -68,10 +68,11 @@ export default function ControlledTextInput({
         return;
       }
 
-      // Backspace - delete char before cursor
+      // Backspace - delete char at cursor position (block cursor deletes the char it's on)
       const isBackspace = key.backspace || input === '\x7F';
       if (isBackspace) {
         if (cursor > 0) {
+          // Delete the character before cursor (since cursor is between chars)
           const next = value.slice(0, cursor - 1) + value.slice(cursor);
           onChange(next);
           safeSetCursor(cursor - 1);
@@ -79,9 +80,10 @@ export default function ControlledTextInput({
         return;
       }
 
-      // Delete - delete char at cursor
+      // Delete - delete char after cursor
       if (key.delete) {
         if (cursor < value.length) {
+          // Delete the character at cursor position
           const next = value.slice(0, cursor) + value.slice(cursor + 1);
           onChange(next);
           // cursor stays at same position
@@ -147,16 +149,14 @@ export default function ControlledTextInput({
     <Box>
       {value.length === 0 && placeholder ? (
         <>
+          {showCursor && <Text color="#00FF88">▊</Text>}
           <Text dimColor>{placeholder}</Text>
-          {showCursor && <Text inverse> </Text>}
         </>
       ) : (
         <>
           <Text>{left}</Text>
-          {showCursor && (
-            <Text inverse>{right.length > 0 ? right[0] : ' '}</Text>
-          )}
-          <Text>{right.slice(showCursor ? 1 : 0)}</Text>
+          {showCursor && <Text color="#00FF88">▊</Text>}
+          <Text>{right}</Text>
         </>
       )}
     </Box>
