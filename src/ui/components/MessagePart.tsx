@@ -27,24 +27,41 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
   const [liveDuration, setLiveDuration] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    // Only track live duration for running parts with startTime
-    if (part.type === 'reasoning' && !('completed' in part && part.completed) && 'startTime' in part && part.startTime) {
+    // Check if this is a running reasoning part
+    const isRunningReasoning = part.type === 'reasoning' &&
+                                !('completed' in part && part.completed) &&
+                                'startTime' in part &&
+                                part.startTime;
+
+    // Check if this is a running tool part
+    const isRunningTool = part.type === 'tool' &&
+                          part.status === 'running' &&
+                          'startTime' in part &&
+                          part.startTime;
+
+    if (isRunningReasoning || isRunningTool) {
+      const startTime = (part as any).startTime;
+
+      // Set initial duration
+      setLiveDuration(Date.now() - startTime);
+
       // Update every second
       const interval = setInterval(() => {
-        setLiveDuration(Date.now() - part.startTime!);
+        setLiveDuration(Date.now() - startTime);
       }, 1000);
-      return () => clearInterval(interval);
-    } else if (part.type === 'tool' && part.status === 'running' && 'startTime' in part && part.startTime) {
-      // Update every second
-      const interval = setInterval(() => {
-        setLiveDuration(Date.now() - part.startTime!);
-      }, 1000);
+
       return () => clearInterval(interval);
     } else {
       // Clear live duration when part completes
       setLiveDuration(undefined);
+      return undefined;
     }
-  }, [part.type, part.type === 'reasoning' ? (('completed' in part && part.completed) ? 'completed' : 'running') : (part.type === 'tool' ? part.status : ''), part.type === 'reasoning' || part.type === 'tool' ? ('startTime' in part ? part.startTime : undefined) : undefined]);
+  }, [
+    part.type,
+    part.type === 'reasoning' ? ('completed' in part ? part.completed : true) : null,
+    part.type === 'tool' ? part.status : null,
+    part.type === 'reasoning' || part.type === 'tool' ? ('startTime' in part ? part.startTime : null) : null
+  ]);
   if (part.type === 'text') {
     return (
       <Box flexDirection="column">
