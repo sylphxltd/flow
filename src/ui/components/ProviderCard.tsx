@@ -28,6 +28,7 @@ export default function ProviderCard({
     google: '#FF6B6B',
     openrouter: '#A855F7',
     'claude-code': '#FF9500',
+    zai: '#FFD700',
   };
 
   const color = colors[providerId];
