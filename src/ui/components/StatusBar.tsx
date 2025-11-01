@@ -28,14 +28,24 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
   } | null>(null);
   const [agentName, setAgentName] = useState<string>('');
 
-  // Get current agent
+  // Get current agent and update periodically
   useEffect(() => {
-    try {
-      const agent = getCurrentAgent();
-      setAgentName(agent.metadata.name);
-    } catch (error) {
-      setAgentName('');
-    }
+    const updateAgent = () => {
+      try {
+        const agent = getCurrentAgent();
+        setAgentName(agent.metadata.name);
+      } catch (error) {
+        setAgentName('');
+      }
+    };
+
+    // Initial update
+    updateAgent();
+
+    // Update every second to reflect agent changes
+    const interval = setInterval(updateAgent, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
