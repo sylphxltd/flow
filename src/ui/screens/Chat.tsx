@@ -1160,7 +1160,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     {msg.usage && (
                       <Box marginLeft={2}>
                         <Text dimColor>
-                          {msg.usage.totalTokens.toLocaleString()} tokens
+                          {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
                         </Text>
                       </Box>
                     )}
