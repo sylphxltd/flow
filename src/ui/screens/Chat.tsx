@@ -218,6 +218,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           const currentQuestion = questions[multiSelectionPage];
           const totalQuestions = questions.length;
 
+          // Handle text input for filtering
+          if (input && !key.upArrow && !key.downArrow && !key.return && !key.escape && !key.tab && !key.ctrl) {
+            setSelectionFilter((prev) => prev + input);
+            setSelectedCommandIndex(0);
+            return;
+          }
+
+          // Handle backspace for filtering
+          if (key.backspace || key.delete) {
+            setSelectionFilter((prev) => prev.slice(0, -1));
+            setSelectedCommandIndex(0);
+            return;
+          }
+
           // Multi-question: Tab navigation between questions
           if (!isSingleQuestion) {
             if (key.tab && !key.shift) {
