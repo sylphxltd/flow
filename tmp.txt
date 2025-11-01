@@ -1,0 +1,5 @@
+This is the EDITED content of the temporary file.
+It has been modified to demonstrate the edit function.
+Line 3: Updated content here.
+Line 4: Modified final line.
+Line 5: This is a new line that was added during editing.

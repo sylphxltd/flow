@@ -65,9 +65,17 @@ IMPORTANT: This will overwrite the file if it exists.`,
     await mkdir(dir, { recursive: true });
 
     await writeFile(file_path, content, encoding as BufferEncoding);
+
+    // Get file name and line preview
+    const fileName = file_path.split('/').pop() || '';
+    const lines = content.split('\n');
+
     return {
       path: file_path,
       bytes: Buffer.byteLength(content, encoding as BufferEncoding),
+      fileName,
+      lineCount: lines.length,
+      preview: lines.slice(0, 5), // First 5 lines for preview
     };
   },
 });

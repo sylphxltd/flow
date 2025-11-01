@@ -90,12 +90,15 @@ function formatResult(toolName: string, result: unknown): { lines: string[]; sum
       }
       return { lines };
     case 'write':
-      // Parse result to show bytes written
-      if (typeof result === 'object' && result !== null && 'bytes' in result) {
-        const bytes = (result as any).bytes;
+      // Parse result to show file info and preview
+      if (typeof result === 'object' && result !== null && 'preview' in result) {
+        const fileName = (result as any).fileName;
+        const lineCount = (result as any).lineCount;
+        const preview = (result as any).preview as string[];
+
         return {
-          lines: [],
-          summary: `Wrote ${bytes} bytes`,
+          lines: preview,
+          summary: `Wrote ${fileName} (${lineCount} line${lineCount !== 1 ? 's' : ''})`,
         };
       }
       return { lines };
@@ -211,11 +214,35 @@ export function ToolDisplay({ name, status, duration, args, result }: ToolDispla
   } else if (status === 'completed' && result !== undefined) {
     const { lines, summary } = formatResult(name, result);
 
-    if (summary) {
-      // Show summary for tools like Read
+    if (summary && lines.length === 0) {
+      // Show summary only (no lines to display)
       resultDisplay = (
         <Box marginLeft={2}>
           <Text color="gray">{summary}</Text>
+        </Box>
+      );
+    } else if (summary && lines.length > 0) {
+      // Show summary with lines below
+      resultDisplay = (
+        <Box flexDirection="column" marginLeft={2}>
+          <Text color="gray">{summary}</Text>
+          <Box flexDirection="column" paddingTop={1}>
+            {truncateLines(lines).map((line, idx) => {
+              // For edit tool, colorize based on diff markers
+              if (name.toLowerCase() === 'edit' && typeof line === 'string') {
+                const match = line.match(/^\s*\d+\s+([-+])/);
+                if (match) {
+                  const marker = match[1];
+                  if (marker === '-') {
+                    return <Text key={idx} color="#FF3366">{line}</Text>;
+                  } else if (marker === '+') {
+                    return <Text key={idx} color="#00FF88">{line}</Text>;
+                  }
+                }
+              }
+              return <Text key={idx} color="gray">{line}</Text>;
+            })}
+          </Box>
         </Box>
       );
     } else if (lines.length > 0) {
