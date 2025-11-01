@@ -58,12 +58,11 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
   if (part.type === 'text') {
     return (
       <Box flexDirection="column">
-        <MarkdownText prefix="▏ " prefixColor="#00FF88">
+        <MarkdownText>
           {part.content}
         </MarkdownText>
         {isLastInStream && (
           <Box>
-            <Text color="#00FF88">▏ </Text>
             <Text color="#FFD700">▊</Text>
           </Box>
         )}
@@ -80,7 +79,6 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
       return (
         <Box flexDirection="column" paddingTop={1}>
           <Box>
-            <Text color="#00FF88">▏ </Text>
             <Text dimColor>Thought {seconds}s</Text>
           </Box>
         </Box>
@@ -91,7 +89,6 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
       return (
         <Box flexDirection="column" paddingTop={1}>
           <Box>
-            <Text color="#00FF88">▏ </Text>
             <Spinner color="#FFD700" />
             <Text dimColor> Thinking... {seconds}s</Text>
           </Box>
@@ -103,7 +100,6 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
   if (part.type === 'error') {
     return (
       <Box>
-        <Text color="#00FF88">▏ </Text>
         <Text color="red">❌ Error: {part.error}</Text>
       </Box>
     );
@@ -116,7 +112,6 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
 
     return (
       <Box>
-        <Text color="#00FF88">▏ </Text>
         <ToolDisplay
           name={part.name}
           status={part.status}
