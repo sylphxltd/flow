@@ -10,6 +10,7 @@ import ProviderManagement from './screens/ProviderManagement.js';
 import ModelSelection from './screens/ModelSelection.js';
 import CommandPalette from './screens/CommandPalette.js';
 import Chat from './screens/Chat.js';
+import Logs from './screens/Logs.js';
 import { useAIConfig } from './hooks/useAIConfig.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 
@@ -78,6 +79,7 @@ export default function App() {
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
         {currentScreen === 'command-palette' && <CommandPalette onCommand={handleCommand} />}
+        {currentScreen === 'logs' && <Logs />}
       </Box>
     </Box>
   );

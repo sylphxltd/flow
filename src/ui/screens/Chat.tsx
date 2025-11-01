@@ -11,7 +11,6 @@ import { useChat } from '../hooks/useChat.js';
 import { useAIConfig } from '../hooks/useAIConfig.js';
 import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
-import LogPanel from '../components/LogPanel.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -41,8 +40,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [inputKey, setInputKey] = useState(0); // Force TextInput remount for cursor position
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const [showLogs, setShowLogs] = useState(true); // Show logs for debugging
+  const debugLogs = useAppStore((state) => state.debugLogs);
+  const addDebugLog = useAppStore((state) => state.addDebugLog);
   const [ctrlPressed, setCtrlPressed] = useState(false);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -50,8 +49,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
 
   const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
+    addDebugLog(message);
   };
 
   const navigateTo = useAppStore((state) => state.navigateTo);
@@ -165,10 +163,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     {
       id: 'logs',
       label: '/logs',
-      description: 'Toggle debug logs',
+      description: 'View debug logs',
       execute: async () => {
-        setShowLogs((prev) => !prev);
-        return showLogs ? 'Debug logs hidden' : 'Debug logs enabled';
+        navigateTo('logs');
+        return 'Opening debug logs...';
       },
     },
     {
@@ -932,13 +930,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           </Box>
         </Box>
       </Box>
-
-      {/* Right panel - Debug Logs */}
-      {showLogs && (
-        <Box flexDirection="column" width="30%" paddingLeft={1}>
-          <LogPanel logs={debugLogs} maxLines={50} />
-        </Box>
-      )}
     </Box>
   );
 }

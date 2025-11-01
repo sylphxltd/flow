@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 
-export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette';
+export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
 
 export type MessagePart =
   | { type: 'text'; content: string }
@@ -56,6 +56,11 @@ export interface AppState {
   error: string | null;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+
+  // Debug Logs
+  debugLogs: string[];
+  addDebugLog: (message: string) => void;
+  clearDebugLogs: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -160,6 +165,18 @@ export const useAppStore = create<AppState>()(
     setError: (error) =>
       set((state) => {
         state.error = error;
+      }),
+
+    // Debug Logs
+    debugLogs: [],
+    addDebugLog: (message) =>
+      set((state) => {
+        const timestamp = new Date().toLocaleTimeString();
+        state.debugLogs.push(`[${timestamp}] ${message}`);
+      }),
+    clearDebugLogs: () =>
+      set((state) => {
+        state.debugLogs = [];
       }),
   }))
 );
