@@ -46,6 +46,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
+  const skipNextSubmit = useRef(false); // Prevent double execution when autocomplete handles Enter
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -370,6 +371,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
             if (isMultiLevel && key.return) {
               // Multi-level autocomplete + Enter: execute directly
+              skipNextSubmit.current = true; // Prevent TextInput's onSubmit from also firing
               if (currentSessionId) {
                 addMessage(currentSessionId, 'user', selected.label);
               }
@@ -458,6 +460,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
+
+    // Skip if we just handled this in autocomplete (prevent double execution)
+    if (skipNextSubmit.current) {
+      skipNextSubmit.current = false;
+      return;
+    }
 
     const userMessage = value.trim();
     setInput('');
