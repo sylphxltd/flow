@@ -46,25 +46,37 @@ const providerCommand: Command = {
       required: false,
       loadOptions: async (previousArgs) => {
         // previousArgs: [action, provider-name]
-        // Only show keys available for the selected provider
+        // Load keys from provider's config schema
         const providerId = previousArgs[1]; // e.g., "anthropic", "openai", "openrouter"
 
-        // Common keys for all providers
-        const commonKeys = [
-          { id: 'apiKey', label: 'apiKey', value: 'apiKey' },
-          { id: 'defaultModel', label: 'defaultModel', value: 'defaultModel' },
-        ];
-
-        // OpenAI has additional baseUrl option
-        if (providerId === 'openai') {
-          return [
-            ...commonKeys,
-            { id: 'baseUrl', label: 'baseUrl', value: 'baseUrl' },
-          ];
+        if (!providerId) {
+          return [];
         }
 
-        // Other providers only have common keys
-        return commonKeys;
+        try {
+          const { getProvider } = await import('../../providers/index.js');
+          const provider = getProvider(providerId as any);
+          const schema = provider.getConfigSchema();
+
+          // Convert schema fields to options and add defaultModel
+          const keys = schema.map(field => ({
+            id: field.key,
+            label: field.label,
+            value: field.key,
+          }));
+
+          // Add defaultModel as a special key (not in provider schema)
+          keys.push({
+            id: 'defaultModel',
+            label: 'Default Model',
+            value: 'defaultModel',
+          });
+
+          return keys;
+        } catch (error) {
+          // Fallback to empty if provider not found
+          return [];
+        }
       },
     },
     {
@@ -100,8 +112,16 @@ const providerCommand: Command = {
       }
 
       // Ask which provider
+      const { getProvider } = await import('../../providers/index.js');
       const providerOptions = Object.values(AI_PROVIDERS).map((p) => {
-        const isConfigured = aiConfig?.providers?.[p.id as keyof typeof aiConfig.providers]?.apiKey;
+        let isConfigured = false;
+        try {
+          const provider = getProvider(p.id as any);
+          const providerConfig = aiConfig?.providers?.[p.id as keyof typeof aiConfig.providers];
+          isConfigured = providerConfig ? provider.isConfigured(providerConfig) : false;
+        } catch {
+          // Provider not found or error checking config
+        }
         return {
           label: `${p.name} ${isConfigured ? '✓' : ''}`,
           value: p.id,
@@ -127,9 +147,12 @@ const providerCommand: Command = {
 
       if (action === 'use') {
         // Use provider
+        const { getProvider } = await import('../../providers/index.js');
+        const provider = getProvider(providerId as any);
         const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
-        if (!providerConfig?.apiKey) {
-          return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId} apiKey <your-key>`;
+
+        if (!providerConfig || !provider.isConfigured(providerConfig)) {
+          return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId}`;
         }
 
         const newConfig = {
@@ -159,10 +182,20 @@ const providerCommand: Command = {
         return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
       } else {
         // Set provider - ask for key
-        const availableKeys = ['apiKey', 'defaultModel'];
-        if (providerId === 'openai') {
-          availableKeys.push('baseUrl');
-        }
+        const { getProvider } = await import('../../providers/index.js');
+        const provider = getProvider(providerId as any);
+        const schema = provider.getConfigSchema();
+
+        const availableKeys = schema.map(field => ({
+          label: field.label,
+          value: field.key,
+        }));
+
+        // Add defaultModel as a special key
+        availableKeys.push({
+          label: 'Default Model',
+          value: 'defaultModel',
+        });
 
         context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
         const keyAnswers = await context.waitForInput({
@@ -171,7 +204,7 @@ const providerCommand: Command = {
             {
               id: 'key',
               question: 'Which setting do you want to configure?',
-              options: availableKeys.map(k => ({ label: k, value: k })),
+              options: availableKeys,
             },
           ],
         });
@@ -212,14 +245,26 @@ const providerCommand: Command = {
         context.setAIConfig(newConfig);
         await context.saveConfig(newConfig);
 
-        return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${key === 'apiKey' ? '***' : value}`;
+        // Mask secret values in response
+        const field = schema.find(f => f.key === key);
+        const displayValue = field?.secret ? '***' : value;
+
+        return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
       }
     }
 
     // Case 2: /provider use - ask which provider to use
     if (context.args.length === 1 && context.args[0] === 'use') {
+      const { getProvider } = await import('../../providers/index.js');
       const providerOptions = Object.values(AI_PROVIDERS).map((p) => {
-        const isConfigured = aiConfig?.providers?.[p.id as keyof typeof aiConfig.providers]?.apiKey;
+        let isConfigured = false;
+        try {
+          const provider = getProvider(p.id as any);
+          const providerConfig = aiConfig?.providers?.[p.id as keyof typeof aiConfig.providers];
+          isConfigured = providerConfig ? provider.isConfigured(providerConfig) : false;
+        } catch {
+          // Provider not found or error checking config
+        }
         return {
           label: `${p.name} ${isConfigured ? '✓' : ''}`,
           value: p.id,
@@ -243,9 +288,11 @@ const providerCommand: Command = {
         return 'Provider selection cancelled.';
       }
 
+      const provider = getProvider(providerId as any);
       const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
-      if (!providerConfig?.apiKey) {
-        return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId} apiKey <your-key>`;
+
+      if (!providerConfig || !provider.isConfigured(providerConfig)) {
+        return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId}`;
       }
 
       const newConfig = {
@@ -283,9 +330,12 @@ const providerCommand: Command = {
         return `Invalid provider: ${providerId}. Available: ${Object.keys(AI_PROVIDERS).join(', ')}`;
       }
 
+      const { getProvider } = await import('../../providers/index.js');
+      const provider = getProvider(providerId as any);
       const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
-      if (!providerConfig?.apiKey) {
-        return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId} apiKey <your-key>`;
+
+      if (!providerConfig || !provider.isConfigured(providerConfig)) {
+        return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId}`;
       }
 
       const newConfig = {
@@ -340,10 +390,20 @@ const providerCommand: Command = {
       }
 
       // Ask for key
-      const availableKeys = ['apiKey', 'defaultModel'];
-      if (providerId === 'openai') {
-        availableKeys.push('baseUrl');
-      }
+      const { getProvider } = await import('../../providers/index.js');
+      const provider = getProvider(providerId as any);
+      const schema = provider.getConfigSchema();
+
+      const availableKeys = schema.map(field => ({
+        label: field.label,
+        value: field.key,
+      }));
+
+      // Add defaultModel as a special key
+      availableKeys.push({
+        label: 'Default Model',
+        value: 'defaultModel',
+      });
 
       context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
       const keyAnswers = await context.waitForInput({
@@ -352,7 +412,7 @@ const providerCommand: Command = {
           {
             id: 'key',
             question: 'Which setting do you want to configure?',
-            options: availableKeys.map(k => ({ label: k, value: k })),
+            options: availableKeys,
           },
         ],
       });
@@ -393,7 +453,11 @@ const providerCommand: Command = {
       context.setAIConfig(newConfig);
       await context.saveConfig(newConfig);
 
-      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${key === 'apiKey' ? '***' : value}`;
+      // Mask secret values in response
+      const field = schema.find(f => f.key === key);
+      const displayValue = field?.secret ? '***' : value;
+
+      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
     }
 
     // Case 5: /provider set [name] - ask which key to set
@@ -405,10 +469,20 @@ const providerCommand: Command = {
       }
 
       // Ask for key
-      const availableKeys = ['apiKey', 'defaultModel'];
-      if (providerId === 'openai') {
-        availableKeys.push('baseUrl');
-      }
+      const { getProvider } = await import('../../providers/index.js');
+      const provider = getProvider(providerId as any);
+      const schema = provider.getConfigSchema();
+
+      const availableKeys = schema.map(field => ({
+        label: field.label,
+        value: field.key,
+      }));
+
+      // Add defaultModel as a special key
+      availableKeys.push({
+        label: 'Default Model',
+        value: 'defaultModel',
+      });
 
       context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
       const keyAnswers = await context.waitForInput({
@@ -417,7 +491,7 @@ const providerCommand: Command = {
           {
             id: 'key',
             question: 'Which setting do you want to configure?',
-            options: availableKeys.map(k => ({ label: k, value: k })),
+            options: availableKeys,
           },
         ],
       });
@@ -458,7 +532,11 @@ const providerCommand: Command = {
       context.setAIConfig(newConfig);
       await context.saveConfig(newConfig);
 
-      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${key === 'apiKey' ? '***' : value}`;
+      // Mask secret values in response
+      const field = schema.find(f => f.key === key);
+      const displayValue = field?.secret ? '***' : value;
+
+      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
     }
 
     // Case 6: /provider set [name] [key] [value] - direct configuration
@@ -471,7 +549,12 @@ const providerCommand: Command = {
         return `Invalid provider: ${providerId}. Available: ${Object.keys(AI_PROVIDERS).join(', ')}`;
       }
 
-      const validKeys = ['apiKey', 'defaultModel', ...(providerId === 'openai' ? ['baseUrl'] : [])];
+      // Get valid keys from provider schema
+      const { getProvider } = await import('../../providers/index.js');
+      const provider = getProvider(providerId as any);
+      const schema = provider.getConfigSchema();
+
+      const validKeys = [...schema.map(f => f.key), 'defaultModel'];
       if (!validKeys.includes(key)) {
         return `Invalid key: ${key}. Valid keys for ${providerId}: ${validKeys.join(', ')}`;
       }
@@ -494,7 +577,11 @@ const providerCommand: Command = {
       context.setAIConfig(newConfig);
       await context.saveConfig(newConfig);
 
-      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${key === 'apiKey' ? '***' : value}`;
+      // Mask secret values in response
+      const field = schema.find(f => f.key === key);
+      const displayValue = field?.secret ? '***' : value;
+
+      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
     }
 
     return 'Usage:\n  /provider - Select action and provider\n  /provider use - Select provider to use\n  /provider use [name] - Switch to provider\n  /provider set - Configure a provider\n  /provider set [name] - Configure specific provider\n  /provider set [name] [key] [value] - Set provider config directly';
