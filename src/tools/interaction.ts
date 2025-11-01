@@ -6,6 +6,11 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
+export interface SelectOption {
+  label: string;
+  value?: string;
+}
+
 /**
  * Global user input request handler
  * This will be set by the Chat component to handle user input requests
@@ -15,7 +20,7 @@ let userInputHandler: ((request: UserInputRequest) => Promise<string>) | null = 
 export interface UserInputRequest {
   type: 'selection';
   question: string;
-  options: Array<{ id: string; name: string }>;
+  options: SelectOption[];
 }
 
 /**
@@ -50,8 +55,8 @@ Note: For free-form text questions, just respond normally in your message and wa
   inputSchema: z.object({
     question: z.string().describe('The question to ask the user'),
     options: z.array(z.object({
-      id: z.string().describe('Unique identifier for this option'),
-      name: z.string().describe('Display name for this option'),
+      label: z.string().describe('Display text for this option (what user sees)'),
+      value: z.string().optional().describe('Optional value to return (defaults to label if not provided)'),
     })).describe('List of options for the user to choose from (2-10 options)'),
   }),
   execute: async ({ question, options }) => {

@@ -179,16 +179,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       if (options.length > 0) {
         return options
           .filter((option) =>
-            option.id.toLowerCase().includes(argInput.toLowerCase()) ||
-            option.name.toLowerCase().includes(argInput.toLowerCase())
+            option.label.toLowerCase().includes(argInput.toLowerCase()) ||
+            (option.value && option.value.toLowerCase().includes(argInput.toLowerCase()))
           )
           .map((option) => ({
-            id: `${cacheKey}-${option.id}`,
-            label: `${commandName} ${option.id}`,
-            description: option.name !== option.id ? option.name : '',
+            id: `${cacheKey}-${option.value || option.label}`,
+            label: `${commandName} ${option.label}`,
+            description: option.value ? `Value: ${option.value}` : '',
             args: matchedCommand.args,
             execute: async (context) => {
-              return await matchedCommand.execute(createCommandContext([option.id]));
+              return await matchedCommand.execute(createCommandContext([option.value || option.label]));
             },
           }));
       }
@@ -245,9 +245,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               if (currentSessionId) {
                 const answerText = questions
                   .map((q) => {
-                    const answerId = multiSelectionAnswers[q.id];
-                    const answerOption = q.options.find((opt) => opt.id === answerId);
-                    return answerOption?.name || answerId;
+                    const answerValue = multiSelectionAnswers[q.id];
+                    const answerOption = q.options.find((opt) =>
+                      (opt.value || opt.label) === answerValue
+                    );
+                    return answerOption?.label || answerValue;
                   })
                   .join(', ');
                 addMessage(currentSessionId, 'user', answerText);
@@ -268,8 +270,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           // Question page - option selection
           const filteredOptions = currentQuestion.options.filter(
             (option) =>
-              option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
-              option.name.toLowerCase().includes(selectionFilter.toLowerCase())
+              option.label.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+              (option.value && option.value.toLowerCase().includes(selectionFilter.toLowerCase()))
           );
           const maxIndex = filteredOptions.length - 1;
 
@@ -287,16 +289,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           if (key.return) {
             const selectedOption = filteredOptions[selectedCommandIndex];
             if (selectedOption) {
-              addLog(`[selection] Q${multiSelectionPage + 1}: ${selectedOption.id}`);
+              const selectedValue = selectedOption.value || selectedOption.label;
+              addLog(`[selection] Q${multiSelectionPage + 1}: ${selectedValue}`);
 
               if (isSingleQuestion) {
                 // Single question: submit immediately
                 // Add user's answer to chat history
                 if (currentSessionId) {
-                  addMessage(currentSessionId, 'user', selectedOption.name || selectedOption.id);
+                  addMessage(currentSessionId, 'user', selectedOption.label);
                 }
 
-                inputResolver.current({ [currentQuestion.id]: selectedOption.id });
+                inputResolver.current({ [currentQuestion.id]: selectedValue });
                 inputResolver.current = null;
                 setPendingInput(null);
                 setMultiSelectionPage(0);
@@ -306,7 +309,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 // Multi-question: save answer
                 const newAnswers = {
                   ...multiSelectionAnswers,
-                  [currentQuestion.id]: selectedOption.id,
+                  [currentQuestion.id]: selectedValue,
                 };
                 setMultiSelectionAnswers(newAnswers);
 
@@ -321,9 +324,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   if (currentSessionId) {
                     const answerText = questions
                       .map((q) => {
-                        const answerId = newAnswers[q.id];
-                        const answerOption = q.options.find((opt) => opt.id === answerId);
-                        return answerOption?.name || answerId;
+                        const answerValue = newAnswers[q.id];
+                        const answerOption = q.options.find((opt) =>
+                          (opt.value || opt.label) === answerValue
+                        );
+                        return answerOption?.label || answerValue;
                       })
                       .join(', ');
                     addMessage(currentSessionId, 'user', answerText);
@@ -863,7 +868,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       {questions.map((q, qIdx) => {
                         const isCurrentQuestion = qIdx === multiSelectionPage;
                         const answer = multiSelectionAnswers[q.id];
-                        const answerOption = answer ? q.options.find((opt) => opt.id === answer) : null;
+                        const answerOption = answer ? q.options.find((opt) => (opt.value || opt.label) === answer) : null;
 
                         return (
                           <Box key={q.id} marginBottom={1} flexDirection="column">
@@ -892,8 +897,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                 {(() => {
                                   const filteredOptions = q.options.filter(
                                     (option) =>
-                                      option.id.toLowerCase().includes(selectionFilter.toLowerCase()) ||
-                                      option.name.toLowerCase().includes(selectionFilter.toLowerCase())
+                                      option.label.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+                                      (option.value && option.value.toLowerCase().includes(selectionFilter.toLowerCase()))
                                   );
 
                                   return filteredOptions.length === 0 ? (
@@ -901,17 +906,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                   ) : (
                                     <>
                                       {filteredOptions.slice(0, 10).map((option, idx) => (
-                                        <Box key={option.id} paddingY={0}>
+                                        <Box key={option.value || option.label} paddingY={0}>
                                           <Text
                                             color={idx === selectedCommandIndex ? '#00FF88' : 'gray'}
                                             bold={idx === selectedCommandIndex}
                                           >
                                             {idx === selectedCommandIndex ? '▶ ' : '  '}
-                                            {option.id}
+                                            {option.label}
                                           </Text>
-                                          {option.name !== option.id && (
-                                            <Text dimColor> - {option.name}</Text>
-                                          )}
                                         </Box>
                                       ))}
                                       {filteredOptions.length > 10 && (
@@ -929,7 +931,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                                 {answer ? (
                                   <>
                                     <Text color="#00FF88">✓ </Text>
-                                    <Text color="#00FF88">{answerOption?.name || answer}</Text>
+                                    <Text color="#00FF88">{answerOption?.label || answer}</Text>
                                   </>
                                 ) : (
                                   <Text dimColor>(not answered yet)</Text>
@@ -1030,10 +1032,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   <>
                     {options.slice(0, 10).map((option, idx) => (
                       <Box
-                        key={option.id}
+                        key={option.value || option.label}
                         paddingY={0}
                         onClick={async () => {
-                          const response = await pendingCommand.command.execute(createCommandContext([option.id]));
+                          const response = await pendingCommand.command.execute(createCommandContext([option.value || option.label]));
                           if (currentSessionId) {
                             addMessage(currentSessionId, 'assistant', response);
                           }
@@ -1046,11 +1048,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           bold={idx === selectedCommandIndex}
                         >
                           {idx === selectedCommandIndex ? '> ' : '  '}
-                          {option.id}
+                          {option.label}
                         </Text>
-                        {option.name !== option.id && (
-                          <Text dimColor> - {option.name}</Text>
-                        )}
                       </Box>
                     ))}
                     <Box marginTop={1}>

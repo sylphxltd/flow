@@ -40,7 +40,7 @@ const modelCommand: Command = {
         }
 
         // Fetch models from all configured providers
-        const allModels: Array<{ id: string; name: string }> = [];
+        const allModels: Array<{ label: string; value: string }> = [];
         const errors: string[] = [];
 
         for (const [providerId, config] of Object.entries(aiConfig.providers)) {
@@ -48,7 +48,7 @@ const modelCommand: Command = {
             try {
               const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
               const models = await fetchModels(providerId as any, config.apiKey);
-              allModels.push(...models.map(m => ({ id: m.id, name: m.name })));
+              allModels.push(...models.map(m => ({ label: m.name, value: m.id })));
               context.addLog(`Loaded ${models.length} models from ${providerId}`);
             } catch (error) {
               const errorMsg = error instanceof Error ? error.message : String(error);
@@ -194,33 +194,33 @@ const surveyCommand: Command = {
           id: 'language',
           question: 'What is your favorite programming language?',
           options: [
-            { id: 'typescript', name: 'TypeScript' },
-            { id: 'javascript', name: 'JavaScript' },
-            { id: 'python', name: 'Python' },
-            { id: 'rust', name: 'Rust' },
-            { id: 'go', name: 'Go' },
+            { label: 'TypeScript' },
+            { label: 'JavaScript' },
+            { label: 'Python' },
+            { label: 'Rust' },
+            { label: 'Go' },
           ],
         },
         {
           id: 'framework',
           question: 'Which framework do you prefer?',
           options: [
-            { id: 'react', name: 'React' },
-            { id: 'vue', name: 'Vue' },
-            { id: 'angular', name: 'Angular' },
-            { id: 'svelte', name: 'Svelte' },
-            { id: 'solid', name: 'Solid' },
+            { label: 'React' },
+            { label: 'Vue' },
+            { label: 'Angular' },
+            { label: 'Svelte' },
+            { label: 'Solid' },
           ],
         },
         {
           id: 'editor',
           question: 'What is your favorite code editor?',
           options: [
-            { id: 'vscode', name: 'Visual Studio Code' },
-            { id: 'vim', name: 'Vim/Neovim' },
-            { id: 'emacs', name: 'Emacs' },
-            { id: 'sublime', name: 'Sublime Text' },
-            { id: 'atom', name: 'Atom' },
+            { label: 'Visual Studio Code' },
+            { label: 'Vim/Neovim' },
+            { label: 'Emacs' },
+            { label: 'Sublime Text' },
+            { label: 'Atom' },
           ],
         },
       ],

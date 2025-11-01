@@ -7,13 +7,21 @@ import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 import type { Session } from '../stores/app-store.js';
 
 /**
+ * Option for selection
+ */
+export interface SelectOption {
+  label: string;
+  value?: string;
+}
+
+/**
  * Command argument definition
  */
 export interface CommandArg {
   name: string;
   description: string;
   required?: boolean;
-  loadOptions?: () => Promise<Array<{ id: string; name: string }>>;
+  loadOptions?: () => Promise<SelectOption[]>;
 }
 
 /**
@@ -22,7 +30,7 @@ export interface CommandArg {
 export interface Question {
   id: string;
   question: string;
-  options: Array<{ id: string; name: string }>;
+  options: SelectOption[];
 }
 
 /**
