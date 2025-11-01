@@ -360,25 +360,39 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : 0));
           return;
         }
-        // Tab or Enter - fill in autocomplete text (don't execute yet)
-        if (key.tab || key.return) {
+        // Tab - fill in autocomplete text only
+        if (key.tab) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
-            // Always just fill in the text, never execute here
-            // This matches shell behavior: autocomplete fills, Enter on final text executes
             const isBaseCommand = baseCommands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
             const completedText = (isBaseCommand && hasArgs) ? `${selected.label} ` : selected.label;
 
-            addLog(`[useInput] Autocomplete fill: ${completedText}`);
+            addLog(`[useInput] Tab autocomplete fill: ${completedText}`);
             setInput(completedText);
             setInputKey((prev) => prev + 1); // Force remount to move cursor to end
             setSelectedCommandIndex(0);
+          }
+          return;
+        }
 
-            // Prevent Enter from also submitting (let user verify and press Enter again)
-            if (key.return) {
-              skipNextSubmit.current = true;
+        // Enter - fill in and execute autocomplete selection
+        if (key.return) {
+          const selected = filteredCommands[selectedCommandIndex];
+          if (selected) {
+            addLog(`[useInput] Enter autocomplete execute: ${selected.label}`);
+            skipNextSubmit.current = true; // Prevent TextInput's onSubmit from executing the OLD input value
+
+            // Execute the autocomplete-selected command directly
+            if (currentSessionId) {
+              addMessage(currentSessionId, 'user', selected.label);
             }
+            const response = await selected.execute();
+            if (currentSessionId) {
+              addMessage(currentSessionId, 'assistant', response);
+            }
+            setInput('');
+            setSelectedCommandIndex(0);
           }
           return;
         }
