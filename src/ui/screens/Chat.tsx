@@ -220,19 +220,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const getFilteredFiles = () => {
     // Check if input contains @ for file completion
     const atIndex = input.lastIndexOf('@');
-    if (atIndex === -1) return { files: [], query: '', hasAt: false };
+    if (atIndex === -1) return { files: [], query: '', hasAt: false, atIndex: -1 };
 
     // Extract query after @
     const query = input.slice(atIndex + 1);
 
     // Don't show suggestions if there's a space after the query
     // (user has moved to next part of message)
-    if (query.includes(' ')) return { files: [], query: '', hasAt: false };
+    if (query.includes(' ')) return { files: [], query: '', hasAt: false, atIndex };
 
     // Filter files based on query
     const filtered = filterFiles(projectFiles, query);
 
-    return { files: filtered.slice(0, 10), query, hasAt: true }; // Limit to 10 results
+    return { files: filtered.slice(0, 10), query, hasAt: true, atIndex }; // Limit to 10 results
   };
 
   // Filter commands based on input
@@ -542,9 +542,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               }
             })();
 
-            // Replace @query with the file name
-            const atIndex = input.lastIndexOf('@');
-            const newInput = input.slice(0, atIndex) + `@${selected.relativePath} `;
+            // Replace @query with the file name, preserving text after the query
+            const beforeAt = input.slice(0, filteredFileInfo.atIndex);
+            const afterQuery = input.slice(filteredFileInfo.atIndex + 1 + filteredFileInfo.query.length);
+            const newInput = `${beforeAt}@${selected.relativePath} ${afterQuery}`;
             setInput(newInput);
             setInputKey((prev) => prev + 1); // Force remount to move cursor to end
             setSelectedFileIndex(0);
