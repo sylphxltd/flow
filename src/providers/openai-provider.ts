@@ -4,7 +4,7 @@
 
 import { openai } from '@ai-sdk/openai';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails } from './base-provider.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
 import { getModelMetadata } from '../utils/models-dev.js';
 
@@ -42,15 +42,42 @@ const MODEL_DETAILS: Record<string, ProviderModelDetails> = {
 export class OpenAIProvider implements AIProvider {
   readonly id = 'openai' as const;
   readonly name = 'OpenAI';
-  readonly keyName = 'OPENAI_API_KEY';
 
-  async fetchModels(apiKey?: string): Promise<ModelInfo[]> {
+  getConfigSchema(): ConfigField[] {
+    return [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'string',
+        required: true,
+        secret: true,
+        description: 'Get your API key from https://platform.openai.com',
+        placeholder: 'sk-...',
+      },
+      {
+        key: 'baseUrl',
+        label: 'Base URL',
+        type: 'string',
+        required: false,
+        description: 'Custom API endpoint (for Azure OpenAI, etc.)',
+        placeholder: 'https://api.openai.com/v1',
+      },
+    ];
+  }
+
+  isConfigured(config: ProviderConfig): boolean {
+    return !!config.apiKey;
+  }
+
+  async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
+    const apiKey = config.apiKey as string | undefined;
     if (!apiKey) {
       return OPENAI_MODELS;
     }
 
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
+      const baseUrl = (config.baseUrl as string) || 'https://api.openai.com/v1';
+      const response = await fetch(`${baseUrl}/models`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
 
@@ -70,7 +97,7 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  async getModelDetails(modelId: string): Promise<ProviderModelDetails | null> {
+  async getModelDetails(modelId: string, _config?: ProviderConfig): Promise<ProviderModelDetails | null> {
     // Try provider knowledge first
     if (MODEL_DETAILS[modelId]) {
       return MODEL_DETAILS[modelId];
@@ -90,7 +117,9 @@ export class OpenAIProvider implements AIProvider {
     return null;
   }
 
-  createClient(apiKey: string, modelId: string): LanguageModelV1 {
-    return openai(modelId, { apiKey });
+  createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
+    const apiKey = config.apiKey as string;
+    const baseUrl = config.baseUrl as string | undefined;
+    return openai(modelId, { apiKey, baseURL: baseUrl });
   }
 }

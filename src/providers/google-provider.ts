@@ -1,10 +1,11 @@
 /**
  * Google Provider
+ * Supports both AI Studio (apiKey) and Vertex AI (projectId + location)
  */
 
 import { google } from '@ai-sdk/google';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails } from './base-provider.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
 import { getModelMetadata } from '../utils/models-dev.js';
 
@@ -32,13 +33,49 @@ const MODEL_DETAILS: Record<string, ProviderModelDetails> = {
 export class GoogleProvider implements AIProvider {
   readonly id = 'google' as const;
   readonly name = 'Google';
-  readonly keyName = 'GOOGLE_API_KEY';
 
-  async fetchModels(): Promise<ModelInfo[]> {
+  getConfigSchema(): ConfigField[] {
+    return [
+      {
+        key: 'apiKey',
+        label: 'API Key (AI Studio)',
+        type: 'string',
+        required: false,
+        secret: true,
+        description: 'Get your API key from https://aistudio.google.com',
+        placeholder: 'AIza...',
+      },
+      {
+        key: 'projectId',
+        label: 'Project ID (Vertex AI)',
+        type: 'string',
+        required: false,
+        description: 'Google Cloud project ID for Vertex AI',
+        placeholder: 'my-project-123',
+      },
+      {
+        key: 'location',
+        label: 'Location (Vertex AI)',
+        type: 'string',
+        required: false,
+        description: 'Vertex AI location (default: us-central1)',
+        placeholder: 'us-central1',
+      },
+    ];
+  }
+
+  isConfigured(config: ProviderConfig): boolean {
+    // Either AI Studio (apiKey) OR Vertex AI (projectId + location)
+    const hasAIStudio = !!config.apiKey;
+    const hasVertexAI = !!config.projectId && !!config.location;
+    return hasAIStudio || hasVertexAI;
+  }
+
+  async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {
     return GOOGLE_MODELS;
   }
 
-  async getModelDetails(modelId: string): Promise<ProviderModelDetails | null> {
+  async getModelDetails(modelId: string, _config?: ProviderConfig): Promise<ProviderModelDetails | null> {
     // Try provider knowledge first
     if (MODEL_DETAILS[modelId]) {
       return MODEL_DETAILS[modelId];
@@ -58,7 +95,21 @@ export class GoogleProvider implements AIProvider {
     return null;
   }
 
-  createClient(apiKey: string, modelId: string): LanguageModelV1 {
-    return google(modelId, { apiKey });
+  createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
+    const apiKey = config.apiKey as string | undefined;
+    const projectId = config.projectId as string | undefined;
+    const location = (config.location as string | undefined) || 'us-central1';
+
+    if (apiKey) {
+      // AI Studio mode
+      return google(modelId, { apiKey });
+    } else if (projectId) {
+      // Vertex AI mode
+      return google(modelId, {
+        vertexai: { projectId, location }
+      });
+    } else {
+      throw new Error('Google provider requires either apiKey or projectId');
+    }
   }
 }

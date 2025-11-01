@@ -141,7 +141,13 @@ const providerCommand: Command = {
         await context.saveConfig(newConfig);
 
         // Update current session's provider (preserve history)
-        const defaultModel = providerConfig.defaultModel || AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].models[0];
+        let defaultModel = providerConfig.defaultModel;
+        if (!defaultModel) {
+          // Fetch first model from provider
+          const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+          const models = await fetchModels(providerId as any, providerConfig);
+          defaultModel = models[0]?.id || 'default';
+        }
         const currentSessionId = context.getCurrentSessionId();
         if (currentSessionId) {
           context.updateSessionProvider(currentSessionId, providerId, defaultModel);
@@ -251,7 +257,13 @@ const providerCommand: Command = {
       await context.saveConfig(newConfig);
 
       // Update current session's provider (preserve history)
-      const defaultModel = providerConfig.defaultModel || AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].models[0];
+      let defaultModel = providerConfig.defaultModel;
+      if (!defaultModel) {
+        // Fetch first model from provider
+        const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+        const models = await fetchModels(providerId as any, providerConfig);
+        defaultModel = models[0]?.id || 'default';
+      }
       const currentSessionId = context.getCurrentSessionId();
       if (currentSessionId) {
         context.updateSessionProvider(currentSessionId, providerId, defaultModel);
@@ -285,7 +297,13 @@ const providerCommand: Command = {
       await context.saveConfig(newConfig);
 
       // Update current session's provider (preserve history)
-      const defaultModel = providerConfig.defaultModel || AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].models[0];
+      let defaultModel = providerConfig.defaultModel;
+      if (!defaultModel) {
+        // Fetch first model from provider
+        const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+        const models = await fetchModels(providerId as any, providerConfig);
+        defaultModel = models[0]?.id || 'default';
+      }
       const currentSessionId = context.getCurrentSessionId();
       if (currentSessionId) {
         context.updateSessionProvider(currentSessionId, providerId, defaultModel);
@@ -507,20 +525,18 @@ const modelCommand: Command = {
           const allModels: Array<{ id: string; label: string; value: string }> = [];
 
           for (const [providerId, config] of Object.entries(aiConfig.providers)) {
-            if (config.apiKey) {
-              try {
-                const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-                const models = await fetchModels(providerId as any, config.apiKey);
-                allModels.push(...models.map(m => ({
-                  id: m.id,
-                  label: `${m.name} (${providerId})`,
-                  value: m.id,
-                })));
-              } catch (error) {
-                // Silently skip providers that fail
-                if (context) {
-                  context.addLog(`Failed to fetch models for ${providerId}: ${error instanceof Error ? error.message : String(error)}`);
-                }
+            try {
+              const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+              const models = await fetchModels(providerId as any, config);
+              allModels.push(...models.map(m => ({
+                id: m.id,
+                label: `${m.name} (${providerId})`,
+                value: m.id,
+              })));
+            } catch (error) {
+              // Silently skip providers that fail
+              if (context) {
+                context.addLog(`Failed to fetch models for ${providerId}: ${error instanceof Error ? error.message : String(error)}`);
               }
             }
           }
@@ -552,17 +568,15 @@ const modelCommand: Command = {
         const errors: string[] = [];
 
         for (const [providerId, config] of Object.entries(aiConfig.providers)) {
-          if (config.apiKey) {
-            try {
-              const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
-              const models = await fetchModels(providerId as any, config.apiKey);
-              allModels.push(...models.map(m => ({ label: m.name, value: m.id })));
-              context.addLog(`Loaded ${models.length} models from ${providerId}`);
-            } catch (error) {
-              const errorMsg = error instanceof Error ? error.message : String(error);
-              errors.push(`${providerId}: ${errorMsg}`);
-              context.addLog(`Failed to fetch models for ${providerId}: ${errorMsg}`);
-            }
+          try {
+            const { fetchModels } = await import('../../utils/ai-model-fetcher.js');
+            const models = await fetchModels(providerId as any, config);
+            allModels.push(...models.map(m => ({ label: m.name, value: m.id })));
+            context.addLog(`Loaded ${models.length} models from ${providerId}`);
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            errors.push(`${providerId}: ${errorMsg}`);
+            context.addLog(`Failed to fetch models for ${providerId}: ${errorMsg}`);
           }
         }
 

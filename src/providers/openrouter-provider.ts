@@ -4,16 +4,35 @@
 
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails } from './base-provider.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
 import { getModelMetadata } from '../utils/models-dev.js';
 
 export class OpenRouterProvider implements AIProvider {
   readonly id = 'openrouter' as const;
   readonly name = 'OpenRouter';
-  readonly keyName = 'OPENROUTER_API_KEY';
 
-  async fetchModels(apiKey?: string): Promise<ModelInfo[]> {
+  getConfigSchema(): ConfigField[] {
+    return [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'string',
+        required: true,
+        secret: true,
+        description: 'Get your API key from https://openrouter.ai',
+        placeholder: 'sk-or-...',
+      },
+    ];
+  }
+
+  isConfigured(config: ProviderConfig): boolean {
+    return !!config.apiKey;
+  }
+
+  async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
+    const apiKey = config.apiKey as string | undefined;
+
     // Retry logic for transient network issues
     const maxRetries = 2;
     let lastError: Error | unknown;
@@ -59,7 +78,9 @@ export class OpenRouterProvider implements AIProvider {
     throw new Error(`Failed to fetch models after ${maxRetries + 1} attempts: ${errorMsg}`);
   }
 
-  async getModelDetails(modelId: string, apiKey?: string): Promise<ProviderModelDetails | null> {
+  async getModelDetails(modelId: string, config?: ProviderConfig): Promise<ProviderModelDetails | null> {
+    const apiKey = config?.apiKey as string | undefined;
+
     // Try fetching from OpenRouter API
     try {
       const response = await fetch('https://openrouter.ai/api/v1/models', {
@@ -109,7 +130,8 @@ export class OpenRouterProvider implements AIProvider {
     return null;
   }
 
-  createClient(apiKey: string, modelId: string): LanguageModelV1 {
+  createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
+    const apiKey = config.apiKey as string;
     const openrouter = createOpenRouter({ apiKey });
     return openrouter(modelId);
   }

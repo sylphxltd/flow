@@ -49,8 +49,8 @@ export default function ModelSelection() {
 
     setIsLoadingModels(true);
     try {
-      const apiKey = aiConfig?.providers?.[selectedProvider]?.apiKey;
-      const modelList = await fetchModels(selectedProvider, apiKey);
+      const providerConfig = aiConfig?.providers?.[selectedProvider] || {};
+      const modelList = await fetchModels(selectedProvider, providerConfig);
       setModels(modelList);
     } catch (err) {
       setError('Failed to load models');

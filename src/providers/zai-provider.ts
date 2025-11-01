@@ -5,21 +5,37 @@
 
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails } from './base-provider.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
 
 export class ZaiProvider implements AIProvider {
   readonly id = 'zai' as const;
   readonly name = 'Z.ai';
-  readonly keyName = 'ZAI_API_KEY';
 
-  async fetchModels(apiKey?: string): Promise<ModelInfo[]> {
-    console.log(`[ZaiProvider] fetchModels called with apiKey: ${apiKey ? 'present' : 'missing'}`);
+  getConfigSchema(): ConfigField[] {
+    return [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'string',
+        required: true,
+        secret: true,
+        description: 'Get your API key from Z.ai',
+        placeholder: 'zai-...',
+      },
+    ];
+  }
+
+  isConfigured(config: ProviderConfig): boolean {
+    return !!config.apiKey;
+  }
+
+  async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
+    const apiKey = config.apiKey as string | undefined;
 
     // Try fetching from Z.ai API
     if (apiKey) {
       try {
-        console.log('[ZaiProvider] Fetching models from Z.ai API...');
         const response = await fetch('https://api.z.ai/api/paas/v4/models', {
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -27,29 +43,24 @@ export class ZaiProvider implements AIProvider {
           signal: AbortSignal.timeout(10000),
         });
 
-        console.log(`[ZaiProvider] API response status: ${response.status}`);
-
         if (response.ok) {
           const data = (await response.json()) as {
             data?: Array<{ id: string; name?: string }>;
           };
 
           if (data.data) {
-            console.log(`[ZaiProvider] Fetched ${data.data.length} models from API`);
             return data.data.map((model) => ({
               id: model.id,
               name: model.name || model.id,
             }));
           }
         }
-      } catch (error) {
-        console.log(`[ZaiProvider] Error fetching from API: ${error instanceof Error ? error.message : String(error)}`);
+      } catch {
         // Fall through to default models
       }
     }
 
     // Return known Z.ai models as fallback
-    console.log('[ZaiProvider] Returning fallback models');
     return [
       { id: 'glm-4.6', name: 'GLM-4.6' },
       { id: 'glm-4-flash', name: 'GLM-4 Flash' },
@@ -58,7 +69,7 @@ export class ZaiProvider implements AIProvider {
     ];
   }
 
-  async getModelDetails(modelId: string): Promise<ProviderModelDetails | null> {
+  async getModelDetails(modelId: string, _config?: ProviderConfig): Promise<ProviderModelDetails | null> {
     // Known specs for Z.ai models
     const specs: Record<string, ProviderModelDetails> = {
       'glm-4.6': {
@@ -90,7 +101,8 @@ export class ZaiProvider implements AIProvider {
     return specs[modelId] || null;
   }
 
-  createClient(apiKey: string, modelId: string): LanguageModelV1 {
+  createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
+    const apiKey = config.apiKey as string;
     const zai = createOpenAICompatible({
       baseURL: 'https://api.z.ai/api/paas/v4/',
       apiKey,

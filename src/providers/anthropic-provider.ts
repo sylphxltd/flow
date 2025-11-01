@@ -4,7 +4,7 @@
 
 import { anthropic } from '@ai-sdk/anthropic';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails } from './base-provider.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
 import { getModelMetadata } from '../utils/models-dev.js';
 
@@ -42,13 +42,30 @@ const MODEL_DETAILS: Record<string, ProviderModelDetails> = {
 export class AnthropicProvider implements AIProvider {
   readonly id = 'anthropic' as const;
   readonly name = 'Anthropic';
-  readonly keyName = 'ANTHROPIC_API_KEY';
 
-  async fetchModels(): Promise<ModelInfo[]> {
+  getConfigSchema(): ConfigField[] {
+    return [
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'string',
+        required: true,
+        secret: true,
+        description: 'Get your API key from https://console.anthropic.com',
+        placeholder: 'sk-ant-...',
+      },
+    ];
+  }
+
+  isConfigured(config: ProviderConfig): boolean {
+    return !!config.apiKey;
+  }
+
+  async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {
     return ANTHROPIC_MODELS;
   }
 
-  async getModelDetails(modelId: string): Promise<ProviderModelDetails | null> {
+  async getModelDetails(modelId: string, _config?: ProviderConfig): Promise<ProviderModelDetails | null> {
     // Try provider knowledge first
     if (MODEL_DETAILS[modelId]) {
       return MODEL_DETAILS[modelId];
@@ -68,7 +85,7 @@ export class AnthropicProvider implements AIProvider {
     return null;
   }
 
-  createClient(apiKey: string, modelId: string): LanguageModelV1 {
-    return anthropic(modelId, { apiKey });
+  createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
+    return anthropic(modelId, { apiKey: config.apiKey as string });
   }
 }

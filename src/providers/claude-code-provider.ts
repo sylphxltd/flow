@@ -5,15 +5,31 @@
 
 import { claudeCode } from 'ai-sdk-provider-claude-code';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails } from './base-provider.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
 
 export class ClaudeCodeProvider implements AIProvider {
   readonly id = 'claude-code' as const;
   readonly name = 'Claude Code';
-  readonly keyName = 'CLAUDE_CODE_AUTH';
 
-  async fetchModels(): Promise<ModelInfo[]> {
+  getConfigSchema(): ConfigField[] {
+    return [
+      {
+        key: 'authenticated',
+        label: 'Authenticated',
+        type: 'boolean',
+        required: false,
+        description: 'Authentication is handled via Claude CLI',
+      },
+    ];
+  }
+
+  isConfigured(_config: ProviderConfig): boolean {
+    // Claude Code doesn't require configuration - uses CLI auth
+    return true;
+  }
+
+  async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {
     // Claude Code has fixed set of models
     return [
       { id: 'opus', name: 'Claude 4.1 Opus (Most Capable)' },
@@ -22,7 +38,7 @@ export class ClaudeCodeProvider implements AIProvider {
     ];
   }
 
-  async getModelDetails(modelId: string): Promise<ProviderModelDetails | null> {
+  async getModelDetails(modelId: string, _config?: ProviderConfig): Promise<ProviderModelDetails | null> {
     // Claude Code models have known specs
     const specs: Record<string, ProviderModelDetails> = {
       opus: {
@@ -48,9 +64,8 @@ export class ClaudeCodeProvider implements AIProvider {
     return specs[modelId] || null;
   }
 
-  createClient(_apiKey: string, modelId: string): LanguageModelV1 {
-    // Claude Code doesn't use API key - it uses CLI authentication
-    // The _apiKey parameter is ignored, but we keep it for interface compatibility
+  createClient(_config: ProviderConfig, modelId: string): LanguageModelV1 {
+    // Claude Code doesn't use config - it uses CLI authentication
     return claudeCode(modelId);
   }
 }

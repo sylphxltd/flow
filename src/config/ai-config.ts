@@ -14,125 +14,44 @@ import path from 'node:path';
 import os from 'node:os';
 import { z } from 'zod';
 import { type Result, success, tryCatchAsync } from '../core/functional/result.js';
+import { getAllProviders } from '../providers/index.js';
 
 /**
- * Available AI providers
+ * Provider IDs
+ * Provider metadata (name, config schema, etc) comes from provider registry
  */
-export const AI_PROVIDERS = {
-  anthropic: {
-    id: 'anthropic',
-    name: 'Anthropic',
-    models: [
-      'claude-3-5-sonnet-20241022',
-      'claude-3-5-haiku-20241022',
-      'claude-3-opus-20240229',
-      'claude-3-sonnet-20240229',
-      'claude-3-haiku-20240307',
-    ],
-    requiresKey: true,
-    keyName: 'ANTHROPIC_API_KEY',
-  },
-  openai: {
-    id: 'openai',
-    name: 'OpenAI',
-    models: [
-      'gpt-4o',
-      'gpt-4o-mini',
-      'gpt-4-turbo',
-      'gpt-4',
-      'gpt-3.5-turbo',
-    ],
-    requiresKey: true,
-    keyName: 'OPENAI_API_KEY',
-  },
-  google: {
-    id: 'google',
-    name: 'Google',
-    models: [
-      'gemini-2.0-flash-exp',
-      'gemini-1.5-pro',
-      'gemini-1.5-flash',
-    ],
-    requiresKey: true,
-    keyName: 'GOOGLE_API_KEY',
-  },
-  openrouter: {
-    id: 'openrouter',
-    name: 'OpenRouter',
-    models: [
-      // Popular models via OpenRouter
-      'anthropic/claude-3.5-sonnet',
-      'anthropic/claude-3-opus',
-      'openai/gpt-4o',
-      'openai/gpt-4-turbo',
-      'google/gemini-2.0-flash-exp',
-      'meta-llama/llama-3.3-70b-instruct',
-      'meta-llama/llama-3.1-405b-instruct',
-      'google/gemini-pro-1.5',
-      'anthropic/claude-3-haiku',
-      'mistralai/mistral-large',
-      'deepseek/deepseek-chat',
-      'qwen/qwen-2.5-72b-instruct',
-    ],
-    requiresKey: true,
-    keyName: 'OPENROUTER_API_KEY',
-  },
-  'claude-code': {
-    id: 'claude-code',
-    name: 'Claude Code',
-    models: [
-      'opus',
-      'sonnet',
-      'haiku',
-    ],
-    requiresKey: false,
-    keyName: 'CLAUDE_CODE_AUTH',
-  },
-  zai: {
-    id: 'zai',
-    name: 'Z.ai',
-    models: [], // Models loaded dynamically from API
-    requiresKey: true,
-    keyName: 'ZAI_API_KEY',
-  },
-} as const;
+export type ProviderId = 'anthropic' | 'openai' | 'google' | 'openrouter' | 'claude-code' | 'zai';
 
-export type ProviderId = keyof typeof AI_PROVIDERS;
+/**
+ * AI_PROVIDERS - Provider metadata from registry
+ * Contains basic info (id, name) for UI components
+ * Config schemas are defined in each provider's getConfigSchema()
+ */
+export const AI_PROVIDERS = getAllProviders();
+
+/**
+ * Provider configuration
+ * Each provider can have different config fields (defined by provider.getConfigSchema())
+ * Common fields: apiKey, defaultModel, etc
+ */
+export interface ProviderConfigValue {
+  defaultModel?: string;
+  [key: string]: string | number | boolean | undefined;
+}
 
 /**
  * AI configuration schema
+ * Uses generic Record for provider configs - validation happens at provider level
  */
 const aiConfigSchema = z.object({
   defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']).optional(),
   defaultModel: z.string().optional(),
-  providers: z.object({
-    anthropic: z.object({
-      apiKey: z.string().optional(),
+  providers: z.record(
+    z.string(),
+    z.object({
       defaultModel: z.string().optional(),
-    }).optional(),
-    openai: z.object({
-      apiKey: z.string().optional(),
-      baseUrl: z.string().optional(),
-      defaultModel: z.string().optional(),
-    }).optional(),
-    google: z.object({
-      apiKey: z.string().optional(),
-      defaultModel: z.string().optional(),
-    }).optional(),
-    openrouter: z.object({
-      apiKey: z.string().optional(),
-      defaultModel: z.string().optional(),
-    }).optional(),
-    'claude-code': z.object({
-      // Claude Code uses CLI authentication, no API key needed
-      authenticated: z.boolean().optional(),
-      defaultModel: z.string().optional(),
-    }).optional(),
-    zai: z.object({
-      apiKey: z.string().optional(),
-      defaultModel: z.string().optional(),
-    }).optional(),
-  }).optional(),
+    }).passthrough() // Allow additional fields defined by provider
+  ).optional(),
 });
 
 export type AIConfig = z.infer<typeof aiConfigSchema>;
@@ -184,35 +103,24 @@ const loadConfigFile = async (filePath: string): Promise<AIConfig | null> => {
  * Deep merge two configs (b overwrites a)
  */
 const mergeConfigs = (a: AIConfig, b: AIConfig): AIConfig => {
+  // Merge provider configs dynamically
+  const allProviderIds = new Set([
+    ...Object.keys(a.providers || {}),
+    ...Object.keys(b.providers || {}),
+  ]);
+
+  const mergedProviders: Record<string, any> = {};
+  for (const providerId of allProviderIds) {
+    mergedProviders[providerId] = {
+      ...a.providers?.[providerId],
+      ...b.providers?.[providerId],
+    };
+  }
+
   return {
     defaultProvider: b.defaultProvider ?? a.defaultProvider,
     defaultModel: b.defaultModel ?? a.defaultModel,
-    providers: {
-      anthropic: {
-        ...a.providers?.anthropic,
-        ...b.providers?.anthropic,
-      },
-      openai: {
-        ...a.providers?.openai,
-        ...b.providers?.openai,
-      },
-      google: {
-        ...a.providers?.google,
-        ...b.providers?.google,
-      },
-      openrouter: {
-        ...a.providers?.openrouter,
-        ...b.providers?.openrouter,
-      },
-      'claude-code': {
-        ...a.providers?.['claude-code'],
-        ...b.providers?.['claude-code'],
-      },
-      zai: {
-        ...a.providers?.zai,
-        ...b.providers?.zai,
-      },
-    },
+    providers: mergedProviders,
   };
 };
 
@@ -374,47 +282,8 @@ export const updateAIConfig = async (
 };
 
 /**
- * Get API key for a provider
- */
-export const getProviderKey = async (
-  providerId: ProviderId,
-  cwd: string = process.cwd()
-): Promise<string | undefined> => {
-  const result = await loadAIConfig(cwd);
-  if (result._tag === 'Success') {
-    return result.value.providers?.[providerId]?.apiKey;
-  }
-  return undefined;
-};
-
-/**
- * Set API key for a provider
- */
-export const setProviderKey = async (
-  providerId: ProviderId,
-  apiKey: string,
-  cwd: string = process.cwd()
-): Promise<Result<void, Error>> => {
-  const currentResult = await loadAIConfig(cwd);
-
-  const current = currentResult._tag === 'Success' ? currentResult.value : {};
-
-  const updated: AIConfig = {
-    ...current,
-    providers: {
-      ...current.providers,
-      [providerId]: {
-        ...current.providers?.[providerId],
-        apiKey,
-      },
-    },
-  };
-
-  return saveAIConfig(updated, cwd);
-};
-
-/**
- * Get configured providers (those with API keys)
+ * Get configured providers
+ * Uses provider's isConfigured() method to check
  */
 export const getConfiguredProviders = async (
   cwd: string = process.cwd()
@@ -428,17 +297,22 @@ export const getConfiguredProviders = async (
   const providers: ProviderId[] = [];
   const config = result.value;
 
-  if (config.providers?.anthropic?.apiKey) {
-    providers.push('anthropic');
+  if (!config.providers) {
+    return [];
   }
-  if (config.providers?.openai?.apiKey) {
-    providers.push('openai');
-  }
-  if (config.providers?.google?.apiKey) {
-    providers.push('google');
-  }
-  if (config.providers?.openrouter?.apiKey) {
-    providers.push('openrouter');
+
+  // Dynamically import provider registry to avoid circular dependency
+  const { getProvider } = await import('../providers/index.js');
+
+  for (const [providerId, providerConfig] of Object.entries(config.providers)) {
+    try {
+      const provider = getProvider(providerId as ProviderId);
+      if (provider.isConfigured(providerConfig)) {
+        providers.push(providerId as ProviderId);
+      }
+    } catch {
+      // Skip unknown providers
+    }
   }
 
   return providers;

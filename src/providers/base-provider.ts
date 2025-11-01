@@ -15,24 +15,54 @@ export interface ProviderModelDetails {
   supportedFeatures?: string[];
 }
 
+/**
+ * Configuration field definition
+ */
+export interface ConfigField {
+  key: string;
+  label: string;
+  type: 'string' | 'number' | 'boolean';
+  required: boolean;
+  secret?: boolean; // Whether to hide value in UI (for API keys)
+  description?: string;
+  placeholder?: string;
+}
+
+/**
+ * Provider configuration (values)
+ */
+export type ProviderConfig = Record<string, string | number | boolean | undefined>;
+
 export interface AIProvider {
   readonly id: ProviderId;
   readonly name: string;
-  readonly keyName: string;
 
   /**
-   * Fetch available models from provider API
+   * Get configuration schema for this provider
+   * Defines what config fields are needed (API keys, project IDs, regions, etc)
    */
-  fetchModels(apiKey?: string): Promise<ModelInfo[]>;
+  getConfigSchema(): ConfigField[];
+
+  /**
+   * Check if provider is configured properly
+   */
+  isConfigured(config: ProviderConfig): boolean;
+
+  /**
+   * Fetch available models from provider
+   * Uses provider config instead of just apiKey
+   */
+  fetchModels(config: ProviderConfig): Promise<ModelInfo[]>;
 
   /**
    * Get detailed information about a model
    * Should try provider API first, then fall back to models.dev
    */
-  getModelDetails(modelId: string, apiKey?: string): Promise<ProviderModelDetails | null>;
+  getModelDetails(modelId: string, config?: ProviderConfig): Promise<ProviderModelDetails | null>;
 
   /**
    * Create AI SDK client for this provider
+   * Uses provider config instead of just apiKey
    */
-  createClient(apiKey: string, modelId: string): LanguageModelV2;
+  createClient(config: ProviderConfig, modelId: string): LanguageModelV2;
 }
