@@ -19,21 +19,40 @@ Usage:
 - Read configuration files
 - Read documentation files
 
-The file path must be absolute or relative to the current working directory.`,
+The file path must be absolute or relative to the current working directory.
+You can optionally specify offset and limit to read specific line ranges.`,
   inputSchema: z.object({
-    file_path: z.string().describe('Path to the file to read'),
-    encoding: z
-      .enum(['utf8', 'base64'])
-      .default('utf8')
+    file_path: z.string().describe('The absolute path to the file to read'),
+    offset: z
+      .number()
       .optional()
-      .describe('File encoding (default: utf8)'),
+      .describe('The line number to start reading from'),
+    limit: z
+      .number()
+      .optional()
+      .describe('The number of lines to read'),
   }),
-  execute: async ({ file_path, encoding = 'utf8' }) => {
-    const content = await readFile(file_path, encoding as BufferEncoding);
+  execute: async ({ file_path, offset, limit }) => {
+    const content = await readFile(file_path, 'utf8');
+
+    // Apply line filtering if offset/limit specified
+    if (offset !== undefined || limit !== undefined) {
+      const lines = content.split('\n');
+      const start = offset ? offset - 1 : 0; // Convert to 0-based index
+      const end = limit ? start + limit : lines.length;
+      const filteredLines = lines.slice(start, end);
+
+      return {
+        path: file_path,
+        content: filteredLines.join('\n'),
+        encoding: 'utf8',
+      };
+    }
+
     return {
       path: file_path,
       content,
-      encoding,
+      encoding: 'utf8',
     };
   },
 });
@@ -51,20 +70,15 @@ Usage:
 
 IMPORTANT: This will overwrite the file if it exists.`,
   inputSchema: z.object({
-    file_path: z.string().describe('Path where the file should be written'),
-    content: z.string().describe('Content to write to the file'),
-    encoding: z
-      .enum(['utf8', 'base64'])
-      .default('utf8')
-      .optional()
-      .describe('File encoding (default: utf8)'),
+    file_path: z.string().describe('The absolute path to the file to write (must be absolute)'),
+    content: z.string().describe('The content to write to the file'),
   }),
-  execute: async ({ file_path, content, encoding = 'utf8' }) => {
+  execute: async ({ file_path, content }) => {
     // Create parent directories if they don't exist
     const dir = dirname(file_path);
     await mkdir(dir, { recursive: true });
 
-    await writeFile(file_path, content, encoding as BufferEncoding);
+    await writeFile(file_path, content, 'utf8');
 
     // Get file name and line preview
     const fileName = file_path.split('/').pop() || '';
@@ -72,7 +86,7 @@ IMPORTANT: This will overwrite the file if it exists.`,
 
     return {
       path: file_path,
-      bytes: Buffer.byteLength(content, encoding as BufferEncoding),
+      bytes: Buffer.byteLength(content, 'utf8'),
       fileName,
       lineCount: lines.length,
       preview: lines.slice(0, 5), // First 5 lines for preview
@@ -97,14 +111,14 @@ IMPORTANT:
 - Use replace_all to change every instance of old_string
 - You must use the exact string from the file (preserve indentation, whitespace)`,
   inputSchema: z.object({
-    file_path: z.string().describe('Absolute path to the file to modify'),
-    old_string: z.string().describe('The exact text to replace (must match exactly)'),
+    file_path: z.string().describe('The absolute path to the file to modify'),
+    old_string: z.string().describe('The text to replace'),
     new_string: z.string().describe('The text to replace it with (must be different from old_string)'),
     replace_all: z
       .boolean()
       .default(false)
       .optional()
-      .describe('Replace all occurrences of old_string (default: false)'),
+      .describe('Replace all occurences of old_string (default false)'),
   }),
   execute: async ({ file_path, old_string, new_string, replace_all = false }) => {
     // Validate strings are different

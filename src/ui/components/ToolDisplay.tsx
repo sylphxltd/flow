@@ -63,17 +63,22 @@ const formatBashIdArgs: ArgsFormatter = (args) =>
 
 const formatGrepArgs: ArgsFormatter = (args) => {
   const pattern = args.pattern ? String(args.pattern) : '';
-  const filePattern = args.file_pattern ? String(args.file_pattern) : '';
-  const directory = args.directory ? String(args.directory) : '';
+  const globPattern = args.glob ? String(args.glob) : '';
+  const type = args.type ? String(args.type) : '';
+  const path = args.path ? String(args.path) : '';
 
   let display = `"${truncateString(pattern, 40)}"`;
 
-  if (filePattern && filePattern !== '**/*') {
-    display += ` in ${filePattern}`;
+  // Show file filter (glob or type)
+  if (globPattern) {
+    display += ` in ${globPattern}`;
+  } else if (type) {
+    display += ` [${type}]`;
   }
 
-  if (!isDefaultCwd(directory)) {
-    display += ` [${getRelativePath(directory)}]`;
+  // Show path if not default
+  if (path && !isDefaultCwd(path)) {
+    display += ` [${getRelativePath(path)}]`;
   }
 
   return display;
@@ -81,11 +86,11 @@ const formatGrepArgs: ArgsFormatter = (args) => {
 
 const formatGlobArgs: ArgsFormatter = (args) => {
   const pattern = args.pattern ? String(args.pattern) : '';
-  const directory = args.directory ? String(args.directory) : '';
+  const path = args.path ? String(args.path) : '';
 
-  return isDefaultCwd(directory)
-    ? pattern
-    : `${pattern} in ${getRelativePath(directory)}`;
+  return path && !isDefaultCwd(path)
+    ? `${pattern} in ${getRelativePath(path)}`
+    : pattern;
 };
 
 /**
@@ -185,9 +190,15 @@ const formatWriteResult: ResultFormatter = (result) => {
 };
 
 const formatGrepResult: ResultFormatter = (result) => {
-  // Extract matches from { pattern, directory, matches } structure
-  if (typeof result === 'object' && result !== null && 'matches' in result) {
-    const matches = (result as any).matches as Array<{ file: string; line: number; content: string }>;
+  if (typeof result !== 'object' || result === null) {
+    return { lines: resultToLines(result) };
+  }
+
+  const res = result as any;
+
+  // Content mode: { pattern, directory, matches, count }
+  if ('matches' in res) {
+    const matches = res.matches as Array<{ file: string; line: number; content: string }>;
     const lines = matches.map(m => `${m.file}:${m.line}: ${m.content}`);
     return {
       lines,
@@ -195,11 +206,24 @@ const formatGrepResult: ResultFormatter = (result) => {
     };
   }
 
-  const lines = resultToLines(result);
-  return {
-    lines,
-    summary: `Found ${lines.length} ${pluralize(lines.length, 'match', 'matches')}`,
-  };
+  // Files mode: { pattern, directory, files, count }
+  if ('files' in res) {
+    const files = res.files as string[];
+    return {
+      lines: files,
+      summary: `Found ${files.length} ${pluralize(files.length, 'file')}`,
+    };
+  }
+
+  // Count mode: { pattern, directory, count }
+  if ('count' in res && !('matches' in res) && !('files' in res)) {
+    return {
+      lines: [],
+      summary: `Found ${res.count} ${pluralize(res.count, 'match', 'matches')}`,
+    };
+  }
+
+  return { lines: resultToLines(result) };
 };
 
 const formatGlobResult: ResultFormatter = (result) => {

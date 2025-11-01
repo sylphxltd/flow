@@ -81,20 +81,15 @@ Pattern syntax:
 - ? matches single character
 - Examples: "*.ts", "src/**/*.tsx", "test?.js"`,
   inputSchema: z.object({
-    pattern: z.string().describe('Glob pattern to match files'),
-    directory: z
+    pattern: z.string().describe('The glob pattern to match files against'),
+    path: z
       .string()
       .optional()
-      .describe('Directory to search in (default: current directory)'),
-    max_results: z
-      .number()
-      .default(100)
-      .optional()
-      .describe('Maximum number of results (default: 100)'),
+      .describe('The directory to search in. If not specified, uses current working directory'),
   }),
-  execute: async ({ pattern, directory, max_results = 100 }) => {
-    const searchDir = directory || process.cwd();
-    const results = await searchFiles(searchDir, pattern, max_results);
+  execute: async ({ pattern, path }) => {
+    const searchDir = path || process.cwd();
+    const results = await searchFiles(searchDir, pattern, 1000); // Internal limit of 1000
 
     return {
       pattern,
@@ -109,72 +104,158 @@ Pattern syntax:
  * Grep content search tool
  */
 export const grepTool = tool({
-  description: `Search for text content within files.
+  description: `Search for text content within files using regex patterns.
 
 Usage:
 - Find code patterns
 - Search for function names
 - Locate specific text across files
 
-Returns matching lines with line numbers and context.`,
+Supports multiple output modes, file filtering, and context lines.`,
   inputSchema: z.object({
-    pattern: z.string().describe('Text or regex pattern to search for'),
-    directory: z
+    pattern: z.string().describe('The regular expression pattern to search for'),
+    path: z
       .string()
       .optional()
-      .describe('Directory to search in (default: current directory)'),
-    file_pattern: z
+      .describe('File or directory to search in'),
+    output_mode: z
+      .enum(['content', 'files_with_matches', 'count'])
+      .optional()
+      .describe('Output mode: content, files_with_matches, or count'),
+    type: z
       .string()
       .optional()
-      .describe('Glob pattern to filter files (e.g., "*.ts")'),
-    max_results: z
-      .number()
-      .default(50)
+      .describe('File type to search (js, py, rust, go, java, etc.)'),
+    glob: z
+      .string()
       .optional()
-      .describe('Maximum number of matches (default: 50)'),
-    case_sensitive: z
+      .describe('Glob pattern to filter files (e.g. "*.js", "*.{ts,tsx}")'),
+    '-i': z
       .boolean()
-      .default(false)
       .optional()
-      .describe('Case sensitive search (default: false)'),
+      .describe('Case insensitive search'),
+    '-n': z
+      .boolean()
+      .optional()
+      .describe('Show line numbers in output'),
+    '-A': z
+      .number()
+      .optional()
+      .describe('Number of lines to show after each match'),
+    '-B': z
+      .number()
+      .optional()
+      .describe('Number of lines to show before each match'),
+    '-C': z
+      .number()
+      .optional()
+      .describe('Number of lines to show before and after each match'),
+    multiline: z
+      .boolean()
+      .optional()
+      .describe('Enable multiline mode where . matches newlines'),
+    head_limit: z
+      .number()
+      .optional()
+      .describe('Limit output to first N lines/entries'),
   }),
   execute: async ({
     pattern,
-    directory,
-    file_pattern = '**/*',
-    max_results = 50,
-    case_sensitive = false,
+    path,
+    output_mode = 'files_with_matches',
+    type,
+    glob: globPattern,
+    '-i': caseInsensitive = false,
+    '-n': showLineNumbers = false,
+    '-A': afterContext = 0,
+    '-B': beforeContext = 0,
+    '-C': aroundContext,
+    multiline = false,
+    head_limit,
   }) => {
-    const searchDir = directory || process.cwd();
-    const files = await searchFiles(searchDir, file_pattern, 1000);
-    const matches: Array<{
-      file: string;
-      line: number;
-      content: string;
-    }> = [];
+    const searchDir = path || process.cwd();
 
-    const regex = new RegExp(pattern, case_sensitive ? 'g' : 'gi');
+    // Determine file pattern based on type or glob
+    let filePattern = '**/*';
+    if (globPattern) {
+      filePattern = globPattern;
+    } else if (type) {
+      // Map common file types to extensions
+      const typeMap: Record<string, string> = {
+        js: '*.{js,jsx}',
+        ts: '*.{ts,tsx}',
+        py: '*.py',
+        rust: '*.rs',
+        go: '*.go',
+        java: '*.java',
+        c: '*.{c,h}',
+        cpp: '*.{cpp,hpp,cc,cxx}',
+        html: '*.{html,htm}',
+        css: '*.{css,scss,sass}',
+        json: '*.json',
+        yaml: '*.{yaml,yml}',
+        md: '*.md',
+      };
+      filePattern = typeMap[type] || `*.${type}`;
+    }
+
+    const files = await searchFiles(searchDir, filePattern, 1000);
+
+    // Determine context lines
+    const before = aroundContext !== undefined ? aroundContext : beforeContext || 0;
+    const after = aroundContext !== undefined ? aroundContext : afterContext || 0;
+
+    // Build regex flags
+    let regexFlags = 'g';
+    if (caseInsensitive) regexFlags += 'i';
+    if (multiline) regexFlags += 's'; // 's' flag makes . match newlines
+
+    const regex = new RegExp(pattern, regexFlags);
+
+    const matches: Array<{ file: string; line: number; content: string }> = [];
+    const filesWithMatches = new Set<string>();
+    let matchCount = 0;
 
     for (const file of files) {
-      if (matches.length >= max_results) break;
-
       try {
         const stats = await stat(file);
-        // Skip large files and binary files
         if (stats.size > 1024 * 1024) continue; // Skip files > 1MB
 
         const content = await readFile(file, 'utf8');
-        const lines = content.split('\n');
 
-        for (let i = 0; i < lines.length; i++) {
-          if (matches.length >= max_results) break;
+        if (multiline) {
+          // Multiline matching - check if file contains pattern
+          if (regex.test(content)) {
+            filesWithMatches.add(file);
+            matchCount++;
+          }
+        } else {
+          // Line-by-line matching
+          const lines = content.split('\n');
 
-          if (regex.test(lines[i])) {
-            matches.push({
-              file,
-              line: i + 1,
-              content: lines[i].trim(),
-            });
+          for (let i = 0; i < lines.length; i++) {
+            if (regex.test(lines[i])) {
+              filesWithMatches.add(file);
+              matchCount++;
+
+              if (output_mode === 'content') {
+                // Collect context lines
+                const startLine = Math.max(0, i - before);
+                const endLine = Math.min(lines.length - 1, i + after);
+
+                for (let j = startLine; j <= endLine; j++) {
+                  const lineContent = showLineNumbers
+                    ? `${j + 1}: ${lines[j]}`
+                    : lines[j];
+
+                  matches.push({
+                    file,
+                    line: j + 1,
+                    content: lineContent,
+                  });
+                }
+              }
+            }
           }
         }
       } catch {
@@ -183,12 +264,34 @@ Returns matching lines with line numbers and context.`,
       }
     }
 
-    return {
-      pattern,
-      directory: searchDir,
-      matches,
-      count: matches.length,
+    // Apply head_limit
+    const applyLimit = <T>(arr: T[]): T[] => {
+      return head_limit ? arr.slice(0, head_limit) : arr;
     };
+
+    // Return based on output mode
+    if (output_mode === 'content') {
+      return {
+        pattern,
+        directory: searchDir,
+        matches: applyLimit(matches),
+        count: matches.length,
+      };
+    } else if (output_mode === 'files_with_matches') {
+      return {
+        pattern,
+        directory: searchDir,
+        files: applyLimit(Array.from(filesWithMatches)),
+        count: filesWithMatches.size,
+      };
+    } else {
+      // count mode
+      return {
+        pattern,
+        directory: searchDir,
+        count: matchCount,
+      };
+    }
   },
 });
 
