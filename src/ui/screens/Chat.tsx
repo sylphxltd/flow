@@ -1112,18 +1112,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             </MarkdownText>
                           );
                         } else if (part.type === 'reasoning') {
+                          // Simplified reasoning display - just show that it happened
                           return (
-                            <Box key={idx} flexDirection="column">
-                              <Box>
-                                <Text color="#00FF88">▏ </Text>
-                                <Text dimColor>💭 Reasoning{part.duration ? ` (${part.duration}ms)` : ''}</Text>
-                              </Box>
-                              {part.content.split('\n').map((line, lineIdx) => (
-                                <Box key={`${idx}-${lineIdx}`}>
-                                  <Text color="gray">  </Text>
-                                  <Text dimColor>{line}</Text>
-                                </Box>
-                              ))}
+                            <Box key={idx}>
+                              <Text color="#00FF88">▏ </Text>
+                              <Text dimColor>💭 Thinking{part.duration ? ` • ${Math.round(part.duration / 1000)}s` : ''}</Text>
                             </Box>
                           );
                         } else if (part.type === 'error') {
@@ -1152,13 +1145,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     ) : (
                       <MarkdownText prefix="▏ " prefixColor="#00FF88">{msg.content}</MarkdownText>
                     )}
-                    {/* Show usage if available */}
+                    {/* Show usage if available - simplified */}
                     {msg.usage && (
                       <Box>
                         <Text color="#00FF88">▏ </Text>
                         <Text dimColor>
-                          📊 {msg.usage.promptTokens}+{msg.usage.completionTokens}={msg.usage.totalTokens} tokens
-                          {msg.finishReason && ` · ${msg.finishReason}`}
+                          {msg.usage.totalTokens.toLocaleString()} tokens
                         </Text>
                       </Box>
                     )}
@@ -1177,7 +1169,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 {streamParts.length === 0 && (
                   <Box>
                     <Text color="#00FF88">▏ </Text>
-                    <Spinner color="#FFD700" label="Thinking..." />
+                    <Spinner color="#FFD700" />
+                    <Text dimColor> Thinking...</Text>
                   </Box>
                 )}
 
@@ -1199,25 +1192,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       </Box>
                     );
                   } else if (part.type === 'reasoning') {
-                    const isLastPart = idx === streamParts.length - 1;
+                    // Simplified streaming reasoning - just show indicator
                     return (
-                      <Box key={idx} flexDirection="column">
-                        <Box>
-                          <Text color="#00FF88">▏ </Text>
-                          <Text dimColor>💭 Reasoning...</Text>
-                        </Box>
-                        {part.content && part.content.split('\n').map((line, lineIdx) => (
-                          <Box key={`stream-${idx}-${lineIdx}`}>
-                            <Text color="gray">  </Text>
-                            <Text dimColor>{line}</Text>
-                          </Box>
-                        ))}
-                        {isLastPart && (
-                          <Box>
-                            <Text color="gray">  </Text>
-                            <Text color="#FFD700" dimColor>▊</Text>
-                          </Box>
-                        )}
+                      <Box key={idx}>
+                        <Text color="#00FF88">▏ </Text>
+                        <Spinner color="#FFD700" />
+                        <Text dimColor> Thinking...</Text>
                       </Box>
                     );
                   } else if (part.type === 'error') {

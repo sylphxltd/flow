@@ -97,7 +97,7 @@ export async function processStream(
           currentTextContent = '';
         }
 
-        // Add tool part
+        // Add tool part (may not have complete args yet if streaming)
         messageParts.push({
           type: 'tool',
           name: chunk.toolName,
@@ -113,6 +113,21 @@ export async function processStream(
         });
 
         onToolCall?.(chunk.toolCallId, chunk.toolName, chunk.args);
+        break;
+      }
+
+      case 'tool-call-delta': {
+        // Update tool args as they stream in
+        // Find the running tool part and update its args
+        const toolPart = messageParts.find(
+          (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
+        );
+
+        if (toolPart && toolPart.type === 'tool') {
+          // Append args delta (args are streaming as JSON text)
+          const currentArgsText = typeof toolPart.args === 'string' ? toolPart.args : '';
+          toolPart.args = currentArgsText + chunk.argsTextDelta;
+        }
         break;
       }
 

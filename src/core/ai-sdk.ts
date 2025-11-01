@@ -68,6 +68,13 @@ export type ToolCallChunk = {
   args: unknown;
 };
 
+export type ToolCallDeltaChunk = {
+  type: 'tool-call-delta';
+  toolCallId: string;
+  toolName: string;
+  argsTextDelta: string;
+};
+
 export type ToolResultChunk = {
   type: 'tool-result';
   toolCallId: string;
@@ -103,6 +110,7 @@ export type StreamChunk =
   | ReasoningDeltaChunk
   | ReasoningEndChunk
   | ToolCallChunk
+  | ToolCallDeltaChunk
   | ToolResultChunk
   | ToolErrorChunk
   | StreamErrorChunk
@@ -251,6 +259,16 @@ export async function* createAIStream(
           toolCallId: chunk.toolCallId,
           toolName: chunk.toolName,
           args: chunk.input,
+        };
+        break;
+
+      case 'tool-call-delta':
+        // Stream tool arguments as they're being generated
+        yield {
+          type: 'tool-call-delta',
+          toolCallId: chunk.toolCallId,
+          toolName: chunk.toolName,
+          argsTextDelta: chunk.argsTextDelta,
         };
         break;
 

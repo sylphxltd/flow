@@ -406,12 +406,15 @@ const ToolHeader: React.FC<{
 }> = ({ statusIndicator, displayName, formattedArgs, isBuiltIn, duration, status }) => (
   <Box>
     {statusIndicator}
-    <Text color="white" bold>{displayName}</Text>
-    <Text color="white">(</Text>
-    <Text color="white" dimColor={!isBuiltIn}>{formattedArgs}</Text>
-    <Text color="white">)</Text>
+    <Text dimColor>{displayName}</Text>
+    {formattedArgs && (
+      <>
+        <Text dimColor> </Text>
+        <Text dimColor>{formattedArgs}</Text>
+      </>
+    )}
     {duration !== undefined && status === 'completed' && (
-      <Text color="gray" dimColor> {duration}ms</Text>
+      <Text dimColor> • {duration}ms</Text>
     )}
   </Box>
 );
@@ -442,52 +445,21 @@ const ResultDisplay: React.FC<{
   toolName: string;
   error?: string;
 }> = ({ status, result, toolName, error }) => {
+  // Don't show anything for running or completed tools (info is in header)
   if (status === 'running') {
-    return (
-      <Box marginLeft={2}>
-        <Text dimColor>... waiting for result</Text>
-      </Box>
-    );
+    return null;
   }
 
   if (status === 'failed') {
     return (
       <Box marginLeft={2}>
-        <Text color="#FF3366">Failed{error ? `: ${error}` : ''}</Text>
+        <Text color="#FF3366">✗ {error || 'Failed'}</Text>
       </Box>
     );
   }
 
-  if (status === 'completed' && result !== undefined) {
-    const { lines, summary } = formatResult(toolName, result);
-    const isEditTool = toolName.toLowerCase() === 'edit';
-
-    if (summary && lines.length === 0) {
-      return (
-        <Box marginLeft={2}>
-          <Text color="gray">{summary}</Text>
-        </Box>
-      );
-    }
-
-    if (summary && lines.length > 0) {
-      return (
-        <Box flexDirection="column" marginLeft={2}>
-          <Text color="gray">{summary}</Text>
-          <ResultLines lines={lines} isEditTool={isEditTool} />
-        </Box>
-      );
-    }
-
-    if (lines.length > 0) {
-      return (
-        <Box flexDirection="column" marginLeft={2}>
-          <ResultLines lines={lines} isEditTool={isEditTool} />
-        </Box>
-      );
-    }
-  }
-
+  // For completed tools, only show result if it's truly important
+  // Most tools don't need to show results (the summary in formatResult handles this)
   return null;
 };
 
@@ -497,7 +469,7 @@ export function ToolDisplay({ name, status, duration, args, result, error }: Too
   const displayName = getDisplayName(name);
 
   return (
-    <Box flexDirection="column" paddingTop={1}>
+    <Box flexDirection="column">
       <ToolHeader
         statusIndicator={<StatusIndicator status={status} />}
         displayName={displayName}
