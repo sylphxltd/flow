@@ -1,10 +1,10 @@
 /**
  * Filesystem Tools
- * Tools for reading, writing, and listing files
+ * Tools for reading and writing files
  */
 
-import { readFile, writeFile, readdir, stat, mkdir } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { tool } from 'ai';
 import { z } from 'zod';
 
@@ -73,89 +73,9 @@ IMPORTANT: This will overwrite the file if it exists.`,
 });
 
 /**
- * List directory tool
- */
-export const listDirectoryTool = tool({
-  description: `List files and directories in a specified path.
-
-Usage:
-- Explore project structure
-- Find files in a directory
-- Check if files exist
-
-Returns file names, types, and sizes.`,
-  inputSchema: z.object({
-    path: z.string().describe('Directory path to list'),
-    recursive: z
-      .boolean()
-      .default(false)
-      .optional()
-      .describe('List subdirectories recursively (default: false)'),
-  }),
-  execute: async ({ path, recursive = false }) => {
-    const entries = await readdir(path, { withFileTypes: true });
-    const items = [];
-
-    for (const entry of entries) {
-      const fullPath = join(path, entry.name);
-      const stats = await stat(fullPath);
-
-      items.push({
-        name: entry.name,
-        path: fullPath,
-        type: entry.isDirectory() ? 'directory' : 'file',
-        size: stats.size,
-        modified: stats.mtime,
-      });
-
-      // Recursively list subdirectories if requested
-      if (recursive && entry.isDirectory()) {
-        // Note: recursive calls are not directly supported, so we don't implement this
-        // The model can call the tool multiple times if needed
-      }
-    }
-
-    return {
-      path,
-      items,
-      count: items.length,
-    };
-  },
-});
-
-/**
- * Get file stats tool
- */
-export const fileStatsTool = tool({
-  description: `Get detailed information about a file or directory.
-
-Usage:
-- Check if file exists
-- Get file size
-- Get modification time
-- Check if path is file or directory`,
-  inputSchema: z.object({
-    path: z.string().describe('File or directory path'),
-  }),
-  execute: async ({ path }) => {
-    const stats = await stat(path);
-    return {
-      path,
-      type: stats.isDirectory() ? 'directory' : 'file',
-      size: stats.size,
-      created: stats.birthtime,
-      modified: stats.mtime,
-      accessed: stats.atime,
-    };
-  },
-});
-
-/**
  * All filesystem tools
  */
 export const filesystemTools = {
-  read_file: readFileTool,
-  write_file: writeFileTool,
-  list_directory: listDirectoryTool,
-  file_stats: fileStatsTool,
+  read: readFileTool,
+  write: writeFileTool,
 };

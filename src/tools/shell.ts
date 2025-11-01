@@ -69,26 +69,8 @@ IMPORTANT:
 });
 
 /**
- * Get current working directory tool
- */
-export const getCwdTool = tool({
-  description: `Get the current working directory.
-
-Usage:
-- Check current directory before file operations
-- Understand context for relative paths`,
-  inputSchema: z.object({}),
-  execute: async () => {
-    return {
-      cwd: process.cwd(),
-    };
-  },
-});
-
-/**
  * All shell tools
  */
 export const shellTools = {
-  execute_bash: executeBashTool,
-  get_cwd: getCwdTool,
+  bash: executeBashTool,
 };

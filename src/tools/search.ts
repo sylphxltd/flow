@@ -196,6 +196,6 @@ Returns matching lines with line numbers and context.`,
  * All search tools
  */
 export const searchTools = {
-  glob_files: globTool,
-  grep_content: grepTool,
+  glob: globTool,
+  grep: grepTool,
 };
