@@ -214,6 +214,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     return undefined;
   };
 
+  // Clear error when input changes (to stop showing stale errors)
+  useEffect(() => {
+    setLoadError(null);
+  }, [input]);
+
   // Trigger option loading when needed
   useEffect(() => {
     if (!input.startsWith('/')) return;
@@ -231,22 +236,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // Trigger load if not cached and not loading
         if (!cachedOptions.has(cacheKey) && currentlyLoading !== cacheKey) {
           setCurrentlyLoading(cacheKey);
-          setLoadError(null);
 
           arg.loadOptions()
             .then((options) => {
-              setCachedOptions(new Map(cachedOptions).set(cacheKey, options));
+              // Use functional update to avoid dependency on cachedOptions
+              setCachedOptions((prev) => new Map(prev).set(cacheKey, options));
               setCurrentlyLoading(null);
             })
             .catch((error) => {
               const errorMsg = error instanceof Error ? error.message : String(error);
+              addLog(`Error loading ${cacheKey}: ${errorMsg}`);
               setLoadError(errorMsg);
               setCurrentlyLoading(null);
             });
         }
       }
     }
-  }, [input, baseCommands, cachedOptions, currentlyLoading]);
+  }, [input, baseCommands, currentlyLoading]); // Remove cachedOptions from deps to prevent loop
 
   // Filter commands based on input
   const getFilteredCommands = () => {
@@ -502,11 +508,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
           firstArg.loadOptions()
             .then((options) => {
-              setCachedOptions(new Map(cachedOptions).set(cacheKey, options));
+              setCachedOptions((prev) => new Map(prev).set(cacheKey, options));
               setCurrentlyLoading(null);
             })
             .catch((error) => {
               const errorMsg = error instanceof Error ? error.message : String(error);
+              addLog(`Error loading ${cacheKey}: ${errorMsg}`);
               setLoadError(errorMsg);
               setCurrentlyLoading(null);
             });
@@ -824,6 +831,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 <Box marginTop={1}>
                   <Spinner color="#FFD700" />
                   <Text color="gray"> Loading options...</Text>
+                </Box>
+              ) : input.startsWith('/') && input.includes(' ') && loadError ? (
+                <Box flexDirection="column" marginTop={1}>
+                  <Box>
+                    <Text color="red">Failed to load options</Text>
+                  </Box>
+                  <Box marginTop={1}>
+                    <Text dimColor>{loadError}</Text>
+                  </Box>
                 </Box>
               ) : filteredCommands.length > 0 ? (
                 <Box flexDirection="column" marginTop={1}>
