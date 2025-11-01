@@ -366,8 +366,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             setSelectionFilter('');
             return;
           }
-          // For other keys (text input), don't handle here - let TextInput handle it via onChange
-          return; // Don't process other handlers
+          // For other keys (text input), let TextInput handle it via onChange
+          // Don't return here - allow text input to work
         }
         // Text input mode - no special handling here, let TextInput handle it
         // Note: We don't return here for pendingInput text mode
