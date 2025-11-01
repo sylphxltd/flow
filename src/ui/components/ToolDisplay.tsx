@@ -73,12 +73,14 @@ function formatResult(toolName: string, result: unknown): { lines: string[]; sum
         summary: `Read ${lines.length} lines`,
       };
     case 'edit':
-      // Parse result to show replacement count
+      // Parse result to show replacement count and file path
       if (typeof result === 'object' && result !== null && 'replacements' in result) {
         const replacements = (result as any).replacements;
+        const path = (result as any).path;
+        const fileName = path ? path.split('/').pop() : '';
         return {
           lines: [],
-          summary: `Replaced ${replacements} occurrence${replacements > 1 ? 's' : ''}`,
+          summary: `Updated ${fileName} with ${replacements} replacement${replacements > 1 ? 's' : ''}`,
         };
       }
       return { lines };
@@ -140,7 +142,7 @@ function getDisplayName(toolName: string): string {
   const displayNames: Record<string, string> = {
     'read': 'Read',
     'write': 'Write',
-    'edit': 'Edit',
+    'edit': 'Update',
     'bash': 'Bash',
     'grep': 'Search',
     'glob': 'Search',
