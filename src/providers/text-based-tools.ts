@@ -182,41 +182,6 @@ export function parseContentBlocks(text: string): ParsedContentBlock[] {
 }
 
 /**
- * Validate tool arguments against tool schema
- * Returns error message if validation fails, null if valid
- */
-export function validateToolArguments(
-  toolName: string,
-  args: Record<string, unknown>,
-  toolDef: ToolDefinition
-): string | null {
-  const { parameters } = toolDef;
-  const required = parameters.required || [];
-
-  // Check for missing required parameters
-  const missing = required.filter(paramName => !(paramName in args) || args[paramName] === undefined);
-
-  if (missing.length > 0) {
-    return `Missing required parameter(s): ${missing.join(', ')}. Please provide all required parameters and try again.`;
-  }
-
-  // Check for empty object when parameters exist
-  if (Object.keys(parameters.properties || {}).length > 0 && Object.keys(args).length === 0) {
-    const paramList = Object.entries(parameters.properties || {})
-      .map(([name, schema]: [string, any]) => {
-        const isReq = required.includes(name);
-        const desc = schema.description || '';
-        return `  - ${name} (${schema.type || 'any'}${isReq ? ', REQUIRED' : ''}): ${desc}`;
-      })
-      .join('\n');
-
-    return `Empty arguments object provided, but tool requires parameters:\n${paramList}\n\nPlease provide the required parameters in JSON format.`;
-  }
-
-  return null;
-}
-
-/**
  * Format tool result for sending back to Claude
  */
 export function formatToolResult(toolCallId: string, result: unknown, isError = false): string {

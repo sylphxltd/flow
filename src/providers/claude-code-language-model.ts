@@ -72,11 +72,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
 
     const toolsMap: Record<string, ToolDefinition> = {};
     for (const tool of tools) {
+      // Vercel AI SDK uses 'inputSchema' field for the JSON Schema
+      const parameters = tool.inputSchema || tool.parameters || { type: 'object', properties: {} };
+
       toolsMap[tool.name] = {
         type: 'function',
         name: tool.name,
         description: tool.description,
-        parameters: tool.parameters || { type: 'object', properties: {} },
+        parameters: parameters,
       };
     }
     return toolsMap;

@@ -19,7 +19,7 @@ async function testGenerateWithTools() {
     tools: {
       calculator: {
         description: 'Perform basic arithmetic operations',
-        parameters: z.object({
+        inputSchema: z.object({
           operation: z.enum(['add', 'subtract', 'multiply', 'divide']).describe('The operation to perform'),
           a: z.number().describe('First number'),
           b: z.number().describe('Second number'),
@@ -71,7 +71,7 @@ async function testStreamWithTools() {
     tools: {
       calculator: {
         description: 'Perform basic arithmetic operations',
-        parameters: z.object({
+        inputSchema: z.object({
           operation: z.enum(['add', 'subtract', 'multiply', 'divide']).describe('The operation to perform'),
           a: z.number().describe('First number'),
           b: z.number().describe('Second number'),
