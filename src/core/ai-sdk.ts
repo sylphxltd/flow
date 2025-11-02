@@ -327,7 +327,11 @@ function getSystemStatus(): string {
 
   const cpuUsage = (100 - (100 * totalIdle) / totalTick).toFixed(1);
 
-  return `[${timestamp} | CPU: ${cpuUsage}% (${cpuCount} cores) | MEM: ${memUsageGB}GB/${totalMemGB}GB]`;
+  return `<system_status>
+Time: ${timestamp}
+CPU: ${cpuUsage}% (${cpuCount} cores)
+Memory: ${memUsageGB}GB/${totalMemGB}GB
+</system_status>`;
 }
 
 /**
