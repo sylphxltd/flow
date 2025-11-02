@@ -112,11 +112,17 @@ export function useChat() {
       );
 
       // Get updated session (after addMessage)
-      const updatedSession = sessions.find((s) => s.id === currentSessionId);
+      // ⚠️ IMPORTANT: Must get fresh state from store, not use hook's sessions variable
+      // The sessions variable is stale - it was captured at hook render time
+      const freshSessions = useAppStore.getState().sessions;
+      const updatedSession = freshSessions.find((s) => s.id === currentSessionId);
       if (!updatedSession) {
         console.error('[useChat] Session not found after addMessage');
         return;
       }
+
+      console.log('[useChat] Session messages count:', updatedSession.messages.length);
+      console.log('[useChat] Last message:', updatedSession.messages[updatedSession.messages.length - 1]);
 
       // Build ModelMessage[] from SessionMessage[] for LLM
       //

@@ -414,7 +414,11 @@ export async function* createAIStream(
 
     // Debug: Log what we're sending to streamText
     console.log('[createAIStream] Step', stepNumber, '- Messages:', preparedMessages.length);
-    console.log('[createAIStream] First message:', JSON.stringify(preparedMessages[0], null, 2).substring(0, 500));
+    if (preparedMessages.length > 0) {
+      console.log('[createAIStream] First message:', JSON.stringify(preparedMessages[0], null, 2).substring(0, 500));
+    } else {
+      console.error('[createAIStream] ⚠️  WARNING: No messages to send to LLM!');
+    }
 
     // Call AI SDK with single step
     const { fullStream, response, finishReason, usage, content } = streamText({
