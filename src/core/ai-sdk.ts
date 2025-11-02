@@ -253,16 +253,6 @@ export interface StepInfo {
     totalTokens: number;
   };
   content: ContentPart[];
-  toolCalls: Array<{
-    toolCallId: string;
-    toolName: string;
-    args: unknown;
-  }>;
-  toolResults: Array<{
-    toolCallId: string;
-    toolName: string;
-    result: unknown;
-  }>;
 }
 
 /**
@@ -589,16 +579,6 @@ export async function* createAIStream(
           totalTokens: (await usage).totalTokens ?? 0,
         },
         content: fromAISDKContent(await content),
-        toolCalls: (await toolCalls ?? []).map((call) => ({
-          toolCallId: call.toolCallId,
-          toolName: call.toolName,
-          args: call.input,
-        })),
-        toolResults: (await toolResults ?? []).map((res) => ({
-          toolCallId: res.toolCallId,
-          toolName: res.toolName,
-          result: res.output,
-        })),
       };
       onStepFinish(stepInfo);
     }

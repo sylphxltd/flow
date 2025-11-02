@@ -143,33 +143,40 @@ async function testChat() {
       tools,
       toolChoice: 'auto', // Explicitly set tool choice
       onStepFinish: (step) => {
+        // Extract different content types
+        const toolCalls = step.content.filter((part) => part.type === 'tool-call');
+        const toolResults = step.content.filter((part) => part.type === 'tool-result');
+        const textParts = step.content.filter((part) => part.type === 'text');
+        const textContent = textParts.map((part: any) => part.text).join('');
+
         console.log('\n📋 Step finished:', {
-          stepType: step.stepType,
-          toolCalls: step.toolCalls?.length || 0,
-          toolResults: step.toolResults?.length || 0,
-          hasText: !!step.text,
-          textLength: step.text?.length || 0,
+          toolCalls: toolCalls.length,
+          toolResults: toolResults.length,
+          hasText: textContent.length > 0,
+          textLength: textContent.length,
         });
 
         // Log tool calls
-        if (step.toolCalls && step.toolCalls.length > 0) {
-          for (const call of step.toolCalls) {
-            console.log(`  🔧 Tool Call: ${call.toolName}`);
-            console.log(`     Args:`, JSON.stringify(call.args, null, 2));
+        if (toolCalls.length > 0) {
+          for (const call of toolCalls) {
+            const toolCall = call as any;
+            console.log(`  🔧 Tool Call: ${toolCall.toolName}`);
+            console.log(`     Args:`, JSON.stringify(toolCall.args, null, 2));
           }
         }
 
         // Log tool results
-        if (step.toolResults && step.toolResults.length > 0) {
-          for (const result of step.toolResults) {
-            console.log(`  ✅ Tool Result: ${result.toolName}`);
-            console.log(`     Result:`, JSON.stringify(result.result, null, 2));
+        if (toolResults.length > 0) {
+          for (const result of toolResults) {
+            const toolResult = result as any;
+            console.log(`  ✅ Tool Result: ${toolResult.toolName}`);
+            console.log(`     Result:`, JSON.stringify(toolResult.result, null, 2));
           }
         }
 
         // Log text if available
-        if (step.text) {
-          console.log(`  📝 Text: ${step.text.substring(0, 200)}${step.text.length > 200 ? '...' : ''}`);
+        if (textContent) {
+          console.log(`  📝 Text: ${textContent.substring(0, 200)}${textContent.length > 200 ? '...' : ''}`);
         }
       },
     });
