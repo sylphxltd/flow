@@ -24,7 +24,7 @@ export const updateTodosTool = tool({
       }).optional().describe('Change order'),
     })).describe('Add/update todos. Examples: [{ content: "Build login", activeForm: "Building login", status: "pending" }] | [{ id: 1, status: "completed" }]'),
   }),
-  execute: async ({ todos }) => {
+  execute: ({ todos }) => {
     const store = useAppStore.getState();
     const beforeState = store.todos;
 

@@ -94,6 +94,20 @@ const formatGlobArgs: ArgsFormatter = (args) => {
     : pattern;
 };
 
+const formatUpdateTodosArgs: ArgsFormatter = (args) => {
+  const todos = args.todos as any[] | undefined;
+  if (!todos || todos.length === 0) return '';
+
+  const adding = todos.filter((t) => !t.id).length;
+  const updating = todos.filter((t) => t.id).length;
+
+  const parts: string[] = [];
+  if (adding > 0) parts.push(`${adding} new`);
+  if (updating > 0) parts.push(`${updating} updated`);
+
+  return parts.join(', ');
+};
+
 /**
  * Tool formatter registry
  */
@@ -107,6 +121,7 @@ const argsFormatters: Record<string, ArgsFormatter> = {
   'kill-bash': formatBashIdArgs,
   grep: formatGrepArgs,
   glob: formatGlobArgs,
+  updateTodos: formatUpdateTodosArgs,
 };
 
 /**
@@ -309,6 +324,19 @@ const formatKillBashResult: ResultFormatter = (result) => {
   return { lines: resultToLines(result) };
 };
 
+const formatUpdateTodosResult: ResultFormatter = (result) => {
+  // Handle updateTodos result: { summary, changes, total }
+  if (typeof result === 'object' && result !== null && 'summary' in result) {
+    const { summary, changes, total } = result as any;
+    return {
+      lines: changes || [],
+      summary: `${summary} • ${total} active`,
+    };
+  }
+
+  return { lines: resultToLines(result) };
+};
+
 /**
  * Result formatter registry
  */
@@ -322,6 +350,7 @@ const resultFormatters: Record<string, ResultFormatter> = {
   'bash-output': formatBashOutputResult,
   'kill-bash': formatKillBashResult,
   ask: formatAskResult,
+  updateTodos: formatUpdateTodosResult,
 };
 
 /**
@@ -365,6 +394,7 @@ const displayNames: Record<string, string> = {
   grep: 'Search',
   glob: 'Search',
   ask: 'Ask',
+  updateTodos: 'Tasks',
 };
 
 /**
@@ -376,7 +406,7 @@ const getDisplayName = (toolName: string): string =>
 /**
  * Component rendering helpers
  */
-const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'bash-output', 'kill-bash', 'grep', 'glob']);
+const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'bash-output', 'kill-bash', 'grep', 'glob', 'updateTodos']);
 
 const isBuiltInTool = (name: string): boolean =>
   builtInTools.has(name.toLowerCase());
