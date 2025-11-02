@@ -1,22 +1,22 @@
 /**
  * Tool Display Component
- * Beautiful display for tool calls with special handling for built-in tools
+ * Supports two modes:
+ * 1. Custom component: if tool has a registered component, use it
+ * 2. Default display: use formatters for args/results (most tools)
  */
 
 import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
-import { formatArgs, formatResult } from '../utils/tool-formatters.js';
-import { truncateLines, getDisplayName, isBuiltInTool, getDiffLineColor } from '../utils/tool-display-utils.js';
-
-interface ToolDisplayProps {
-  name: string;
-  status: 'running' | 'completed' | 'failed';
-  duration?: number;
-  args?: unknown;
-  result?: unknown;
-  error?: string;
-}
+import {
+  formatArgs,
+  formatResult,
+  getDisplayName,
+  isBuiltInTool,
+  getToolConfig,
+  type ToolDisplayProps,
+} from '../utils/tool-configs.js';
+import { truncateLines, getDiffLineColor } from '../utils/tool-display-utils.js';
 
 /**
  * Component rendering helpers
@@ -108,7 +108,17 @@ const ResultDisplay: React.FC<{
   return null;
 };
 
-export function ToolDisplay({ name, status, duration, args, result, error }: ToolDisplayProps) {
+export function ToolDisplay(props: ToolDisplayProps) {
+  const { name, status, duration, args, result, error } = props;
+
+  // Check if tool has a custom component registered
+  const config = getToolConfig(name);
+  if (config && config.type === 'component') {
+    const CustomComponent = config.component;
+    return <CustomComponent {...props} />;
+  }
+
+  // Use default display with formatters
   const formattedArgs = formatArgs(name, args);
   const isBuiltIn = isBuiltInTool(name);
   const displayName = getDisplayName(name);
