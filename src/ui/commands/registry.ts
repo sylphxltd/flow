@@ -4,7 +4,6 @@
  */
 
 import type { Command, CommandContext } from './types.js';
-import type { MessagePart } from '../../types/session.types.js';
 
 // Internal cache for options (like models)
 const optionsCache = new Map<string, Array<{ id: string; name: string }>>();
@@ -1646,150 +1645,6 @@ ${enabledNames || '  (none)'}`;
 };
 
 /**
- * Compact command - Summarize current session and continue in new session
- */
-const compactCommand: Command = {
-  id: 'compact',
-  label: '/compact',
-  description: 'Summarize current session and continue in new session',
-  execute: async (context) => {
-    const currentSession = context.getCurrentSession();
-    const aiConfig = context.getConfig();
-
-    if (!currentSession) {
-      return 'No active session to compact. Start chatting first to create a session.';
-    }
-
-    if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
-      return 'No AI provider configured. Use /provider to configure a provider first.';
-    }
-
-    if (currentSession.messages.length === 0) {
-      return 'Current session is empty. Nothing to compact.';
-    }
-
-    context.sendMessage('Compacting current session...');
-
-    try {
-      // Import required modules
-      const { getProvider } = await import('../../providers/index.js');
-      const { createAIStream } = await import('../../core/ai-sdk.js');
-      const { processStream } = await import('../../core/stream-handler.js');
-      const { createHeadlessDisplay } = await import('../../core/headless-display.js');
-      const { countTokens } = await import('../../utils/token-counter.js');
-
-      // Get provider and model
-      const providerInstance = getProvider(currentSession.provider);
-      const providerConfig = aiConfig.providers?.[currentSession.provider];
-      
-      if (!providerConfig || !providerInstance.isConfigured(providerConfig)) {
-        return `Provider ${currentSession.provider} is not properly configured.`;
-      }
-
-      const model = providerInstance.createClient(providerConfig, currentSession.model);
-
-      // Create a summary prompt
-      const messagesForSummary = [
-        {
-          role: 'system' as const,
-          content: `You are tasked with summarizing a chat session. Create a comprehensive but concise summary that captures:
-1. The main topics discussed
-2. Key decisions made
-3. Code changes or implementations
-4. Important context that should be preserved
-5. Any unfinished tasks or next steps
-
-Format your response as a clear summary that can be used as context for continuing the work in a new session.`
-        },
-        ...currentSession.messages.map(msg => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content.map(part => 
-            part.type === 'text' ? part.content : ''
-          ).join('\n').trim()
-        }))
-      ];
-
-      // Create display for streaming
-      const display = createHeadlessDisplay(false);
-
-      context.sendMessage('Generating session summary...');
-
-      // Create AI stream for summarization
-      const stream = createAIStream({
-        model,
-        messages: messagesForSummary,
-      });
-
-      // Process stream with unified handler
-      const { fullResponse } = await processStream(stream, {
-        onTextDelta: display.onTextDelta,
-        onToolCall: display.onToolCall,
-        onToolResult: display.onToolResult,
-        onComplete: display.onComplete,
-      });
-
-      if (!fullResponse || fullResponse.length === 0) {
-        return 'Failed to generate session summary.';
-      }
-
-      // Create new session
-      const newSessionId = context.createSession(currentSession.provider, currentSession.model);
-      context.setCurrentSession(newSessionId);
-
-      // Add the summary as the first message in the new session
-      const { useAppStore } = await import('../../stores/app-store.js');
-      const addMessage = useAppStore.getState().addMessage;
-      
-      // Create message parts for the summary
-      const summaryContent: MessagePart[] = [
-        {
-          type: 'text',
-          content: `📋 **Session Summary**
-
-${fullResponse}
-
----
-
-This is a compacted session. The previous conversation has been summarized above. You can continue your work here with the key context preserved.`
-        }
-      ];
-      
-      addMessage(newSessionId, 'assistant', summaryContent);
-
-      // Calculate and display token savings
-      const originalTokens = await countTokens(
-        currentSession.messages.map(msg => 
-          msg.content.map(part => 
-            part.type === 'text' ? part.content : ''
-          ).join('\n')
-        ).join('\n'),
-        currentSession.model
-      );
-
-      const summaryTokens = await countTokens(fullResponse, currentSession.model);
-      const savedTokens = originalTokens - summaryTokens;
-      const savedPercent = ((savedTokens / originalTokens) * 100).toFixed(1);
-
-      return `✅ Session compacted successfully!
-
-📊 **Compression Stats:**
-• Original: ${originalTokens.toLocaleString()} tokens
-• Summary: ${summaryTokens.toLocaleString()} tokens  
-• Saved: ${savedTokens.toLocaleString()} tokens (${savedPercent}% reduction)
-
-🆕 **New Session Created**
-You're now in a fresh session with the key context preserved above.
-
-Continue your work from the summarized context...`;
-
-    } catch (error) {
-      context.addLog(`[Compact] Error: ${error instanceof Error ? error.message : String(error)}`);
-      return `Failed to compact session: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    }
-  },
-};
-
-/**
  * All registered commands
  */
 export const commands: Command[] = [
@@ -1804,7 +1659,6 @@ export const commands: Command[] = [
   sessionsCommand,
   newCommand,
   bashesCommand,
-  compactCommand,
 ];
 
 /**
