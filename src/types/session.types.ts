@@ -61,7 +61,6 @@ export interface TokenUsage {
 export interface MessageMetadata {
   cpu?: string;         // CPU usage at creation time (e.g., "45.3% (8 cores)")
   memory?: string;      // Memory usage at creation time (e.g., "4.2GB/16.0GB")
-  todoContext?: string; // Todo context snapshot at creation time (for LLM, not UI)
   // Future: add more fields as needed (sessionId, requestId, modelVersion, etc.)
 }
 
@@ -82,6 +81,7 @@ export interface MessageMetadata {
  * - metadata: Injected as system status (cpu, memory) - NOT shown in UI
  * - timestamp: Used to construct system status time
  * - attachments: File contents read and injected
+ * - todoSnapshot: Todo state at message creation, injected as context
  *
  * Why content doesn't include system status:
  * - System status is contextual info, not part of user's actual message
@@ -92,12 +92,19 @@ export interface MessageMetadata {
  * - They're for monitoring/debugging, not for LLM consumption
  * - finishReason controls multi-step flow (stop vs tool-calls vs length)
  * - usage helps track API costs and quota
+ *
+ * Why todoSnapshot at top-level (not in metadata):
+ * - Structured data (Todo[]), not string context like cpu/memory
+ * - Enables rewind feature - can restore todo state at any point in conversation
+ * - May be used by UI for historical view
+ * - Clearer separation: metadata = simple context, todoSnapshot = structured state
  */
 export interface SessionMessage {
   role: 'user' | 'assistant';
   content: MessagePart[];  // UI display (without system status)
   timestamp: number;
   metadata?: MessageMetadata;  // System info for LLM context (not shown in UI)
+  todoSnapshot?: Todo[];   // Full todo state at message creation time (for rewind + LLM context)
   attachments?: FileAttachment[];
   usage?: TokenUsage;          // For UI/monitoring, not sent to LLM
   finishReason?: string;       // For flow control (stop/tool-calls/length/error), not sent to LLM

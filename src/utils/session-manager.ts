@@ -39,6 +39,8 @@ export async function createSession(provider: ProviderId, model: string): Promis
     provider,
     model,
     messages: [],
+    todos: [],        // Initialize empty todos
+    nextTodoId: 1,    // Start from 1
     created: Date.now(),
     updated: Date.now(),
   };

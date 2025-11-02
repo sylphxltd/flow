@@ -38,7 +38,7 @@ export interface AppState {
   updateSessionModel: (sessionId: string, model: string) => void;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string, metadata?: MessageMetadata) => void;
+  addMessage: (sessionId: string, role: 'user' | 'assistant', content: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string, metadata?: MessageMetadata, todoSnapshot?: Todo[]) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
@@ -160,7 +160,7 @@ export const useAppStore = create<AppState>()(
           session.title = title;
         }
       }),
-    addMessage: (sessionId, role, content, attachments, usage, finishReason, metadata) =>
+    addMessage: (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) =>
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -172,6 +172,7 @@ export const useAppStore = create<AppState>()(
             ...(usage !== undefined && { usage }),
             ...(finishReason !== undefined && { finishReason }),
             ...(metadata !== undefined && { metadata }),
+            ...(todoSnapshot !== undefined && todoSnapshot.length > 0 && { todoSnapshot }),
           });
         }
       }),

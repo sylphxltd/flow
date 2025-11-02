@@ -84,20 +84,19 @@ export function useChat() {
       }
 
       // ⚠️ CRITICAL: Capture context ONCE at message creation time
-      // This metadata is stored and NEVER changes (important for prompt cache)
+      // This data is stored and NEVER changes (important for prompt cache)
       const systemStatus = getSystemStatus();
 
-      // Capture todo context snapshot at message creation time
+      // Capture full todo state snapshot at message creation time
+      // Store Todo[] (structured data) for rewind capability
       const currentSession = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
-      const todos = currentSession?.todos || [];
-      const todoContext = buildTodoContext(todos);
+      const todoSnapshot = currentSession?.todos ? [...currentSession.todos] : [];
 
-      // Add user message to session with metadata (not in display content)
-      // Design decision: System status and todo context are in metadata, NOT in content
+      // Add user message to session
+      // Design decisions:
       // - content: What user actually typed (shown in UI)
-      // - metadata: System context for LLM (not shown in UI)
-      //   - cpu, memory: System resource usage
-      //   - todoContext: Snapshot of todos at message creation time
+      // - metadata: System resource context (cpu, memory) - for LLM, not UI
+      // - todoSnapshot: Full todo state - enables rewind, sent to LLM as context
       addMessage(
         currentSessionId,
         'user',
@@ -108,8 +107,8 @@ export function useChat() {
         {
           cpu: systemStatus.cpu,
           memory: systemStatus.memory,
-          todoContext: todoContext, // Snapshot, not dynamic
-        }
+        },
+        todoSnapshot // Full todo state snapshot
       );
 
       // Get updated session (after addMessage)
@@ -139,10 +138,11 @@ export function useChat() {
           if (msg.role === 'user') {
             const contentParts: any[] = [];
 
-            // 1. Inject context from STORED metadata (not current values!)
-            //    ⚠️ Using stored metadata preserves prompt cache - messages stay immutable
+            // 1. Inject context from STORED data (not current values!)
+            //    ⚠️ Using stored data preserves prompt cache - messages stay immutable
+
+            // System status from metadata
             if (msg.metadata) {
-              // System status
               const systemStatusString = buildSystemStatusFromMetadata({
                 timestamp: new Date(msg.timestamp).toISOString(),
                 cpu: msg.metadata.cpu || 'N/A',
@@ -152,14 +152,16 @@ export function useChat() {
                 type: 'text',
                 text: systemStatusString,
               });
+            }
 
-              // Todo context (if exists - captured at message creation time)
-              if (msg.metadata.todoContext) {
-                contentParts.push({
-                  type: 'text',
-                  text: msg.metadata.todoContext,
-                });
-              }
+            // Todo context from todoSnapshot (full structured state)
+            // Build context string from snapshot, not current todos
+            if (msg.todoSnapshot && msg.todoSnapshot.length > 0) {
+              const todoContext = buildTodoContext(msg.todoSnapshot);
+              contentParts.push({
+                type: 'text',
+                text: todoContext,
+              });
             }
 
             // 2. Extract text parts from content (user message)
@@ -218,6 +220,15 @@ export function useChat() {
 
       // Get model using provider registry with full config
       const model = providerInstance.createClient(providerConfig, modelName);
+
+      // Debug: Log messages being sent to LLM
+      addDebugLog('[useChat] Messages to LLM: ' + JSON.stringify(messages.map(m => ({
+        role: m.role,
+        contentLength: Array.isArray(m.content) ? m.content.length : typeof m.content === 'string' ? m.content.length : 0,
+        contentPreview: Array.isArray(m.content)
+          ? m.content.slice(0, 2).map((p: any) => ({ type: p.type, textPreview: p.text?.substring(0, 100) }))
+          : typeof m.content === 'string' ? m.content.substring(0, 100) : 'unknown'
+      })), null, 2));
 
       // Create AI stream with context injection callbacks
       //
