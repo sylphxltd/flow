@@ -393,24 +393,25 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                       delta: streamEvent.delta.thinking,
                     });
                   } else if (streamEvent.delta.type === 'text_delta') {
-                    // Text delta - emit text-delta
-                    if (!hasStartedText) {
-                      controller.enqueue({
-                        type: 'text-start',
-                        id: 'text-0',
-                      });
-                      hasStartedText = true;
-                    }
-                    controller.enqueue({
-                      type: 'text-delta',
-                      id: 'text-0',
-                      delta: streamEvent.delta.text,
-                    });
-
-                    // If tools are available, parse text for tool calls
+                    // Text delta - parse through XML parser if tools available, otherwise emit directly
                     if (xmlParser) {
+                      // Parse text through XML parser to filter out tool call XML tags
                       for (const xmlEvent of xmlParser.processChunk(streamEvent.delta.text)) {
-                        if (xmlEvent.type === 'tool-input-start') {
+                        if (xmlEvent.type === 'text-start') {
+                          if (!hasStartedText) {
+                            controller.enqueue({
+                              type: 'text-start',
+                              id: 'text-0',
+                            });
+                            hasStartedText = true;
+                          }
+                        } else if (xmlEvent.type === 'text-delta') {
+                          controller.enqueue({
+                            type: 'text-delta',
+                            id: 'text-0',
+                            delta: xmlEvent.delta,
+                          });
+                        } else if (xmlEvent.type === 'tool-input-start') {
                           controller.enqueue({
                             type: 'tool-input-start',
                             id: xmlEvent.toolCallId,
@@ -437,6 +438,20 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                           finishReason = 'tool-calls';
                         }
                       }
+                    } else {
+                      // No tools - emit text directly
+                      if (!hasStartedText) {
+                        controller.enqueue({
+                          type: 'text-start',
+                          id: 'text-0',
+                        });
+                        hasStartedText = true;
+                      }
+                      controller.enqueue({
+                        type: 'text-delta',
+                        id: 'text-0',
+                        delta: streamEvent.delta.text,
+                      });
                     }
                   }
                 }
