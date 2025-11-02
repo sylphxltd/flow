@@ -5,15 +5,14 @@
 
 import React, { useMemo } from 'react';
 import { Box, Text } from 'ink';
+import { useAppStore } from '../stores/app-store.js';
 import type { Todo } from '../../types/todo.types.js';
-
-interface TodoListProps {
-  todos: Todo[];
-}
 
 const MAX_VISIBLE_LINES = 5;
 
-export default function TodoList({ todos }: TodoListProps) {
+export default function TodoList() {
+  // Subscribe directly to store for real-time updates
+  const todos = useAppStore((state) => state.todos);
   // Calculate progress
   const completedCount = todos.filter((t) => t.status === 'completed').length;
   const totalCount = todos.filter((t) => t.status !== 'removed').length;

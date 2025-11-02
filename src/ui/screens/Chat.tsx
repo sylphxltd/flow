@@ -1732,7 +1732,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           ) : (
             <>
               {/* Show todos */}
-              <TodoList todos={todos} />
+              <TodoList />
 
               {/* Show pending attachments */}
               {pendingAttachments.length > 0 && (

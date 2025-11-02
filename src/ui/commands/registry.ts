@@ -1106,7 +1106,7 @@ const contextCommand: Command = {
   description: 'Display context window usage and token breakdown',
   execute: async (context) => {
     const { countTokens, formatTokenCount } = await import('../../utils/token-counter.js');
-    const { SYSTEM_PROMPT } = await import('../../core/ai-sdk.js');
+    const { getSystemPrompt } = await import('../../core/ai-sdk.js');
     const { getAISDKTools } = await import('../../tools/index.js');
 
     const currentSession = context.getCurrentSession();
@@ -1123,8 +1123,9 @@ const contextCommand: Command = {
     // Calculate token counts
     context.addLog('[Context] Calculating token counts...');
 
-    // System prompt tokens
-    const systemPromptTokens = await countTokens(SYSTEM_PROMPT, modelName);
+    // System prompt tokens - use the actual system prompt that gets sent
+    const systemPrompt = getSystemPrompt();
+    const systemPromptTokens = await countTokens(systemPrompt, modelName);
 
     // System tools tokens (calculate individual tool tokens)
     const tools = getAISDKTools();
@@ -1132,16 +1133,51 @@ const contextCommand: Command = {
     let toolsTokensTotal = 0;
 
     for (const [toolName, toolDef] of Object.entries(tools)) {
-      const toolJson = JSON.stringify(toolDef);
+      // Create a more accurate representation of how tools are sent to the AI
+      // Tools are typically sent as function definitions with name, description, and parameters
+      const toolRepresentation = {
+        name: toolName,
+        description: toolDef.description || '',
+        parameters: toolDef.parameters || {}
+      };
+      const toolJson = JSON.stringify(toolRepresentation, null, 0); // No spaces for compact representation
       const tokens = await countTokens(toolJson, modelName);
       toolTokens[toolName] = tokens;
       toolsTokensTotal += tokens;
     }
 
-    // Messages tokens
+    // Messages tokens - include attachments and parts for accurate calculation
     let messagesTokens = 0;
     for (const msg of currentSession.messages) {
-      const msgTokens = await countTokens(msg.content, modelName);
+      let msgText = msg.content;
+      
+      // Add attachment content if present (as it would be sent to AI)
+      if (msg.attachments && msg.attachments.length > 0) {
+        try {
+          const { readFile } = await import('node:fs/promises');
+          const fileContents = await Promise.all(
+            msg.attachments.map(async (att) => {
+              try {
+                const content = await readFile(att.path, 'utf8');
+                return { path: att.relativePath, content };
+              } catch {
+                return { path: att.relativePath, content: '[Error reading file]' };
+              }
+            })
+          );
+
+          const fileContentsText = fileContents
+            .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
+            .join('');
+          
+          msgText += fileContentsText;
+        } catch (error) {
+          // If we can't read attachments, just count the content we have
+          console.warn('[Context] Failed to read attachments for token count:', error);
+        }
+      }
+      
+      const msgTokens = await countTokens(msgText, modelName);
       messagesTokens += msgTokens;
     }
 
