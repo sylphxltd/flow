@@ -77,78 +77,64 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
-      // Read file contents if attachments provided
-      // Note: Timestamps are added in ai-sdk.ts to ensure consistency
-      let messageForLLM = message;
-      if (attachments && attachments.length > 0) {
-        try {
-          const { readFile } = await import('node:fs/promises');
-          const fileContents = await Promise.all(
-            attachments.map(async (att) => {
-              try {
-                const content = await readFile(att.path, 'utf8');
-                return { path: att.relativePath, content, success: true };
-              } catch (error) {
-                return {
-                  path: att.relativePath,
-                  content: `[Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}]`,
-                  success: false
-                };
-              }
-            })
-          );
-
-          // Format message with file contents for LLM
-          const fileContentsText = fileContents
-            .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
-            .join('');
-
-          messageForLLM = `${message}${fileContentsText}`;
-        } catch (error) {
-          console.error('Failed to read attachments:', error);
-        }
-      }
-
-      // Add user message to session (original message without file contents)
+      // Add user message to session (original message without file contents or system status)
       addMessage(currentSessionId, 'user', message, undefined, attachments);
 
-      // Get all messages for context
-      // For messages with attachments, we need to read files and add content
-      const messages = await Promise.all(
+      // Build messages with content parts (supports text, files, images)
+      const messages: ModelMessage[] = await Promise.all(
         [...currentSession.messages, { role: 'user' as const, content: message, timestamp: Date.now(), attachments }].map(async (msg) => {
-          if (msg.attachments && msg.attachments.length > 0) {
-            // Read file contents for this message
-            try {
-              const { readFile } = await import('node:fs/promises');
-              const fileContents = await Promise.all(
-                msg.attachments.map(async (att) => {
-                  try {
-                    const content = await readFile(att.path, 'utf8');
-                    return { path: att.relativePath, content };
-                  } catch {
-                    return { path: att.relativePath, content: '[Error reading file]' };
-                  }
-                })
-              );
+          // User messages: inject system status + convert to content parts
+          if (msg.role === 'user') {
+            const contentParts: any[] = [];
 
-              const fileContentsText = fileContents
-                .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
-                .join('');
+            // 1. Add system status at the beginning
+            const systemStatus = getSystemStatus();
+            contentParts.push({
+              type: 'text',
+              text: systemStatus,
+            });
 
-              return {
-                role: msg.role as 'user' | 'assistant',
-                content: `${msg.content}${fileContentsText}`,
-              };
-            } catch {
-              return {
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-              };
+            // 2. Add main message text
+            contentParts.push({
+              type: 'text',
+              text: msg.content,
+            });
+
+            // 3. Add file attachments as file parts
+            if (msg.attachments && msg.attachments.length > 0) {
+              try {
+                const { readFile } = await import('node:fs/promises');
+                const fileContents = await Promise.all(
+                  msg.attachments.map(async (att) => {
+                    try {
+                      const content = await readFile(att.path, 'utf8');
+                      return {
+                        type: 'text',
+                        text: `\n\n<file path="${att.relativePath}">\n${content}\n</file>`,
+                      };
+                    } catch {
+                      return {
+                        type: 'text',
+                        text: `\n\n<file path="${att.relativePath}">\n[Error reading file]\n</file>`,
+                      };
+                    }
+                  })
+                );
+                contentParts.push(...fileContents);
+              } catch (error) {
+                console.error('Failed to read attachments:', error);
+              }
             }
+
+            return {
+              role: 'user' as const,
+              content: contentParts,
+            };
           }
 
+          // Assistant messages: keep as is (already in correct format from AI SDK)
           return {
-            role: msg.role as 'user' | 'assistant',
+            role: msg.role as 'assistant',
             content: msg.content,
           };
         })
@@ -162,34 +148,12 @@ export function useChat() {
         model,
         messages,
         onPrepareMessages: (messageHistory, stepNumber) => {
-          // Inject system status to user messages at step 0
-          let preparedMessages = messageHistory;
-
-          if (stepNumber === 0) {
-            const systemStatus = getSystemStatus();
-            preparedMessages = messageHistory.map((msg) => {
-              if (msg.role === 'user') {
-                return {
-                  ...msg,
-                  content: [
-                    {
-                      type: 'text',
-                      text: systemStatus,
-                    },
-                    ...msg.content,
-                  ],
-                };
-              }
-              return msg;
-            });
-          }
-
-          // Inject todo context at every step (temporary, not saved)
+          // Inject todo context at every step (temporary, not saved to history)
           const todos = useAppStore.getState().todos;
           const todoContext = buildTodoContext(todos);
 
           return [
-            ...preparedMessages,
+            ...messageHistory,
             {
               role: 'system' as const,
               content: [
