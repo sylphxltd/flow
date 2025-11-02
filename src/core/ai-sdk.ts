@@ -515,7 +515,12 @@ export async function* createAIStream(
       ...messageHistory,
       {
         role: 'system' as const,
-        content: todoContext,
+        content: [
+          {
+            type: 'text',
+            text: todoContext,
+          },
+        ],
       },
     ];
 
