@@ -412,14 +412,6 @@ export async function* createAIStream(
       ? onPrepareMessages(messageHistory, stepNumber)
       : messageHistory;
 
-    // Debug: Log what we're sending to streamText
-    console.log('[createAIStream] Step', stepNumber, '- Messages:', preparedMessages.length);
-    if (preparedMessages.length > 0) {
-      console.log('[createAIStream] First message:', JSON.stringify(preparedMessages[0], null, 2).substring(0, 500));
-    } else {
-      console.error('[createAIStream] ⚠️  WARNING: No messages to send to LLM!');
-    }
-
     // Call AI SDK with single step
     const { fullStream, response, finishReason, usage, content } = streamText({
       model,
@@ -430,16 +422,8 @@ export async function* createAIStream(
       // onError callback is for non-fatal errors, fatal ones should throw
     });
 
-    console.log('[createAIStream] streamText called successfully');
-
     // Stream all chunks to user
-    let chunkCount = 0;
     for await (const chunk of fullStream) {
-      chunkCount++;
-      if (chunkCount % 10 === 1) {
-        console.log('[createAIStream] Processing chunk', chunkCount, 'type:', chunk.type);
-      }
-
       switch (chunk.type) {
         case 'text-start':
           yield { type: 'text-start' };

@@ -121,9 +121,6 @@ export function useChat() {
         return;
       }
 
-      console.log('[useChat] Session messages count:', updatedSession.messages.length);
-      console.log('[useChat] Last message:', updatedSession.messages[updatedSession.messages.length - 1]);
-
       // Build ModelMessage[] from SessionMessage[] for LLM
       //
       // ⚠️ CRITICAL: This is where SessionMessage (UI) transforms to ModelMessage (LLM)
@@ -226,15 +223,6 @@ export function useChat() {
 
       // Get model using provider registry with full config
       const model = providerInstance.createClient(providerConfig, modelName);
-
-      // Debug: Log messages being sent to LLM
-      addDebugLog('[useChat] Messages to LLM: ' + JSON.stringify(messages.map(m => ({
-        role: m.role,
-        contentLength: Array.isArray(m.content) ? m.content.length : typeof m.content === 'string' ? m.content.length : 0,
-        contentPreview: Array.isArray(m.content)
-          ? m.content.slice(0, 2).map((p: any) => ({ type: p.type, textPreview: p.text?.substring(0, 100) }))
-          : typeof m.content === 'string' ? m.content.substring(0, 100) : 'unknown'
-      })), null, 2));
 
       // Create AI stream with context injection callbacks
       //
