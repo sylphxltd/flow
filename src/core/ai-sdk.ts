@@ -325,43 +325,52 @@ Memory: ${memUsageGB}GB/${totalMemGB}GB
 }
 
 /**
- * Inject system status into tool result output based on output type
+ * Inject system status into tool result output
+ * Convert all types to content type and prepend system status as text part
  */
 function injectSystemStatusToOutput(output: any, systemStatus: string): any {
   if (!output || typeof output !== 'object') {
     return output;
   }
 
-  switch (output.type) {
-    case 'text':
-    case 'error-text':
-      // Prepend system status to text value
-      return {
-        ...output,
-        value: `${systemStatus}\n${output.value}`,
-      };
+  // Convert to content type if not already
+  let contentValue: any[];
 
-    case 'content':
-      // Prepend a text part with system status to content array
-      return {
-        ...output,
-        value: [
-          {
-            type: 'text',
-            text: systemStatus,
-          },
-          ...output.value,
-        ],
-      };
-
-    case 'json':
-    case 'error-json':
-      // Keep JSON types unchanged (can't naturally inject text)
-      return output;
-
-    default:
-      return output;
+  if (output.type === 'content') {
+    // Already content type
+    contentValue = output.value;
+  } else if (output.type === 'text' || output.type === 'error-text') {
+    // Convert text to content
+    contentValue = [
+      {
+        type: 'text',
+        text: output.value,
+      },
+    ];
+  } else if (output.type === 'json' || output.type === 'error-json') {
+    // Convert JSON to content (stringify)
+    contentValue = [
+      {
+        type: 'text',
+        text: JSON.stringify(output.value, null, 2),
+      },
+    ];
+  } else {
+    // Unknown type, keep as is
+    return output;
   }
+
+  // Prepend system status as text part
+  return {
+    type: 'content',
+    value: [
+      {
+        type: 'text',
+        text: systemStatus,
+      },
+      ...contentValue,
+    ],
+  };
 }
 
 /**
