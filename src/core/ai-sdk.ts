@@ -210,6 +210,36 @@ export interface CreateAIStreamOptions {
 
 /**
  * System status object (captured at message creation time)
+ *
+ * Design: Separation of capture vs construction
+ * ==============================================
+ *
+ * Why we have TWO functions (getSystemStatus + buildSystemStatusFromMetadata):
+ *
+ * 1. getSystemStatus() - Captures CURRENT system state
+ *    - Called when creating a NEW message
+ *    - Returns object { timestamp, cpu, memory }
+ *    - Stored in SessionMessage.metadata
+ *    - NEVER called again for historical messages
+ *
+ * 2. buildSystemStatusFromMetadata() - Constructs string from STORED values
+ *    - Called when building ModelMessage from SessionMessage
+ *    - Uses HISTORICAL values from metadata (never current values)
+ *    - Ensures prompt cache works (historical messages never change)
+ *
+ * ⚠️ CRITICAL for prompt cache:
+ * - Historical messages must be IMMUTABLE
+ * - If we use current values, messages change every request → cache miss
+ * - Using stored metadata values → messages stay same → cache hit ✅
+ *
+ * Example timeline:
+ * T1: User sends "hi"
+ *     → getSystemStatus() returns { cpu: "45%", memory: "4.2GB" }
+ *     → Store in message.metadata
+ * T2: User sends "bye" (10 minutes later)
+ *     → getSystemStatus() returns { cpu: "67%", memory: "5.1GB" } for NEW message
+ *     → buildSystemStatusFromMetadata(T1.metadata) still returns "45%, 4.2GB" for T1 ✅
+ *     → Prompt cache recognizes T1 message as unchanged → cache hit!
  */
 export interface SystemStatus {
   timestamp: string;  // ISO format
@@ -218,7 +248,10 @@ export interface SystemStatus {
 }
 
 /**
- * Get system status for context injection
+ * Get CURRENT system status (called only when creating NEW messages)
+ *
+ * ⚠️ IMPORTANT: Never call this for historical messages!
+ * Use buildSystemStatusFromMetadata() instead to preserve prompt cache.
  */
 function getSystemStatus(): SystemStatus {
   const timestamp = new Date().toISOString();
@@ -255,7 +288,20 @@ function getSystemStatus(): SystemStatus {
 }
 
 /**
- * Build system status string from metadata object
+ * Build system status string from STORED metadata (not current values)
+ *
+ * ⚠️ CRITICAL: This function MUST use the metadata parameter values,
+ * NEVER call getSystemStatus() or use current system values!
+ *
+ * Why: Prompt cache requires historical messages to be immutable.
+ * Using stored metadata ensures the same message always produces the same output.
+ *
+ * Called by:
+ * - useChat when building ModelMessage from SessionMessage (historical messages)
+ * - Tool result injection (for current step's system status)
+ *
+ * @param metadata - Stored SystemStatus from SessionMessage.metadata
+ * @returns Formatted system status string for LLM
  */
 function buildSystemStatusFromMetadata(metadata: SystemStatus): string {
   return `<system_status>

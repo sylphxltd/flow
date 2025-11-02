@@ -19,7 +19,7 @@ import {
   clearUserInputHandler,
   type UserInputRequest
 } from '../../tools/interaction.js';
-import type { ModelMessage, LanguageModelV2ToolResultOutput } from 'ai';
+import type { ModelMessage } from 'ai';
 
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -83,18 +83,22 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
-      // Capture system status at message creation time
+      // ⚠️ CRITICAL: Capture system status ONCE at message creation time
+      // This metadata is stored and NEVER changes (important for prompt cache)
       const systemStatus = getSystemStatus();
 
       // Add user message to session with metadata (not in display content)
+      // Design decision: System status is in metadata, NOT in content
+      // - content: What user actually typed (shown in UI)
+      // - metadata: System context for LLM (not shown in UI)
       addMessage(
         currentSessionId,
         'user',
         [{ type: 'text', content: message }],
         attachments,
-        undefined, // usage
-        undefined, // finishReason
-        { cpu: systemStatus.cpu, memory: systemStatus.memory }
+        undefined, // usage (only for assistant messages)
+        undefined, // finishReason (only for assistant messages)
+        { cpu: systemStatus.cpu, memory: systemStatus.memory } // metadata (for LLM, not UI)
       );
 
       // Get updated session (after addMessage)
@@ -104,14 +108,28 @@ export function useChat() {
         return;
       }
 
-      // Build messages with content parts (supports text, files, images)
+      // Build ModelMessage[] from SessionMessage[] for LLM
+      //
+      // ⚠️ CRITICAL: This is where SessionMessage (UI) transforms to ModelMessage (LLM)
+      //
+      // Key transformation:
+      // 1. System status: Built from STORED metadata, NOT current values (prompt cache!)
+      // 2. File attachments: Read fresh from disk (files can change between requests)
+      // 3. Content: Extract text from MessagePart[] format
+      //
+      // Why use stored metadata?
+      // - Historical messages must be IMMUTABLE for prompt cache
+      // - buildSystemStatusFromMetadata uses msg.metadata (captured at creation)
+      // - NEVER use getSystemStatus() here (would use current values → cache miss)
+      //
       const messages: ModelMessage[] = await Promise.all(
         updatedSession.messages.map(async (msg) => {
           // User messages: inject system status from metadata + extract text + add file attachments
           if (msg.role === 'user') {
             const contentParts: any[] = [];
 
-            // 1. Inject system status from metadata (for LLM context, not saved in content)
+            // 1. Inject system status from STORED metadata (not current values!)
+            //    ⚠️ Using stored metadata preserves prompt cache - messages stay immutable
             if (msg.metadata) {
               const systemStatusString = buildSystemStatusFromMetadata({
                 timestamp: new Date(msg.timestamp).toISOString(),
@@ -185,12 +203,31 @@ export function useChat() {
       const currentSession = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
 
       // Create AI stream with context injection callbacks
+      //
+      // Why we use callbacks instead of hardcoded injection:
+      // - Keeps createAIStream reusable (can be used for title generation, etc.)
+      // - Allows different contexts for different use cases
+      // - Separates concerns: ai-sdk.ts handles streaming, useChat handles context
+      //
       const stream = createAIStream({
         model,
         messages,
+
+        // onPrepareMessages: Inject dynamic context at EVERY step (not saved to history)
+        //
+        // Called before each step of multi-step execution.
+        // Injected messages are TEMPORARY - only for this step, not saved to history.
+        //
+        // Why inject todos here?
+        // - Todos change during execution (pending → in_progress → completed)
+        // - LLM needs latest todo state at each step
+        // - But we DON'T want to save todos in message history (bloat + not user content)
+        //
+        // Why use session's todos?
+        // - Todos are per-session (not global) to prevent cross-contamination
+        // - Each session has independent task context
+        //
         onPrepareMessages: (messageHistory, stepNumber) => {
-          // Inject todo context at every step (temporary, not saved to history)
-          // Use current session's todos (per-session, not global)
           const session = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
           const todos = session?.todos || [];
           const todoContext = buildTodoContext(todos);
@@ -199,12 +236,20 @@ export function useChat() {
             ...messageHistory,
             {
               role: 'system' as const,
-              content: todoContext, // System messages use string content
+              content: todoContext, // System messages use string content (not array)
             },
           ];
         },
+
+        // onTransformToolResult: Inject system status into tool outputs
+        //
+        // Called after each tool execution, before saving result to history.
+        // Allows LLM to see system state after tool execution.
+        //
+        // ⚠️ Note: Uses CURRENT system status (getSystemStatus), not stored metadata
+        // This is OK because tool results are part of the current step, not historical.
+        //
         onTransformToolResult: (output: LanguageModelV2ToolResultOutput, toolName: string) => {
-          // Inject system status to tool results
           const systemStatus = getSystemStatus();
           return injectSystemStatusToOutput(output, systemStatus);
         },

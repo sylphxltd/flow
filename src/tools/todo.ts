@@ -1,6 +1,24 @@
 /**
  * Todo Management Tools
  * Tools for LLM to track and manage work progress
+ *
+ * Design: Per-session todo lists
+ * ===============================
+ *
+ * Todos are scoped to sessions (not global) to prevent cross-contamination:
+ * - Each session has independent todos
+ * - updateTodos tool operates on current session
+ * - New sessions start with empty todo list
+ *
+ * Why per-session?
+ * - Context isolation: Session A's todos don't interfere with Session B
+ * - LLM clarity: AI only sees tasks relevant to current conversation
+ * - Prevents bug: Starting new session and seeing old session's todos
+ *
+ * Implementation:
+ * - Tool gets current sessionId from store
+ * - Calls store.updateTodos(sessionId, updates)
+ * - Returns error if no active session
  */
 
 import { tool } from 'ai';
@@ -9,6 +27,9 @@ import { useAppStore } from '../ui/stores/app-store.js';
 
 /**
  * Update todos - Batch add/update todos
+ *
+ * ⚠️ IMPORTANT: This tool operates on the CURRENT session's todos only.
+ * It does not affect other sessions' todos.
  */
 export const updateTodosTool = tool({
   description: 'Update task list to track work progress',
