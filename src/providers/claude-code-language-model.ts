@@ -12,6 +12,26 @@ import type {
 } from '@ai-sdk/provider';
 import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
 
+// All Claude Code built-in tools to disable
+const CLAUDE_CODE_BUILTIN_TOOLS = [
+  'Task',
+  'Bash',
+  'Glob',
+  'Grep',
+  'ExitPlanMode',
+  'Read',
+  'Edit',
+  'Write',
+  'NotebookEdit',
+  'WebFetch',
+  'TodoWrite',
+  'WebSearch',
+  'BashOutput',
+  'KillShell',
+  'Skill',
+  'SlashCommand',
+];
+
 export interface ClaudeCodeLanguageModelConfig {
   modelId: string;
 }
@@ -109,7 +129,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         model: this.modelId,
         // Disable all Claude Code built-in tools
         settingSources: [],
-        allowedTools: [],
+        allowedTools: [],  // Empty list = no tools allowed
       };
 
       if (systemPrompt) {
@@ -219,7 +239,6 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         model: this.modelId,
         // Disable all Claude Code built-in tools
         settingSources: [],
-        allowedTools: [],
       };
 
       if (systemPrompt) {
@@ -262,12 +281,12 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                       delta: block.text,
                     });
                   } else if (block.type === 'tool_use') {
-                    // Tool call detected - emit as tool-call-delta
+                    // Tool call detected - emit as tool-call
                     controller.enqueue({
-                      type: 'tool-call-delta',
+                      type: 'tool-call',
                       toolCallId: block.id,
                       toolName: block.name,
-                      argsTextDelta: JSON.stringify(block.input),
+                      args: block.input,
                     });
                     finishReason = 'tool-calls';
                   }
