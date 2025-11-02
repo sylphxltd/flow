@@ -87,7 +87,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const navigateTo = useAppStore((state) => state.navigateTo);
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
-  const todos = useAppStore((state) => state.todos);
   const createSession = useAppStore((state) => state.createSession);
   const updateSessionModel = useAppStore((state) => state.updateSessionModel);
   const updateSessionProvider = useAppStore((state) => state.updateSessionProvider);
@@ -1039,43 +1038,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
-    // Get pending and in-progress todos (exclude completed and removed)
-    const activeTodos = todos.filter((t) => t.status !== 'completed' && t.status !== 'removed');
-
-    // Build todo context
-    let messageWithContext = userMessage;
-    if (activeTodos.length > 0) {
-      // Sort by ordering ASC, id ASC (first added = first to do)
-      const sortedTodos = [...activeTodos].sort((a, b) => {
-        if (a.ordering !== b.ordering) {
-          return a.ordering - b.ordering;
-        }
-        return a.id - b.id;
-      });
-
-      const pendingTodos = sortedTodos.filter((t) => t.status === 'pending');
-      const inProgressTodos = sortedTodos.filter((t) => t.status === 'in_progress');
-
-      const todoLines: string[] = ['<pending_tasks>'];
-
-      if (inProgressTodos.length > 0) {
-        todoLines.push('In Progress:');
-        inProgressTodos.forEach((t) => todoLines.push(`  - [${t.id}] ${t.activeForm}`));
-      }
-
-      if (pendingTodos.length > 0) {
-        todoLines.push('Pending:');
-        pendingTodos.forEach((t) => todoLines.push(`  - [${t.id}] ${t.content}`));
-      }
-
-      todoLines.push('</pending_tasks>');
-      todoLines.push('');
-
-      messageWithContext = todoLines.join('\n') + userMessage;
-    } else {
-      // Remind to add todos for multi-step tasks
-      messageWithContext = '<todo_reminder>For multi-step tasks, use updateTodos tool</todo_reminder>\n\n' + userMessage;
-    }
+    // Note: Todo context is now injected via prepareStep in ai-sdk.ts
+    // This ensures todos are fresh on every step, not just the initial message
+    const messageWithContext = userMessage;
 
     // Get attachments for this message
     const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];

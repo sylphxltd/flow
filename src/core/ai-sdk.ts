@@ -9,6 +9,8 @@ import type { LanguageModelV2 } from '@ai-sdk/provider';
 import { getAISDKTools } from '../tools/index.js';
 import { getCurrentSystemPrompt } from './agent-manager.js';
 import { getEnabledRulesContent } from './rule-manager.js';
+import { useAppStore } from '../ui/stores/app-store.js';
+import { buildTodoContext } from '../utils/todo-context.js';
 
 // Legacy system prompt - kept for backwards compatibility and fallback
 const LEGACY_SYSTEM_PROMPT = `You are a helpful coding assistant.
@@ -257,6 +259,34 @@ export async function* createAIStream(
     stopWhen: stepCountIs(1000),
     onError: (_) => {
       return;
+    },
+    // Inject todo context into each step
+    prepareStep: async ({ messages }) => {
+      // Get current todos from store
+      const todos = useAppStore.getState().todos;
+      const todoContext = buildTodoContext(todos);
+
+      // Find last user message and prepend todo context
+      const modifiedMessages = [...messages];
+      for (let i = modifiedMessages.length - 1; i >= 0; i--) {
+        if (modifiedMessages[i].role === 'user') {
+          const originalContent = modifiedMessages[i].content;
+          // Extract text content from content parts
+          const textContent = typeof originalContent === 'string'
+            ? originalContent
+            : Array.isArray(originalContent)
+            ? originalContent.filter((part: any) => part.type === 'text').map((part: any) => part.text).join('')
+            : '';
+
+          modifiedMessages[i] = {
+            ...modifiedMessages[i],
+            content: `${todoContext}\n\n${textContent}`,
+          };
+          break;
+        }
+      }
+
+      return { messages: modifiedMessages };
     },
     ...(onStepFinish && {
       onStepFinish: (step) => {
