@@ -16,6 +16,7 @@ export interface ControlledTextInputProps {
   showCursor?: boolean;
   focus?: boolean;
   validTags?: Set<string>;
+  maxLines?: number; // Maximum lines to display (default: 10)
 }
 
 // Helper: Find word boundary (left)
@@ -107,6 +108,7 @@ export default function ControlledTextInput({
   placeholder,
   showCursor = true,
   focus = true,
+  maxLines = 10,
 }: ControlledTextInputProps) {
   // Kill buffer for Ctrl+K, Ctrl+U, Ctrl+W → Ctrl+Y
   const killBufferRef = useRef('');
@@ -382,15 +384,41 @@ export default function ControlledTextInput({
     charCount += lineLength + 1; // +1 for \n
   }
 
-  // Render each line
+  // Calculate visible window (scroll to keep cursor in view)
+  const totalLines = lines.length;
+  let startLine = 0;
+  let endLine = totalLines;
+
+  if (totalLines > maxLines) {
+    // Center cursor in viewport if possible
+    const halfWindow = Math.floor(maxLines / 2);
+    startLine = Math.max(0, cursorLine - halfWindow);
+    endLine = Math.min(totalLines, startLine + maxLines);
+
+    // Adjust if we hit the bottom
+    if (endLine === totalLines) {
+      startLine = Math.max(0, totalLines - maxLines);
+    }
+  }
+
+  const visibleLines = lines.slice(startLine, endLine);
+  const hasMore = startLine > 0 || endLine < totalLines;
+
+  // Render visible lines
   return (
     <Box flexDirection="column">
-      {lines.map((line, idx) => {
-        const isCursorLine = idx === cursorLine;
+      {startLine > 0 && (
+        <Box>
+          <Text dimColor>... ({startLine} more lines above)</Text>
+        </Box>
+      )}
+      {visibleLines.map((line, idx) => {
+        const actualLineIdx = startLine + idx;
+        const isCursorLine = actualLineIdx === cursorLine;
 
         if (!isCursorLine) {
           return (
-            <Box key={idx}>
+            <Box key={actualLineIdx}>
               <Text>{line || ' '}</Text>
             </Box>
           );
@@ -402,13 +430,18 @@ export default function ControlledTextInput({
         const after = line.slice(cursorCol + 1);
 
         return (
-          <Box key={idx}>
+          <Box key={actualLineIdx}>
             <Text>{before}</Text>
             {showCursor && <Text inverse>{char}</Text>}
             <Text>{after}</Text>
           </Box>
         );
       })}
+      {endLine < totalLines && (
+        <Box>
+          <Text dimColor>... ({totalLines - endLine} more lines below)</Text>
+        </Box>
+      )}
     </Box>
   );
 }
