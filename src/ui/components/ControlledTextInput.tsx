@@ -153,7 +153,10 @@ export default function ControlledTextInput({
       // Insert text (handles paste with \n)
       if (input) {
         console.log('[INSERT]', JSON.stringify(input), 'at cursor', state.cursor);
-        dispatch({ type: 'INSERT', text: input });
+        // Normalize line endings: \r\n and \r → \n
+        const normalizedInput = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        console.log('[NORMALIZED]', JSON.stringify(normalizedInput));
+        dispatch({ type: 'INSERT', text: normalizedInput });
       }
     },
     { isActive: focus }
