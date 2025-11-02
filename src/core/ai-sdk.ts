@@ -85,6 +85,65 @@ export interface SylphxMessage {
 }
 
 /**
+ * Content Part Types - Our own type system
+ */
+export interface TextPart {
+  type: 'text';
+  text: string;
+}
+
+export interface FilePart {
+  type: 'file';
+  name: string;
+  mimeType: string;
+  data: string; // base64 or URL
+}
+
+export interface ReasoningPart {
+  type: 'reasoning';
+  reasoning: string;
+}
+
+export interface SourcePart {
+  type: 'source';
+  name: string;
+  content: string;
+}
+
+export interface ToolCallPart {
+  type: 'tool-call';
+  toolCallId: string;
+  toolName: string;
+  args: unknown;
+}
+
+export interface ToolResultPart {
+  type: 'tool-result';
+  toolCallId: string;
+  toolName: string;
+  result: unknown;
+}
+
+export interface ToolErrorPart {
+  type: 'tool-error';
+  toolCallId: string;
+  toolName: string;
+  error: string;
+}
+
+/**
+ * Content part types - all possible parts in LLM response
+ */
+export type ContentPart =
+  | TextPart
+  | FilePart
+  | ReasoningPart
+  | SourcePart
+  | ToolCallPart
+  | ToolResultPart
+  | ToolErrorPart;
+
+/**
  * Stream chunk types (our own)
  */
 export type TextStartChunk = {
@@ -192,7 +251,7 @@ export interface StepInfo {
     completionTokens: number;
     totalTokens: number;
   };
-  text: string;
+  content: ContentPart[];
   toolCalls: Array<{
     toolCallId: string;
     toolName: string;
@@ -248,6 +307,73 @@ function toAISDKMessages(messages: SylphxMessage[]) {
 }
 
 /**
+ * Convert AI SDK content to our ContentPart types
+ */
+function fromAISDKContent(aiContent: any[]): ContentPart[] {
+  return aiContent.map((part: any): ContentPart => {
+    switch (part.type) {
+      case 'text':
+        return {
+          type: 'text',
+          text: part.text,
+        };
+
+      case 'file':
+        return {
+          type: 'file',
+          name: part.file?.name || 'unknown',
+          mimeType: part.file?.mimeType || 'application/octet-stream',
+          data: part.file?.data || '',
+        };
+
+      case 'reasoning':
+        return {
+          type: 'reasoning',
+          reasoning: part.reasoning || part.text || '',
+        };
+
+      case 'source':
+        return {
+          type: 'source',
+          name: part.name || 'unknown',
+          content: part.content || '',
+        };
+
+      case 'tool-call':
+        return {
+          type: 'tool-call',
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          args: part.args || part.input,
+        };
+
+      case 'tool-result':
+        return {
+          type: 'tool-result',
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          result: part.result || part.output,
+        };
+
+      case 'tool-error':
+        return {
+          type: 'tool-error',
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          error: part.error instanceof Error ? part.error.message : String(part.error),
+        };
+
+      default:
+        // Fallback: treat unknown parts as text
+        return {
+          type: 'text',
+          text: JSON.stringify(part),
+        };
+    }
+  });
+}
+
+/**
  * Create AI stream with Sylphx tools pre-configured
  * Uses manual loop to control message history with timestamps
  */
@@ -259,13 +385,30 @@ export async function* createAIStream(
   // Convert our types to AI SDK types
   const aiModel = toAISDKModel(model);
 
-  // Message history that we control
-  const messageHistory: any[] = toAISDKMessages(initialMessages);
+  // Message history that we control - add timestamps to initial messages
+  const timestamp = new Date().toISOString();
+  const messageHistory: any[] = toAISDKMessages(initialMessages).map((msg: any) => {
+    if (msg.role === 'user') {
+      // Add timestamp to user messages
+      return {
+        ...msg,
+        content: typeof msg.content === 'string'
+          ? `[${timestamp}] ${msg.content}`
+          : msg.content,
+      };
+    }
+    return msg;
+  });
 
   let stepNumber = 0;
   const MAX_STEPS = 1000;
 
   while (stepNumber < MAX_STEPS) {
+    // Emit step-start event
+    yield {
+      type: 'step-start' as any,
+      stepNumber,
+    };
     // Get current todos and build context
     const todos = useAppStore.getState().todos;
     const todoContext = buildTodoContext(todos);
@@ -280,12 +423,11 @@ export async function* createAIStream(
     ];
 
     // Call AI SDK with single step
-    const result = streamText({
+    const { fullStream, response, finishReason, usage, toolCalls, toolResults, content } = streamText({
       model: aiModel,
       messages: messagesWithContext,
       system: systemPrompt,
       tools: getAISDKTools(),
-      maxSteps: 1,  // Only one step at a time
       onError: (_) => {
         return;
       },
@@ -399,27 +541,22 @@ export async function* createAIStream(
       }
     }
 
-    // After streaming completes, get step results
-    const response = await result.response;
-    const finishReason = await result.finishReason;
-    const usage = await result.usage;
-
     // Call onStepFinish callback if provided
     if (onStepFinish) {
       const stepInfo: StepInfo = {
-        finishReason,
+        finishReason: await finishReason,
         usage: {
-          promptTokens: usage.inputTokens ?? 0,
-          completionTokens: usage.outputTokens ?? 0,
-          totalTokens: usage.totalTokens ?? 0,
+          promptTokens: (await usage).inputTokens ?? 0,
+          completionTokens: (await usage).outputTokens ?? 0,
+          totalTokens: (await usage).totalTokens ?? 0,
         },
-        text: response.text ?? '',
-        toolCalls: (await result.toolCalls ?? []).map((call) => ({
+        content: fromAISDKContent(await content),
+        toolCalls: (await toolCalls ?? []).map((call) => ({
           toolCallId: call.toolCallId,
           toolName: call.toolName,
           args: call.input,
         })),
-        toolResults: (await result.toolResults ?? []).map((res) => ({
+        toolResults: (await toolResults ?? []).map((res) => ({
           toolCallId: res.toolCallId,
           toolName: res.toolName,
           result: res.output,
@@ -429,8 +566,8 @@ export async function* createAIStream(
     }
 
     // Save LLM response messages to history (with timestamp)
-    const timestamp = new Date().toISOString();
-    const responseMessages = response.messages;
+    const stepTimestamp = new Date().toISOString();
+    const responseMessages = (await response).messages;
 
     for (const msg of responseMessages) {
       // Add timestamp to tool messages
@@ -440,7 +577,7 @@ export async function* createAIStream(
           content: msg.content.map((part: any) => ({
             ...part,
             output: typeof part.output === 'string'
-              ? `[${timestamp}] ${part.output}`
+              ? `[${stepTimestamp}] ${part.output}`
               : part.output,
           })),
         });
@@ -449,8 +586,17 @@ export async function* createAIStream(
       }
     }
 
+    const currentFinishReason = await finishReason;
+
+    // Emit step-end event
+    yield {
+      type: 'step-end' as any,
+      stepNumber,
+      finishReason: currentFinishReason,
+    };
+
     // Check if we should continue the loop
-    if (finishReason !== 'tool-calls') {
+    if (currentFinishReason !== 'tool-calls') {
       // No more tool calls, exit loop
       break;
     }
