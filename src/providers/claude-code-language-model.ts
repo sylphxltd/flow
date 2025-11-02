@@ -166,6 +166,12 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             }
           }
 
+          // Extract usage from assistant message
+          if (event.message.usage) {
+            inputTokens = event.message.usage.input_tokens || 0;
+            outputTokens = event.message.usage.output_tokens || 0;
+          }
+
           // Check stop reason
           if (event.message.stop_reason === 'end_turn') {
             finishReason = 'stop';
@@ -175,7 +181,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             finishReason = 'length';
           }
         } else if (event.type === 'result') {
-          // Extract usage from result
+          // Extract usage from result (fallback)
           if (event.usage) {
             inputTokens = event.usage.input_tokens || 0;
             outputTokens = event.usage.output_tokens || 0;
@@ -277,6 +283,12 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   }
                 }
 
+                // Extract usage from assistant message
+                if (event.message.usage) {
+                  inputTokens = event.message.usage.input_tokens || 0;
+                  outputTokens = event.message.usage.output_tokens || 0;
+                }
+
                 // Check stop reason
                 if (event.message.stop_reason === 'end_turn') {
                   finishReason = 'stop';
@@ -286,7 +298,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   finishReason = 'length';
                 }
               } else if (event.type === 'result') {
-                // Extract usage from result
+                // Extract usage from result (fallback)
                 if (event.usage) {
                   inputTokens = event.usage.input_tokens || 0;
                   outputTokens = event.usage.output_tokens || 0;
