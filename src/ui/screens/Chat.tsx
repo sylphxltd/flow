@@ -918,10 +918,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // Messages tokens
         for (const msg of currentSession.messages) {
           // Count main content (extract text from parts)
-          const textContent = msg.content
-            .filter((part) => part.type === 'text')
-            .map((part: any) => part.content)
-            .join('\n');
+          let textContent = '';
+          if (msg.content && Array.isArray(msg.content)) {
+            textContent = msg.content
+              .filter((part) => part.type === 'text')
+              .map((part: any) => part.content)
+              .join('\n');
+          } else if (msg.content) {
+            // Legacy format: content is a string
+            textContent = String(msg.content);
+          }
           total += await countTokens(textContent, currentSession.model);
 
           // Count attachments if any
@@ -1294,9 +1300,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
                     {/* Render content parts */}
-                    {msg.content.map((part, idx) => (
-                      <MessagePart key={idx} part={part} />
-                    ))}
+                    {msg.content && Array.isArray(msg.content) ? (
+                      msg.content.map((part, idx) => (
+                        <MessagePart key={idx} part={part} />
+                      ))
+                    ) : (
+                      <Box marginLeft={2}>
+                        <Text>{String(msg.content || '')}</Text>
+                      </Box>
+                    )}
                     {/* Display attachments if any */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <Box flexDirection="column" marginTop={1}>
@@ -1322,9 +1334,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       <Text color="#00FF88">▌ SYLPHX</Text>
                     </Box>
                     {/* Render content parts */}
-                    {msg.content.map((part, idx) => (
-                      <MessagePart key={idx} part={part} />
-                    ))}
+                    {msg.content && Array.isArray(msg.content) ? (
+                      msg.content.map((part, idx) => (
+                        <MessagePart key={idx} part={part} />
+                      ))
+                    ) : (
+                      <Box marginLeft={2}>
+                        <Text>{String(msg.content || '')}</Text>
+                      </Box>
+                    )}
                     {/* Show usage if available - simplified */}
                     {msg.usage && (
                       <Box marginLeft={2}>
