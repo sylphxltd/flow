@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import MarkdownText from '../components/MarkdownText.js';
+import TodoList from '../components/TodoList.js';
 import { useAppStore } from '../stores/app-store.js';
 import { useChat } from '../hooks/useChat.js';
 import { useAIConfig } from '../hooks/useAIConfig.js';
@@ -86,6 +87,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const navigateTo = useAppStore((state) => state.navigateTo);
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
+  const todos = useAppStore((state) => state.todos);
   const createSession = useAppStore((state) => state.createSession);
   const updateSessionModel = useAppStore((state) => state.updateSessionModel);
   const updateSessionProvider = useAppStore((state) => state.updateSessionProvider);
@@ -1037,6 +1039,33 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
+    // Get pending and in-progress todos
+    const activeTodos = todos.filter((t) => t.status !== 'completed');
+
+    // Build todo reminder if there are active todos
+    let messageWithContext = userMessage;
+    if (activeTodos.length > 0) {
+      const pendingTodos = activeTodos.filter((t) => t.status === 'pending');
+      const inProgressTodos = activeTodos.filter((t) => t.status === 'in_progress');
+
+      const todoLines: string[] = ['<pending_tasks>'];
+
+      if (inProgressTodos.length > 0) {
+        todoLines.push('In Progress:');
+        inProgressTodos.forEach((t) => todoLines.push(`  - ${t.content} (ID: ${t.id})`));
+      }
+
+      if (pendingTodos.length > 0) {
+        todoLines.push('Pending:');
+        pendingTodos.forEach((t) => todoLines.push(`  - ${t.content} (ID: ${t.id})`));
+      }
+
+      todoLines.push('</pending_tasks>');
+      todoLines.push('');
+
+      messageWithContext = todoLines.join('\n') + userMessage;
+    }
+
     // Get attachments for this message
     const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];
 
@@ -1049,7 +1078,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     try {
       await sendMessage(
-        userMessage,
+        messageWithContext,
         // onChunk - text streaming
         (chunk) => {
         const timestamp = Date.now();
@@ -1691,6 +1720,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             </Box>
           ) : (
             <>
+              {/* Show todos */}
+              <TodoList todos={todos} />
+
               {/* Show pending attachments */}
               {pendingAttachments.length > 0 && (
                 <Box flexDirection="column" marginBottom={1}>

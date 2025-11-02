@@ -8,6 +8,7 @@ import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 import type { Session, MessagePart, FileAttachment, TokenUsage } from '../../types/session.types.js';
+import type { Todo } from '../../types/todo.types.js';
 import { saveSession as saveSessionToFile } from '../../utils/session-manager.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
@@ -59,6 +60,13 @@ export interface AppState {
   debugLogs: string[];
   addDebugLog: (message: string) => void;
   clearDebugLogs: () => void;
+
+  // Todo State
+  todos: Todo[];
+  addTodo: (content: string) => string;
+  updateTodo: (id: string, updates: Partial<Pick<Todo, 'content' | 'status'>>) => void;
+  removeTodo: (id: string) => void;
+  clearCompletedTodos: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -217,6 +225,44 @@ export const useAppStore = create<AppState>()(
     clearDebugLogs: () =>
       set((state) => {
         state.debugLogs = [];
+      }),
+
+    // Todo State
+    todos: [],
+    addTodo: (content) => {
+      const id = `todo-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const now = Date.now();
+      set((state) => {
+        state.todos.push({
+          id,
+          content,
+          status: 'pending',
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+      return id;
+    },
+    updateTodo: (id, updates) =>
+      set((state) => {
+        const todo = state.todos.find((t) => t.id === id);
+        if (todo) {
+          if (updates.content !== undefined) {
+            todo.content = updates.content;
+          }
+          if (updates.status !== undefined) {
+            todo.status = updates.status;
+          }
+          todo.updatedAt = Date.now();
+        }
+      }),
+    removeTodo: (id) =>
+      set((state) => {
+        state.todos = state.todos.filter((t) => t.id !== id);
+      }),
+    clearCompletedTodos: () =>
+      set((state) => {
+        state.todos = state.todos.filter((t) => t.status !== 'completed');
       }),
     }))
   )
