@@ -227,17 +227,23 @@ export function useChat() {
         // - Todos are per-session (not global) to prevent cross-contamination
         // - Each session has independent task context
         //
+        // ⚠️ IMPORTANT: Todo context is placed at the BEGINNING of messages, not the end!
+        // If placed at end, LLM thinks user is asking about todos (last message has most weight)
+        // Placing at beginning treats it as context, not as user's question.
+        //
         onPrepareMessages: (messageHistory, stepNumber) => {
           const session = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
           const todos = session?.todos || [];
           const todoContext = buildTodoContext(todos);
 
+          // Place todo context at the BEGINNING as system message
+          // This prevents LLM from thinking user is asking about todos
           return [
-            ...messageHistory,
             {
               role: 'system' as const,
               content: todoContext, // System messages use string content (not array)
             },
+            ...messageHistory,
           ];
         },
 
