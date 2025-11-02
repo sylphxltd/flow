@@ -40,25 +40,22 @@ export default function ControlledTextInput({
   const latestValueRef = useRef(value);
   const latestCursorRef = useRef(cursor);
 
-  // Track previous props to detect external changes
-  const prevValueRef = useRef(value);
-  const prevCursorRef = useRef(cursor);
+  // Track if we're currently handling user input
+  const isHandlingUserInput = useRef(false);
+  const resetInputFlagTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Detect if props changed from an external source (not our own onChange)
-    // This happens when: autocomplete fills text, input cleared, etc.
-    const valueChangedExternally = value !== prevValueRef.current && value !== latestValueRef.current;
-    const cursorChangedExternally = cursor !== prevCursorRef.current && cursor !== latestCursorRef.current;
+    // Don't sync refs while handling user input (paste, typing, etc.)
+    // During fast paste, props update slower than refs, causing false external change detection
+    if (isHandlingUserInput.current) {
+      return;
+    }
 
-    if (valueChangedExternally || cursorChangedExternally) {
-      // External change - sync refs from props
+    // Props changed while not handling input → external change (autocomplete, clear, etc.)
+    if (value !== latestValueRef.current || cursor !== latestCursorRef.current) {
       latestValueRef.current = value;
       latestCursorRef.current = cursor;
     }
-
-    // Always update prev refs to track props changes
-    prevValueRef.current = value;
-    prevCursorRef.current = cursor;
   }, [value, cursor]);
 
   // Safe cursor position setter (clamp to valid range)
@@ -73,6 +70,22 @@ export default function ControlledTextInput({
 
   useInput(
     (input, key) => {
+      // Mark that we're handling user input
+      // This prevents useEffect from overwriting refs during paste
+      isHandlingUserInput.current = true;
+
+      // Clear previous reset timer
+      if (resetInputFlagTimer.current) {
+        clearTimeout(resetInputFlagTimer.current);
+      }
+
+      // Reset flag after a brief delay (to handle paste with multiple chars)
+      // The delay ensures all chars in a paste operation are processed before flag resets
+      resetInputFlagTimer.current = setTimeout(() => {
+        isHandlingUserInput.current = false;
+        resetInputFlagTimer.current = null;
+      }, 100); // 100ms should be enough for even slow pastes
+
       // Use latest values from refs to handle fast paste operations
       const currentValue = latestValueRef.current;
       const currentCursor = latestCursorRef.current;
