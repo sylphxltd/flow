@@ -239,6 +239,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         model: this.modelId,
         // Disable all Claude Code built-in tools
         settingSources: [],
+        disallowedTools: CLAUDE_CODE_BUILTIN_TOOLS,
       };
 
       if (systemPrompt) {
