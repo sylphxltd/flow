@@ -77,13 +77,17 @@
 | 交換字符 | - | - | Ctrl+T |
 | Yank (粘貼) | - | - | Ctrl+Y |
 
-### 9. 提交/換行
-| 操作 | Mac | Windows/Linux | 多行輸入 |
-|------|-----|---------------|----------|
-| 提交 | **Ctrl+S** | **Ctrl+S** | ✓ |
-| 換行 | Return | Return | ✓ |
+### 9. 提交/換行（Claude Code 標準）
+| 操作 | Mac | Windows/Linux | 說明 |
+|------|-----|---------------|------|
+| **提交** | **Return** | **Return** | 發送消息（預設行為）|
+| 換行 | Shift+Return | Shift+Return | 插入新行 |
+| 換行 | Option+Return | - | Mac 替代方案 |
+| 換行 | Ctrl+J | Ctrl+J | Line feed character |
 
-**注意**: Command+Return 在 CLI 環境下無法檢測，改用 Ctrl+S（標準保存快捷鍵）
+**注意**: 採用 Claude Code 官方鍵盤映射
+- Enter = 提交（與 ChatGPT Web 相同）
+- Shift+Enter / Option+Enter / Ctrl+J = 換行
 
 ## Ink 實現注意事項
 

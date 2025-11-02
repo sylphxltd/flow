@@ -304,22 +304,28 @@ export default function ControlledTextInput({
       }
 
       // ===========================================
-      // Submit
+      // Enter - Submit or Newline
       // ===========================================
 
-      // Ctrl+S - Submit (since Command+Return cannot be detected in CLI)
-      if (key.ctrl && input?.toLowerCase() === 's') {
+      if (key.return && !input) {
+        // Shift+Enter or Option+Enter (Meta+Enter) - insert newline
+        // Matches Claude Code official behavior
+        if (key.shift || key.meta) {
+          const before = value.slice(0, cursor);
+          const after = value.slice(cursor);
+          onChange(before + '\n' + after);
+          onCursorChange(cursor + 1);
+          return;
+        }
+
+        // Regular Enter - submit (Claude Code default)
         onSubmit?.(value);
         return;
       }
 
-      // ===========================================
-      // Enter - Newline
-      // ===========================================
-
-      if (key.return && !input) {
-        // Regular Enter - insert newline
-        // Note: Cannot detect Command+Return in CLI environment
+      // Ctrl+J - insert newline (Claude Code alternative)
+      // "Line feed character for multiline"
+      if (key.ctrl && input?.toLowerCase() === 'j') {
         const before = value.slice(0, cursor);
         const after = value.slice(cursor);
         onChange(before + '\n' + after);
