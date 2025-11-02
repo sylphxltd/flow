@@ -36,17 +36,21 @@ export default function ControlledTextInput({
   const text = maskChar ? maskChar.repeat(value.length) : value;
 
   // Use refs to track latest value and cursor for paste handling
-  // This prevents race conditions when multiple characters arrive quickly
+  // Refs are updated immediately after each input to handle fast paste operations
   const latestValueRef = useRef(value);
   const latestCursorRef = useRef(cursor);
 
-  // Update refs when props change, but only if we're not in the middle of handling input
-  // This prevents race conditions where value and cursor update at different times
-  const isHandlingInputRef = useRef(false);
+  // Sync refs when props change from external sources (e.g., autocomplete, clear)
+  // Only sync if the change didn't come from our own input handler
+  const lastEmittedValue = useRef(value);
+  const lastEmittedCursor = useRef(cursor);
   useEffect(() => {
-    if (!isHandlingInputRef.current) {
+    // Only update refs if value/cursor changed externally (not from our onChange)
+    if (value !== lastEmittedValue.current || cursor !== lastEmittedCursor.current) {
       latestValueRef.current = value;
       latestCursorRef.current = cursor;
+      lastEmittedValue.current = value;
+      lastEmittedCursor.current = cursor;
     }
   }, [value, cursor]);
 
@@ -62,134 +66,127 @@ export default function ControlledTextInput({
 
   useInput(
     (input, key) => {
-      // Mark that we're handling input to prevent useEffect from overwriting refs
-      isHandlingInputRef.current = true;
+      // Use latest values from refs to handle fast paste operations
+      const currentValue = latestValueRef.current;
+      const currentCursor = latestCursorRef.current;
 
-      try {
-        // Use latest values from refs to handle fast paste operations
-        const currentValue = latestValueRef.current;
-        const currentCursor = latestCursorRef.current;
+      // Left arrow - move cursor left
+      if (key.leftArrow) {
+        safeSetCursor(currentCursor - 1);
+        return;
+      }
 
-        // Left arrow - move cursor left
-        if (key.leftArrow) {
+      // Right arrow - move cursor right
+      if (key.rightArrow) {
+        safeSetCursor(currentCursor + 1);
+        return;
+      }
+
+      // Up arrow - move cursor to previous line
+      if (key.upArrow) {
+        safeSetCursor(moveCursorUp(currentValue, currentCursor));
+        return;
+      }
+
+      // Down arrow - move cursor to next line
+      if (key.downArrow) {
+        safeSetCursor(moveCursorDown(currentValue, currentCursor));
+        return;
+      }
+
+      // Home - move to start
+      if (key.home || (key.ctrl && input?.toLowerCase() === 'a')) {
+        safeSetCursor(0);
+        return;
+      }
+
+      // End - move to end
+      if (key.end || (key.ctrl && input?.toLowerCase() === 'e')) {
+        safeSetCursor(currentValue.length);
+        return;
+      }
+
+      // Backspace/Delete handling
+      // Standard cross-platform approach: treat both as backspace
+      // - Windows: Backspace key → key.backspace=true
+      // - Mac: Delete key (backspace function) → key.delete=true
+      // - Also check \x7F and \b character codes for compatibility
+      if (key.backspace || key.delete || input === '\x7F' || input === '\b') {
+        // Backward delete (delete char before cursor)
+        if (currentCursor > 0) {
+          const next = currentValue.slice(0, currentCursor - 1) + currentValue.slice(currentCursor);
+          onChange(next);
           safeSetCursor(currentCursor - 1);
-          return;
         }
+        return;
+      }
 
-        // Right arrow - move cursor right
-        if (key.rightArrow) {
+      // Enter - submit (but allow Shift+Enter for newline)
+      // Note: When pasting multi-line text, input will contain '\n' but key.return will be false
+      if (key.return && !input) {
+        // Allow Shift+Enter to insert newline instead of submitting
+        if (key.shift) {
+          const next = currentValue.slice(0, currentCursor) + '\n' + currentValue.slice(currentCursor);
+          onChange(next);
           safeSetCursor(currentCursor + 1);
           return;
         }
+        onSubmit?.(currentValue);
+        return;
+      }
 
-        // Up arrow - move cursor to previous line
-        if (key.upArrow) {
-          safeSetCursor(moveCursorUp(currentValue, currentCursor));
-          return;
-        }
+      // Ctrl+U - delete from cursor to start (Unix convention)
+      if (key.ctrl && input?.toLowerCase() === 'u') {
+        const next = currentValue.slice(currentCursor);
+        onChange(next);
+        safeSetCursor(0);
+        return;
+      }
 
-        // Down arrow - move cursor to next line
-        if (key.downArrow) {
-          safeSetCursor(moveCursorDown(currentValue, currentCursor));
-          return;
-        }
+      // Ctrl+K - delete from cursor to end (Unix convention)
+      if (key.ctrl && input?.toLowerCase() === 'k') {
+        const next = currentValue.slice(0, currentCursor);
+        onChange(next);
+        // cursor stays at same position
+        return;
+      }
 
-        // Home - move to start
-        if (key.home || (key.ctrl && input?.toLowerCase() === 'a')) {
-          safeSetCursor(0);
-          return;
-        }
-
-        // End - move to end
-        if (key.end || (key.ctrl && input?.toLowerCase() === 'e')) {
-          safeSetCursor(currentValue.length);
-          return;
-        }
-
-        // Backspace/Delete handling
-        // Standard cross-platform approach: treat both as backspace
-        // - Windows: Backspace key → key.backspace=true
-        // - Mac: Delete key (backspace function) → key.delete=true
-        // - Also check \x7F and \b character codes for compatibility
-        if (key.backspace || key.delete || input === '\x7F' || input === '\b') {
-          // Backward delete (delete char before cursor)
-          if (currentCursor > 0) {
-            const next = currentValue.slice(0, currentCursor - 1) + currentValue.slice(currentCursor);
-            onChange(next);
-            safeSetCursor(currentCursor - 1);
-          }
-          return;
-        }
-
-        // Enter - submit (but allow Shift+Enter for newline)
-        // Note: When pasting multi-line text, input will contain '\n' but key.return will be false
-        if (key.return && !input) {
-          // Allow Shift+Enter to insert newline instead of submitting
-          if (key.shift) {
-            const next = currentValue.slice(0, currentCursor) + '\n' + currentValue.slice(currentCursor);
-            onChange(next);
-            safeSetCursor(currentCursor + 1);
-            return;
-          }
-          onSubmit?.(currentValue);
-          return;
-        }
-
-        // Ctrl+U - delete from cursor to start (Unix convention)
-        if (key.ctrl && input?.toLowerCase() === 'u') {
-          const next = currentValue.slice(currentCursor);
+      // Ctrl+W - delete word before cursor (Unix convention)
+      if (key.ctrl && input?.toLowerCase() === 'w') {
+        const before = currentValue.slice(0, currentCursor);
+        const after = currentValue.slice(currentCursor);
+        // Find last word boundary
+        const match = before.match(/\s*\S*$/);
+        if (match) {
+          const deleteCount = match[0].length;
+          const next = before.slice(0, -deleteCount) + after;
           onChange(next);
-          safeSetCursor(0);
-          return;
+          safeSetCursor(currentCursor - deleteCount);
         }
+        return;
+      }
 
-        // Ctrl+K - delete from cursor to end (Unix convention)
-        if (key.ctrl && input?.toLowerCase() === 'k') {
-          const next = currentValue.slice(0, currentCursor);
-          onChange(next);
-          // cursor stays at same position
-          return;
-        }
+      // Ignore other control key combinations (but allow paste which might have ctrl)
+      if ((key.ctrl || key.meta) && !input) return;
 
-        // Ctrl+W - delete word before cursor (Unix convention)
-        if (key.ctrl && input?.toLowerCase() === 'w') {
-          const before = currentValue.slice(0, currentCursor);
-          const after = currentValue.slice(currentCursor);
-          // Find last word boundary
-          const match = before.match(/\s*\S*$/);
-          if (match) {
-            const deleteCount = match[0].length;
-            const next = before.slice(0, -deleteCount) + after;
-            onChange(next);
-            safeSetCursor(currentCursor - deleteCount);
-          }
-          return;
-        }
+      // Insert regular character at cursor position
+      // Use refs to handle fast paste - each character uses latest value
+      // Note: Pasted text may contain newlines - preserve them
+      if (input) {
+        const next = currentValue.slice(0, currentCursor) + input + currentValue.slice(currentCursor);
+        const newCursor = currentCursor + input.length;
 
-        // Ignore other control key combinations (but allow paste which might have ctrl)
-        if ((key.ctrl || key.meta) && !input) return;
+        // Update refs immediately for next character (critical for paste)
+        latestValueRef.current = next;
+        latestCursorRef.current = newCursor;
 
-        // Insert regular character at cursor position
-        // Use refs to handle fast paste - each character uses latest value
-        // Note: Pasted text may contain newlines - preserve them
-        if (input) {
-          const next = currentValue.slice(0, currentCursor) + input + currentValue.slice(currentCursor);
-          const newCursor = currentCursor + input.length;
+        // Track what we emitted to prevent useEffect from overwriting refs
+        lastEmittedValue.current = next;
+        lastEmittedCursor.current = newCursor;
 
-          // Update refs immediately for next character
-          latestValueRef.current = next;
-          latestCursorRef.current = newCursor;
-
-          // Then update parent state
-          onChange(next);
-          onCursorChange(newCursor);
-        }
-      } finally {
-        // Reset the flag after all state updates are done
-        // Use queueMicrotask to ensure this runs after the current event loop
-        queueMicrotask(() => {
-          isHandlingInputRef.current = false;
-        });
+        // Then update parent state
+        onChange(next);
+        onCursorChange(newCursor);
       }
     },
     { isActive: focus }
