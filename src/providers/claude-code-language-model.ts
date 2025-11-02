@@ -7,10 +7,10 @@
 import type {
   LanguageModelV2,
   LanguageModelV2CallOptions,
-  LanguageModelV2StreamPart,
   LanguageModelV2FinishReason,
+  LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
+import { type Options, query } from '@anthropic-ai/claude-agent-sdk';
 import {
   generateToolsSystemPrompt,
   parseContentBlocks,
@@ -48,10 +48,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
   readonly provider = 'claude-code' as const;
   readonly modelId: string;
 
-  private config: ClaudeCodeLanguageModelConfig;
-
   constructor(config: ClaudeCodeLanguageModelConfig) {
-    this.config = config;
     this.modelId = config.modelId;
   }
 
@@ -65,21 +62,26 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
   /**
    * Convert tools from Vercel AI SDK format to our internal format
    */
-  private convertTools(tools: any[]): Record<string, ToolDefinition> | undefined {
+  private convertTools(tools: unknown[]): Record<string, ToolDefinition> | undefined {
     if (!tools || tools.length === 0) {
       return undefined;
     }
 
     const toolsMap: Record<string, ToolDefinition> = {};
     for (const tool of tools) {
-      // Vercel AI SDK uses 'inputSchema' field for the JSON Schema
-      const parameters = tool.inputSchema || tool.parameters || { type: 'object', properties: {} };
+      if (typeof tool !== 'object' || !tool || !('name' in tool)) continue;
 
-      toolsMap[tool.name] = {
+      // Vercel AI SDK uses 'inputSchema' field for the JSON Schema
+      const parameters =
+        ('inputSchema' in tool && tool.inputSchema) ||
+        ('parameters' in tool && tool.parameters) ||
+        { type: 'object', properties: {} };
+
+      toolsMap[String(tool.name)] = {
         type: 'function',
-        name: tool.name,
-        description: tool.description,
-        parameters: parameters,
+        name: String(tool.name),
+        description: 'description' in tool ? String(tool.description) : undefined,
+        parameters: parameters as ToolDefinition['parameters'],
       };
     }
     return toolsMap;
@@ -203,9 +205,15 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     }
 
     // Add maxThinkingTokens from providerOptions if provided
-    const providerOptions = options.providerOptions?.['claude-code'] as Record<string, any> | undefined;
-    if (providerOptions?.maxThinkingTokens) {
-      queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens as number;
+    const providerOptions = options.providerOptions?.['claude-code'] as
+      | Record<string, unknown>
+      | undefined;
+    if (
+      providerOptions &&
+      'maxThinkingTokens' in providerOptions &&
+      typeof providerOptions.maxThinkingTokens === 'number'
+    ) {
+      queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens;
     }
 
     return { queryOptions, systemPrompt };
@@ -214,17 +222,25 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
   /**
    * Extract usage tokens from result event
    */
-  private extractUsage(event: any): { inputTokens: number; outputTokens: number } {
-    if (!event.usage) {
+  private extractUsage(event: unknown): { inputTokens: number; outputTokens: number } {
+    if (
+      !event ||
+      typeof event !== 'object' ||
+      !('usage' in event) ||
+      !event.usage ||
+      typeof event.usage !== 'object'
+    ) {
       return { inputTokens: 0, outputTokens: 0 };
     }
 
-    const usage = event.usage;
+    const usage = event.usage as Record<string, unknown>;
     const inputTokens =
-      (usage.input_tokens || 0) +
-      (usage.cache_creation_input_tokens || 0) +
-      (usage.cache_read_input_tokens || 0);
-    const outputTokens = usage.output_tokens || 0;
+      (typeof usage.input_tokens === 'number' ? usage.input_tokens : 0) +
+      (typeof usage.cache_creation_input_tokens === 'number'
+        ? usage.cache_creation_input_tokens
+        : 0) +
+      (typeof usage.cache_read_input_tokens === 'number' ? usage.cache_read_input_tokens : 0);
+    const outputTokens = typeof usage.output_tokens === 'number' ? usage.output_tokens : 0;
 
     return { inputTokens, outputTokens };
   }
@@ -232,7 +248,11 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
   /**
    * Check and handle result errors
    */
-  private handleResultError(event: any): void {
+  private handleResultError(event: unknown): void {
+    if (!event || typeof event !== 'object' || !('subtype' in event)) {
+      return;
+    }
+
     if (event.subtype === 'error_max_turns') {
       throw new Error('Claude Code reached maximum turns limit');
     } else if (event.subtype === 'error_during_execution') {
@@ -328,7 +348,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
           totalTokens: inputTokens + outputTokens,
         },
         warnings: [],
-        rawResponse: { headers: {} },
+        response: { headers: {} },
       };
     } catch (error) {
       // Log detailed error information
@@ -357,6 +377,10 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         prompt: promptString,
         options: queryOptions,
       });
+
+      // Bind helper methods to preserve `this` context
+      const handleResultError = this.handleResultError.bind(this);
+      const extractUsage = this.extractUsage.bind(this);
 
       // Create streaming response
       const stream = new ReadableStream<LanguageModelV2StreamPart>({
@@ -544,14 +568,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
               } else if (event.type === 'result') {
                 // Check for errors
                 try {
-                  this.handleResultError(event);
+                  handleResultError(event);
                 } catch (error) {
                   controller.error(error);
                   return;
                 }
 
                 // Extract usage
-                const usage = this.extractUsage(event);
+                const usage = extractUsage(event);
                 inputTokens = usage.inputTokens;
                 outputTokens = usage.outputTokens;
               }
@@ -586,7 +610,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
 
       return {
         stream,
-        rawResponse: { headers: {} },
+        response: { headers: {} },
         warnings: [],
       };
     } catch (error) {
