@@ -325,6 +325,46 @@ Memory: ${memUsageGB}GB/${totalMemGB}GB
 }
 
 /**
+ * Inject system status into tool result output based on output type
+ */
+function injectSystemStatusToOutput(output: any, systemStatus: string): any {
+  if (!output || typeof output !== 'object') {
+    return output;
+  }
+
+  switch (output.type) {
+    case 'text':
+    case 'error-text':
+      // Prepend system status to text value
+      return {
+        ...output,
+        value: `${systemStatus}\n${output.value}`,
+      };
+
+    case 'content':
+      // Prepend a text part with system status to content array
+      return {
+        ...output,
+        value: [
+          {
+            type: 'text',
+            text: systemStatus,
+          },
+          ...output.value,
+        ],
+      };
+
+    case 'json':
+    case 'error-json':
+      // Keep JSON types unchanged (can't naturally inject text)
+      return output;
+
+    default:
+      return output;
+  }
+}
+
+/**
  * Convert our messages to AI SDK format
  */
 function toAISDKMessages(messages: SylphxMessage[]) {
@@ -594,9 +634,7 @@ export async function* createAIStream(
           ...msg,
           content: msg.content.map((part: any) => ({
             ...part,
-            output: typeof part.output === 'string'
-              ? `${stepSystemStatus} ${part.output}`
-              : part.output,
+            output: injectSystemStatusToOutput(part.output, stepSystemStatus),
           })),
         });
       } else {
