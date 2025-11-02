@@ -412,19 +412,30 @@ export async function* createAIStream(
       ? onPrepareMessages(messageHistory, stepNumber)
       : messageHistory;
 
+    // Debug: Log what we're sending to streamText
+    console.log('[createAIStream] Step', stepNumber, '- Messages:', preparedMessages.length);
+    console.log('[createAIStream] First message:', JSON.stringify(preparedMessages[0], null, 2).substring(0, 500));
+
     // Call AI SDK with single step
     const { fullStream, response, finishReason, usage, content } = streamText({
       model,
       messages: preparedMessages,
       system: systemPrompt,
       tools: getAISDKTools(),
-      onError: (_) => {
-        return;
-      },
+      // Don't handle errors here - let them propagate to the caller
+      // onError callback is for non-fatal errors, fatal ones should throw
     });
 
+    console.log('[createAIStream] streamText called successfully');
+
     // Stream all chunks to user
+    let chunkCount = 0;
     for await (const chunk of fullStream) {
+      chunkCount++;
+      if (chunkCount % 10 === 1) {
+        console.log('[createAIStream] Processing chunk', chunkCount, 'type:', chunk.type);
+      }
+
       switch (chunk.type) {
         case 'text-start':
           yield { type: 'text-start' };
