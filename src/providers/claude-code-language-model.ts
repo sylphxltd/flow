@@ -197,8 +197,9 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         content: contentParts,
         finishReason,
         usage: {
-          promptTokens: inputTokens,
-          completionTokens: outputTokens,
+          inputTokens: inputTokens,
+          outputTokens: outputTokens,
+          totalTokens: inputTokens + outputTokens,
         },
         warnings: [],
         rawResponse: { headers: {} },
@@ -329,8 +330,9 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
               type: 'finish',
               finishReason,
               usage: {
-                promptTokens: inputTokens,
-                completionTokens: outputTokens,
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                totalTokens: inputTokens + outputTokens,
               },
               providerMetadata: undefined,
             });
