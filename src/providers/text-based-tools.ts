@@ -50,7 +50,8 @@ export function generateToolsSystemPrompt(tools: Record<string, ToolDefinition>)
         const isRequired = required.includes(paramName);
         const type = paramSchema.type || 'any';
         const description = paramSchema.description || '';
-        return `  - ${paramName} (${type}${isRequired ? ', required' : ', optional'}): ${description}`;
+        const requiredTag = isRequired ? ', **REQUIRED**' : ', optional';
+        return `  - ${paramName} (${type}${requiredTag}): ${description}`;
       });
 
       return `## ${name}
@@ -74,12 +75,14 @@ You have access to the following tools. To use a tool, output it in this XML for
 </arguments>
 </tool_use>
 
-**IMPORTANT RULES**:
+**CRITICAL RULES**:
 1. Generate a unique tool_call_id for each tool call (e.g., call_1, call_2, etc.)
 2. Put arguments in valid JSON format inside <arguments> tags
-3. You can call multiple tools in one response
-4. You can mix text and tool calls in any order
-5. Wrap regular text in <text> tags to clearly separate it from tool calls
+3. **ALWAYS provide ALL required parameters** - never use empty object {}
+4. **Infer missing parameter values from context** if not explicitly stated
+5. You can call multiple tools in one response
+6. You can mix text and tool calls in any order
+7. Wrap regular text in <text> tags to clearly separate it from tool calls
 
 **Example response format**:
 <text>
@@ -176,6 +179,41 @@ export function parseContentBlocks(text: string): ParsedContentBlock[] {
   }
 
   return blocks;
+}
+
+/**
+ * Validate tool arguments against tool schema
+ * Returns error message if validation fails, null if valid
+ */
+export function validateToolArguments(
+  toolName: string,
+  args: Record<string, unknown>,
+  toolDef: ToolDefinition
+): string | null {
+  const { parameters } = toolDef;
+  const required = parameters.required || [];
+
+  // Check for missing required parameters
+  const missing = required.filter(paramName => !(paramName in args) || args[paramName] === undefined);
+
+  if (missing.length > 0) {
+    return `Missing required parameter(s): ${missing.join(', ')}. Please provide all required parameters and try again.`;
+  }
+
+  // Check for empty object when parameters exist
+  if (Object.keys(parameters.properties || {}).length > 0 && Object.keys(args).length === 0) {
+    const paramList = Object.entries(parameters.properties || {})
+      .map(([name, schema]: [string, any]) => {
+        const isReq = required.includes(name);
+        const desc = schema.description || '';
+        return `  - ${name} (${schema.type || 'any'}${isReq ? ', REQUIRED' : ''}): ${desc}`;
+      })
+      .join('\n');
+
+    return `Empty arguments object provided, but tool requires parameters:\n${paramList}\n\nPlease provide the required parameters in JSON format.`;
+  }
+
+  return null;
 }
 
 /**
