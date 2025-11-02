@@ -266,27 +266,18 @@ export async function* createAIStream(
       const todos = useAppStore.getState().todos;
       const todoContext = buildTodoContext(todos);
 
-      // Find last user message and prepend todo context
-      const modifiedMessages = [...messages];
-      for (let i = modifiedMessages.length - 1; i >= 0; i--) {
-        if (modifiedMessages[i].role === 'user') {
-          const originalContent = modifiedMessages[i].content;
-          // Extract text content from content parts
-          const textContent = typeof originalContent === 'string'
-            ? originalContent
-            : Array.isArray(originalContent)
-            ? originalContent.filter((part: any) => part.type === 'text').map((part: any) => part.text).join('')
-            : '';
-
-          modifiedMessages[i] = {
-            ...modifiedMessages[i],
-            content: `${todoContext}\n\n${textContent}`,
-          };
-          break;
-        }
-      }
-
-      return { messages: modifiedMessages };
+      // Append system message with current todos at the end
+      // This preserves prompt cache (no modification to history)
+      // and ensures fresh todos on every step
+      return {
+        messages: [
+          ...messages,
+          {
+            role: 'system',
+            content: todoContext,
+          },
+        ],
+      };
     },
     ...(onStepFinish && {
       onStepFinish: (step) => {
