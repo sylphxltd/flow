@@ -1042,7 +1042,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Get pending and in-progress todos (exclude completed and removed)
     const activeTodos = todos.filter((t) => t.status !== 'completed' && t.status !== 'removed');
 
-    // Build todo reminder if there are active todos
+    // Build todo context
     let messageWithContext = userMessage;
     if (activeTodos.length > 0) {
       // Sort by ordering ASC, id ASC (first added = first to do)
@@ -1072,6 +1072,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       todoLines.push('');
 
       messageWithContext = todoLines.join('\n') + userMessage;
+    } else {
+      // Remind to add todos for multi-step tasks
+      messageWithContext = '<todo_reminder>For multi-step tasks, use updateTodos tool</todo_reminder>\n\n' + userMessage;
     }
 
     // Get attachments for this message

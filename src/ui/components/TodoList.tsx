@@ -3,8 +3,8 @@
  * Displays LLM task progress above the input area
  */
 
-import React, { useState } from 'react';
-import { Box, Text, useInput } from 'ink';
+import React, { useMemo } from 'react';
+import { Box, Text } from 'ink';
 import type { Todo } from '../../types/todo.types.js';
 
 interface TodoListProps {
@@ -14,95 +14,92 @@ interface TodoListProps {
 const MAX_VISIBLE_LINES = 5;
 
 export default function TodoList({ todos }: TodoListProps) {
-  const [scrollOffset, setScrollOffset] = useState(0);
-
   // Calculate progress
   const completedCount = todos.filter((t) => t.status === 'completed').length;
   const totalCount = todos.filter((t) => t.status !== 'removed').length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  // Filter out completed and removed todos
-  const activeTodos = todos.filter((t) => t.status !== 'completed' && t.status !== 'removed');
+  // Filter out removed todos (show completed with strikethrough)
+  const displayTodos = todos.filter((t) => t.status !== 'removed');
 
-  if (activeTodos.length === 0 && totalCount === 0) {
+  if (displayTodos.length === 0) {
     return null;
   }
 
   // Sort by ordering ASC, id ASC (first added = first to do)
-  const sortedTodos = [...activeTodos].sort((a, b) => {
+  const sortedTodos = [...displayTodos].sort((a, b) => {
     if (a.ordering !== b.ordering) {
-      return a.ordering - b.ordering; // Lower ordering first
+      return a.ordering - b.ordering;
     }
-    return a.id - b.id; // Lower id first if same ordering
+    return a.id - b.id;
   });
 
-  const pendingTodos = sortedTodos.filter((t) => t.status === 'pending');
-  const inProgressTodos = sortedTodos.filter((t) => t.status === 'in_progress');
-
-  // Combine todos for display (in-progress first, then pending)
-  const allDisplayTodos = [...inProgressTodos, ...pendingTodos];
-  const totalLines = allDisplayTodos.length;
-  const maxScroll = Math.max(0, totalLines - MAX_VISIBLE_LINES);
-
-  // Handle scroll input
-  useInput((input, key) => {
-    if (key.upArrow) {
-      setScrollOffset((prev) => Math.max(0, prev - 1));
-    } else if (key.downArrow) {
-      setScrollOffset((prev) => Math.min(maxScroll, prev + 1));
-    }
-  });
-
-  // Clamp scroll offset
-  const clampedScroll = Math.min(scrollOffset, maxScroll);
+  // Auto-scroll to in_progress task
+  const inProgressIndex = sortedTodos.findIndex((t) => t.status === 'in_progress');
+  const scrollOffset = useMemo(() => {
+    if (inProgressIndex === -1) return 0;
+    // Center the in_progress task in the viewport
+    const targetScroll = Math.max(0, inProgressIndex - Math.floor(MAX_VISIBLE_LINES / 2));
+    return Math.min(targetScroll, Math.max(0, sortedTodos.length - MAX_VISIBLE_LINES));
+  }, [inProgressIndex, sortedTodos.length]);
 
   // Get visible todos
-  const visibleTodos = allDisplayTodos.slice(clampedScroll, clampedScroll + MAX_VISIBLE_LINES);
-
-  // Progress bar
-  const barWidth = 20;
-  const filledWidth = Math.round((progressPercent / 100) * barWidth);
-  const emptyWidth = barWidth - filledWidth;
-  const progressBar = '█'.repeat(filledWidth) + '░'.repeat(emptyWidth);
+  const visibleTodos = sortedTodos.slice(scrollOffset, scrollOffset + MAX_VISIBLE_LINES);
+  const hasMoreAbove = scrollOffset > 0;
+  const hasMoreBelow = scrollOffset + MAX_VISIBLE_LINES < sortedTodos.length;
 
   return (
     <Box flexDirection="column" marginBottom={1} paddingX={1} borderStyle="round" borderColor="gray">
-      {/* Header with progress */}
+      {/* Header with simple progress */}
       <Box marginBottom={0}>
         <Text bold color="#FFD700">
           Tasks {completedCount}/{totalCount}
         </Text>
-        <Text dimColor> </Text>
-        <Text color="#FFD700">{progressBar}</Text>
-        <Text dimColor> {progressPercent}%</Text>
       </Box>
 
-      {/* Scrollable todo list */}
+      {/* Scroll indicator top */}
+      {hasMoreAbove && (
+        <Box>
+          <Text dimColor>↑ {scrollOffset} more above</Text>
+        </Box>
+      )}
+
+      {/* Todo list */}
       {visibleTodos.map((todo) => {
         const isInProgress = todo.status === 'in_progress';
+        const isCompleted = todo.status === 'completed';
+        const isPending = todo.status === 'pending';
+
+        // Display text
+        const displayText = isInProgress ? todo.activeForm : todo.content;
+
         return (
           <Box key={`todo-${todo.id}`}>
-            {isInProgress ? (
+            {isInProgress && (
               <>
-                <Text color="#00FF88">▶ </Text>
-                <Text color="#00FF88" dimColor>[{todo.id}] </Text>
-                <Text color="#00FF88">{todo.activeForm}</Text>
+                <Text bold color="#00FF88">▶ </Text>
+                <Text bold color="#00FF88">{displayText}</Text>
               </>
-            ) : (
-              <Text dimColor>○ [{todo.id}] {todo.content}</Text>
+            )}
+            {isPending && (
+              <>
+                <Text dimColor>○ </Text>
+                <Text dimColor>{displayText}</Text>
+              </>
+            )}
+            {isCompleted && (
+              <>
+                <Text color="green">✓ </Text>
+                <Text dimColor strikethrough>{displayText}</Text>
+              </>
             )}
           </Box>
         );
       })}
 
-      {/* Scroll indicator */}
-      {totalLines > MAX_VISIBLE_LINES && (
-        <Box marginTop={0}>
-          <Text dimColor>
-            {clampedScroll > 0 && '↑ '}
-            Showing {clampedScroll + 1}-{Math.min(clampedScroll + MAX_VISIBLE_LINES, totalLines)} of {totalLines}
-            {clampedScroll < maxScroll && ' ↓'}
-          </Text>
+      {/* Scroll indicator bottom */}
+      {hasMoreBelow && (
+        <Box>
+          <Text dimColor>↓ {sortedTodos.length - scrollOffset - MAX_VISIBLE_LINES} more below</Text>
         </Box>
       )}
     </Box>
