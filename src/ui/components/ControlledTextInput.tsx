@@ -1,9 +1,9 @@
 /**
  * Controlled Text Input with Programmatic Cursor Control
- * Simplified version - internal state with external sync
+ * Uses useReducer to ensure state updates are based on latest state
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import Spinner from './Spinner.js';
 import { clampCursor, moveCursorUp, moveCursorDown, getCursorLinePosition } from '../utils/cursor-utils.js';
@@ -22,6 +22,77 @@ export interface ControlledTextInputProps {
   validTags?: Set<string>;
 }
 
+interface State {
+  value: string;
+  cursor: number;
+}
+
+type Action =
+  | { type: 'SET_FROM_PROPS'; value: string; cursor: number }
+  | { type: 'INSERT_TEXT'; text: string }
+  | { type: 'DELETE_BEFORE_CURSOR' }
+  | { type: 'INSERT_NEWLINE' }
+  | { type: 'DELETE_TO_START' }
+  | { type: 'DELETE_TO_END' }
+  | { type: 'DELETE_WORD' }
+  | { type: 'SET_CURSOR'; cursor: number }
+  | { type: 'SET_VALUE'; value: string; cursor: number };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'SET_FROM_PROPS':
+      return { value: action.value, cursor: action.cursor };
+
+    case 'INSERT_TEXT': {
+      const next = state.value.slice(0, state.cursor) + action.text + state.value.slice(state.cursor);
+      return { value: next, cursor: state.cursor + action.text.length };
+    }
+
+    case 'DELETE_BEFORE_CURSOR': {
+      if (state.cursor === 0) return state;
+      const next = state.value.slice(0, state.cursor - 1) + state.value.slice(state.cursor);
+      return { value: next, cursor: state.cursor - 1 };
+    }
+
+    case 'INSERT_NEWLINE': {
+      const next = state.value.slice(0, state.cursor) + '\n' + state.value.slice(state.cursor);
+      return { value: next, cursor: state.cursor + 1 };
+    }
+
+    case 'DELETE_TO_START': {
+      const next = state.value.slice(state.cursor);
+      return { value: next, cursor: 0 };
+    }
+
+    case 'DELETE_TO_END': {
+      const next = state.value.slice(0, state.cursor);
+      return { value: next, cursor: state.cursor };
+    }
+
+    case 'DELETE_WORD': {
+      const before = state.value.slice(0, state.cursor);
+      const after = state.value.slice(state.cursor);
+      const match = before.match(/\s*\S*$/);
+      if (!match) return state;
+      const deleteCount = match[0].length;
+      const next = before.slice(0, -deleteCount) + after;
+      return { value: next, cursor: state.cursor - deleteCount };
+    }
+
+    case 'SET_CURSOR': {
+      const clamped = clampCursor(action.cursor, state.value.length);
+      return { ...state, cursor: clamped };
+    }
+
+    case 'SET_VALUE': {
+      return { value: action.value, cursor: action.cursor };
+    }
+
+    default:
+      return state;
+  }
+}
+
 export default function ControlledTextInput({
   value,
   onChange,
@@ -34,128 +105,99 @@ export default function ControlledTextInput({
   focus = true,
   validTags,
 }: ControlledTextInputProps) {
-  // Internal state - source of truth during user input
-  const [internalValue, setInternalValue] = useState(value);
-  const [internalCursor, setInternalCursor] = useState(cursor);
+  const [state, dispatch] = useReducer(reducer, { value, cursor });
 
-  // Sync from props only when props change externally (not from our onChange)
-  // Detect external changes by comparing with internal state
+  // Sync from props when they change externally
   useEffect(() => {
-    if (value !== internalValue) {
-      // External change (autocomplete, clear, etc.)
-      setInternalValue(value);
-      setInternalCursor(cursor);
+    if (value !== state.value || cursor !== state.cursor) {
+      dispatch({ type: 'SET_FROM_PROPS', value, cursor });
     }
-  }, [value]); // Only watch value, not internalValue (to avoid loop)
+  }, [value, cursor]);
 
-  // Sync cursor changes
+  // Notify parent of changes
   useEffect(() => {
-    if (cursor !== internalCursor && value === internalValue) {
-      // Cursor changed externally but value didn't
-      setInternalCursor(cursor);
+    if (state.value !== value) {
+      onChange(state.value);
     }
-  }, [cursor]);
+  }, [state.value]);
 
-  const text = maskChar ? maskChar.repeat(internalValue.length) : internalValue;
+  useEffect(() => {
+    if (state.cursor !== cursor) {
+      onCursorChange(state.cursor);
+    }
+  }, [state.cursor]);
 
-  // Helper to update both internal and external state
-  const updateValue = (newValue: string, newCursor: number) => {
-    setInternalValue(newValue);
-    setInternalCursor(newCursor);
-    onChange(newValue);
-    onCursorChange(newCursor);
-  };
-
-  const safeSetCursor = (n: number) => {
-    const clamped = clampCursor(n, internalValue.length);
-    setInternalCursor(clamped);
-    onCursorChange(clamped);
-  };
+  const text = maskChar ? maskChar.repeat(state.value.length) : state.value;
 
   useInput(
     (input, key) => {
       // Left arrow
       if (key.leftArrow) {
-        safeSetCursor(internalCursor - 1);
+        dispatch({ type: 'SET_CURSOR', cursor: state.cursor - 1 });
         return;
       }
 
       // Right arrow
       if (key.rightArrow) {
-        safeSetCursor(internalCursor + 1);
+        dispatch({ type: 'SET_CURSOR', cursor: state.cursor + 1 });
         return;
       }
 
       // Up arrow
       if (key.upArrow) {
-        safeSetCursor(moveCursorUp(internalValue, internalCursor));
+        dispatch({ type: 'SET_CURSOR', cursor: moveCursorUp(state.value, state.cursor) });
         return;
       }
 
       // Down arrow
       if (key.downArrow) {
-        safeSetCursor(moveCursorDown(internalValue, internalCursor));
+        dispatch({ type: 'SET_CURSOR', cursor: moveCursorDown(state.value, state.cursor) });
         return;
       }
 
       // Home
       if (key.home || (key.ctrl && input?.toLowerCase() === 'a')) {
-        safeSetCursor(0);
+        dispatch({ type: 'SET_CURSOR', cursor: 0 });
         return;
       }
 
       // End
       if (key.end || (key.ctrl && input?.toLowerCase() === 'e')) {
-        safeSetCursor(internalValue.length);
+        dispatch({ type: 'SET_CURSOR', cursor: state.value.length });
         return;
       }
 
       // Backspace
       if (key.backspace || key.delete || input === '\x7F' || input === '\b') {
-        if (internalCursor > 0) {
-          const next = internalValue.slice(0, internalCursor - 1) + internalValue.slice(internalCursor);
-          updateValue(next, internalCursor - 1);
-        }
+        dispatch({ type: 'DELETE_BEFORE_CURSOR' });
         return;
       }
 
       // Enter - submit or newline
       if (key.return && !input) {
         if (key.shift) {
-          // Shift+Enter - insert newline
-          const next = internalValue.slice(0, internalCursor) + '\n' + internalValue.slice(internalCursor);
-          updateValue(next, internalCursor + 1);
+          dispatch({ type: 'INSERT_NEWLINE' });
           return;
         }
-        onSubmit?.(internalValue);
+        onSubmit?.(state.value);
         return;
       }
 
       // Ctrl+U - delete to start
       if (key.ctrl && input?.toLowerCase() === 'u') {
-        const next = internalValue.slice(internalCursor);
-        updateValue(next, 0);
+        dispatch({ type: 'DELETE_TO_START' });
         return;
       }
 
       // Ctrl+K - delete to end
       if (key.ctrl && input?.toLowerCase() === 'k') {
-        const next = internalValue.slice(0, internalCursor);
-        setInternalValue(next);
-        onChange(next);
+        dispatch({ type: 'DELETE_TO_END' });
         return;
       }
 
       // Ctrl+W - delete word
       if (key.ctrl && input?.toLowerCase() === 'w') {
-        const before = internalValue.slice(0, internalCursor);
-        const after = internalValue.slice(internalCursor);
-        const match = before.match(/\s*\S*$/);
-        if (match) {
-          const deleteCount = match[0].length;
-          const next = before.slice(0, -deleteCount) + after;
-          updateValue(next, internalCursor - deleteCount);
-        }
+        dispatch({ type: 'DELETE_WORD' });
         return;
       }
 
@@ -164,15 +206,14 @@ export default function ControlledTextInput({
 
       // Insert character (including pasted text with newlines)
       if (input) {
-        const next = internalValue.slice(0, internalCursor) + input + internalValue.slice(internalCursor);
-        updateValue(next, internalCursor + input.length);
+        dispatch({ type: 'INSERT_TEXT', text: input });
       }
     },
     { isActive: focus }
   );
 
   // Handle multiline text with proper cursor positioning
-  if (internalValue.length === 0 && placeholder) {
+  if (state.value.length === 0 && placeholder) {
     return (
       <Box>
         {showCursor && <Text inverse> </Text>}
@@ -183,7 +224,7 @@ export default function ControlledTextInput({
 
   // Split text into lines
   const lines = text.split('\n');
-  const { line: cursorLine, column: cursorColumn } = getCursorLinePosition(text, internalCursor);
+  const { line: cursorLine, column: cursorColumn } = getCursorLinePosition(text, state.cursor);
 
   // Get terminal width
   const terminalWidth = process.stdout.columns || 120;
