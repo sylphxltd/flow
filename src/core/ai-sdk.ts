@@ -6,6 +6,7 @@
 
 import { streamText, stepCountIs } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
+import * as os from 'node:os';
 import { getAISDKTools } from '../tools/index.js';
 import { getCurrentSystemPrompt } from './agent-manager.js';
 import { getEnabledRulesContent } from './rule-manager.js';
@@ -297,6 +298,39 @@ function toAISDKModel(model: SylphxLanguageModel | LanguageModelV2): LanguageMod
 }
 
 /**
+ * Get system status for context injection
+ */
+function getSystemStatus(): string {
+  const timestamp = new Date().toISOString();
+
+  // Get memory usage
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+  const memUsageGB = (usedMem / 1024 / 1024 / 1024).toFixed(1);
+  const totalMemGB = (totalMem / 1024 / 1024 / 1024).toFixed(1);
+
+  // Get CPU usage (average load)
+  const cpus = os.cpus();
+  const cpuCount = cpus.length;
+
+  // Calculate average CPU usage from all cores
+  let totalIdle = 0;
+  let totalTick = 0;
+
+  cpus.forEach((cpu) => {
+    for (const type in cpu.times) {
+      totalTick += cpu.times[type as keyof typeof cpu.times];
+    }
+    totalIdle += cpu.times.idle;
+  });
+
+  const cpuUsage = (100 - (100 * totalIdle) / totalTick).toFixed(1);
+
+  return `[${timestamp} | CPU: ${cpuUsage}% (${cpuCount} cores) | MEM: ${memUsageGB}GB/${totalMemGB}GB]`;
+}
+
+/**
  * Convert our messages to AI SDK format
  */
 function toAISDKMessages(messages: SylphxMessage[]) {
@@ -385,15 +419,15 @@ export async function* createAIStream(
   // Convert our types to AI SDK types
   const aiModel = toAISDKModel(model);
 
-  // Message history that we control - add timestamps to initial messages
-  const timestamp = new Date().toISOString();
+  // Message history that we control - add system status to initial messages
+  const systemStatus = getSystemStatus();
   const messageHistory: any[] = toAISDKMessages(initialMessages).map((msg: any) => {
     if (msg.role === 'user') {
-      // Add timestamp to user messages
+      // Add system status (timestamp, CPU, memory) to user messages
       return {
         ...msg,
         content: typeof msg.content === 'string'
-          ? `[${timestamp}] ${msg.content}`
+          ? `${systemStatus} ${msg.content}`
           : msg.content,
       };
     }
@@ -565,19 +599,19 @@ export async function* createAIStream(
       onStepFinish(stepInfo);
     }
 
-    // Save LLM response messages to history (with timestamp)
-    const stepTimestamp = new Date().toISOString();
+    // Save LLM response messages to history (with system status)
+    const stepSystemStatus = getSystemStatus();
     const responseMessages = (await response).messages;
 
     for (const msg of responseMessages) {
-      // Add timestamp to tool messages
+      // Add system status (timestamp, CPU, memory) to tool messages
       if (msg.role === 'tool') {
         messageHistory.push({
           ...msg,
           content: msg.content.map((part: any) => ({
             ...part,
             output: typeof part.output === 'string'
-              ? `[${stepTimestamp}] ${part.output}`
+              ? `${stepSystemStatus} ${part.output}`
               : part.output,
           })),
         });
