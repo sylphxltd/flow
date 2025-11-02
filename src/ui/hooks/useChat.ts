@@ -71,8 +71,12 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
+      // Add timestamp to user message
+      const timestamp = new Date().toISOString();
+      const messageWithTimestamp = `[${timestamp}] ${message}`;
+
       // Read file contents if attachments provided
-      let messageForLLM = message;
+      let messageForLLM = messageWithTimestamp;
       if (attachments && attachments.length > 0) {
         try {
           const { readFile } = await import('node:fs/promises');
@@ -96,7 +100,7 @@ export function useChat() {
             .map((f) => `\n\n<file path="${f.path}">\n${f.content}\n</file>`)
             .join('');
 
-          messageForLLM = `${message}${fileContentsText}`;
+          messageForLLM = `${messageWithTimestamp}${fileContentsText}`;
         } catch (error) {
           console.error('Failed to read attachments:', error);
         }

@@ -206,6 +206,15 @@ export interface StepInfo {
 }
 
 /**
+ * Extended message with timestamp
+ */
+export interface TimestampedMessage {
+  role: 'user' | 'assistant' | 'tool' | 'system';
+  content: any;
+  timestamp?: string;
+}
+
+/**
  * Create AI stream options (our own)
  */
 export interface CreateAIStreamOptions {
@@ -240,206 +249,213 @@ function toAISDKMessages(messages: SylphxMessage[]) {
 
 /**
  * Create AI stream with Sylphx tools pre-configured
+ * Uses manual loop to control message history with timestamps
  */
 export async function* createAIStream(
   options: CreateAIStreamOptions
 ): AsyncIterable<StreamChunk> {
-  const { systemPrompt = getSystemPrompt(), model, messages, onStepFinish } = options;
+  const { systemPrompt = getSystemPrompt(), model, messages: initialMessages, onStepFinish } = options;
 
   // Convert our types to AI SDK types
   const aiModel = toAISDKModel(model);
-  const aiMessages = toAISDKMessages(messages);
 
-  // Call AI SDK - errors from the API call will propagate naturally
-  const result = streamText({
-    model: aiModel,
-    messages: aiMessages,
-    system: systemPrompt,
-    tools: getAISDKTools(),
-    stopWhen: stepCountIs(1000),
-    onError: (_) => {
-      return;
-    },
-    // Inject todo context into each step
-    prepareStep: async ({ messages }) => {
-      // Get current todos from store
-      const todos = useAppStore.getState().todos;
-      const todoContext = buildTodoContext(todos);
+  // Message history that we control
+  const messageHistory: any[] = toAISDKMessages(initialMessages);
 
-      // Append system message with current todos at the end
-      // This preserves prompt cache (no modification to history)
-      // and ensures fresh todos on every step
-      return {
-        messages: [
-          ...messages,
-          {
-            role: 'system',
-            content: todoContext,
-          },
-        ],
+  let stepNumber = 0;
+  const MAX_STEPS = 1000;
+
+  while (stepNumber < MAX_STEPS) {
+    // Get current todos and build context
+    const todos = useAppStore.getState().todos;
+    const todoContext = buildTodoContext(todos);
+
+    // Temporarily inject todo context (not saved to history)
+    const messagesWithContext = [
+      ...messageHistory,
+      {
+        role: 'system' as const,
+        content: todoContext,
+      },
+    ];
+
+    // Call AI SDK with single step
+    const result = streamText({
+      model: aiModel,
+      messages: messagesWithContext,
+      system: systemPrompt,
+      tools: getAISDKTools(),
+      maxSteps: 1,  // Only one step at a time
+      onError: (_) => {
+        return;
+      },
+    });
+
+    // Stream all chunks to user
+    for await (const chunk of fullStream) {
+      switch (chunk.type) {
+        case 'text-start':
+          yield { type: 'text-start' };
+          break;
+
+        case 'text-delta':
+          yield { type: 'text-delta', textDelta: chunk.text };
+          break;
+
+        case 'text-end':
+          yield { type: 'text-end' };
+          break;
+
+        case 'reasoning-start':
+          yield { type: 'reasoning-start' };
+          break;
+
+        case 'reasoning-delta':
+          yield { type: 'reasoning-delta', textDelta: chunk.text };
+          break;
+
+        case 'reasoning-end':
+          yield { type: 'reasoning-end' };
+          break;
+
+        case 'tool-call':
+          yield {
+            type: 'tool-call',
+            toolCallId: chunk.toolCallId,
+            toolName: chunk.toolName,
+            args: chunk.input,
+          };
+          break;
+
+        case 'tool-input-start':
+          yield {
+            type: 'tool-input-start',
+            toolCallId: chunk.id,
+            toolName: chunk.toolName,
+          };
+          break;
+
+        case 'tool-input-delta':
+          yield {
+            type: 'tool-input-delta',
+            toolCallId: chunk.id,
+            argsTextDelta: chunk.delta,
+          };
+          break;
+
+        case 'tool-input-end':
+          yield {
+            type: 'tool-input-end',
+            toolCallId: chunk.id,
+          };
+          break;
+
+        case 'tool-result':
+          yield {
+            type: 'tool-result',
+            toolCallId: chunk.toolCallId,
+            toolName: chunk.toolName,
+            result: chunk.output,
+          };
+          break;
+
+        case 'finish':
+          yield {
+            type: 'finish',
+            finishReason: chunk.finishReason,
+            usage: {
+              promptTokens: chunk.totalUsage.inputTokens ?? 0,
+              completionTokens: chunk.totalUsage.outputTokens ?? 0,
+              totalTokens: chunk.totalUsage.totalTokens ?? 0,
+            },
+          };
+          break;
+
+        case 'error':
+          yield {
+            type: 'error',
+            error: chunk.error instanceof Error ? chunk.error.message : String(chunk.error),
+          };
+          break;
+
+        case 'tool-error':
+          yield {
+            type: 'tool-error',
+            toolCallId: chunk.toolCallId,
+            toolName: chunk.toolName,
+            error: chunk.error instanceof Error ? chunk.error.message : String(chunk.error),
+          };
+          break;
+
+        case 'abort':
+          yield {
+            type: 'error',
+            error: 'Stream aborted',
+          };
+          break;
+
+        default:
+          break;
+      }
+    }
+
+    // After streaming completes, get step results
+    const response = await result.response;
+    const finishReason = await result.finishReason;
+    const usage = await result.usage;
+
+    // Call onStepFinish callback if provided
+    if (onStepFinish) {
+      const stepInfo: StepInfo = {
+        finishReason,
+        usage: {
+          promptTokens: usage.inputTokens ?? 0,
+          completionTokens: usage.outputTokens ?? 0,
+          totalTokens: usage.totalTokens ?? 0,
+        },
+        text: response.text ?? '',
+        toolCalls: (await result.toolCalls ?? []).map((call) => ({
+          toolCallId: call.toolCallId,
+          toolName: call.toolName,
+          args: call.input,
+        })),
+        toolResults: (await result.toolResults ?? []).map((res) => ({
+          toolCallId: res.toolCallId,
+          toolName: res.toolName,
+          result: res.output,
+        })),
       };
-    },
-    ...(onStepFinish && {
-      onStepFinish: (step) => {
-        const usage = step.usage;
-        onStepFinish({
-          finishReason: step.finishReason,
-          usage: {
-            promptTokens: usage.inputTokens ?? 0,
-            completionTokens: usage.outputTokens ?? 0,
-            totalTokens: usage.totalTokens ?? 0,
-          },
-          text: step.text ?? '',
-          toolCalls: (step.toolCalls ?? []).map((call) => ({
-            toolCallId: call.toolCallId,
-            toolName: call.toolName,
-            args: call.input,
-          })),
-          toolResults: (step.toolResults ?? []).map((result) => ({
-            toolCallId: result.toolCallId,
-            toolName: result.toolName,
-            result: result.output,
+      onStepFinish(stepInfo);
+    }
+
+    // Save LLM response messages to history (with timestamp)
+    const timestamp = new Date().toISOString();
+    const responseMessages = response.messages;
+
+    for (const msg of responseMessages) {
+      // Add timestamp to tool messages
+      if (msg.role === 'tool') {
+        messageHistory.push({
+          ...msg,
+          content: msg.content.map((part: any) => ({
+            ...part,
+            output: typeof part.output === 'string'
+              ? `[${timestamp}] ${part.output}`
+              : part.output,
           })),
         });
-      },
-    }),
-  });
-
-  // Destructure to get fullStream
-  const { fullStream } = result;
-
-  // Convert AI SDK chunks to our chunk format
-  // Handle all chunk types to ensure proper error flow
-  for await (const chunk of fullStream) {
-    switch (chunk.type) {
-      case 'text-start':
-        // Text generation started - immediately show typing indicator
-        yield {
-          type: 'text-start',
-        };
-        break;
-
-      case 'text-delta':
-        yield {
-          type: 'text-delta',
-          textDelta: chunk.text,
-        };
-        break;
-
-      case 'text-end':
-        // Text generation finished
-        yield {
-          type: 'text-end',
-        };
-        break;
-
-      case 'reasoning-start':
-        yield {
-          type: 'reasoning-start',
-        };
-        break;
-
-      case 'reasoning-delta':
-        yield {
-          type: 'reasoning-delta',
-          textDelta: chunk.text,
-        };
-        break;
-
-      case 'reasoning-end':
-        yield {
-          type: 'reasoning-end',
-        };
-        break;
-
-      case 'tool-call':
-        yield {
-          type: 'tool-call',
-          toolCallId: chunk.toolCallId,
-          toolName: chunk.toolName,
-          args: chunk.input,
-        };
-        break;
-
-      case 'tool-input-start':
-        // Tool input streaming started
-        yield {
-          type: 'tool-input-start',
-          toolCallId: chunk.id,
-          toolName: chunk.toolName,
-        };
-        break;
-
-      case 'tool-input-delta':
-        // Tool input streaming (arguments being generated)
-        yield {
-          type: 'tool-input-delta',
-          toolCallId: chunk.id,
-          argsTextDelta: chunk.delta,
-        };
-        break;
-
-      case 'tool-input-end':
-        // Tool input complete (end of tool-input streaming)
-        yield {
-          type: 'tool-input-end',
-          toolCallId: chunk.id,
-        };
-        break;
-
-      case 'tool-result':
-        yield {
-          type: 'tool-result',
-          toolCallId: chunk.toolCallId,
-          toolName: chunk.toolName,
-          result: chunk.output,
-        };
-        break;
-
-      case 'finish':
-        // Final usage statistics
-        yield {
-          type: 'finish',
-          finishReason: chunk.finishReason,
-          usage: {
-            promptTokens: chunk.totalUsage.inputTokens ?? 0,
-            completionTokens: chunk.totalUsage.outputTokens ?? 0,
-            totalTokens: chunk.totalUsage.totalTokens ?? 0,
-          },
-        };
-        break;
-
-      case 'error':
-        // Stream error - yield as error chunk to preserve ordering
-        yield {
-          type: 'error',
-          error: chunk.error instanceof Error ? chunk.error.message : String(chunk.error),
-        };
-        break;
-
-      case 'tool-error':
-        // Tool execution error - yield as tool-error chunk to preserve ordering
-        yield {
-          type: 'tool-error',
-          toolCallId: chunk.toolCallId,
-          toolName: chunk.toolName,
-          error: chunk.error instanceof Error ? chunk.error.message : String(chunk.error),
-        };
-        break;
-
-      case 'abort':
-        // Stream aborted - yield as error chunk to preserve ordering
-        yield {
-          type: 'error',
-          error: 'Stream aborted',
-        };
-        break;
-
-      // Ignore other chunk types (text-start, text-end, etc.)
-      // They don't affect our streaming output
-      default:
-        break;
+      } else {
+        messageHistory.push(msg);
+      }
     }
+
+    // Check if we should continue the loop
+    if (finishReason !== 'tool-calls') {
+      // No more tool calls, exit loop
+      break;
+    }
+
+    stepNumber++;
   }
 }
 
