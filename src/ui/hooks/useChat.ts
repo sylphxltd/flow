@@ -83,14 +83,21 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
-      // ⚠️ CRITICAL: Capture system status ONCE at message creation time
+      // ⚠️ CRITICAL: Capture context ONCE at message creation time
       // This metadata is stored and NEVER changes (important for prompt cache)
       const systemStatus = getSystemStatus();
 
+      // Capture todo context snapshot at message creation time
+      const currentSession = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
+      const todos = currentSession?.todos || [];
+      const todoContext = buildTodoContext(todos);
+
       // Add user message to session with metadata (not in display content)
-      // Design decision: System status is in metadata, NOT in content
+      // Design decision: System status and todo context are in metadata, NOT in content
       // - content: What user actually typed (shown in UI)
       // - metadata: System context for LLM (not shown in UI)
+      //   - cpu, memory: System resource usage
+      //   - todoContext: Snapshot of todos at message creation time
       addMessage(
         currentSessionId,
         'user',
@@ -98,7 +105,11 @@ export function useChat() {
         attachments,
         undefined, // usage (only for assistant messages)
         undefined, // finishReason (only for assistant messages)
-        { cpu: systemStatus.cpu, memory: systemStatus.memory } // metadata (for LLM, not UI)
+        {
+          cpu: systemStatus.cpu,
+          memory: systemStatus.memory,
+          todoContext: todoContext, // Snapshot, not dynamic
+        }
       );
 
       // Get updated session (after addMessage)
@@ -128,9 +139,10 @@ export function useChat() {
           if (msg.role === 'user') {
             const contentParts: any[] = [];
 
-            // 1. Inject system status from STORED metadata (not current values!)
+            // 1. Inject context from STORED metadata (not current values!)
             //    ⚠️ Using stored metadata preserves prompt cache - messages stay immutable
             if (msg.metadata) {
+              // System status
               const systemStatusString = buildSystemStatusFromMetadata({
                 timestamp: new Date(msg.timestamp).toISOString(),
                 cpu: msg.metadata.cpu || 'N/A',
@@ -140,6 +152,14 @@ export function useChat() {
                 type: 'text',
                 text: systemStatusString,
               });
+
+              // Todo context (if exists - captured at message creation time)
+              if (msg.metadata.todoContext) {
+                contentParts.push({
+                  type: 'text',
+                  text: msg.metadata.todoContext,
+                });
+              }
             }
 
             // 2. Extract text parts from content (user message)
@@ -199,9 +219,6 @@ export function useChat() {
       // Get model using provider registry with full config
       const model = providerInstance.createClient(providerConfig, modelName);
 
-      // Get current session for todos
-      const currentSession = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
-
       // Create AI stream with context injection callbacks
       //
       // Why we use callbacks instead of hardcoded injection:
@@ -209,43 +226,13 @@ export function useChat() {
       // - Allows different contexts for different use cases
       // - Separates concerns: ai-sdk.ts handles streaming, useChat handles context
       //
+      // Note: Todo context is now stored in metadata (like system status)
+      // It's injected when building ModelMessage, not here in onPrepareMessages
+      // This ensures prompt cache effectiveness (historical messages immutable)
+      //
       const stream = createAIStream({
         model,
         messages,
-
-        // onPrepareMessages: Inject dynamic context at EVERY step (not saved to history)
-        //
-        // Called before each step of multi-step execution.
-        // Injected messages are TEMPORARY - only for this step, not saved to history.
-        //
-        // Why inject todos here?
-        // - Todos change during execution (pending → in_progress → completed)
-        // - LLM needs latest todo state at each step
-        // - But we DON'T want to save todos in message history (bloat + not user content)
-        //
-        // Why use session's todos?
-        // - Todos are per-session (not global) to prevent cross-contamination
-        // - Each session has independent task context
-        //
-        // ⚠️ IMPORTANT: Todo context is placed at the BEGINNING of messages, not the end!
-        // If placed at end, LLM thinks user is asking about todos (last message has most weight)
-        // Placing at beginning treats it as context, not as user's question.
-        //
-        onPrepareMessages: (messageHistory, stepNumber) => {
-          const session = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
-          const todos = session?.todos || [];
-          const todoContext = buildTodoContext(todos);
-
-          // Place todo context at the BEGINNING as system message
-          // This prevents LLM from thinking user is asking about todos
-          return [
-            {
-              role: 'system' as const,
-              content: todoContext, // System messages use string content (not array)
-            },
-            ...messageHistory,
-          ];
-        },
 
         // onTransformToolResult: Inject system status into tool outputs
         //

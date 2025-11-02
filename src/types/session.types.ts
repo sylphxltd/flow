@@ -59,8 +59,9 @@ export interface TokenUsage {
  * - content: Shown in UI AND sent to LLM
  */
 export interface MessageMetadata {
-  cpu?: string;      // CPU usage at creation time (e.g., "45.3% (8 cores)")
-  memory?: string;   // Memory usage at creation time (e.g., "4.2GB/16.0GB")
+  cpu?: string;         // CPU usage at creation time (e.g., "45.3% (8 cores)")
+  memory?: string;      // Memory usage at creation time (e.g., "4.2GB/16.0GB")
+  todoContext?: string; // Todo context snapshot at creation time (for LLM, not UI)
   // Future: add more fields as needed (sessionId, requestId, modelVersion, etc.)
 }
 
