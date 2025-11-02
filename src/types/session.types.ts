@@ -45,9 +45,8 @@ export interface TokenUsage {
  */
 export interface SessionMessage {
   role: 'user' | 'assistant';
-  content: string;
+  content: MessagePart[];
   timestamp: number;
-  parts?: MessagePart[];
   attachments?: FileAttachment[];
   usage?: TokenUsage;
   finishReason?: string;

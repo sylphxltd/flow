@@ -58,7 +58,9 @@ export function useChat() {
 
     // Handle configuration errors as assistant messages
     if (!providerConfig) {
-      addMessage(currentSessionId, 'assistant', '❌ Error: Provider not configured\n\nPlease configure your provider using the /provider command.');
+      addMessage(currentSessionId, 'assistant', [
+        { type: 'text', content: '❌ Error: Provider not configured\n\nPlease configure your provider using the /provider command.' }
+      ]);
       onComplete?.();
       return;
     }
@@ -66,7 +68,9 @@ export function useChat() {
     // Check if provider is properly configured using provider's own logic
     const providerInstance = getProvider(provider);
     if (!providerInstance.isConfigured(providerConfig)) {
-      addMessage(currentSessionId, 'assistant', `❌ Error: ${providerInstance.name} is not properly configured\n\nPlease check your settings with the /provider command.`);
+      addMessage(currentSessionId, 'assistant', [
+        { type: 'text', content: `❌ Error: ${providerInstance.name} is not properly configured\n\nPlease check your settings with the /provider command.` }
+      ]);
       onComplete?.();
       return;
     }
@@ -78,12 +82,14 @@ export function useChat() {
       }
 
       // Add user message to session (original message without file contents or system status)
-      addMessage(currentSessionId, 'user', message, undefined, attachments);
+      addMessage(currentSessionId, 'user', [
+        { type: 'text', content: message }
+      ], attachments);
 
       // Build messages with content parts (supports text, files, images)
       const messages: ModelMessage[] = await Promise.all(
-        [...currentSession.messages, { role: 'user' as const, content: message, timestamp: Date.now(), attachments }].map(async (msg) => {
-          // User messages: inject system status + convert to content parts
+        [...currentSession.messages, { role: 'user' as const, content: [{ type: 'text' as const, content: message }], timestamp: Date.now(), attachments }].map(async (msg) => {
+          // User messages: inject system status + extract text from parts
           if (msg.role === 'user') {
             const contentParts: any[] = [];
 
@@ -94,11 +100,14 @@ export function useChat() {
               text: systemStatus,
             });
 
-            // 2. Add main message text
-            contentParts.push({
-              type: 'text',
-              text: msg.content,
-            });
+            // 2. Add main message text (extract from parts)
+            const textParts = msg.content.filter((part) => part.type === 'text');
+            for (const part of textParts) {
+              contentParts.push({
+                type: 'text',
+                text: (part as any).content,
+              });
+            }
 
             // 3. Add file attachments as file parts
             if (msg.attachments && msg.attachments.length > 0) {
@@ -132,10 +141,15 @@ export function useChat() {
             };
           }
 
-          // Assistant messages: keep as is (already in correct format from AI SDK)
+          // Assistant messages: convert parts to AI SDK format
+          const textParts = msg.content
+            .filter((part) => part.type === 'text')
+            .map((part: any) => part.content)
+            .join('\n');
+
           return {
             role: msg.role as 'assistant',
-            content: msg.content,
+            content: textParts,
           };
         })
       );
@@ -219,7 +233,7 @@ export function useChat() {
       addDebugLog('[useChat] stream complete');
 
       // Add assistant message to session with parts and usage
-      addMessage(currentSessionId, 'assistant', fullResponse, messageParts, undefined, usage, finishReason);
+      addMessage(currentSessionId, 'assistant', messageParts, undefined, usage, finishReason);
 
       // Then trigger UI update
       onComplete?.();
@@ -248,7 +262,9 @@ export function useChat() {
       }`;
 
       // Add error as assistant message so user can see it in chat
-      addMessage(sessionId, 'assistant', displayError);
+      addMessage(sessionId, 'assistant', [
+        { type: 'error', error: displayError }
+      ]);
       addDebugLog('[useChat] Error message added, calling onComplete');
 
       // Trigger UI update after adding error message

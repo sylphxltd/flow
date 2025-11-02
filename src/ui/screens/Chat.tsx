@@ -917,8 +917,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
         // Messages tokens
         for (const msg of currentSession.messages) {
-          // Count main content
-          total += await countTokens(msg.content, currentSession.model);
+          // Count main content (extract text from parts)
+          const textContent = msg.content
+            .filter((part) => part.type === 'text')
+            .map((part: any) => part.content)
+            .join('\n');
+          total += await countTokens(textContent, currentSession.model);
 
           // Count attachments if any
           if (msg.attachments && msg.attachments.length > 0) {
@@ -1289,9 +1293,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Box>
                       <Text color="#00D9FF">▌ YOU</Text>
                     </Box>
-                    <Box marginLeft={2}>
-                      <MarkdownText>{msg.content}</MarkdownText>
-                    </Box>
+                    {/* Render content parts */}
+                    {msg.content.map((part, idx) => (
+                      <MessagePart key={idx} part={part} />
+                    ))}
                     {/* Display attachments if any */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <Box flexDirection="column" marginTop={1}>
@@ -1316,16 +1321,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Box>
                       <Text color="#00FF88">▌ SYLPHX</Text>
                     </Box>
-                    {/* Render parts if available, otherwise fallback to content */}
-                    {msg.parts && msg.parts.length > 0 ? (
-                      msg.parts.map((part, idx) => (
-                        <MessagePart key={idx} part={part} />
-                      ))
-                    ) : (
-                      <Box marginLeft={2}>
-                        <MarkdownText>{msg.content}</MarkdownText>
-                      </Box>
-                    )}
+                    {/* Render content parts */}
+                    {msg.content.map((part, idx) => (
+                      <MessagePart key={idx} part={part} />
+                    ))}
                     {/* Show usage if available - simplified */}
                     {msg.usage && (
                       <Box marginLeft={2}>

@@ -38,7 +38,7 @@ export interface AppState {
   updateSessionModel: (sessionId: string, model: string) => void;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, parts?: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string) => void;
+  addMessage: (sessionId: string, role: 'user' | 'assistant', content: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
@@ -160,7 +160,7 @@ export const useAppStore = create<AppState>()(
           session.title = title;
         }
       }),
-    addMessage: (sessionId, role, content, parts, attachments, usage, finishReason) =>
+    addMessage: (sessionId, role, content, attachments, usage, finishReason) =>
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -168,7 +168,6 @@ export const useAppStore = create<AppState>()(
             role,
             content,
             timestamp: Date.now(),
-            ...(parts !== undefined && { parts }),
             ...(attachments !== undefined && attachments.length > 0 && { attachments }),
             ...(usage !== undefined && { usage }),
             ...(finishReason !== undefined && { finishReason }),
