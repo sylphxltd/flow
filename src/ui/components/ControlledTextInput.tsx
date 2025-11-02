@@ -117,7 +117,7 @@ export default function ControlledTextInput({
       if (process.env.DEBUG_INPUT) {
         console.log('[INPUT]', {
           input: JSON.stringify(input),
-          key: Object.keys(key).filter((k) => key[k as keyof typeof key]),
+          keys: Object.keys(key).filter((k) => key[k as keyof typeof key]),
           value: JSON.stringify(value),
           cursor,
         });
@@ -189,18 +189,25 @@ export default function ControlledTextInput({
       // Deletion (Character)
       // ===========================================
 
-      // Backspace or Ctrl+H - delete char left
-      if (key.backspace || (key.ctrl && input?.toLowerCase() === 'h')) {
-        if (cursor === 0) return;
-        const before = value.slice(0, cursor - 1);
-        const after = value.slice(cursor);
-        onChange(before + after);
-        onCursorChange(cursor - 1);
-        return;
+      // Delete (Mac) or Backspace (Windows/Linux) or Ctrl+H - delete char left (backward)
+      // Note: Mac Delete key maps to key.delete, but should delete backward like Backspace
+      if (key.delete || key.backspace || (key.ctrl && input?.toLowerCase() === 'h')) {
+        // Don't delete if combined with meta (that's word delete)
+        if (key.meta) {
+          // Fall through to word deletion below
+        } else {
+          if (cursor === 0) return;
+          const before = value.slice(0, cursor - 1);
+          const after = value.slice(cursor);
+          onChange(before + after);
+          onCursorChange(cursor - 1);
+          return;
+        }
       }
 
-      // Delete or Ctrl+D - delete char right
-      if (key.delete || (key.ctrl && input?.toLowerCase() === 'd')) {
+      // Ctrl+D - delete char right (forward)
+      // Note: No standalone forward delete key on Mac (would need Fn+Delete which we can't detect)
+      if (key.ctrl && input?.toLowerCase() === 'd') {
         if (cursor >= value.length) return;
         const before = value.slice(0, cursor);
         const after = value.slice(cursor + 1);
@@ -297,16 +304,22 @@ export default function ControlledTextInput({
       }
 
       // ===========================================
-      // Enter - Submit or Newline
+      // Submit
+      // ===========================================
+
+      // Ctrl+S - Submit (since Command+Return cannot be detected in CLI)
+      if (key.ctrl && input?.toLowerCase() === 's') {
+        onSubmit?.(value);
+        return;
+      }
+
+      // ===========================================
+      // Enter - Newline
       // ===========================================
 
       if (key.return && !input) {
-        if (key.meta) {
-          // Command+Enter (Mac) - submit
-          onSubmit?.(value);
-          return;
-        }
         // Regular Enter - insert newline
+        // Note: Cannot detect Command+Return in CLI environment
         const before = value.slice(0, cursor);
         const after = value.slice(cursor);
         onChange(before + '\n' + after);
