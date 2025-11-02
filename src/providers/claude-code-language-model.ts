@@ -97,8 +97,8 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         // Handle both array and non-array content
         const content = Array.isArray(message.content) ? message.content : [message.content];
         const textParts = content
-          .filter((part: any) => typeof part === 'object' && part.type === 'text')
-          .map((part: any) => part.text);
+          .filter((part) => typeof part === 'object' && part.type === 'text')
+          .map((part) => part.text);
 
         if (textParts.length > 0) {
           promptParts.push(textParts.join('\n'));
@@ -107,8 +107,8 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         // Handle both array and non-array content
         const content = Array.isArray(message.content) ? message.content : [message.content];
         const textParts = content
-          .filter((part: any) => typeof part === 'object' && part.type === 'text')
-          .map((part: any) => part.text);
+          .filter((part) => typeof part === 'object' && part.type === 'text')
+          .map((part) => part.text);
 
         if (textParts.length > 0) {
           // Prefix assistant messages for context
@@ -199,6 +199,12 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         queryOptions.systemPrompt = systemPrompt;
       }
 
+      // Add maxThinkingTokens from providerOptions if provided
+      const providerOptions = options.providerOptions?.['claude-code'] as Record<string, any> | undefined;
+      if (providerOptions?.maxThinkingTokens) {
+        queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens as number;
+      }
+
       // Execute query
       const queryResult = query({
         prompt: promptString,
@@ -216,7 +222,13 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
           // Extract content from assistant message
           const content = event.message.content;
           for (const block of content) {
-            if (block.type === 'text') {
+            if (block.type === 'thinking') {
+              // Handle thinking/reasoning blocks
+              contentParts.push({
+                type: 'reasoning',
+                reasoning: block.thinking,
+              });
+            } else if (block.type === 'text') {
               // Parse text for tool calls if tools are available
               if (tools && Object.keys(tools).length > 0) {
                 const parsedBlocks = parseContentBlocks(block.text);
@@ -322,10 +334,18 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         // Disable all Claude Code built-in tools
         settingSources: [],
         disallowedTools: CLAUDE_CODE_BUILTIN_TOOLS,
+        // Enable partial messages for streaming events
+        includePartialMessages: true,
       };
 
       if (systemPrompt) {
         queryOptions.systemPrompt = systemPrompt;
+      }
+
+      // Add maxThinkingTokens from providerOptions if provided
+      const providerOptions = options.providerOptions?.['claude-code'] as Record<string, any> | undefined;
+      if (providerOptions?.maxThinkingTokens) {
+        queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens as number;
       }
 
       // Execute query
@@ -342,105 +362,138 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             let outputTokens = 0;
             let finishReason: LanguageModelV2FinishReason = 'stop';
             let hasStartedText = false;
+            // Track thinking block indices for streaming
+            const thinkingBlockIndices = new Set<number>();
+            // XML parser for streaming tool call detection
+            const xmlParser = tools && Object.keys(tools).length > 0 ? new StreamingXMLParser() : null;
 
             for await (const event of queryResult) {
-              if (event.type === 'assistant') {
-                // Extract content from assistant message
-                const content = event.message.content;
-                for (const block of content) {
-                  if (block.type === 'text') {
-                    // Parse text for tool calls if tools are available
-                    if (tools && Object.keys(tools).length > 0) {
-                      // Use streaming XML parser for incremental parsing
-                      const parser = new StreamingXMLParser();
-                      const CHUNK_SIZE = 5; // Characters per chunk for smooth streaming
+              // Handle streaming events from Anthropic SDK
+              if (event.type === 'stream_event') {
+                const streamEvent = event.event;
 
-                      // Feed text chunk by chunk to simulate streaming
-                      for (let i = 0; i < block.text.length; i += CHUNK_SIZE) {
-                        const chunk = block.text.slice(i, i + CHUNK_SIZE);
-                        for (const xmlEvent of parser.processChunk(chunk)) {
-                          // Convert XML parser events to Vercel AI SDK events
-                          if (xmlEvent.type === 'text-start') {
-                            controller.enqueue({
-                              type: 'text-start',
-                              id: 'text-0',
-                            });
-                            hasStartedText = true;
-                          } else if (xmlEvent.type === 'text-delta') {
-                            controller.enqueue({
-                              type: 'text-delta',
-                              id: 'text-0',
-                              delta: xmlEvent.delta,
-                            });
-                          } else if (xmlEvent.type === 'text-end') {
-                            controller.enqueue({
-                              type: 'text-end',
-                              id: 'text-0',
-                            });
-                          } else if (xmlEvent.type === 'tool-input-start') {
-                            controller.enqueue({
-                              type: 'tool-input-start',
-                              id: xmlEvent.toolCallId,
-                              toolName: xmlEvent.toolName,
-                            });
-                          } else if (xmlEvent.type === 'tool-input-delta') {
-                            controller.enqueue({
-                              type: 'tool-input-delta',
-                              id: xmlEvent.toolCallId,
-                              delta: xmlEvent.delta,
-                            });
-                          } else if (xmlEvent.type === 'tool-input-end') {
-                            controller.enqueue({
-                              type: 'tool-input-end',
-                              id: xmlEvent.toolCallId,
-                            });
-                          } else if (xmlEvent.type === 'tool-call-complete') {
-                            controller.enqueue({
-                              type: 'tool-call',
-                              toolCallId: xmlEvent.toolCallId,
-                              toolName: xmlEvent.toolName,
-                              input: JSON.stringify(xmlEvent.arguments),
-                            });
-                            finishReason = 'tool-calls';
-                          }
-                        }
-                      }
+                // Handle content block start (thinking or text)
+                if (streamEvent.type === 'content_block_start') {
+                  if (streamEvent.content_block.type === 'thinking') {
+                    // Start of thinking block - emit reasoning-start
+                    thinkingBlockIndices.add(streamEvent.index);
+                    controller.enqueue({
+                      type: 'reasoning-start',
+                      id: `reasoning-${streamEvent.index}`,
+                    });
+                  }
+                }
+                // Handle content block deltas
+                else if (streamEvent.type === 'content_block_delta') {
+                  if (streamEvent.delta.type === 'thinking_delta') {
+                    // Thinking delta - emit reasoning-delta
+                    controller.enqueue({
+                      type: 'reasoning-delta',
+                      id: `reasoning-${streamEvent.index}`,
+                      delta: streamEvent.delta.thinking,
+                    });
+                  } else if (streamEvent.delta.type === 'text_delta') {
+                    // Text delta - emit text-delta
+                    if (!hasStartedText) {
+                      controller.enqueue({
+                        type: 'text-start',
+                        id: 'text-0',
+                      });
+                      hasStartedText = true;
+                    }
+                    controller.enqueue({
+                      type: 'text-delta',
+                      id: 'text-0',
+                      delta: streamEvent.delta.text,
+                    });
 
-                      // Flush any remaining content
-                      for (const xmlEvent of parser.flush()) {
-                        if (xmlEvent.type === 'text-delta') {
+                    // If tools are available, parse text for tool calls
+                    if (xmlParser) {
+                      for (const xmlEvent of xmlParser.processChunk(streamEvent.delta.text)) {
+                        if (xmlEvent.type === 'tool-input-start') {
                           controller.enqueue({
-                            type: 'text-delta',
-                            id: 'text-0',
+                            type: 'tool-input-start',
+                            id: xmlEvent.toolCallId,
+                            toolName: xmlEvent.toolName,
+                          });
+                        } else if (xmlEvent.type === 'tool-input-delta') {
+                          controller.enqueue({
+                            type: 'tool-input-delta',
+                            id: xmlEvent.toolCallId,
                             delta: xmlEvent.delta,
                           });
-                        } else if (xmlEvent.type === 'text-end') {
+                        } else if (xmlEvent.type === 'tool-input-end') {
                           controller.enqueue({
-                            type: 'text-end',
-                            id: 'text-0',
+                            type: 'tool-input-end',
+                            id: xmlEvent.toolCallId,
                           });
-                        }
-                      }
-                    } else {
-                      // No tools, just emit text chunks
-                      const CHUNK_SIZE = 5;
-                      for (let i = 0; i < block.text.length; i += CHUNK_SIZE) {
-                        if (i === 0) {
+                        } else if (xmlEvent.type === 'tool-call-complete') {
                           controller.enqueue({
-                            type: 'text-start',
-                            id: 'text-0',
+                            type: 'tool-call',
+                            toolCallId: xmlEvent.toolCallId,
+                            toolName: xmlEvent.toolName,
+                            input: JSON.stringify(xmlEvent.arguments),
                           });
-                          hasStartedText = true;
+                          finishReason = 'tool-calls';
                         }
-
-                        const chunk = block.text.slice(i, i + CHUNK_SIZE);
-                        controller.enqueue({
-                          type: 'text-delta',
-                          id: 'text-0',
-                          delta: chunk,
-                        });
                       }
                     }
+                  }
+                }
+                // Handle content block stop
+                else if (streamEvent.type === 'content_block_stop') {
+                  if (thinkingBlockIndices.has(streamEvent.index)) {
+                    // End of thinking block - emit reasoning-end
+                    controller.enqueue({
+                      type: 'reasoning-end',
+                      id: `reasoning-${streamEvent.index}`,
+                    });
+                    thinkingBlockIndices.delete(streamEvent.index);
+                  } else if (hasStartedText) {
+                    // End of text block - flush XML parser if tools are available
+                    if (xmlParser) {
+                      for (const xmlEvent of xmlParser.flush()) {
+                        if (xmlEvent.type === 'tool-input-delta') {
+                          controller.enqueue({
+                            type: 'tool-input-delta',
+                            id: xmlEvent.toolCallId,
+                            delta: xmlEvent.delta,
+                          });
+                        } else if (xmlEvent.type === 'tool-input-end') {
+                          controller.enqueue({
+                            type: 'tool-input-end',
+                            id: xmlEvent.toolCallId,
+                          });
+                        } else if (xmlEvent.type === 'tool-call-complete') {
+                          controller.enqueue({
+                            type: 'tool-call',
+                            toolCallId: xmlEvent.toolCallId,
+                            toolName: xmlEvent.toolName,
+                            input: JSON.stringify(xmlEvent.arguments),
+                          });
+                          finishReason = 'tool-calls';
+                        }
+                      }
+                    }
+
+                    // Emit text-end
+                    controller.enqueue({
+                      type: 'text-end',
+                      id: 'text-0',
+                    });
+                  }
+                }
+              } else if (event.type === 'assistant') {
+                // Extract content from assistant message
+                // Note: With includePartialMessages: true, content has already been streamed
+                // via stream_event. We only need to handle final metadata here.
+                const content = event.message.content;
+                for (const block of content) {
+                  if (block.type === 'thinking') {
+                    // Thinking blocks are handled via stream_event
+                  } else if (block.type === 'text') {
+                    // Text has already been streamed via stream_event with includePartialMessages: true
+                    // Skip re-emitting to avoid duplication
                   }
                 }
 
@@ -492,7 +545,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                 outputTokens: outputTokens,
                 totalTokens: inputTokens + outputTokens,
               },
-              providerMetadata: undefined,
+              providerMetadata: {},
             });
 
             controller.close();
