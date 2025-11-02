@@ -26,16 +26,44 @@ export const updateTodosTool = tool({
   }),
   execute: async ({ todos }) => {
     const store = useAppStore.getState();
+    const beforeState = store.todos;
+
     store.updateTodos(todos);
 
-    const added = todos.filter((t) => t.id === undefined).length;
-    const updated = todos.filter((t) => t.id !== undefined).length;
+    const afterState = store.todos;
 
-    const parts: string[] = [];
-    if (added > 0) parts.push(`${added} added`);
-    if (updated > 0) parts.push(`${updated} updated`);
+    // Categorize changes
+    const addedTodos = todos.filter((t) => t.id === undefined);
+    const updatedTodos = todos.filter((t) => t.id !== undefined);
 
-    return `Todos updated: ${parts.join(', ') || 'no changes'}`;
+    // Build result
+    const changes: string[] = [];
+
+    if (addedTodos.length > 0) {
+      addedTodos.forEach((t) => {
+        changes.push(`+ ${t.content}`);
+      });
+    }
+
+    if (updatedTodos.length > 0) {
+      updatedTodos.forEach((t) => {
+        const before = beforeState.find((todo) => todo.id === t.id);
+        const after = afterState.find((todo) => todo.id === t.id);
+        if (before && after) {
+          if (t.status && t.status !== before.status) {
+            changes.push(`[${t.id}] ${before.status} → ${t.status}`);
+          } else if (t.reorder) {
+            changes.push(`[${t.id}] reordered to ${t.reorder.type}`);
+          }
+        }
+      });
+    }
+
+    return {
+      summary: `${addedTodos.length} added, ${updatedTodos.length} updated`,
+      changes: changes.length > 0 ? changes : ['No changes'],
+      total: afterState.filter((t) => t.status !== 'removed').length,
+    };
   },
 });
 

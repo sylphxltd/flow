@@ -1116,16 +1116,56 @@ const contextCommand: Command = {
 
     const modelName = currentSession.model;
 
-    // Get model context limit (default to 200k for Claude Sonnet 4.5)
-    // TODO: Get actual limit from model metadata
-    const contextLimit = 200000;
+    // Get model-specific context limit
+    const getContextLimit = (model: string): number => {
+      // Default limits for common models
+      if (model.includes('gpt-4')) {
+        if (model.includes('32k') || model.includes('turbo')) return 128000;
+        if (model.includes('vision')) return 128000;
+        return 8192; // Original GPT-4
+      }
+      if (model.includes('gpt-3.5')) {
+        if (model.includes('16k')) return 16385;
+        return 4096; // Original GPT-3.5
+      }
+      // Claude models
+      if (model.includes('claude-3')) {
+        if (model.includes('opus')) return 200000;
+        if (model.includes('sonnet')) return 200000;
+        if (model.includes('haiku')) return 200000;
+      }
+      // Default fallback
+      return 200000;
+    };
+
+    const contextLimit = getContextLimit(modelName);
 
     // Calculate token counts
-    context.addLog('[Context] Calculating token counts...');
+    context.addLog(`[Context] Calculating token counts for ${modelName} (limit: ${formatTokenCount(contextLimit)})...`);
 
     // System prompt tokens - use the actual system prompt that gets sent
     const systemPrompt = getSystemPrompt();
     const systemPromptTokens = await countTokens(systemPrompt, modelName);
+    
+    // Also calculate breakdown of system prompt components for debugging
+    const { getEnabledRulesContent } = await import('../../core/rule-manager.js');
+    const { getCurrentSystemPrompt } = await import('../../core/agent-manager.js');
+    const BASE_SYSTEM_PROMPT = `You are Sylphx, an AI development assistant.`;
+    
+    let systemPromptBreakdown: Record<string, number> = {};
+    try {
+      systemPromptBreakdown['Base prompt'] = await countTokens(BASE_SYSTEM_PROMPT, modelName);
+      
+      const rulesContent = getEnabledRulesContent();
+      if (rulesContent) {
+        systemPromptBreakdown['Rules'] = await countTokens(rulesContent, modelName);
+      }
+      
+      const agentPrompt = getCurrentSystemPrompt();
+      systemPromptBreakdown['Agent prompt'] = await countTokens(agentPrompt, modelName);
+    } catch (error) {
+      context.addLog(`[Context] Failed to calculate system prompt breakdown: ${error}`);
+    }
 
     // System tools tokens (calculate individual tool tokens)
     const tools = getAISDKTools();
@@ -1223,6 +1263,11 @@ const contextCommand: Command = {
       .map(([name, tokens]) => `    ${name}: ${formatTokenCount(tokens)} tokens`)
       .join('\n');
 
+    // Format system prompt breakdown
+    const systemPromptBreakdownText = Object.entries(systemPromptBreakdown)
+      .map(([name, tokens]) => `    ${name}: ${formatTokenCount(tokens)} tokens`)
+      .join('\n');
+
     // Format output with clean visual hierarchy
     const output = `
 Context Usage: ${formatTokenCount(usedTokens)}/${formatTokenCount(contextLimit)} tokens (${usedPercent}%)
@@ -1236,6 +1281,9 @@ Visual Breakdown:
 Available Space:
   • Free: ${formatTokenCount(realFreeTokens)} tokens (${freePercent}%)
   • Buffer: ${formatTokenCount(autocompactBuffer)} tokens (${bufferPercent}%)
+
+System Prompt Breakdown:
+${systemPromptBreakdownText}
 
 System Tools (${Object.keys(tools).length} total):
 ${toolList}
