@@ -8,7 +8,7 @@ import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 import type { Session, MessagePart, FileAttachment, TokenUsage } from '../../types/session.types.js';
-import type { Todo } from '../../types/todo.types.js';
+import type { Todo, TodoUpdate } from '../../types/todo.types.js';
 import { saveSession as saveSessionToFile } from '../../utils/session-manager.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
@@ -63,7 +63,8 @@ export interface AppState {
 
   // Todo State
   todos: Todo[];
-  setTodos: (todos: Todo[]) => void;
+  nextTodoId: number;
+  updateTodos: (updates: TodoUpdate[]) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -226,9 +227,81 @@ export const useAppStore = create<AppState>()(
 
     // Todo State
     todos: [],
-    setTodos: (todos) =>
+    nextTodoId: 1,
+    updateTodos: (updates) =>
       set((state) => {
-        state.todos = todos;
+        for (const update of updates) {
+          if (update.id === undefined || update.id === null) {
+            // Add new todo
+            const newId = state.nextTodoId;
+            const maxOrdering = state.todos.length > 0
+              ? Math.max(...state.todos.map((t) => t.ordering))
+              : 0;
+
+            state.todos.push({
+              id: newId,
+              content: update.content || '',
+              activeForm: update.activeForm || '',
+              status: update.status || 'pending',
+              ordering: maxOrdering + 10,
+            });
+            state.nextTodoId = newId + 1;
+          } else {
+            // Update existing todo
+            const todo = state.todos.find((t) => t.id === update.id);
+            if (!todo) continue;
+
+            // Update fields
+            if (update.content !== undefined) todo.content = update.content;
+            if (update.activeForm !== undefined) todo.activeForm = update.activeForm;
+            if (update.status !== undefined) todo.status = update.status;
+
+            // Handle reordering
+            if (update.reorder) {
+              const { type, id: targetId } = update.reorder;
+
+              if (type === 'top') {
+                const minOrdering = Math.min(...state.todos.map((t) => t.ordering));
+                todo.ordering = minOrdering - 10;
+              } else if (type === 'last') {
+                const maxOrdering = Math.max(...state.todos.map((t) => t.ordering));
+                todo.ordering = maxOrdering + 10;
+              } else if (type === 'before' && targetId !== undefined) {
+                const target = state.todos.find((t) => t.id === targetId);
+                if (target) {
+                  // Find the todo before target (higher ordering)
+                  const sorted = [...state.todos].sort((a, b) => b.ordering - a.ordering || a.id - b.id);
+                  const targetIdx = sorted.findIndex((t) => t.id === targetId);
+                  const before = targetIdx > 0 ? sorted[targetIdx - 1] : null;
+
+                  if (before) {
+                    // Insert between before and target
+                    todo.ordering = Math.floor((before.ordering + target.ordering) / 2);
+                  } else {
+                    // Target is first, put this todo before it
+                    todo.ordering = target.ordering + 10;
+                  }
+                }
+              } else if (type === 'after' && targetId !== undefined) {
+                const target = state.todos.find((t) => t.id === targetId);
+                if (target) {
+                  // Find the todo after target (lower ordering)
+                  const sorted = [...state.todos].sort((a, b) => b.ordering - a.ordering || a.id - b.id);
+                  const targetIdx = sorted.findIndex((t) => t.id === targetId);
+                  const after = targetIdx < sorted.length - 1 ? sorted[targetIdx + 1] : null;
+
+                  if (after) {
+                    // Insert between target and after
+                    todo.ordering = Math.floor((target.ordering + after.ordering) / 2);
+                  } else {
+                    // Target is last, put this todo after it
+                    todo.ordering = target.ordering - 10;
+                  }
+                }
+              }
+            }
+          }
+        }
       }),
     }))
   )

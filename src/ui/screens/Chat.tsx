@@ -1039,25 +1039,33 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
-    // Get pending and in-progress todos
-    const activeTodos = todos.filter((t) => t.status !== 'completed');
+    // Get pending and in-progress todos (exclude completed and removed)
+    const activeTodos = todos.filter((t) => t.status !== 'completed' && t.status !== 'removed');
 
     // Build todo reminder if there are active todos
     let messageWithContext = userMessage;
     if (activeTodos.length > 0) {
-      const pendingTodos = activeTodos.filter((t) => t.status === 'pending');
-      const inProgressTodos = activeTodos.filter((t) => t.status === 'in_progress');
+      // Sort by ordering DESC, id ASC
+      const sortedTodos = [...activeTodos].sort((a, b) => {
+        if (a.ordering !== b.ordering) {
+          return b.ordering - a.ordering;
+        }
+        return a.id - b.id;
+      });
+
+      const pendingTodos = sortedTodos.filter((t) => t.status === 'pending');
+      const inProgressTodos = sortedTodos.filter((t) => t.status === 'in_progress');
 
       const todoLines: string[] = ['<pending_tasks>'];
 
       if (inProgressTodos.length > 0) {
         todoLines.push('In Progress:');
-        inProgressTodos.forEach((t) => todoLines.push(`  - ${t.activeForm}`));
+        inProgressTodos.forEach((t) => todoLines.push(`  - [${t.id}] ${t.activeForm}`));
       }
 
       if (pendingTodos.length > 0) {
         todoLines.push('Pending:');
-        pendingTodos.forEach((t) => todoLines.push(`  - ${t.content}`));
+        pendingTodos.forEach((t) => todoLines.push(`  - [${t.id}] ${t.content}`));
       }
 
       todoLines.push('</pending_tasks>');

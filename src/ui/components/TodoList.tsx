@@ -12,15 +12,23 @@ interface TodoListProps {
 }
 
 export default function TodoList({ todos }: TodoListProps) {
-  // Only show pending and in_progress todos
-  const activeTodos = todos.filter((t) => t.status !== 'completed');
+  // Filter out completed and removed todos
+  const activeTodos = todos.filter((t) => t.status !== 'completed' && t.status !== 'removed');
 
   if (activeTodos.length === 0) {
     return null;
   }
 
-  const pendingTodos = activeTodos.filter((t) => t.status === 'pending');
-  const inProgressTodos = activeTodos.filter((t) => t.status === 'in_progress');
+  // Sort by ordering DESC, id ASC
+  const sortedTodos = [...activeTodos].sort((a, b) => {
+    if (a.ordering !== b.ordering) {
+      return b.ordering - a.ordering; // Higher ordering first
+    }
+    return a.id - b.id; // Lower id first if same ordering
+  });
+
+  const pendingTodos = sortedTodos.filter((t) => t.status === 'pending');
+  const inProgressTodos = sortedTodos.filter((t) => t.status === 'in_progress');
 
   return (
     <Box flexDirection="column" marginBottom={1} paddingX={1} borderStyle="round" borderColor="gray">
@@ -31,19 +39,19 @@ export default function TodoList({ todos }: TodoListProps) {
         </Text>
       </Box>
 
-      {/* In Progress - Show activeForm (present continuous) */}
-      {inProgressTodos.map((todo, idx) => (
-        <Box key={`in-progress-${idx}`}>
+      {/* In Progress - Show [id] activeForm (present continuous) */}
+      {inProgressTodos.map((todo) => (
+        <Box key={`in-progress-${todo.id}`}>
           <Text color="#00FF88">▶ </Text>
+          <Text color="#00FF88" dimColor>[{todo.id}] </Text>
           <Text color="#00FF88">{todo.activeForm}</Text>
         </Box>
       ))}
 
-      {/* Pending - Show content (imperative) */}
-      {pendingTodos.map((todo, idx) => (
-        <Box key={`pending-${idx}`}>
-          <Text dimColor>○ </Text>
-          <Text dimColor>{todo.content}</Text>
+      {/* Pending - Show [id] content (imperative) */}
+      {pendingTodos.map((todo) => (
+        <Box key={`pending-${todo.id}`}>
+          <Text dimColor>○ [{todo.id}] {todo.content}</Text>
         </Box>
       ))}
     </Box>
