@@ -965,7 +965,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               )}
 
               {/* Command Autocomplete - Shows below input when typing / */}
-              {input.startsWith('/') && input.includes(' ') && (
+              {input.startsWith('/') && !filteredFileInfo.hasAt && filteredCommands.length > 0 && (
                 <CommandAutocomplete
                   commands={filteredCommands}
                   selectedCommandIndex={selectedCommandIndex}

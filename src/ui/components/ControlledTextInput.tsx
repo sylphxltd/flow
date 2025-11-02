@@ -121,8 +121,16 @@ export default function ControlledTextInput({
           return;
         }
 
-        // Enter - submit
-        if (key.return) {
+        // Enter - submit (but allow Shift+Enter for newline)
+        // Note: When pasting multi-line text, input will contain '\n' but key.return will be false
+        if (key.return && !input) {
+          // Allow Shift+Enter to insert newline instead of submitting
+          if (key.shift) {
+            const next = currentValue.slice(0, currentCursor) + '\n' + currentValue.slice(currentCursor);
+            onChange(next);
+            safeSetCursor(currentCursor + 1);
+            return;
+          }
           onSubmit?.(currentValue);
           return;
         }
@@ -158,11 +166,12 @@ export default function ControlledTextInput({
           return;
         }
 
-        // Ignore other control key combinations
-        if (key.ctrl || key.meta) return;
+        // Ignore other control key combinations (but allow paste which might have ctrl)
+        if ((key.ctrl || key.meta) && !input) return;
 
         // Insert regular character at cursor position
         // Use refs to handle fast paste - each character uses latest value
+        // Note: Pasted text may contain newlines - preserve them
         if (input) {
           const next = currentValue.slice(0, currentCursor) + input + currentValue.slice(currentCursor);
           const newCursor = currentCursor + input.length;
