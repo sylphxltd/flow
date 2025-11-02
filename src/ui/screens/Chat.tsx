@@ -1052,12 +1052,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
       if (inProgressTodos.length > 0) {
         todoLines.push('In Progress:');
-        inProgressTodos.forEach((t) => todoLines.push(`  - ${t.content} (ID: ${t.id})`));
+        inProgressTodos.forEach((t) => todoLines.push(`  - ${t.activeForm}`));
       }
 
       if (pendingTodos.length > 0) {
         todoLines.push('Pending:');
-        pendingTodos.forEach((t) => todoLines.push(`  - ${t.content} (ID: ${t.id})`));
+        pendingTodos.forEach((t) => todoLines.push(`  - ${t.content}`));
       }
 
       todoLines.push('</pending_tasks>');

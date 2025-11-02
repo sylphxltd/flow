@@ -31,17 +31,17 @@ export default function TodoList({ todos }: TodoListProps) {
         </Text>
       </Box>
 
-      {/* In Progress */}
-      {inProgressTodos.map((todo) => (
-        <Box key={todo.id}>
+      {/* In Progress - Show activeForm (present continuous) */}
+      {inProgressTodos.map((todo, idx) => (
+        <Box key={`in-progress-${idx}`}>
           <Text color="#00FF88">▶ </Text>
-          <Text color="#00FF88">{todo.content}</Text>
+          <Text color="#00FF88">{todo.activeForm}</Text>
         </Box>
       ))}
 
-      {/* Pending */}
-      {pendingTodos.map((todo) => (
-        <Box key={todo.id}>
+      {/* Pending - Show content (imperative) */}
+      {pendingTodos.map((todo, idx) => (
+        <Box key={`pending-${idx}`}>
           <Text dimColor>○ </Text>
           <Text dimColor>{todo.content}</Text>
         </Box>

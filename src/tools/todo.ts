@@ -8,113 +8,54 @@ import { z } from 'zod';
 import { useAppStore } from '../ui/stores/app-store.js';
 
 /**
- * Manage todos - Add, update, or complete tasks
+ * Update todo list - Replace entire todo list
  */
-export const manageTodosTool = tool({
-  description: `Manage your task list to track work progress. Use this to:
-- Add new tasks when starting work on something
-- Update task status as you progress (pending → in_progress → completed)
-- Mark tasks as completed when done
-- Remove tasks that are no longer needed
+export const updateTodosTool = tool({
+  description: `Update your task list to track work progress. The user can see your task list above the input area.
 
-The user can see your task list above the input area to track your progress.
+Usage notes:
+- Call this tool whenever tasks change (add, update status, remove)
+- Provide the complete todo list each time (replaces existing list)
+- Each todo must have:
+  - content: Imperative form (e.g., "Build feature X", "Fix bug Y")
+  - status: pending | in_progress | completed
+  - activeForm: Present continuous form shown during execution (e.g., "Building feature X", "Fixing bug Y")
 
 Best practices:
 - Add a todo BEFORE starting significant work
 - Keep exactly ONE task as "in_progress" at a time
-- Mark completed IMMEDIATELY after finishing (don't batch completions)
-- Remove tasks that become irrelevant
+- Mark completed IMMEDIATELY after finishing (don't batch)
+- Remove tasks from the list when completed (or keep if you want user to see completion)
 - Use clear, action-oriented descriptions
 
-Status meanings:
-- pending: Not started yet
-- in_progress: Currently working on (only one at a time)
-- completed: Finished successfully`,
+Example:
+updateTodos({
+  todos: [
+    { content: "Build login feature", status: "in_progress", activeForm: "Building login feature" },
+    { content: "Write tests", status: "pending", activeForm: "Writing tests" },
+    { content: "Update documentation", status: "pending", activeForm: "Updating documentation" }
+  ]
+})`,
   inputSchema: z.object({
-    action: z.enum(['add', 'update', 'remove', 'list']).describe('Action to perform'),
-    todoId: z.string().optional().describe('Todo ID (required for update/remove)'),
-    content: z.string().optional().describe('Task description (required for add, optional for update)'),
-    status: z.enum(['pending', 'in_progress', 'completed']).optional().describe('Task status (optional for update)'),
+    todos: z.array(z.object({
+      content: z.string().min(1).describe('Task description (imperative form)'),
+      status: z.enum(['pending', 'in_progress', 'completed']).describe('Task status'),
+      activeForm: z.string().min(1).describe('Present continuous form for display during execution'),
+    })).describe('Complete todo list (replaces existing list)'),
   }),
-  execute: async ({ action, todoId, content, status }) => {
+  execute: async ({ todos }) => {
     const store = useAppStore.getState();
+    store.setTodos(todos);
 
-    switch (action) {
-      case 'add': {
-        if (!content) {
-          return 'Error: content is required for add action';
-        }
-        const id = store.addTodo(content);
-        return `Added todo: "${content}" (ID: ${id})`;
-      }
-
-      case 'update': {
-        if (!todoId) {
-          return 'Error: todoId is required for update action';
-        }
-        const todo = store.todos.find((t) => t.id === todoId);
-        if (!todo) {
-          return `Error: Todo with ID ${todoId} not found`;
-        }
-
-        const updates: { content?: string; status?: 'pending' | 'in_progress' | 'completed' } = {};
-        if (content !== undefined) updates.content = content;
-        if (status !== undefined) updates.status = status;
-
-        store.updateTodo(todoId, updates);
-
-        const parts: string[] = [];
-        if (content !== undefined) parts.push(`content: "${content}"`);
-        if (status !== undefined) parts.push(`status: ${status}`);
-
-        return `Updated todo ${todoId}: ${parts.join(', ')}`;
-      }
-
-      case 'remove': {
-        if (!todoId) {
-          return 'Error: todoId is required for remove action';
-        }
-        const todo = store.todos.find((t) => t.id === todoId);
-        if (!todo) {
-          return `Error: Todo with ID ${todoId} not found`;
-        }
-
-        store.removeTodo(todoId);
-        return `Removed todo: "${todo.content}"`;
-      }
-
-      case 'list': {
-        const todos = store.todos;
-        if (todos.length === 0) {
-          return 'No todos';
-        }
-
-        const grouped = {
-          pending: todos.filter((t) => t.status === 'pending'),
-          in_progress: todos.filter((t) => t.status === 'in_progress'),
-          completed: todos.filter((t) => t.status === 'completed'),
-        };
-
-        const lines: string[] = [];
-
-        if (grouped.in_progress.length > 0) {
-          lines.push('In Progress:');
-          grouped.in_progress.forEach((t) => lines.push(`  → ${t.content} (${t.id})`));
-        }
-
-        if (grouped.pending.length > 0) {
-          lines.push('Pending:');
-          grouped.pending.forEach((t) => lines.push(`  ○ ${t.content} (${t.id})`));
-        }
-
-        if (grouped.completed.length > 0) {
-          lines.push('Completed:');
-          grouped.completed.forEach((t) => lines.push(`  ✓ ${t.content} (${t.id})`));
-        }
-
-        return lines.join('\n');
-      }
+    if (todos.length === 0) {
+      return 'Todos cleared';
     }
+
+    const pending = todos.filter((t) => t.status === 'pending').length;
+    const inProgress = todos.filter((t) => t.status === 'in_progress').length;
+    const completed = todos.filter((t) => t.status === 'completed').length;
+
+    return `Todos updated: ${inProgress} in progress, ${pending} pending, ${completed} completed (${todos.length} total)`;
   },
 });
 
@@ -122,5 +63,5 @@ Status meanings:
  * Export all todo tools
  */
 export const todoTools = {
-  manageTodos: manageTodosTool,
+  updateTodos: updateTodosTool,
 };

@@ -6,9 +6,7 @@
 export type TodoStatus = 'pending' | 'in_progress' | 'completed';
 
 export interface Todo {
-  id: string;
   content: string;
   status: TodoStatus;
-  createdAt: number;
-  updatedAt: number;
+  activeForm: string; // Present continuous form (e.g., "Building feature X")
 }

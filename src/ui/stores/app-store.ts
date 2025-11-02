@@ -63,10 +63,7 @@ export interface AppState {
 
   // Todo State
   todos: Todo[];
-  addTodo: (content: string) => string;
-  updateTodo: (id: string, updates: Partial<Pick<Todo, 'content' | 'status'>>) => void;
-  removeTodo: (id: string) => void;
-  clearCompletedTodos: () => void;
+  setTodos: (todos: Todo[]) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -229,40 +226,9 @@ export const useAppStore = create<AppState>()(
 
     // Todo State
     todos: [],
-    addTodo: (content) => {
-      const id = `todo-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      const now = Date.now();
+    setTodos: (todos) =>
       set((state) => {
-        state.todos.push({
-          id,
-          content,
-          status: 'pending',
-          createdAt: now,
-          updatedAt: now,
-        });
-      });
-      return id;
-    },
-    updateTodo: (id, updates) =>
-      set((state) => {
-        const todo = state.todos.find((t) => t.id === id);
-        if (todo) {
-          if (updates.content !== undefined) {
-            todo.content = updates.content;
-          }
-          if (updates.status !== undefined) {
-            todo.status = updates.status;
-          }
-          todo.updatedAt = Date.now();
-        }
-      }),
-    removeTodo: (id) =>
-      set((state) => {
-        state.todos = state.todos.filter((t) => t.id !== id);
-      }),
-    clearCompletedTodos: () =>
-      set((state) => {
-        state.todos = state.todos.filter((t) => t.status !== 'completed');
+        state.todos = todos;
       }),
     }))
   )
