@@ -14,15 +14,15 @@ import { z } from 'zod';
 export const readFileTool = tool({
   description: 'Read contents of a file from the filesystem',
   inputSchema: z.object({
-    file_path: z.string().describe('Absolute or relative path to the file to read (source code, config, documentation, etc.)'),
+    file_path: z.string().describe('Path to file'),
     offset: z
       .number()
       .optional()
-      .describe('Line number to start reading from (1-based)'),
+      .describe('Start line number (1-based)'),
     limit: z
       .number()
       .optional()
-      .describe('Number of lines to read. Use with offset to read specific line ranges'),
+      .describe('Number of lines to read'),
   }),
   execute: async ({ file_path, offset, limit }) => {
     const content = await readFile(file_path, 'utf8');
@@ -55,8 +55,8 @@ export const readFileTool = tool({
 export const writeFileTool = tool({
   description: 'Write content to a file',
   inputSchema: z.object({
-    file_path: z.string().describe('Absolute path to the file to write. Overwrites if exists. Creates parent directories automatically'),
-    content: z.string().describe('The content to write to the file'),
+    file_path: z.string().describe('Path to file (overwrites if exists)'),
+    content: z.string().describe('Content to write'),
   }),
   execute: async ({ file_path, content }) => {
     // Create parent directories if they don't exist
@@ -85,14 +85,14 @@ export const writeFileTool = tool({
 export const editFileTool = tool({
   description: 'Perform exact string replacements in files',
   inputSchema: z.object({
-    file_path: z.string().describe('Absolute path to the file to modify'),
-    old_string: z.string().describe('Exact text to replace (preserve indentation/whitespace). Must be unique unless replace_all=true. Edit FAILS if not found or not unique'),
-    new_string: z.string().describe('Text to replace it with (must differ from old_string)'),
+    file_path: z.string().describe('Path to file'),
+    old_string: z.string().describe('Text to replace (must be exact and unique unless replace_all=true)'),
+    new_string: z.string().describe('Replacement text'),
     replace_all: z
       .boolean()
       .default(false)
       .optional()
-      .describe('Replace all occurrences (default: false). If false, old_string must be unique in file'),
+      .describe('Replace all occurrences. If false, old_string must be unique'),
   }),
   execute: async ({ file_path, old_string, new_string, replace_all = false }) => {
     // Validate strings are different

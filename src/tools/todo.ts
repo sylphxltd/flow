@@ -14,15 +14,15 @@ export const updateTodosTool = tool({
   description: 'Update task list to track work progress',
   inputSchema: z.object({
     todos: z.array(z.object({
-      id: z.number().optional().describe('Omit to add new todo, provide to update existing. User messages show IDs: [1] Task name'),
-      content: z.string().optional().describe('Imperative form (e.g., "Build feature", "Fix bug"). Required when adding new todo'),
-      activeForm: z.string().optional().describe('Present continuous form (e.g., "Building feature") shown when status=in_progress. Required when adding new todo'),
-      status: z.enum(['pending', 'in_progress', 'completed', 'removed']).optional().describe('pending: not started | in_progress: currently working (keep ONLY ONE) | completed: done | removed: cancelled'),
+      id: z.number().optional().describe('ID to update existing, omit to add new'),
+      content: z.string().optional().describe('Imperative form: "Build feature"'),
+      activeForm: z.string().optional().describe('Present continuous: "Building feature"'),
+      status: z.enum(['pending', 'in_progress', 'completed', 'removed']).optional().describe('pending | in_progress (keep ONE only) | completed | removed'),
       reorder: z.object({
-        type: z.enum(['top', 'last', 'before', 'after']).describe('top: move to first | last: move to end | before: insert before target | after: insert after target'),
-        id: z.number().optional().describe('Target todo ID (required for before/after)'),
-      }).optional().describe('Change task order. Default order: first added = first to do'),
-    })).describe('Batch add/update todos. Examples: [{ content: "Build login", activeForm: "Building login", status: "pending" }] to add | [{ id: 1, status: "completed" }, { id: 2, status: "in_progress" }] to update | [{ id: 3, reorder: { type: "top" } }] to prioritize'),
+        type: z.enum(['top', 'last', 'before', 'after']).describe('top | last | before | after'),
+        id: z.number().optional().describe('Target ID (for before/after)'),
+      }).optional().describe('Change order'),
+    })).describe('Add/update todos. Examples: [{ content: "Build login", activeForm: "Building login", status: "pending" }] | [{ id: 1, status: "completed" }]'),
   }),
   execute: async ({ todos }) => {
     const store = useAppStore.getState();

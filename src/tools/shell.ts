@@ -17,18 +17,18 @@ const execAsync = promisify(exec);
 export const executeBashTool = tool({
   description: 'Execute a bash command and return its output',
   inputSchema: z.object({
-    command: z.string().describe('The bash command to execute (npm, git, ls, grep, etc.). Commands run in current working directory. Use absolute paths when necessary'),
-    cwd: z.string().optional().describe('Working directory (defaults to current directory)'),
+    command: z.string().describe('Bash command to execute'),
+    cwd: z.string().optional().describe('Working directory'),
     timeout: z
       .number()
       .default(30000)
       .optional()
-      .describe('Command timeout in milliseconds (default: 30000, only for foreground mode)'),
+      .describe('Timeout in milliseconds (foreground mode only)'),
     run_in_background: z
       .boolean()
       .default(false)
       .optional()
-      .describe('Run in background for long-running commands. Returns bash_id to check output later with bash-output tool. Use kill-bash to terminate'),
+      .describe('Run in background. Returns bash_id for bash-output tool'),
   }),
   execute: async ({ command, cwd, timeout = 30000, run_in_background = false }) => {
     // Background mode - spawn and return immediately
@@ -78,8 +78,8 @@ export const executeBashTool = tool({
 export const bashOutputTool = tool({
   description: 'Get output from a background bash process',
   inputSchema: z.object({
-    bash_id: z.string().describe('The bash_id returned from a background bash command (run_in_background=true)'),
-    filter: z.string().optional().describe('Optional regex to filter output lines. Only matching lines will be shown'),
+    bash_id: z.string().describe('bash_id from background bash command'),
+    filter: z.string().optional().describe('Regex to filter output lines'),
   }),
   execute: async ({ bash_id, filter }) => {
     const output = bashManager.getOutput(bash_id);
@@ -120,7 +120,7 @@ export const bashOutputTool = tool({
 export const killBashTool = tool({
   description: 'Kill a background bash process',
   inputSchema: z.object({
-    bash_id: z.string().describe('The bash_id of the process to kill. Process receives SIGTERM first, then SIGKILL if it doesn\'t exit within 5 seconds'),
+    bash_id: z.string().describe('bash_id of process to kill'),
   }),
   execute: async ({ bash_id }) => {
     const success = bashManager.kill(bash_id);

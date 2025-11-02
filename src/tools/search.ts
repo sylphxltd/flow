@@ -70,11 +70,11 @@ async function searchFiles(
 export const globTool = tool({
   description: 'Search for files matching a glob pattern',
   inputSchema: z.object({
-    pattern: z.string().describe('Glob pattern to match files. Syntax: * (any chars except /), ** (any chars including /), ? (single char). Examples: "*.ts", "src/**/*.tsx", "test?.js"'),
+    pattern: z.string().describe('Glob pattern: * (any except /), ** (any), ? (single). Examples: "*.ts", "src/**/*.tsx"'),
     path: z
       .string()
       .optional()
-      .describe('Directory to search in (defaults to current working directory)'),
+      .describe('Directory to search'),
   }),
   execute: async ({ pattern, path }) => {
     const searchDir = path || process.cwd();
@@ -95,51 +95,22 @@ export const globTool = tool({
 export const grepTool = tool({
   description: 'Search for text content within files using regex patterns',
   inputSchema: z.object({
-    pattern: z.string().describe('Regular expression pattern to search for'),
-    path: z
-      .string()
-      .optional()
-      .describe('File or directory to search in (defaults to current directory)'),
+    pattern: z.string().describe('Regex pattern to search'),
+    path: z.string().optional().describe('File or directory to search'),
     output_mode: z
       .enum(['content', 'files_with_matches', 'count'])
+      .default('files_with_matches')
       .optional()
-      .describe('content: show matching lines | files_with_matches: show file paths only (default) | count: show match counts'),
-    type: z
-      .string()
-      .optional()
-      .describe('File type to search: js, ts, py, rust, go, java, c, cpp, html, css, json, yaml, md'),
-    glob: z
-      .string()
-      .optional()
-      .describe('Glob pattern to filter files. Examples: "*.js", "*.{ts,tsx}"'),
-    '-i': z
-      .boolean()
-      .optional()
-      .describe('Case insensitive search'),
-    '-n': z
-      .boolean()
-      .optional()
-      .describe('Show line numbers in output (only with output_mode=content)'),
-    '-A': z
-      .number()
-      .optional()
-      .describe('Show N lines after each match (only with output_mode=content)'),
-    '-B': z
-      .number()
-      .optional()
-      .describe('Show N lines before each match (only with output_mode=content)'),
-    '-C': z
-      .number()
-      .optional()
-      .describe('Show N lines before and after each match (only with output_mode=content)'),
-    multiline: z
-      .boolean()
-      .optional()
-      .describe('Enable multiline mode where . matches newlines and patterns can span lines'),
-    head_limit: z
-      .number()
-      .optional()
-      .describe('Limit output to first N lines/entries/files'),
+      .describe('content: show lines | files_with_matches: show paths | count: show counts'),
+    type: z.string().optional().describe('File type: js, ts, py, rust, go, java, c, cpp, html, css, json, yaml, md'),
+    glob: z.string().optional().describe('Glob filter: "*.js", "*.{ts,tsx}"'),
+    '-i': z.boolean().optional().describe('Case insensitive'),
+    '-n': z.boolean().optional().describe('Show line numbers (content mode only)'),
+    '-A': z.number().optional().describe('Lines after match (content mode only)'),
+    '-B': z.number().optional().describe('Lines before match (content mode only)'),
+    '-C': z.number().optional().describe('Lines before and after match (content mode only)'),
+    multiline: z.boolean().optional().describe('Multiline mode: . matches newlines'),
+    head_limit: z.number().optional().describe('Limit output to first N entries'),
   }),
   execute: async ({
     pattern,

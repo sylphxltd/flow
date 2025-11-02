@@ -145,12 +145,12 @@ async function processNextAsk() {
 export const askUserSelectionTool = tool({
   description: 'Ask the user a multiple choice question and wait for their selection',
   inputSchema: z.object({
-    question: z.string().describe('The question to ask the user. Only use this tool when you have specific options. For free-form text questions, respond normally and wait for user input'),
+    question: z.string().describe('Question to ask. Use only when you have specific options, not for free-form text'),
     options: z.array(z.object({
-      label: z.string().describe('Display text for this option (what user sees)'),
-      value: z.string().optional().describe('Value to return (defaults to label if not provided)'),
-    })).min(2).max(10).describe('2-10 options for the user to choose from'),
-    multiSelect: z.boolean().optional().describe('Allow multiple selections (default: false). User selects with Space, confirms with Enter. Returns comma-separated values. Call this tool multiple times in same response to ask multiple questions - they will be presented together'),
+      label: z.string().describe('Display text'),
+      value: z.string().optional().describe('Return value'),
+    })).min(2).max(10).describe('2-10 options'),
+    multiSelect: z.boolean().optional().describe('Allow multiple selections. Returns comma-separated. Call multiple times in same response to batch questions'),
   }),
   execute: async ({ question, options, multiSelect }) => {
     if (!userInputHandler) {
