@@ -15,14 +15,17 @@ import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
 import { commands } from '../commands/registry.js';
 import type { CommandContext, WaitForInputOptions, Question } from '../commands/types.js';
-import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from '../../tools/interaction.js';
 import { ToolDisplay } from '../components/ToolDisplay.js';
-import { scanProjectFiles, filterFiles } from '../../utils/file-scanner.js';
+import { filterFiles } from '../../utils/file-scanner.js';
 import type { FileAttachment } from '../../types/session.types.js';
 import { formatTokenCount } from '../../utils/token-counter.js';
 import { useFileAttachments } from '../hooks/useFileAttachments.js';
 import { MessagePart } from '../components/MessagePart.js';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation.js';
+import { useTokenCalculation } from '../hooks/useTokenCalculation.js';
+import { useProjectFiles } from '../hooks/useProjectFiles.js';
+import { useAskToolHandler } from '../hooks/useAskToolHandler.js';
+import { useSessionInitialization } from '../hooks/useSessionInitialization.js';
 import { SelectionUI } from '../components/SelectionUI.js';
 import { PendingCommandSelection } from '../components/PendingCommandSelection.js';
 import { FileAutocomplete } from '../components/FileAutocomplete.js';
@@ -65,8 +68,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setAttachmentTokenCount,
   } = useFileAttachments(input);
 
-  const [projectFiles, setProjectFiles] = useState<Array<{ path: string; relativePath: string; size: number }>>([]);
-  const [filesLoading, setFilesLoading] = useState(false);
+  const { projectFiles, filesLoading } = useProjectFiles();
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
 
   // For command interactive flow - when command calls waitForInput()
@@ -82,7 +84,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Ask queue state
   const [askQueueLength, setAskQueueLength] = useState(0);
-  const [usedTokens, setUsedTokens] = useState(0);
 
   const addLog = (message: string) => {
     addDebugLog(message);
@@ -103,6 +104,26 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
+
+  // Custom hooks for side effects
+  const usedTokens = useTokenCalculation(currentSession);
+
+  useSessionInitialization({
+    currentSessionId,
+    aiConfig,
+    createSession,
+  });
+
+  useAskToolHandler({
+    setPendingInput,
+    setMultiSelectionPage,
+    setMultiSelectionAnswers,
+    setSelectionFilter,
+    setSelectedCommandIndex,
+    setAskQueueLength,
+    inputResolver,
+    addDebugLog,
+  });
 
   // Options cache for selection mode and autocomplete
   const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
@@ -186,23 +207,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   useEffect(() => {
     setLoadError(null);
   }, [input]);
-
-  // Load project files on mount for @file auto-completion
-  useEffect(() => {
-    const loadFiles = async () => {
-      setFilesLoading(true);
-      try {
-        const files = await scanProjectFiles(process.cwd());
-        setProjectFiles(files);
-      } catch (error) {
-        console.error('Failed to load project files:', error);
-      } finally {
-        setFilesLoading(false);
-      }
-    };
-
-    loadFiles();
-  }, []);
 
   // Trigger option loading when needed
   useEffect(() => {
@@ -391,41 +395,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     createSession,
   });
 
-  // Create new session on mount (don't restore old sessions automatically)
-  useEffect(() => {
-    if (!currentSessionId && aiConfig?.defaultProvider && aiConfig?.defaultModel) {
-      // Always create a new session on app start
-      // Old sessions are loaded and available in the store but not auto-selected
-      createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
-    }
-  }, [currentSessionId, aiConfig, createSession]);
-
-  // Register user input handler for ask tool
-  useEffect(() => {
-    setUserInputHandler((request) => {
-      return new Promise((resolve) => {
-        addDebugLog(`[ask tool] Waiting for user selection (${request.questions.length} question${request.questions.length > 1 ? 's' : ''})`);
-        inputResolver.current = resolve;
-        setPendingInput(request);
-
-        // Reset selection state
-        setMultiSelectionPage(0);
-        setMultiSelectionAnswers({});
-        setSelectionFilter('');
-        setSelectedCommandIndex(0);
-      });
-    });
-
-    // Set queue update callback
-    setQueueUpdateCallback((count) => {
-      setAskQueueLength(count);
-    });
-
-    return () => {
-      clearUserInputHandler();
-    };
-  }, [addDebugLog]);
-
   // Reset selected command index when filtered commands change
   useEffect(() => {
     setSelectedCommandIndex(0);
@@ -435,67 +404,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   useEffect(() => {
     setSelectedFileIndex(0);
   }, [filteredFileInfo.files.length]);
-
-  // Calculate total token usage for current session
-  useEffect(() => {
-    if (!currentSession) {
-      setUsedTokens(0);
-      return;
-    }
-
-    const calculateTokens = async () => {
-      try {
-        const { countTokens } = await import('../../utils/token-counter.js');
-        const { SYSTEM_PROMPT } = await import('../../core/ai-sdk.js');
-        const { getAISDKTools } = await import('../../tools/index.js');
-
-        let total = 0;
-
-        // System prompt tokens
-        total += await countTokens(SYSTEM_PROMPT, currentSession.model);
-
-        // Tools tokens
-        const tools = getAISDKTools();
-        const toolsJson = JSON.stringify(tools);
-        total += await countTokens(toolsJson, currentSession.model);
-
-        // Messages tokens
-        for (const msg of currentSession.messages) {
-          // Count main content (extract text from parts)
-          let textContent = '';
-          if (msg.content && Array.isArray(msg.content)) {
-            textContent = msg.content
-              .filter((part) => part.type === 'text')
-              .map((part: any) => part.content)
-              .join('\n');
-          } else if (msg.content) {
-            // Legacy format: content is a string
-            textContent = String(msg.content);
-          }
-          total += await countTokens(textContent, currentSession.model);
-
-          // Count attachments if any
-          if (msg.attachments && msg.attachments.length > 0) {
-            for (const att of msg.attachments) {
-              try {
-                const { readFile } = await import('node:fs/promises');
-                const content = await readFile(att.path, 'utf8');
-                total += await countTokens(content, currentSession.model);
-              } catch (error) {
-                // File might not exist anymore, skip
-              }
-            }
-          }
-        }
-
-        setUsedTokens(total);
-      } catch (error) {
-        console.error('Failed to calculate token usage:', error);
-      }
-    };
-
-    calculateTokens();
-  }, [currentSession, currentSession?.messages.length]);
 
   const handleSubmit = async (value: string) => {
     if (!value.trim() || isStreaming) return;
