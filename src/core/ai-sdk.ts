@@ -209,9 +209,18 @@ export interface CreateAIStreamOptions {
 }
 
 /**
+ * System status object (captured at message creation time)
+ */
+export interface SystemStatus {
+  timestamp: string;  // ISO format
+  cpu: string;        // e.g., "45.3% (8 cores)"
+  memory: string;     // e.g., "4.2GB/16.0GB"
+}
+
+/**
  * Get system status for context injection
  */
-function getSystemStatus(): string {
+function getSystemStatus(): SystemStatus {
   const timestamp = new Date().toISOString();
 
   // Get memory usage
@@ -238,10 +247,21 @@ function getSystemStatus(): string {
 
   const cpuUsage = (100 - (100 * totalIdle) / totalTick).toFixed(1);
 
+  return {
+    timestamp,
+    cpu: `${cpuUsage}% (${cpuCount} cores)`,
+    memory: `${memUsageGB}GB/${totalMemGB}GB`,
+  };
+}
+
+/**
+ * Build system status string from metadata object
+ */
+function buildSystemStatusFromMetadata(metadata: SystemStatus): string {
   return `<system_status>
-Time: ${timestamp}
-CPU: ${cpuUsage}% (${cpuCount} cores)
-Memory: ${memUsageGB}GB/${totalMemGB}GB
+Time: ${metadata.timestamp}
+CPU: ${metadata.cpu}
+Memory: ${metadata.memory}
 </system_status>`;
 }
 
@@ -249,7 +269,7 @@ Memory: ${memUsageGB}GB/${totalMemGB}GB
  * Inject system status into tool result output
  * Convert all types to content type and prepend system status as text part
  */
-function injectSystemStatusToOutput(output: LanguageModelV2ToolResultOutput, systemStatus: string): Extract<
+function injectSystemStatusToOutput(output: LanguageModelV2ToolResultOutput, systemStatus: SystemStatus): Extract<
   LanguageModelV2ToolResultOutput,
   { type: 'content' }
 > {
@@ -283,10 +303,11 @@ function injectSystemStatusToOutput(output: LanguageModelV2ToolResultOutput, sys
   }
 
   // Prepend system status as text part
+  const systemStatusString = buildSystemStatusFromMetadata(systemStatus);
 
   content.value.unshift({
       type: 'text',
-      text: systemStatus,
+      text: systemStatusString,
   })
   return content;
 }
@@ -518,4 +539,4 @@ export async function* createAIStream(
 /**
  * Export helper functions
  */
-export { getAISDKTools, getSystemStatus, injectSystemStatusToOutput, buildTodoContext, normalizeMessage };
+export { getAISDKTools, getSystemStatus, buildSystemStatusFromMetadata, injectSystemStatusToOutput, buildTodoContext, normalizeMessage };

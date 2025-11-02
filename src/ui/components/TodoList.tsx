@@ -11,8 +11,12 @@ import type { Todo } from '../../types/todo.types.js';
 const MAX_VISIBLE_LINES = 5;
 
 export default function TodoList() {
-  // Subscribe directly to store for real-time updates
-  const todos = useAppStore((state) => state.todos);
+  // Get current session's todos
+  const currentSessionId = useAppStore((state) => state.currentSessionId);
+  const sessions = useAppStore((state) => state.sessions);
+  const currentSession = sessions.find((s) => s.id === currentSessionId);
+  const todos = currentSession?.todos || [];
+
   // Calculate progress
   const completedCount = todos.filter((t) => t.status === 'completed').length;
   const totalCount = todos.filter((t) => t.status !== 'removed').length;

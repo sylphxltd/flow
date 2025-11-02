@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
-import type { Session, MessagePart, FileAttachment, TokenUsage } from '../../types/session.types.js';
+import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata } from '../../types/session.types.js';
 import type { Todo, TodoUpdate } from '../../types/todo.types.js';
 import { saveSession as saveSessionToFile } from '../../utils/session-manager.js';
 
@@ -38,7 +38,7 @@ export interface AppState {
   updateSessionModel: (sessionId: string, model: string) => void;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string) => void;
+  addMessage: (sessionId: string, role: 'user' | 'assistant', content: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string, metadata?: MessageMetadata) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
@@ -61,10 +61,8 @@ export interface AppState {
   addDebugLog: (message: string) => void;
   clearDebugLogs: () => void;
 
-  // Todo State
-  todos: Todo[];
-  nextTodoId: number;
-  updateTodos: (updates: TodoUpdate[]) => void;
+  // Todo State (per-session, accessed via currentSession)
+  updateTodos: (sessionId: string, updates: TodoUpdate[]) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -131,6 +129,8 @@ export const useAppStore = create<AppState>()(
           provider,
           model,
           messages: [],
+          todos: [], // Initialize empty todos for this session
+          nextTodoId: 1, // Start todo IDs from 1
           created: now,
           updated: now,
         });
@@ -160,7 +160,7 @@ export const useAppStore = create<AppState>()(
           session.title = title;
         }
       }),
-    addMessage: (sessionId, role, content, attachments, usage, finishReason) =>
+    addMessage: (sessionId, role, content, attachments, usage, finishReason, metadata) =>
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -171,6 +171,7 @@ export const useAppStore = create<AppState>()(
             ...(attachments !== undefined && attachments.length > 0 && { attachments }),
             ...(usage !== undefined && { usage }),
             ...(finishReason !== undefined && { finishReason }),
+            ...(metadata !== undefined && { metadata }),
           });
         }
       }),
@@ -224,30 +225,31 @@ export const useAppStore = create<AppState>()(
         state.debugLogs = [];
       }),
 
-    // Todo State
-    todos: [],
-    nextTodoId: 1,
-    updateTodos: (updates) =>
+    // Todo State (per-session)
+    updateTodos: (sessionId, updates) =>
       set((state) => {
+        const session = state.sessions.find((s) => s.id === sessionId);
+        if (!session) return;
+
         for (const update of updates) {
           if (update.id === undefined || update.id === null) {
             // Add new todo
-            const newId = state.nextTodoId;
-            const maxOrdering = state.todos.length > 0
-              ? Math.max(...state.todos.map((t) => t.ordering))
+            const newId = session.nextTodoId;
+            const maxOrdering = session.todos.length > 0
+              ? Math.max(...session.todos.map((t) => t.ordering))
               : 0;
 
-            state.todos.push({
+            session.todos.push({
               id: newId,
               content: update.content || '',
               activeForm: update.activeForm || '',
               status: update.status || 'pending',
               ordering: maxOrdering + 10,
             });
-            state.nextTodoId = newId + 1;
+            session.nextTodoId = newId + 1;
           } else {
             // Update existing todo
-            const todo = state.todos.find((t) => t.id === update.id);
+            const todo = session.todos.find((t) => t.id === update.id);
             if (!todo) continue;
 
             // Update fields
@@ -260,16 +262,16 @@ export const useAppStore = create<AppState>()(
               const { type, id: targetId } = update.reorder;
 
               if (type === 'top') {
-                const minOrdering = Math.min(...state.todos.map((t) => t.ordering));
+                const minOrdering = Math.min(...session.todos.map((t) => t.ordering));
                 todo.ordering = minOrdering - 10;
               } else if (type === 'last') {
-                const maxOrdering = Math.max(...state.todos.map((t) => t.ordering));
+                const maxOrdering = Math.max(...session.todos.map((t) => t.ordering));
                 todo.ordering = maxOrdering + 10;
               } else if (type === 'before' && targetId !== undefined) {
-                const target = state.todos.find((t) => t.id === targetId);
+                const target = session.todos.find((t) => t.id === targetId);
                 if (target) {
                   // Find the todo before target (lower ordering, shows earlier)
-                  const sorted = [...state.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
+                  const sorted = [...session.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
                   const targetIdx = sorted.findIndex((t) => t.id === targetId);
                   const before = targetIdx > 0 ? sorted[targetIdx - 1] : null;
 
@@ -282,10 +284,10 @@ export const useAppStore = create<AppState>()(
                   }
                 }
               } else if (type === 'after' && targetId !== undefined) {
-                const target = state.todos.find((t) => t.id === targetId);
+                const target = session.todos.find((t) => t.id === targetId);
                 if (target) {
                   // Find the todo after target (higher ordering, shows later)
-                  const sorted = [...state.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
+                  const sorted = [...session.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
                   const targetIdx = sorted.findIndex((t) => t.id === targetId);
                   const after = targetIdx < sorted.length - 1 ? sorted[targetIdx + 1] : null;
 

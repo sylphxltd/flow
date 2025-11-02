@@ -8,8 +8,10 @@ import { getProvider } from '../../providers/index.js';
 import {
   createAIStream,
   getSystemStatus,
+  buildSystemStatusFromMetadata,
   injectSystemStatusToOutput,
   buildTodoContext,
+  type SystemStatus,
 } from '../../core/ai-sdk.js';
 import { processStream } from '../../core/stream-handler.js';
 import {
@@ -81,12 +83,19 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
-      // Add user message to session with system status (added once at creation time)
+      // Capture system status at message creation time
       const systemStatus = getSystemStatus();
-      addMessage(currentSessionId, 'user', [
-        { type: 'text', content: systemStatus },
-        { type: 'text', content: message }
-      ], attachments);
+
+      // Add user message to session with metadata (not in display content)
+      addMessage(
+        currentSessionId,
+        'user',
+        [{ type: 'text', content: message }],
+        attachments,
+        undefined, // usage
+        undefined, // finishReason
+        { cpu: systemStatus.cpu, memory: systemStatus.memory }
+      );
 
       // Get updated session (after addMessage)
       const updatedSession = sessions.find((s) => s.id === currentSessionId);
@@ -98,11 +107,24 @@ export function useChat() {
       // Build messages with content parts (supports text, files, images)
       const messages: ModelMessage[] = await Promise.all(
         updatedSession.messages.map(async (msg) => {
-          // User messages: extract text from parts + add file attachments
+          // User messages: inject system status from metadata + extract text + add file attachments
           if (msg.role === 'user') {
             const contentParts: any[] = [];
 
-            // 1. Extract text parts (including system status already saved)
+            // 1. Inject system status from metadata (for LLM context, not saved in content)
+            if (msg.metadata) {
+              const systemStatusString = buildSystemStatusFromMetadata({
+                timestamp: new Date(msg.timestamp).toISOString(),
+                cpu: msg.metadata.cpu || 'N/A',
+                memory: msg.metadata.memory || 'N/A',
+              });
+              contentParts.push({
+                type: 'text',
+                text: systemStatusString,
+              });
+            }
+
+            // 2. Extract text parts from content (user message)
             const textParts = msg.content.filter((part) => part.type === 'text');
             for (const part of textParts) {
               contentParts.push({
@@ -111,7 +133,7 @@ export function useChat() {
               });
             }
 
-            // 2. Add file attachments as file parts (read fresh from disk)
+            // 3. Add file attachments as file parts (read fresh from disk)
             if (msg.attachments && msg.attachments.length > 0) {
               try {
                 const { readFile } = await import('node:fs/promises');
@@ -159,13 +181,18 @@ export function useChat() {
       // Get model using provider registry with full config
       const model = providerInstance.createClient(providerConfig, modelName);
 
+      // Get current session for todos
+      const currentSession = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
+
       // Create AI stream with context injection callbacks
       const stream = createAIStream({
         model,
         messages,
         onPrepareMessages: (messageHistory, stepNumber) => {
           // Inject todo context at every step (temporary, not saved to history)
-          const todos = useAppStore.getState().todos;
+          // Use current session's todos (per-session, not global)
+          const session = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
+          const todos = session?.todos || [];
           const todoContext = buildTodoContext(todos);
 
           return [

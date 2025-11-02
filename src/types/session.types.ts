@@ -4,6 +4,7 @@
  */
 
 import type { ProviderId } from '../config/ai-config.js';
+import type { Todo } from './todo.types.js';
 
 /**
  * Message part - can be text, reasoning, tool call, or error
@@ -41,12 +42,22 @@ export interface TokenUsage {
 }
 
 /**
+ * Message metadata - system information at message creation time
+ */
+export interface MessageMetadata {
+  cpu?: string;      // CPU usage at creation time (e.g., "45.3% (8 cores)")
+  memory?: string;   // Memory usage at creation time (e.g., "4.2GB/16.0GB")
+  // Future: add more fields as needed (sessionId, requestId, etc.)
+}
+
+/**
  * Session message
  */
 export interface SessionMessage {
   role: 'user' | 'assistant';
-  content: MessagePart[];
+  content: MessagePart[];  // UI display (without system status)
   timestamp: number;
+  metadata?: MessageMetadata;  // System info for LLM context (not shown in UI)
   attachments?: FileAttachment[];
   usage?: TokenUsage;
   finishReason?: string;
@@ -61,6 +72,8 @@ export interface Session {
   provider: ProviderId;
   model: string;
   messages: SessionMessage[];
+  todos: Todo[]; // Per-session todo list
+  nextTodoId: number; // Next todo ID for this session
   created: number;
   updated: number;
 }

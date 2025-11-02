@@ -26,11 +26,36 @@ export const updateTodosTool = tool({
   }),
   execute: ({ todos }) => {
     const store = useAppStore.getState();
-    const beforeState = store.todos;
+    const sessionId = store.currentSessionId;
 
-    store.updateTodos(todos);
+    if (!sessionId) {
+      return {
+        error: 'No active session',
+        summary: 'Failed: no active session',
+        changes: [],
+        total: 0,
+      };
+    }
 
-    const afterState = store.todos;
+    // Get current session's todos before update
+    const session = store.sessions.find((s) => s.id === sessionId);
+    if (!session) {
+      return {
+        error: 'Session not found',
+        summary: 'Failed: session not found',
+        changes: [],
+        total: 0,
+      };
+    }
+
+    const beforeState = session.todos;
+
+    // Update todos for this session
+    store.updateTodos(sessionId, todos);
+
+    // Get updated session todos
+    const updatedSession = store.sessions.find((s) => s.id === sessionId);
+    const afterState = updatedSession?.todos || [];
 
     // Categorize changes
     const addedTodos = todos.filter((t) => t.id === undefined);
