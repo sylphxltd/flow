@@ -36,22 +36,29 @@ export default function ControlledTextInput({
   const text = maskChar ? maskChar.repeat(value.length) : value;
 
   // Use refs to track latest value and cursor for paste handling
-  // Refs are updated immediately after each input to handle fast paste operations
+  // These refs maintain the immediate state during fast paste operations
   const latestValueRef = useRef(value);
   const latestCursorRef = useRef(cursor);
 
-  // Sync refs when props change from external sources (e.g., autocomplete, clear)
-  // Only sync if the change didn't come from our own input handler
-  const lastEmittedValue = useRef(value);
-  const lastEmittedCursor = useRef(cursor);
+  // Track previous props to detect external changes
+  const prevValueRef = useRef(value);
+  const prevCursorRef = useRef(cursor);
+
   useEffect(() => {
-    // Only update refs if value/cursor changed externally (not from our onChange)
-    if (value !== lastEmittedValue.current || cursor !== lastEmittedCursor.current) {
+    // Detect if props changed from an external source (not our own onChange)
+    // This happens when: autocomplete fills text, input cleared, etc.
+    const valueChangedExternally = value !== prevValueRef.current && value !== latestValueRef.current;
+    const cursorChangedExternally = cursor !== prevCursorRef.current && cursor !== latestCursorRef.current;
+
+    if (valueChangedExternally || cursorChangedExternally) {
+      // External change - sync refs from props
       latestValueRef.current = value;
       latestCursorRef.current = cursor;
-      lastEmittedValue.current = value;
-      lastEmittedCursor.current = cursor;
     }
+
+    // Always update prev refs to track props changes
+    prevValueRef.current = value;
+    prevCursorRef.current = cursor;
   }, [value, cursor]);
 
   // Safe cursor position setter (clamp to valid range)
@@ -115,8 +122,13 @@ export default function ControlledTextInput({
         // Backward delete (delete char before cursor)
         if (currentCursor > 0) {
           const next = currentValue.slice(0, currentCursor - 1) + currentValue.slice(currentCursor);
+          const newCursor = currentCursor - 1;
+
+          latestValueRef.current = next;
+          latestCursorRef.current = newCursor;
+
           onChange(next);
-          safeSetCursor(currentCursor - 1);
+          onCursorChange(newCursor);
         }
         return;
       }
@@ -127,8 +139,13 @@ export default function ControlledTextInput({
         // Allow Shift+Enter to insert newline instead of submitting
         if (key.shift) {
           const next = currentValue.slice(0, currentCursor) + '\n' + currentValue.slice(currentCursor);
+          const newCursor = currentCursor + 1;
+
+          latestValueRef.current = next;
+          latestCursorRef.current = newCursor;
+
           onChange(next);
-          safeSetCursor(currentCursor + 1);
+          onCursorChange(newCursor);
           return;
         }
         onSubmit?.(currentValue);
@@ -138,16 +155,23 @@ export default function ControlledTextInput({
       // Ctrl+U - delete from cursor to start (Unix convention)
       if (key.ctrl && input?.toLowerCase() === 'u') {
         const next = currentValue.slice(currentCursor);
+
+        latestValueRef.current = next;
+        latestCursorRef.current = 0;
+
         onChange(next);
-        safeSetCursor(0);
+        onCursorChange(0);
         return;
       }
 
       // Ctrl+K - delete from cursor to end (Unix convention)
       if (key.ctrl && input?.toLowerCase() === 'k') {
         const next = currentValue.slice(0, currentCursor);
+
+        latestValueRef.current = next;
+        // cursor stays at same position (already in latestCursorRef)
+
         onChange(next);
-        // cursor stays at same position
         return;
       }
 
@@ -160,8 +184,13 @@ export default function ControlledTextInput({
         if (match) {
           const deleteCount = match[0].length;
           const next = before.slice(0, -deleteCount) + after;
+          const newCursor = currentCursor - deleteCount;
+
+          latestValueRef.current = next;
+          latestCursorRef.current = newCursor;
+
           onChange(next);
-          safeSetCursor(currentCursor - deleteCount);
+          onCursorChange(newCursor);
         }
         return;
       }
@@ -176,15 +205,12 @@ export default function ControlledTextInput({
         const next = currentValue.slice(0, currentCursor) + input + currentValue.slice(currentCursor);
         const newCursor = currentCursor + input.length;
 
-        // Update refs immediately for next character (critical for paste)
+        // Update refs immediately for next input event (critical for paste)
+        // These refs maintain the immediate state before React re-renders
         latestValueRef.current = next;
         latestCursorRef.current = newCursor;
 
-        // Track what we emitted to prevent useEffect from overwriting refs
-        lastEmittedValue.current = next;
-        lastEmittedCursor.current = newCursor;
-
-        // Then update parent state
+        // Update parent state (async - will trigger re-render later)
         onChange(next);
         onCursorChange(newCursor);
       }
