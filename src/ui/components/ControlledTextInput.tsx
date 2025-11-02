@@ -1,24 +1,25 @@
 /**
  * Controlled Text Input with Programmatic Cursor Control
- * Supports explicit cursor positioning via props
+ * Simplified version - internal state with external sync
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
+import Spinner from './Spinner.js';
 import { clampCursor, moveCursorUp, moveCursorDown, getCursorLinePosition } from '../utils/cursor-utils.js';
 import { renderTextWithTags } from '../utils/text-rendering-utils.js';
 
 export interface ControlledTextInputProps {
   value: string;
   onChange: (value: string) => void;
-  cursor: number; // Controlled cursor position (0..value.length)
+  cursor: number;
   onCursorChange: (cursor: number) => void;
   onSubmit?: (value: string) => void;
   placeholder?: string;
-  maskChar?: string; // Optional: display * like password input
+  maskChar?: string;
   showCursor?: boolean;
   focus?: boolean;
-  validTags?: Set<string>; // Set of valid @file references (e.g., "src/file.ts")
+  validTags?: Set<string>;
 }
 
 export default function ControlledTextInput({
@@ -33,206 +34,145 @@ export default function ControlledTextInput({
   focus = true,
   validTags,
 }: ControlledTextInputProps) {
-  const text = maskChar ? maskChar.repeat(value.length) : value;
+  // Internal state - source of truth during user input
+  const [internalValue, setInternalValue] = useState(value);
+  const [internalCursor, setInternalCursor] = useState(cursor);
 
-  // Use refs to track latest value and cursor for paste handling
-  // These refs maintain the immediate state during fast paste operations
-  const latestValueRef = useRef(value);
-  const latestCursorRef = useRef(cursor);
-
-  // Track if we're currently handling user input
-  const isHandlingUserInput = useRef(false);
-  const resetInputFlagTimer = useRef<NodeJS.Timeout | null>(null);
-
+  // Sync from props only when props change externally (not from our onChange)
+  // Detect external changes by comparing with internal state
   useEffect(() => {
-    // Don't sync refs while handling user input (paste, typing, etc.)
-    // During fast paste, props update slower than refs, causing false external change detection
-    if (isHandlingUserInput.current) {
-      return;
+    if (value !== internalValue) {
+      // External change (autocomplete, clear, etc.)
+      setInternalValue(value);
+      setInternalCursor(cursor);
     }
+  }, [value]); // Only watch value, not internalValue (to avoid loop)
 
-    // Props changed while not handling input → external change (autocomplete, clear, etc.)
-    if (value !== latestValueRef.current || cursor !== latestCursorRef.current) {
-      latestValueRef.current = value;
-      latestCursorRef.current = cursor;
-    }
-  }, [value, cursor]);
-
-  // Safe cursor position setter (clamp to valid range)
-  const safeSetCursor = (n: number) => onCursorChange(clampCursor(n, latestValueRef.current.length));
-
-  // Auto-correct cursor if value changes and cursor is out of bounds
+  // Sync cursor changes
   useEffect(() => {
-    if (cursor > value.length) {
-      safeSetCursor(value.length);
+    if (cursor !== internalCursor && value === internalValue) {
+      // Cursor changed externally but value didn't
+      setInternalCursor(cursor);
     }
-  }, [value.length]);
+  }, [cursor]);
+
+  const text = maskChar ? maskChar.repeat(internalValue.length) : internalValue;
+
+  // Helper to update both internal and external state
+  const updateValue = (newValue: string, newCursor: number) => {
+    setInternalValue(newValue);
+    setInternalCursor(newCursor);
+    onChange(newValue);
+    onCursorChange(newCursor);
+  };
+
+  const safeSetCursor = (n: number) => {
+    const clamped = clampCursor(n, internalValue.length);
+    setInternalCursor(clamped);
+    onCursorChange(clamped);
+  };
 
   useInput(
     (input, key) => {
-      // Mark that we're handling user input
-      // This prevents useEffect from overwriting refs during paste
-      isHandlingUserInput.current = true;
-
-      // Clear previous reset timer
-      if (resetInputFlagTimer.current) {
-        clearTimeout(resetInputFlagTimer.current);
-      }
-
-      // Reset flag after a brief delay (to handle paste with multiple chars)
-      // The delay ensures all chars in a paste operation are processed before flag resets
-      resetInputFlagTimer.current = setTimeout(() => {
-        isHandlingUserInput.current = false;
-        resetInputFlagTimer.current = null;
-      }, 100); // 100ms should be enough for even slow pastes
-
-      // Use latest values from refs to handle fast paste operations
-      const currentValue = latestValueRef.current;
-      const currentCursor = latestCursorRef.current;
-
-      // Left arrow - move cursor left
+      // Left arrow
       if (key.leftArrow) {
-        safeSetCursor(currentCursor - 1);
+        safeSetCursor(internalCursor - 1);
         return;
       }
 
-      // Right arrow - move cursor right
+      // Right arrow
       if (key.rightArrow) {
-        safeSetCursor(currentCursor + 1);
+        safeSetCursor(internalCursor + 1);
         return;
       }
 
-      // Up arrow - move cursor to previous line
+      // Up arrow
       if (key.upArrow) {
-        safeSetCursor(moveCursorUp(currentValue, currentCursor));
+        safeSetCursor(moveCursorUp(internalValue, internalCursor));
         return;
       }
 
-      // Down arrow - move cursor to next line
+      // Down arrow
       if (key.downArrow) {
-        safeSetCursor(moveCursorDown(currentValue, currentCursor));
+        safeSetCursor(moveCursorDown(internalValue, internalCursor));
         return;
       }
 
-      // Home - move to start
+      // Home
       if (key.home || (key.ctrl && input?.toLowerCase() === 'a')) {
         safeSetCursor(0);
         return;
       }
 
-      // End - move to end
+      // End
       if (key.end || (key.ctrl && input?.toLowerCase() === 'e')) {
-        safeSetCursor(currentValue.length);
+        safeSetCursor(internalValue.length);
         return;
       }
 
-      // Backspace/Delete handling
-      // Standard cross-platform approach: treat both as backspace
-      // - Windows: Backspace key → key.backspace=true
-      // - Mac: Delete key (backspace function) → key.delete=true
-      // - Also check \x7F and \b character codes for compatibility
+      // Backspace
       if (key.backspace || key.delete || input === '\x7F' || input === '\b') {
-        // Backward delete (delete char before cursor)
-        if (currentCursor > 0) {
-          const next = currentValue.slice(0, currentCursor - 1) + currentValue.slice(currentCursor);
-          const newCursor = currentCursor - 1;
-
-          latestValueRef.current = next;
-          latestCursorRef.current = newCursor;
-
-          onChange(next);
-          onCursorChange(newCursor);
+        if (internalCursor > 0) {
+          const next = internalValue.slice(0, internalCursor - 1) + internalValue.slice(internalCursor);
+          updateValue(next, internalCursor - 1);
         }
         return;
       }
 
-      // Enter - submit (but allow Shift+Enter for newline)
-      // Note: When pasting multi-line text, input will contain '\n' but key.return will be false
+      // Enter - submit or newline
       if (key.return && !input) {
-        // Allow Shift+Enter to insert newline instead of submitting
         if (key.shift) {
-          const next = currentValue.slice(0, currentCursor) + '\n' + currentValue.slice(currentCursor);
-          const newCursor = currentCursor + 1;
-
-          latestValueRef.current = next;
-          latestCursorRef.current = newCursor;
-
-          onChange(next);
-          onCursorChange(newCursor);
+          // Shift+Enter - insert newline
+          const next = internalValue.slice(0, internalCursor) + '\n' + internalValue.slice(internalCursor);
+          updateValue(next, internalCursor + 1);
           return;
         }
-        onSubmit?.(currentValue);
+        onSubmit?.(internalValue);
         return;
       }
 
-      // Ctrl+U - delete from cursor to start (Unix convention)
+      // Ctrl+U - delete to start
       if (key.ctrl && input?.toLowerCase() === 'u') {
-        const next = currentValue.slice(currentCursor);
-
-        latestValueRef.current = next;
-        latestCursorRef.current = 0;
-
-        onChange(next);
-        onCursorChange(0);
+        const next = internalValue.slice(internalCursor);
+        updateValue(next, 0);
         return;
       }
 
-      // Ctrl+K - delete from cursor to end (Unix convention)
+      // Ctrl+K - delete to end
       if (key.ctrl && input?.toLowerCase() === 'k') {
-        const next = currentValue.slice(0, currentCursor);
-
-        latestValueRef.current = next;
-        // cursor stays at same position (already in latestCursorRef)
-
+        const next = internalValue.slice(0, internalCursor);
+        setInternalValue(next);
         onChange(next);
         return;
       }
 
-      // Ctrl+W - delete word before cursor (Unix convention)
+      // Ctrl+W - delete word
       if (key.ctrl && input?.toLowerCase() === 'w') {
-        const before = currentValue.slice(0, currentCursor);
-        const after = currentValue.slice(currentCursor);
-        // Find last word boundary
+        const before = internalValue.slice(0, internalCursor);
+        const after = internalValue.slice(internalCursor);
         const match = before.match(/\s*\S*$/);
         if (match) {
           const deleteCount = match[0].length;
           const next = before.slice(0, -deleteCount) + after;
-          const newCursor = currentCursor - deleteCount;
-
-          latestValueRef.current = next;
-          latestCursorRef.current = newCursor;
-
-          onChange(next);
-          onCursorChange(newCursor);
+          updateValue(next, internalCursor - deleteCount);
         }
         return;
       }
 
-      // Ignore other control key combinations (but allow paste which might have ctrl)
+      // Ignore other control keys
       if ((key.ctrl || key.meta) && !input) return;
 
-      // Insert regular character at cursor position
-      // Use refs to handle fast paste - each character uses latest value
-      // Note: Pasted text may contain newlines - preserve them
+      // Insert character (including pasted text with newlines)
       if (input) {
-        const next = currentValue.slice(0, currentCursor) + input + currentValue.slice(currentCursor);
-        const newCursor = currentCursor + input.length;
-
-        // Update refs immediately for next input event (critical for paste)
-        // These refs maintain the immediate state before React re-renders
-        latestValueRef.current = next;
-        latestCursorRef.current = newCursor;
-
-        // Update parent state (async - will trigger re-render later)
-        onChange(next);
-        onCursorChange(newCursor);
+        const next = internalValue.slice(0, internalCursor) + input + internalValue.slice(internalCursor);
+        updateValue(next, internalCursor + input.length);
       }
     },
     { isActive: focus }
   );
 
   // Handle multiline text with proper cursor positioning
-  if (value.length === 0 && placeholder) {
+  if (internalValue.length === 0 && placeholder) {
     return (
       <Box>
         {showCursor && <Text inverse> </Text>}
@@ -243,11 +183,10 @@ export default function ControlledTextInput({
 
   // Split text into lines
   const lines = text.split('\n');
-  const { line: cursorLine, column: cursorColumn } = getCursorLinePosition(text, cursor);
+  const { line: cursorLine, column: cursorColumn } = getCursorLinePosition(text, internalCursor);
 
-  // Get terminal width (default to reasonable value if not available)
+  // Get terminal width
   const terminalWidth = process.stdout.columns || 120;
-  // Reserve some space for margins and indicators
   const maxLineWidth = Math.max(40, terminalWidth - 10);
 
   return (
@@ -256,26 +195,22 @@ export default function ControlledTextInput({
         const isCursorLine = lineIndex === cursorLine;
         const cursorPosForLine = isCursorLine ? cursorColumn : undefined;
 
-        // Handle long lines by showing a viewport around the cursor
+        // Handle long lines
         let displayLine = line;
         let displayCursor = cursorPosForLine;
 
         if (line.length > maxLineWidth && cursorPosForLine !== undefined) {
-          // Calculate viewport window centered on cursor
           const halfWindow = Math.floor(maxLineWidth / 2);
           let start = Math.max(0, cursorPosForLine - halfWindow);
           let end = Math.min(line.length, start + maxLineWidth);
 
-          // Adjust if we're near the end
           if (end === line.length && end - start < maxLineWidth) {
             start = Math.max(0, end - maxLineWidth);
           }
 
-          // Extract the visible portion
           displayLine = line.slice(start, end);
           displayCursor = cursorPosForLine - start;
 
-          // Replace first/last char with indicators for hidden content
           if (start > 0 && displayLine.length > 0) {
             displayLine = '‹' + displayLine.slice(1);
           }
