@@ -108,17 +108,11 @@ const ResultDisplay: React.FC<{
   return null;
 };
 
-export function ToolDisplay(props: ToolDisplayProps) {
+/**
+ * Default tool display component (uses formatters)
+ */
+function DefaultToolDisplay(props: ToolDisplayProps) {
   const { name, status, duration, args, result, error } = props;
-
-  // Check if tool has a custom component registered
-  const config = getToolConfig(name);
-  if (config && config.type === 'component') {
-    const CustomComponent = config.component;
-    return <CustomComponent {...props} />;
-  }
-
-  // Use default display with formatters
   const formattedArgs = formatArgs(name, args);
   const isBuiltIn = isBuiltInTool(name);
   const displayName = getDisplayName(name);
@@ -136,4 +130,21 @@ export function ToolDisplay(props: ToolDisplayProps) {
       <ResultDisplay status={status} result={result} toolName={name} error={error} />
     </Box>
   );
+}
+
+/**
+ * Main ToolDisplay component
+ * Uses custom component if registered, otherwise uses DefaultToolDisplay
+ */
+export function ToolDisplay(props: ToolDisplayProps) {
+  const config = getToolConfig(props.name);
+
+  // Use custom component if registered
+  if (config?.component) {
+    const CustomComponent = config.component;
+    return <CustomComponent {...props} />;
+  }
+
+  // Use default display with formatters
+  return <DefaultToolDisplay {...props} />;
 }

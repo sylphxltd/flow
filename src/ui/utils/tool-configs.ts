@@ -29,27 +29,19 @@ export interface ToolDisplayProps {
 }
 
 /**
- * Formatter-based tool configuration (uses default display)
+ * Tool configuration
+ * - component: custom React component (optional)
+ * - displayName, formatArgs, formatResult: for default display (optional)
+ *
+ * If component is provided, it will be used.
+ * Otherwise, DefaultToolComponent will use the formatters.
  */
-export interface FormatterConfig {
-  type: 'formatter';
-  displayName: string;
-  formatArgs: ArgsFormatter;
-  formatResult: ResultFormatter;
+export interface ToolConfig {
+  component?: FC<ToolDisplayProps>;
+  displayName?: string;
+  formatArgs?: ArgsFormatter;
+  formatResult?: ResultFormatter;
 }
-
-/**
- * Component-based tool configuration (custom display)
- */
-export interface ComponentConfig {
-  type: 'component';
-  component: FC<ToolDisplayProps>;
-}
-
-/**
- * Tool configuration - can be formatter or component
- */
-export type ToolConfig = FormatterConfig | ComponentConfig;
 
 /**
  * Helper to convert result to lines
@@ -71,13 +63,12 @@ const resultToLines = (result: unknown): string[] => {
  * Add new tools here - single source of truth
  *
  * Examples:
- * - Formatter config: { type: 'formatter', displayName: '...', formatArgs: ..., formatResult: ... }
- * - Component config: { type: 'component', component: MyCustomComponent }
+ * - Default display: { displayName: '...', formatArgs: ..., formatResult: ... }
+ * - Custom component: { component: MyCustomComponent }
  */
 export const toolConfigs: Record<string, ToolConfig> = {
   // Ask tool
   ask: {
-    type: 'formatter',
     displayName: 'Ask',
     formatArgs: (args) =>
       args.question ? truncateString(String(args.question), 80) : '',
@@ -89,7 +80,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Read tool
   read: {
-    type: 'formatter',
     displayName: 'Read',
     formatArgs: (args) =>
       args.file_path ? getRelativePath(String(args.file_path)) : '',
@@ -110,7 +100,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Write tool
   write: {
-    type: 'formatter',
     displayName: 'Write',
     formatArgs: (args) =>
       args.file_path ? getRelativePath(String(args.file_path)) : '',
@@ -129,7 +118,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Edit tool
   edit: {
-    type: 'formatter',
     displayName: 'Update',
     formatArgs: (args) =>
       args.file_path ? getRelativePath(String(args.file_path)) : '',
@@ -152,7 +140,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Bash tool
   bash: {
-    type: 'formatter',
     displayName: 'Bash',
     formatArgs: (args) => {
       const command = args.command ? String(args.command) : '';
@@ -202,7 +189,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Bash output tool
   'bash-output': {
-    type: 'formatter',
     displayName: 'BashOutput',
     formatArgs: (args) => args.bash_id ? String(args.bash_id) : '',
     formatResult: (result) => {
@@ -226,7 +212,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Kill bash tool
   'kill-bash': {
-    type: 'formatter',
     displayName: 'KillBash',
     formatArgs: (args) => args.bash_id ? String(args.bash_id) : '',
     formatResult: (result) => {
@@ -244,7 +229,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Grep tool
   grep: {
-    type: 'formatter',
     displayName: 'Search',
     formatArgs: (args) => {
       const pattern = args.pattern ? String(args.pattern) : '';
@@ -306,7 +290,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Glob tool
   glob: {
-    type: 'formatter',
     displayName: 'Search',
     formatArgs: (args) => {
       const pattern = args.pattern ? String(args.pattern) : '';
@@ -335,7 +318,6 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
   // Update todos tool
   updateTodos: {
-    type: 'formatter',
     displayName: 'Tasks',
     formatArgs: (args) => {
       const todos = args.todos as any[] | undefined;
@@ -379,18 +361,15 @@ export const isBuiltInTool = (toolName: string): boolean => {
 };
 
 /**
- * Get display name for tool (only for formatter configs)
+ * Get display name for tool
  */
 export const getDisplayName = (toolName: string): string => {
   const config = getToolConfig(toolName);
-  if (config && config.type === 'formatter') {
-    return config.displayName;
-  }
-  return toolName;
+  return config?.displayName || toolName;
 };
 
 /**
- * Format tool arguments (only for formatter configs)
+ * Format tool arguments
  */
 export const formatArgs = (toolName: string, args: unknown): string => {
   if (!args || typeof args !== 'object') {
@@ -398,14 +377,14 @@ export const formatArgs = (toolName: string, args: unknown): string => {
   }
 
   const config = getToolConfig(toolName);
-  if (config && config.type === 'formatter') {
+  if (config?.formatArgs) {
     return config.formatArgs(args as Record<string, unknown>);
   }
   return JSON.stringify(args);
 };
 
 /**
- * Format tool result (only for formatter configs)
+ * Format tool result
  */
 export const formatResult = (toolName: string, result: unknown): { lines: string[]; summary?: string } => {
   if (result === null || result === undefined) {
@@ -413,45 +392,28 @@ export const formatResult = (toolName: string, result: unknown): { lines: string
   }
 
   const config = getToolConfig(toolName);
-  if (config && config.type === 'formatter') {
+  if (config?.formatResult) {
     return config.formatResult(result);
   }
   return { lines: resultToLines(result) };
 };
 
 /**
- * Register a custom tool display component
+ * Register a tool display configuration
  *
- * Example:
+ * Examples:
  * ```ts
- * registerToolDisplay('myTool', MyToolComponent);
- * ```
- */
-export const registerToolDisplay = (toolName: string, component: FC<ToolDisplayProps>): void => {
-  toolConfigs[toolName] = {
-    type: 'component',
-    component,
-  };
-};
-
-/**
- * Register a formatter-based tool display
+ * // Custom component
+ * registerTool('myTool', { component: MyToolComponent });
  *
- * Example:
- * ```ts
- * registerToolFormatter('myTool', {
+ * // Default display with formatters
+ * registerTool('myTool', {
  *   displayName: 'My Tool',
  *   formatArgs: (args) => args.foo,
  *   formatResult: (result) => ({ lines: [String(result)] }),
  * });
  * ```
  */
-export const registerToolFormatter = (
-  toolName: string,
-  config: Omit<FormatterConfig, 'type'>
-): void => {
-  toolConfigs[toolName] = {
-    type: 'formatter',
-    ...config,
-  };
+export const registerTool = (toolName: string, config: ToolConfig): void => {
+  toolConfigs[toolName] = config;
 };
