@@ -38,7 +38,7 @@ export interface AppState {
   updateSessionModel: (sessionId: string, model: string) => void;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string, metadata?: MessageMetadata, todoSnapshot?: Todo[]) => void;
+  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string | MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string, metadata?: MessageMetadata, todoSnapshot?: Todo[]) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
@@ -164,9 +164,15 @@ export const useAppStore = create<AppState>()(
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
+          // Normalize content to MessagePart[] format
+          // Accept both string and MessagePart[] for backwards compatibility and convenience
+          const normalizedContent: MessagePart[] = typeof content === 'string'
+            ? [{ type: 'text', content }]
+            : content;
+
           session.messages.push({
             role,
-            content,
+            content: normalizedContent,
             timestamp: Date.now(),
             ...(attachments !== undefined && attachments.length > 0 && { attachments }),
             ...(usage !== undefined && { usage }),
