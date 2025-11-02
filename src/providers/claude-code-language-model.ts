@@ -170,40 +170,84 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     return systemTexts || undefined;
   }
 
+  /**
+   * Build query options from call options
+   */
+  private buildQueryOptions(
+    options: LanguageModelV2CallOptions,
+    tools: Record<string, ToolDefinition> | undefined,
+    includePartialMessages = false
+  ): { queryOptions: Options; systemPrompt: string } {
+    // Build system prompt
+    let systemPrompt = this.extractSystemPrompt(options) || '';
+
+    // Add tools description to system prompt if tools are provided
+    if (tools && Object.keys(tools).length > 0) {
+      const toolsPrompt = generateToolsSystemPrompt(tools);
+      systemPrompt = systemPrompt ? `${systemPrompt}\n\n${toolsPrompt}` : toolsPrompt;
+    }
+
+    // Build query options
+    const queryOptions: Options = {
+      model: this.modelId,
+      settingSources: [],
+      disallowedTools: CLAUDE_CODE_BUILTIN_TOOLS,
+    };
+
+    if (systemPrompt) {
+      queryOptions.systemPrompt = systemPrompt;
+    }
+
+    if (includePartialMessages) {
+      queryOptions.includePartialMessages = true;
+    }
+
+    // Add maxThinkingTokens from providerOptions if provided
+    const providerOptions = options.providerOptions?.['claude-code'] as Record<string, any> | undefined;
+    if (providerOptions?.maxThinkingTokens) {
+      queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens as number;
+    }
+
+    return { queryOptions, systemPrompt };
+  }
+
+  /**
+   * Extract usage tokens from result event
+   */
+  private extractUsage(event: any): { inputTokens: number; outputTokens: number } {
+    if (!event.usage) {
+      return { inputTokens: 0, outputTokens: 0 };
+    }
+
+    const usage = event.usage;
+    const inputTokens =
+      (usage.input_tokens || 0) +
+      (usage.cache_creation_input_tokens || 0) +
+      (usage.cache_read_input_tokens || 0);
+    const outputTokens = usage.output_tokens || 0;
+
+    return { inputTokens, outputTokens };
+  }
+
+  /**
+   * Check and handle result errors
+   */
+  private handleResultError(event: any): void {
+    if (event.subtype === 'error_max_turns') {
+      throw new Error('Claude Code reached maximum turns limit');
+    } else if (event.subtype === 'error_during_execution') {
+      throw new Error('Error occurred during Claude Code execution');
+    }
+  }
+
   async doGenerate(
     options: LanguageModelV2CallOptions
   ): Promise<Awaited<ReturnType<LanguageModelV2['doGenerate']>>> {
     try {
-      // Convert tools to internal format
+      // Convert tools and build query options
       const tools = this.convertTools(options.tools || []);
-
-      // Convert messages to string prompt
       const promptString = this.convertMessagesToString(options);
-      let systemPrompt = this.extractSystemPrompt(options) || '';
-
-      // Add tools description to system prompt if tools are provided
-      if (tools && Object.keys(tools).length > 0) {
-        const toolsPrompt = generateToolsSystemPrompt(tools);
-        systemPrompt = systemPrompt ? `${systemPrompt}\n\n${toolsPrompt}` : toolsPrompt;
-      }
-
-      // Build query options
-      const queryOptions: Options = {
-        model: this.modelId,
-        // Disable all Claude Code built-in tools
-        settingSources: [],
-        disallowedTools: CLAUDE_CODE_BUILTIN_TOOLS,
-      };
-
-      if (systemPrompt) {
-        queryOptions.systemPrompt = systemPrompt;
-      }
-
-      // Add maxThinkingTokens from providerOptions if provided
-      const providerOptions = options.providerOptions?.['claude-code'] as Record<string, any> | undefined;
-      if (providerOptions?.maxThinkingTokens) {
-        queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens as number;
-      }
+      const { queryOptions } = this.buildQueryOptions(options, tools);
 
       // Execute query
       const queryResult = query({
@@ -268,22 +312,10 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             finishReason = 'length';
           }
         } else if (event.type === 'result') {
-          // Check for errors
-          if (event.subtype === 'error_max_turns') {
-            throw new Error('Claude Code reached maximum turns limit');
-          } else if (event.subtype === 'error_during_execution') {
-            throw new Error('Error occurred during Claude Code execution');
-          }
-
-          // Extract usage from result (final, includes cache tokens)
-          if (event.usage) {
-            const usage = event.usage;
-            inputTokens =
-              (usage.input_tokens || 0) +
-              (usage.cache_creation_input_tokens || 0) +
-              (usage.cache_read_input_tokens || 0);
-            outputTokens = usage.output_tokens || 0;
-          }
+          this.handleResultError(event);
+          const usage = this.extractUsage(event);
+          inputTokens = usage.inputTokens;
+          outputTokens = usage.outputTokens;
         }
       }
 
@@ -315,38 +347,10 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     options: LanguageModelV2CallOptions
   ): Promise<Awaited<ReturnType<LanguageModelV2['doStream']>>> {
     try {
-      // Convert tools to internal format
+      // Convert tools and build query options
       const tools = this.convertTools(options.tools || []);
-
-      // Convert messages to string prompt
       const promptString = this.convertMessagesToString(options);
-      let systemPrompt = this.extractSystemPrompt(options) || '';
-
-      // Add tools description to system prompt if tools are provided
-      if (tools && Object.keys(tools).length > 0) {
-        const toolsPrompt = generateToolsSystemPrompt(tools);
-        systemPrompt = systemPrompt ? `${systemPrompt}\n\n${toolsPrompt}` : toolsPrompt;
-      }
-
-      // Build query options
-      const queryOptions: Options = {
-        model: this.modelId,
-        // Disable all Claude Code built-in tools
-        settingSources: [],
-        disallowedTools: CLAUDE_CODE_BUILTIN_TOOLS,
-        // Enable partial messages for streaming events
-        includePartialMessages: true,
-      };
-
-      if (systemPrompt) {
-        queryOptions.systemPrompt = systemPrompt;
-      }
-
-      // Add maxThinkingTokens from providerOptions if provided
-      const providerOptions = options.providerOptions?.['claude-code'] as Record<string, any> | undefined;
-      if (providerOptions?.maxThinkingTokens) {
-        queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens as number;
-      }
+      const { queryOptions } = this.buildQueryOptions(options, tools, true);
 
       // Execute query
       const queryResult = query({
@@ -539,23 +543,17 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                 }
               } else if (event.type === 'result') {
                 // Check for errors
-                if (event.subtype === 'error_max_turns') {
-                  controller.error(new Error('Claude Code reached maximum turns limit'));
-                  return;
-                } else if (event.subtype === 'error_during_execution') {
-                  controller.error(new Error('Error occurred during Claude Code execution'));
+                try {
+                  this.handleResultError(event);
+                } catch (error) {
+                  controller.error(error);
                   return;
                 }
 
-                // Extract usage from result (final, includes cache tokens)
-                if (event.usage) {
-                  const usage = event.usage;
-                  inputTokens =
-                    (usage.input_tokens || 0) +
-                    (usage.cache_creation_input_tokens || 0) +
-                    (usage.cache_read_input_tokens || 0);
-                  outputTokens = usage.output_tokens || 0;
-                }
+                // Extract usage
+                const usage = this.extractUsage(event);
+                inputTokens = usage.inputTokens;
+                outputTokens = usage.outputTokens;
               }
             }
 
