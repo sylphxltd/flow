@@ -69,15 +69,6 @@ export function getSystemPrompt(): string {
 export const SYSTEM_PROMPT = LEGACY_SYSTEM_PROMPT;
 
 /**
- * Our own Language Model interface
- */
-export interface SylphxLanguageModel {
-  readonly specificationVersion: string;
-  readonly provider: string;
-  readonly modelId: string;
-}
-
-/**
  * Stream chunk types (our own)
  */
 export type TextStartChunk = {
@@ -189,13 +180,32 @@ export interface StepInfo {
 }
 
 /**
- * Create AI stream options (our own)
+ * Create AI stream options
  */
 export interface CreateAIStreamOptions {
   model: LanguageModelV2;
   messages: ModelMessage[];
   systemPrompt?: string;
   onStepFinish?: (step: StepInfo) => void;
+  /**
+   * Called before each step to prepare messages
+   * Can be used to inject context (e.g., todo list, system status)
+   * @param messages - Current message history
+   * @param stepNumber - Current step number
+   * @returns Modified messages array
+   */
+  onPrepareMessages?: (messages: ModelMessage[], stepNumber: number) => ModelMessage[];
+  /**
+   * Called to transform tool result output before saving to history
+   * Can be used to inject metadata (e.g., system status, timestamp)
+   * @param output - Tool result output
+   * @param toolName - Name of the tool
+   * @returns Modified output
+   */
+  onTransformToolResult?: (
+    output: LanguageModelV2ToolResultOutput,
+    toolName: string
+  ) => LanguageModelV2ToolResultOutput;
 }
 
 /**
@@ -285,7 +295,7 @@ function injectSystemStatusToOutput(output: LanguageModelV2ToolResultOutput, sys
  * Normalize content to modern array format
  * Converts legacy string content to Array<TextPart | ImagePart | FilePart | ... >
  */
-function normailzeMessage(message: ModelMessage): ModelMessage {
+function normalizeMessage(message: ModelMessage): ModelMessage {
   const content = message.content;
   if (typeof content === 'string') {
     // Legacy string format → convert to TextPart array
@@ -308,28 +318,17 @@ function normailzeMessage(message: ModelMessage): ModelMessage {
 export async function* createAIStream(
   options: CreateAIStreamOptions
 ): AsyncIterable<StreamChunk> {
-  const { systemPrompt = getSystemPrompt(), model, messages: initialMessages, onStepFinish } = options;
+  const {
+    systemPrompt = getSystemPrompt(),
+    model,
+    messages: initialMessages,
+    onStepFinish,
+    onPrepareMessages,
+    onTransformToolResult,
+  } = options;
 
-
-  // Message history that we control - add system status to initial messages
-  // Note: toAISDKMessages() already normalizes all content to array format
-  const systemStatus = getSystemStatus();
-  const messageHistory = initialMessages.map(normailzeMessage).map((msg) => {
-    if (msg.role === 'user') {
-      // Prepend system status as TextPart (content is already array)
-      return {
-        ...msg,
-        content: [
-          {
-            type: 'text',
-            text: systemStatus,
-          },
-          ...msg.content,
-        ],
-      };
-    }
-    return msg;
-  });
+  // Normalize all messages to array format
+  let messageHistory = initialMessages.map(normalizeMessage);
 
   let stepNumber = 0;
   const MAX_STEPS = 1000;
@@ -340,28 +339,16 @@ export async function* createAIStream(
       type: 'step-start' as any,
       stepNumber,
     };
-    // Get current todos and build context
-    const todos = useAppStore.getState().todos;
-    const todoContext = buildTodoContext(todos);
 
-    // Temporarily inject todo context (not saved to history)
-    const messagesWithContext = [
-      ...messageHistory,
-      {
-        role: 'system' as const,
-        content: [
-          {
-            type: 'text',
-            text: todoContext,
-          },
-        ],
-      },
-    ];
+    // Prepare messages for this step (caller can inject context)
+    const preparedMessages = onPrepareMessages
+      ? onPrepareMessages(messageHistory, stepNumber)
+      : messageHistory;
 
     // Call AI SDK with single step
     const { fullStream, response, finishReason, usage, content } = streamText({
       model,
-      messages: messagesWithContext,
+      messages: preparedMessages,
       system: systemPrompt,
       tools: getAISDKTools(),
       onError: (_) => {
@@ -491,18 +478,17 @@ export async function* createAIStream(
       onStepFinish(stepInfo);
     }
 
-    // Save LLM response messages to history (with system status)
-    const stepSystemStatus = getSystemStatus();
+    // Save LLM response messages to history
     const responseMessages = (await response).messages;
 
     for (const msg of responseMessages) {
-      // Add system status (timestamp, CPU, memory) to tool messages
-      if (msg.role === 'tool') {
+      // Transform tool result output if callback provided
+      if (msg.role === 'tool' && onTransformToolResult) {
         messageHistory.push({
           ...msg,
           content: msg.content.map((part) => ({
             ...part,
-            output: injectSystemStatusToOutput(part.output, stepSystemStatus),
+            output: onTransformToolResult(part.output, part.toolName),
           })),
         });
       } else {
@@ -530,7 +516,6 @@ export async function* createAIStream(
 }
 
 /**
- * Export tools getter for backwards compatibility
- * SYSTEM_PROMPT and getSystemPrompt are exported earlier in the file
+ * Export helper functions
  */
-export { getAISDKTools };
+export { getAISDKTools, getSystemStatus, injectSystemStatusToOutput, buildTodoContext, normalizeMessage };

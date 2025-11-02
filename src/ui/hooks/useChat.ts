@@ -5,13 +5,19 @@
 
 import { useAppStore } from '../stores/app-store.js';
 import { getProvider } from '../../providers/index.js';
-import { createAIStream } from '../../core/ai-sdk.js';
+import {
+  createAIStream,
+  getSystemStatus,
+  injectSystemStatusToOutput,
+  buildTodoContext,
+} from '../../core/ai-sdk.js';
 import { processStream } from '../../core/stream-handler.js';
 import {
   setUserInputHandler,
   clearUserInputHandler,
   type UserInputRequest
 } from '../../tools/interaction.js';
+import type { ModelMessage, LanguageModelV2ToolResultOutput } from 'ai';
 
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -151,10 +157,55 @@ export function useChat() {
       // Get model using provider registry with full config
       const model = providerInstance.createClient(providerConfig, modelName);
 
-      // Create AI stream
+      // Create AI stream with context injection callbacks
       const stream = createAIStream({
         model,
         messages,
+        onPrepareMessages: (messageHistory, stepNumber) => {
+          // Inject system status to user messages at step 0
+          let preparedMessages = messageHistory;
+
+          if (stepNumber === 0) {
+            const systemStatus = getSystemStatus();
+            preparedMessages = messageHistory.map((msg) => {
+              if (msg.role === 'user') {
+                return {
+                  ...msg,
+                  content: [
+                    {
+                      type: 'text',
+                      text: systemStatus,
+                    },
+                    ...msg.content,
+                  ],
+                };
+              }
+              return msg;
+            });
+          }
+
+          // Inject todo context at every step (temporary, not saved)
+          const todos = useAppStore.getState().todos;
+          const todoContext = buildTodoContext(todos);
+
+          return [
+            ...preparedMessages,
+            {
+              role: 'system' as const,
+              content: [
+                {
+                  type: 'text',
+                  text: todoContext,
+                },
+              ],
+            },
+          ];
+        },
+        onTransformToolResult: (output: LanguageModelV2ToolResultOutput, toolName: string) => {
+          // Inject system status to tool results
+          const systemStatus = getSystemStatus();
+          return injectSystemStatusToOutput(output, systemStatus);
+        },
       });
 
       // Process stream with unified handler
