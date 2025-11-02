@@ -74,6 +74,14 @@ export const toolConfigs: Record<string, ToolConfig> = {
     'Read',
     (args) => args.file_path ? getRelativePath(String(args.file_path)) : '',
     (result) => {
+      // Handle undefined/null results
+      if (result === null || result === undefined) {
+        return {
+          lines: [],
+          summary: 'Read 0 lines',
+        };
+      }
+
       const content = typeof result === 'object' && result !== null && 'content' in result
         ? String((result as any).content)
         : typeof result === 'string'
