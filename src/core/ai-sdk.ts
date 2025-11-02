@@ -466,12 +466,32 @@ export async function* createAIStream(
   const systemStatus = getSystemStatus();
   const messageHistory: any[] = toAISDKMessages(initialMessages).map((msg: any) => {
     if (msg.role === 'user') {
-      // Add system status (timestamp, CPU, memory) to user messages
+      // Convert content to array format and prepend system status
+      let contentArray: any[];
+
+      if (typeof msg.content === 'string') {
+        // Convert string to TextPart array
+        contentArray = [
+          {
+            type: 'text',
+            text: msg.content,
+          },
+        ];
+      } else {
+        // Already array (TextPart | ImagePart | FilePart)
+        contentArray = msg.content;
+      }
+
+      // Prepend system status as TextPart
       return {
         ...msg,
-        content: typeof msg.content === 'string'
-          ? `${systemStatus} ${msg.content}`
-          : msg.content,
+        content: [
+          {
+            type: 'text',
+            text: systemStatus,
+          },
+          ...contentArray,
+        ],
       };
     }
     return msg;
