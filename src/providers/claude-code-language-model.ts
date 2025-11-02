@@ -11,6 +11,12 @@ import type {
   LanguageModelV2FinishReason,
 } from '@ai-sdk/provider';
 import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
+import {
+  generateToolsSystemPrompt,
+  parseContentBlocks,
+  formatToolResult,
+  type ToolDefinition,
+} from './text-based-tools.js';
 
 // All Claude Code built-in tools to disable
 const CLAUDE_CODE_BUILTIN_TOOLS = [
@@ -56,8 +62,28 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
   }
 
   /**
+   * Convert tools from Vercel AI SDK format to our internal format
+   */
+  private convertTools(tools: any[]): Record<string, ToolDefinition> | undefined {
+    if (!tools || tools.length === 0) {
+      return undefined;
+    }
+
+    const toolsMap: Record<string, ToolDefinition> = {};
+    for (const tool of tools) {
+      toolsMap[tool.name] = {
+        type: 'function',
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters || { type: 'object', properties: {} },
+      };
+    }
+    return toolsMap;
+  }
+
+  /**
    * Convert Vercel AI SDK messages to a single string prompt
-   * Note: Claude Agent SDK works better with string prompts than async iterables
+   * Handles tool results by converting them to XML format
    */
   private convertMessagesToString(options: LanguageModelV2CallOptions): string {
     const promptParts: string[] = [];
@@ -67,8 +93,8 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         // Handle both array and non-array content
         const content = Array.isArray(message.content) ? message.content : [message.content];
         const textParts = content
-          .filter((part) => typeof part === 'object' && part.type === 'text')
-          .map((part) => part.text);
+          .filter((part: any) => typeof part === 'object' && part.type === 'text')
+          .map((part: any) => part.text);
 
         if (textParts.length > 0) {
           promptParts.push(textParts.join('\n'));
@@ -77,12 +103,40 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         // Handle both array and non-array content
         const content = Array.isArray(message.content) ? message.content : [message.content];
         const textParts = content
-          .filter((part) => typeof part === 'object' && part.type === 'text')
-          .map((part) => part.text);
+          .filter((part: any) => typeof part === 'object' && part.type === 'text')
+          .map((part: any) => part.text);
 
         if (textParts.length > 0) {
           // Prefix assistant messages for context
           promptParts.push(`Previous assistant response: ${textParts.join('\n')}`);
+        }
+      } else if (message.role === 'tool') {
+        // Convert tool results to XML format for Claude
+        const content = Array.isArray(message.content) ? message.content : [message.content];
+        const toolResults: string[] = [];
+
+        for (const part of content) {
+          if (typeof part === 'object' && 'toolCallId' in part && 'output' in part) {
+            // Check if it's an error
+            const isError =
+              part.output &&
+              typeof part.output === 'object' &&
+              'type' in part.output &&
+              (part.output.type === 'error-text' || part.output.type === 'error-json');
+
+            let resultValue: unknown;
+            if (part.output && typeof part.output === 'object' && 'value' in part.output) {
+              resultValue = part.output.value;
+            } else {
+              resultValue = part.output;
+            }
+
+            toolResults.push(formatToolResult(part.toolCallId, resultValue, isError));
+          }
+        }
+
+        if (toolResults.length > 0) {
+          promptParts.push(toolResults.join('\n\n'));
         }
       }
     }
@@ -116,13 +170,18 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     options: LanguageModelV2CallOptions
   ): Promise<Awaited<ReturnType<LanguageModelV2['doGenerate']>>> {
     try {
-      // Note: Claude Agent SDK does not support Vercel AI SDK custom tools
-      // It only supports built-in tools and MCP servers
-      // Custom tools passed via options.tools are ignored
+      // Convert tools to internal format
+      const tools = this.convertTools(options.tools || []);
 
       // Convert messages to string prompt
       const promptString = this.convertMessagesToString(options);
-      const systemPrompt = this.extractSystemPrompt(options);
+      let systemPrompt = this.extractSystemPrompt(options) || '';
+
+      // Add tools description to system prompt if tools are provided
+      if (tools && Object.keys(tools).length > 0) {
+        const toolsPrompt = generateToolsSystemPrompt(tools);
+        systemPrompt = systemPrompt ? `${systemPrompt}\n\n${toolsPrompt}` : toolsPrompt;
+      }
 
       // Build query options
       const queryOptions: Options = {
@@ -154,27 +213,41 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
           const content = event.message.content;
           for (const block of content) {
             if (block.type === 'text') {
-              contentParts.push({
-                type: 'text',
-                text: block.text,
-              });
-            } else if (block.type === 'tool_use') {
-              // Tool call detected - add to content and set finish reason
-              contentParts.push({
-                type: 'tool-call',
-                toolCallId: block.id,
-                toolName: block.name,
-                args: block.input,
-              });
-              finishReason = 'tool-calls';
+              // Parse text for tool calls if tools are available
+              if (tools && Object.keys(tools).length > 0) {
+                const parsedBlocks = parseContentBlocks(block.text);
+                for (const parsedBlock of parsedBlocks) {
+                  if (parsedBlock.type === 'text') {
+                    contentParts.push({
+                      type: 'text',
+                      text: parsedBlock.text,
+                    });
+                  } else if (parsedBlock.type === 'tool_use') {
+                    contentParts.push({
+                      type: 'tool-call',
+                      toolCallId: parsedBlock.toolCallId,
+                      toolName: parsedBlock.toolName,
+                      input: JSON.stringify(parsedBlock.arguments),
+                    });
+                    finishReason = 'tool-calls';
+                  }
+                }
+              } else {
+                // No tools, just add text
+                contentParts.push({
+                  type: 'text',
+                  text: block.text,
+                });
+              }
             }
           }
 
           // Check stop reason
           if (event.message.stop_reason === 'end_turn') {
-            finishReason = 'stop';
-          } else if (event.message.stop_reason === 'tool_use') {
-            finishReason = 'tool-calls';
+            // Keep tool-calls finish reason if we detected tool calls
+            if (finishReason !== 'tool-calls') {
+              finishReason = 'stop';
+            }
           } else if (event.message.stop_reason === 'max_tokens') {
             finishReason = 'length';
           }
@@ -226,13 +299,18 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     options: LanguageModelV2CallOptions
   ): Promise<Awaited<ReturnType<LanguageModelV2['doStream']>>> {
     try {
-      // Note: Claude Agent SDK does not support Vercel AI SDK custom tools
-      // It only supports built-in tools and MCP servers
-      // Custom tools passed via options.tools are ignored
+      // Convert tools to internal format
+      const tools = this.convertTools(options.tools || []);
 
       // Convert messages to string prompt
       const promptString = this.convertMessagesToString(options);
-      const systemPrompt = this.extractSystemPrompt(options);
+      let systemPrompt = this.extractSystemPrompt(options) || '';
+
+      // Add tools description to system prompt if tools are provided
+      if (tools && Object.keys(tools).length > 0) {
+        const toolsPrompt = generateToolsSystemPrompt(tools);
+        systemPrompt = systemPrompt ? `${systemPrompt}\n\n${toolsPrompt}` : toolsPrompt;
+      }
 
       // Build query options
       const queryOptions: Options = {
@@ -267,37 +345,61 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                 const content = event.message.content;
                 for (const block of content) {
                   if (block.type === 'text') {
-                    // Emit text-start before first text-delta
-                    if (!hasStartedText) {
-                      controller.enqueue({
-                        type: 'text-start',
-                        id: 'text-0',
-                      });
-                      hasStartedText = true;
-                    }
+                    // Parse text for tool calls if tools are available
+                    if (tools && Object.keys(tools).length > 0) {
+                      const parsedBlocks = parseContentBlocks(block.text);
+                      for (const parsedBlock of parsedBlocks) {
+                        if (parsedBlock.type === 'text') {
+                          // Emit text-start before first text-delta
+                          if (!hasStartedText) {
+                            controller.enqueue({
+                              type: 'text-start',
+                              id: 'text-0',
+                            });
+                            hasStartedText = true;
+                          }
 
-                    controller.enqueue({
-                      type: 'text-delta',
-                      id: 'text-0',
-                      delta: block.text,
-                    });
-                  } else if (block.type === 'tool_use') {
-                    // Tool call detected - emit as tool-call
-                    controller.enqueue({
-                      type: 'tool-call',
-                      toolCallId: block.id,
-                      toolName: block.name,
-                      args: block.input,
-                    });
-                    finishReason = 'tool-calls';
+                          controller.enqueue({
+                            type: 'text-delta',
+                            id: 'text-0',
+                            delta: parsedBlock.text,
+                          });
+                        } else if (parsedBlock.type === 'tool_use') {
+                          // Tool call detected - emit as tool-call
+                          controller.enqueue({
+                            type: 'tool-call',
+                            toolCallId: parsedBlock.toolCallId,
+                            toolName: parsedBlock.toolName,
+                            input: JSON.stringify(parsedBlock.arguments),
+                          });
+                          finishReason = 'tool-calls';
+                        }
+                      }
+                    } else {
+                      // No tools, just emit text
+                      if (!hasStartedText) {
+                        controller.enqueue({
+                          type: 'text-start',
+                          id: 'text-0',
+                        });
+                        hasStartedText = true;
+                      }
+
+                      controller.enqueue({
+                        type: 'text-delta',
+                        id: 'text-0',
+                        delta: block.text,
+                      });
+                    }
                   }
                 }
 
                 // Check stop reason
                 if (event.message.stop_reason === 'end_turn') {
-                  finishReason = 'stop';
-                } else if (event.message.stop_reason === 'tool_use') {
-                  finishReason = 'tool-calls';
+                  // Keep tool-calls finish reason if we detected tool calls
+                  if (finishReason !== 'tool-calls') {
+                    finishReason = 'stop';
+                  }
                 } else if (event.message.stop_reason === 'max_tokens') {
                   finishReason = 'length';
                 }
