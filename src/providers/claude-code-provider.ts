@@ -66,8 +66,6 @@ export class ClaudeCodeProvider implements AIProvider {
 
   createClient(_config: ProviderConfig, modelId: string): LanguageModelV1 {
     // Claude Code doesn't use config - it uses CLI authentication
-    return claudeCode(modelId, {
-      allowedTools: ['Write'],
-    });
+    return claudeCode(modelId);
   }
 }
