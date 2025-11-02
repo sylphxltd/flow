@@ -362,6 +362,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             let outputTokens = 0;
             let finishReason: LanguageModelV2FinishReason = 'stop';
             let hasStartedText = false;
+            let hasEmittedTextEnd = false;
             // Track thinking block indices for streaming
             const thinkingBlockIndices = new Set<number>();
             // XML parser for streaming tool call detection
@@ -468,7 +469,19 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                     // End of text block - flush XML parser if tools are available
                     if (xmlParser) {
                       for (const xmlEvent of xmlParser.flush()) {
-                        if (xmlEvent.type === 'tool-input-delta') {
+                        if (xmlEvent.type === 'text-delta') {
+                          controller.enqueue({
+                            type: 'text-delta',
+                            id: 'text-0',
+                            delta: xmlEvent.delta,
+                          });
+                        } else if (xmlEvent.type === 'text-end') {
+                          controller.enqueue({
+                            type: 'text-end',
+                            id: 'text-0',
+                          });
+                          hasEmittedTextEnd = true;
+                        } else if (xmlEvent.type === 'tool-input-delta') {
                           controller.enqueue({
                             type: 'tool-input-delta',
                             id: xmlEvent.toolCallId,
@@ -491,11 +504,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                       }
                     }
 
-                    // Emit text-end
-                    controller.enqueue({
-                      type: 'text-end',
-                      id: 'text-0',
-                    });
+                    // Emit text-end if flush didn't emit it
+                    if (!hasEmittedTextEnd) {
+                      controller.enqueue({
+                        type: 'text-end',
+                        id: 'text-0',
+                      });
+                      hasEmittedTextEnd = true;
+                    }
                   }
                 }
               } else if (event.type === 'assistant') {
@@ -543,8 +559,8 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
               }
             }
 
-            // Emit text-end if we started text
-            if (hasStartedText) {
+            // Emit text-end if we started text but haven't emitted text-end yet
+            if (hasStartedText && !hasEmittedTextEnd) {
               controller.enqueue({
                 type: 'text-end',
                 id: 'text-0',
