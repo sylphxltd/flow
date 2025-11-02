@@ -6,7 +6,6 @@ import { DEFAULT_AGENTS } from '../constants/benchmark-constants.js';
 import type { TimingData } from '../types/benchmark.js';
 import { getAgentsDir } from '../utils/paths.js';
 import { ProcessManager } from '../utils/process-manager.js';
-import { formatToolDisplay } from '../utils/tool-display.js';
 
 /**
  * Get list of agents to run based on user selection
@@ -174,7 +173,12 @@ async function runSingleAgent(
               } else if (content.type === 'tool_use') {
                 const toolName = content.name;
                 const params = content.input || {};
-                const toolDisplay = formatToolDisplay(toolName, params);
+
+                // Simple tool display for benchmark output
+                const paramsStr = JSON.stringify(params);
+                const toolDisplay = paramsStr.length > 80
+                  ? `${toolName}(${paramsStr.substring(0, 77)}...)`
+                  : `${toolName}(${paramsStr})`;
 
                 monitor?.addAgentOutput(agentName, toolDisplay);
               }
