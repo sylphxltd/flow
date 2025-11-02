@@ -96,6 +96,16 @@ export default function ControlledTextInput({
 
   useInput(
     (input, key) => {
+      // DEBUG: Log all input events
+      console.log('[INPUT]', {
+        input: JSON.stringify(input),
+        inputLength: input?.length,
+        hasNewline: input?.includes('\n'),
+        key: Object.keys(key).filter(k => key[k as keyof typeof key]),
+        currentValue: JSON.stringify(state.value),
+        currentCursor: state.cursor,
+      });
+
       // Arrow keys
       if (key.leftArrow) {
         dispatch({ type: 'MOVE', cursor: state.cursor - 1 });
@@ -118,6 +128,7 @@ export default function ControlledTextInput({
 
       // Backspace
       if (key.backspace || key.delete) {
+        console.log('[BACKSPACE] before:', state.value.length, 'cursor:', state.cursor);
         dispatch({ type: 'BACKSPACE' });
         return;
       }
@@ -126,10 +137,12 @@ export default function ControlledTextInput({
       if (key.return && !input) {
         // Shift+Enter inserts newline
         if (key.shift) {
+          console.log('[SHIFT+ENTER] inserting newline');
           dispatch({ type: 'INSERT', text: '\n' });
           return;
         }
         // Regular Enter submits
+        console.log('[ENTER] submitting:', JSON.stringify(state.value));
         onSubmit?.(state.value);
         return;
       }
@@ -139,6 +152,7 @@ export default function ControlledTextInput({
 
       // Insert text (handles paste with \n)
       if (input) {
+        console.log('[INSERT]', JSON.stringify(input), 'at cursor', state.cursor);
         dispatch({ type: 'INSERT', text: input });
       }
     },
