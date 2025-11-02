@@ -1,24 +1,33 @@
 # Tool Display System
 
-Simple, unified API for configuring tool display.
+Simple, unified API for configuring tool display using factory pattern.
+
+## Core Principle
+
+**The default display system does not know about specific tools.**
+
+Each tool registers itself with its own display logic. The system only provides:
+- A factory function to create default displays
+- A registry to store tool components
+- Generic rendering utilities
 
 ## Basic Usage
 
-### Default Display (Formatters)
+### Default Display (Factory Pattern)
 
-For most tools, just define how to format args and results:
+For most tools, use the factory function with formatters:
 
 ```ts
-import { registerTool } from '../ui/utils/tool-configs.js';
+import { registerTool, createDefaultToolDisplay } from '../ui/utils/tool-configs.js';
 
-registerTool('myTool', {
-  displayName: 'My Tool',
-  formatArgs: (args) => `Processing ${args.filename}`,
-  formatResult: (result) => ({
+registerTool('myTool', createDefaultToolDisplay(
+  'My Tool',                                        // Display name
+  (args) => `Processing ${args.filename}`,          // Format args
+  (result) => ({                                    // Format result
     lines: ['Line 1', 'Line 2'],
     summary: 'Processed 2 items',
-  }),
-});
+  })
+));
 ```
 
 ### Custom Component
@@ -38,7 +47,7 @@ function MyCustomToolDisplay({ name, status, args, result }: ToolDisplayProps) {
   );
 }
 
-registerTool('myTool', { component: MyCustomToolDisplay });
+registerTool('myTool', MyCustomToolDisplay);
 ```
 
 ## Built-in Tools Configuration
@@ -47,14 +56,14 @@ All built-in tools are pre-configured in `src/ui/utils/tool-configs.ts`:
 
 ```ts
 export const toolConfigs: Record<string, ToolConfig> = {
-  read: {
-    displayName: 'Read',
-    formatArgs: (args) => getRelativePath(args.file_path),
-    formatResult: (result) => ({
+  read: createDefaultToolDisplay(
+    'Read',
+    (args) => getRelativePath(args.file_path),
+    (result) => ({
       summary: `Read ${lineCount} lines`,
       lines: [],
-    }),
-  },
+    })
+  ),
 
   // ... more tools
 };
@@ -67,11 +76,13 @@ export const toolConfigs: Record<string, ToolConfig> = {
 Edit the tool config in `src/ui/utils/tool-configs.ts`:
 
 ```ts
-read: {
-  displayName: 'Read File',  // Changed from 'Read'
-  formatArgs: (args) => `📄 ${getRelativePath(args.file_path)}`,  // Added icon
-  // ... rest stays same
-}
+read: createDefaultToolDisplay(
+  'Read File',  // Changed from 'Read'
+  (args) => `📄 ${getRelativePath(args.file_path)}`,  // Added icon
+  (result) => {
+    // ... result formatting
+  }
+)
 ```
 
 ### Replace with custom component:
@@ -80,9 +91,7 @@ read: {
 import { MyCustomReadDisplay } from './components/MyCustomReadDisplay.js';
 
 // In tool-configs.ts
-read: {
-  component: MyCustomReadDisplay,
-}
+read: MyCustomReadDisplay,
 ```
 
 ## Single Source of Truth
@@ -100,10 +109,11 @@ read: {
 ### Add icon to bash commands:
 
 ```ts
-bash: {
-  displayName: '⚡ Bash',  // Added icon
-  // ... rest unchanged
-}
+bash: createDefaultToolDisplay(
+  '⚡ Bash',  // Added icon
+  (args) => formatBashCommand(args),
+  (result) => formatBashResult(result)
+)
 ```
 
 ### Custom display for a specific tool:
@@ -120,18 +130,18 @@ function ImageToolDisplay({ args, result, status }: ToolDisplayProps) {
   return <Text>Generating image...</Text>;
 }
 
-registerTool('generateImage', { component: ImageToolDisplay });
+registerTool('generateImage', ImageToolDisplay);
 ```
 
 ### Reuse formatters with different names:
 
 ```ts
-import { toolConfigs, registerTool } from '../ui/utils/tool-configs.js';
+import { registerTool, createDefaultToolDisplay } from '../ui/utils/tool-configs.js';
 
-// Clone existing config but with different name
-const writeConfig = toolConfigs.write;
-registerTool('createFile', {
-  ...writeConfig,
-  displayName: 'Create',
-});
+// Create similar display with different name
+registerTool('createFile', createDefaultToolDisplay(
+  'Create',
+  (args) => args.file_path ? getRelativePath(args.file_path) : '',
+  (result) => formatWriteResult(result)
+));
 ```

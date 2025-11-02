@@ -15,6 +15,7 @@ import {
   isDefaultCwd,
   pluralize,
 } from './tool-formatters.js';
+import { createDefaultToolDisplay } from '../components/DefaultToolDisplay.js';
 
 /**
  * Tool display props (for custom components)
@@ -30,18 +31,9 @@ export interface ToolDisplayProps {
 
 /**
  * Tool configuration
- * - component: custom React component (optional)
- * - displayName, formatArgs, formatResult: for default display (optional)
- *
- * If component is provided, it will be used.
- * Otherwise, DefaultToolComponent will use the formatters.
+ * Simply a React component that renders the tool display
  */
-export interface ToolConfig {
-  component?: FC<ToolDisplayProps>;
-  displayName?: string;
-  formatArgs?: ArgsFormatter;
-  formatResult?: ResultFormatter;
-}
+export type ToolConfig = FC<ToolDisplayProps>;
 
 /**
  * Helper to convert result to lines
@@ -63,27 +55,25 @@ const resultToLines = (result: unknown): string[] => {
  * Add new tools here - single source of truth
  *
  * Examples:
- * - Default display: { displayName: '...', formatArgs: ..., formatResult: ... }
- * - Custom component: { component: MyCustomComponent }
+ * - Default display: createDefaultToolDisplay('Name', formatArgs, formatResult)
+ * - Custom component: MyCustomComponent
  */
 export const toolConfigs: Record<string, ToolConfig> = {
   // Ask tool
-  ask: {
-    displayName: 'Ask',
-    formatArgs: (args) =>
-      args.question ? truncateString(String(args.question), 80) : '',
-    formatResult: (result) => ({
+  ask: createDefaultToolDisplay(
+    'Ask',
+    (args) => args.question ? truncateString(String(args.question), 80) : '',
+    (result) => ({
       lines: resultToLines(result),
       summary: undefined,
-    }),
-  },
+    })
+  ),
 
   // Read tool
-  read: {
-    displayName: 'Read',
-    formatArgs: (args) =>
-      args.file_path ? getRelativePath(String(args.file_path)) : '',
-    formatResult: (result) => {
+  read: createDefaultToolDisplay(
+    'Read',
+    (args) => args.file_path ? getRelativePath(String(args.file_path)) : '',
+    (result) => {
       const content = typeof result === 'object' && result !== null && 'content' in result
         ? String((result as any).content)
         : typeof result === 'string'
@@ -95,15 +85,14 @@ export const toolConfigs: Record<string, ToolConfig> = {
         lines: [],
         summary: `Read ${lines.length} ${pluralize(lines.length, 'line')}`,
       };
-    },
-  },
+    }
+  ),
 
   // Write tool
-  write: {
-    displayName: 'Write',
-    formatArgs: (args) =>
-      args.file_path ? getRelativePath(String(args.file_path)) : '',
-    formatResult: (result) => {
+  write: createDefaultToolDisplay(
+    'Write',
+    (args) => args.file_path ? getRelativePath(String(args.file_path)) : '',
+    (result) => {
       if (typeof result !== 'object' || result === null || !('preview' in result)) {
         return { lines: resultToLines(result) };
       }
@@ -113,15 +102,14 @@ export const toolConfigs: Record<string, ToolConfig> = {
         lines: preview,
         summary: `Wrote ${fileName} (${lineCount} ${pluralize(lineCount, 'line')})`,
       };
-    },
-  },
+    }
+  ),
 
   // Edit tool
-  edit: {
-    displayName: 'Update',
-    formatArgs: (args) =>
-      args.file_path ? getRelativePath(String(args.file_path)) : '',
-    formatResult: (result) => {
+  edit: createDefaultToolDisplay(
+    'Update',
+    (args) => args.file_path ? getRelativePath(String(args.file_path)) : '',
+    (result) => {
       if (typeof result !== 'object' || result === null || !('diff' in result)) {
         return { lines: resultToLines(result) };
       }
@@ -135,13 +123,13 @@ export const toolConfigs: Record<string, ToolConfig> = {
         lines: diff,
         summary: `Updated ${fileName} with ${additions} ${pluralize(additions, 'addition')} and ${removals} ${pluralize(removals, 'removal')}`,
       };
-    },
-  },
+    }
+  ),
 
   // Bash tool
-  bash: {
-    displayName: 'Bash',
-    formatArgs: (args) => {
+  bash: createDefaultToolDisplay(
+    'Bash',
+    (args) => {
       const command = args.command ? String(args.command) : '';
       const cwd = args.cwd ? String(args.cwd) : '';
       const runInBackground = args.run_in_background;
@@ -158,7 +146,7 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
       return display;
     },
-    formatResult: (result) => {
+    (result) => {
       // Background mode
       if (typeof result === 'object' && result !== null && 'mode' in result && (result as any).mode === 'background') {
         const { bash_id, message } = result as any;
@@ -184,14 +172,14 @@ export const toolConfigs: Record<string, ToolConfig> = {
         lines,
         summary: lines.length > 0 ? undefined : 'Command completed',
       };
-    },
-  },
+    }
+  ),
 
   // Bash output tool
-  'bash-output': {
-    displayName: 'BashOutput',
-    formatArgs: (args) => args.bash_id ? String(args.bash_id) : '',
-    formatResult: (result) => {
+  'bash-output': createDefaultToolDisplay(
+    'BashOutput',
+    (args) => args.bash_id ? String(args.bash_id) : '',
+    (result) => {
       if (typeof result === 'object' && result !== null && 'bash_id' in result) {
         const { stdout, stderr, exitCode, isRunning, duration } = result as any;
         const output = stderr && exitCode !== 0 ? stderr : stdout;
@@ -207,14 +195,14 @@ export const toolConfigs: Record<string, ToolConfig> = {
       }
 
       return { lines: resultToLines(result) };
-    },
-  },
+    }
+  ),
 
   // Kill bash tool
-  'kill-bash': {
-    displayName: 'KillBash',
-    formatArgs: (args) => args.bash_id ? String(args.bash_id) : '',
-    formatResult: (result) => {
+  'kill-bash': createDefaultToolDisplay(
+    'KillBash',
+    (args) => args.bash_id ? String(args.bash_id) : '',
+    (result) => {
       if (typeof result === 'object' && result !== null && 'message' in result) {
         const { message } = result as any;
         return {
@@ -224,13 +212,13 @@ export const toolConfigs: Record<string, ToolConfig> = {
       }
 
       return { lines: resultToLines(result) };
-    },
-  },
+    }
+  ),
 
   // Grep tool
-  grep: {
-    displayName: 'Search',
-    formatArgs: (args) => {
+  grep: createDefaultToolDisplay(
+    'Search',
+    (args) => {
       const pattern = args.pattern ? String(args.pattern) : '';
       const globPattern = args.glob ? String(args.glob) : '';
       const type = args.type ? String(args.type) : '';
@@ -250,7 +238,7 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
       return display;
     },
-    formatResult: (result) => {
+    (result) => {
       if (typeof result !== 'object' || result === null) {
         return { lines: resultToLines(result) };
       }
@@ -285,13 +273,13 @@ export const toolConfigs: Record<string, ToolConfig> = {
       }
 
       return { lines: resultToLines(result) };
-    },
-  },
+    }
+  ),
 
   // Glob tool
-  glob: {
-    displayName: 'Search',
-    formatArgs: (args) => {
+  glob: createDefaultToolDisplay(
+    'Search',
+    (args) => {
       const pattern = args.pattern ? String(args.pattern) : '';
       const path = args.path ? String(args.path) : '';
 
@@ -299,7 +287,7 @@ export const toolConfigs: Record<string, ToolConfig> = {
         ? `${pattern} in ${getRelativePath(path)}`
         : pattern;
     },
-    formatResult: (result) => {
+    (result) => {
       if (typeof result === 'object' && result !== null && 'files' in result) {
         const files = (result as any).files as string[];
         return {
@@ -313,13 +301,13 @@ export const toolConfigs: Record<string, ToolConfig> = {
         lines,
         summary: `Found ${lines.length} ${pluralize(lines.length, 'file')}`,
       };
-    },
-  },
+    }
+  ),
 
   // Update todos tool
-  updateTodos: {
-    displayName: 'Tasks',
-    formatArgs: (args) => {
+  updateTodos: createDefaultToolDisplay(
+    'Tasks',
+    (args) => {
       const todos = args.todos as any[] | undefined;
       if (!todos || todos.length === 0) return '';
 
@@ -332,7 +320,7 @@ export const toolConfigs: Record<string, ToolConfig> = {
 
       return parts.join(', ');
     },
-    formatResult: (result) => {
+    (result) => {
       if (typeof result === 'object' && result !== null && 'summary' in result) {
         const { summary, changes, total } = result as any;
         return {
@@ -342,78 +330,40 @@ export const toolConfigs: Record<string, ToolConfig> = {
       }
 
       return { lines: resultToLines(result) };
-    },
-  },
+    }
+  ),
 };
 
 /**
- * Get tool configuration
+ * Get tool display component
  */
-export const getToolConfig = (toolName: string): ToolConfig | null => {
+export const getToolComponent = (toolName: string): ToolConfig | null => {
   return toolConfigs[toolName] || null;
 };
 
 /**
- * Check if tool is built-in (has a config)
+ * Check if tool has a registered display component
  */
 export const isBuiltInTool = (toolName: string): boolean => {
   return toolName in toolConfigs;
 };
 
 /**
- * Get display name for tool
- */
-export const getDisplayName = (toolName: string): string => {
-  const config = getToolConfig(toolName);
-  return config?.displayName || toolName;
-};
-
-/**
- * Format tool arguments
- */
-export const formatArgs = (toolName: string, args: unknown): string => {
-  if (!args || typeof args !== 'object') {
-    return '';
-  }
-
-  const config = getToolConfig(toolName);
-  if (config?.formatArgs) {
-    return config.formatArgs(args as Record<string, unknown>);
-  }
-  return JSON.stringify(args);
-};
-
-/**
- * Format tool result
- */
-export const formatResult = (toolName: string, result: unknown): { lines: string[]; summary?: string } => {
-  if (result === null || result === undefined) {
-    return { lines: [] };
-  }
-
-  const config = getToolConfig(toolName);
-  if (config?.formatResult) {
-    return config.formatResult(result);
-  }
-  return { lines: resultToLines(result) };
-};
-
-/**
- * Register a tool display configuration
+ * Register a tool display component
  *
  * Examples:
  * ```ts
- * // Custom component
- * registerTool('myTool', { component: MyToolComponent });
+ * // Using factory for default display
+ * registerTool('myTool', createDefaultToolDisplay(
+ *   'My Tool',
+ *   (args) => args.foo,
+ *   (result) => ({ lines: [String(result)] })
+ * ));
  *
- * // Default display with formatters
- * registerTool('myTool', {
- *   displayName: 'My Tool',
- *   formatArgs: (args) => args.foo,
- *   formatResult: (result) => ({ lines: [String(result)] }),
- * });
+ * // Using custom component
+ * registerTool('myTool', MyCustomComponent);
  * ```
  */
-export const registerTool = (toolName: string, config: ToolConfig): void => {
-  toolConfigs[toolName] = config;
+export const registerTool = (toolName: string, component: ToolConfig): void => {
+  toolConfigs[toolName] = component;
 };
