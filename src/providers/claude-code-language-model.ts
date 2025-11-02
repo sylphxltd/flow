@@ -122,14 +122,13 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
       // Build query options
       const queryOptions: any = {
         model: this.modelId,
+        // Disable Claude Code built-in tools - only use Vercel AI SDK tools
+        settingSources: [],
+        tools: tools || [],
       };
 
       if (systemPrompt) {
         queryOptions.systemPrompt = systemPrompt;
-      }
-
-      if (tools) {
-        queryOptions.tools = tools;
       }
 
       // Execute query
@@ -166,16 +165,6 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             }
           }
 
-          // Extract usage from assistant message (includes cache tokens)
-          if (event.message.usage) {
-            const usage = event.message.usage;
-            inputTokens =
-              (usage.input_tokens || 0) +
-              (usage.cache_creation_input_tokens || 0) +
-              (usage.cache_read_input_tokens || 0);
-            outputTokens = usage.output_tokens || 0;
-          }
-
           // Check stop reason
           if (event.message.stop_reason === 'end_turn') {
             finishReason = 'stop';
@@ -192,7 +181,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             throw new Error('Error occurred during Claude Code execution');
           }
 
-          // Extract usage from result (fallback, includes cache tokens)
+          // Extract usage from result (final, includes cache tokens)
           if (event.usage) {
             const usage = event.usage;
             inputTokens =
@@ -241,14 +230,13 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
       // Build query options
       const queryOptions: any = {
         model: this.modelId,
+        // Disable Claude Code built-in tools - only use Vercel AI SDK tools
+        settingSources: [],
+        tools: tools || [],
       };
 
       if (systemPrompt) {
         queryOptions.systemPrompt = systemPrompt;
-      }
-
-      if (tools) {
-        queryOptions.tools = tools;
       }
 
       // Execute query
@@ -298,16 +286,6 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   }
                 }
 
-                // Extract usage from assistant message (includes cache tokens)
-                if (event.message.usage) {
-                  const usage = event.message.usage;
-                  inputTokens =
-                    (usage.input_tokens || 0) +
-                    (usage.cache_creation_input_tokens || 0) +
-                    (usage.cache_read_input_tokens || 0);
-                  outputTokens = usage.output_tokens || 0;
-                }
-
                 // Check stop reason
                 if (event.message.stop_reason === 'end_turn') {
                   finishReason = 'stop';
@@ -326,7 +304,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   return;
                 }
 
-                // Extract usage from result (fallback, includes cache tokens)
+                // Extract usage from result (final, includes cache tokens)
                 if (event.usage) {
                   const usage = event.usage;
                   inputTokens =
