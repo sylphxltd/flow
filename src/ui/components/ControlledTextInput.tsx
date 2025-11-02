@@ -3,7 +3,7 @@
  * Implements standard readline keybindings for cross-platform compatibility
  */
 
-import React, { useReducer, useEffect } from 'react';
+import React, { useReducer, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 
 export interface ControlledTextInputProps {
@@ -335,21 +335,31 @@ export default function ControlledTextInput({
     killBuffer: '',
   });
 
-  // Sync props → state
+  // Track if update is from internal state change (avoid infinite loop)
+  const isInternalUpdate = useRef(false);
+
+  // Sync props → state (only when changed externally)
   useEffect(() => {
-    if (value !== state.value || cursor !== state.cursor) {
+    if (!isInternalUpdate.current && (value !== state.value || cursor !== state.cursor)) {
       dispatch({ type: 'SYNC', value, cursor });
     }
-  }, [value, cursor]);
+    isInternalUpdate.current = false;
+  }, [value, cursor, state.value, state.cursor]);
 
-  // Sync state → parent
+  // Sync state → parent (only when changed internally)
   useEffect(() => {
-    if (state.value !== value) onChange(state.value);
-  }, [state.value]);
+    if (state.value !== value) {
+      isInternalUpdate.current = true;
+      onChange(state.value);
+    }
+  }, [state.value, value, onChange]);
 
   useEffect(() => {
-    if (state.cursor !== cursor) onCursorChange(state.cursor);
-  }, [state.cursor]);
+    if (state.cursor !== cursor) {
+      isInternalUpdate.current = true;
+      onCursorChange(state.cursor);
+    }
+  }, [state.cursor, cursor, onCursorChange]);
 
   useInput(
     (input, key) => {
@@ -492,13 +502,13 @@ export default function ControlledTextInput({
       // ===========================================
 
       if (key.return && !input) {
-        if (key.shift) {
-          // Shift+Enter - insert newline
-          dispatch({ type: 'INSERT', text: '\n' });
+        if (key.meta) {
+          // Command+Enter (Mac) - submit
+          onSubmit?.(state.value);
           return;
         }
-        // Regular Enter - submit
-        onSubmit?.(state.value);
+        // Regular Enter - insert newline
+        dispatch({ type: 'INSERT', text: '\n' });
         return;
       }
 
