@@ -4,8 +4,8 @@
  * Content parts based design - own type system with proper conversion
  */
 
-import { streamText, stepCountIs } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import { streamText, stepCountIs, type UserContent, type AssistantContent, type DataContent, type ModelMessage } from 'ai';
+import type { LanguageModelV2, LanguageModelV2ToolResultOutput } from '@ai-sdk/provider';
 import * as os from 'node:os';
 import { getAISDKTools } from '../tools/index.js';
 import { getCurrentSystemPrompt } from './agent-manager.js';
@@ -76,73 +76,6 @@ export interface SylphxLanguageModel {
   readonly provider: string;
   readonly modelId: string;
 }
-
-/**
- * Our own Message interface
- */
-export interface SylphxMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-/**
- * Content Part Types - Our own type system
- */
-export interface TextPart {
-  type: 'text';
-  text: string;
-}
-
-export interface FilePart {
-  type: 'file';
-  name: string;
-  mimeType: string;
-  data: string; // base64 or URL
-}
-
-export interface ReasoningPart {
-  type: 'reasoning';
-  reasoning: string;
-}
-
-export interface SourcePart {
-  type: 'source';
-  name: string;
-  content: string;
-}
-
-export interface ToolCallPart {
-  type: 'tool-call';
-  toolCallId: string;
-  toolName: string;
-  args: unknown;
-}
-
-export interface ToolResultPart {
-  type: 'tool-result';
-  toolCallId: string;
-  toolName: string;
-  result: unknown;
-}
-
-export interface ToolErrorPart {
-  type: 'tool-error';
-  toolCallId: string;
-  toolName: string;
-  error: string;
-}
-
-/**
- * Content part types - all possible parts in LLM response
- */
-export type ContentPart =
-  | TextPart
-  | FilePart
-  | ReasoningPart
-  | SourcePart
-  | ToolCallPart
-  | ToolResultPart
-  | ToolErrorPart;
 
 /**
  * Stream chunk types (our own)
@@ -252,39 +185,17 @@ export interface StepInfo {
     completionTokens: number;
     totalTokens: number;
   };
-  content: ContentPart[];
-}
-
-/**
- * Extended message with timestamp
- */
-export interface TimestampedMessage {
-  role: 'user' | 'assistant' | 'tool' | 'system';
-  content: any;
-  timestamp?: string;
+  content: AssistantContent[];
 }
 
 /**
  * Create AI stream options (our own)
  */
 export interface CreateAIStreamOptions {
-  model: SylphxLanguageModel | LanguageModelV2;
-  messages: SylphxMessage[];
+  model: LanguageModelV2;
+  messages: ModelMessage[];
   systemPrompt?: string;
   onStepFinish?: (step: StepInfo) => void;
-}
-
-/**
- * Convert our language model to AI SDK format
- * We accept either our interface or the actual LanguageModelV2
- */
-function toAISDKModel(model: SylphxLanguageModel | LanguageModelV2): LanguageModelV2 {
-  // If it's already a LanguageModelV2, return it
-  if ('doStream' in model) {
-    return model;
-  }
-  // Otherwise it's our interface wrapper, cast it
-  return model as unknown as LanguageModelV2;
 }
 
 /**
@@ -328,59 +239,57 @@ Memory: ${memUsageGB}GB/${totalMemGB}GB
  * Inject system status into tool result output
  * Convert all types to content type and prepend system status as text part
  */
-function injectSystemStatusToOutput(output: any, systemStatus: string): any {
+function injectSystemStatusToOutput(output: LanguageModelV2ToolResultOutput, systemStatus: string): Extract<
+  LanguageModelV2ToolResultOutput,
+  { type: 'content' }
+> {
   if (!output || typeof output !== 'object') {
     return output;
   }
 
   // Convert to content type if not already
-  let contentValue: any[];
+  const content: Extract<
+    LanguageModelV2ToolResultOutput,
+    { type: 'content' }
+  > = {
+    type: 'content',
+    value: [],
+  }
 
   if (output.type === 'content') {
     // Already content type
-    contentValue = output.value;
+    content.value = output.value;
   } else if (output.type === 'text' || output.type === 'error-text') {
-    // Convert text to content
-    contentValue = [
-      {
+    content.value.push({
         type: 'text',
         text: output.value,
-      },
-    ];
+    });
   } else if (output.type === 'json' || output.type === 'error-json') {
     // Convert JSON to content (stringify)
-    contentValue = [
-      {
+    content.value.push({
         type: 'text',
         text: JSON.stringify(output.value, null, 2),
-      },
-    ];
-  } else {
-    // Unknown type, keep as is
-    return output;
+    });
   }
 
   // Prepend system status as text part
-  return {
-    type: 'content',
-    value: [
-      {
-        type: 'text',
-        text: systemStatus,
-      },
-      ...contentValue,
-    ],
-  };
+
+  content.value.unshift({
+      type: 'text',
+      text: systemStatus,
+  })
+  return content;
 }
 
 /**
  * Normalize content to modern array format
- * Converts legacy string content to Array<TextPart | ImagePart | FilePart>
+ * Converts legacy string content to Array<TextPart | ImagePart | FilePart | ... >
  */
-function normalizeContent(content: any): any[] {
+function normailzeMessage(message: ModelMessage): ModelMessage {
+  const content = message.content;
   if (typeof content === 'string') {
     // Legacy string format → convert to TextPart array
-    return [
+    message.content =  [
       {
         type: 'text',
         text: content,
@@ -389,84 +298,7 @@ function normalizeContent(content: any): any[] {
   }
 
   // Already array format (or other object)
-  return Array.isArray(content) ? content : [content];
-}
-
-/**
- * Convert our messages to AI SDK format with normalized content
- */
-function toAISDKMessages(messages: SylphxMessage[]) {
-  return messages.map((msg) => ({
-    role: msg.role,
-    content: normalizeContent(msg.content),
-  }));
-}
-
-/**
- * Convert AI SDK content to our ContentPart types
- */
-function fromAISDKContent(aiContent: any[]): ContentPart[] {
-  return aiContent.map((part: any): ContentPart => {
-    switch (part.type) {
-      case 'text':
-        return {
-          type: 'text',
-          text: part.text,
-        };
-
-      case 'file':
-        return {
-          type: 'file',
-          name: part.file?.name || 'unknown',
-          mimeType: part.file?.mimeType || 'application/octet-stream',
-          data: part.file?.data || '',
-        };
-
-      case 'reasoning':
-        return {
-          type: 'reasoning',
-          reasoning: part.reasoning || part.text || '',
-        };
-
-      case 'source':
-        return {
-          type: 'source',
-          name: part.name || 'unknown',
-          content: part.content || '',
-        };
-
-      case 'tool-call':
-        return {
-          type: 'tool-call',
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: part.args || part.input,
-        };
-
-      case 'tool-result':
-        return {
-          type: 'tool-result',
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          result: part.result || part.output,
-        };
-
-      case 'tool-error':
-        return {
-          type: 'tool-error',
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          error: part.error instanceof Error ? part.error.message : String(part.error),
-        };
-
-      default:
-        // Fallback: treat unknown parts as text
-        return {
-          type: 'text',
-          text: JSON.stringify(part),
-        };
-    }
-  });
+  return message;
 }
 
 /**
@@ -478,13 +310,11 @@ export async function* createAIStream(
 ): AsyncIterable<StreamChunk> {
   const { systemPrompt = getSystemPrompt(), model, messages: initialMessages, onStepFinish } = options;
 
-  // Convert our types to AI SDK types
-  const aiModel = toAISDKModel(model);
 
   // Message history that we control - add system status to initial messages
   // Note: toAISDKMessages() already normalizes all content to array format
   const systemStatus = getSystemStatus();
-  const messageHistory: any[] = toAISDKMessages(initialMessages).map((msg: any) => {
+  const messageHistory = initialMessages.map(normailzeMessage).map((msg) => {
     if (msg.role === 'user') {
       // Prepend system status as TextPart (content is already array)
       return {
@@ -529,8 +359,8 @@ export async function* createAIStream(
     ];
 
     // Call AI SDK with single step
-    const { fullStream, response, finishReason, usage, toolCalls, toolResults, content } = streamText({
-      model: aiModel,
+    const { fullStream, response, finishReason, usage, content } = streamText({
+      model,
       messages: messagesWithContext,
       system: systemPrompt,
       tools: getAISDKTools(),
@@ -656,7 +486,7 @@ export async function* createAIStream(
           completionTokens: (await usage).outputTokens ?? 0,
           totalTokens: (await usage).totalTokens ?? 0,
         },
-        content: fromAISDKContent(await content),
+        content: await content,
       };
       onStepFinish(stepInfo);
     }
@@ -670,7 +500,7 @@ export async function* createAIStream(
       if (msg.role === 'tool') {
         messageHistory.push({
           ...msg,
-          content: msg.content.map((part: any) => ({
+          content: msg.content.map((part) => ({
             ...part,
             output: injectSystemStatusToOutput(part.output, stepSystemStatus),
           })),
