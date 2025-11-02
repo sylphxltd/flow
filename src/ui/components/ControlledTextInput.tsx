@@ -40,6 +40,8 @@ type Action =
   | { type: 'MOVE_WORD_RIGHT' }
   | { type: 'MOVE_TO_START' }
   | { type: 'MOVE_TO_END' }
+  | { type: 'MOVE_LINE_UP' }
+  | { type: 'MOVE_LINE_DOWN' }
   | { type: 'TRANSPOSE_CHARS' }
   | { type: 'YANK' };
 
@@ -88,6 +90,37 @@ function findWordEnd(text: string, cursor: number): number {
 // Helper: Clamp cursor
 function clampCursor(cursor: number, length: number): number {
   return Math.max(0, Math.min(cursor, length));
+}
+
+// Helper: Get line info for cursor position
+function getLineInfo(text: string, cursor: number): { line: number; col: number; lines: string[] } {
+  const lines = text.split('\n');
+  let charCount = 0;
+  let line = 0;
+  let col = cursor;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineLength = lines[i].length;
+    if (cursor <= charCount + lineLength) {
+      line = i;
+      col = cursor - charCount;
+      break;
+    }
+    charCount += lineLength + 1; // +1 for \n
+  }
+
+  return { line, col, lines };
+}
+
+// Helper: Convert line/col to cursor position
+function lineToCursor(lines: string[], targetLine: number, targetCol: number): number {
+  let cursor = 0;
+  for (let i = 0; i < targetLine && i < lines.length; i++) {
+    cursor += lines[i].length + 1; // +1 for \n
+  }
+  const lineLength = lines[targetLine]?.length || 0;
+  cursor += Math.min(targetCol, lineLength);
+  return cursor;
 }
 
 function reducer(state: State, action: Action): State {
@@ -227,6 +260,26 @@ function reducer(state: State, action: Action): State {
       };
     }
 
+    case 'MOVE_LINE_UP': {
+      const { line, col, lines } = getLineInfo(state.value, state.cursor);
+      if (line === 0) return state; // Already on first line
+      const newCursor = lineToCursor(lines, line - 1, col);
+      return {
+        ...state,
+        cursor: newCursor,
+      };
+    }
+
+    case 'MOVE_LINE_DOWN': {
+      const { line, col, lines } = getLineInfo(state.value, state.cursor);
+      if (line >= lines.length - 1) return state; // Already on last line
+      const newCursor = lineToCursor(lines, line + 1, col);
+      return {
+        ...state,
+        cursor: newCursor,
+      };
+    }
+
     case 'TRANSPOSE_CHARS': {
       if (state.value.length < 2) return state;
 
@@ -325,6 +378,18 @@ export default function ControlledTextInput({
       // Ctrl+E or End - move to end
       if (key.end || (key.ctrl && input?.toLowerCase() === 'e')) {
         dispatch({ type: 'MOVE_TO_END' });
+        return;
+      }
+
+      // Up Arrow - move to previous line
+      if (key.upArrow) {
+        dispatch({ type: 'MOVE_LINE_UP' });
+        return;
+      }
+
+      // Down Arrow - move to next line
+      if (key.downArrow) {
+        dispatch({ type: 'MOVE_LINE_DOWN' });
         return;
       }
 
