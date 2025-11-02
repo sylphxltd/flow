@@ -166,10 +166,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             }
           }
 
-          // Extract usage from assistant message
+          // Extract usage from assistant message (includes cache tokens)
           if (event.message.usage) {
-            inputTokens = event.message.usage.input_tokens || 0;
-            outputTokens = event.message.usage.output_tokens || 0;
+            const usage = event.message.usage;
+            inputTokens =
+              (usage.input_tokens || 0) +
+              (usage.cache_creation_input_tokens || 0) +
+              (usage.cache_read_input_tokens || 0);
+            outputTokens = usage.output_tokens || 0;
           }
 
           // Check stop reason
@@ -181,10 +185,21 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             finishReason = 'length';
           }
         } else if (event.type === 'result') {
-          // Extract usage from result (fallback)
+          // Check for errors
+          if (event.subtype === 'error_max_turns') {
+            throw new Error('Claude Code reached maximum turns limit');
+          } else if (event.subtype === 'error_during_execution') {
+            throw new Error('Error occurred during Claude Code execution');
+          }
+
+          // Extract usage from result (fallback, includes cache tokens)
           if (event.usage) {
-            inputTokens = event.usage.input_tokens || 0;
-            outputTokens = event.usage.output_tokens || 0;
+            const usage = event.usage;
+            inputTokens =
+              (usage.input_tokens || 0) +
+              (usage.cache_creation_input_tokens || 0) +
+              (usage.cache_read_input_tokens || 0);
+            outputTokens = usage.output_tokens || 0;
           }
         }
       }
@@ -283,10 +298,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   }
                 }
 
-                // Extract usage from assistant message
+                // Extract usage from assistant message (includes cache tokens)
                 if (event.message.usage) {
-                  inputTokens = event.message.usage.input_tokens || 0;
-                  outputTokens = event.message.usage.output_tokens || 0;
+                  const usage = event.message.usage;
+                  inputTokens =
+                    (usage.input_tokens || 0) +
+                    (usage.cache_creation_input_tokens || 0) +
+                    (usage.cache_read_input_tokens || 0);
+                  outputTokens = usage.output_tokens || 0;
                 }
 
                 // Check stop reason
@@ -298,10 +317,23 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   finishReason = 'length';
                 }
               } else if (event.type === 'result') {
-                // Extract usage from result (fallback)
+                // Check for errors
+                if (event.subtype === 'error_max_turns') {
+                  controller.error(new Error('Claude Code reached maximum turns limit'));
+                  return;
+                } else if (event.subtype === 'error_during_execution') {
+                  controller.error(new Error('Error occurred during Claude Code execution'));
+                  return;
+                }
+
+                // Extract usage from result (fallback, includes cache tokens)
                 if (event.usage) {
-                  inputTokens = event.usage.input_tokens || 0;
-                  outputTokens = event.usage.output_tokens || 0;
+                  const usage = event.usage;
+                  inputTokens =
+                    (usage.input_tokens || 0) +
+                    (usage.cache_creation_input_tokens || 0) +
+                    (usage.cache_read_input_tokens || 0);
+                  outputTokens = usage.output_tokens || 0;
                 }
               }
             }
