@@ -66,13 +66,39 @@ export async function saveSession(session: Session): Promise<void> {
 }
 
 /**
- * Load session from file
+ * Load session from file with migration support
+ * Automatically adds missing fields from newer schema versions
  */
 export async function loadSession(sessionId: string): Promise<Session | null> {
   try {
     const path = getSessionPath(sessionId);
     const content = await readFile(path, 'utf8');
-    return JSON.parse(content);
+    const rawSession = JSON.parse(content) as any;
+
+    // Migration: Add todos/nextTodoId if missing
+    if (!rawSession.todos) {
+      rawSession.todos = [];
+    }
+    if (typeof rawSession.nextTodoId !== 'number') {
+      rawSession.nextTodoId = 1;
+    }
+
+    // Migration: Normalize message content format
+    // Old: { content: string }
+    // New: { content: MessagePart[] }
+    if (Array.isArray(rawSession.messages)) {
+      rawSession.messages = rawSession.messages.map((msg: any) => {
+        if (typeof msg.content === 'string') {
+          return {
+            ...msg,
+            content: [{ type: 'text', content: msg.content }],
+          };
+        }
+        return msg;
+      });
+    }
+
+    return rawSession as Session;
   } catch {
     return null;
   }
