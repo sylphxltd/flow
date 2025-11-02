@@ -304,11 +304,12 @@ export default function ControlledTextInput({
       }
 
       // ===========================================
-      // Enter - Submit or Newline
+      // Return/Enter - Submit or Newline
       // ===========================================
 
-      if (key.return && !input) {
-        // Shift+Enter or Option+Enter (Meta+Enter) - insert newline
+      // Return key pressed (input will be '\r' or '\n')
+      if (key.return) {
+        // Shift+Return or Option+Return (Meta+Return) - insert newline
         // Matches Claude Code official behavior
         if (key.shift || key.meta) {
           const before = value.slice(0, cursor);
@@ -318,7 +319,7 @@ export default function ControlledTextInput({
           return;
         }
 
-        // Regular Enter - submit (Claude Code default)
+        // Regular Return - submit (Claude Code default)
         onSubmit?.(value);
         return;
       }
