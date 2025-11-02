@@ -132,7 +132,7 @@ const formatArgs = (toolName: string, args: unknown): string => {
     return '';
   }
 
-  const formatter = argsFormatters[toolName.toLowerCase()];
+  const formatter = argsFormatters[toolName];
   return formatter
     ? formatter(args as Record<string, unknown>)
     : JSON.stringify(args);
@@ -361,7 +361,7 @@ const formatResult = (toolName: string, result: unknown): FormattedResult => {
     return { lines: [] };
   }
 
-  const formatter = resultFormatters[toolName.toLowerCase()];
+  const formatter = resultFormatters[toolName];
   return formatter
     ? formatter(result)
     : { lines: resultToLines(result) };
@@ -401,7 +401,7 @@ const displayNames: Record<string, string> = {
  * Get display name for tool
  */
 const getDisplayName = (toolName: string): string =>
-  displayNames[toolName.toLowerCase()] || toolName;
+  displayNames[toolName] || toolName;
 
 /**
  * Component rendering helpers
@@ -409,7 +409,7 @@ const getDisplayName = (toolName: string): string =>
 const builtInTools = new Set(['ask', 'read', 'write', 'edit', 'bash', 'bash-output', 'kill-bash', 'grep', 'glob', 'updateTodos']);
 
 const isBuiltInTool = (name: string): boolean =>
-  builtInTools.has(name.toLowerCase());
+  builtInTools.has(name);
 
 const StatusIndicator: React.FC<{ status: ToolDisplayProps['status'] }> = ({ status }) => {
   if (status === 'running') {
