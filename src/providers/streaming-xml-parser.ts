@@ -4,6 +4,10 @@
  * Emits streaming events for text and tool calls
  */
 
+// Buffer safety margins to handle split tags
+const TEXT_TAG_SAFETY_MARGIN = 10; // Reserve chars for "</text>"
+const ARGUMENTS_TAG_SAFETY_MARGIN = 15; // Reserve chars for "</arguments>"
+
 export type StreamingXMLEvent =
   | { type: 'text-start' }
   | { type: 'text-delta'; delta: string }
@@ -20,7 +24,7 @@ export type StreamingXMLEvent =
 
 type ParserState =
   | { type: 'idle' }
-  | { type: 'in-text'; buffer: string }
+  | { type: 'in-text' }
   | {
       type: 'in-tool';
       toolName: string | null;
@@ -46,17 +50,20 @@ export class StreamingXMLParser {
 
     // Process buffer until no more complete tags can be extracted
     while (true) {
-      // First, yield any queued events
-      while (this.eventQueue.length > 0) {
-        yield this.eventQueue.shift()!;
-      }
+      yield* this.drainEventQueue();
 
       const result = this.processBuffer();
       if (!result) break;
       yield result;
     }
 
-    // Yield any remaining queued events
+    yield* this.drainEventQueue();
+  }
+
+  /**
+   * Drain and yield all queued events
+   */
+  private *drainEventQueue(): Generator<StreamingXMLEvent> {
     while (this.eventQueue.length > 0) {
       yield this.eventQueue.shift()!;
     }
@@ -66,19 +73,15 @@ export class StreamingXMLParser {
    * Flush remaining content and emit final events
    */
   *flush(): Generator<StreamingXMLEvent> {
-    // Emit any remaining content based on current state
     if (this.state.type === 'in-text') {
-      // Emit any remaining text in buffer (last 10 chars that were held back)
+      // Emit any remaining buffered text (held back for safety margin)
       if (this.buffer) {
         yield { type: 'text-delta', delta: this.buffer };
       }
       yield { type: 'text-end' };
     }
 
-    // Emit any queued events
-    while (this.eventQueue.length > 0) {
-      yield this.eventQueue.shift()!;
-    }
+    yield* this.drainEventQueue();
 
     // Reset state
     this.state = { type: 'idle' };
@@ -92,14 +95,12 @@ export class StreamingXMLParser {
       const toolMatch = this.buffer.match(/^[^<]*<tool_use>/);
 
       if (textMatch) {
-        // Remove matched content from buffer
         this.buffer = this.buffer.slice(textMatch[0].length);
-        this.state = { type: 'in-text', buffer: '' };
+        this.state = { type: 'in-text' };
         return { type: 'text-start' };
       }
 
       if (toolMatch) {
-        // Remove matched content from buffer
         this.buffer = this.buffer.slice(toolMatch[0].length);
         this.state = {
           type: 'in-tool',
@@ -108,10 +109,10 @@ export class StreamingXMLParser {
           argsBuffer: '',
           tagBuffer: '',
         };
-        return this.processBuffer(); // Continue processing
+        return this.processBuffer();
       }
 
-      // Skip any content before tags (whitespace, etc.)
+      // Skip any content before tags
       const nextTag = this.buffer.indexOf('<');
       if (nextTag > 0) {
         this.buffer = this.buffer.slice(nextTag);
@@ -128,27 +129,22 @@ export class StreamingXMLParser {
       if (endMatch) {
         const content = endMatch[1];
         this.buffer = this.buffer.slice(endMatch[0].length);
-
-        // content already includes any previously un-emitted text from buffer
-        // Don't use state.buffer as it would cause duplication
         this.state = { type: 'idle' };
 
-        // Queue text-end event to be emitted after text-delta
+        // Queue text-end to emit after final text-delta
         this.eventQueue.push({ type: 'text-end' });
 
         if (content) {
           return { type: 'text-delta', delta: content };
         }
-        // If no content, return the text-end event directly
         return this.eventQueue.shift()!;
       }
 
-      // No closing tag yet - emit what we can
-      // Keep last 10 chars in buffer in case </text> is split
-      if (this.buffer.length > 10) {
-        const safeToEmit = this.buffer.slice(0, -10);
-        this.buffer = this.buffer.slice(-10);
-        // Emit the safe text immediately; last 10 chars stay in buffer
+      // No closing tag yet - emit what we can safely
+      // Keep safety margin in buffer in case </text> tag is split across chunks
+      if (this.buffer.length > TEXT_TAG_SAFETY_MARGIN) {
+        const safeToEmit = this.buffer.slice(0, -TEXT_TAG_SAFETY_MARGIN);
+        this.buffer = this.buffer.slice(-TEXT_TAG_SAFETY_MARGIN);
         return { type: 'text-delta', delta: safeToEmit };
       }
 
@@ -156,100 +152,92 @@ export class StreamingXMLParser {
     }
 
     if (this.state.type === 'in-tool') {
-      // Parse tool_name if not yet parsed
+      // Parse <tool_name> tag
       if (!this.state.toolName) {
         const toolNameMatch = this.buffer.match(/^[^<]*<tool_name>(.*?)<\/tool_name>/s);
         if (toolNameMatch) {
           this.state.toolName = toolNameMatch[1].trim();
           this.buffer = this.buffer.slice(toolNameMatch[0].length);
-          return this.processBuffer(); // Continue
+          return this.processBuffer();
         }
-        return null; // Wait for more data
+        return null;
       }
 
-      // Parse tool_call_id if not yet parsed
+      // Parse <tool_call_id> tag
       if (!this.state.toolCallId) {
         const idMatch = this.buffer.match(/^[^<]*<tool_call_id>(.*?)<\/tool_call_id>/s);
         if (idMatch) {
           this.state.toolCallId = idMatch[1].trim();
           this.buffer = this.buffer.slice(idMatch[0].length);
 
-          // Emit tool-input-start now that we have name and ID
-          const event: StreamingXMLEvent = {
+          return {
             type: 'tool-input-start',
             toolCallId: this.state.toolCallId,
             toolName: this.state.toolName,
           };
-
-          // Continue processing for arguments
-          setTimeout(() => this.processBuffer(), 0);
-          return event;
         }
-        return null; // Wait for more data
+        return null;
       }
 
-      // Look for <arguments> opening
+      // Parse <arguments> opening tag
       if (!this.state.tagBuffer) {
         const argsOpenMatch = this.buffer.match(/^[^<]*<arguments>/);
         if (argsOpenMatch) {
           this.buffer = this.buffer.slice(argsOpenMatch[0].length);
           this.state.tagBuffer = 'in-args';
-          return this.processBuffer(); // Continue
+          return this.processBuffer();
         }
         return null;
       }
 
-      // Parse arguments content
+      // Parse arguments content until closing tag
       if (this.state.tagBuffer === 'in-args') {
         const argsCloseMatch = this.buffer.match(/^(.*?)<\/arguments>/s);
 
         if (argsCloseMatch) {
           const argsContent = argsCloseMatch[1];
           this.buffer = this.buffer.slice(argsCloseMatch[0].length);
-
-          // Emit tool-input-end first
           this.state.tagBuffer = 'args-complete';
 
-          // Emit final delta if any content, then tool-input-end will come in next call
+          // Queue tool-input-end to emit after final delta
+          this.eventQueue.push({
+            type: 'tool-input-end',
+            toolCallId: this.state.toolCallId!,
+          });
+
           if (argsContent) {
             this.state.argsBuffer += argsContent;
             return {
               type: 'tool-input-delta',
               toolCallId: this.state.toolCallId!,
-              delta: argsContent
+              delta: argsContent,
             };
           }
 
-          // Emit tool-input-end
-          const toolInputEndEvent: StreamingXMLEvent = {
-            type: 'tool-input-end',
-            toolCallId: this.state.toolCallId!,
-          };
-          return toolInputEndEvent;
+          return this.eventQueue.shift()!;
         }
 
-        // Emit partial arguments (keep last 15 chars for </arguments>)
-        if (this.buffer.length > 15) {
-          const safeToEmit = this.buffer.slice(0, -15);
-          this.buffer = this.buffer.slice(-15);
+        // Emit partial arguments, keeping safety margin for closing tag
+        if (this.buffer.length > ARGUMENTS_TAG_SAFETY_MARGIN) {
+          const safeToEmit = this.buffer.slice(0, -ARGUMENTS_TAG_SAFETY_MARGIN);
+          this.buffer = this.buffer.slice(-ARGUMENTS_TAG_SAFETY_MARGIN);
           this.state.argsBuffer += safeToEmit;
           return {
             type: 'tool-input-delta',
             toolCallId: this.state.toolCallId!,
-            delta: safeToEmit
+            delta: safeToEmit,
           };
         }
 
         return null;
       }
 
-      // Look for </tool_use> closing
+      // Parse </tool_use> closing tag and complete tool call
       if (this.state.tagBuffer === 'args-complete') {
         const toolCloseMatch = this.buffer.match(/^[^<]*<\/tool_use>/);
         if (toolCloseMatch) {
           this.buffer = this.buffer.slice(toolCloseMatch[0].length);
 
-          // Parse arguments JSON
           let args: Record<string, unknown> = {};
           try {
             args = JSON.parse(this.state.argsBuffer);
@@ -257,15 +245,18 @@ export class StreamingXMLParser {
             console.error('Failed to parse tool arguments:', this.state.argsBuffer, error);
           }
 
-          const event: StreamingXMLEvent = {
-            type: 'tool-call-complete',
-            toolCallId: this.state.toolCallId!,
-            toolName: this.state.toolName!,
-            arguments: args,
-          };
+          // Save values before resetting state
+          const toolCallId = this.state.toolCallId!;
+          const toolName = this.state.toolName!;
 
           this.state = { type: 'idle' };
-          return event;
+
+          return {
+            type: 'tool-call-complete',
+            toolCallId,
+            toolName,
+            arguments: args,
+          };
         }
         return null;
       }
