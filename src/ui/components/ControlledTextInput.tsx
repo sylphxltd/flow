@@ -1,13 +1,11 @@
 /**
- * Controlled Text Input with Programmatic Cursor Control
- * Uses useReducer to ensure state updates are based on latest state
+ * Controlled Text Input - Simplified
+ * Minimal implementation with proper multi-line handling
  */
 
 import React, { useReducer, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import Spinner from './Spinner.js';
-import { clampCursor, moveCursorUp, moveCursorDown, getCursorLinePosition } from '../utils/cursor-utils.js';
-import { renderTextWithTags } from '../utils/text-rendering-utils.js';
+import { clampCursor } from '../utils/cursor-utils.js';
 
 export interface ControlledTextInputProps {
   value: string;
@@ -16,7 +14,6 @@ export interface ControlledTextInputProps {
   onCursorChange: (cursor: number) => void;
   onSubmit?: (value: string) => void;
   placeholder?: string;
-  maskChar?: string;
   showCursor?: boolean;
   focus?: boolean;
   validTags?: Set<string>;
@@ -28,64 +25,40 @@ interface State {
 }
 
 type Action =
-  | { type: 'SET_FROM_PROPS'; value: string; cursor: number }
-  | { type: 'INSERT_TEXT'; text: string }
-  | { type: 'DELETE_BEFORE_CURSOR' }
-  | { type: 'INSERT_NEWLINE' }
-  | { type: 'DELETE_TO_START' }
-  | { type: 'DELETE_TO_END' }
-  | { type: 'DELETE_WORD' }
-  | { type: 'SET_CURSOR'; cursor: number }
-  | { type: 'SET_VALUE'; value: string; cursor: number };
+  | { type: 'SYNC'; value: string; cursor: number }
+  | { type: 'INSERT'; text: string }
+  | { type: 'BACKSPACE' }
+  | { type: 'MOVE'; cursor: number };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SET_FROM_PROPS':
+    case 'SYNC':
       return { value: action.value, cursor: action.cursor };
 
-    case 'INSERT_TEXT': {
-      const next = state.value.slice(0, state.cursor) + action.text + state.value.slice(state.cursor);
-      return { value: next, cursor: state.cursor + action.text.length };
-    }
-
-    case 'DELETE_BEFORE_CURSOR': {
-      if (state.cursor === 0) return state;
-      const next = state.value.slice(0, state.cursor - 1) + state.value.slice(state.cursor);
-      return { value: next, cursor: state.cursor - 1 };
-    }
-
-    case 'INSERT_NEWLINE': {
-      const next = state.value.slice(0, state.cursor) + '\n' + state.value.slice(state.cursor);
-      return { value: next, cursor: state.cursor + 1 };
-    }
-
-    case 'DELETE_TO_START': {
-      const next = state.value.slice(state.cursor);
-      return { value: next, cursor: 0 };
-    }
-
-    case 'DELETE_TO_END': {
-      const next = state.value.slice(0, state.cursor);
-      return { value: next, cursor: state.cursor };
-    }
-
-    case 'DELETE_WORD': {
+    case 'INSERT': {
       const before = state.value.slice(0, state.cursor);
       const after = state.value.slice(state.cursor);
-      const match = before.match(/\s*\S*$/);
-      if (!match) return state;
-      const deleteCount = match[0].length;
-      const next = before.slice(0, -deleteCount) + after;
-      return { value: next, cursor: state.cursor - deleteCount };
+      return {
+        value: before + action.text + after,
+        cursor: state.cursor + action.text.length,
+      };
     }
 
-    case 'SET_CURSOR': {
-      const clamped = clampCursor(action.cursor, state.value.length);
-      return { ...state, cursor: clamped };
+    case 'BACKSPACE': {
+      if (state.cursor === 0) return state;
+      const before = state.value.slice(0, state.cursor - 1);
+      const after = state.value.slice(state.cursor);
+      return {
+        value: before + after,
+        cursor: state.cursor - 1,
+      };
     }
 
-    case 'SET_VALUE': {
-      return { value: action.value, cursor: action.cursor };
+    case 'MOVE': {
+      return {
+        ...state,
+        cursor: clampCursor(action.cursor, state.value.length),
+      };
     }
 
     default:
@@ -100,119 +73,79 @@ export default function ControlledTextInput({
   onCursorChange,
   onSubmit,
   placeholder,
-  maskChar,
   showCursor = true,
   focus = true,
-  validTags,
 }: ControlledTextInputProps) {
   const [state, dispatch] = useReducer(reducer, { value, cursor });
 
-  // Sync from props when they change externally
+  // Sync props → state
   useEffect(() => {
     if (value !== state.value || cursor !== state.cursor) {
-      dispatch({ type: 'SET_FROM_PROPS', value, cursor });
+      dispatch({ type: 'SYNC', value, cursor });
     }
   }, [value, cursor]);
 
-  // Notify parent of changes
+  // Sync state → parent
   useEffect(() => {
-    if (state.value !== value) {
-      onChange(state.value);
-    }
+    if (state.value !== value) onChange(state.value);
   }, [state.value]);
 
   useEffect(() => {
-    if (state.cursor !== cursor) {
-      onCursorChange(state.cursor);
-    }
+    if (state.cursor !== cursor) onCursorChange(state.cursor);
   }, [state.cursor]);
-
-  const text = maskChar ? maskChar.repeat(state.value.length) : state.value;
 
   useInput(
     (input, key) => {
-      // Left arrow
+      // Arrow keys
       if (key.leftArrow) {
-        dispatch({ type: 'SET_CURSOR', cursor: state.cursor - 1 });
+        dispatch({ type: 'MOVE', cursor: state.cursor - 1 });
         return;
       }
-
-      // Right arrow
       if (key.rightArrow) {
-        dispatch({ type: 'SET_CURSOR', cursor: state.cursor + 1 });
+        dispatch({ type: 'MOVE', cursor: state.cursor + 1 });
         return;
       }
 
-      // Up arrow
-      if (key.upArrow) {
-        dispatch({ type: 'SET_CURSOR', cursor: moveCursorUp(state.value, state.cursor) });
+      // Home/End
+      if (key.home) {
+        dispatch({ type: 'MOVE', cursor: 0 });
         return;
       }
-
-      // Down arrow
-      if (key.downArrow) {
-        dispatch({ type: 'SET_CURSOR', cursor: moveCursorDown(state.value, state.cursor) });
-        return;
-      }
-
-      // Home
-      if (key.home || (key.ctrl && input?.toLowerCase() === 'a')) {
-        dispatch({ type: 'SET_CURSOR', cursor: 0 });
-        return;
-      }
-
-      // End
-      if (key.end || (key.ctrl && input?.toLowerCase() === 'e')) {
-        dispatch({ type: 'SET_CURSOR', cursor: state.value.length });
+      if (key.end) {
+        dispatch({ type: 'MOVE', cursor: state.value.length });
         return;
       }
 
       // Backspace
-      if (key.backspace || key.delete || input === '\x7F' || input === '\b') {
-        dispatch({ type: 'DELETE_BEFORE_CURSOR' });
+      if (key.backspace || key.delete) {
+        dispatch({ type: 'BACKSPACE' });
         return;
       }
 
-      // Enter - submit or newline
+      // Enter
       if (key.return && !input) {
+        // Shift+Enter inserts newline
         if (key.shift) {
-          dispatch({ type: 'INSERT_NEWLINE' });
+          dispatch({ type: 'INSERT', text: '\n' });
           return;
         }
+        // Regular Enter submits
         onSubmit?.(state.value);
         return;
       }
 
-      // Ctrl+U - delete to start
-      if (key.ctrl && input?.toLowerCase() === 'u') {
-        dispatch({ type: 'DELETE_TO_START' });
-        return;
-      }
-
-      // Ctrl+K - delete to end
-      if (key.ctrl && input?.toLowerCase() === 'k') {
-        dispatch({ type: 'DELETE_TO_END' });
-        return;
-      }
-
-      // Ctrl+W - delete word
-      if (key.ctrl && input?.toLowerCase() === 'w') {
-        dispatch({ type: 'DELETE_WORD' });
-        return;
-      }
-
       // Ignore other control keys
-      if ((key.ctrl || key.meta) && !input) return;
+      if (key.ctrl || key.meta) return;
 
-      // Insert character (including pasted text with newlines)
+      // Insert text (handles paste with \n)
       if (input) {
-        dispatch({ type: 'INSERT_TEXT', text: input });
+        dispatch({ type: 'INSERT', text: input });
       }
     },
     { isActive: focus }
   );
 
-  // Handle multiline text with proper cursor positioning
+  // Empty with placeholder
   if (state.value.length === 0 && placeholder) {
     return (
       <Box>
@@ -222,47 +155,49 @@ export default function ControlledTextInput({
     );
   }
 
-  // Split text into lines
-  const lines = text.split('\n');
-  const { line: cursorLine, column: cursorColumn } = getCursorLinePosition(text, state.cursor);
+  // Split into lines
+  const lines = state.value.split('\n');
 
-  // Get terminal width
-  const terminalWidth = process.stdout.columns || 120;
-  const maxLineWidth = Math.max(40, terminalWidth - 10);
+  // Find cursor line and column
+  let charCount = 0;
+  let cursorLine = 0;
+  let cursorCol = state.cursor;
 
+  for (let i = 0; i < lines.length; i++) {
+    const lineLength = lines[i].length;
+    if (state.cursor <= charCount + lineLength) {
+      cursorLine = i;
+      cursorCol = state.cursor - charCount;
+      break;
+    }
+    charCount += lineLength + 1; // +1 for \n
+  }
+
+  // Render each line
   return (
     <Box flexDirection="column">
-      {lines.map((line, lineIndex) => {
-        const isCursorLine = lineIndex === cursorLine;
-        const cursorPosForLine = isCursorLine ? cursorColumn : undefined;
+      {lines.map((line, idx) => {
+        const isCursorLine = idx === cursorLine;
 
-        // Handle long lines
-        let displayLine = line;
-        let displayCursor = cursorPosForLine;
-
-        if (line.length > maxLineWidth && cursorPosForLine !== undefined) {
-          const halfWindow = Math.floor(maxLineWidth / 2);
-          let start = Math.max(0, cursorPosForLine - halfWindow);
-          let end = Math.min(line.length, start + maxLineWidth);
-
-          if (end === line.length && end - start < maxLineWidth) {
-            start = Math.max(0, end - maxLineWidth);
-          }
-
-          displayLine = line.slice(start, end);
-          displayCursor = cursorPosForLine - start;
-
-          if (start > 0 && displayLine.length > 0) {
-            displayLine = '‹' + displayLine.slice(1);
-          }
-          if (end < line.length && displayLine.length > 0) {
-            displayLine = displayLine.slice(0, -1) + '›';
-          }
+        if (!isCursorLine) {
+          // Line without cursor
+          return (
+            <Box key={idx}>
+              <Text>{line || ' '}</Text>
+            </Box>
+          );
         }
 
+        // Line with cursor
+        const before = line.slice(0, cursorCol);
+        const char = line[cursorCol] || ' ';
+        const after = line.slice(cursorCol + 1);
+
         return (
-          <Box key={lineIndex}>
-            {renderTextWithTags(displayLine, displayCursor, showCursor, validTags)}
+          <Box key={idx}>
+            <Text>{before}</Text>
+            {showCursor && <Text inverse>{char}</Text>}
+            <Text>{after}</Text>
           </Box>
         );
       })}

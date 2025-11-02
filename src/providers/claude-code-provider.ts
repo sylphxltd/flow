@@ -1,12 +1,19 @@
 /**
  * Claude Code Provider
- * Uses Claude Agent SDK via CLI authentication
+ * Uses Anthropic API with Claude CLI authentication
+ * Fully supports Vercel AI SDK tools
  */
 
-import { claudeCode } from 'ai-sdk-provider-claude-code';
-import type { LanguageModelV1 } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
+
+const MODEL_ID_MAP: Record<string, string> = {
+  opus: 'claude-opus-4-20250514',
+  sonnet: 'claude-sonnet-4-20250514',
+  haiku: 'claude-haiku-4-20250415',
+};
 
 export class ClaudeCodeProvider implements AIProvider {
   readonly id = 'claude-code' as const;
@@ -15,18 +22,19 @@ export class ClaudeCodeProvider implements AIProvider {
   getConfigSchema(): ConfigField[] {
     return [
       {
-        key: 'authenticated',
-        label: 'Authenticated',
-        type: 'boolean',
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'string',
         required: false,
-        description: 'Authentication is handled via Claude CLI',
+        secret: true,
+        description: 'Anthropic API key (defaults to ANTHROPIC_API_KEY from Claude CLI)',
       },
     ];
   }
 
   isConfigured(_config: ProviderConfig): boolean {
-    // Claude Code doesn't require configuration - uses CLI auth
-    return true;
+    // Check if API key is available from config or environment
+    return !!(_config.apiKey || process.env.ANTHROPIC_API_KEY);
   }
 
   async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {
@@ -44,28 +52,43 @@ export class ClaudeCodeProvider implements AIProvider {
       opus: {
         contextLength: 200000,
         maxOutput: 4096,
-        inputPrice: 0,
-        outputPrice: 0,
+        inputPrice: 0.015,
+        outputPrice: 0.075,
       },
       sonnet: {
         contextLength: 200000,
         maxOutput: 8192,
-        inputPrice: 0,
-        outputPrice: 0,
+        inputPrice: 0.003,
+        outputPrice: 0.015,
       },
       haiku: {
         contextLength: 200000,
         maxOutput: 4096,
-        inputPrice: 0,
-        outputPrice: 0,
+        inputPrice: 0.00025,
+        outputPrice: 0.00125,
       },
     };
 
     return specs[modelId] || null;
   }
 
-  createClient(_config: ProviderConfig, modelId: string): LanguageModelV1 {
-    // Claude Code doesn't use config - it uses CLI authentication
-    return claudeCode(modelId);
+  createClient(config: ProviderConfig, modelId: string): LanguageModelV2 {
+    // Use Anthropic provider with API key from config or environment
+    const apiKey = (config.apiKey as string) || process.env.ANTHROPIC_API_KEY;
+
+    if (!apiKey) {
+      throw new Error(
+        'Anthropic API key is required. Run `claude login` to set ANTHROPIC_API_KEY environment variable.'
+      );
+    }
+
+    // Map short model ID to full model name
+    const fullModelId = MODEL_ID_MAP[modelId] || modelId;
+
+    // Create Anthropic provider instance with API key
+    const provider = anthropic(apiKey);
+
+    // Return language model
+    return provider(fullModelId);
   }
 }
