@@ -15,39 +15,20 @@ const execAsync = promisify(exec);
  * Execute bash command tool
  */
 export const executeBashTool = tool({
-  description: `Execute a bash command and return its output.
-
-Usage:
-- Run build commands (npm, bun, etc.)
-- Execute git commands
-- Run tests
-- List files (ls, find)
-- Search content (grep)
-- Any shell command
-
-Background mode:
-- Set run_in_background to true for long-running commands
-- Returns a bash_id to check output later with bash-output tool
-- Use kill-bash tool to terminate background processes
-
-IMPORTANT:
-- Commands are executed in the current working directory
-- Use absolute paths when necessary
-- Be careful with destructive commands
-- Non-background commands timeout after specified duration`,
+  description: 'Execute a bash command and return its output',
   inputSchema: z.object({
-    command: z.string().describe('The bash command to execute'),
+    command: z.string().describe('The bash command to execute (npm, git, ls, grep, etc.). Commands run in current working directory. Use absolute paths when necessary'),
     cwd: z.string().optional().describe('Working directory (defaults to current directory)'),
     timeout: z
       .number()
       .default(30000)
       .optional()
-      .describe('Command timeout in milliseconds (default: 30000, only for non-background)'),
+      .describe('Command timeout in milliseconds (default: 30000, only for foreground mode)'),
     run_in_background: z
       .boolean()
       .default(false)
       .optional()
-      .describe('Run command in background and return immediately with bash_id'),
+      .describe('Run in background for long-running commands. Returns bash_id to check output later with bash-output tool. Use kill-bash to terminate'),
   }),
   execute: async ({ command, cwd, timeout = 30000, run_in_background = false }) => {
     // Background mode - spawn and return immediately
@@ -95,17 +76,10 @@ IMPORTANT:
  * Get output from background bash process
  */
 export const bashOutputTool = tool({
-  description: `Get output from a background bash process.
-
-Usage:
-- Check output of long-running commands started with run_in_background
-- Monitor progress of background processes
-- Returns stdout, stderr, exit code, and running status
-
-The output is cumulative - shows all output since process started.`,
+  description: 'Get output from a background bash process',
   inputSchema: z.object({
-    bash_id: z.string().describe('The bash_id returned from a background bash command'),
-    filter: z.string().optional().describe('Optional regex to filter output lines'),
+    bash_id: z.string().describe('The bash_id returned from a background bash command (run_in_background=true)'),
+    filter: z.string().optional().describe('Optional regex to filter output lines. Only matching lines will be shown'),
   }),
   execute: async ({ bash_id, filter }) => {
     const output = bashManager.getOutput(bash_id);
@@ -144,16 +118,9 @@ The output is cumulative - shows all output since process started.`,
  * Kill a background bash process
  */
 export const killBashTool = tool({
-  description: `Kill a background bash process.
-
-Usage:
-- Terminate long-running background processes
-- Stop processes that are no longer needed
-- Clean up hanging processes
-
-The process will be sent SIGTERM first, then SIGKILL if it doesn't exit within 5 seconds.`,
+  description: 'Kill a background bash process',
   inputSchema: z.object({
-    bash_id: z.string().describe('The bash_id of the process to kill'),
+    bash_id: z.string().describe('The bash_id of the process to kill. Process receives SIGTERM first, then SIGKILL if it doesn\'t exit within 5 seconds'),
   }),
   execute: async ({ bash_id }) => {
     const success = bashManager.kill(bash_id);

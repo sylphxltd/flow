@@ -12,25 +12,17 @@ import { z } from 'zod';
  * Read file tool
  */
 export const readFileTool = tool({
-  description: `Read contents of a file from the filesystem.
-
-Usage:
-- Read source code files
-- Read configuration files
-- Read documentation files
-
-The file path must be absolute or relative to the current working directory.
-You can optionally specify offset and limit to read specific line ranges.`,
+  description: 'Read contents of a file from the filesystem',
   inputSchema: z.object({
-    file_path: z.string().describe('The absolute path to the file to read'),
+    file_path: z.string().describe('Absolute or relative path to the file to read (source code, config, documentation, etc.)'),
     offset: z
       .number()
       .optional()
-      .describe('The line number to start reading from'),
+      .describe('Line number to start reading from (1-based)'),
     limit: z
       .number()
       .optional()
-      .describe('The number of lines to read'),
+      .describe('Number of lines to read. Use with offset to read specific line ranges'),
   }),
   execute: async ({ file_path, offset, limit }) => {
     const content = await readFile(file_path, 'utf8');
@@ -61,16 +53,9 @@ You can optionally specify offset and limit to read specific line ranges.`,
  * Write file tool
  */
 export const writeFileTool = tool({
-  description: `Write content to a file. Creates parent directories if they don't exist.
-
-Usage:
-- Create new files
-- Overwrite existing files
-- Write generated code or data
-
-IMPORTANT: This will overwrite the file if it exists.`,
+  description: 'Write content to a file',
   inputSchema: z.object({
-    file_path: z.string().describe('The absolute path to the file to write (must be absolute)'),
+    file_path: z.string().describe('Absolute path to the file to write. Overwrites if exists. Creates parent directories automatically'),
     content: z.string().describe('The content to write to the file'),
   }),
   execute: async ({ file_path, content }) => {
@@ -98,27 +83,16 @@ IMPORTANT: This will overwrite the file if it exists.`,
  * Edit file tool
  */
 export const editFileTool = tool({
-  description: `Performs exact string replacements in files.
-
-Usage:
-- Modify existing files
-- Replace specific code sections
-- Update configuration values
-
-IMPORTANT:
-- The edit will FAIL if old_string is not unique in the file
-- Provide more context in old_string to make it unique
-- Use replace_all to change every instance of old_string
-- You must use the exact string from the file (preserve indentation, whitespace)`,
+  description: 'Perform exact string replacements in files',
   inputSchema: z.object({
-    file_path: z.string().describe('The absolute path to the file to modify'),
-    old_string: z.string().describe('The text to replace'),
-    new_string: z.string().describe('The text to replace it with (must be different from old_string)'),
+    file_path: z.string().describe('Absolute path to the file to modify'),
+    old_string: z.string().describe('Exact text to replace (preserve indentation/whitespace). Must be unique unless replace_all=true. Edit FAILS if not found or not unique'),
+    new_string: z.string().describe('Text to replace it with (must differ from old_string)'),
     replace_all: z
       .boolean()
       .default(false)
       .optional()
-      .describe('Replace all occurences of old_string (default false)'),
+      .describe('Replace all occurrences (default: false). If false, old_string must be unique in file'),
   }),
   execute: async ({ file_path, old_string, new_string, replace_all = false }) => {
     // Validate strings are different

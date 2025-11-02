@@ -143,35 +143,14 @@ async function processNextAsk() {
  * Ask user a multiple choice question
  */
 export const askUserSelectionTool = tool({
-  description: `Ask the user a multiple choice question and wait for their selection.
-
-You can call this tool multiple times in the same response to ask multiple questions at once - they will be presented together for better user experience.
-
-When to use:
-- You have specific options for the user to choose from
-- You need user to select between different approaches
-- You need to confirm which file/component/feature to work on
-- You want to gather multiple pieces of information
-
-How to use:
-1. Call this tool (can call multiple times in same message)
-2. Wait for the user's answer (returned as a string)
-3. Continue your task with the gathered information
-
-Example - multiple questions in one response:
-- Call ask() for "which file?"
-- Call ask() for "which function?"
-- Call ask() for "which approach?"
-→ User sees all 3 questions together and answers them all at once
-
-Note: For free-form text questions, just respond normally in your message and wait for the user's next input. Only use this tool when you have specific options to present.`,
+  description: 'Ask the user a multiple choice question and wait for their selection',
   inputSchema: z.object({
-    question: z.string().describe('The question to ask the user'),
+    question: z.string().describe('The question to ask the user. Only use this tool when you have specific options. For free-form text questions, respond normally and wait for user input'),
     options: z.array(z.object({
       label: z.string().describe('Display text for this option (what user sees)'),
-      value: z.string().optional().describe('Optional value to return (defaults to label if not provided)'),
-    })).min(2).max(10).describe('List of options for the user to choose from (2-10 options)'),
-    multiSelect: z.boolean().optional().describe('Allow user to select multiple options (default: false). When true, user can select multiple options with Space and confirm with Enter. Returns array of selected values.'),
+      value: z.string().optional().describe('Value to return (defaults to label if not provided)'),
+    })).min(2).max(10).describe('2-10 options for the user to choose from'),
+    multiSelect: z.boolean().optional().describe('Allow multiple selections (default: false). User selects with Space, confirms with Enter. Returns comma-separated values. Call this tool multiple times in same response to ask multiple questions - they will be presented together'),
   }),
   execute: async ({ question, options, multiSelect }) => {
     if (!userInputHandler) {
