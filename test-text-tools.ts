@@ -94,15 +94,28 @@ async function testStreamWithTools() {
     maxSteps: 5,
   });
 
-  console.log('\n=== Streaming ===');
-  for await (const chunk of result.textStream) {
-    process.stdout.write(chunk);
+  console.log('\n=== Streaming Events ===');
+  for await (const chunk of result.fullStream) {
+    if (chunk.type === 'text-start') {
+      console.log('[text-start]');
+    } else if (chunk.type === 'text-delta') {
+      process.stdout.write(chunk.text);
+    } else if (chunk.type === 'text-end') {
+      console.log('\n[text-end]');
+    } else if (chunk.type === 'tool-input-start') {
+      console.log(`[tool-input-start: ${chunk.toolName}]`);
+    } else if (chunk.type === 'tool-input-delta') {
+      process.stdout.write(chunk.delta);
+    } else if (chunk.type === 'tool-input-end') {
+      console.log('\n[tool-input-end]');
+    } else if (chunk.type === 'tool-call') {
+      console.log(`[tool-call: ${chunk.toolName}]`);
+    } else if (chunk.type === 'tool-result') {
+      console.log(`[tool-result: ${chunk.output}]`);
+    }
   }
 
-  const response = await result.response;
-  console.log('\n\n=== Final Response ===');
-  console.log('Text:', response.text);
-  console.log('Usage:', response.usage);
+  console.log('\n=== Test Complete ===');
 }
 
 // Run tests

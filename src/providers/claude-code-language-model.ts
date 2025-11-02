@@ -17,6 +17,7 @@ import {
   formatToolResult,
   type ToolDefinition,
 } from './text-based-tools.js';
+import { StreamingXMLParser } from './streaming-xml-parser.js';
 
 // All Claude Code built-in tools to disable
 const CLAUDE_CODE_BUILTIN_TOOLS = [
@@ -347,49 +348,95 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   if (block.type === 'text') {
                     // Parse text for tool calls if tools are available
                     if (tools && Object.keys(tools).length > 0) {
-                      const parsedBlocks = parseContentBlocks(block.text);
-                      for (const parsedBlock of parsedBlocks) {
-                        if (parsedBlock.type === 'text') {
-                          // Emit text-start before first text-delta
-                          if (!hasStartedText) {
+                      // Use streaming XML parser for incremental parsing
+                      const parser = new StreamingXMLParser();
+                      const CHUNK_SIZE = 5; // Characters per chunk for smooth streaming
+
+                      // Feed text chunk by chunk to simulate streaming
+                      for (let i = 0; i < block.text.length; i += CHUNK_SIZE) {
+                        const chunk = block.text.slice(i, i + CHUNK_SIZE);
+                        for (const xmlEvent of parser.processChunk(chunk)) {
+                          // Convert XML parser events to Vercel AI SDK events
+                          if (xmlEvent.type === 'text-start') {
                             controller.enqueue({
                               type: 'text-start',
                               id: 'text-0',
                             });
                             hasStartedText = true;
+                          } else if (xmlEvent.type === 'text-delta') {
+                            controller.enqueue({
+                              type: 'text-delta',
+                              id: 'text-0',
+                              delta: xmlEvent.delta,
+                            });
+                          } else if (xmlEvent.type === 'text-end') {
+                            controller.enqueue({
+                              type: 'text-end',
+                              id: 'text-0',
+                            });
+                          } else if (xmlEvent.type === 'tool-input-start') {
+                            controller.enqueue({
+                              type: 'tool-input-start',
+                              id: xmlEvent.toolCallId,
+                              toolName: xmlEvent.toolName,
+                            });
+                          } else if (xmlEvent.type === 'tool-input-delta') {
+                            controller.enqueue({
+                              type: 'tool-input-delta',
+                              id: xmlEvent.toolCallId,
+                              delta: xmlEvent.delta,
+                            });
+                          } else if (xmlEvent.type === 'tool-input-end') {
+                            controller.enqueue({
+                              type: 'tool-input-end',
+                              id: xmlEvent.toolCallId,
+                            });
+                          } else if (xmlEvent.type === 'tool-call-complete') {
+                            controller.enqueue({
+                              type: 'tool-call',
+                              toolCallId: xmlEvent.toolCallId,
+                              toolName: xmlEvent.toolName,
+                              input: JSON.stringify(xmlEvent.arguments),
+                            });
+                            finishReason = 'tool-calls';
                           }
+                        }
+                      }
 
+                      // Flush any remaining content
+                      for (const xmlEvent of parser.flush()) {
+                        if (xmlEvent.type === 'text-delta') {
                           controller.enqueue({
                             type: 'text-delta',
                             id: 'text-0',
-                            delta: parsedBlock.text,
+                            delta: xmlEvent.delta,
                           });
-                        } else if (parsedBlock.type === 'tool_use') {
-                          // Tool call detected - emit as tool-call
+                        } else if (xmlEvent.type === 'text-end') {
                           controller.enqueue({
-                            type: 'tool-call',
-                            toolCallId: parsedBlock.toolCallId,
-                            toolName: parsedBlock.toolName,
-                            input: JSON.stringify(parsedBlock.arguments),
+                            type: 'text-end',
+                            id: 'text-0',
                           });
-                          finishReason = 'tool-calls';
                         }
                       }
                     } else {
-                      // No tools, just emit text
-                      if (!hasStartedText) {
-                        controller.enqueue({
-                          type: 'text-start',
-                          id: 'text-0',
-                        });
-                        hasStartedText = true;
-                      }
+                      // No tools, just emit text chunks
+                      const CHUNK_SIZE = 5;
+                      for (let i = 0; i < block.text.length; i += CHUNK_SIZE) {
+                        if (i === 0) {
+                          controller.enqueue({
+                            type: 'text-start',
+                            id: 'text-0',
+                          });
+                          hasStartedText = true;
+                        }
 
-                      controller.enqueue({
-                        type: 'text-delta',
-                        id: 'text-0',
-                        delta: block.text,
-                      });
+                        const chunk = block.text.slice(i, i + CHUNK_SIZE);
+                        controller.enqueue({
+                          type: 'text-delta',
+                          id: 'text-0',
+                          delta: chunk,
+                        });
+                      }
                     }
                   }
                 }
