@@ -1,19 +1,13 @@
 /**
  * Claude Code Provider
- * Uses Anthropic API with Claude CLI authentication
- * Fully supports Vercel AI SDK tools
+ * Uses Claude Code CLI with OAuth authentication
+ * Supports Vercel AI SDK tools (executed by framework, not CLI)
  */
 
-import { anthropic } from '@ai-sdk/anthropic';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
 import type { ModelInfo } from '../utils/ai-model-fetcher.js';
-
-const MODEL_ID_MAP: Record<string, string> = {
-  opus: 'claude-opus-4-20250514',
-  sonnet: 'claude-sonnet-4-20250514',
-  haiku: 'claude-haiku-4-20250415',
-};
+import { ClaudeCodeLanguageModel } from './claude-code-language-model.js';
 
 export class ClaudeCodeProvider implements AIProvider {
   readonly id = 'claude-code' as const;
@@ -22,19 +16,18 @@ export class ClaudeCodeProvider implements AIProvider {
   getConfigSchema(): ConfigField[] {
     return [
       {
-        key: 'apiKey',
-        label: 'API Key',
-        type: 'string',
+        key: 'authenticated',
+        label: 'Authenticated',
+        type: 'boolean',
         required: false,
-        secret: true,
-        description: 'Anthropic API key (defaults to ANTHROPIC_API_KEY from Claude CLI)',
+        description: 'Authentication via Claude CLI OAuth (run `claude` to authenticate)',
       },
     ];
   }
 
   isConfigured(_config: ProviderConfig): boolean {
-    // Check if API key is available from config or environment
-    return !!(_config.apiKey || process.env.ANTHROPIC_API_KEY);
+    // Claude Code uses CLI OAuth - authentication handled by CLI
+    return true;
   }
 
   async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {
@@ -52,43 +45,37 @@ export class ClaudeCodeProvider implements AIProvider {
       opus: {
         contextLength: 200000,
         maxOutput: 4096,
-        inputPrice: 0.015,
-        outputPrice: 0.075,
+        inputPrice: 0,
+        outputPrice: 0,
       },
       sonnet: {
         contextLength: 200000,
         maxOutput: 8192,
-        inputPrice: 0.003,
-        outputPrice: 0.015,
+        inputPrice: 0,
+        outputPrice: 0,
       },
       haiku: {
         contextLength: 200000,
         maxOutput: 4096,
-        inputPrice: 0.00025,
-        outputPrice: 0.00125,
+        inputPrice: 0,
+        outputPrice: 0,
       },
     };
 
     return specs[modelId] || null;
   }
 
-  createClient(config: ProviderConfig, modelId: string): LanguageModelV2 {
-    // Use Anthropic provider with API key from config or environment
-    const apiKey = (config.apiKey as string) || process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey) {
-      throw new Error(
-        'Anthropic API key is required. Run `claude login` to set ANTHROPIC_API_KEY environment variable.'
-      );
-    }
-
-    // Map short model ID to full model name
-    const fullModelId = MODEL_ID_MAP[modelId] || modelId;
-
-    // Create Anthropic provider instance with API key
-    const provider = anthropic(apiKey);
-
-    // Return language model
-    return provider(fullModelId);
+  createClient(_config: ProviderConfig, modelId: string): LanguageModelV2 {
+    // Use custom LanguageModelV2 implementation with Claude Code CLI
+    // This implementation:
+    // - Uses Claude Agent SDK query() function
+    // - Accesses Claude Code CLI via OAuth (no API key needed)
+    // - Supports basic text generation
+    // - Returns LanguageModelV2 compatible with AI SDK v5
+    // Note: Custom Vercel tools support is limited - Claude Agent SDK only supports
+    // built-in tools and MCP servers, not arbitrary tool schemas
+    return new ClaudeCodeLanguageModel({
+      modelId,
+    });
   }
 }
