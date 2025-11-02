@@ -10,7 +10,7 @@ import type {
   LanguageModelV2StreamPart,
   LanguageModelV2FinishReason,
 } from '@ai-sdk/provider';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
 
 export interface ClaudeCodeLanguageModelConfig {
   modelId: string;
@@ -36,22 +36,6 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
   }
 
   /**
-   * Convert Vercel AI SDK tool schemas to Anthropic tool format
-   * Note: This is for schema definition only - Vercel framework handles execution
-   */
-  private convertToolSchemas(vercelTools: any[]): any[] | undefined {
-    if (!vercelTools || vercelTools.length === 0) {
-      return undefined;
-    }
-
-    return vercelTools.map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      input_schema: tool.inputSchema || { type: 'object', properties: {} },
-    }));
-  }
-
-  /**
    * Convert Vercel AI SDK messages to a single string prompt
    * Note: Claude Agent SDK works better with string prompts than async iterables
    */
@@ -63,8 +47,8 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         // Handle both array and non-array content
         const content = Array.isArray(message.content) ? message.content : [message.content];
         const textParts = content
-          .filter((part: any) => typeof part === 'object' && part.type === 'text')
-          .map((part: any) => part.text);
+          .filter((part) => typeof part === 'object' && part.type === 'text')
+          .map((part) => part.text);
 
         if (textParts.length > 0) {
           promptParts.push(textParts.join('\n'));
@@ -73,8 +57,8 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         // Handle both array and non-array content
         const content = Array.isArray(message.content) ? message.content : [message.content];
         const textParts = content
-          .filter((part: any) => typeof part === 'object' && part.type === 'text')
-          .map((part: any) => part.text);
+          .filter((part) => typeof part === 'object' && part.type === 'text')
+          .map((part) => part.text);
 
         if (textParts.length > 0) {
           // Prefix assistant messages for context
@@ -90,18 +74,18 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
    * Extract system prompt from messages
    */
   private extractSystemPrompt(options: LanguageModelV2CallOptions): string | undefined {
-    const systemMessages = options.prompt.filter((msg: any) => msg.role === 'system');
+    const systemMessages = options.prompt.filter((msg) => msg.role === 'system');
     if (systemMessages.length === 0) {
       return undefined;
     }
 
     const systemTexts = systemMessages
-      .flatMap((msg: any) => {
+      .flatMap((msg) => {
         // Handle both array and non-array content
         const content = Array.isArray(msg.content) ? msg.content : [msg.content];
         return content
-          .filter((part: any) => typeof part === 'object' && part.type === 'text')
-          .map((part: any) => part.text);
+          .filter((part) => typeof part === 'object' && part.type === 'text')
+          .map((part) => part.text);
       })
       .join('\n');
 
@@ -112,19 +96,20 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     options: LanguageModelV2CallOptions
   ): Promise<Awaited<ReturnType<LanguageModelV2['doGenerate']>>> {
     try {
-      // Convert tool schemas to Anthropic format
-      const tools = this.convertToolSchemas(options.tools as any);
+      // Note: Claude Agent SDK does not support Vercel AI SDK custom tools
+      // It only supports built-in tools and MCP servers
+      // Custom tools passed via options.tools are ignored
 
       // Convert messages to string prompt
       const promptString = this.convertMessagesToString(options);
       const systemPrompt = this.extractSystemPrompt(options);
 
       // Build query options
-      const queryOptions: any = {
+      const queryOptions: Options = {
         model: this.modelId,
-        // Disable Claude Code built-in tools - only use Vercel AI SDK tools
+        // Disable all Claude Code built-in tools
         settingSources: [],
-        tools: tools || [],
+        allowedTools: [],
       };
 
       if (systemPrompt) {
@@ -217,23 +202,24 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     }
   }
 
-  async doStream(
+  doStream(
     options: LanguageModelV2CallOptions
   ): Promise<Awaited<ReturnType<LanguageModelV2['doStream']>>> {
     try {
-      // Convert tool schemas to Anthropic format
-      const tools = this.convertToolSchemas(options.tools as any);
+      // Note: Claude Agent SDK does not support Vercel AI SDK custom tools
+      // It only supports built-in tools and MCP servers
+      // Custom tools passed via options.tools are ignored
 
       // Convert messages to string prompt
       const promptString = this.convertMessagesToString(options);
       const systemPrompt = this.extractSystemPrompt(options);
 
       // Build query options
-      const queryOptions: any = {
+      const queryOptions: Options = {
         model: this.modelId,
-        // Disable Claude Code built-in tools - only use Vercel AI SDK tools
+        // Disable all Claude Code built-in tools
         settingSources: [],
-        tools: tools || [],
+        allowedTools: [],
       };
 
       if (systemPrompt) {
