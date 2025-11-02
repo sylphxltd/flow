@@ -19,10 +19,10 @@ export default function TodoList({ todos }: TodoListProps) {
     return null;
   }
 
-  // Sort by ordering DESC, id ASC
+  // Sort by ordering ASC, id ASC (first added = first to do)
   const sortedTodos = [...activeTodos].sort((a, b) => {
     if (a.ordering !== b.ordering) {
-      return b.ordering - a.ordering; // Higher ordering first
+      return a.ordering - b.ordering; // Lower ordering first
     }
     return a.id - b.id; // Lower id first if same ordering
   });

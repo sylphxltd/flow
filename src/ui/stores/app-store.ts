@@ -269,8 +269,8 @@ export const useAppStore = create<AppState>()(
               } else if (type === 'before' && targetId !== undefined) {
                 const target = state.todos.find((t) => t.id === targetId);
                 if (target) {
-                  // Find the todo before target (higher ordering)
-                  const sorted = [...state.todos].sort((a, b) => b.ordering - a.ordering || a.id - b.id);
+                  // Find the todo before target (lower ordering, shows earlier)
+                  const sorted = [...state.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
                   const targetIdx = sorted.findIndex((t) => t.id === targetId);
                   const before = targetIdx > 0 ? sorted[targetIdx - 1] : null;
 
@@ -279,14 +279,14 @@ export const useAppStore = create<AppState>()(
                     todo.ordering = Math.floor((before.ordering + target.ordering) / 2);
                   } else {
                     // Target is first, put this todo before it
-                    todo.ordering = target.ordering + 10;
+                    todo.ordering = target.ordering - 10;
                   }
                 }
               } else if (type === 'after' && targetId !== undefined) {
                 const target = state.todos.find((t) => t.id === targetId);
                 if (target) {
-                  // Find the todo after target (lower ordering)
-                  const sorted = [...state.todos].sort((a, b) => b.ordering - a.ordering || a.id - b.id);
+                  // Find the todo after target (higher ordering, shows later)
+                  const sorted = [...state.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
                   const targetIdx = sorted.findIndex((t) => t.id === targetId);
                   const after = targetIdx < sorted.length - 1 ? sorted[targetIdx + 1] : null;
 
@@ -295,7 +295,7 @@ export const useAppStore = create<AppState>()(
                     todo.ordering = Math.floor((target.ordering + after.ordering) / 2);
                   } else {
                     // Target is last, put this todo after it
-                    todo.ordering = target.ordering - 10;
+                    todo.ordering = target.ordering + 10;
                   }
                 }
               }

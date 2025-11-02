@@ -18,6 +18,8 @@ Usage notes:
 - Each update can have an id (to update existing) or no id (to add new)
 - User's messages will show todo IDs like: [1] Task name
 - You can update multiple todos in one call
+- Todos are sorted by order added (first added = first in list = first to do)
+- Use reorder to change task priority
 
 Fields:
 - id: number (optional) - If provided, updates existing todo. If omitted, creates new todo with auto-increment ID

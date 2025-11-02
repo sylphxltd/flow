@@ -1045,10 +1045,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Build todo reminder if there are active todos
     let messageWithContext = userMessage;
     if (activeTodos.length > 0) {
-      // Sort by ordering DESC, id ASC
+      // Sort by ordering ASC, id ASC (first added = first to do)
       const sortedTodos = [...activeTodos].sort((a, b) => {
         if (a.ordering !== b.ordering) {
-          return b.ordering - a.ordering;
+          return a.ordering - b.ordering;
         }
         return a.id - b.id;
       });
