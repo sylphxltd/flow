@@ -11,62 +11,18 @@ import { useAppStore } from '../ui/stores/app-store.js';
  * Update todos - Batch add/update todos
  */
 export const updateTodosTool = tool({
-  description: `Update your task list to track work progress. The user can see your task list above the input area.
-
-Usage notes:
-- Add new todos by omitting id, update existing by providing id
-- User messages show your pending tasks
-- Todos sorted by order added (first added = first to do)
-- Use reorder to change priority
-- Update multiple todos in one call
-
-Fields:
-- id: number (optional) - If provided, updates existing todo. If omitted, creates new todo with auto-increment ID
-- content: string (optional when updating) - Imperative form (e.g., "Build feature", "Fix bug")
-- activeForm: string (optional when updating) - Present continuous form shown when in_progress (e.g., "Building feature", "Fixing bug")
-- status: "pending" | "in_progress" | "completed" | "removed" (optional when updating)
-- reorder: object (optional) - Change task order
-  - type: "top" | "last" | "before" | "after"
-  - id: number (required when type is "before" or "after") - Reference todo ID
-
-Best practices:
-- Add a todo BEFORE starting work
-- Keep exactly ONE task as "in_progress" at a time
-- Mark "completed" or "removed" IMMEDIATELY after finishing
-- Use reorder to prioritize tasks
-
-Examples:
-// Add new todos
-updateTodos([
-  { content: "Build login", activeForm: "Building login", status: "pending" },
-  { content: "Write tests", activeForm: "Writing tests", status: "pending" }
-])
-
-// Update status
-updateTodos([{ id: 1, status: "in_progress" }])
-
-// Complete and start next
-updateTodos([
-  { id: 1, status: "completed" },
-  { id: 2, status: "in_progress" }
-])
-
-// Move todo 3 to top
-updateTodos([{ id: 3, reorder: { type: "top" } }])
-
-// Move todo 5 before todo 2
-updateTodos([{ id: 5, reorder: { type: "before", id: 2 } }])`,
+  description: 'Update task list to track work progress',
   inputSchema: z.object({
     todos: z.array(z.object({
-      id: z.number().optional().describe('Todo ID (omit to create new, provide to update existing)'),
-      content: z.string().optional().describe('Task description (imperative form)'),
-      activeForm: z.string().optional().describe('Present continuous form shown during execution'),
-      status: z.enum(['pending', 'in_progress', 'completed', 'removed']).optional().describe('Task status'),
+      id: z.number().optional().describe('Omit to add new todo, provide to update existing. User messages show IDs: [1] Task name'),
+      content: z.string().optional().describe('Imperative form (e.g., "Build feature", "Fix bug"). Required when adding new todo'),
+      activeForm: z.string().optional().describe('Present continuous form (e.g., "Building feature") shown when status=in_progress. Required when adding new todo'),
+      status: z.enum(['pending', 'in_progress', 'completed', 'removed']).optional().describe('pending: not started | in_progress: currently working (keep ONLY ONE) | completed: done | removed: cancelled'),
       reorder: z.object({
-        type: z.enum(['top', 'last', 'before', 'after']).describe('Where to move the todo'),
-        id: z.number().optional().describe('Reference todo ID (required for before/after)'),
-      }).optional().describe('Change task order'),
-    })).describe('List of todos to add or update'),
+        type: z.enum(['top', 'last', 'before', 'after']).describe('top: move to first | last: move to end | before: insert before target | after: insert after target'),
+        id: z.number().optional().describe('Target todo ID (required for before/after)'),
+      }).optional().describe('Change task order. Default order: first added = first to do'),
+    })).describe('Batch add/update todos. Examples: [{ content: "Build login", activeForm: "Building login", status: "pending" }] to add | [{ id: 1, status: "completed" }, { id: 2, status: "in_progress" }] to update | [{ id: 3, reorder: { type: "top" } }] to prioritize'),
   }),
   execute: async ({ todos }) => {
     const store = useAppStore.getState();
