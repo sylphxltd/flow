@@ -90,6 +90,10 @@ export interface CommandContext {
   // Update session provider and model (preserve history)
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
 
+  // Set UI selected provider and model (for UI state synchronization)
+  setUISelectedProvider: (provider: ProviderId | null) => void;
+  setUISelectedModel: (model: string | null) => void;
+
   // Create new session
   createSession: (provider: ProviderId, model: string) => string;
 

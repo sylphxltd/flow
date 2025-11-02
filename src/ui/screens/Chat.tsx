@@ -101,6 +101,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const setAIConfig = useAppStore((state) => state.setAIConfig);
   const setCurrentSession = useAppStore((state) => state.setCurrentSession);
   const addMessage = useAppStore((state) => state.addMessage);
+  const setSelectedProvider = useAppStore((state) => state.setSelectedProvider);
+  const setSelectedModel = useAppStore((state) => state.setSelectedModel);
 
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
@@ -173,6 +175,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setAIConfig: (config) => setAIConfig(config),
     updateSessionModel: (sessionId, model) => updateSessionModel(sessionId, model),
     updateSessionProvider: (sessionId, provider, model) => updateSessionProvider(sessionId, provider, model),
+    setUISelectedProvider: (provider) => setSelectedProvider(provider),
+    setUISelectedModel: (model) => setSelectedModel(model),
     createSession: (provider, model) => createSession(provider, model),
     getSessions: () => sessions,
     getCurrentSessionId: () => currentSessionId,

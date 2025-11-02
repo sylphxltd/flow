@@ -235,6 +235,10 @@ export const providerCommand: Command = {
           context.setAIConfig(newConfig);
           await context.saveConfig(newConfig);
 
+          // Update UI state
+          context.setUISelectedProvider(providerId as ProviderId);
+          context.setUISelectedModel(defaultModel);
+
           // Update current session's provider (preserve history)
           const currentSessionId = context.getCurrentSessionId();
           if (currentSessionId) {
@@ -388,6 +392,10 @@ export const providerCommand: Command = {
 
         context.setAIConfig(newConfig);
         await context.saveConfig(newConfig);
+
+        // Update UI state
+        context.setUISelectedProvider(providerId as ProviderId);
+        context.setUISelectedModel(defaultModel);
 
         // Update current session's provider (preserve history)
         const currentSessionId = context.getCurrentSessionId();

@@ -40,9 +40,56 @@ export default function ModelSelection() {
   // Load models when provider is selected
   useEffect(() => {
     if (selectedProvider && mode === 'model') {
-      loadModels();
+      loadModelsAndSelectDefault();
     }
   }, [selectedProvider, mode]);
+
+  const loadModelsAndSelectDefault = async () => {
+    if (!selectedProvider) return;
+
+    setIsLoadingModels(true);
+    try {
+      const providerConfig = aiConfig?.providers?.[selectedProvider] || {};
+      const modelList = await fetchModels(selectedProvider, providerConfig);
+      setModels(modelList);
+
+      // Auto-select default model
+      const defaultModel = providerConfig['default-model'] as string | undefined;
+      const modelToSelect = defaultModel || modelList[0]?.id;
+
+      if (modelToSelect) {
+        // Automatically select and save the model
+        setSelectedModel(modelToSelect);
+        updateProvider(selectedProvider, { defaultModel: modelToSelect });
+
+        // Update config
+        const newConfig = {
+          ...aiConfig!,
+          defaultProvider: selectedProvider,
+          defaultModel: modelToSelect,
+          providers: {
+            ...aiConfig!.providers,
+            [selectedProvider]: {
+              ...aiConfig!.providers?.[selectedProvider],
+              defaultModel: modelToSelect,
+            },
+          },
+        };
+
+        await saveConfig(newConfig);
+
+        // Reset and go back to chat
+        setSelectedProvider(null);
+        setSearchQuery('');
+        setMode('provider');
+        navigateTo('chat');
+      }
+    } catch (err) {
+      setError('Failed to load models');
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
 
   const loadModels = async () => {
     if (!selectedProvider) return;

@@ -19,8 +19,18 @@ export const sessionsCommand: Command = {
 
     const currentSessionId = context.getCurrentSessionId();
 
+    // Sort sessions by updated time (most recent first), then by created time
+    const sortedSessions = [...sessions].sort((a, b) => {
+      // First compare by updated time (descending)
+      const updateDiff = b.updated - a.updated;
+      if (updateDiff !== 0) return updateDiff;
+      
+      // If updated is same, compare by created time (descending)
+      return b.created - a.created;
+    });
+
     // Ask user to select a session
-    const sessionOptions = sessions.map((session) => {
+    const sessionOptions = sortedSessions.map((session) => {
       const isCurrent = session.id === currentSessionId;
       const displayText = formatSessionDisplay(session.title, session.created);
       const label = isCurrent ? `${displayText} (current)` : displayText;
