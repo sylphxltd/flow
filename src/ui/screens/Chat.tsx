@@ -15,7 +15,6 @@ import StatusBar from '../components/StatusBar.js';
 import Spinner from '../components/Spinner.js';
 import { commands } from '../commands/registry.js';
 import type { CommandContext, WaitForInputOptions, Question } from '../commands/types.js';
-import { calculateScrollViewport } from '../utils/scroll-viewport.js';
 import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from '../../tools/interaction.js';
 import { ToolDisplay } from '../components/ToolDisplay.js';
 import { scanProjectFiles, filterFiles } from '../../utils/file-scanner.js';
@@ -25,6 +24,9 @@ import { useFileAttachments } from '../hooks/useFileAttachments.js';
 import { MessagePart } from '../components/MessagePart.js';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation.js';
 import { SelectionUI } from '../components/SelectionUI.js';
+import { PendingCommandSelection } from '../components/PendingCommandSelection.js';
+import { FileAutocomplete } from '../components/FileAutocomplete.js';
+import { CommandAutocomplete } from '../components/CommandAutocomplete.js';
 
 type StreamPart =
   | { type: 'text'; content: string }
@@ -950,100 +952,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             />
           ) : /* Selection Mode - when a command is pending and needs args */
           pendingCommand ? (
-            <Box flexDirection="column">
-              <Box marginBottom={1}>
-                <Text dimColor>
-                  Select {pendingCommand.command.args?.[0]?.name || 'option'}:
-                </Text>
-              </Box>
-
-              {/* Loading state */}
-              {currentlyLoading ? (
-                <Box>
-                  <Spinner color="#FFD700" />
-                  <Text color="gray"> Loading options...</Text>
-                </Box>
-              ) : loadError ? (
-                /* Error state */
-                <Box flexDirection="column">
-                  <Box marginBottom={1}>
-                    <Text color="red">Failed to load options</Text>
-                  </Box>
-                  <Box marginBottom={1}>
-                    <Text dimColor>{loadError}</Text>
-                  </Box>
-                  <Box>
-                    <Text dimColor>Press Esc to cancel</Text>
-                  </Box>
-                </Box>
-              ) : (() => {
-                /* Options list */
-                const firstArg = pendingCommand.command.args?.[0];
-                const cacheKey = firstArg ? `${pendingCommand.command.id}:${firstArg.name}` : '';
-                const options = cacheKey ? (cachedOptions.get(cacheKey) || []) : [];
-
-                if (options.length === 0) {
-                  return (
-                    <Box flexDirection="column">
-                      <Box marginBottom={1}>
-                        <Text color="yellow">No options available</Text>
-                      </Box>
-                      <Box>
-                        <Text dimColor>Press Esc to cancel</Text>
-                      </Box>
-                    </Box>
-                  );
+            <PendingCommandSelection
+              pendingCommand={pendingCommand}
+              currentlyLoading={currentlyLoading}
+              loadError={loadError}
+              cachedOptions={cachedOptions}
+              selectedCommandIndex={selectedCommandIndex}
+              onSelect={async (option) => {
+                const response = await pendingCommand.command.execute(createCommandContext([option.value || option.label]));
+                if (currentSessionId) {
+                  addMessage(currentSessionId, 'assistant', response);
                 }
-
-                // Calculate scroll window to keep selected item visible
-                const viewport = calculateScrollViewport(options, selectedCommandIndex);
-
-                return (
-                  <>
-                    {viewport.hasItemsAbove && (
-                      <Box marginBottom={1}>
-                        <Text dimColor>... {viewport.itemsAboveCount} more above</Text>
-                      </Box>
-                    )}
-                    {viewport.visibleItems.map((option, idx) => {
-                      const absoluteIdx = viewport.scrollOffset + idx;
-                      return (
-                        <Box
-                          key={option.value || option.label}
-                          paddingY={0}
-                          onClick={async () => {
-                            const response = await pendingCommand.command.execute(createCommandContext([option.value || option.label]));
-                            if (currentSessionId) {
-                              addMessage(currentSessionId, 'assistant', response);
-                            }
-                            setPendingCommand(null);
-                            setSelectedCommandIndex(0);
-                          }}
-                        >
-                          <Text
-                            color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                            bold={absoluteIdx === selectedCommandIndex}
-                          >
-                            {absoluteIdx === selectedCommandIndex ? '> ' : '  '}
-                            {option.label}
-                          </Text>
-                        </Box>
-                      );
-                    })}
-                    {viewport.hasItemsBelow && (
-                      <Box marginTop={1}>
-                        <Text dimColor>... {viewport.itemsBelowCount} more below</Text>
-                      </Box>
-                    )}
-                    <Box marginTop={1}>
-                      <Text dimColor>
-                        ↑↓ Navigate · Enter Select · Esc Cancel
-                      </Text>
-                    </Box>
-                  </>
-                );
-              })()}
-            </Box>
+                setPendingCommand(null);
+                setSelectedCommandIndex(0);
+              }}
+            />
           ) : isStreaming ? (
             <Box>
               <Text dimColor>Waiting for response...</Text>
@@ -1125,93 +1048,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               )}
 
               {/* File Autocomplete - Shows below input when typing @ */}
-              {filteredFileInfo.hasAt && filteredFileInfo.files.length > 0 && !filesLoading ? (
-                <Box flexDirection="column" marginTop={1}>
-                  <Box marginBottom={1}>
-                    <Text dimColor>Files (↑↓ to select, Tab/Enter to attach):</Text>
-                  </Box>
-                  {filteredFileInfo.files.map((file, idx) => (
-                    <Box key={file.path} marginLeft={2}>
-                      <Text
-                        color={idx === selectedFileIndex ? '#00FF88' : 'gray'}
-                        bold={idx === selectedFileIndex}
-                      >
-                        {idx === selectedFileIndex ? '> ' : '  '}
-                        {file.relativePath}
-                      </Text>
-                    </Box>
-                  ))}
-                </Box>
-              ) : filteredFileInfo.hasAt && filesLoading ? (
-                <Box marginTop={1}>
-                  <Spinner color="#FFD700" />
-                  <Text color="gray"> Loading files...</Text>
-                </Box>
-              ) : /* Command Autocomplete - Shows below input when typing / */
-              input.startsWith('/') && input.includes(' ') && currentlyLoading ? (
-                <Box marginTop={1}>
-                  <Spinner color="#FFD700" />
-                  <Text color="gray"> Loading options...</Text>
-                </Box>
-              ) : input.startsWith('/') && input.includes(' ') && loadError ? (
-                <Box flexDirection="column" marginTop={1}>
-                  <Box>
-                    <Text color="red">Failed to load options</Text>
-                  </Box>
-                  <Box marginTop={1}>
-                    <Text dimColor>{loadError}</Text>
-                  </Box>
-                </Box>
-              ) : filteredCommands.length > 0 ? (
-                <Box flexDirection="column" marginTop={1}>
-                  {(() => {
-                    // Calculate visible window based on selection
-                    const maxVisible = 5;
-                    const totalCommands = filteredCommands.length;
+              {filteredFileInfo.hasAt && (
+                <FileAutocomplete
+                  files={filteredFileInfo.files}
+                  selectedFileIndex={selectedFileIndex}
+                  filesLoading={filesLoading}
+                />
+              )}
 
-                    // Center the selection in the visible window
-                    let startIdx = Math.max(0, selectedCommandIndex - Math.floor(maxVisible / 2));
-                    let endIdx = Math.min(totalCommands, startIdx + maxVisible);
-
-                    // Adjust if we're at the end
-                    if (endIdx === totalCommands) {
-                      startIdx = Math.max(0, endIdx - maxVisible);
-                    }
-
-                    const visibleCommands = filteredCommands.slice(startIdx, endIdx);
-
-                    return (
-                      <>
-                        {startIdx > 0 && (
-                          <Box>
-                            <Text dimColor>  ↑ {startIdx} more above</Text>
-                          </Box>
-                        )}
-                        {visibleCommands.map((cmd, idx) => {
-                          const actualIdx = startIdx + idx;
-                          return (
-                            <Box key={cmd.id}>
-                              <Text
-                                color={actualIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                                bold={actualIdx === selectedCommandIndex}
-                              >
-                                {actualIdx === selectedCommandIndex ? '> ' : '  '}
-                                {cmd.label}
-                              </Text>
-                              {cmd.description && <Text dimColor> {cmd.description}</Text>}
-                            </Box>
-                          );
-                        })}
-                        {endIdx < totalCommands && (
-                          <Box>
-                            <Text dimColor>  ↓ {totalCommands - endIdx} more below</Text>
-                          </Box>
-                        )}
-                      </>
-                    );
-                  })()}
-                </Box>
-              ) : null}
+              {/* Command Autocomplete - Shows below input when typing / */}
+              {input.startsWith('/') && input.includes(' ') && (
+                <CommandAutocomplete
+                  commands={filteredCommands}
+                  selectedCommandIndex={selectedCommandIndex}
+                  currentlyLoading={currentlyLoading}
+                  loadError={loadError}
+                />
+              )}
             </>
           )}
         </Box>
