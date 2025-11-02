@@ -353,6 +353,16 @@ export default function ControlledTextInput({
 
   useInput(
     (input, key) => {
+      // DEBUG: Log all key presses to understand Mac delete behavior
+      if (process.env.DEBUG_INPUT) {
+        console.log('[INPUT]', {
+          input: JSON.stringify(input),
+          key: Object.keys(key).filter((k) => key[k as keyof typeof key]),
+          value: JSON.stringify(state.value),
+          cursor: state.cursor,
+        });
+      }
+
       // ===========================================
       // Movement (Character)
       // ===========================================
