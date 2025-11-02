@@ -374,12 +374,31 @@ function injectSystemStatusToOutput(output: any, systemStatus: string): any {
 }
 
 /**
- * Convert our messages to AI SDK format
+ * Normalize content to modern array format
+ * Converts legacy string content to Array<TextPart | ImagePart | FilePart>
+ */
+function normalizeContent(content: any): any[] {
+  if (typeof content === 'string') {
+    // Legacy string format → convert to TextPart array
+    return [
+      {
+        type: 'text',
+        text: content,
+      },
+    ];
+  }
+
+  // Already array format (or other object)
+  return Array.isArray(content) ? content : [content];
+}
+
+/**
+ * Convert our messages to AI SDK format with normalized content
  */
 function toAISDKMessages(messages: SylphxMessage[]) {
   return messages.map((msg) => ({
     role: msg.role,
-    content: msg.content,
+    content: normalizeContent(msg.content),
   }));
 }
 
@@ -463,26 +482,11 @@ export async function* createAIStream(
   const aiModel = toAISDKModel(model);
 
   // Message history that we control - add system status to initial messages
+  // Note: toAISDKMessages() already normalizes all content to array format
   const systemStatus = getSystemStatus();
   const messageHistory: any[] = toAISDKMessages(initialMessages).map((msg: any) => {
     if (msg.role === 'user') {
-      // Convert content to array format and prepend system status
-      let contentArray: any[];
-
-      if (typeof msg.content === 'string') {
-        // Convert string to TextPart array
-        contentArray = [
-          {
-            type: 'text',
-            text: msg.content,
-          },
-        ];
-      } else {
-        // Already array (TextPart | ImagePart | FilePart)
-        contentArray = msg.content;
-      }
-
-      // Prepend system status as TextPart
+      // Prepend system status as TextPart (content is already array)
       return {
         ...msg,
         content: [
@@ -490,7 +494,7 @@ export async function* createAIStream(
             type: 'text',
             text: systemStatus,
           },
-          ...contentArray,
+          ...msg.content,
         ],
       };
     }
