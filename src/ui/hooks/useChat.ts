@@ -168,20 +168,11 @@ export function useChat() {
             }
 
             // 2. Extract text parts from content (user message)
-            // Handle both new MessagePart[] format and legacy string format
-            if (msg.content && Array.isArray(msg.content)) {
-              const textParts = msg.content.filter((part) => part.type === 'text');
-              for (const part of textParts) {
-                contentParts.push({
-                  type: 'text',
-                  text: (part as any).content,
-                });
-              }
-            } else if (msg.content) {
-              // Legacy format: content is a string
+            const textParts = msg.content.filter((part) => part.type === 'text');
+            for (const part of textParts) {
               contentParts.push({
                 type: 'text',
-                text: String(msg.content),
+                text: (part as any).content,
               });
             }
 
@@ -218,17 +209,10 @@ export function useChat() {
           }
 
           // Assistant messages: convert parts to AI SDK format
-          // Handle both new MessagePart[] format and legacy string format
-          let textParts = '';
-          if (msg.content && Array.isArray(msg.content)) {
-            textParts = msg.content
-              .filter((part) => part.type === 'text')
-              .map((part: any) => part.content)
-              .join('\n');
-          } else if (msg.content) {
-            // Legacy format: content is a string
-            textParts = String(msg.content);
-          }
+          const textParts = msg.content
+            .filter((part) => part.type === 'text')
+            .map((part: any) => part.content)
+            .join('\n');
 
           return {
             role: msg.role as 'assistant',

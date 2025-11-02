@@ -1687,17 +1687,11 @@ const compactCommand: Command = {
 
       // Build conversation history for summarization
       const conversationHistory = currentSession.messages.map((msg) => {
-        let content = '';
-
-        // Extract text content from MessagePart array or use string directly
-        if (msg.content && Array.isArray(msg.content)) {
-          const textParts = msg.content
-            .filter((part) => part.type === 'text')
-            .map((part: any) => part.content);
-          content = textParts.join('\n');
-        } else if (msg.content) {
-          content = String(msg.content);
-        }
+        // Extract text content from MessagePart array
+        const textParts = msg.content
+          .filter((part) => part.type === 'text')
+          .map((part: any) => part.content);
+        let content = textParts.join('\n');
 
         // Include attachments info
         if (msg.attachments && msg.attachments.length > 0) {
