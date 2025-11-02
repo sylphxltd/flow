@@ -54,8 +54,10 @@
 ### 5. 字符刪除
 | 操作 | Mac | Windows/Linux | Emacs/Readline |
 |------|-----|---------------|----------------|
-| 向後刪字符 | Delete | Backspace | Ctrl+H |
-| 向前刪字符 | Fn+Delete | Delete | Ctrl+D |
+| 向後刪字符 | **Delete** | Backspace | Ctrl+H |
+| 向前刪字符 | **(Ctrl+D only)** | Delete | Ctrl+D |
+
+**注意**: Mac Delete 鍵向後刪除，Fn+Delete 在 CLI 環境下無法檢測
 
 ### 6. 詞刪除
 | 操作 | Mac | Windows/Linux | Emacs/Readline |
@@ -78,8 +80,10 @@
 ### 9. 提交/換行
 | 操作 | Mac | Windows/Linux | 多行輸入 |
 |------|-----|---------------|----------|
-| 提交 | Command+Return | Ctrl+Return | ✓ |
+| 提交 | **Ctrl+S** | **Ctrl+S** | ✓ |
 | 換行 | Return | Return | ✓ |
+
+**注意**: Command+Return 在 CLI 環境下無法檢測，改用 Ctrl+S（標準保存快捷鍵）
 
 ## Ink 實現注意事項
 
@@ -101,25 +105,28 @@ Ink 可能將 Command 鍵映射到 `key.meta`，需要區分 Option (Meta) 和 C
    - Mac: Command+←/→, Option+Delete
    - Windows: Ctrl+←/→, Ctrl+Backspace
 
-## 當前實現問題
+## 實際測試結果（Mac 環境）
 
-### 問題 1: Mac Delete 鍵行為
-- **現象**: Delete 鍵向前刪除（應該向後刪除）
-- **原因**: 可能 `key.delete` 和 `key.backspace` 映射錯誤
-- **需要測試**: 運行 `DEBUG_INPUT=1` 查看實際事件
+### ✅ 已解決問題
 
-### 問題 2: 提交快捷鍵
-- **現象**: 無法提交
-- **原因**: Shift+Enter 改為 Command+Enter（Mac 標準）
-- **建議**:
-  - Mac: Command+Return 提交
-  - Windows/Linux: Ctrl+Return 提交
-  - Return: 換行（多行輸入）
+#### 1. Mac Delete 鍵行為
+- **發現**: Mac Delete 鍵映射到 `key.delete`（不是 `key.backspace`）
+- **行為**: 應該向後刪除（像 Windows Backspace）
+- **解決**: `key.delete` 現在正確向後刪除
+- **Option+Delete**: `key.delete` + `key.meta` 正確刪除整個詞
 
-### 問題 3: 上下箭頭
-- **現象**: 上下無反應
-- **狀態**: 已實現 MOVE_LINE_UP/DOWN
-- **需要測試**: 確認是否正常工作
+#### 2. 提交快捷鍵
+- **發現**: CLI 環境下 **Command 鍵完全無法檢測**
+- **原因**: 終端系統級限制，Command+任何鍵 都無法被 Ink 捕獲
+- **解決**: 改用 **Ctrl+S** 提交（標準保存快捷鍵）
+- **Return 鍵**: 只用於換行（多行輸入）
+
+#### 3. CLI 環境鍵盤限制
+- ❌ **Command 鍵**: 完全無法檢測（系統攔截）
+- ✅ **Ctrl 鍵**: 可以與 A-Z 組合使用
+- ✅ **Option 鍵** (`key.meta`): 可以與 Delete、B、F、D 組合
+- ❌ **Fn+Delete**: 無法檢測（沒有對應事件）
+- ❌ **組合鍵+Return**: 任何組合鍵+Return 都無法檢測
 
 ## 建議測試方案
 
