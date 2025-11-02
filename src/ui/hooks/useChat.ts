@@ -81,26 +81,28 @@ export function useChat() {
         setUserInputHandler(onUserInputRequest);
       }
 
-      // Add user message to session (original message without file contents or system status)
+      // Add user message to session with system status (added once at creation time)
+      const systemStatus = getSystemStatus();
       addMessage(currentSessionId, 'user', [
+        { type: 'text', content: systemStatus },
         { type: 'text', content: message }
       ], attachments);
 
+      // Get updated session (after addMessage)
+      const updatedSession = sessions.find((s) => s.id === currentSessionId);
+      if (!updatedSession) {
+        console.error('[useChat] Session not found after addMessage');
+        return;
+      }
+
       // Build messages with content parts (supports text, files, images)
       const messages: ModelMessage[] = await Promise.all(
-        [...currentSession.messages, { role: 'user' as const, content: [{ type: 'text' as const, content: message }], timestamp: Date.now(), attachments }].map(async (msg) => {
-          // User messages: inject system status + extract text from parts
+        updatedSession.messages.map(async (msg) => {
+          // User messages: extract text from parts + add file attachments
           if (msg.role === 'user') {
             const contentParts: any[] = [];
 
-            // 1. Add system status at the beginning
-            const systemStatus = getSystemStatus();
-            contentParts.push({
-              type: 'text',
-              text: systemStatus,
-            });
-
-            // 2. Add main message text (extract from parts)
+            // 1. Extract text parts (including system status already saved)
             const textParts = msg.content.filter((part) => part.type === 'text');
             for (const part of textParts) {
               contentParts.push({
@@ -109,7 +111,7 @@ export function useChat() {
               });
             }
 
-            // 3. Add file attachments as file parts
+            // 2. Add file attachments as file parts (read fresh from disk)
             if (msg.attachments && msg.attachments.length > 0) {
               try {
                 const { readFile } = await import('node:fs/promises');
@@ -170,12 +172,7 @@ export function useChat() {
             ...messageHistory,
             {
               role: 'system' as const,
-              content: [
-                {
-                  type: 'text',
-                  text: todoContext,
-                },
-              ],
+              content: todoContext, // System messages use string content
             },
           ];
         },
