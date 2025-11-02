@@ -243,6 +243,7 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             let inputTokens = 0;
             let outputTokens = 0;
             let finishReason: LanguageModelV2FinishReason = 'stop';
+            let hasStartedText = false;
 
             for await (const event of queryResult) {
               if (event.type === 'assistant') {
@@ -250,10 +251,19 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                 const content = event.message.content;
                 for (const block of content) {
                   if (block.type === 'text') {
+                    // Emit text-start before first text-delta
+                    if (!hasStartedText) {
+                      controller.enqueue({
+                        type: 'text-start',
+                        id: 'text-0',
+                      });
+                      hasStartedText = true;
+                    }
+
                     controller.enqueue({
                       type: 'text-delta',
-                      delta: block.text,  // SDK expects 'delta' not 'textDelta'
                       id: 'text-0',
+                      delta: block.text,
                     });
                   } else if (block.type === 'tool_use') {
                     // Tool call detected - emit as tool-call-delta
@@ -282,6 +292,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                   outputTokens = event.usage.output_tokens || 0;
                 }
               }
+            }
+
+            // Emit text-end if we started text
+            if (hasStartedText) {
+              controller.enqueue({
+                type: 'text-end',
+                id: 'text-0',
+              });
             }
 
             // Emit finish
