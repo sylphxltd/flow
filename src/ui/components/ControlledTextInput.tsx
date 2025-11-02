@@ -335,31 +335,35 @@ export default function ControlledTextInput({
     killBuffer: '',
   });
 
-  // Track if update is from internal state change (avoid infinite loop)
-  const isInternalUpdate = useRef(false);
+  // Store previous props to detect external changes
+  const prevPropsRef = useRef({ value, cursor });
 
-  // Sync props → state (only when changed externally)
+  // Sync props → state (only when props change externally)
   useEffect(() => {
-    if (!isInternalUpdate.current && (value !== state.value || cursor !== state.cursor)) {
-      dispatch({ type: 'SYNC', value, cursor });
-    }
-    isInternalUpdate.current = false;
-  }, [value, cursor, state.value, state.cursor]);
+    const prevProps = prevPropsRef.current;
 
-  // Sync state → parent (only when changed internally)
+    // Only sync if props actually changed from previous render
+    if (value !== prevProps.value || cursor !== prevProps.cursor) {
+      // Check if this is an external change (not just echo back from our onChange)
+      if (value !== state.value || cursor !== state.cursor) {
+        dispatch({ type: 'SYNC', value, cursor });
+      }
+      prevPropsRef.current = { value, cursor };
+    }
+  }, [value, cursor]);
+
+  // Sync state → parent (when state changes internally)
   useEffect(() => {
     if (state.value !== value) {
-      isInternalUpdate.current = true;
       onChange(state.value);
     }
-  }, [state.value, value, onChange]);
+  }, [state.value]);
 
   useEffect(() => {
     if (state.cursor !== cursor) {
-      isInternalUpdate.current = true;
       onCursorChange(state.cursor);
     }
-  }, [state.cursor, cursor, onCursorChange]);
+  }, [state.cursor]);
 
   useInput(
     (input, key) => {
