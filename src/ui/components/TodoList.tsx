@@ -7,6 +7,14 @@ import React, { useMemo } from 'react';
 import { Box, Text } from 'ink';
 import { useAppStore } from '../stores/app-store.js';
 import type { Todo } from '../../types/todo.types.js';
+import {
+  getTodoIcon,
+  getTodoColor,
+  getTodoDisplayText,
+  isTodoDimmed,
+  isTodoBold,
+  isTodoStrikethrough,
+} from '../utils/todo-formatters.js';
 
 const MAX_VISIBLE_LINES = 5;
 
@@ -68,33 +76,21 @@ export default function TodoList() {
 
       {/* Todo list */}
       {visibleTodos.map((todo) => {
-        const isInProgress = todo.status === 'in_progress';
-        const isCompleted = todo.status === 'completed';
-        const isPending = todo.status === 'pending';
-
-        // Display text
-        const displayText = isInProgress ? todo.activeForm : todo.content;
+        const icon = getTodoIcon(todo.status);
+        const color = getTodoColor(todo.status);
+        const displayText = getTodoDisplayText(todo);
+        const dimmed = isTodoDimmed(todo.status);
+        const bold = isTodoBold(todo.status);
+        const strikethrough = isTodoStrikethrough(todo.status);
 
         return (
           <Box key={`todo-${todo.id}`}>
-            {isInProgress && (
-              <>
-                <Text bold color="#00FF88">▶ </Text>
-                <Text bold color="#00FF88">{displayText}</Text>
-              </>
-            )}
-            {isPending && (
-              <>
-                <Text dimColor>○ </Text>
-                <Text dimColor>{displayText}</Text>
-              </>
-            )}
-            {isCompleted && (
-              <>
-                <Text color="green">✓ </Text>
-                <Text dimColor strikethrough>{displayText}</Text>
-              </>
-            )}
+            <Text color={color} bold={bold} dimColor={dimmed}>
+              {icon}{' '}
+            </Text>
+            <Text color={color} bold={bold} dimColor={dimmed} strikethrough={strikethrough}>
+              {displayText}
+            </Text>
           </Box>
         );
       })}

@@ -24,6 +24,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { useAppStore } from '../ui/stores/app-store.js';
+import { formatTodoChange } from '../ui/utils/todo-formatters.js';
 
 /**
  * Update todos - Batch add/update todos
@@ -82,12 +83,15 @@ export const updateTodosTool = tool({
     const addedTodos = todos.filter((t) => t.id === undefined);
     const updatedTodos = todos.filter((t) => t.id !== undefined);
 
-    // Build result
+    // Build result using centralized formatters
     const changes: string[] = [];
 
     if (addedTodos.length > 0) {
       addedTodos.forEach((t) => {
-        changes.push(`+ ${t.content}`);
+        const addedTodo = afterState.find((todo) => todo.content === t.content);
+        if (addedTodo) {
+          changes.push(formatTodoChange('added', addedTodo));
+        }
       });
     }
 
@@ -97,9 +101,9 @@ export const updateTodosTool = tool({
         const after = afterState.find((todo) => todo.id === t.id);
         if (before && after) {
           if (t.status && t.status !== before.status) {
-            changes.push(`[${t.id}] ${before.status} → ${t.status}`);
+            changes.push(formatTodoChange('updated', after, before.status));
           } else if (t.reorder) {
-            changes.push(`[${t.id}] reordered to ${t.reorder.type}`);
+            changes.push(formatTodoChange('reordered', after, undefined, t.reorder.type));
           }
         }
       });
