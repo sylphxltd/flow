@@ -394,9 +394,9 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                       delta: streamEvent.delta.thinking,
                     });
                   } else if (streamEvent.delta.type === 'text_delta') {
-                    // Text delta - parse through XML parser if tools available, otherwise emit directly
+                    // Text delta - parse through XML parser if tools available
                     if (xmlParser) {
-                      // Parse text through XML parser to filter out tool call XML tags
+                      // All text should be wrapped in <text> tags per system prompt
                       for (const xmlEvent of xmlParser.processChunk(streamEvent.delta.text)) {
                         if (xmlEvent.type === 'text-start') {
                           if (!hasStartedText) {

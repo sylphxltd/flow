@@ -76,13 +76,13 @@ You have access to the following tools. To use a tool, output it in this XML for
 </tool_use>
 
 **CRITICAL RULES**:
-1. Generate a unique tool_call_id for each tool call (e.g., call_1, call_2, etc.)
-2. Put arguments in valid JSON format inside <arguments> tags
-3. **ALWAYS provide ALL required parameters** - never use empty object {}
-4. **Infer missing parameter values from context** if not explicitly stated
-5. You can call multiple tools in one response
-6. You can mix text and tool calls in any order
-7. Wrap regular text in <text> tags to clearly separate it from tool calls
+1. **ALWAYS wrap ALL text in <text> tags** - this is REQUIRED for every response
+2. Generate a unique tool_call_id for each tool call (e.g., call_1, call_2, etc.)
+3. Put arguments in valid JSON format inside <arguments> tags
+4. **ALWAYS provide ALL required parameters** - never use empty object {}
+5. **Infer missing parameter values from context** if not explicitly stated
+6. You can call multiple tools in one response
+7. You can mix text and tool calls in any order
 
 **Example response format**:
 <text>
