@@ -36,6 +36,7 @@ type ParserState =
 export class StreamingXMLParser {
   private state: ParserState = { type: 'idle' };
   private buffer = '';
+  private eventQueue: StreamingXMLEvent[] = [];
 
   /**
    * Process a chunk of text and emit events
@@ -45,9 +46,19 @@ export class StreamingXMLParser {
 
     // Process buffer until no more complete tags can be extracted
     while (true) {
+      // First, yield any queued events
+      while (this.eventQueue.length > 0) {
+        yield this.eventQueue.shift()!;
+      }
+
       const result = this.processBuffer();
       if (!result) break;
       yield result;
+    }
+
+    // Yield any remaining queued events
+    while (this.eventQueue.length > 0) {
+      yield this.eventQueue.shift()!;
     }
   }
 
@@ -56,9 +67,17 @@ export class StreamingXMLParser {
    */
   *flush(): Generator<StreamingXMLEvent> {
     // Emit any remaining content based on current state
-    if (this.state.type === 'in-text' && this.state.buffer) {
-      yield { type: 'text-delta', delta: this.state.buffer };
+    if (this.state.type === 'in-text') {
+      // Emit any remaining text in buffer (last 10 chars that were held back)
+      if (this.buffer) {
+        yield { type: 'text-delta', delta: this.buffer };
+      }
       yield { type: 'text-end' };
+    }
+
+    // Emit any queued events
+    while (this.eventQueue.length > 0) {
+      yield this.eventQueue.shift()!;
     }
 
     // Reset state
@@ -110,15 +129,18 @@ export class StreamingXMLParser {
         const content = endMatch[1];
         this.buffer = this.buffer.slice(endMatch[0].length);
 
-        // Emit any remaining buffered text plus new content
-        const fullContent = this.state.buffer + content;
+        // content already includes any previously un-emitted text from buffer
+        // Don't use state.buffer as it would cause duplication
         this.state = { type: 'idle' };
 
-        if (fullContent) {
-          return { type: 'text-delta', delta: fullContent };
-        } else {
-          return { type: 'text-end' };
+        // Queue text-end event to be emitted after text-delta
+        this.eventQueue.push({ type: 'text-end' });
+
+        if (content) {
+          return { type: 'text-delta', delta: content };
         }
+        // If no content, return the text-end event directly
+        return this.eventQueue.shift()!;
       }
 
       // No closing tag yet - emit what we can
@@ -126,7 +148,7 @@ export class StreamingXMLParser {
       if (this.buffer.length > 10) {
         const safeToEmit = this.buffer.slice(0, -10);
         this.buffer = this.buffer.slice(-10);
-        this.state.buffer += safeToEmit;
+        // Emit the safe text immediately; last 10 chars stay in buffer
         return { type: 'text-delta', delta: safeToEmit };
       }
 
