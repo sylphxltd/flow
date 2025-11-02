@@ -149,7 +149,7 @@ export const askUserSelectionTool = tool({
     options: z.array(z.object({
       label: z.string().describe('Display text'),
       value: z.string().optional().describe('Return value'),
-    })).min(2).max(10).describe('2-10 options'),
+    })).min(2).describe('Options to choose from'),
     multiSelect: z.boolean().optional().describe('Allow multiple selections. Returns comma-separated. Call multiple times in same response to batch questions'),
   }),
   execute: async ({ question, options, multiSelect }) => {
