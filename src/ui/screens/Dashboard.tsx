@@ -6,6 +6,7 @@
 import React, { useState, useRef } from 'react';
 import { Box, Text, useInput, DOMElement } from 'ink';
 import { useOnMouseClick, useOnMouseHover } from '@zenobius/ink-mouse';
+import { FullScreen } from '../components/FullScreen.js';
 import { useAppStore } from '../stores/app-store.js';
 import { getAllAgents, switchAgent } from '../../core/agent-manager.js';
 import { getAllRules, toggleRule } from '../../core/rule-manager.js';
@@ -474,7 +475,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <Box flexDirection="column" width="100%" height="100%">
+    <FullScreen flexDirection="column">
       {/* Header */}
       <Box paddingX={2} paddingY={0}>
         <Text bold color="#00D9FF">SYLPHX FLOW</Text>
@@ -545,6 +546,6 @@ export default function Dashboard() {
         <Box flexGrow={1} />
         <Text dimColor italic>Full-screen Interactive Panel</Text>
       </Box>
-    </Box>
+    </FullScreen>
   );
 }
