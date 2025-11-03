@@ -73,7 +73,7 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
     : 0;
 
   return (
-    <Box flexGrow={1} justifyContent="space-between">
+    <Box flexGrow={1} justifyContent="space-between" marginBottom={1}>
       {/* Left side: Agent, Rules, Provider and Model */}
       <Box>
         <Text dimColor>
