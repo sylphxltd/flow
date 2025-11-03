@@ -3,8 +3,9 @@
  * Features: Keyboard navigation, full management capabilities
  */
 
-import React, { useState } from 'react';
-import { Box, Text, useInput } from 'ink';
+import React, { useState, useRef } from 'react';
+import { Box, Text, useInput, DOMElement } from 'ink';
+import { useOnMouseClick, useOnMouseHover } from '@zenobius/ink-mouse';
 import { useAppStore } from '../stores/app-store.js';
 import { getAllAgents, switchAgent } from '../../core/agent-manager.js';
 import { getAllRules, toggleRule } from '../../core/rule-manager.js';
@@ -19,10 +20,41 @@ type DashboardSection =
 
 type InteractionMode = 'browse' | 'edit';
 
+interface ClickableItemProps {
+  children: React.ReactNode;
+  onClick: () => void;
+  isHovered?: boolean;
+  onHoverChange?: (hovering: boolean) => void;
+}
+
+function ClickableItem({ children, onClick, isHovered: externalHover, onHoverChange }: ClickableItemProps) {
+  const ref = useRef<DOMElement | null>(null);
+  const [internalHover, setInternalHover] = useState(false);
+
+  useOnMouseHover(ref, (hovering) => {
+    setInternalHover(hovering);
+    onHoverChange?.(hovering);
+  });
+
+  useOnMouseClick(ref, (event) => {
+    if (event) onClick();
+  });
+
+  const isHovered = externalHover !== undefined ? externalHover : internalHover;
+
+  return (
+    <Box ref={ref}>
+      {children}
+    </Box>
+  );
+}
+
 export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState<DashboardSection>('agents');
   const [mode, setMode] = useState<InteractionMode>('browse');
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [hoveredSection, setHoveredSection] = useState<DashboardSection | null>(null);
 
   const currentAgentId = useAppStore((state) => state.currentAgentId);
   const enabledRuleIds = useAppStore((state) => state.enabledRuleIds);
@@ -150,39 +182,49 @@ export default function Dashboard() {
           {agents.map((agent, idx) => {
             const isActive = agent.id === currentAgentId;
             const isSelected = mode === 'edit' && selectedItemIndex === idx;
+            const isHovered = hoveredIndex === idx;
 
             return (
-              <Box
+              <ClickableItem
                 key={agent.id}
-                marginBottom={1}
-                paddingY={0}
+                onClick={() => {
+                  switchAgent(agent.id);
+                  setMode('browse');
+                }}
+                onHoverChange={(hovering) => {
+                  setHoveredIndex(hovering ? idx : null);
+                }}
               >
-                <Text dimColor>{idx + 1}  </Text>
-                <Text
-                  bold={isActive || isSelected}
-                  color={
-                    isActive
-                      ? '#00FF88'
-                      : isSelected
-                      ? '#00D9FF'
-                      : 'white'
-                  }
-                >
-                  {agent.metadata.name}
-                </Text>
-                {isActive && (
-                  <>
-                    <Text dimColor>  </Text>
-                    <Text color="#00FF88">●</Text>
-                  </>
-                )}
-                {isSelected && mode === 'edit' && (
-                  <>
-                    <Text dimColor>  </Text>
-                    <Text color="#00D9FF">◄</Text>
-                  </>
-                )}
-              </Box>
+                <Box marginBottom={1} paddingY={0}>
+                  <Text dimColor>{idx + 1}  </Text>
+                  <Text
+                    bold={isActive || isSelected}
+                    color={
+                      isActive
+                        ? '#00FF88'
+                        : isSelected
+                        ? '#00D9FF'
+                        : isHovered
+                        ? '#FFD700'
+                        : 'white'
+                    }
+                  >
+                    {agent.metadata.name}
+                  </Text>
+                  {isActive && (
+                    <>
+                      <Text dimColor>  </Text>
+                      <Text color="#00FF88">●</Text>
+                    </>
+                  )}
+                  {isSelected && mode === 'edit' && (
+                    <>
+                      <Text dimColor>  </Text>
+                      <Text color="#00D9FF">◄</Text>
+                    </>
+                  )}
+                </Box>
+              </ClickableItem>
             );
           })}
         </Box>
@@ -209,37 +251,44 @@ export default function Dashboard() {
           {rules.map((rule, idx) => {
             const isEnabled = enabledRuleIds.includes(rule.id);
             const isSelected = mode === 'edit' && selectedItemIndex === idx;
+            const isHovered = hoveredIndex === idx;
 
             return (
-              <Box
+              <ClickableItem
                 key={rule.id}
-                marginBottom={1}
-                paddingY={0}
+                onClick={() => toggleRule(rule.id)}
+                onHoverChange={(hovering) => {
+                  setHoveredIndex(hovering ? idx : null);
+                }}
               >
-                <Text dimColor>{idx + 1}  </Text>
-                <Text
-                  bold={isSelected}
-                  color={
-                    isSelected
-                      ? '#00D9FF'
-                      : isEnabled
-                      ? '#00FF88'
-                      : 'gray'
-                  }
-                >
-                  {rule.id}
-                </Text>
-                <Box flexGrow={1} />
-                <Text color={isEnabled ? '#00FF88' : '#FF3366'}>
-                  {isEnabled ? 'ON' : 'OFF'}
-                </Text>
-                {isSelected && mode === 'edit' && (
-                  <>
-                    <Text dimColor>  </Text>
-                    <Text color="#00D9FF">◄</Text>
-                  </>
-                )}
-              </Box>
+                <Box marginBottom={1} paddingY={0}>
+                  <Text dimColor>{idx + 1}  </Text>
+                  <Text
+                    bold={isSelected}
+                    color={
+                      isSelected
+                        ? '#00D9FF'
+                        : isHovered
+                        ? '#FFD700'
+                        : isEnabled
+                        ? '#00FF88'
+                        : 'gray'
+                    }
+                  >
+                    {rule.id}
+                  </Text>
+                  <Box flexGrow={1} />
+                  <Text color={isEnabled ? '#00FF88' : '#FF3366'}>
+                    {isEnabled ? 'ON' : 'OFF'}
+                  </Text>
+                  {isSelected && mode === 'edit' && (
+                    <>
+                      <Text dimColor>  </Text>
+                      <Text color="#00D9FF">◄</Text>
+                    </>
+                  )}
+                </Box>
+              </ClickableItem>
             );
           })}
         </Box>
@@ -442,26 +491,41 @@ export default function Dashboard() {
         <Box width="25%" flexDirection="column" paddingX={2} paddingY={1}>
           {sections.map((section) => {
             const isSelected = selectedSection === section.id;
+            const isHovered = hoveredSection === section.id;
 
             return (
-              <Box
+              <ClickableItem
                 key={section.id}
-                marginBottom={2}
+                onClick={() => {
+                  setSelectedSection(section.id);
+                  setSelectedItemIndex(0);
+                }}
+                onHoverChange={(hovering) => {
+                  setHoveredSection(hovering ? section.id : null);
+                }}
               >
-                <Text dimColor>{section.num}  </Text>
-                <Text
-                  bold={isSelected}
-                  color={isSelected ? '#00FF88' : 'white'}
-                >
-                  {section.label}
-                </Text>
-                {isSelected && (
-                  <>
-                    <Text dimColor>  </Text>
-                    <Text color="#00FF88">●</Text>
-                  </>
-                )}
-              </Box>
+                <Box marginBottom={2}>
+                  <Text dimColor>{section.num}  </Text>
+                  <Text
+                    bold={isSelected}
+                    color={
+                      isSelected
+                        ? '#00FF88'
+                        : isHovered
+                        ? '#FFD700'
+                        : 'white'
+                    }
+                  >
+                    {section.label}
+                  </Text>
+                  {isSelected && (
+                    <>
+                      <Text dimColor>  </Text>
+                      <Text color="#00FF88">●</Text>
+                    </>
+                  )}
+                </Box>
+              </ClickableItem>
             );
           })}
         </Box>

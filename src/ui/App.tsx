@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
+import { MouseProvider } from '@zenobius/ink-mouse';
 import { useAppStore } from './stores/app-store.js';
 import ProviderManagement from './screens/ProviderManagement.js';
 import ModelSelection from './screens/ModelSelection.js';
@@ -18,7 +19,7 @@ import { useSessionPersistence } from './hooks/useSessionPersistence.js';
 import { initializeAgentManager, setAppStoreGetter } from '../core/agent-manager.js';
 import { initializeRuleManager, setRuleAppStoreGetter } from '../core/rule-manager.js';
 
-export default function App() {
+function AppContent() {
   const currentScreen = useAppStore((state) => state.currentScreen);
   const isLoading = useAppStore((state) => state.isLoading);
   const error = useAppStore((state) => state.error);
@@ -113,5 +114,13 @@ export default function App() {
         {currentScreen === 'logs' && <Logs />}
       </Box>
     </Box>
+  );
+}
+
+export default function App() {
+  return (
+    <MouseProvider>
+      <AppContent />
+    </MouseProvider>
   );
 }
