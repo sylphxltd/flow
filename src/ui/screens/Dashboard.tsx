@@ -22,7 +22,9 @@ type InteractionMode = 'browse' | 'edit';
 
 interface ClickableItem {
   id: string;
+  x: number;
   y: number;
+  width: number;
   height: number;
   action: () => void;
 }
@@ -45,39 +47,161 @@ export default function Dashboard() {
   const agents = getAllAgents();
   const rules = getAllRules();
 
+  // Alternate screen buffer for true full-screen (like vim)
+  useEffect(() => {
+    // Enter alternate screen buffer
+    process.stdout.write('\x1b[?1049h');
+    // Clear screen
+    process.stdout.write('\x1b[2J');
+    // Move cursor to home
+    process.stdout.write('\x1b[H');
+
+    return () => {
+      // Exit alternate screen buffer
+      process.stdout.write('\x1b[?1049l');
+    };
+  }, []);
+
   // Mouse support
   const mouse = useMouse(true);
 
   // Track clickable items
   useEffect(() => {
     const items: ClickableItem[] = [];
-    let currentY = 3; // Header takes 1 line + padding
 
-    // Navigation sidebar items (sections)
+    // Get terminal dimensions (approximate)
+    const termWidth = process.stdout.columns || 100;
+    const sidebarWidth = Math.floor(termWidth * 0.25);
+    const contentX = sidebarWidth;
+
+    let sidebarY = 1; // Start at top
+
+    // Navigation sidebar items (sections) - starts at y=1 (paddingY={1})
     const sections: DashboardSection[] = ['agents', 'rules', 'sessions', 'providers', 'notifications', 'keybindings'];
     sections.forEach((section, idx) => {
       items.push({
         id: `section-${section}`,
-        y: currentY,
+        x: 2, // paddingX={2}
+        y: sidebarY,
+        width: sidebarWidth - 4,
         height: 1,
         action: () => {
           setSelectedSection(section);
           setSelectedItemIndex(0);
         },
       });
-      currentY += 2; // marginBottom={2}
+      sidebarY += 2; // marginBottom={2}
     });
 
+    // Content area items - starts at y=3 (header + padding + title)
+    let contentY = 3;
+
+    switch (selectedSection) {
+      case 'agents':
+        agents.forEach((agent, idx) => {
+          items.push({
+            id: `agent-${idx}`,
+            x: contentX + 2, // paddingX={2}
+            y: contentY,
+            width: termWidth - contentX - 4,
+            height: 1,
+            action: () => {
+              switchAgent(agent.id);
+              setMode('browse');
+            },
+          });
+          contentY += 1; // marginBottom={1}
+        });
+        break;
+
+      case 'rules':
+        rules.forEach((rule, idx) => {
+          items.push({
+            id: `rule-${idx}`,
+            x: contentX + 2,
+            y: contentY,
+            width: termWidth - contentX - 4,
+            height: 1,
+            action: () => {
+              toggleRule(rule.id);
+            },
+          });
+          contentY += 1;
+        });
+        break;
+
+      case 'sessions':
+        sessions.slice(0, 15).forEach((session, idx) => {
+          items.push({
+            id: `session-${idx}`,
+            x: contentX + 2,
+            y: contentY,
+            width: termWidth - contentX - 4,
+            height: 1,
+            action: () => {
+              // TODO: Load session
+            },
+          });
+          contentY += 1;
+        });
+        break;
+
+      case 'providers':
+        Object.entries(aiConfig?.providers || {}).forEach(([providerId], idx) => {
+          items.push({
+            id: `provider-${idx}`,
+            x: contentX + 2,
+            y: contentY,
+            width: termWidth - contentX - 4,
+            height: 1,
+            action: () => {
+              // TODO: Manage provider
+            },
+          });
+          contentY += 2; // Provider takes 2 lines
+        });
+        break;
+
+      case 'notifications':
+        const notifSettings = ['osNotifications', 'terminalNotifications', 'sound'];
+        notifSettings.forEach((_, idx) => {
+          items.push({
+            id: `notif-${idx}`,
+            x: contentX + 2,
+            y: contentY,
+            width: termWidth - contentX - 4,
+            height: 1,
+            action: () => {
+              const settings = ['osNotifications', 'terminalNotifications', 'sound'] as const;
+              const setting = settings[idx];
+              if (setting) {
+                updateNotificationSettings({ [setting]: !notificationSettings[setting] });
+              }
+            },
+          });
+          contentY += 1;
+        });
+        break;
+
+      case 'keybindings':
+        // Keybindings are non-interactive
+        break;
+    }
+
     setClickableItems(items);
-  }, [selectedSection]);
+  }, [selectedSection, agents, rules, sessions, aiConfig, notificationSettings, updateNotificationSettings]);
 
   // Mouse hover detection
   useEffect(() => {
     if (!mouse.position) return;
 
-    const { y } = mouse.position;
+    const { x, y } = mouse.position;
     const hoveredClickable = clickableItems.find(
-      (item) => y >= item.y && y < item.y + item.height
+      (item) =>
+        x >= item.x &&
+        x < item.x + item.width &&
+        y >= item.y &&
+        y < item.y + item.height
     );
 
     if (hoveredClickable) {
@@ -91,9 +215,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (!mouse.lastClick || mouse.lastClick.button !== 'left') return;
 
-    const { y } = mouse.lastClick.position;
+    const { x, y } = mouse.lastClick.position;
     const clickedItem = clickableItems.find(
-      (item) => y >= item.y && y < item.y + item.height
+      (item) =>
+        x >= item.x &&
+        x < item.x + item.width &&
+        y >= item.y &&
+        y < item.y + item.height
     );
 
     if (clickedItem) {
