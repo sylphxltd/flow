@@ -69,6 +69,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Flag to track if user manually aborted (ESC pressed)
   const wasManuallyAbortedRef = useRef(false);
 
+  // Flag to track if stream completed normally (not interrupted)
+  const streamCompletedNormallyRef = useRef(false);
+
   // Optimized streaming: accumulate chunks in ref, update state in batches
   const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
     chunks: [],
@@ -538,14 +541,28 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             )
           );
         },
-        // onComplete - streaming finished (or cancelled)
+        // onComplete - streaming finished (or interrupted)
         async () => {
-          // Check if we need to save partial content (abort/cancel case)
-          // This happens when onComplete is called but stream didn't finish normally
+          // Check if stream completed normally by checking if useChat added a message
+          // If last assistant message was added recently (within 100ms), it's normal completion
+          let completedNormally = false;
+          if (currentSessionId) {
+            const sessions = useAppStore.getState().sessions;
+            const session = sessions.find(s => s.id === currentSessionId);
+            if (session && session.messages.length > 0) {
+              const lastMessage = session.messages[session.messages.length - 1];
+              if (lastMessage.role === 'assistant') {
+                const timeSinceLastMessage = Date.now() - new Date(lastMessage.timestamp).getTime();
+                completedNormally = timeSinceLastMessage < 100;
+              }
+            }
+          }
+
+          // Save partial content ONLY if interrupted (not normal completion)
           const currentStreamParts = streamPartsRef.current;
           const hasPartialContent = currentStreamParts.length > 0;
 
-          if (hasPartialContent && currentSessionId && wasManuallyAbortedRef.current) {
+          if (!completedNormally && hasPartialContent && currentSessionId) {
             // Get buffered chunks that haven't been flushed yet
             const bufferedText = streamBufferRef.current.chunks.join('');
 
@@ -560,9 +577,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             }
             partialContent += bufferedText;
 
-            // Save partial response
+            // Save partial response if we have content
             if (partialContent.trim()) {
-              addMessage(currentSessionId, 'assistant', `${partialContent}\n\n[Response cancelled by user]`);
+              const interruptionNote = wasManuallyAbortedRef.current
+                ? '\n\n[Response cancelled by user]'
+                : '\n\n[Response interrupted]';
+              addMessage(currentSessionId, 'assistant', partialContent + interruptionNote);
             }
           }
 
@@ -689,41 +709,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     } catch (error) {
       addLog(`[sendUserMessageToAI] Error: ${error instanceof Error ? error.message : String(error)}`);
 
-      // Save partial content before clearing (important for abort/cancel)
-      if (currentSessionId) {
-        // Get buffered chunks that haven't been flushed yet
-        const bufferedText = streamBufferRef.current.chunks.join('');
-        if (streamBufferRef.current.timeout) {
-          clearTimeout(streamBufferRef.current.timeout);
-          streamBufferRef.current.timeout = null;
-        }
-        streamBufferRef.current.chunks = [];
-
-        // Build partial response from streamParts + buffered text
-        let partialContent = '';
-        const currentStreamParts = streamPartsRef.current;
-
-        for (const part of currentStreamParts) {
-          if (part.type === 'text') {
-            partialContent += part.content;
-          } else if (part.type === 'tool' && part.result) {
-            partialContent += `\n[Tool: ${part.name}]\n`;
-          }
-        }
-
-        // Add any buffered text that wasn't flushed yet
-        partialContent += bufferedText;
-
-        // Save partial response if we have content
-        if (partialContent.trim()) {
-          const isAborted = error instanceof Error && error.name === 'AbortError';
-          const message = isAborted
-            ? `${partialContent}\n\n[Response cancelled by user]`
-            : `${partialContent}\n\n[Error: ${error instanceof Error ? error.message : String(error)}]`;
-
-          addMessage(currentSessionId, 'assistant', message);
-        }
-      }
+      // Note: Abort errors are handled in onComplete callback
+      // Other errors will be handled by useChat's error handler
 
       setIsStreaming(false);
       setStreamParts([]);
