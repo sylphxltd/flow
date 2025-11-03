@@ -8,7 +8,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import { MCP_SERVER_REGISTRY, type MCPServerID } from '../../config/servers.js';
 import { createMCPService } from '../../services/mcp-service.js';
-import { targetManager } from '../target-manager.js';
+import type { Target } from '../../types.js';
 
 export interface MCPInstallResult {
   selectedServers: MCPServerID[];
@@ -35,14 +35,10 @@ export interface MCPInstaller {
 /**
  * Create an MCP installer instance
  * Handles server selection, configuration, and installation
+ *
+ * @param target - Target configuration object (dependency injection)
  */
-export function createMCPInstaller(targetId: string): MCPInstaller {
-  const targetOption = targetManager.getTarget(targetId);
-  if (targetOption._tag === 'None') {
-    throw new Error(`Target not found: ${targetId}`);
-  }
-
-  const target = targetOption.value;
+export function createMCPInstaller(target: Target): MCPInstaller {
   const mcpService = createMCPService({ target });
 
   /**
@@ -188,8 +184,8 @@ export function createMCPInstaller(targetId: string): MCPInstaller {
 export class MCPInstaller {
   private installer: ReturnType<typeof createMCPInstaller>;
 
-  constructor(targetId: string) {
-    this.installer = createMCPInstaller(targetId);
+  constructor(target: Target) {
+    this.installer = createMCPInstaller(target);
   }
 
   async selectServers(options: { quiet?: boolean } = {}): Promise<MCPServerID[]> {

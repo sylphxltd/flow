@@ -459,7 +459,7 @@ Please begin your response with a comprehensive summary of all the instructions 
    * Select, configure, install, and approve MCP servers
    */
   async setupMCP(cwd: string, options: CommonOptions): Promise<SetupResult> {
-    const installer = new MCPInstaller(this.id);
+    const installer = new MCPInstaller(this);
     const result = await installer.setupMCP({ ...options, quiet: true });
 
     // Approve servers in Claude Code settings

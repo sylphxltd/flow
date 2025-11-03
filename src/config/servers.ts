@@ -1,4 +1,3 @@
-import { useTargetConfig } from '../composables/useTargetConfig.js';
 import type { MCPServerConfigUnion } from '../types.js';
 import { envSecurity, securitySchemas } from '../utils/security.js';
 
@@ -52,25 +51,7 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     config: {
       type: 'stdio' as const,
       command: 'sylphx-flow',
-      args: async () => {
-        const args = ['mcp', 'start'];
-
-        // Get target config without creating circular dependency
-        const targetConfig = await useTargetConfig();
-
-        // Apply flags based on target configuration
-        if (targetConfig?.disableTime) {
-          args.push('--disable-time');
-        }
-        if (targetConfig?.disableKnowledge) {
-          args.push('--disable-knowledge');
-        }
-        if (targetConfig?.disableCodebase) {
-          args.push('--disable-codebase');
-        }
-
-        return args;
-      },
+      args: ['mcp', 'start'],
       env: {
         OPENAI_API_KEY: '',
         OPENAI_BASE_URL: 'https://api.openai.com/v1',

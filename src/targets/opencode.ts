@@ -363,7 +363,7 @@ export const opencodeTarget: Target = {
     }
 
     // Install MCP servers
-    const installer = new MCPInstaller(this.id);
+    const installer = new MCPInstaller(this);
     const result = await installer.setupMCP({ ...options, quiet: true });
 
     return { count: result.selectedServers.length };

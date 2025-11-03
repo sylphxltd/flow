@@ -1,4 +1,5 @@
-import { targetManager } from '../core/target-manager.js';
+import { getTarget, getDefaultTargetUnsafe } from '../config/targets.js';
+import { projectSettings } from '../utils/settings.js';
 import type { MCPServerConfigFlags } from '../types.js';
 
 /**
@@ -7,20 +8,23 @@ import type { MCPServerConfigFlags } from '../types.js';
  * Returns undefined if no target is set or target has no mcpServerConfig
  */
 export async function useTargetConfig(): Promise<MCPServerConfigFlags | undefined> {
-  // Use the same resolution logic as targetManager.resolveTarget()
-  // but without allowing user selection (since this is a non-interactive context)
-  const currentTargetId = await targetManager.resolveTarget({
-    allowSelection: false,
-  });
-
   try {
-    const targetOption = targetManager.getTarget(currentTargetId);
-    if (targetOption._tag === 'None') {
-      return undefined;
+    // Try to get target from project settings first
+    const settings = await projectSettings.load();
+    const targetId = settings?.target;
+
+    if (targetId) {
+      const targetOption = getTarget(targetId);
+      if (targetOption._tag === 'Some') {
+        return targetOption.value.mcpServerConfig;
+      }
     }
-    return targetOption.value.mcpServerConfig;
+
+    // Fall back to default target
+    const defaultTarget = getDefaultTargetUnsafe();
+    return defaultTarget.mcpServerConfig;
   } catch {
-    // If target doesn't exist, return undefined
+    // If no target can be resolved, return undefined
     return undefined;
   }
 }
@@ -30,7 +34,7 @@ export async function useTargetConfig(): Promise<MCPServerConfigFlags | undefine
  */
 export function useTargetConfigById(targetId: string): MCPServerConfigFlags | undefined {
   try {
-    const targetOption = targetManager.getTarget(targetId);
+    const targetOption = getTarget(targetId);
     if (targetOption._tag === 'None') {
       return undefined;
     }
