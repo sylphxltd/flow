@@ -218,11 +218,8 @@ export function useChat() {
         const updateSessionTitle = useAppStore.getState().updateSessionTitle;
         const autoGenerateTitle = notificationSettings.autoGenerateTitle;
 
-        addDebugLog(`[Title Gen] Auto-generate: ${autoGenerateTitle}, Messages: ${updatedSession.messages.length}`);
-
         if (autoGenerateTitle) {
           // Generate title with LLM streaming
-          addDebugLog('[Title Gen] Starting LLM title generation...');
           let accumulatedTitle = '';
           generateSessionTitleWithStreaming(
             message,
@@ -236,17 +233,14 @@ export function useChat() {
             }
           ).then((finalTitle) => {
             // Update with final cleaned title
-            addDebugLog(`[Title Gen] LLM title complete: ${finalTitle}`);
             updateSessionTitle(currentSessionId, finalTitle);
-          }).catch((error) => {
+          }).catch(() => {
             // Fallback to simple title on error
-            addDebugLog(`[Title Gen] LLM failed, using fallback: ${error}`);
             const simpleTitle = generateSessionTitle(message);
             updateSessionTitle(currentSessionId, simpleTitle);
           });
         } else {
           // Simple title generation (truncate first message)
-          addDebugLog('[Title Gen] Using simple title generation');
           const simpleTitle = generateSessionTitle(message);
           updateSessionTitle(currentSessionId, simpleTitle);
         }

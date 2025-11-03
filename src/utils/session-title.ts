@@ -52,18 +52,10 @@ export async function generateSessionTitleWithStreaming(
   }
 
   try {
-    if (process.env.DEBUG) {
-      console.log(`[Title Gen] Creating AI stream for provider: ${provider}, model: ${modelName}`);
-    }
-
     // Get the provider instance and create the model
     const { getProvider } = await import('../providers/index.js');
     const providerInstance = getProvider(provider);
     const model = providerInstance.createClient(providerConfig, modelName);
-
-    if (process.env.DEBUG) {
-      console.log('[Title Gen] Stream created, starting to read chunks...');
-    }
 
     const streamGenerator = createAIStream({
       model,
@@ -91,53 +83,26 @@ Now generate the title:`,
     });
 
     let fullTitle = '';
-    let chunkCount = 0;
 
-    // Iterate the async generator
+    // Iterate the async generator and stream to UI
     for await (const chunk of streamGenerator) {
       if (chunk.type === 'text-delta' && chunk.textDelta) {
-        chunkCount++;
         fullTitle += chunk.textDelta;
         onChunk(chunk.textDelta);
       }
     }
 
-    if (process.env.DEBUG) {
-      console.log(`[Title Gen] Received ${chunkCount} chunks, full title: "${fullTitle}"`);
-    }
-
-    // Clean up title - remove quotes, newlines, and common prefixes
+    // Clean up title
     let cleaned = fullTitle.trim();
     cleaned = cleaned.replace(/^["'「『]+|["'」』]+$/g, ''); // Remove quotes
     cleaned = cleaned.replace(/^(Title:|标题：)\s*/i, ''); // Remove "Title:" prefix
     cleaned = cleaned.replace(/\n+/g, ' '); // Replace newlines with spaces
     cleaned = cleaned.trim();
 
-    // Check if LLM just repeated the message (fallback to simple title)
-    // Calculate similarity: if cleaned title is too similar to original message, use fallback
-    const normalizedCleaned = cleaned.toLowerCase().replace(/[^\w\s]/g, '');
-    const normalizedOriginal = firstMessage.toLowerCase().replace(/[^\w\s]/g, '');
-
-    // If title is essentially the same as original message, use simple truncation
-    if (normalizedCleaned === normalizedOriginal ||
-        normalizedOriginal.includes(normalizedCleaned) ||
-        cleaned === firstMessage.trim()) {
-      if (process.env.DEBUG) {
-        console.log('[Title Gen] LLM title too similar to original, using fallback');
-      }
-      return generateSessionTitle(firstMessage);
-    }
-
-    if (process.env.DEBUG) {
-      console.log(`[Title Gen] Final cleaned title: "${cleaned}"`);
-    }
-
+    // Return truncated if needed
     return cleaned.length > 50 ? cleaned.substring(0, 50) + '...' : cleaned;
   } catch (error) {
-    // Fallback to simple title generation
-    if (process.env.DEBUG) {
-      console.error('[Title Gen] Error generating title:', error);
-    }
+    // Fallback to simple title generation on any error
     return generateSessionTitle(firstMessage);
   }
 }
