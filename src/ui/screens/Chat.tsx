@@ -686,10 +686,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     };
 
     try {
-      await sendMessage(
-        userMessage,
+      await sendMessage(userMessage, {
+        attachments,
+        abortSignal: abortControllerRef.current.signal,
+
         // onChunk - text streaming (batched for performance)
-        (chunk) => {
+        onChunk: (chunk) => {
           // Accumulate chunks in buffer
           streamBufferRef.current.chunks.push(chunk);
 
@@ -704,8 +706,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             streamBufferRef.current.timeout = null;
           }, 50);
         },
+
         // onToolCall - tool execution started
-        (toolCallId, toolName, args) => {
+        onToolCall: (toolCallId, toolName, args) => {
           // Message streaming: New part (tool) being added
           // Can be parallel - multiple tools can be active simultaneously
           setStreamParts((prev) => {
@@ -724,8 +727,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onToolResult - tool execution completed
-        (toolCallId, toolName, result, duration) => {
+        onToolResult: (toolCallId, toolName, result, duration) => {
           // Part streaming: Update tool status to completed
           // Keep in parts array - may not be movable to static yet
           setStreamParts((prev) => {
@@ -745,8 +749,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onComplete - finalize message status
-        async () => {
+        onComplete: async () => {
           // NEW DESIGN: Message-based streaming
           // ====================================
           //
@@ -833,8 +838,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             }
           }
         },
+
         // onUserInputRequest - handle AI tool ask requests
-        async (request) => {
+        onUserInputRequest: async (request) => {
           // Use the same waitForInput mechanism as commands
           // The ask tool sends UserInputRequest which is compatible with WaitForInputOptions
           return new Promise((resolve) => {
@@ -855,9 +861,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             }
           });
         },
-        attachments, // attachments
+
         // onReasoningStart
-        () => {
+        onReasoningStart: () => {
           // Message streaming: New part (reasoning) being added
           setStreamParts((prev) => {
             const newParts = [
@@ -875,8 +881,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onReasoningDelta
-        (text) => {
+        onReasoningDelta: (text) => {
           // Part streaming: Add delta to last reasoning part
           setStreamParts((prev) => {
             const newParts = [...prev];
@@ -894,8 +901,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onReasoningEnd
-        (duration) => {
+        onReasoningEnd: (duration) => {
           // Part streaming: Mark reasoning as completed
           // Reasoning always ends before next part starts, so it's the last part
           setStreamParts((prev) => {
@@ -919,8 +927,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onTextEnd - mark text part as completed
-        () => {
+        onTextEnd: () => {
           // Part streaming: Mark text as completed
           // Text always ends before next part starts, so it's the last part
           setStreamParts((prev) => {
@@ -943,14 +952,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onToolInputStart - tool input streaming started
-        (toolCallId, toolName) => {
+        onToolInputStart: (toolCallId, toolName) => {
           // Tool input streaming started - args will be streamed in deltas
           // No UI update needed, just log
           addLog(`Tool input streaming: ${toolName}`);
         },
+
         // onToolInputDelta - tool input streaming delta
-        (toolCallId, toolName, argsTextDelta) => {
+        onToolInputDelta: (toolCallId, toolName, argsTextDelta) => {
           // Part streaming: Update tool args as they stream in
           setStreamParts((prev) => {
             const newParts = prev.map((part) => {
@@ -968,8 +979,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onToolInputEnd - tool input streaming completed
-        (toolCallId, toolName, args) => {
+        onToolInputEnd: (toolCallId, toolName, args) => {
           // Part streaming: Finalize tool args
           setStreamParts((prev) => {
             const newParts = prev.map((part) =>
@@ -988,8 +1000,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onToolError
-        (toolCallId, toolName, error, duration) => {
+        onToolError: (toolCallId, toolName, error, duration) => {
           // Part streaming: Update tool status to error
           setStreamParts((prev) => {
             const newParts = prev.map((part) =>
@@ -1008,8 +1021,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+
         // onError
-        (error) => {
+        onError: (error) => {
           // Store error for onComplete handler
           lastErrorRef.current = error;
           setStreamParts((prev) => {
@@ -1028,8 +1042,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
-        abortControllerRef.current.signal
-      );
+      });
     } catch (error) {
       addLog(`[sendUserMessageToAI] Error: ${error instanceof Error ? error.message : String(error)}`);
 

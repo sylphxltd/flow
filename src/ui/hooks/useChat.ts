@@ -133,25 +133,59 @@ export function useChat() {
    * Send message and stream response
    * @param abortSignal - Optional abort signal to cancel the stream
    */
+  interface SendMessageOptions {
+    // Data
+    attachments?: FileAttachment[];
+    abortSignal?: AbortSignal;
+
+    // Lifecycle callbacks (required/optional)
+    onChunk: (chunk: string) => void;
+    onComplete?: () => void;
+    onError?: (error: string) => void;
+
+    // Tool streaming callbacks
+    onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
+    onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
+    onToolInputStart?: (toolCallId: string, toolName: string) => void;
+    onToolInputDelta?: (toolCallId: string, toolName: string, argsTextDelta: string) => void;
+    onToolInputEnd?: (toolCallId: string, toolName: string, args: unknown) => void;
+    onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void;
+
+    // Reasoning streaming callbacks
+    onReasoningStart?: () => void;
+    onReasoningDelta?: (text: string) => void;
+    onReasoningEnd?: (duration: number) => void;
+
+    // Text streaming callbacks
+    onTextEnd?: () => void;
+
+    // User interaction
+    onUserInputRequest?: (request: UserInputRequest) => Promise<string>;
+  }
+
   const sendMessage = async (
     message: string,
-    onChunk: (chunk: string) => void,
-    onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void,
-    onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void,
-    onComplete?: () => void,
-    onUserInputRequest?: (request: UserInputRequest) => Promise<string>,
-    attachments?: Array<{ path: string; relativePath: string; size?: number }>,
-    onReasoningStart?: () => void,
-    onReasoningDelta?: (text: string) => void,
-    onReasoningEnd?: (duration: number) => void,
-    onTextEnd?: () => void,
-    onToolInputStart?: (toolCallId: string, toolName: string) => void,
-    onToolInputDelta?: (toolCallId: string, toolName: string, argsTextDelta: string) => void,
-    onToolInputEnd?: (toolCallId: string, toolName: string, args: unknown) => void,
-    onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void,
-    onError?: (error: string) => void,
-    abortSignal?: AbortSignal
+    options: SendMessageOptions
   ) => {
+    // Destructure options for easier access
+    const {
+      attachments,
+      abortSignal,
+      onChunk,
+      onComplete,
+      onError,
+      onToolCall,
+      onToolResult,
+      onToolInputStart,
+      onToolInputDelta,
+      onToolInputEnd,
+      onToolError,
+      onReasoningStart,
+      onReasoningDelta,
+      onReasoningEnd,
+      onTextEnd,
+      onUserInputRequest,
+    } = options;
     if (!currentSession || !currentSessionId) {
       // Don't use setError - this should never happen in normal flow
       console.error('[useChat] No active session');
