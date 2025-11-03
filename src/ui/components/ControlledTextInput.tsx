@@ -648,9 +648,11 @@ function ControlledTextInput({
 
         return (
           <Box key={actualIdx}>
-            <Text>{before}</Text>
-            {showCursor && <Text inverse>{char}</Text>}
-            <Text>{after}</Text>
+            <Text>
+              {before}
+              {showCursor && <Text inverse>{char}</Text>}
+              {after}
+            </Text>
           </Box>
         );
       })}
