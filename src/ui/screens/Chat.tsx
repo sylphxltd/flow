@@ -894,109 +894,109 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           </Box>
         ) : (
           <>
-            {/* All messages (completed + streaming) - using Static */}
-            <Static items={[
-              ...currentSession.messages,
-              // Add streaming message as virtual message if streaming
-              ...(isStreaming ? [{
-                role: 'assistant' as const,
-                content: streamParts,
-                timestamp: Date.now(),
-                isStreaming: true
-              }] : [])
-            ]}>
-              {(msg: any, i) => (
-                <Box key={i} paddingX={1} paddingTop={1} flexDirection="column">
-                  {msg.role === 'user' ? (
-                    <>
-                      <Box>
-                        <Text color="#00D9FF">▌ YOU</Text>
-                      </Box>
-                      {/* Render content parts */}
-                      {msg.content && Array.isArray(msg.content) ? (
-                        msg.content.map((part: any, idx: number) => (
-                          <MessagePart key={idx} part={part} />
-                        ))
-                      ) : (
-                        <Box marginLeft={2}>
-                          <Text>{String(msg.content || '')}</Text>
+            {/* Completed messages - using Static to keep them above */}
+            {currentSession.messages.length > 0 && (
+              <Static items={currentSession.messages}>
+                {(msg, i) => (
+                  <Box key={i} paddingX={1} paddingTop={1} flexDirection="column">
+                    {msg.role === 'user' ? (
+                      <>
+                        <Box>
+                          <Text color="#00D9FF">▌ YOU</Text>
                         </Box>
-                      )}
-                      {/* Display attachments if any */}
-                      {msg.attachments && msg.attachments.length > 0 ? (
-                        <Box flexDirection="column" marginTop={1}>
-                          {msg.attachments.map((att: any, attIdx: number) => (
-                            <Box key={attIdx} marginLeft={2}>
-                              <Text dimColor>Attached(</Text>
-                              <Text color="#00D9FF">{att.relativePath}</Text>
-                              <Text dimColor>)</Text>
-                              {attachmentTokens.has(att.path) && (
-                                <>
-                                  <Text dimColor> </Text>
-                                  <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                                </>
-                              )}
-                            </Box>
-                          ))}
-                        </Box>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      <Box>
-                        <Text color="#00FF88">▌ SYLPHX</Text>
-                      </Box>
-                      {/* Render content parts */}
-                      {msg.content && Array.isArray(msg.content) ? (
-                        // Streaming message: content is StreamPart[]
-                        msg.isStreaming ? (
-                          <>
-                            {msg.content.length === 0 && (
-                              <Box marginLeft={2}>
-                                <Text dimColor>...</Text>
-                              </Box>
-                            )}
-                            {msg.content.map((part: StreamPart, idx: number) => {
-                              const isLastPart = idx === msg.content.length - 1;
-                              const key = part.type === 'tool'
-                                ? `tool-${part.toolId}`
-                                : part.type === 'reasoning'
-                                ? `reasoning-${part.startTime}`
-                                : `${part.type}-${idx}`;
-
-                              return (
-                                <MessagePart
-                                  key={key}
-                                  part={part}
-                                  isLastInStream={isLastPart && part.type === 'text'}
-                                />
-                              );
-                            })}
-                          </>
-                        ) : (
-                          // Completed message: content is MessagePart[]
-                          msg.content.map((part: any, idx: number) => (
+                        {/* Render content parts */}
+                        {msg.content && Array.isArray(msg.content) ? (
+                          msg.content.map((part, idx) => (
                             <MessagePart key={idx} part={part} />
                           ))
-                        )
-                      ) : (
-                        <Box marginLeft={2}>
-                          <Text>{String(msg.content || '')}</Text>
+                        ) : (
+                          <Box marginLeft={2}>
+                            <Text>{String(msg.content || '')}</Text>
+                          </Box>
+                        )}
+                        {/* Display attachments if any */}
+                        {msg.attachments && msg.attachments.length > 0 ? (
+                          <Box flexDirection="column" marginTop={1}>
+                            {msg.attachments.map((att, attIdx) => (
+                              <Box key={attIdx} marginLeft={2}>
+                                <Text dimColor>Attached(</Text>
+                                <Text color="#00D9FF">{att.relativePath}</Text>
+                                <Text dimColor>)</Text>
+                                {attachmentTokens.has(att.path) && (
+                                  <>
+                                    <Text dimColor> </Text>
+                                    <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                                  </>
+                                )}
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <Box>
+                          <Text color="#00FF88">▌ SYLPHX</Text>
                         </Box>
-                      )}
-                      {/* Show usage if available - simplified */}
-                      {msg.usage && (
-                        <Box marginLeft={2}>
-                          <Text dimColor>
-                            {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                          </Text>
-                        </Box>
-                      )}
-                    </>
-                  )}
+                        {/* Render content parts */}
+                        {msg.content && Array.isArray(msg.content) ? (
+                          msg.content.map((part, idx) => (
+                            <MessagePart key={idx} part={part} />
+                          ))
+                        ) : (
+                          <Box marginLeft={2}>
+                            <Text>{String(msg.content || '')}</Text>
+                          </Box>
+                        )}
+                        {/* Show usage if available - simplified */}
+                        {msg.usage && (
+                          <Box marginLeft={2}>
+                            <Text dimColor>
+                              {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+                            </Text>
+                          </Box>
+                        )}
+                      </>
+                    )}
+                  </Box>
+                )}
+              </Static>
+            )}
+
+            {/* Currently streaming message - dynamic, stays at bottom */}
+            {isStreaming && (
+              <Box paddingX={1} paddingTop={1} flexDirection="column">
+                <Box>
+                  <Text color="#00FF88">▌ SYLPHX</Text>
                 </Box>
-              )}
-            </Static>
+
+                {/* Show placeholder when no parts yet */}
+                {streamParts.length === 0 && (
+                  <Box marginLeft={2}>
+                    <Text dimColor>...</Text>
+                  </Box>
+                )}
+
+                {/* Render parts in order */}
+                {streamParts.map((part, idx) => {
+                  const isLastPart = idx === streamParts.length - 1;
+                  // Generate stable key based on part type and identity
+                  const key = part.type === 'tool'
+                    ? `tool-${part.toolId}`
+                    : part.type === 'reasoning'
+                    ? `reasoning-${part.startTime}`
+                    : `${part.type}-${idx}`;
+
+                  return (
+                    <MessagePart
+                      key={key}
+                      part={part}
+                      isLastInStream={isLastPart && part.type === 'text'}
+                    />
+                  );
+                })}
+              </Box>
+            )}
           </>
         )}
 
