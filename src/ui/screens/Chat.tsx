@@ -1265,20 +1265,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                   {/* Dynamic parts - first incomplete onwards */}
                   {(dynamicParts.length > 0 || staticParts.length === 0) && (
-                    <Box paddingX={1} paddingTop={staticParts.length === 0 ? 1 : 0} flexDirection="column">
-                      {staticParts.length === 0 && (
-                        <Box>
-                          <Text color="#00FF88">▌ SYLPHX</Text>
-                        </Box>
-                      )}
-
+                    <>
                       {streamParts.length === 0 && (
-                        <Box marginLeft={2}>
-                          <Text dimColor>...</Text>
+                        <Box paddingX={1} paddingTop={1} flexDirection="column">
+                          <Box>
+                            <Text color="#00FF88">▌ SYLPHX</Text>
+                          </Box>
+                          <Box marginLeft={2}>
+                            <Text dimColor>...</Text>
+                          </Box>
                         </Box>
                       )}
 
                       {dynamicParts.map((part, idx) => {
+                        const isFirstDynamic = idx === 0 && staticParts.length === 0;
                         const isLastPart = idx === dynamicParts.length - 1;
                         // Generate stable key based on part type and position in original streamParts
                         const globalIdx = streamParts.indexOf(part);
@@ -1291,14 +1291,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           : `stream-text-${globalIdx}`;
 
                         return (
-                          <MessagePart
-                            key={key}
-                            part={part}
-                            isLastInStream={isLastPart && part.type === 'text'}
-                          />
+                          <Box key={key} paddingX={1} paddingTop={isFirstDynamic ? 1 : 0} flexDirection="column">
+                            {isFirstDynamic && (
+                              <Box>
+                                <Text color="#00FF88">▌ SYLPHX</Text>
+                              </Box>
+                            )}
+                            <MessagePart
+                              part={part}
+                              isLastInStream={isLastPart && part.type === 'text'}
+                            />
+                          </Box>
                         );
                       })}
-                    </Box>
+                    </>
                   )}
                 </>
               );
