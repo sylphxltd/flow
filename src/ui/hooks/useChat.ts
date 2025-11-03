@@ -21,6 +21,91 @@ import {
 } from '../../tools/interaction.js';
 import type { ModelMessage } from 'ai';
 
+// Simple LRU cache for file attachments with mtime validation
+// Prevents re-reading same files from disk multiple times
+// Validates cache entries against file modification time to prevent stale data
+class FileContentCache {
+  private cache = new Map<string, { content: string; timestamp: number; size: number; mtime: number }>();
+  private maxSize = 50 * 1024 * 1024; // 50MB total cache size
+  private currentSize = 0;
+
+  async get(path: string): Promise<string | null> {
+    const entry = this.cache.get(path);
+    if (!entry) {
+      return null;
+    }
+
+    // Validate cache: check if file was modified since cached
+    try {
+      const { stat } = await import('node:fs/promises');
+      const stats = await stat(path);
+      const currentMtime = stats.mtimeMs;
+
+      if (currentMtime !== entry.mtime) {
+        // File was modified, invalidate cache entry
+        this.cache.delete(path);
+        this.currentSize -= entry.size;
+        return null;
+      }
+
+      // Cache valid, update timestamp for LRU
+      entry.timestamp = Date.now();
+      return entry.content;
+    } catch {
+      // File doesn't exist or can't be read, invalidate cache
+      this.cache.delete(path);
+      this.currentSize -= entry.size;
+      return null;
+    }
+  }
+
+  async set(path: string, content: string): Promise<void> {
+    const size = content.length;
+
+    // Don't cache files larger than 10MB
+    if (size > 10 * 1024 * 1024) {
+      return;
+    }
+
+    // Get file mtime for validation
+    let mtime: number;
+    try {
+      const { stat } = await import('node:fs/promises');
+      const stats = await stat(path);
+      mtime = stats.mtimeMs;
+    } catch {
+      // Can't get mtime, don't cache
+      return;
+    }
+
+    // Evict oldest entries if cache is full
+    while (this.currentSize + size > this.maxSize && this.cache.size > 0) {
+      const oldestKey = Array.from(this.cache.entries())
+        .sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0];
+
+      if (oldestKey) {
+        const removed = this.cache.get(oldestKey);
+        if (removed) {
+          this.currentSize -= removed.size;
+        }
+        this.cache.delete(oldestKey);
+      } else {
+        break;
+      }
+    }
+
+    this.cache.set(path, { content, timestamp: Date.now(), size, mtime });
+    this.currentSize += size;
+  }
+
+  clear(): void {
+    this.cache.clear();
+    this.currentSize = 0;
+  }
+}
+
+const fileContentCache = new FileContentCache();
+
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
@@ -176,14 +261,21 @@ export function useChat() {
               });
             }
 
-            // 3. Add file attachments as file parts (read fresh from disk)
+            // 3. Add file attachments as file parts (use cache with mtime validation)
             if (msg.attachments && msg.attachments.length > 0) {
               try {
                 const { readFile } = await import('node:fs/promises');
                 const fileContents = await Promise.all(
                   msg.attachments.map(async (att) => {
                     try {
-                      const content = await readFile(att.path, 'utf8');
+                      // Check cache first (validates mtime)
+                      let content = await fileContentCache.get(att.path);
+                      if (content === null) {
+                        // Not in cache or stale, read from disk
+                        content = await readFile(att.path, 'utf8');
+                        // Add to cache for future use
+                        await fileContentCache.set(att.path, content);
+                      }
                       return {
                         type: 'text',
                         text: `\n\n<file path="${att.relativePath}">\n${content}\n</file>`,

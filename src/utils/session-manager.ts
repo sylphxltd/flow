@@ -62,7 +62,8 @@ export async function saveSession(session: Session): Promise<void> {
     updated: Date.now(),
   };
   const path = getSessionPath(session.id);
-  await writeFile(path, JSON.stringify(sessionToSave, null, 2), 'utf8');
+  // Use compact JSON format for faster serialization and smaller file size
+  await writeFile(path, JSON.stringify(sessionToSave), 'utf8');
 }
 
 /**

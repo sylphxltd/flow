@@ -226,6 +226,13 @@ export const useAppStore = create<AppState>()(
       set((state) => {
         const timestamp = new Date().toLocaleTimeString();
         state.debugLogs.push(`[${timestamp}] ${message}`);
+
+        // Log rotation: keep max 1000 entries to prevent memory leak
+        const MAX_LOGS = 1000;
+        if (state.debugLogs.length > MAX_LOGS) {
+          // Remove oldest half when limit reached
+          state.debugLogs = state.debugLogs.slice(-MAX_LOGS / 2);
+        }
       }),
     clearDebugLogs: () =>
       set((state) => {
@@ -315,17 +322,35 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-// Subscribe to sessions changes and persist to disk
+// Debounced session persistence
+// Track pending saves to avoid writing same session multiple times
+const pendingSaves = new Map<string, NodeJS.Timeout>();
+const DEBOUNCE_MS = 500;
+
+// Subscribe to sessions changes and persist to disk (debounced)
 useAppStore.subscribe(
   (state) => state.sessions,
   (sessions) => {
-    // Save all sessions to disk whenever sessions array changes
-    sessions.forEach(async (session) => {
-      try {
-        await saveSessionToFile(session);
-      } catch (error) {
-        console.error(`Failed to persist session ${session.id}:`, error);
+    // Debounce saves - batch multiple updates within 500ms window
+    sessions.forEach((session) => {
+      // Clear existing timeout for this session
+      const existingTimeout = pendingSaves.get(session.id);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
       }
+
+      // Schedule new save
+      const timeout = setTimeout(async () => {
+        try {
+          await saveSessionToFile(session);
+          pendingSaves.delete(session.id);
+        } catch (error) {
+          console.error(`Failed to persist session ${session.id}:`, error);
+          pendingSaves.delete(session.id);
+        }
+      }, DEBOUNCE_MS);
+
+      pendingSaves.set(session.id, timeout);
     });
   },
   { fireImmediately: false } // Don't fire on initialization

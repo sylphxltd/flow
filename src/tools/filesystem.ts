@@ -9,7 +9,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 /**
- * Read file tool
+ * Read file tool with size limits to prevent crashes
  */
 export const readFileTool = tool({
   description: 'Read contents of a file from the filesystem',
@@ -25,6 +25,27 @@ export const readFileTool = tool({
       .describe('Number of lines to read'),
   }),
   execute: async ({ file_path, offset, limit }) => {
+    // Check file size before reading to prevent memory exhaustion
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+    try {
+      const { stat } = await import('node:fs/promises');
+      const stats = await stat(file_path);
+
+      if (stats.size > MAX_FILE_SIZE) {
+        return {
+          path: file_path,
+          error: `File too large (${Math.round(stats.size / 1024 / 1024)}MB). Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB. Use offset and limit parameters to read specific sections.`,
+          encoding: 'utf8',
+        };
+      }
+    } catch (error) {
+      return {
+        path: file_path,
+        error: `Failed to check file size: ${error instanceof Error ? error.message : String(error)}`,
+        encoding: 'utf8',
+      };
+    }
+
     const content = await readFile(file_path, 'utf8');
 
     // Apply line filtering if offset/limit specified

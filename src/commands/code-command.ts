@@ -10,6 +10,7 @@ import { createHeadlessDisplay } from '../core/headless-display.js';
 import { getOrCreateSession, showModelToolSupportError } from '../core/session-service.js';
 import { addMessage, saveSession } from '../utils/session-manager.js';
 import App from '../ui/App.js';
+import { ErrorBoundary } from '../ui/components/ErrorBoundary.js';
 
 /**
  * Code command - AI chatbot powered by Sylphx Flow AI SDK
@@ -20,11 +21,15 @@ import App from '../ui/App.js';
 
 
 /**
- * Start interactive TUI app
+ * Start interactive TUI app with error boundary
  */
 async function startTUIApp(): Promise<void> {
-  // Render React + Ink app
-  render(React.createElement(App));
+  // Render React + Ink app wrapped in error boundary
+  render(
+    React.createElement(ErrorBoundary, null,
+      React.createElement(App)
+    )
+  );
 }
 
 /**

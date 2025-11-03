@@ -9,9 +9,11 @@
 import { AutoTokenizer } from '@huggingface/transformers';
 
 // Cache for multiple tokenizers (keyed by tokenizer name)
+// Limited to 3 tokenizers to prevent memory leak (each ~100-500MB)
 const tokenizerCache = new Map<string, any>();
 const tokenizerInitializing = new Set<string>();
 const tokenizerFailed = new Set<string>();
+const MAX_CACHED_TOKENIZERS = 3;
 
 /**
  * Map provider model names to tokenizer names
@@ -126,6 +128,14 @@ async function ensureTokenizer(modelName?: string): Promise<any | null> {
       // Use local files if available, otherwise download
       local_files_only: false,
     });
+
+    // Limit cache size - evict oldest tokenizer if limit reached
+    if (tokenizerCache.size >= MAX_CACHED_TOKENIZERS) {
+      const oldestKey = tokenizerCache.keys().next().value;
+      if (oldestKey) {
+        tokenizerCache.delete(oldestKey);
+      }
+    }
 
     tokenizerCache.set(tokenizerName, tokenizer);
     tokenizerInitializing.delete(tokenizerName);

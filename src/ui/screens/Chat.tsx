@@ -48,6 +48,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
   const [isTitleStreaming, setIsTitleStreaming] = useState(false);
   const [streamingTitle, setStreamingTitle] = useState('');
+
+  // Optimized streaming: accumulate chunks in ref, update state in batches
+  const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
+    chunks: [],
+    timeout: null
+  });
   const debugLogs = useAppStore((state) => state.debugLogs);
   const addDebugLog = useAppStore((state) => state.addDebugLog);
   const [ctrlPressed, setCtrlPressed] = useState(false);
@@ -518,33 +524,54 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setStreamParts([]);
     addLog('Starting message send...');
 
+    // Helper to flush accumulated chunks
+    const flushStreamBuffer = () => {
+      const buffer = streamBufferRef.current;
+      if (buffer.chunks.length === 0) return;
+
+      const accumulatedText = buffer.chunks.join('');
+      buffer.chunks = [];
+
+      setStreamParts((prev) => {
+        const newParts = [...prev];
+        const lastPart = newParts[newParts.length - 1];
+
+        // If last part is text, append to it
+        if (lastPart && lastPart.type === 'text') {
+          newParts[newParts.length - 1] = {
+            type: 'text',
+            content: lastPart.content + accumulatedText
+          };
+        } else {
+          // Otherwise create new text part
+          newParts.push({ type: 'text', content: accumulatedText });
+        }
+        return newParts;
+      });
+    };
+
     try {
       await sendMessage(
         messageWithContext,
-        // onChunk - text streaming
+        // onChunk - text streaming (batched for performance)
         (chunk) => {
-        const timestamp = Date.now();
-        addLog(`Chunk(${chunk.length}ch) @${timestamp}`);
-        setStreamParts((prev) => {
-          const newParts = [...prev];
-          const lastPart = newParts[newParts.length - 1];
+          const timestamp = Date.now();
+          addLog(`Chunk(${chunk.length}ch) @${timestamp}`);
 
-          // If last part is text, append to it
-          if (lastPart && lastPart.type === 'text') {
-            newParts[newParts.length - 1] = {
-              type: 'text',
-              content: lastPart.content + chunk
-            };
-          } else {
-            // Otherwise create new text part
-            newParts.push({ type: 'text', content: chunk });
+          // Accumulate chunks in buffer
+          streamBufferRef.current.chunks.push(chunk);
+
+          // Clear existing timeout
+          if (streamBufferRef.current.timeout) {
+            clearTimeout(streamBufferRef.current.timeout);
           }
-          const totalLength = newParts.reduce((sum, p) =>
-            p.type === 'text' ? sum + p.content.length : sum, 0);
-          addLog(`→ Total: ${totalLength}ch in ${newParts.length} parts`);
-          return newParts;
-        });
-      },
+
+          // Schedule flush after 50ms of inactivity (debounce)
+          streamBufferRef.current.timeout = setTimeout(() => {
+            flushStreamBuffer();
+            streamBufferRef.current.timeout = null;
+          }, 50);
+        },
       // onToolCall - tool execution started
       (toolCallId, toolName, args) => {
         addLog(`Tool call: ${toolName} (${toolCallId})`);
@@ -566,6 +593,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       },
         // onComplete - streaming finished
         async () => {
+          // Flush any remaining buffered chunks
+          if (streamBufferRef.current.timeout) {
+            clearTimeout(streamBufferRef.current.timeout);
+            streamBufferRef.current.timeout = null;
+          }
+          flushStreamBuffer();
+
           addLog('Streaming complete');
           setIsStreaming(false);
           setStreamParts([]); // Clear streaming parts - they're now in message history
