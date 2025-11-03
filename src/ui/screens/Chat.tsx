@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, Static } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import MarkdownText from '../components/MarkdownText.js';
 import TodoList from '../components/TodoList.js';
@@ -819,71 +819,75 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           // Input will appear right below header
           null
         ) : (
-          <Box flexDirection="column">
-            {currentSession.messages.map((msg, i) => (
-              <Box key={i} paddingTop={1} flexDirection="column">
-                {msg.role === 'user' ? (
-                  <>
-                    <Box>
-                      <Text color="#00D9FF">▌ YOU</Text>
-                    </Box>
-                    {/* Render content parts */}
-                    {msg.content && Array.isArray(msg.content) ? (
-                      msg.content.map((part, idx) => (
-                        <MessagePart key={idx} part={part} />
-                      ))
-                    ) : (
-                      <Box marginLeft={2}>
-                        <Text>{String(msg.content || '')}</Text>
+          <>
+            {/* Completed messages - using Static to keep them above */}
+            <Static items={currentSession.messages}>
+              {(msg, i) => (
+                <Box key={i} paddingTop={1} flexDirection="column">
+                  {msg.role === 'user' ? (
+                    <>
+                      <Box>
+                        <Text color="#00D9FF">▌ YOU</Text>
                       </Box>
-                    )}
-                    {/* Display attachments if any */}
-                    {msg.attachments && msg.attachments.length > 0 ? (
-                      <Box flexDirection="column" marginTop={1}>
-                        {msg.attachments.map((att, attIdx) => (
-                          <Box key={attIdx} marginLeft={2}>
-                            <Text dimColor>Attached(</Text>
-                            <Text color="#00D9FF">{att.relativePath}</Text>
-                            <Text dimColor>)</Text>
-                            {attachmentTokens.has(att.path) && (
-                              <>
-                                <Text dimColor> </Text>
-                                <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                              </>
-                            )}
-                          </Box>
-                        ))}
+                      {/* Render content parts */}
+                      {msg.content && Array.isArray(msg.content) ? (
+                        msg.content.map((part, idx) => (
+                          <MessagePart key={idx} part={part} />
+                        ))
+                      ) : (
+                        <Box marginLeft={2}>
+                          <Text>{String(msg.content || '')}</Text>
+                        </Box>
+                      )}
+                      {/* Display attachments if any */}
+                      {msg.attachments && msg.attachments.length > 0 ? (
+                        <Box flexDirection="column" marginTop={1}>
+                          {msg.attachments.map((att, attIdx) => (
+                            <Box key={attIdx} marginLeft={2}>
+                              <Text dimColor>Attached(</Text>
+                              <Text color="#00D9FF">{att.relativePath}</Text>
+                              <Text dimColor>)</Text>
+                              {attachmentTokens.has(att.path) && (
+                                <>
+                                  <Text dimColor> </Text>
+                                  <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                                </>
+                              )}
+                            </Box>
+                          ))}
+                        </Box>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <Box>
+                        <Text color="#00FF88">▌ SYLPHX</Text>
                       </Box>
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    <Box>
-                      <Text color="#00FF88">▌ SYLPHX</Text>
-                    </Box>
-                    {/* Render content parts */}
-                    {msg.content && Array.isArray(msg.content) ? (
-                      msg.content.map((part, idx) => (
-                        <MessagePart key={idx} part={part} />
-                      ))
-                    ) : (
-                      <Box marginLeft={2}>
-                        <Text>{String(msg.content || '')}</Text>
-                      </Box>
-                    )}
-                    {/* Show usage if available - simplified */}
-                    {msg.usage && (
-                      <Box marginLeft={2}>
-                        <Text dimColor>
-                          {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                        </Text>
-                      </Box>
-                    )}
-                  </>
-                )}
-              </Box>
-            ))}
+                      {/* Render content parts */}
+                      {msg.content && Array.isArray(msg.content) ? (
+                        msg.content.map((part, idx) => (
+                          <MessagePart key={idx} part={part} />
+                        ))
+                      ) : (
+                        <Box marginLeft={2}>
+                          <Text>{String(msg.content || '')}</Text>
+                        </Box>
+                      )}
+                      {/* Show usage if available - simplified */}
+                      {msg.usage && (
+                        <Box marginLeft={2}>
+                          <Text dimColor>
+                            {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+                          </Text>
+                        </Box>
+                      )}
+                    </>
+                  )}
+                </Box>
+              )}
+            </Static>
 
+            {/* Currently streaming message - dynamic, stays at bottom */}
             {isStreaming && (
               <Box paddingTop={1} flexDirection="column">
                 <Box>
@@ -918,7 +922,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 })}
               </Box>
             )}
-          </Box>
+          </>
         )}
       </Box>
 
