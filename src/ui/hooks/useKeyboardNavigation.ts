@@ -208,6 +208,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
               setSelectedCommandIndex(0);
               return;
             }
+            // Let event propagate to text input when filter is empty
           }
 
           // Multi-question: Tab navigation between questions

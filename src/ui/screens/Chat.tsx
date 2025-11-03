@@ -973,13 +973,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 setSelectedCommandIndex(0);
               }}
             />
-          ) : isStreaming ? (
-            <Box flexDirection="column">
-              <Text dimColor>Waiting for response...</Text>
-              <Box marginTop={1}>
-                <Text color="yellow">Press ESC to cancel</Text>
-              </Box>
-            </Box>
           ) : (
             <>
               {/* Show pending attachments */}
