@@ -61,7 +61,7 @@ export function selectTarget(
   // If no target specified, try to auto-detect
   // This is pure because we're not actually detecting, just returning None
   // The actual detection happens in the target-manager
-  return none();
+  return none;
 }
 
 /**
