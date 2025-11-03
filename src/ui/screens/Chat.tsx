@@ -795,7 +795,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         </Box>
 
         {/* Messages - Scrollable area */}
-        <Box flexDirection="column" flexGrow={1} minHeight={0}>
+        {/* Only expand to fill space when there are messages or streaming */}
+        <Box
+          flexDirection="column"
+          flexGrow={!currentSession || (currentSession.messages.length === 0 && !isStreaming) ? 0 : 1}
+          minHeight={0}
+        >
         {!currentSession ? (
           <Box paddingY={1} flexDirection="column">
             <Box paddingBottom={2}>
@@ -818,9 +823,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             </Box>
           </Box>
         ) : currentSession.messages.length === 0 && !isStreaming ? (
-          <Box paddingY={1} marginLeft={2}>
-            <Text dimColor>Ready to chat...</Text>
-          </Box>
+          // Empty - no "Ready to chat..." message
+          // Input will appear right below header
+          null
         ) : (
           <Box flexDirection="column">
             {currentSession.messages.map((msg, i) => (
@@ -922,7 +927,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         {/* Input Area */}
         <Box flexDirection="column" flexShrink={0} paddingTop={1}>
           <Box marginBottom={1}>
-            <Text color="#00D9FF">▌ INPUT</Text>
+            <Text color="#00D9FF">▌ YOU</Text>
           </Box>
 
           {/* PendingInput Mode - when command calls waitForInput */}
