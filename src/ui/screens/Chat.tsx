@@ -75,6 +75,9 @@ function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): strin
     : `stream-text-${globalIdx}`;
 }
 
+// Global debug flag - set via DEBUG env var
+const SHOW_DEBUG_INDICATORS = process.env.DEBUG === 'true' || process.env.DEBUG === '1';
+
 /**
  * Streaming Part Wrapper Component
  *
@@ -83,7 +86,7 @@ function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): strin
  *
  * @param part - The streaming part to render
  * @param isLastInStream - Whether this is the last text part (shows cursor)
- * @param debugRegion - Debug flag to show which region this part is in (static/dynamic)
+ * @param debugRegion - Debug flag to show which region this part is in (static/dynamic/completed)
  */
 function StreamingPartWrapper({
   part,
@@ -92,22 +95,32 @@ function StreamingPartWrapper({
 }: {
   part: StreamPart;
   isLastInStream?: boolean;
-  debugRegion?: 'static' | 'dynamic';
+  debugRegion?: 'static' | 'dynamic' | 'completed';
 }) {
   // Determine status for debug label
   const getPartStatus = (): string => {
     return part.status;
   };
 
+  // Show debug indicator if:
+  // 1. debugRegion is provided (streaming mode)
+  // 2. SHOW_DEBUG_INDICATORS is true (global debug mode)
+  const showDebug = debugRegion !== undefined || SHOW_DEBUG_INDICATORS;
+  const displayRegion = debugRegion || 'completed';
+
   return (
     <Box paddingX={1} flexDirection="column">
-      {debugRegion && (
+      {showDebug && (
         <Box>
           <Text
-            backgroundColor={debugRegion === 'static' ? 'green' : 'blue'}
+            backgroundColor={
+              displayRegion === 'static' ? 'green' :
+              displayRegion === 'dynamic' ? 'blue' :
+              'gray'  // completed
+            }
             color="black"
           >
-            {' '}{part.type.toUpperCase()}: {getPartStatus()} [{debugRegion.toUpperCase()}]{' '}
+            {' '}{part.type.toUpperCase()}: {getPartStatus()} [{displayRegion.toUpperCase()}]{' '}
           </Text>
         </Box>
       )}
@@ -1243,6 +1256,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             <StreamingPartWrapper
                               key={`msg-${msg.timestamp}-part-${idx}`}
                               part={part}
+                              debugRegion={SHOW_DEBUG_INDICATORS ? 'completed' : undefined}
                             />
                           ))
                         ) : (
@@ -1280,6 +1294,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             <StreamingPartWrapper
                               key={`msg-${msg.timestamp}-part-${idx}`}
                               part={part}
+                              debugRegion={SHOW_DEBUG_INDICATORS ? 'completed' : undefined}
                             />
                           ))
                         ) : (
@@ -1313,8 +1328,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               // Find first non-completed part (this is the boundary)
               const firstIncompleteIndex = streamParts.findIndex(part => !isPartCompleted(part));
 
-              // DEBUG: Log part completion status
-              if (streamParts.length > 0) {
+              // DEBUG: Log part completion status (only if DEBUG enabled)
+              if (SHOW_DEBUG_INDICATORS && streamParts.length > 0) {
                 console.error('[Static/Dynamic Split]');
                 console.error('  Total parts:', streamParts.length);
                 console.error('  First incomplete index:', firstIncompleteIndex);
