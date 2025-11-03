@@ -768,31 +768,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     <Box flexDirection="row" flexGrow={1}>
       {/* Main chat area */}
       <Box flexDirection="column" flexGrow={1} width="70%">
-        {/* Header */}
-        <Box flexShrink={0}>
-          <Text color="#00D9FF">▌ CHAT</Text>
-          {currentSession && (
-            <>
-              <Text color="#00D9FF"> · </Text>
-              {isTitleStreaming ? (
-                <>
-                  <Text color="white">{streamingTitle}</Text>
-                  <Text color="#FFD700">▊</Text>
-                </>
-              ) : (
-                <Text color="white">{currentSession.title || 'New Chat'}</Text>
-              )}
-            </>
-          )}
-        </Box>
-
-        {/* Messages - Scrollable area */}
-        {/* Only expand to fill space when there are messages or streaming */}
-        <Box
-          flexDirection="column"
-          flexGrow={!currentSession || (currentSession.messages.length === 0 && !isStreaming) ? 0 : 1}
-          minHeight={0}
-        >
+        {/* Messages - All messages in Static, dynamic UI at bottom */}
         {!currentSession ? (
           <Box paddingY={1} flexDirection="column">
             <Box paddingBottom={2}>
@@ -814,78 +790,76 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               <Text dimColor> - Show all available commands</Text>
             </Box>
           </Box>
-        ) : currentSession.messages.length === 0 && !isStreaming ? (
-          // Empty - no "Ready to chat..." message
-          // Input will appear right below header
-          null
         ) : (
           <>
             {/* Completed messages - using Static to keep them above */}
-            <Static items={currentSession.messages}>
-              {(msg, i) => (
-                <Box key={i} paddingTop={1} flexDirection="column">
-                  {msg.role === 'user' ? (
-                    <>
-                      <Box>
-                        <Text color="#00D9FF">▌ YOU</Text>
-                      </Box>
-                      {/* Render content parts */}
-                      {msg.content && Array.isArray(msg.content) ? (
-                        msg.content.map((part, idx) => (
-                          <MessagePart key={idx} part={part} />
-                        ))
-                      ) : (
-                        <Box marginLeft={2}>
-                          <Text>{String(msg.content || '')}</Text>
+            {currentSession.messages.length > 0 && (
+              <Static items={currentSession.messages}>
+                {(msg, i) => (
+                  <Box key={i} paddingTop={1} flexDirection="column">
+                    {msg.role === 'user' ? (
+                      <>
+                        <Box>
+                          <Text color="#00D9FF">▌ YOU</Text>
                         </Box>
-                      )}
-                      {/* Display attachments if any */}
-                      {msg.attachments && msg.attachments.length > 0 ? (
-                        <Box flexDirection="column" marginTop={1}>
-                          {msg.attachments.map((att, attIdx) => (
-                            <Box key={attIdx} marginLeft={2}>
-                              <Text dimColor>Attached(</Text>
-                              <Text color="#00D9FF">{att.relativePath}</Text>
-                              <Text dimColor>)</Text>
-                              {attachmentTokens.has(att.path) && (
-                                <>
-                                  <Text dimColor> </Text>
-                                  <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                                </>
-                              )}
-                            </Box>
-                          ))}
+                        {/* Render content parts */}
+                        {msg.content && Array.isArray(msg.content) ? (
+                          msg.content.map((part, idx) => (
+                            <MessagePart key={idx} part={part} />
+                          ))
+                        ) : (
+                          <Box marginLeft={2}>
+                            <Text>{String(msg.content || '')}</Text>
+                          </Box>
+                        )}
+                        {/* Display attachments if any */}
+                        {msg.attachments && msg.attachments.length > 0 ? (
+                          <Box flexDirection="column" marginTop={1}>
+                            {msg.attachments.map((att, attIdx) => (
+                              <Box key={attIdx} marginLeft={2}>
+                                <Text dimColor>Attached(</Text>
+                                <Text color="#00D9FF">{att.relativePath}</Text>
+                                <Text dimColor>)</Text>
+                                {attachmentTokens.has(att.path) && (
+                                  <>
+                                    <Text dimColor> </Text>
+                                    <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                                  </>
+                                )}
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <Box>
+                          <Text color="#00FF88">▌ SYLPHX</Text>
                         </Box>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      <Box>
-                        <Text color="#00FF88">▌ SYLPHX</Text>
-                      </Box>
-                      {/* Render content parts */}
-                      {msg.content && Array.isArray(msg.content) ? (
-                        msg.content.map((part, idx) => (
-                          <MessagePart key={idx} part={part} />
-                        ))
-                      ) : (
-                        <Box marginLeft={2}>
-                          <Text>{String(msg.content || '')}</Text>
-                        </Box>
-                      )}
-                      {/* Show usage if available - simplified */}
-                      {msg.usage && (
-                        <Box marginLeft={2}>
-                          <Text dimColor>
-                            {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                          </Text>
-                        </Box>
-                      )}
-                    </>
-                  )}
-                </Box>
-              )}
-            </Static>
+                        {/* Render content parts */}
+                        {msg.content && Array.isArray(msg.content) ? (
+                          msg.content.map((part, idx) => (
+                            <MessagePart key={idx} part={part} />
+                          ))
+                        ) : (
+                          <Box marginLeft={2}>
+                            <Text>{String(msg.content || '')}</Text>
+                          </Box>
+                        )}
+                        {/* Show usage if available - simplified */}
+                        {msg.usage && (
+                          <Box marginLeft={2}>
+                            <Text dimColor>
+                              {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+                            </Text>
+                          </Box>
+                        )}
+                      </>
+                    )}
+                  </Box>
+                )}
+              </Static>
+            )}
 
             {/* Currently streaming message - dynamic, stays at bottom */}
             {isStreaming && (
@@ -924,7 +898,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             )}
           </>
         )}
-      </Box>
 
         {/* Todo List - Always visible, positioned above input */}
         <TodoList />
