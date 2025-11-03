@@ -94,18 +94,15 @@ function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): strin
  * Ensures React can properly reuse components when parts move between regions.
  *
  * @param part - The streaming part to render
- * @param isFirst - Whether this is the first part (shows "▌ SYLPHX" header)
  * @param isLastInStream - Whether this is the last text part (shows cursor)
  * @param debugRegion - Debug flag to show which region this part is in (static/dynamic)
  */
 function StreamingPartWrapper({
   part,
-  isFirst,
   isLastInStream = false,
   debugRegion,
 }: {
   part: StreamPart;
-  isFirst: boolean;
   isLastInStream?: boolean;
   debugRegion?: 'static' | 'dynamic';
 }) {
@@ -121,28 +118,21 @@ function StreamingPartWrapper({
   };
 
   return (
-    <Box paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
-      {isFirst && (
+    <Box paddingX={1} flexDirection="column">
+      {debugRegion && (
         <Box>
-          <Text color="#00FF88">▌ SYLPHX</Text>
+          <Text
+            backgroundColor={debugRegion === 'static' ? 'green' : 'blue'}
+            color="black"
+          >
+            {' '}{part.type.toUpperCase()}: {getPartStatus()} [{debugRegion.toUpperCase()}]{' '}
+          </Text>
         </Box>
       )}
-      <Box flexDirection="column">
-        {debugRegion && (
-          <Box>
-            <Text
-              backgroundColor={debugRegion === 'static' ? 'green' : 'blue'}
-              color="black"
-            >
-              {' '}{part.type.toUpperCase()}: {getPartStatus()} [{debugRegion.toUpperCase()}]{' '}
-            </Text>
-          </Box>
-        )}
-        <MessagePart
-          part={part}
-          isLastInStream={isLastInStream}
-        />
-      </Box>
+      <MessagePart
+        part={part}
+        isLastInStream={isLastInStream}
+      />
     </Box>
   );
 }
@@ -1338,14 +1328,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               return (
                 <>
+                  {/* Message header - message level, not part level */}
+                  <Box paddingX={1} paddingTop={1}>
+                    <Text color="#00FF88">▌ SYLPHX</Text>
+                  </Box>
+
                   {/* Static parts - continuous completed from start */}
                   {staticParts.length > 0 && (
                     <Static items={staticParts}>
-                      {(part, idx) => (
+                      {(part) => (
                         <StreamingPartWrapper
                           key={getStreamingPartKey(part, streamParts)}
                           part={part}
-                          isFirst={idx === 0}
                           debugRegion="static"
                         />
                       )}
@@ -1353,35 +1347,27 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   )}
 
                   {/* Dynamic parts - first incomplete onwards */}
-                  {(dynamicParts.length > 0 || staticParts.length === 0) && (
+                  {dynamicParts.length > 0 ? (
                     <>
-                      {streamParts.length === 0 && (
-                        <Box paddingX={1} paddingTop={1} flexDirection="column">
-                          <Box>
-                            <Text color="#00FF88">▌ SYLPHX</Text>
-                          </Box>
-                          <Box marginLeft={2}>
-                            <Text dimColor>...</Text>
-                          </Box>
-                        </Box>
-                      )}
-
                       {dynamicParts.map((part, idx) => {
-                        const isFirstDynamic = idx === 0 && staticParts.length === 0;
                         const isLastPart = idx === dynamicParts.length - 1;
 
                         return (
                           <StreamingPartWrapper
                             key={getStreamingPartKey(part, streamParts)}
                             part={part}
-                            isFirst={isFirstDynamic}
                             isLastInStream={isLastPart && part.type === 'text'}
                             debugRegion="dynamic"
                           />
                         );
                       })}
                     </>
-                  )}
+                  ) : streamParts.length === 0 ? (
+                    /* No parts yet - show waiting indicator */
+                    <Box paddingX={1} marginLeft={2}>
+                      <Text dimColor>...</Text>
+                    </Box>
+                  ) : null}
                 </>
               );
             })()}
