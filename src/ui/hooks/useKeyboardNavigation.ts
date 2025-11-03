@@ -534,6 +534,14 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             const afterQuery = input.slice(filteredFileInfo.atIndex + 1 + filteredFileInfo.query.length);
             const newInput = `${beforeAt}@${selected.relativePath} ${afterQuery}`;
             const newCursorPos = beforeAt.length + selected.relativePath.length + 2; // +2 for @ and space
+
+            if (process.env.DEBUG) {
+              addLog(`[File Select] beforeAt: ${JSON.stringify(beforeAt)}`);
+              addLog(`[File Select] afterQuery: ${JSON.stringify(afterQuery)}`);
+              addLog(`[File Select] newInput: ${JSON.stringify(newInput)}`);
+              addLog(`[File Select] newCursorPos: ${newCursorPos}`);
+            }
+
             setInput(newInput);
             setCursor(newCursorPos); // Position cursor right after the inserted file name + space
             setSelectedFileIndex(0);
