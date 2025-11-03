@@ -2,73 +2,61 @@
  * useFPS Hook
  * Tracks rendering performance by measuring frames per second
  *
- * PERFORMANCE MONITORING:
- * - Uses requestAnimationFrame to measure actual render frames
- * - Calculates rolling average over 1 second window
+ * PERFORMANCE MONITORING (Node.js/Terminal):
+ * - Tracks component render calls to measure rendering frequency
+ * - Samples every 500ms to calculate FPS
  * - Returns current FPS and whether performance is degraded
+ *
+ * NOTE: In terminal environments, FPS is based on component re-render frequency,
+ * not browser animation frames. Ideal is low FPS (components not re-rendering unnecessarily).
  */
 
 import { useState, useEffect, useRef } from 'react';
 
 interface FPSStats {
   fps: number;
-  isDegraded: boolean; // true if FPS < 30
-  isSlow: boolean;     // true if FPS < 15
+  isDegraded: boolean; // true if FPS > 30 (too many re-renders)
+  isSlow: boolean;     // true if FPS > 60 (excessive re-renders)
 }
 
-const FPS_THRESHOLD_DEGRADED = 30;
-const FPS_THRESHOLD_SLOW = 15;
-const MEASUREMENT_WINDOW = 1000; // 1 second in ms
+const FPS_THRESHOLD_DEGRADED = 30;  // More than 30 renders/sec is excessive
+const FPS_THRESHOLD_SLOW = 60;      // More than 60 renders/sec is very bad
+const SAMPLE_INTERVAL = 500;        // Sample every 500ms
 
 export function useFPS(): FPSStats {
-  const [fps, setFps] = useState(60); // Optimistic default
-  const frameTimesRef = useRef<number[]>([]);
-  const rafIdRef = useRef<number | null>(null);
-  const lastFrameTimeRef = useRef<number>(performance.now());
+  const [fps, setFps] = useState(0); // Start at 0
+  const renderCountRef = useRef(0);
+  const lastSampleTimeRef = useRef<number>(Date.now());
+
+  // Increment render count on every render
+  renderCountRef.current++;
 
   useEffect(() => {
-    let isActive = true;
+    // Sample FPS periodically
+    const intervalId = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - lastSampleTimeRef.current;
 
-    const measureFrame = (currentTime: number) => {
-      if (!isActive) return;
+      if (elapsed > 0) {
+        // Calculate renders per second
+        const rendersPerSecond = Math.round((renderCountRef.current / elapsed) * 1000);
+        setFps(rendersPerSecond);
 
-      // Calculate time since last frame
-      const deltaTime = currentTime - lastFrameTimeRef.current;
-      lastFrameTimeRef.current = currentTime;
-
-      // Store frame time
-      frameTimesRef.current.push(currentTime);
-
-      // Remove frame times older than 1 second
-      const cutoffTime = currentTime - MEASUREMENT_WINDOW;
-      frameTimesRef.current = frameTimesRef.current.filter(time => time > cutoffTime);
-
-      // Calculate FPS based on number of frames in the last second
-      const frameCount = frameTimesRef.current.length;
-      if (frameCount > 0) {
-        const calculatedFps = frameCount;
-        setFps(calculatedFps);
+        // Reset counter
+        renderCountRef.current = 0;
+        lastSampleTimeRef.current = now;
       }
-
-      // Request next frame
-      rafIdRef.current = requestAnimationFrame(measureFrame);
-    };
-
-    // Start measuring
-    rafIdRef.current = requestAnimationFrame(measureFrame);
+    }, SAMPLE_INTERVAL);
 
     // Cleanup
     return () => {
-      isActive = false;
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
+      clearInterval(intervalId);
     };
   }, []);
 
   return {
     fps,
-    isDegraded: fps < FPS_THRESHOLD_DEGRADED,
-    isSlow: fps < FPS_THRESHOLD_SLOW,
+    isDegraded: fps > FPS_THRESHOLD_DEGRADED,
+    isSlow: fps > FPS_THRESHOLD_SLOW,
   };
 }
