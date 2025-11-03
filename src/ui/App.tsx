@@ -72,6 +72,11 @@ export default function App() {
     }
   }, [error, setError]);
 
+  // Dashboard is full screen - no padding, no header
+  if (currentScreen === 'dashboard') {
+    return <Dashboard />;
+  }
+
   return (
     <Box flexDirection="column" width="100%" height="100%" paddingX={1}>
       {/* Header */}
@@ -106,7 +111,6 @@ export default function App() {
         {currentScreen === 'model-selection' && <ModelSelection />}
         {currentScreen === 'command-palette' && <CommandPalette onCommand={handleCommand} />}
         {currentScreen === 'logs' && <Logs />}
-        {currentScreen === 'dashboard' && <Dashboard />}
       </Box>
     </Box>
   );
