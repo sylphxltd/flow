@@ -342,7 +342,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const updateNotificationSettings = useAppStore((state) => state.updateNotificationSettings);
   const notificationSettings = useAppStore((state) => state.notificationSettings);
   const sessions = useAppStore((state) => state.sessions);
-  const setStreamingState = useAppStore((state) => state.setStreamingState);
 
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();

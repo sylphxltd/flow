@@ -71,8 +71,8 @@ export interface AppState {
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
 
-  // Streaming State (persisted per-session for recovery)
-  setStreamingState: (sessionId: string, isStreaming: boolean, streamingParts: StreamingPart[]) => void;
+  // Note: No separate streaming state needed
+  // Derived from data: session.messages.some(m => m.status === 'active')
 
   // UI State
   isLoading: boolean;
@@ -294,25 +294,6 @@ export const useAppStore = create<AppState>()(
       getSessionRepository().then((repo) => {
         repo.deleteSession(sessionId).catch((error) => {
           console.error('Failed to delete session from database:', error);
-        });
-      });
-    },
-
-    // Streaming State
-    setStreamingState: (sessionId, isStreaming, streamingParts) => {
-      // Update state immediately (optimistic update)
-      set((state) => {
-        const session = state.sessions.find((s) => s.id === sessionId);
-        if (session) {
-          session.isStreaming = isStreaming;
-          session.streamingParts = streamingParts;
-        }
-      });
-
-      // Persist to database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.updateStreamingState(sessionId, isStreaming, streamingParts).catch((error) => {
-          console.error('Failed to update streaming state in database:', error);
         });
       });
     },

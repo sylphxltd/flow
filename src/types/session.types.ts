@@ -181,26 +181,30 @@ export interface SessionMessage {
  * - Todos are persisted with session to disk
  * - updateTodos tool requires sessionId parameter
  *
- * Design: Persistent streaming state
+ * Design: Message status-based state
  * ===================================
  *
- * Why streaming state is persisted in session:
- * 1. Session recovery - Can switch sessions and return to exact streaming state
- * 2. App restart - Preserve in-progress generations across app restarts
- * 3. Multi-tasking - Work on Session A while Session B is streaming
+ * Streaming state is derived from message status, not stored separately:
+ * - message.status: 'active' | 'completed' | 'error' | 'abort'
+ * - part.status: 'active' | 'completed' | 'error' | 'abort'
+ *
+ * Session recovery:
+ * 1. Find messages with status === 'active'
+ * 2. Display their parts directly
+ * 3. No separate streaming state needed
  *
  * Streaming lifecycle:
- * 1. User sends message → isStreaming = true, streamingParts = []
- * 2. Parts arrive → streamingParts grows, each part has detailed status
- * 3. User switches session → Streaming state saved, restored on return
- * 4. Streaming completes → Convert streamingParts to MessagePart[], clear state
- * 5. User aborts (ESC) → Mark parts as 'aborted', save partial content
+ * 1. User sends message → Create message with status='active'
+ * 2. Parts arrive → Add/update parts in message
+ * 3. User switches session → Message stays in DB with status='active'
+ * 4. Streaming completes → Update message status='completed'
+ * 5. User aborts (ESC) → Update message status='abort'
  *
- * Part states (detailed for recovery):
- * - text: active | completed | aborted
- * - reasoning: active | completed | aborted (with duration, startTime)
- * - tool: running | completed | failed | aborted (with toolId, args, result, error)
- * - error: always completed
+ * Benefits:
+ * - Single source of truth (message data)
+ * - No conversion between streaming/persistent formats
+ * - Recovery is just "display active messages"
+ * - Archives naturally (status='archived')
  */
 export interface Session {
   id: string;
@@ -211,10 +215,8 @@ export interface Session {
   todos: Todo[];         // Per-session todo list (not global!)
   nextTodoId: number;    // Next todo ID for this session (starts at 1)
 
-  // Streaming state - persisted for session recovery
-  // Enables switching sessions during streaming and exact state restoration
-  streamingParts?: StreamingPart[];  // Parts being generated (with detailed status)
-  isStreaming?: boolean;              // Is message currently streaming
+  // Note: Streaming state derived from message.status, not stored here
+  // To check if streaming: messages.some(m => m.status === 'active')
 
   created: number;
   updated: number;
