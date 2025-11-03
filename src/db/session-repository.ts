@@ -173,14 +173,8 @@ export class SessionRepository {
     // Get todos
     const sessionTodos = await this.getSessionTodos(sessionId);
 
-    // Parse streaming state
-    const streamingParts = session.streamingParts
-      ? (JSON.parse(session.streamingParts) as StreamingPart[])
-      : undefined;
-    const isStreaming = session.isStreaming ? true : undefined;
-
-    // Build return object with conditional optional fields
-    const result = {
+    // Build return object
+    const result: SessionType = {
       id: session.id,
       title: session.title || undefined,
       provider: session.provider as ProviderId,
@@ -190,9 +184,7 @@ export class SessionRepository {
       nextTodoId: session.nextTodoId,
       created: session.created,
       updated: session.updated,
-      ...(streamingParts && { streamingParts }),
-      ...(isStreaming && { isStreaming }),
-    } as SessionType;
+    };
 
     return result;
   }
@@ -288,6 +280,7 @@ export class SessionRepository {
         role: msg.role as 'user' | 'assistant',
         content: parts.map((p) => JSON.parse(p.content) as MessagePart),
         timestamp: msg.timestamp,
+        status: (msg.status as 'active' | 'completed' | 'error' | 'abort') || 'completed',
       };
 
       if (msg.metadata) {
@@ -361,8 +354,9 @@ export class SessionRepository {
     usage?: TokenUsage,
     finishReason?: string,
     metadata?: MessageMetadata,
-    todoSnapshot?: TodoType[]
-  ): Promise<void> {
+    todoSnapshot?: TodoType[],
+    status?: 'active' | 'completed' | 'error' | 'abort'
+  ): Promise<string> {
     await retryOnBusy(async () => {
       const messageId = randomUUID();
       const now = Date.now();
@@ -385,6 +379,7 @@ export class SessionRepository {
         timestamp: now,
         ordering,
         finishReason: finishReason || null,
+        status: status || 'completed',
         metadata: metadata ? JSON.stringify(metadata) : null,
       });
 
@@ -443,6 +438,8 @@ export class SessionRepository {
         .set({ updated: now })
         .where(eq(sessions.id, sessionId));
       });
+
+      return messageId;
     });
   }
 
@@ -477,27 +474,44 @@ export class SessionRepository {
   }
 
   /**
-   * Update streaming state for session
-   * Persists the current streaming status and parts for session recovery
-   *
-   * Design: Enables session switching during streaming
-   * - Session A streaming → switch to B → state preserved → return to A → exact recovery
-   * - Survives app restarts (if database persisted)
-   * - Parts stored as JSON with full status (active, completed, aborted, failed)
+   * Update message parts (used during streaming)
+   * Replaces all parts for a message atomically
    */
-  async updateStreamingState(
-    sessionId: string,
-    isStreaming: boolean,
-    streamingParts: StreamingPart[]
+  async updateMessageParts(messageId: string, parts: MessagePart[]): Promise<void> {
+    await retryOnBusy(async () => {
+      await this.db.transaction(async (tx) => {
+        // Delete existing parts
+        await tx.delete(messageParts).where(eq(messageParts.messageId, messageId));
+
+        // Insert new parts
+        for (let i = 0; i < parts.length; i++) {
+          await tx.insert(messageParts).values({
+            id: randomUUID(),
+            messageId,
+            ordering: i,
+            type: parts[i].type,
+            content: JSON.stringify(parts[i]),
+          });
+        }
+      });
+    });
+  }
+
+  /**
+   * Update message status (used when streaming completes/aborts)
+   */
+  async updateMessageStatus(
+    messageId: string,
+    status: 'active' | 'completed' | 'error' | 'abort',
+    finishReason?: string
   ): Promise<void> {
     await this.db
-      .update(sessions)
+      .update(messages)
       .set({
-        isStreaming: isStreaming,
-        streamingParts: streamingParts.length > 0 ? JSON.stringify(streamingParts) : null,
-        updated: Date.now(),
+        status,
+        finishReason: finishReason || null,
       })
-      .where(eq(sessions.id, sessionId));
+      .where(eq(messages.id, messageId));
   }
 
   /**

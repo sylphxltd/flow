@@ -7,47 +7,31 @@ import type { ProviderId } from '../config/ai-config.js';
 import type { Todo } from './todo.types.js';
 
 /**
- * Message part - can be text, reasoning, tool call, or error
+ * Message Part - unified type for all content parts
+ *
+ * ALL parts have status field to track their lifecycle state:
+ * - 'active': Being generated/processed
+ * - 'completed': Successfully finished
+ * - 'error': Failed with error
+ * - 'abort': User cancelled
+ *
+ * Design: No separate "StreamingPart" type needed
+ * - Streaming parts ARE message parts
+ * - Status field tracks state during and after streaming
+ * - No conversion required between streaming/stored formats
+ *
+ * Multiple parts can be active simultaneously (parallel tool calls).
  */
 export type MessagePart =
-  | { type: 'text'; content: string }
-  | { type: 'reasoning'; content: string; duration?: number }
-  | {
-      type: 'tool';
-      name: string;
-      status: 'running' | 'completed' | 'failed';
-      duration?: number;
-      args?: unknown;
-      result?: unknown;
-      error?: string; // Error message if status is 'failed'
-    }
-  | { type: 'error'; error: string }; // Stream-level errors
-
-/**
- * Streaming Part - represents a unit of content being actively generated
- *
- * Extended version of MessagePart with streaming-specific fields and states.
- * Used during active streaming to track generation progress and state.
- *
- * Part States:
- * - Active: Content being generated (reasoning ongoing, tool running)
- * - Completed: Generation finished successfully
- * - Failed: Generation failed with error (tools only)
- * - Aborted: User cancelled during generation
- *
- * Multiple parts can stream in parallel (e.g., parallel tool calls).
- * When streaming completes, parts are converted to MessagePart[] for storage.
- */
-export type StreamingPart =
   | {
       type: 'text';
       content: string;
-      status: 'active' | 'completed' | 'aborted';
+      status: 'active' | 'completed' | 'error' | 'abort';
     }
   | {
       type: 'reasoning';
       content: string;
-      status: 'active' | 'completed' | 'aborted';
+      status: 'active' | 'completed' | 'error' | 'abort';
       duration?: number;
       startTime?: number;
     }
@@ -55,7 +39,7 @@ export type StreamingPart =
       type: 'tool';
       toolId: string;
       name: string;
-      status: 'running' | 'completed' | 'failed' | 'aborted';
+      status: 'active' | 'completed' | 'error' | 'abort';
       args?: unknown;
       result?: unknown;
       error?: string;
@@ -67,6 +51,12 @@ export type StreamingPart =
       error: string;
       status: 'completed';  // Errors are immediately completed
     };
+
+/**
+ * Legacy type alias for backwards compatibility
+ * @deprecated Use MessagePart directly
+ */
+export type StreamingPart = MessagePart;
 
 /**
  * File attachment
@@ -148,6 +138,7 @@ export interface SessionMessage {
   role: 'user' | 'assistant';
   content: MessagePart[];  // UI display (without system status)
   timestamp: number;
+  status?: 'active' | 'completed' | 'error' | 'abort';  // Message lifecycle state (default: 'completed')
   metadata?: MessageMetadata;  // System info for LLM context (not shown in UI)
   todoSnapshot?: Todo[];   // Full todo state at message creation time (for rewind + LLM context)
   attachments?: FileAttachment[];
