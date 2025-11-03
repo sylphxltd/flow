@@ -5,7 +5,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
-import { MouseProvider } from '@zenobius/ink-mouse';
 import { useAppStore } from './stores/app-store.js';
 import ProviderManagement from './screens/ProviderManagement.js';
 import ModelSelection from './screens/ModelSelection.js';
@@ -118,9 +117,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <MouseProvider>
-      <AppContent />
-    </MouseProvider>
-  );
+  return <AppContent />;
 }

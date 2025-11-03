@@ -475,9 +475,10 @@ export default function Dashboard() {
   ];
 
   return (
-    <FullScreen flexDirection="column">
-      {/* Header */}
-      <Box paddingX={2} paddingY={0}>
+    <MouseProvider>
+      <FullScreen flexDirection="column">
+        {/* Header */}
+        <Box paddingX={2} paddingY={0}>
         <Text bold color="#00D9FF">SYLPHX FLOW</Text>
         <Text dimColor>  Control Panel</Text>
         <Box flexGrow={1} />
@@ -546,6 +547,7 @@ export default function Dashboard() {
         <Box flexGrow={1} />
         <Text dimColor italic>Full-screen Interactive Panel</Text>
       </Box>
-    </FullScreen>
+      </FullScreen>
+    </MouseProvider>
   );
 }

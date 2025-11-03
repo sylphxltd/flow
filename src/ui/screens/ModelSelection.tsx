@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import { useAppStore } from '../stores/app-store.js';
@@ -36,11 +36,6 @@ export default function ModelSelection() {
   const { saveConfig } = useAIConfig();
 
   const configuredProviders = Object.keys(aiConfig?.providers || {}) as ProviderId[];
-
-  // Consume mouse events to prevent them from reaching TextInput
-  useInput((input, key) => {
-    // Mouse events will be consumed here and not reach TextInput
-  });
 
   // Load models when provider is selected
   useEffect(() => {

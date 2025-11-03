@@ -144,13 +144,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     addDebugLog,
   });
 
-  // Consume mouse events to prevent them from reaching TextInput
-  // Mouse events are ANSI escape sequences that start with \x1b[<
-  useInput((input, key) => {
-    // Mouse events will be consumed here and not reach TextInput
-    // We don't need to do anything with them in Chat screen
-  });
-
   // Options cache for selection mode and autocomplete
   const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
   const [currentlyLoading, setCurrentlyLoading] = useState<string | null>(null);
