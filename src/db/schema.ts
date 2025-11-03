@@ -145,8 +145,8 @@ export const messages = sqliteTable(
     timestamp: integer('timestamp').notNull(), // Unix timestamp (ms)
     ordering: integer('ordering').notNull(), // For display order
     finishReason: text('finish_reason'), // 'stop' | 'length' | 'tool-calls' | 'error'
-    // Streaming state - messages can be in active streaming state
-    isStreaming: integer('is_streaming', { mode: 'boolean' }), // true while streaming, false when complete
+    // Message status - unified state for all messages
+    status: text('status').notNull().default('completed'), // 'active' | 'completed' | 'error' | 'abort'
     // Metadata stored as JSON: { cpu?: string, memory?: string }
     metadata: text('metadata'), // JSON string
   },
@@ -154,7 +154,7 @@ export const messages = sqliteTable(
     sessionIdx: index('idx_messages_session').on(table.sessionId),
     orderingIdx: index('idx_messages_ordering').on(table.sessionId, table.ordering),
     timestampIdx: index('idx_messages_timestamp').on(table.timestamp),
-    isStreamingIdx: index('idx_messages_is_streaming').on(table.isStreaming),
+    statusIdx: index('idx_messages_status').on(table.status),
   })
 );
 
@@ -162,6 +162,8 @@ export const messages = sqliteTable(
  * Message parts table - Content parts of messages
  * Stores text, reasoning, tool calls, errors
  * Content structure varies by type, stored as JSON
+ *
+ * ALL parts have unified status field: 'active' | 'completed' | 'error' | 'abort'
  */
 export const messageParts = sqliteTable(
   'message_parts',
@@ -172,11 +174,11 @@ export const messageParts = sqliteTable(
       .references(() => messages.id, { onDelete: 'cascade' }),
     ordering: integer('ordering').notNull(), // Order within message
     type: text('type').notNull(), // 'text' | 'reasoning' | 'tool' | 'error'
-    // Content structure depends on type:
-    // - text: { content: string }
-    // - reasoning: { content: string, duration?: number }
-    // - tool: { name: string, status: string, duration?: number, args?: any, result?: any, error?: string }
-    // - error: { error: string }
+    // Content structure (JSON) - ALL parts include status field:
+    // - text: { type: 'text', content: string, status: 'active' | 'completed' | ... }
+    // - reasoning: { type: 'reasoning', content: string, status: ..., duration?: number }
+    // - tool: { type: 'tool', name: string, status: ..., duration?: number, args?: any, result?: any, error?: string }
+    // - error: { type: 'error', error: string, status: 'completed' }
     content: text('content').notNull(), // JSON string
   },
   (table) => ({
