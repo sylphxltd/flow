@@ -35,33 +35,34 @@ export class DrizzleDatabase {
 
       const dbPath = path.join(memoryDir, 'memory.db');
 
-      // Convert Windows backslashes to forward slashes for file: URL
-      // libSQL expects forward slashes even on Windows
+      // Pre-create empty database file to ensure it exists
+      // This helps libSQL/SQLite open it successfully on Windows
+      try {
+        if (!fs.existsSync(dbPath)) {
+          fs.writeFileSync(dbPath, '', { flag: 'wx' });
+        }
+      } catch (fileError) {
+        // File already exists or cannot be created
+        // Continue anyway, libSQL will try to open it
+      }
+
+      // For local file databases, normalize path for cross-platform compatibility
+      // Use forward slashes even on Windows as libSQL expects this format
       const normalizedPath = dbPath.replace(/\\/g, '/');
 
-      // Use file:// protocol (double slash) and add third slash for absolute paths on Windows
-      // This ensures proper URL formatting: file:///C:/Users/... on Windows
-      const fileUrl = process.platform === 'win32'
-        ? `file:///${normalizedPath}`
-        : `file:${normalizedPath}`;
-
       this.client = createClient({
-        url: fileUrl,
+        url: `file:${normalizedPath}`,
       });
 
       this.db = drizzle(this.client, { schema });
     } catch (error) {
       const dbPath = path.join(process.cwd(), '.sylphx-flow', 'memory.db');
-      const normalizedPath = dbPath.replace(/\\/g, '/');
-      const fileUrl = process.platform === 'win32'
-        ? `file:///${normalizedPath}`
-        : `file:${normalizedPath}`;
 
       throw new ConnectionError(
         'Failed to initialize database connection',
         {
-          url: fileUrl,
-          normalizedPath,
+          url: `file:${dbPath}`,
+          dbPath,
           cwd: process.cwd(),
           platform: process.platform,
         },
