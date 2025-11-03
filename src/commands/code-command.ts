@@ -8,7 +8,8 @@ import { createAIStream } from '../core/ai-sdk.js';
 import { processStream } from '../core/stream-handler.js';
 import { createHeadlessDisplay } from '../core/headless-display.js';
 import { getOrCreateSession, showModelToolSupportError } from '../core/session-service.js';
-import { addMessage, saveSession } from '../utils/session-manager.js';
+import { addMessage } from '../utils/session-manager.js';
+import { getSessionRepository } from '../db/database.js';
 import App from '../ui/App.js';
 import { ErrorBoundary } from '../ui/components/ErrorBoundary.js';
 import { getDatabase } from '../db/database.js';
@@ -75,8 +76,16 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
 
   const model = providerInstance.createClient(providerConfig, session.model);
 
-  // Add user message to session
+  // Add user message to session (in-memory and database)
   const updatedSession = addMessage(session, 'user', prompt);
+
+  // Save user message to database
+  const repository = await getSessionRepository();
+  await repository.addMessage(
+    session.id,
+    'user',
+    [{ type: 'text', content: prompt }]
+  );
 
   // Show user message (unless quiet)
   if (!options.quiet) {
@@ -117,9 +126,15 @@ async function runHeadless(prompt: string, options: any): Promise<void> {
       process.exit(1);
     }
 
-    // Add assistant message to session and save
+    // Add assistant message to session and save to database
     const finalSession = addMessage(updatedSession, 'assistant', fullResponse);
-    await saveSession(finalSession);
+
+    // Save assistant message to database
+    await repository.addMessage(
+      finalSession.id,
+      'assistant',
+      [{ type: 'text', content: fullResponse }]
+    );
 
     if (options.verbose) {
       console.error(chalk.dim(`\nSession: ${finalSession.id}`));

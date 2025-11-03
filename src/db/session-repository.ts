@@ -11,7 +11,7 @@
  * - Efficient updates: Update specific fields without rewriting entire file
  */
 
-import { eq, desc, and, like, sql } from 'drizzle-orm';
+import { eq, desc, and, like, sql, inArray } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { randomUUID } from 'node:crypto';
 import {
@@ -154,6 +154,7 @@ export class SessionRepository {
   /**
    * Get messages for a session
    * Assembles message parts, attachments, usage into SessionMessage format
+   * OPTIMIZED: Batch queries instead of N+1 queries
    */
   private async getSessionMessages(sessionId: string): Promise<SessionMessage[]> {
     // Get all messages for session
@@ -163,80 +164,122 @@ export class SessionRepository {
       .where(eq(messages.sessionId, sessionId))
       .orderBy(messages.ordering);
 
-    // For each message, get parts, attachments, usage, todo snapshots
-    const fullMessages = await Promise.all(
-      messageRecords.map(async (msg) => {
-        // Get message parts
-        const parts = await this.db
-          .select()
-          .from(messageParts)
-          .where(eq(messageParts.messageId, msg.id))
-          .orderBy(messageParts.ordering);
+    if (messageRecords.length === 0) {
+      return [];
+    }
 
-        // Get attachments
-        const attachments = await this.db
-          .select()
-          .from(messageAttachments)
-          .where(eq(messageAttachments.messageId, msg.id));
+    // Batch fetch all related data (MASSIVE performance improvement!)
+    const messageIds = messageRecords.map((m) => m.id);
 
-        // Get usage (if exists)
-        const [usage] = await this.db
-          .select()
-          .from(messageUsage)
-          .where(eq(messageUsage.messageId, msg.id))
-          .limit(1);
+    // Fetch all parts, attachments, usage, snapshots in parallel (OPTIMIZED!)
+    const [allParts, allAttachments, allUsage, allSnapshots] = await Promise.all([
+      // Get all message parts for all messages
+      this.db
+        .select()
+        .from(messageParts)
+        .where(inArray(messageParts.messageId, messageIds))
+        .orderBy(messageParts.ordering),
 
-        // Get todo snapshot
-        const todoSnap = await this.db
-          .select()
-          .from(messageTodoSnapshots)
-          .where(eq(messageTodoSnapshots.messageId, msg.id))
-          .orderBy(messageTodoSnapshots.ordering);
+      // Get all attachments for all messages
+      this.db
+        .select()
+        .from(messageAttachments)
+        .where(inArray(messageAttachments.messageId, messageIds)),
 
-        // Assemble SessionMessage
-        const sessionMessage: SessionMessage = {
-          role: msg.role as 'user' | 'assistant',
-          content: parts.map((p) => JSON.parse(p.content) as MessagePart),
-          timestamp: msg.timestamp,
+      // Get all usage for all messages
+      this.db
+        .select()
+        .from(messageUsage)
+        .where(inArray(messageUsage.messageId, messageIds)),
+
+      // Get all todo snapshots for all messages
+      this.db
+        .select()
+        .from(messageTodoSnapshots)
+        .where(inArray(messageTodoSnapshots.messageId, messageIds))
+        .orderBy(messageTodoSnapshots.ordering),
+    ]);
+
+    // Group by message ID for O(1) lookup
+    const partsByMessage = new Map<string, typeof allParts>();
+    const attachmentsByMessage = new Map<string, typeof allAttachments>();
+    const usageByMessage = new Map<string, (typeof allUsage)[0]>();
+    const snapshotsByMessage = new Map<string, typeof allSnapshots>();
+
+    for (const part of allParts) {
+      if (!partsByMessage.has(part.messageId)) {
+        partsByMessage.set(part.messageId, []);
+      }
+      partsByMessage.get(part.messageId)!.push(part);
+    }
+
+    for (const attachment of allAttachments) {
+      if (!attachmentsByMessage.has(attachment.messageId)) {
+        attachmentsByMessage.set(attachment.messageId, []);
+      }
+      attachmentsByMessage.get(attachment.messageId)!.push(attachment);
+    }
+
+    for (const usage of allUsage) {
+      usageByMessage.set(usage.messageId, usage);
+    }
+
+    for (const snapshot of allSnapshots) {
+      if (!snapshotsByMessage.has(snapshot.messageId)) {
+        snapshotsByMessage.set(snapshot.messageId, []);
+      }
+      snapshotsByMessage.get(snapshot.messageId)!.push(snapshot);
+    }
+
+    // Assemble messages using grouped data
+    const fullMessages = messageRecords.map((msg) => {
+      const parts = partsByMessage.get(msg.id) || [];
+      const attachments = attachmentsByMessage.get(msg.id) || [];
+      const usage = usageByMessage.get(msg.id);
+      const todoSnap = snapshotsByMessage.get(msg.id) || [];
+
+      const sessionMessage: SessionMessage = {
+        role: msg.role as 'user' | 'assistant',
+        content: parts.map((p) => JSON.parse(p.content) as MessagePart),
+        timestamp: msg.timestamp,
+      };
+
+      if (msg.metadata) {
+        sessionMessage.metadata = JSON.parse(msg.metadata) as MessageMetadata;
+      }
+
+      if (attachments.length > 0) {
+        sessionMessage.attachments = attachments.map((a) => ({
+          path: a.path,
+          relativePath: a.relativePath,
+          size: a.size || undefined,
+        }));
+      }
+
+      if (usage) {
+        sessionMessage.usage = {
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
         };
+      }
 
-        if (msg.metadata) {
-          sessionMessage.metadata = JSON.parse(msg.metadata) as MessageMetadata;
-        }
+      if (msg.finishReason) {
+        sessionMessage.finishReason = msg.finishReason;
+      }
 
-        if (attachments.length > 0) {
-          sessionMessage.attachments = attachments.map((a) => ({
-            path: a.path,
-            relativePath: a.relativePath,
-            size: a.size || undefined,
-          }));
-        }
+      if (todoSnap.length > 0) {
+        sessionMessage.todoSnapshot = todoSnap.map((t) => ({
+          id: t.todoId,
+          content: t.content,
+          activeForm: t.activeForm,
+          status: t.status as 'pending' | 'in_progress' | 'completed',
+          ordering: t.ordering,
+        }));
+      }
 
-        if (usage) {
-          sessionMessage.usage = {
-            promptTokens: usage.promptTokens,
-            completionTokens: usage.completionTokens,
-            totalTokens: usage.totalTokens,
-          };
-        }
-
-        if (msg.finishReason) {
-          sessionMessage.finishReason = msg.finishReason;
-        }
-
-        if (todoSnap.length > 0) {
-          sessionMessage.todoSnapshot = todoSnap.map((t) => ({
-            id: t.todoId,
-            content: t.content,
-            activeForm: t.activeForm,
-            status: t.status as 'pending' | 'in_progress' | 'completed',
-            ordering: t.ordering,
-          }));
-        }
-
-        return sessionMessage;
-      })
-    );
+      return sessionMessage;
+    });
 
     return fullMessages;
   }
@@ -434,6 +477,26 @@ export class SessionRepository {
       .where(eq(messages.sessionId, sessionId));
 
     return count;
+  }
+
+  /**
+   * Get most recently updated session (for headless mode continuation)
+   * Returns the last active session
+   */
+  async getLastSession(): Promise<SessionType | null> {
+    // Get most recent session by updated timestamp
+    const [lastSession] = await this.db
+      .select()
+      .from(sessions)
+      .orderBy(desc(sessions.updated))
+      .limit(1);
+
+    if (!lastSession) {
+      return null;
+    }
+
+    // Load full session data
+    return this.getSessionById(lastSession.id);
   }
 
   /**

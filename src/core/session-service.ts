@@ -1,15 +1,16 @@
 /**
  * Session Service
  * Centralized session management for headless mode
+ * Uses database for persistence
  */
 
 import chalk from 'chalk';
 import { loadAIConfig, getConfiguredProviders } from '../config/ai-config.js';
 import type { ProviderId, ProviderConfig } from '../config/ai-config.js';
-import { createSession, loadLastSession } from '../utils/session-manager.js';
 import type { Session } from '../types/session.types.js';
 import { getProvider } from '../providers/index.js';
 import { fetchModels } from '../utils/ai-model-fetcher.js';
+import { getSessionRepository } from '../db/database.js';
 
 /**
  * Get default model for a provider
@@ -72,9 +73,12 @@ export async function getOrCreateSession(continueSession: boolean): Promise<Sess
     return null;
   }
 
+  // Get session repository
+  const repository = await getSessionRepository();
+
   // Try to continue last session
   if (continueSession) {
-    const lastSession = await loadLastSession();
+    const lastSession = await repository.getLastSession();
     if (lastSession) {
       console.error(chalk.dim(`Continuing session: ${lastSession.id}`));
       console.error(chalk.dim(`Messages: ${lastSession.messages.length}\n`));
@@ -90,8 +94,8 @@ export async function getOrCreateSession(continueSession: boolean): Promise<Sess
     return null;
   }
 
-  // Create new session
-  return await createSession(providerId, modelName);
+  // Create new session in database
+  return await repository.createSession(providerId, modelName);
 }
 
 /**

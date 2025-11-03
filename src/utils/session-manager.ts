@@ -135,7 +135,8 @@ export async function loadLastSession(): Promise<Session | null> {
 }
 
 /**
- * Add message to session
+ * Add message to session (in-memory helper for headless mode)
+ * Converts string content to MessagePart[] format
  */
 export function addMessage(
   session: Session,
@@ -148,7 +149,7 @@ export function addMessage(
       ...session.messages,
       {
         role,
-        content,
+        content: [{ type: 'text', content }], // Convert to MessagePart[]
         timestamp: Date.now(),
       },
     ],
