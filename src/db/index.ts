@@ -39,17 +39,29 @@ export class DrizzleDatabase {
       // libSQL expects forward slashes even on Windows
       const normalizedPath = dbPath.replace(/\\/g, '/');
 
+      // Use file:// protocol (double slash) and add third slash for absolute paths on Windows
+      // This ensures proper URL formatting: file:///C:/Users/... on Windows
+      const fileUrl = process.platform === 'win32'
+        ? `file:///${normalizedPath}`
+        : `file:${normalizedPath}`;
+
       this.client = createClient({
-        url: `file:${normalizedPath}`,
+        url: fileUrl,
       });
 
       this.db = drizzle(this.client, { schema });
     } catch (error) {
       const dbPath = path.join(process.cwd(), '.sylphx-flow', 'memory.db');
+      const normalizedPath = dbPath.replace(/\\/g, '/');
+      const fileUrl = process.platform === 'win32'
+        ? `file:///${normalizedPath}`
+        : `file:${normalizedPath}`;
+
       throw new ConnectionError(
         'Failed to initialize database connection',
         {
-          url: `file:${dbPath}`,
+          url: fileUrl,
+          normalizedPath,
           cwd: process.cwd(),
           platform: process.platform,
         },

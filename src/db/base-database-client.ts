@@ -38,17 +38,29 @@ export abstract class BaseDatabaseClient<TSchema extends Record<string, unknown>
       // libSQL expects forward slashes even on Windows
       const normalizedPath = dbPath.replace(/\\/g, '/');
 
+      // Use file:// protocol (double slash) and add third slash for absolute paths on Windows
+      // This ensures proper URL formatting: file:///C:/Users/... on Windows
+      const fileUrl = process.platform === 'win32'
+        ? `file:///${normalizedPath}`
+        : `file:${normalizedPath}`;
+
       this.client = createClient({
-        url: `file:${normalizedPath}`,
+        url: fileUrl,
       });
 
       this.db = drizzle(this.client, { schema });
     } catch (error) {
       const dbPath = path.join(process.cwd(), '.sylphx-flow', `${dbName}.db`);
+      const normalizedPath = dbPath.replace(/\\/g, '/');
+      const fileUrl = process.platform === 'win32'
+        ? `file:///${normalizedPath}`
+        : `file:${normalizedPath}`;
+
       throw new ConnectionError(
         `Failed to initialize ${dbName} database connection`,
         {
-          url: `file:${dbPath}`,
+          url: fileUrl,
+          normalizedPath,
           cwd: process.cwd(),
           platform: process.platform,
         },
