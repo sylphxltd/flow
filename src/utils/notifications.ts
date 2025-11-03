@@ -3,19 +3,23 @@
  * Provides terminal and OS-level notifications for AI responses
  */
 
+import { playNotificationSound } from './audio-player.js';
+
 // Terminal notification with sound
 export function sendTerminalNotification(title: string, message: string, options?: {
-  sound?: string;
+  sound?: boolean;
   duration?: number;
 }) {
-  const { sound = 'glass', duration = 3000 } = options || {};
+  const { sound = true, duration = 3000 } = options || {};
 
-  // Play system sound (macOS)
-  if (process.platform === 'darwin') {
-    const { spawn } = require('child_process');
-    spawn('afplay', ['/System/Library/Sounds/Glass.aiff'], {
-      stdio: 'ignore'
-    }).unref();
+  // Play system sound using cross-platform audio player
+  if (sound) {
+    playNotificationSound().catch((error) => {
+      // Fail silently - don't crash on sound errors
+      if (process.env.DEBUG) {
+        console.error('[Notifications] Failed to play sound:', error);
+      }
+    });
   }
 
   // Terminal bell only (no visual output to avoid interfering with Ink UI)
@@ -62,12 +66,11 @@ export async function sendOSNotification(title: string, message: string, options
         
         proc.on('exit', (code) => {
           if (code === 0) {
-            // Play sound separately if needed
+            // Play sound separately if needed using cross-platform audio player
             if (sound) {
-              spawn('afplay', ['/System/Library/Sounds/Glass.aiff'], { 
-                stdio: 'ignore',
-                detached: true 
-              }).unref();
+              playNotificationSound().catch(() => {
+                // Ignore sound errors
+              });
             }
             resolve();
           } else {
