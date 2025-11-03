@@ -73,6 +73,11 @@ CRITICAL REQUIREMENTS:
 5. Include all context that would be needed to continue this conversation naturally
 6. Use clear markdown formatting with sections and bullet points
 7. If code was discussed or written, include the essential parts or describe what was implemented
+8. **CRITICAL**: If there is ongoing work or tasks in progress, create a section called "## Current Work" that describes:
+   - What was being worked on when the conversation was compacted
+   - What the next steps should be
+   - Any pending tasks or unfinished work
+   - The current state of the implementation
 
 The summary will be used to start a fresh conversation while maintaining full context.
 
@@ -109,29 +114,21 @@ Please provide a detailed, structured summary now:`;
         currentSession.model
       );
 
-      // Get the new session and add summary message
-      const { useAppStore } = await import('../../stores/app-store.js');
-      const store = useAppStore.getState();
-
-      // Add summary as a system message (user message with clear indication it's a summary)
-      store.addMessage(
-        newSessionId,
-        'user',
-        [
-          {
-            type: 'text',
-            content: `# Previous Conversation Summary\n\n${summary}\n\n---\n\n*This is a summary of our previous conversation. You can reference any details from above as we continue our discussion.*`,
-          },
-        ]
-      );
-
       // Switch to new session
       context.setCurrentSession(newSessionId);
 
       const messageCount = currentSession.messages.length;
       const sessionTitle = currentSession.title || 'Untitled session';
 
-      return `✓ Compacted session "${sessionTitle}" (${messageCount} messages)\n✓ Created new session with detailed summary\n✓ Switched to new session\n\nYou can now continue the conversation with full context preserved.`;
+      // Format summary as a user message and trigger AI response
+      const summaryMessage = `This session is being continued from a previous conversation that ran out of context. The conversation is summarized below:
+${summary}`;
+
+      // Send summary and automatically trigger AI response
+      // This allows the LLM to acknowledge the summary and continue working
+      await context.triggerAIResponse(summaryMessage);
+
+      return `✓ Compacted session "${sessionTitle}" (${messageCount} messages)\n✓ Created new session with detailed summary\n✓ Switched to new session\n✓ AI is processing the summary and will continue working...`;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       context.addLog(`[Compact] Error: ${errorMsg}`);

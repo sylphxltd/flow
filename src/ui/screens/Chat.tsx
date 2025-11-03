@@ -162,6 +162,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       }
       addMessage(commandSessionRef.current, 'assistant', content);
     },
+    triggerAIResponse: async (message: string, attachments?: Array<{ path: string; relativePath: string; size?: number }>) => {
+      // Clear input
+      setInput('');
+      // Call the shared helper
+      await sendUserMessageToAI(message, attachments);
+    },
     waitForInput: (options) => {
       return new Promise((resolve) => {
         addLog(`[waitForInput] Waiting for ${options.type} input`);
@@ -434,6 +440,213 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setSelectedFileIndex(0);
   }, [filteredFileInfo.files.length]);
 
+  // Helper function to send user message and trigger AI response
+  // Used by both handleSubmit and triggerAIResponse
+  const sendUserMessageToAI = useCallback(async (userMessage: string, attachments?: FileAttachment[]) => {
+    // Block if no provider configured
+    if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
+      if (currentSessionId) {
+        addMessage(currentSessionId, 'user', userMessage, attachments);
+        addMessage(currentSessionId, 'assistant', 'No AI provider configured. Use /provider to configure a provider first.');
+      }
+      return;
+    }
+
+    setIsStreaming(true);
+    setStreamParts([]);
+    addLog('Starting message send...');
+
+    // Create abort controller for this stream
+    abortControllerRef.current = new AbortController();
+
+    // Helper to flush accumulated chunks
+    const flushStreamBuffer = () => {
+      const buffer = streamBufferRef.current;
+      if (buffer.chunks.length === 0) return;
+
+      const accumulatedText = buffer.chunks.join('');
+      buffer.chunks = [];
+
+      setStreamParts((prev) => {
+        const newParts = [...prev];
+        const lastPart = newParts[newParts.length - 1];
+
+        // If last part is text, append to it
+        if (lastPart && lastPart.type === 'text') {
+          newParts[newParts.length - 1] = {
+            type: 'text',
+            content: lastPart.content + accumulatedText
+          };
+        } else {
+          // Otherwise create new text part
+          newParts.push({ type: 'text', content: accumulatedText });
+        }
+        return newParts;
+      });
+    };
+
+    try {
+      await sendMessage(
+        userMessage,
+        // onChunk - text streaming (batched for performance)
+        (chunk) => {
+          // Accumulate chunks in buffer
+          streamBufferRef.current.chunks.push(chunk);
+
+          // Clear existing timeout
+          if (streamBufferRef.current.timeout) {
+            clearTimeout(streamBufferRef.current.timeout);
+          }
+
+          // Schedule flush after 50ms of inactivity (debounce)
+          streamBufferRef.current.timeout = setTimeout(() => {
+            flushStreamBuffer();
+            streamBufferRef.current.timeout = null;
+          }, 50);
+        },
+        // onToolCall - tool execution started
+        (toolCallId, toolName, args) => {
+          setStreamParts((prev) => [
+            ...prev,
+            { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() },
+          ]);
+        },
+        // onToolResult - tool execution completed
+        (toolCallId, toolName, result, duration) => {
+          setStreamParts((prev) =>
+            prev.map((part) =>
+              part.type === 'tool' && part.toolId === toolCallId
+                ? { ...part, status: 'completed', duration, result }
+                : part
+            )
+          );
+        },
+        // onComplete - streaming finished
+        async () => {
+          // Flush any remaining buffered chunks
+          if (streamBufferRef.current.timeout) {
+            clearTimeout(streamBufferRef.current.timeout);
+            streamBufferRef.current.timeout = null;
+          }
+          flushStreamBuffer();
+
+          setIsStreaming(false);
+          setStreamParts([]); // Clear streaming parts - they're now in message history
+
+          // Generate title with streaming if this is first message
+          if (currentSessionId) {
+            // Get fresh session from store (currentSession might be stale)
+            const sessions = useAppStore.getState().sessions;
+            const freshSession = sessions.find(s => s.id === currentSessionId);
+
+            if (freshSession) {
+              const userMessageCount = freshSession.messages.filter(m => m.role === 'user').length;
+              const hasTitle = !!freshSession.title && freshSession.title !== 'New Chat';
+
+              const isFirstMessage = userMessageCount === 1;
+              if (isFirstMessage && !hasTitle) {
+                const { generateSessionTitleWithStreaming } = await import('../../utils/session-title.js');
+                const provider = freshSession.provider;
+                const modelName = freshSession.model;
+                const providerConfig = aiConfig?.providers?.[provider];
+
+                if (providerConfig) {
+                  setIsTitleStreaming(true);
+                  setStreamingTitle('');
+
+                  try {
+                    const finalTitle = await generateSessionTitleWithStreaming(
+                      userMessage,
+                      provider,
+                      modelName,
+                      providerConfig,
+                      (chunk) => {
+                        setStreamingTitle(prev => prev + chunk);
+                      }
+                    );
+
+                    setIsTitleStreaming(false);
+                    updateSessionTitle(currentSessionId, finalTitle);
+                  } catch (error) {
+                    // Only log errors in debug mode
+                    if (process.env.DEBUG) {
+                      addLog(`[Title] Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+                    }
+                    setIsTitleStreaming(false);
+                    // Fallback to simple title
+                    const { generateSessionTitle } = await import('../../utils/session-title.js');
+                    const title = generateSessionTitle(userMessage);
+                    updateSessionTitle(currentSessionId, title);
+                  }
+                }
+              }
+            }
+          }
+        },
+        undefined, // onUserInputRequest
+        attachments, // attachments
+        // onReasoningStart
+        () => {
+          setStreamParts((prev) => [
+            ...prev,
+            { type: 'reasoning', content: '', startTime: Date.now() }
+          ]);
+        },
+        // onReasoningDelta
+        (text) => {
+          setStreamParts((prev) => {
+            const newParts = [...prev];
+            const lastPart = newParts[newParts.length - 1];
+            if (lastPart && lastPart.type === 'reasoning') {
+              newParts[newParts.length - 1] = {
+                ...lastPart,
+                content: lastPart.content + text
+              };
+            }
+            return newParts;
+          });
+        },
+        // onReasoningEnd
+        (duration) => {
+          setStreamParts((prev) => {
+            const newParts = [...prev];
+            const lastPart = newParts[newParts.length - 1];
+            if (lastPart && lastPart.type === 'reasoning') {
+              newParts[newParts.length - 1] = {
+                ...lastPart,
+                completed: true,
+                duration
+              };
+            }
+            return newParts;
+          });
+        },
+        // onToolError
+        (toolCallId, toolName, error, duration) => {
+          setStreamParts((prev) =>
+            prev.map((part) =>
+              part.type === 'tool' && part.toolId === toolCallId
+                ? { ...part, status: 'failed', error, duration }
+                : part
+            )
+          );
+        },
+        // onError
+        (error) => {
+          setStreamParts((prev) => [
+            ...prev,
+            { type: 'error', error }
+          ]);
+        },
+        abortControllerRef.current.signal
+      );
+    } catch (error) {
+      addLog(`[sendUserMessageToAI] Error: ${error instanceof Error ? error.message : String(error)}`);
+      setIsStreaming(false);
+      setStreamParts([]);
+    }
+  }, [aiConfig, currentSessionId, sendMessage, addMessage, addLog, updateSessionTitle, notificationSettings]);
+
   // PERFORMANCE: Memoize handleSubmit to provide stable reference to child components
   const handleSubmit = useCallback(async (value: string) => {
     if (!value.trim()) return;
@@ -525,230 +738,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // For regular messages, clear input after getting the value
     setInput('');
 
-    // Regular message - send to AI
-    // Block if no provider configured
-    if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
-      if (currentSessionId) {
-        addMessage(currentSessionId, 'user', userMessage);
-        addMessage(currentSessionId, 'assistant', 'No AI provider configured. Use /provider to configure a provider first.');
-      }
-      return;
-    }
-
-    // Note: Todo context is now injected via prepareStep in ai-sdk.ts
-    // This ensures todos are fresh on every step, not just the initial message
-    const messageWithContext = userMessage;
-
     // Get attachments for this message
     const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];
 
     // Clear pending attachments after capturing them
     clearAttachments();
 
-    setIsStreaming(true);
-    setStreamParts([]);
-    addLog('Starting message send...');
-
-    // Create abort controller for this stream
-    abortControllerRef.current = new AbortController();
-
-    // Helper to flush accumulated chunks
-    const flushStreamBuffer = () => {
-      const buffer = streamBufferRef.current;
-      if (buffer.chunks.length === 0) return;
-
-      const accumulatedText = buffer.chunks.join('');
-      buffer.chunks = [];
-
-      setStreamParts((prev) => {
-        const newParts = [...prev];
-        const lastPart = newParts[newParts.length - 1];
-
-        // If last part is text, append to it
-        if (lastPart && lastPart.type === 'text') {
-          newParts[newParts.length - 1] = {
-            type: 'text',
-            content: lastPart.content + accumulatedText
-          };
-        } else {
-          // Otherwise create new text part
-          newParts.push({ type: 'text', content: accumulatedText });
-        }
-        return newParts;
-      });
-    };
-
-    try {
-      await sendMessage(
-        messageWithContext,
-        // onChunk - text streaming (batched for performance)
-        (chunk) => {
-          // Accumulate chunks in buffer
-          streamBufferRef.current.chunks.push(chunk);
-
-          // Clear existing timeout
-          if (streamBufferRef.current.timeout) {
-            clearTimeout(streamBufferRef.current.timeout);
-          }
-
-          // Schedule flush after 50ms of inactivity (debounce)
-          streamBufferRef.current.timeout = setTimeout(() => {
-            flushStreamBuffer();
-            streamBufferRef.current.timeout = null;
-          }, 50);
-        },
-      // onToolCall - tool execution started
-      (toolCallId, toolName, args) => {
-        setStreamParts((prev) => [
-          ...prev,
-          { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() },
-        ]);
-      },
-      // onToolResult - tool execution completed
-      (toolCallId, toolName, result, duration) => {
-        setStreamParts((prev) =>
-          prev.map((part) =>
-            part.type === 'tool' && part.toolId === toolCallId
-              ? { ...part, status: 'completed', duration, result }
-              : part
-          )
-        );
-      },
-        // onComplete - streaming finished
-        async () => {
-          // Flush any remaining buffered chunks
-          if (streamBufferRef.current.timeout) {
-            clearTimeout(streamBufferRef.current.timeout);
-            streamBufferRef.current.timeout = null;
-          }
-          flushStreamBuffer();
-
-          setIsStreaming(false);
-          setStreamParts([]); // Clear streaming parts - they're now in message history
-
-          // Generate title with streaming if this is first message
-          if (currentSessionId) {
-            // Get fresh session from store (currentSession might be stale)
-            const sessions = useAppStore.getState().sessions;
-            const freshSession = sessions.find(s => s.id === currentSessionId);
-
-            if (freshSession) {
-              const userMessageCount = freshSession.messages.filter(m => m.role === 'user').length;
-              const hasTitle = !!freshSession.title && freshSession.title !== 'New Chat';
-
-              const isFirstMessage = userMessageCount === 1;
-              if (isFirstMessage && !hasTitle) {
-                const { generateSessionTitleWithStreaming } = await import('../../utils/session-title.js');
-                const provider = freshSession.provider;
-                const modelName = freshSession.model;
-                const providerConfig = aiConfig?.providers?.[provider];
-
-                if (providerConfig) {
-                  setIsTitleStreaming(true);
-                  setStreamingTitle('');
-
-                  try {
-                    const finalTitle = await generateSessionTitleWithStreaming(
-                      userMessage,
-                      provider,
-                      modelName,
-                      providerConfig,
-                      (chunk) => {
-                        setStreamingTitle(prev => prev + chunk);
-                      }
-                    );
-
-                    setIsTitleStreaming(false);
-                    updateSessionTitle(currentSessionId, finalTitle);
-                  } catch (error) {
-                    // Only log errors in debug mode
-                    if (process.env.DEBUG) {
-                      addLog(`[Title] Error: ${error instanceof Error ? error.message : 'Unknown'}`);
-                    }
-                    setIsTitleStreaming(false);
-                    // Fallback to simple title
-                    const { generateSessionTitle } = await import('../../utils/session-title.js');
-                    const title = generateSessionTitle(userMessage);
-                    updateSessionTitle(currentSessionId, title);
-                  }
-                }
-              }
-            }
-          }
-        },
-        // NOTE: onUserInputRequest removed - handler is set globally in useEffect
-        undefined, // onUserInputRequest
-        attachmentsForMessage.length > 0 ? attachmentsForMessage : undefined, // attachments
-        // onReasoningStart - reasoning started
-        () => {
-          setStreamParts((prev) => [...prev, { type: 'reasoning', content: '', completed: false, startTime: Date.now() }]);
-        },
-        // onReasoningDelta - reasoning chunk
-        (chunk) => {
-          setStreamParts((prev) => {
-            const newParts = [...prev];
-            const lastPart = newParts[newParts.length - 1];
-
-            if (lastPart && lastPart.type === 'reasoning' && !lastPart.completed) {
-              newParts[newParts.length - 1] = {
-                type: 'reasoning',
-                content: lastPart.content + chunk,
-                completed: false,
-                startTime: lastPart.startTime // Preserve startTime for live duration tracking
-              };
-            }
-            return newParts;
-          });
-        },
-        // onReasoningEnd - reasoning finished
-        (duration) => {
-          setStreamParts((prev) => {
-            const newParts = [...prev];
-
-            // Find the last uncompleted reasoning part
-            for (let i = newParts.length - 1; i >= 0; i--) {
-              if (newParts[i].type === 'reasoning' && 'completed' in newParts[i] && !newParts[i].completed) {
-                // Mark as completed with duration
-                newParts[i] = {
-                  ...newParts[i],
-                  completed: true,
-                  duration
-                };
-                break;
-              }
-            }
-            return newParts;
-          });
-        },
-        // onToolError - tool failed
-        (toolCallId, toolName, error, duration) => {
-          setStreamParts((prev) => {
-            const newParts = [...prev];
-            const toolPart = newParts.find(p => p.type === 'tool' && p.toolId === toolCallId);
-
-            if (toolPart && toolPart.type === 'tool') {
-              toolPart.status = 'failed';
-              toolPart.error = error;
-              toolPart.duration = duration;
-            }
-
-            return [...newParts];
-          });
-        },
-        // onError - stream error
-        (error) => {
-          setStreamParts((prev) => [...prev, { type: 'error', error }]);
-        },
-        abortControllerRef.current.signal // Pass abort signal to sendMessage
-      );
-    } catch (error) {
-      // Error is already handled in useChat hook and added as assistant message
-      // This catch prevents unhandled promise rejection
-      // Only log in debug mode
-      if (process.env.DEBUG) {
-        addLog(`[handleSubmit] Caught error (already handled in useChat): ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
+    // Regular message - send to AI using shared helper
+    await sendUserMessageToAI(userMessage, attachmentsForMessage);
   }, [
     isStreaming,
     pendingInput,
@@ -760,16 +757,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     filteredCommands,
     skipNextSubmit,
     addLog,
-    aiConfig,
-    sendMessage,
     clearAttachments,
     pendingAttachments,
     setInput,
-    setIsStreaming,
-    setStreamParts,
-    setIsTitleStreaming,
-    setStreamingTitle,
-    updateSessionTitle,
+    sendUserMessageToAI,
   ]);
 
   return (

@@ -62,6 +62,10 @@ export interface CommandContext {
   // Send message to chat (like AI response)
   sendMessage: (content: string) => void;
 
+  // Send user message and trigger AI response
+  // Used for commands that want to continue the conversation (like compact)
+  triggerAIResponse: (message: string, attachments?: Array<{ path: string; relativePath: string; size?: number }>) => Promise<void>;
+
   // Wait for user input (text or selection)
   // Returns: string for text, Record<string, string | string[]> for selection
   //   - Single-select: question id -> answer id (string)
