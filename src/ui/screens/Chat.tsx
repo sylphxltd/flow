@@ -925,8 +925,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
 
         {/* Input Area */}
-        <Box flexDirection="column" flexShrink={0} paddingTop={1}>
-          <Box marginBottom={1}>
+        {/* Match padding with messages for visual consistency */}
+        <Box
+          flexDirection="column"
+          flexShrink={0}
+          paddingTop={currentSession && currentSession.messages.length === 0 && !isStreaming ? 0 : 1}
+          paddingY={currentSession && currentSession.messages.length === 0 && !isStreaming ? 1 : 0}
+        >
+          <Box>
             <Text color="#00D9FF">▌ YOU</Text>
           </Box>
 
