@@ -100,8 +100,9 @@ export default function Dashboard() {
       return;
     }
 
-    // Toggle mouse (m key in browse mode)
-    if (input === 'm' && mode === 'browse') {
+    // Toggle mouse (Ctrl+M)
+    if (input === '\r' && key.ctrl) {
+      // Ctrl+M sends carriage return (\r)
       setMouseEnabled(!mouseEnabled);
       return;
     }
@@ -424,7 +425,7 @@ export default function Dashboard() {
 
   const renderKeybindings = () => {
     const keybindings = [
-      { keys: 'M', action: 'Toggle mouse (for text selection)' },
+      { keys: 'Ctrl+M', action: 'Toggle mouse (for text selection)' },
       { keys: 'ESC', action: 'Exit dashboard / Cancel edit' },
       { keys: 'TAB', action: 'Switch section' },
       { keys: '1-6', action: 'Quick select section' },
@@ -552,7 +553,7 @@ export default function Dashboard() {
 
       {/* Footer */}
       <Box paddingX={2} paddingY={0}>
-        <Text dimColor>M</Text>
+        <Text dimColor>Ctrl+M</Text>
         <Text dimColor>  Mouse  </Text>
         <Text dimColor>TAB</Text>
         <Text dimColor>  Next  </Text>
@@ -560,7 +561,7 @@ export default function Dashboard() {
         <Text dimColor>  Exit</Text>
         <Box flexGrow={1} />
         <Text dimColor italic>
-          {mouseEnabled ? 'Press M to disable mouse for text selection' : 'Press M to enable mouse'}
+          {mouseEnabled ? 'Ctrl+M to disable mouse for text selection' : 'Ctrl+M to enable mouse'}
         </Text>
       </Box>
     </FullScreen>
