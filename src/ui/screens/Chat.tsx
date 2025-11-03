@@ -916,21 +916,25 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         {/* Todo List - Always visible, positioned above input */}
         <TodoList />
 
-        {/* Status Indicator */}
-        {isStreaming && (
-          <Box paddingY={1}>
-            <Spinner color="#FFD700" />
-            {streamParts.length === 0 ? (
-              <Text color="#FFD700"> Thinking...</Text>
-            ) : streamParts.some(p => p.type === 'tool' && p.status === 'running') ? (
-              <Text color="#FFD700"> Working...</Text>
-            ) : streamParts.some(p => p.type === 'reasoning') ? (
-              <Text color="#FFD700"> Thinking...</Text>
-            ) : (
-              <Text color="#FFD700"> Typing...</Text>
-            )}
-          </Box>
-        )}
+        {/* Status Indicator - Always present to prevent layout shift */}
+        <Box paddingY={1}>
+          {isStreaming ? (
+            <>
+              <Spinner color="#FFD700" />
+              {streamParts.length === 0 ? (
+                <Text color="#FFD700"> Thinking...</Text>
+              ) : streamParts.some(p => p.type === 'tool' && p.status === 'running') ? (
+                <Text color="#FFD700"> Working...</Text>
+              ) : streamParts.some(p => p.type === 'reasoning') ? (
+                <Text color="#FFD700"> Thinking...</Text>
+              ) : (
+                <Text color="#FFD700"> Typing...</Text>
+              )}
+            </>
+          ) : (
+            <Text> </Text>
+          )}
+        </Box>
 
         {/* Input Area */}
         {/* Match padding with messages for visual consistency */}
