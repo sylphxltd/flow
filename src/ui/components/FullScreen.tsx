@@ -15,13 +15,18 @@ const leaveAltScreenCommand = '\x1b[?1049l';
  */
 function useStdoutDimensions(): [number, number] {
   const { stdout } = useStdout();
-  const { columns, rows } = stdout;
-  const [size, setSize] = useState({ columns, rows });
+  const [size, setSize] = useState({
+    columns: stdout.columns || 100,
+    rows: stdout.rows || 30
+  });
 
   useEffect(() => {
+    // Force update size on mount in case initial values were wrong
+    setSize({ columns: stdout.columns || 100, rows: stdout.rows || 30 });
+
     function onResize() {
       const { columns, rows } = stdout;
-      setSize({ columns, rows });
+      setSize({ columns: columns || 100, rows: rows || 30 });
     }
 
     stdout.on('resize', onResize);
@@ -35,9 +40,11 @@ function useStdoutDimensions(): [number, number] {
 
 /**
  * FullScreen component
- * Enters alternate screen buffer
+ * Enters alternate screen buffer and fills terminal dimensions
  */
 export function FullScreen({ children, ...props }: PropsWithChildren<BoxProps>) {
+  const [columns, rows] = useStdoutDimensions();
+
   useEffect(() => {
     // Enter alternate screen buffer
     process.stdout.write(enterAltScreenCommand);
@@ -53,7 +60,7 @@ export function FullScreen({ children, ...props }: PropsWithChildren<BoxProps>) 
   }, []);
 
   return (
-    <Box flexDirection="column" {...props}>
+    <Box width={columns} height={rows} flexDirection="column" {...props}>
       {children}
     </Box>
   );
