@@ -178,6 +178,9 @@ export const codeCommand = new Command('code')
   .option('-q, --quiet', 'Quiet mode - only output assistant response')
   .option('-v, --verbose', 'Show detailed output including tool calls')
   .action(async (prompt, options) => {
+    // Set environment variable for database location (code command uses home directory)
+    process.env.SYLPHX_FLOW_COMMAND = 'code';
+
     if (prompt && prompt.trim()) {
       // Headless mode with tools and session support
       await runHeadless(prompt, options);

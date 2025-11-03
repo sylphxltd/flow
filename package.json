@@ -1,6 +1,6 @@
 {
   "name": "@sylphx/flow",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Sylphx Flow - Type-safe development flow for modern web development",
   "type": "module",
   "main": "dist/index.js",
@@ -9,6 +9,7 @@
   },
   "files": [
     "dist",
+    "drizzle",
     "assets",
     "README.md",
     "LICENSE"
