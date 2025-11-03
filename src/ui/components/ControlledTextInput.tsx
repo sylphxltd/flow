@@ -140,6 +140,126 @@ function getPhysicalCursorPos(text: string, logicalCursor: number, terminalWidth
   return { physicalLine, physicalCol };
 }
 
+// Helper: Move cursor up one physical line (accounting for wrapping)
+function moveCursorUpPhysical(value: string, cursor: number, terminalWidth: number): number {
+  if (terminalWidth <= 0) return cursor;
+
+  // Find cursor's logical line
+  const lines = value.split('\n');
+  let charCount = 0;
+  let logicalLine = 0;
+  let posInLogicalLine = cursor;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineLength = lines[i].length;
+    if (cursor <= charCount + lineLength) {
+      logicalLine = i;
+      posInLogicalLine = cursor - charCount;
+      break;
+    }
+    charCount += lineLength + 1; // +1 for \n
+  }
+
+  const currentLineText = lines[logicalLine];
+  const { physicalLine: physicalIdx, physicalCol } =
+    getPhysicalCursorPos(currentLineText, posInLogicalLine, terminalWidth);
+
+  // If we're not on the first physical line of this logical line, move up within same logical line
+  if (physicalIdx > 0) {
+    const targetPhysicalLine = physicalIdx - 1;
+    const targetPos = targetPhysicalLine * terminalWidth + physicalCol;
+    // Clamp to line length
+    const newPosInLine = Math.min(targetPos, currentLineText.length);
+
+    // Calculate absolute cursor position
+    let absolutePos = 0;
+    for (let i = 0; i < logicalLine; i++) {
+      absolutePos += lines[i].length + 1;
+    }
+    return absolutePos + newPosInLine;
+  }
+
+  // Otherwise, move to previous logical line
+  if (logicalLine === 0) {
+    // Already at first line
+    return cursor;
+  }
+
+  // Move to previous logical line, same column if possible
+  const prevLineText = lines[logicalLine - 1];
+  const wrappedPrevLines = wrapLine(prevLineText, terminalWidth);
+  const lastPhysicalLine = wrappedPrevLines.length - 1;
+
+  // Try to maintain column position
+  const targetPos = lastPhysicalLine * terminalWidth + physicalCol;
+  const newPosInLine = Math.min(targetPos, prevLineText.length);
+
+  // Calculate absolute position
+  let absolutePos = 0;
+  for (let i = 0; i < logicalLine - 1; i++) {
+    absolutePos += lines[i].length + 1;
+  }
+  return absolutePos + newPosInLine;
+}
+
+// Helper: Move cursor down one physical line (accounting for wrapping)
+function moveCursorDownPhysical(value: string, cursor: number, terminalWidth: number): number {
+  if (terminalWidth <= 0) return cursor;
+
+  // Find cursor's logical line
+  const lines = value.split('\n');
+  let charCount = 0;
+  let logicalLine = 0;
+  let posInLogicalLine = cursor;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineLength = lines[i].length;
+    if (cursor <= charCount + lineLength) {
+      logicalLine = i;
+      posInLogicalLine = cursor - charCount;
+      break;
+    }
+    charCount += lineLength + 1; // +1 for \n
+  }
+
+  const currentLineText = lines[logicalLine];
+  const wrappedCurrentLines = wrapLine(currentLineText, terminalWidth);
+  const { physicalLine: physicalIdx, physicalCol } =
+    getPhysicalCursorPos(currentLineText, posInLogicalLine, terminalWidth);
+
+  // If we're not on the last physical line of this logical line, move down within same logical line
+  if (physicalIdx < wrappedCurrentLines.length - 1) {
+    const targetPhysicalLine = physicalIdx + 1;
+    const targetPos = targetPhysicalLine * terminalWidth + physicalCol;
+    // Clamp to line length
+    const newPosInLine = Math.min(targetPos, currentLineText.length);
+
+    // Calculate absolute cursor position
+    let absolutePos = 0;
+    for (let i = 0; i < logicalLine; i++) {
+      absolutePos += lines[i].length + 1;
+    }
+    return absolutePos + newPosInLine;
+  }
+
+  // Otherwise, move to next logical line
+  if (logicalLine === lines.length - 1) {
+    // Already at last line
+    return cursor;
+  }
+
+  // Move to next logical line, first physical line, same column if possible
+  const nextLineText = lines[logicalLine + 1];
+  const newPosInLine = Math.min(physicalCol, nextLineText.length);
+
+  // Calculate absolute position
+  let absolutePos = 0;
+  for (let i = 0; i <= logicalLine; i++) {
+    absolutePos += lines[i].length + 1;
+  }
+  return absolutePos + newPosInLine;
+}
+
 // No reducer needed - fully controlled component
 
 function ControlledTextInput({
@@ -155,6 +275,11 @@ function ControlledTextInput({
 }: ControlledTextInputProps) {
   // Kill buffer for Ctrl+K, Ctrl+U, Ctrl+W → Ctrl+Y
   const killBufferRef = useRef('');
+
+  // Get terminal width for wrapping calculations
+  const { stdout } = useStdout();
+  const terminalWidth = stdout.columns || 80;
+  const availableWidth = Math.max(40, terminalWidth - 10);
 
   // Memoize input handler to prevent recreating on every render
   const handleInput = useCallback((input: string, key: any) => {
@@ -196,21 +321,17 @@ function ControlledTextInput({
         return;
       }
 
-      // Up Arrow - move to previous line
+      // Up Arrow - move to previous physical line (accounting for wrapping)
       if (key.upArrow) {
-        const { line, col, lines } = getLineInfo(value, cursor);
-        if (line > 0) {
-          onCursorChange(lineToCursor(lines, line - 1, col));
-        }
+        const newCursor = moveCursorUpPhysical(value, cursor, availableWidth);
+        onCursorChange(newCursor);
         return;
       }
 
-      // Down Arrow - move to next line
+      // Down Arrow - move to next physical line (accounting for wrapping)
       if (key.downArrow) {
-        const { line, col, lines } = getLineInfo(value, cursor);
-        if (line < lines.length - 1) {
-          onCursorChange(lineToCursor(lines, line + 1, col));
-        }
+        const newCursor = moveCursorDownPhysical(value, cursor, availableWidth);
+        onCursorChange(newCursor);
         return;
       }
 
@@ -401,15 +522,9 @@ function ControlledTextInput({
         onChange(before + normalizedInput + after);
         onCursorChange(cursor + normalizedInput.length);
       }
-  }, [value, cursor, onChange, onCursorChange, onSubmit]);
+  }, [value, cursor, onChange, onCursorChange, onSubmit, availableWidth]);
 
   useInput(handleInput, { isActive: focus });
-
-  // Get terminal width for wrapping calculations
-  const { stdout } = useStdout();
-  const terminalWidth = stdout.columns || 80;
-  // Reserve space for margin/padding (e.g., "▌ YOU  " takes about 7 chars)
-  const availableWidth = Math.max(40, terminalWidth - 10);
 
   // Empty with placeholder
   if (value.length === 0 && placeholder) {
