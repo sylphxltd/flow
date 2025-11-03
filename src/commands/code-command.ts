@@ -11,6 +11,7 @@ import { getOrCreateSession, showModelToolSupportError } from '../core/session-s
 import { addMessage, saveSession } from '../utils/session-manager.js';
 import App from '../ui/App.js';
 import { ErrorBoundary } from '../ui/components/ErrorBoundary.js';
+import { getDatabase } from '../db/database.js';
 
 /**
  * Code command - AI chatbot powered by Sylphx Flow AI SDK
@@ -24,6 +25,15 @@ import { ErrorBoundary } from '../ui/components/ErrorBoundary.js';
  * Start interactive TUI app with error boundary
  */
 async function startTUIApp(): Promise<void> {
+  // Initialize database before rendering app
+  // This ensures auto-migration runs before UI tries to load sessions
+  try {
+    await getDatabase();
+  } catch (error) {
+    console.error(chalk.red('✗ Failed to initialize database:'), error);
+    process.exit(1);
+  }
+
   // Render React + Ink app wrapped in error boundary
   render(
     React.createElement(ErrorBoundary, null,

@@ -135,13 +135,16 @@ async function migrateSessionFiles(
         continue; // Skip duplicates
       }
 
-      // Create session in database
-      await repository.createSession(session.provider, session.model);
-
-      // Update metadata
-      if (session.title) {
-        await repository.updateSessionTitle(session.id, session.title);
-      }
+      // Create session in database with existing ID and metadata
+      await repository.createSessionFromData({
+        id: session.id,
+        provider: session.provider,
+        model: session.model,
+        title: session.title,
+        nextTodoId: session.nextTodoId || 1,
+        created: session.created,
+        updated: session.updated,
+      });
 
       // Add all messages
       for (const message of session.messages) {

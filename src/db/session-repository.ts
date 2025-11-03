@@ -72,6 +72,31 @@ export class SessionRepository {
   }
 
   /**
+   * Create session with specific ID and timestamps (for migration)
+   */
+  async createSessionFromData(sessionData: {
+    id: string;
+    provider: ProviderId;
+    model: string;
+    title?: string;
+    nextTodoId: number;
+    created: number;
+    updated: number;
+  }): Promise<void> {
+    const newSession: NewSession = {
+      id: sessionData.id,
+      title: sessionData.title || null,
+      provider: sessionData.provider,
+      model: sessionData.model,
+      nextTodoId: sessionData.nextTodoId,
+      created: sessionData.created,
+      updated: sessionData.updated,
+    };
+
+    await this.db.insert(sessions).values(newSession);
+  }
+
+  /**
    * Get recent sessions with pagination
    * HUGE performance improvement: Only load 20 recent sessions instead of all
    */

@@ -1,68 +1,22 @@
 /**
  * Session Persistence Hook
- * Load sessions from disk on mount
+ * Load sessions from database (auto-migrates from files on first run)
  */
 
 import { useEffect } from 'react';
 import { useAppStore } from '../stores/app-store.js';
-import { readdir } from 'node:fs/promises';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
-import { loadSession } from '../../utils/session-manager.js';
-
-const SESSION_DIR = join(homedir(), '.sylphx', 'sessions');
+import { getSessionRepository } from '../../db/database.js';
 
 export function useSessionPersistence() {
   useEffect(() => {
     const loadSessions = async () => {
       try {
-        // Get all session files
-        const files = await readdir(SESSION_DIR);
-        const sessionFiles = files.filter(f => f.endsWith('.json') && !f.startsWith('.'));
+        // Get database repository (auto-initializes and migrates if needed)
+        const repository = await getSessionRepository();
 
-        // Load only metadata (id, updated timestamp) first for pagination
-        const sessionMetadata = await Promise.all(
-          sessionFiles.map(async (file) => {
-            const sessionId = file.replace('.json', '');
-            try {
-              const { stat } = await import('node:fs/promises');
-              const { join } = await import('node:path');
-              const { homedir } = await import('node:os');
-              const SESSION_DIR = join(homedir(), '.sylphx', 'sessions');
-              const filePath = join(SESSION_DIR, file);
-              const stats = await stat(filePath);
-              return {
-                sessionId,
-                mtime: stats.mtimeMs,
-                file
-              };
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        // Filter out nulls and sort by modification time (newest first)
-        const validMetadata = sessionMetadata
-          .filter((m): m is NonNullable<typeof m> => m !== null)
-          .sort((a, b) => b.mtime - a.mtime);
-
-        // Load only the most recent 20 sessions
-        const MAX_SESSIONS = 20;
-        const recentSessionIds = validMetadata.slice(0, MAX_SESSIONS).map(m => m.sessionId);
-
-        // Load full session data for recent sessions
-        const sessions = await Promise.all(
-          recentSessionIds.map(async (sessionId) => {
-            return loadSession(sessionId);
-          })
-        );
-
-        // Filter out null results
-        const validSessions = sessions.filter((s): s is NonNullable<typeof s> => s !== null);
-
-        // Sort by updated time (newest first)
-        validSessions.sort((a, b) => b.updated - a.updated);
+        // Load recent 20 sessions from database
+        // MASSIVE performance improvement: Database query vs loading 20 JSON files!
+        const validSessions = await repository.getRecentSessions(20);
 
         // Update store with loaded sessions
         const setState = useAppStore.setState;
@@ -71,10 +25,7 @@ export function useSessionPersistence() {
         // Don't auto-set current session - let user start fresh or choose from history
         // Sessions are loaded and available but not automatically opened
       } catch (error) {
-        // Directory might not exist yet, that's ok
-        if ((error as any).code !== 'ENOENT') {
-          console.error('Failed to load sessions:', error);
-        }
+        console.error('Failed to load sessions from database:', error);
       }
     };
 

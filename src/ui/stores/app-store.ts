@@ -9,7 +9,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
 import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata } from '../../types/session.types.js';
 import type { Todo, TodoUpdate } from '../../types/todo.types.js';
-import { saveSession as saveSessionToFile } from '../../utils/session-manager.js';
+import { getSessionRepository } from '../../db/database.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
 export type { Session, MessagePart } from '../../types/session.types.js';
@@ -123,6 +123,15 @@ export const useAppStore = create<AppState>()(
     createSession: (provider, model) => {
       const sessionId = `session-${Date.now()}`;
       const now = Date.now();
+
+      // Create in database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.createSession(provider, model).catch((error) => {
+          console.error('Failed to create session in database:', error);
+        });
+      });
+
+      // Update state immediately (optimistic update)
       set((state) => {
         state.sessions.push({
           id: sessionId,
@@ -138,38 +147,74 @@ export const useAppStore = create<AppState>()(
       });
       return sessionId;
     },
-    updateSessionModel: (sessionId, model) =>
+    updateSessionModel: (sessionId, model) => {
+      // Update database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.updateSessionModel(sessionId, model).catch((error) => {
+          console.error('Failed to update session model in database:', error);
+        });
+      });
+
+      // Update state immediately
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
           session.model = model;
         }
-      }),
-    updateSessionProvider: (sessionId, provider, model) =>
+      });
+    },
+    updateSessionProvider: (sessionId, provider, model) => {
+      // Update database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.updateSessionProvider(sessionId, provider, model).catch((error) => {
+          console.error('Failed to update session provider in database:', error);
+        });
+      });
+
+      // Update state immediately
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
           session.provider = provider;
           session.model = model;
         }
-      }),
-    updateSessionTitle: (sessionId, title) =>
+      });
+    },
+    updateSessionTitle: (sessionId, title) => {
+      // Update database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.updateSessionTitle(sessionId, title).catch((error) => {
+          console.error('Failed to update session title in database:', error);
+        });
+      });
+
+      // Update state immediately
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
           session.title = title;
         }
-      }),
-    addMessage: (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) =>
+      });
+    },
+    addMessage: (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) => {
+      // Normalize content to MessagePart[] format
+      const normalizedContent: MessagePart[] = typeof content === 'string'
+        ? [{ type: 'text', content }]
+        : content;
+
+      // Add to database asynchronously
+      getSessionRepository().then((repo) => {
+        repo
+          .addMessage(sessionId, role, normalizedContent, attachments, usage, finishReason, metadata, todoSnapshot)
+          .catch((error) => {
+            console.error('Failed to add message to database:', error);
+          });
+      });
+
+      // Update state immediately (optimistic update)
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
-          // Normalize content to MessagePart[] format
-          // Accept both string and MessagePart[] for backwards compatibility and convenience
-          const normalizedContent: MessagePart[] = typeof content === 'string'
-            ? [{ type: 'text', content }]
-            : content;
-
           session.messages.push({
             role,
             content: normalizedContent,
@@ -181,18 +226,28 @@ export const useAppStore = create<AppState>()(
             ...(todoSnapshot !== undefined && todoSnapshot.length > 0 && { todoSnapshot }),
           });
         }
-      }),
+      });
+    },
     setCurrentSession: (sessionId) =>
       set((state) => {
         state.currentSessionId = sessionId;
       }),
-    deleteSession: (sessionId) =>
+    deleteSession: (sessionId) => {
+      // Delete from database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.deleteSession(sessionId).catch((error) => {
+          console.error('Failed to delete session from database:', error);
+        });
+      });
+
+      // Update state immediately (optimistic update)
       set((state) => {
         state.sessions = state.sessions.filter((s) => s.id !== sessionId);
         if (state.currentSessionId === sessionId) {
           state.currentSessionId = null;
         }
-      }),
+      });
+    },
 
     // UI State
     isLoading: false,
@@ -323,72 +378,17 @@ export const useAppStore = create<AppState>()(
             }
           }
         }
+
+        // Sync to database asynchronously after state update
+        getSessionRepository().then((repo) => {
+          repo.updateTodos(sessionId, session.todos, session.nextTodoId).catch((error) => {
+            console.error('Failed to update todos in database:', error);
+          });
+        });
       }),
     }))
   )
 );
 
-// Optimized session persistence
-// Only save sessions that actually changed (not all 20 sessions on every update!)
-const pendingSaves = new Map<string, NodeJS.Timeout>();
-const sessionReferences = new Map<string, Session>();
-const DEBOUNCE_MS = 500;
-
-// Subscribe to sessions changes and persist to disk (debounced)
-useAppStore.subscribe(
-  (state) => state.sessions,
-  (sessions) => {
-    // Find which sessions actually changed by comparing references
-    // This prevents saving all 20 sessions when only 1 changed
-    const changedSessions: Session[] = [];
-
-    for (const session of sessions) {
-      const previousRef = sessionReferences.get(session.id);
-
-      // Session changed if:
-      // 1. It's new (not in map)
-      // 2. Reference is different (Immer creates new object on mutation)
-      if (!previousRef || previousRef !== session) {
-        changedSessions.push(session);
-        sessionReferences.set(session.id, session);
-      }
-    }
-
-    // Clean up references for deleted sessions
-    const currentIds = new Set(sessions.map(s => s.id));
-    for (const [id] of sessionReferences) {
-      if (!currentIds.has(id)) {
-        sessionReferences.delete(id);
-        // Cancel pending save for deleted session
-        const timeout = pendingSaves.get(id);
-        if (timeout) {
-          clearTimeout(timeout);
-          pendingSaves.delete(id);
-        }
-      }
-    }
-
-    // Only process changed sessions (not all 20!)
-    for (const session of changedSessions) {
-      // Clear existing timeout for this session
-      const existingTimeout = pendingSaves.get(session.id);
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-      }
-
-      // Schedule new save
-      const timeout = setTimeout(async () => {
-        try {
-          await saveSessionToFile(session);
-          pendingSaves.delete(session.id);
-        } catch (error) {
-          console.error(`Failed to persist session ${session.id}:`, error);
-          pendingSaves.delete(session.id);
-        }
-      }, DEBOUNCE_MS);
-
-      pendingSaves.set(session.id, timeout);
-    }
-  },
-  { fireImmediately: false } // Don't fire on initialization
-);
+// Database persistence is now handled via optimistic updates in each action
+// No need for separate subscription - each CRUD operation syncs to DB immediately
