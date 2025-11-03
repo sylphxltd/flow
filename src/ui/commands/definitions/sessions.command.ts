@@ -62,7 +62,7 @@ export const sessionsCommand: Command = {
     // Switch to selected session
     context.setCurrentSession(selectedSessionId);
 
-    const selectedSession = sessions.find((s) => s.id === selectedSessionId);
+    const selectedSession = sortedSessions.find((s) => s.id === selectedSessionId);
     const displayName = selectedSession
       ? formatSessionDisplay(selectedSession.title, selectedSession.created)
       : 'Unknown session';
