@@ -947,7 +947,28 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             }
           }
         },
-        undefined, // onUserInputRequest
+        // onUserInputRequest - handle AI tool ask requests
+        async (request) => {
+          // Use the same waitForInput mechanism as commands
+          // The ask tool sends UserInputRequest which is compatible with WaitForInputOptions
+          return new Promise((resolve) => {
+            inputResolver.current = resolve;
+            setPendingInput(request);
+
+            // Reset multi-selection state
+            if (request.questions.length > 1) {
+              setMultiSelectionPage(0);
+              setMultiSelectionAnswers({});
+              // Initialize pre-selected choices for first question if multi-select
+              const firstQuestion = request.questions[0];
+              if (firstQuestion?.multiSelect && firstQuestion.preSelected) {
+                setMultiSelectChoices(new Set(firstQuestion.preSelected));
+              } else {
+                setMultiSelectChoices(new Set());
+              }
+            }
+          });
+        },
         attachments, // attachments
         // onReasoningStart
         () => {
