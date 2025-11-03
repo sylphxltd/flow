@@ -14,7 +14,6 @@
         "@libsql/client": "^0.15.15",
         "@modelcontextprotocol/sdk": "^1.20.2",
         "@openrouter/ai-sdk-provider": "^1.2.0",
-        "@zenobius/ink-mouse": "^1.0.3",
         "ai": "^5.0.86",
         "ai-sdk-provider-claude-code": "^2.1.0",
         "apache-arrow": "^21.1.0",
@@ -25,7 +24,6 @@
         "cli-table3": "^0.6.5",
         "commander": "^14.0.2",
         "drizzle-orm": "^0.44.7",
-        "fullscreen-ink": "^0.1.0",
         "gradient-string": "^3.0.0",
         "gray-matter": "^4.0.3",
         "ignore": "^7.0.5",
@@ -422,8 +420,6 @@
 
     "@vitest/utils": ["@vitest/utils@4.0.6", "", { "dependencies": { "@vitest/pretty-format": "4.0.6", "tinyrainbow": "^3.0.3" } }, "sha512-bG43VS3iYKrMIZXBo+y8Pti0O7uNju3KvNn6DrQWhQQKcLavMB+0NZfO1/QBAEbq0MaQ3QjNsnnXlGQvsh0Z6A=="],
 
-    "@zenobius/ink-mouse": ["@zenobius/ink-mouse@1.0.3", "", { "peerDependencies": { "ink": "^5.0.1", "react": "^18.2.0" } }, "sha512-2rEsLgIniTWf0+mXXuRnMEGQ/Tcg/mScbCfZeFUNCDA+hb9hev/bzZM66mq+PoSFd243146RISLagO2NJaTXuQ=="],
-
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
 
     "ai": ["ai@5.0.86", "", { "dependencies": { "@ai-sdk/gateway": "2.0.5", "@ai-sdk/provider": "2.0.0", "@ai-sdk/provider-utils": "3.0.15", "@opentelemetry/api": "1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ooHwNTkLdedFf98iQhtSc5btc/P4UuXuOpYneoifq0190vqosLunNdW8Hs6CiE0Am7YOGNplDK56JIPlHZIL4w=="],
@@ -629,8 +625,6 @@
     "fresh": ["fresh@2.0.0", "", {}, "sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A=="],
 
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
-
-    "fullscreen-ink": ["fullscreen-ink@0.1.0", "", { "dependencies": { "ink": ">=4.4.1", "react": ">=18.2.0" } }, "sha512-GkyPG5Y8YxRT6i1Q8mZ0BCMSpgQjdBY+C39DnCUMswBpSypTk0G80rAYs6FoEp6Da2gzAwygXbJbju6GahbrFQ=="],
 
     "function-bind": ["function-bind@1.1.2", "", {}, "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA=="],
 
