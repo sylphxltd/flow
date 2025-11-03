@@ -109,24 +109,35 @@ function StreamingPartWrapper({
   isLastInStream?: boolean;
   debugRegion?: 'static' | 'dynamic';
 }) {
+  // Determine status for debug label
+  const getPartStatus = (): string => {
+    if (part.type === 'tool') {
+      return part.status;
+    }
+    if (part.type === 'reasoning') {
+      return part.completed ? 'completed' : 'active';
+    }
+    return 'completed';
+  };
+
   return (
     <Box paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
       {isFirst && (
         <Box>
           <Text color="#00FF88">▌ SYLPHX</Text>
-          {debugRegion && (
-            <Text dimColor> [{debugRegion.toUpperCase()}]</Text>
-          )}
         </Box>
       )}
-      <Box
-        flexDirection="column"
-        backgroundColor={
-          debugRegion === 'static' ? 'greenBright' :
-          debugRegion === 'dynamic' ? 'blueBright' :
-          undefined
-        }
-      >
+      <Box flexDirection="column">
+        {debugRegion && (
+          <Box>
+            <Text
+              backgroundColor={debugRegion === 'static' ? 'green' : 'blue'}
+              color="black"
+            >
+              {' '}{part.type.toUpperCase()}: {getPartStatus()} [{debugRegion.toUpperCase()}]{' '}
+            </Text>
+          </Box>
+        )}
         <MessagePart
           part={part}
           isLastInStream={isLastInStream}
