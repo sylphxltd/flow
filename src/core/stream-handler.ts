@@ -73,7 +73,7 @@ export async function processStream(
       case 'text-end': {
         // Text generation finished - save text part if any
         if (currentTextContent) {
-          messageParts.push({ type: 'text', content: currentTextContent });
+          messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
           currentTextContent = '';
         }
         onTextEnd?.();
@@ -83,7 +83,7 @@ export async function processStream(
       case 'reasoning-start': {
         // Save current text part if any
         if (currentTextContent) {
-          messageParts.push({ type: 'text', content: currentTextContent });
+          messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
           currentTextContent = '';
         }
         reasoningStartTime = Date.now();
@@ -104,6 +104,7 @@ export async function processStream(
           messageParts.push({
             type: 'reasoning',
             content: currentReasoningContent,
+            status: 'completed',  // All saved parts are completed
             duration
           });
           currentReasoningContent = '';
@@ -117,15 +118,16 @@ export async function processStream(
       case 'tool-call': {
         // Save current text part if any
         if (currentTextContent) {
-          messageParts.push({ type: 'text', content: currentTextContent });
+          messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
           currentTextContent = '';
         }
 
         // Add tool part (may not have complete args yet if streaming)
         messageParts.push({
           type: 'tool',
+          toolId: chunk.toolCallId,
           name: chunk.toolName,
-          status: 'running',
+          status: 'active',  // Match MessagePart type
           args: chunk.args,
         });
 
@@ -202,7 +204,7 @@ export async function processStream(
       case 'tool-error': {
         // Save current text part if any
         if (currentTextContent) {
-          messageParts.push({ type: 'text', content: currentTextContent });
+          messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
           currentTextContent = '';
         }
 
@@ -231,12 +233,12 @@ export async function processStream(
       case 'error': {
         // Save current text part if any
         if (currentTextContent) {
-          messageParts.push({ type: 'text', content: currentTextContent });
+          messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
           currentTextContent = '';
         }
 
         // Add error part
-        messageParts.push({ type: 'error', error: chunk.error });
+        messageParts.push({ type: 'error', error: chunk.error, status: 'completed' });
 
         // Notify callback
         onError?.(chunk.error);
@@ -254,7 +256,7 @@ export async function processStream(
 
   // Save final text part if any
   if (currentTextContent) {
-    messageParts.push({ type: 'text', content: currentTextContent });
+    messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
   }
 
   return {

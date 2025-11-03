@@ -97,6 +97,9 @@ function StreamingPartWrapper({
   isLastInStream?: boolean;
   debugRegion?: 'static' | 'dynamic';
 }) {
+  // Get status with fallback for old messages without status field
+  const status = 'status' in part ? part.status : 'completed';
+
   return (
     <Box paddingX={1} flexDirection="column">
       {(debugRegion || SHOW_DEBUG_INDICATORS) && (
@@ -109,7 +112,7 @@ function StreamingPartWrapper({
             }
             color="black"
           >
-            {' '}{part.type.toUpperCase()}: {part.status} {debugRegion ? `[${debugRegion.toUpperCase()}]` : ''}{' '}
+            {' '}{part.type.toUpperCase()}: {status} {debugRegion ? `[${debugRegion.toUpperCase()}]` : ''}{' '}
           </Text>
         </Box>
       )}

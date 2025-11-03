@@ -493,10 +493,15 @@ export function useChat() {
 
       addDebugLog('[useChat] stream complete');
 
-      // Add assistant message to session with parts and usage
-      addMessage(currentSessionId, 'assistant', messageParts, undefined, usage, finishReason);
+      // NOTE: Message is already created and updated by Chat.tsx during streaming
+      // No need to addMessage here - would create duplicate message
+      // Chat.tsx handles:
+      // - Message creation (with status='active')
+      // - Real-time part updates (via onReasoningEnd, onTextEnd, etc.)
+      // - Status update (via onComplete -> updateMessageStatus)
+      // - Usage/finishReason update (via onFinish)
 
-      // Then trigger UI update and send notification
+      // Just trigger UI completion
       onComplete?.();
       
       // Send notification when AI response is complete
