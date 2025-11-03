@@ -37,10 +37,10 @@ export function useMouse(enabled = true) {
     // \x1b[?1003h - Enable mouse motion tracking (all events)
     // \x1b[?1006h - Enable SGR mouse mode (better coordinate handling)
     // \x1b[?1015h - Enable urxvt mouse mode (for some terminals)
-    stdin.write('\x1b[?1000h');
-    stdin.write('\x1b[?1003h');
-    stdin.write('\x1b[?1006h');
-    stdin.write('\x1b[?1015h');
+    process.stdout.write('\x1b[?1000h');
+    process.stdout.write('\x1b[?1003h');
+    process.stdout.write('\x1b[?1006h');
+    process.stdout.write('\x1b[?1015h');
 
     const handleData = (data: Buffer) => {
       const str = data.toString();
@@ -102,10 +102,10 @@ export function useMouse(enabled = true) {
       stdin.off('data', handleData);
 
       // Disable mouse tracking
-      stdin.write('\x1b[?1000l');
-      stdin.write('\x1b[?1003l');
-      stdin.write('\x1b[?1006l');
-      stdin.write('\x1b[?1015l');
+      process.stdout.write('\x1b[?1000l');
+      process.stdout.write('\x1b[?1003l');
+      process.stdout.write('\x1b[?1006l');
+      process.stdout.write('\x1b[?1015l');
 
       // Restore raw mode
       if (isRawModeSupported && setRawMode) {
