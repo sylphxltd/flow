@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
-import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata } from '../../types/session.types.js';
+import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata, StreamingPart } from '../../types/session.types.js';
 import type { Todo, TodoUpdate } from '../../types/todo.types.js';
 import { getSessionRepository } from '../../db/database.js';
 
@@ -41,6 +41,9 @@ export interface AppState {
   addMessage: (sessionId: string, role: 'user' | 'assistant', content: string | MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string, metadata?: MessageMetadata, todoSnapshot?: Todo[]) => void;
   setCurrentSession: (sessionId: string | null) => void;
   deleteSession: (sessionId: string) => void;
+
+  // Streaming State (persisted per-session for recovery)
+  setStreamingState: (sessionId: string, isStreaming: boolean, streamingParts: StreamingPart[]) => void;
 
   // UI State
   isLoading: boolean;
@@ -262,6 +265,25 @@ export const useAppStore = create<AppState>()(
         state.sessions = state.sessions.filter((s) => s.id !== sessionId);
         if (state.currentSessionId === sessionId) {
           state.currentSessionId = null;
+        }
+      });
+    },
+
+    // Streaming State
+    setStreamingState: (sessionId, isStreaming, streamingParts) => {
+      // Update database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.updateStreamingState(sessionId, isStreaming, streamingParts).catch((error) => {
+          console.error('Failed to update streaming state in database:', error);
+        });
+      });
+
+      // Update state immediately (optimistic update)
+      set((state) => {
+        const session = state.sessions.find((s) => s.id === sessionId);
+        if (session) {
+          session.isStreaming = isStreaming;
+          session.streamingParts = streamingParts;
         }
       });
     },

@@ -24,6 +24,51 @@ export type MessagePart =
   | { type: 'error'; error: string }; // Stream-level errors
 
 /**
+ * Streaming Part - represents a unit of content being actively generated
+ *
+ * Extended version of MessagePart with streaming-specific fields and states.
+ * Used during active streaming to track generation progress and state.
+ *
+ * Part States:
+ * - Active: Content being generated (reasoning ongoing, tool running)
+ * - Completed: Generation finished successfully
+ * - Failed: Generation failed with error (tools only)
+ * - Aborted: User cancelled during generation
+ *
+ * Multiple parts can stream in parallel (e.g., parallel tool calls).
+ * When streaming completes, parts are converted to MessagePart[] for storage.
+ */
+export type StreamingPart =
+  | {
+      type: 'text';
+      content: string;
+      status: 'active' | 'completed' | 'aborted';
+    }
+  | {
+      type: 'reasoning';
+      content: string;
+      status: 'active' | 'completed' | 'aborted';
+      duration?: number;
+      startTime?: number;
+    }
+  | {
+      type: 'tool';
+      toolId: string;
+      name: string;
+      status: 'running' | 'completed' | 'failed' | 'aborted';
+      args?: unknown;
+      result?: unknown;
+      error?: string;
+      duration?: number;
+      startTime?: number;
+    }
+  | {
+      type: 'error';
+      error: string;
+      status: 'completed';  // Errors are immediately completed
+    };
+
+/**
  * File attachment
  */
 export interface FileAttachment {
@@ -135,6 +180,27 @@ export interface SessionMessage {
  * - nextTodoId is also per-session to avoid ID conflicts
  * - Todos are persisted with session to disk
  * - updateTodos tool requires sessionId parameter
+ *
+ * Design: Persistent streaming state
+ * ===================================
+ *
+ * Why streaming state is persisted in session:
+ * 1. Session recovery - Can switch sessions and return to exact streaming state
+ * 2. App restart - Preserve in-progress generations across app restarts
+ * 3. Multi-tasking - Work on Session A while Session B is streaming
+ *
+ * Streaming lifecycle:
+ * 1. User sends message → isStreaming = true, streamingParts = []
+ * 2. Parts arrive → streamingParts grows, each part has detailed status
+ * 3. User switches session → Streaming state saved, restored on return
+ * 4. Streaming completes → Convert streamingParts to MessagePart[], clear state
+ * 5. User aborts (ESC) → Mark parts as 'aborted', save partial content
+ *
+ * Part states (detailed for recovery):
+ * - text: active | completed | aborted
+ * - reasoning: active | completed | aborted (with duration, startTime)
+ * - tool: running | completed | failed | aborted (with toolId, args, result, error)
+ * - error: always completed
  */
 export interface Session {
   id: string;
@@ -144,6 +210,12 @@ export interface Session {
   messages: SessionMessage[];
   todos: Todo[];         // Per-session todo list (not global!)
   nextTodoId: number;    // Next todo ID for this session (starts at 1)
+
+  // Streaming state - persisted for session recovery
+  // Enables switching sessions during streaming and exact state restoration
+  streamingParts?: StreamingPart[];  // Parts being generated (with detailed status)
+  isStreaming?: boolean;              // Is message currently streaming
+
   created: number;
   updated: number;
 }
