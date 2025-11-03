@@ -83,23 +83,23 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
 
       {/* Right side: Tokenizer and Context */}
       <Box>
-        {!loading && tokenizerInfo && (
+        {!loading && tokenizerInfo ? (
           <>
             <Text dimColor>
               {tokenizerInfo.tokenizerName}
               {tokenizerInfo.failed && ' (fallback)'}
             </Text>
-            {contextLength && <Text dimColor> │ </Text>}
+            {contextLength ? <Text dimColor> │ </Text> : null}
           </>
-        )}
-        {!loading && contextLength && usedTokens > 0 && (
+        ) : null}
+        {!loading && contextLength && usedTokens > 0 ? (
           <Text dimColor>
             Context: {formatNumber(usedTokens)}/{formatNumber(contextLength)} ({usagePercent}%)
           </Text>
-        )}
-        {!loading && contextLength && usedTokens === 0 && (
+        ) : null}
+        {!loading && contextLength && usedTokens === 0 ? (
           <Text dimColor>Context: {formatNumber(contextLength)}</Text>
-        )}
+        ) : null}
       </Box>
     </Box>
   );
