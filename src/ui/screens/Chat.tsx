@@ -1139,7 +1139,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             {currentSession.messages.length > 0 && (
               <Static items={currentSession.messages}>
                 {(msg, i) => (
-                  <Box key={i} paddingX={1} paddingTop={1} flexDirection="column">
+                  <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
                     {msg.role === 'user' ? (
                       <>
                         <Box>
@@ -1148,7 +1148,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         {/* Render content parts */}
                         {msg.content && Array.isArray(msg.content) ? (
                           msg.content.map((part, idx) => (
-                            <MessagePart key={idx} part={part} />
+                            <MessagePart key={`msg-${msg.timestamp}-part-${idx}`} part={part} />
                           ))
                         ) : (
                           <Box marginLeft={2}>
@@ -1159,7 +1159,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         {msg.attachments && msg.attachments.length > 0 ? (
                           <Box flexDirection="column" marginTop={1}>
                             {msg.attachments.map((att, attIdx) => (
-                              <Box key={attIdx} marginLeft={2}>
+                              <Box key={`msg-${msg.timestamp}-att-${att.path}`} marginLeft={2}>
                                 <Text dimColor>Attached(</Text>
                                 <Text color="#00D9FF">{att.relativePath}</Text>
                                 <Text dimColor>)</Text>
@@ -1182,7 +1182,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         {/* Render content parts */}
                         {msg.content && Array.isArray(msg.content) ? (
                           msg.content.map((part, idx) => (
-                            <MessagePart key={idx} part={part} />
+                            <MessagePart key={`msg-${msg.timestamp}-part-${idx}`} part={part} />
                           ))
                         ) : (
                           <Box marginLeft={2}>
@@ -1369,7 +1369,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Text dimColor>Attachments ({pendingAttachments.length}):</Text>
                   </Box>
                   {pendingAttachments.map((att, idx) => (
-                    <Box key={idx} marginLeft={2}>
+                    <Box key={`pending-att-${att.path}`} marginLeft={2}>
                       <Text color="#00D9FF">{att.relativePath}</Text>
                       <Text dimColor> (</Text>
                       {att.size ? (
