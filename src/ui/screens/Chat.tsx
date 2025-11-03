@@ -871,30 +871,39 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           const needsSaving = wasAborted || hasError;
 
           if (needsSaving && currentSessionId) {
+            // Flush any remaining buffered text chunks first
+            if (streamBufferRef.current.chunks.length > 0) {
+              flushStreamBuffer();
+            }
+
             const allParts = streamPartsRef.current;
             if (allParts.length > 0) {
-              // Build partial content from streaming parts
-              const bufferedText = streamBufferRef.current.chunks.join('');
-              let content = '';
-              for (const part of allParts) {
-                if (part.type === 'text') {
-                  content += part.content;
-                } else if (part.type === 'tool' && part.result) {
-                  content += `\n[Tool: ${part.name}]\n`;
-                }
-              }
-              content += bufferedText;
+              // DESIGN: Streaming parts ARE the message content
+              // No need to rebuild - just convert to persistent format and save
+              // This preserves:
+              // - Complete tool call structure (args, results)
+              // - Reasoning content
+              // - All metadata (duration, status, etc.)
 
-              if (content.trim()) {
-                // Add appropriate note
-                let note = '';
-                if (wasAborted) {
-                  note = '\n\n[Response cancelled by user]';
-                } else if (hasError) {
-                  note = `\n\n[Error: ${hasError}]`;
-                }
-                addMessage(currentSessionId, 'assistant', content + note);
+              const messageParts = allParts.map(toPersistentFormat);
+
+              // Add note as final text part
+              let note = '';
+              if (wasAborted) {
+                note = '\n\n[Response cancelled by user]';
+              } else if (hasError) {
+                note = `\n\n[Error: ${hasError}]`;
               }
+
+              if (note) {
+                messageParts.push({
+                  type: 'text',
+                  content: note,
+                  status: 'completed'
+                });
+              }
+
+              addMessage(currentSessionId, 'assistant', messageParts);
             }
           }
 
