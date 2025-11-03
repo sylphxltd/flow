@@ -635,7 +635,7 @@ function ControlledTextInput({
         if (!physicalLine.hasCursor) {
           return (
             <Box key={actualIdx}>
-              <Text>{physicalLine.text || ' '}</Text>
+              <Text>{physicalLine.text.length > 0 ? physicalLine.text : ' '}</Text>
             </Box>
           );
         }
@@ -648,9 +648,10 @@ function ControlledTextInput({
 
         return (
           <Box key={actualIdx}>
-            <Text>{before}</Text>
-            {showCursor && <Text inverse>{char}</Text>}
-            <Text>{after}</Text>
+            {before.length > 0 ? <Text>{before}</Text> : null}
+            {showCursor ? <Text inverse>{char}</Text> : null}
+            {after.length > 0 ? <Text>{after}</Text> : null}
+            {!showCursor && before.length === 0 && after.length === 0 ? <Text> </Text> : null}
           </Box>
         );
       })}
