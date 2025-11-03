@@ -110,13 +110,19 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
   // Tool part
   if (part.type === 'tool') {
     // Use liveDuration for running tools, part.duration for completed/failed
-    const displayDuration = part.status === 'running' ? liveDuration : part.duration;
+    const displayDuration = part.status === 'active' ? liveDuration : part.duration;
+
+    // Map MessagePart status to ToolDisplay status
+    const toolStatus: 'running' | 'completed' | 'failed' =
+      part.status === 'active' ? 'running' :
+      part.status === 'error' || part.status === 'abort' ? 'failed' :
+      'completed';
 
     return (
       <Box marginLeft={2} marginBottom={1}>
         <ToolDisplay
           name={part.name}
-          status={part.status}
+          status={toolStatus}
           duration={displayDuration}
           args={part.args}
           result={part.result}

@@ -35,36 +35,24 @@ import { SelectionUI } from '../components/SelectionUI.js';
 import { PendingCommandSelection } from '../components/PendingCommandSelection.js';
 import { FileAutocomplete } from '../components/FileAutocomplete.js';
 import { CommandAutocomplete } from '../components/CommandAutocomplete.js';
-import type { StreamingPart } from '../../types/session.types.js';
+import type { MessagePart as StreamPart } from '../../types/session.types.js';
+import { getSessionRepository } from '../../db/database.js';
 
 /**
- * StreamPart - Internal streaming representation
+ * StreamPart - Alias for MessagePart
  *
- * DESIGN DECISION: Why separate type from StreamingPart?
- * ========================================================
+ * DESIGN DECISION: Unified type for streaming and persistence
+ * ===========================================================
  *
- * StreamPart (internal, this file):
- * - Optimized for UI rendering during active streaming
- * - Uses 'completed' boolean for reasoning (simpler logic)
- * - Minimal fields for performance
+ * MessagePart is used directly for both streaming and persistence:
+ * - All parts have status field ('active' | 'completed' | 'error' | 'abort')
+ * - No conversion needed between formats
+ * - Streaming state stored in database message with status='active'
+ * - Parts updated via updateMessageParts() during streaming
+ * - Message status updated via updateMessageStatus() on completion
  *
- * StreamingPart (persisted, session.types.ts):
- * - Standardized format for session persistence
- * - Explicit 'status' fields for all part types
- * - Includes 'aborted' state for recovery
- *
- * Conversion happens at persistence boundary:
- * - StreamPart → StreamingPart when saving to session
- * - StreamingPart → StreamPart when restoring from session
- *
- * This separation keeps streaming code simple while maintaining
- * rich persistence format for session recovery.
+ * This unification eliminates conversion overhead and simplifies recovery.
  */
-type StreamPart =
-  | { type: 'text'; content: string }
-  | { type: 'reasoning'; content: string; completed?: boolean; duration?: number; startTime?: number }
-  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
-  | { type: 'error'; error: string };
 
 interface ChatProps {
   commandFromPalette?: string | null;
@@ -108,13 +96,7 @@ function StreamingPartWrapper({
 }) {
   // Determine status for debug label
   const getPartStatus = (): string => {
-    if (part.type === 'tool') {
-      return part.status;
-    }
-    if (part.type === 'reasoning') {
-      return part.completed ? 'completed' : 'active';
-    }
-    return 'completed';
+    return part.status;
   };
 
   return (
@@ -138,116 +120,19 @@ function StreamingPartWrapper({
 }
 
 /**
- * Convert internal StreamPart to persisted StreamingPart format
- *
- * DESIGN DECISION: Conversion strategy
- * ====================================
- *
- * Status mapping:
- * - text: always 'completed' (text parts are immutable once created)
- * - reasoning: completed=true → 'completed', completed=false/undefined → 'active'
- * - tool: maps status directly (running/completed/failed)
- * - error: always 'completed'
- *
- * Why this mapping?
- * - Preserves all runtime state for recovery
- * - Text parts don't need 'active' state (accumulated atomically)
- * - Reasoning and tools have clear active/completed lifecycle
+ * Helper to convert status strings between formats
+ * Maps tool 'running'/'failed' to MessagePart 'active'/'error'
  */
-function toPersistentFormat(part: StreamPart): StreamingPart {
-  if (part.type === 'text') {
-    return {
-      type: 'text',
-      content: part.content,
-      status: 'completed'
-    };
-  }
-  if (part.type === 'reasoning') {
-    const base: StreamingPart & { type: 'reasoning' } = {
-      type: 'reasoning' as const,
-      content: part.content,
-      status: (part.completed ? 'completed' : 'active') as 'active' | 'completed' | 'aborted'
-    };
-    if (part.duration !== undefined) base.duration = part.duration;
-    if (part.startTime !== undefined) base.startTime = part.startTime;
-    return base;
-  }
-  if (part.type === 'tool') {
-    const base: StreamingPart & { type: 'tool' } = {
-      type: 'tool' as const,
-      toolId: part.toolId,
-      name: part.name,
-      status: part.status as 'running' | 'completed' | 'failed' | 'aborted'
-    };
-    if (part.args !== undefined) base.args = part.args;
-    if (part.result !== undefined) base.result = part.result;
-    if (part.error !== undefined) base.error = part.error;
-    if (part.duration !== undefined) base.duration = part.duration;
-    if (part.startTime !== undefined) base.startTime = part.startTime;
-    return base;
-  }
-  // error
-  return {
-    type: 'error',
-    error: part.error,
-    status: 'completed'
-  };
+function mapToolStatusToPart(status: 'running' | 'completed' | 'failed'): 'active' | 'completed' | 'error' {
+  if (status === 'running') return 'active';
+  if (status === 'failed') return 'error';
+  return 'completed';
 }
 
-/**
- * Convert persisted StreamingPart to internal StreamPart format
- *
- * DESIGN DECISION: Recovery strategy
- * ==================================
- *
- * Status mapping (reverse of toPersistentFormat):
- * - text: status ignored (always have content)
- * - reasoning: status 'completed' → completed=true, 'active'/'aborted' → completed=false
- * - tool: maps status directly, 'aborted' → 'failed' (treat aborted as failed for UI)
- * - error: status ignored
- *
- * Why treat 'aborted' as 'failed' for tools?
- * - UI rendering logic already handles 'failed' state
- * - Aborted tools can't be resumed, so treating as failed is appropriate
- * - Simplifies recovery logic
- */
-function fromPersistentFormat(part: StreamingPart): StreamPart {
-  if (part.type === 'text') {
-    return {
-      type: 'text',
-      content: part.content
-    };
-  }
-  if (part.type === 'reasoning') {
-    const base: StreamPart & { type: 'reasoning' } = {
-      type: 'reasoning' as const,
-      content: part.content,
-      completed: part.status === 'completed'
-    };
-    if (part.duration !== undefined) base.duration = part.duration;
-    if (part.startTime !== undefined) base.startTime = part.startTime;
-    return base;
-  }
-  if (part.type === 'tool') {
-    const mappedStatus = part.status === 'aborted' ? 'failed' : part.status;
-    const base: StreamPart & { type: 'tool' } = {
-      type: 'tool' as const,
-      toolId: part.toolId,
-      name: part.name,
-      status: mappedStatus as 'running' | 'completed' | 'failed'
-    };
-    if (part.args !== undefined) base.args = part.args;
-    if (part.result !== undefined) base.result = part.result;
-    if (part.error !== undefined) base.error = part.error;
-    if (part.duration !== undefined) base.duration = part.duration;
-    if (part.startTime !== undefined) base.startTime = part.startTime;
-    return base;
-  }
-  // error
-  return {
-    type: 'error',
-    error: part.error
-  };
+function mapPartStatusToTool(status: 'active' | 'completed' | 'error' | 'abort'): 'running' | 'completed' | 'failed' {
+  if (status === 'active') return 'running';
+  if (status === 'error' || status === 'abort') return 'failed';
+  return 'completed';
 }
 
 export default function Chat({ commandFromPalette }: ChatProps) {
@@ -278,6 +163,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Store last error for onComplete handler
   const lastErrorRef = useRef<string | null>(null);
+
+  // Store current streaming message ID for persistence
+  const streamingMessageIdRef = useRef<string | null>(null);
 
   // Optimized streaming: accumulate chunks in ref, update state in batches
   const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
@@ -370,64 +258,25 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   });
 
   /**
-   * Effect: Sync streaming state to session (persistence)
-   *
-   * DESIGN DECISION: When to persist streaming state?
-   * =================================================
-   *
-   * Persist on every streamParts or isStreaming change:
-   * - Ensures session always has latest streaming state
-   * - Enables instant recovery on session switch
-   * - Database writes are async (optimistic update pattern)
-   *
-   * Why not debounce?
-   * - streamParts changes are already batched (50ms debounce in flushStreamBuffer)
-   * - Tool/reasoning updates are infrequent (seconds apart)
-   * - Extra writes are cheap (in-memory + async disk)
-   * - Guarantees zero data loss on crash/switch
-   *
-   * Performance: ~10-50 writes per second during active streaming
-   * Impact: Negligible (batched text updates, async DB writes)
-   */
-  useEffect(() => {
-    if (!currentSessionId) return;
-
-    // Convert internal format to persistent format
-    const persistentParts = streamParts.map(toPersistentFormat);
-
-    // Update session (optimistic in-memory + async to database)
-    setStreamingState(currentSessionId, isStreaming, persistentParts);
-  }, [currentSessionId, isStreaming, streamParts, setStreamingState]);
-
-  /**
    * Effect: Restore streaming state on session switch
    *
-   * DESIGN DECISION: How to handle state restoration?
-   * =================================================
+   * NEW DESIGN: Message-based streaming state
+   * ==========================================
    *
-   * On session switch (currentSessionId changes):
-   * 1. Check if new session has persisted streaming state
-   * 2. If yes: restore isStreaming and streamParts from session
-   * 3. If no: keep current state (empty)
+   * Streaming state is now stored in database messages with status='active':
+   * 1. On streaming start: Create message with status='active'
+   * 2. During streaming: Update message.parts via updateMessageParts()
+   * 3. On completion: Update message.status via updateMessageStatus()
+   * 4. On session switch: Query messages WHERE status='active' to restore
    *
-   * Why restore from session instead of current state?
-   * - User may switch between multiple streaming sessions
-   * - Each session must maintain independent streaming state
-   * - Current state belongs to previous session
+   * This effect restores UI streaming state (isStreaming, streamParts) from
+   * database messages when switching sessions.
    *
-   * Edge cases handled:
-   * - Session A streaming → switch to B → B has no state → show empty
-   * - Session A streaming → switch to B streaming → restore B's state
-   * - New session → no streaming state → normal empty state
-   *
-   * Abort controller handling:
-   * - NOT restored (can't resume network request)
-   * - User must re-send message to continue
-   * - This is intentional: network state is not serializable
-   *
-   * CRITICAL: Only runs when currentSessionId changes (session switch)
-   * - NOT on every sessions array update (would cause infinite loop)
-   * - Reads session.streamingParts from the sessions array snapshot
+   * Benefits:
+   * - Single source of truth (database)
+   * - No conversion between formats
+   * - Natural recovery (query by status)
+   * - Works with session archiving (status field)
    */
   useEffect(() => {
     if (!currentSessionId) {
@@ -436,7 +285,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
-    // Find session
+    // Find session in store
     const session = sessions.find(s => s.id === currentSessionId);
     if (!session) {
       setIsStreaming(false);
@@ -444,17 +293,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
-    // Restore streaming state if exists
-    if (session.streamingParts && session.streamingParts.length > 0) {
-      setIsStreaming(session.isStreaming || false);
-      setStreamParts(session.streamingParts.map(fromPersistentFormat));
-    } else if (session.isStreaming === false || session.isStreaming === undefined) {
-      // Session has no streaming state, clear current state
+    // Find active (streaming) message in session
+    const activeMessage = session.messages.find(m => m.status === 'active');
+    if (activeMessage) {
+      // Restore streaming state from active message
+      setIsStreaming(true);
+      setStreamParts(activeMessage.content);
+    } else {
+      // No active message, clear streaming state
       setIsStreaming(false);
       setStreamParts([]);
     }
-    // Note: We don't clear state if session.isStreaming is true but no parts
-    // This handles edge case where streaming just started
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSessionId]); // ONLY depend on currentSessionId (not sessions)
 
@@ -779,6 +628,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Create abort controller for this stream
     abortControllerRef.current = new AbortController();
 
+    // Create assistant message with status='active' to track streaming
+    // This enables recovery: query WHERE status='active' to restore
+    const repo = await getSessionRepository();
+    const messageId = await repo.addMessage(
+      currentSessionId!,
+      'assistant',
+      [], // Start with empty parts
+      undefined, // no attachments
+      undefined, // no usage yet
+      undefined, // no finishReason yet
+      undefined, // no metadata
+      undefined, // no todoSnapshot
+      'active' // Mark as active for streaming
+    );
+    streamingMessageIdRef.current = messageId;
+    addLog(`Created streaming message: ${messageId}`);
+
     // Helper to flush accumulated chunks
     // This updates the last text part (part-level streaming)
     const flushStreamBuffer = () => {
@@ -796,12 +662,25 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         if (lastPart && lastPart.type === 'text') {
           newParts[newParts.length - 1] = {
             type: 'text',
-            content: lastPart.content + accumulatedText
+            content: lastPart.content + accumulatedText,
+            status: 'active' as const  // Text is active while streaming
           };
         } else {
           // No text part at end, create new one
-          newParts.push({ type: 'text', content: accumulatedText });
+          newParts.push({
+            type: 'text',
+            content: accumulatedText,
+            status: 'active' as const
+          });
         }
+
+        // Persist to database asynchronously
+        if (streamingMessageIdRef.current) {
+          repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+            addLog(`Failed to persist parts: ${error}`);
+          });
+        }
+
         return newParts;
       });
     };
@@ -829,93 +708,76 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         (toolCallId, toolName, args) => {
           // Message streaming: New part (tool) being added
           // Can be parallel - multiple tools can be active simultaneously
-          setStreamParts((prev) => [
-            ...prev,
-            { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() }
-          ]);
+          setStreamParts((prev) => {
+            const newParts = [
+              ...prev,
+              { type: 'tool', toolId: toolCallId, name: toolName, status: 'active', args, startTime: Date.now() } as StreamPart
+            ];
+
+            // Persist to database asynchronously
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist tool start: ${error}`);
+              });
+            }
+
+            return newParts;
+          });
         },
         // onToolResult - tool execution completed
         (toolCallId, toolName, result, duration) => {
           // Part streaming: Update tool status to completed
           // Keep in parts array - may not be movable to static yet
-          setStreamParts((prev) =>
-            prev.map((part) =>
+          setStreamParts((prev) => {
+            const newParts = prev.map((part) =>
               part.type === 'tool' && part.toolId === toolCallId
                 ? { ...part, status: 'completed' as const, duration, result }
                 : part
-            )
-          );
+            );
+
+            // Persist to database asynchronously
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist tool result: ${error}`);
+              });
+            }
+
+            return newParts;
+          });
         },
-        // onComplete - save partial content on abort/error only
+        // onComplete - finalize message status
         async () => {
-          // DESIGN DECISION: When to save in onComplete?
-          // =============================================
+          // NEW DESIGN: Message-based streaming
+          // ====================================
           //
-          // Normal completion:
-          // - useChat already saves complete message with full parts structure
-          // - DO NOT save again (would create duplicate)
-          //
-          // Abort/Error situations:
-          // - useChat throws before saving
-          // - onComplete must save partial content
-          // - Add note to indicate interruption
-          //
-          // Detection:
-          // - wasManuallyAbortedRef.current = user pressed ESC
-          // - lastErrorRef.current = stream error occurred
-          // - Neither = normal completion, useChat handled it
+          // Message was created with status='active' when streaming started.
+          // Parts were updated via updateMessageParts() during streaming.
+          // Now just update message status to 'completed', 'abort', or 'error'.
 
           const wasAborted = wasManuallyAbortedRef.current;
           const hasError = lastErrorRef.current;
-          const needsSaving = wasAborted || hasError;
 
-          if (needsSaving && currentSessionId) {
-            // Flush any remaining buffered text chunks first
-            if (streamBufferRef.current.chunks.length > 0) {
-              flushStreamBuffer();
-            }
-
-            const allParts = streamPartsRef.current;
-            if (allParts.length > 0) {
-              // DESIGN: Streaming parts ARE the message content
-              // No need to rebuild - just convert to persistent format and save
-              // This preserves:
-              // - Complete tool call structure (args, results)
-              // - Reasoning content
-              // - All metadata (duration, status, etc.)
-
-              const messageParts = allParts.map(toPersistentFormat);
-
-              // Add note as final text part
-              let note = '';
-              if (wasAborted) {
-                note = '\n\n[Response cancelled by user]';
-              } else if (hasError) {
-                note = `\n\n[Error: ${hasError}]`;
-              }
-
-              if (note) {
-                messageParts.push({
-                  type: 'text',
-                  content: note,
-                  status: 'completed'
-                });
-              }
-
-              addMessage(currentSessionId, 'assistant', messageParts);
-            }
-          }
-
-          // Flush any remaining buffered chunks
+          // Flush any remaining buffered text chunks first
           if (streamBufferRef.current.timeout) {
             clearTimeout(streamBufferRef.current.timeout);
             streamBufferRef.current.timeout = null;
           }
+          if (streamBufferRef.current.chunks.length > 0) {
+            flushStreamBuffer();
+          }
           streamBufferRef.current.chunks = [];
+
+          // Update message status in database
+          if (streamingMessageIdRef.current) {
+            const finalStatus = wasAborted ? 'abort' : hasError ? 'error' : 'completed';
+            await repo.updateMessageStatus(streamingMessageIdRef.current, finalStatus);
+            addLog(`Updated message status to: ${finalStatus}`);
+          }
 
           // Reset flags
           wasManuallyAbortedRef.current = false;
           lastErrorRef.current = null;
+          streamingMessageIdRef.current = null;
 
           // Message streaming ended - all parts saved to message history
           setIsStreaming(false);
@@ -997,10 +859,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onReasoningStart
         () => {
           // Message streaming: New part (reasoning) being added
-          setStreamParts((prev) => [
-            ...prev,
-            { type: 'reasoning', content: '', completed: false, startTime: Date.now() }
-          ]);
+          setStreamParts((prev) => {
+            const newParts = [
+              ...prev,
+              { type: 'reasoning', content: '', status: 'active', startTime: Date.now() } as StreamPart
+            ];
+
+            // Persist to database asynchronously
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist reasoning start: ${error}`);
+              });
+            }
+
+            return newParts;
+          });
         },
         // onReasoningDelta
         (text) => {
@@ -1014,6 +887,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 content: lastPart.content + text
               };
             }
+
+            // Persist to database asynchronously (but not on every delta - too frequent)
+            // The periodic flushStreamBuffer will handle persistence
+
             return newParts;
           });
         },
@@ -1026,32 +903,60 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             if (lastPart && lastPart.type === 'reasoning') {
               newParts[newParts.length - 1] = {
                 ...lastPart,
-                completed: true,
+                status: 'completed',
                 duration
               };
             }
+
+            // Persist to database asynchronously
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist reasoning end: ${error}`);
+              });
+            }
+
             return newParts;
           });
         },
         // onToolError
         (toolCallId, toolName, error, duration) => {
-          // Part streaming: Update tool status to failed
-          setStreamParts((prev) =>
-            prev.map((part) =>
+          // Part streaming: Update tool status to error
+          setStreamParts((prev) => {
+            const newParts = prev.map((part) =>
               part.type === 'tool' && part.toolId === toolCallId
-                ? { ...part, status: 'failed' as const, error, duration }
+                ? { ...part, status: 'error' as const, error, duration }
                 : part
-            )
-          );
+            );
+
+            // Persist to database asynchronously
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist tool error: ${error}`);
+              });
+            }
+
+            return newParts;
+          });
         },
         // onError
         (error) => {
           // Store error for onComplete handler
           lastErrorRef.current = error;
-          setStreamParts((prev) => [
-            ...prev,
-            { type: 'error', error }
-          ]);
+          setStreamParts((prev) => {
+            const newParts = [
+              ...prev,
+              { type: 'error', error, status: 'completed' } as StreamPart
+            ];
+
+            // Persist to database asynchronously
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist error: ${error}`);
+              });
+            }
+
+            return newParts;
+          });
         },
         abortControllerRef.current.signal
       );
@@ -1296,14 +1201,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             {isStreaming && (() => {
               // Helper to check if part is completed
               const isPartCompleted = (part: StreamPart): boolean => {
-                if (part.type === 'tool') {
-                  return part.status === 'completed' || part.status === 'failed';
-                }
-                if (part.type === 'reasoning') {
-                  return part.completed === true;
-                }
-                // Text and error parts are immediately completed
-                return true;
+                // All parts now have status field - check if it's completed
+                return part.status === 'completed' || part.status === 'error' || part.status === 'abort';
               };
 
               // Find first non-completed part (this is the boundary)
@@ -1316,10 +1215,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 console.error('  First incomplete index:', firstIncompleteIndex);
                 streamParts.forEach((part, idx) => {
                   const completed = isPartCompleted(part);
-                  console.error(`  [${idx}] ${part.type}: ${completed ? 'COMPLETED' : 'INCOMPLETE'}`,
-                    part.type === 'tool' ? `status=${part.status}` :
-                    part.type === 'reasoning' ? `completed=${part.completed}` : ''
-                  );
+                  console.error(`  [${idx}] ${part.type}: ${completed ? 'COMPLETED' : 'INCOMPLETE'} status=${part.status}`);
                 });
               }
 
