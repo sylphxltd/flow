@@ -124,13 +124,6 @@ export const useAppStore = create<AppState>()(
       const sessionId = `session-${Date.now()}`;
       const now = Date.now();
 
-      // Create in database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.createSession(provider, model).catch((error) => {
-          console.error('Failed to create session in database:', error);
-        });
-      });
-
       // Update state immediately (optimistic update)
       set((state) => {
         state.sessions.push({
@@ -145,6 +138,21 @@ export const useAppStore = create<AppState>()(
         });
         state.currentSessionId = sessionId;
       });
+
+      // Create in database asynchronously with SAME ID (critical for consistency!)
+      getSessionRepository().then((repo) => {
+        repo.createSessionFromData({
+          id: sessionId,
+          provider,
+          model,
+          nextTodoId: 1,
+          created: now,
+          updated: now,
+        }).catch((error) => {
+          console.error('Failed to create session in database:', error);
+        });
+      });
+
       return sessionId;
     },
     updateSessionModel: (sessionId, model) => {
