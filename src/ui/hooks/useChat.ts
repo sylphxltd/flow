@@ -109,12 +109,14 @@ const fileContentCache = new FileContentCache();
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
-  const sessions = useAppStore((state) => state.sessions);
+  // Optimized: select only current session instead of entire sessions array
+  // This prevents re-renders when other sessions change
+  const currentSession = useAppStore((state) =>
+    state.sessions.find((s) => s.id === state.currentSessionId)
+  );
   const addMessage = useAppStore((state) => state.addMessage);
   const setError = useAppStore((state) => state.setError);
   const addDebugLog = useAppStore((state) => state.addDebugLog);
-
-  const currentSession = sessions.find((s) => s.id === currentSessionId);
 
   /**
    * Send message and stream response

@@ -224,6 +224,12 @@ export const useAppStore = create<AppState>()(
     debugLogs: [],
     addDebugLog: (message) =>
       set((state) => {
+        // Only log in debug mode (controlled by DEBUG env var)
+        // In production, this is a no-op to avoid performance overhead
+        if (!process.env.DEBUG) {
+          return;
+        }
+
         const timestamp = new Date().toLocaleTimeString();
         state.debugLogs.push(`[${timestamp}] ${message}`);
 
@@ -322,17 +328,48 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-// Debounced session persistence
-// Track pending saves to avoid writing same session multiple times
+// Optimized session persistence
+// Only save sessions that actually changed (not all 20 sessions on every update!)
 const pendingSaves = new Map<string, NodeJS.Timeout>();
+const sessionReferences = new Map<string, Session>();
 const DEBOUNCE_MS = 500;
 
 // Subscribe to sessions changes and persist to disk (debounced)
 useAppStore.subscribe(
   (state) => state.sessions,
   (sessions) => {
-    // Debounce saves - batch multiple updates within 500ms window
-    sessions.forEach((session) => {
+    // Find which sessions actually changed by comparing references
+    // This prevents saving all 20 sessions when only 1 changed
+    const changedSessions: Session[] = [];
+
+    for (const session of sessions) {
+      const previousRef = sessionReferences.get(session.id);
+
+      // Session changed if:
+      // 1. It's new (not in map)
+      // 2. Reference is different (Immer creates new object on mutation)
+      if (!previousRef || previousRef !== session) {
+        changedSessions.push(session);
+        sessionReferences.set(session.id, session);
+      }
+    }
+
+    // Clean up references for deleted sessions
+    const currentIds = new Set(sessions.map(s => s.id));
+    for (const [id] of sessionReferences) {
+      if (!currentIds.has(id)) {
+        sessionReferences.delete(id);
+        // Cancel pending save for deleted session
+        const timeout = pendingSaves.get(id);
+        if (timeout) {
+          clearTimeout(timeout);
+          pendingSaves.delete(id);
+        }
+      }
+    }
+
+    // Only process changed sessions (not all 20!)
+    for (const session of changedSessions) {
       // Clear existing timeout for this session
       const existingTimeout = pendingSaves.get(session.id);
       if (existingTimeout) {
@@ -351,7 +388,7 @@ useAppStore.subscribe(
       }, DEBOUNCE_MS);
 
       pendingSaves.set(session.id, timeout);
-    });
+    }
   },
   { fireImmediately: false } // Don't fire on initialization
 );

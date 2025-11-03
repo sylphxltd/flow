@@ -21,13 +21,27 @@ export function useTokenCalculation(currentSession: Session | null): number {
   const [usedTokens, setUsedTokens] = useState(0);
   const lastCalculatedLength = useRef(0);
   const cachedTotal = useRef(0);
+  const lastSessionId = useRef<string | null>(null);
+
+  // Extract stable values to avoid triggering on object reference changes
+  const sessionId = currentSession?.id ?? null;
+  const messagesLength = currentSession?.messages.length ?? 0;
+  const model = currentSession?.model ?? '';
 
   useEffect(() => {
-    if (!currentSession) {
+    if (!currentSession || !sessionId) {
       setUsedTokens(0);
       lastCalculatedLength.current = 0;
       cachedTotal.current = 0;
+      lastSessionId.current = null;
       return;
+    }
+
+    // Reset cache if session changed
+    if (lastSessionId.current !== sessionId) {
+      lastCalculatedLength.current = 0;
+      cachedTotal.current = 0;
+      lastSessionId.current = sessionId;
     }
 
     const calculateTokens = async () => {
@@ -142,7 +156,7 @@ export function useTokenCalculation(currentSession: Session | null): number {
     };
 
     calculateTokens();
-  }, [currentSession, currentSession?.messages.length]);
+  }, [sessionId, messagesLength, model]); // Only depend on stable primitive values, not object references
 
   return usedTokens;
 }

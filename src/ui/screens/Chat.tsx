@@ -102,7 +102,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const updateSessionModel = useAppStore((state) => state.updateSessionModel);
   const updateSessionProvider = useAppStore((state) => state.updateSessionProvider);
   const updateSessionTitle = useAppStore((state) => state.updateSessionTitle);
-  const sessions = useAppStore((state) => state.sessions);
+  // Removed unused 'sessions' selector that was causing unnecessary re-renders
   const updateProvider = useAppStore((state) => state.updateProvider);
   const setAIConfig = useAppStore((state) => state.setAIConfig);
   const setCurrentSession = useAppStore((state) => state.setCurrentSession);
@@ -555,9 +555,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         messageWithContext,
         // onChunk - text streaming (batched for performance)
         (chunk) => {
-          const timestamp = Date.now();
-          addLog(`Chunk(${chunk.length}ch) @${timestamp}`);
-
           // Accumulate chunks in buffer
           streamBufferRef.current.chunks.push(chunk);
 
@@ -574,7 +571,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
       // onToolCall - tool execution started
       (toolCallId, toolName, args) => {
-        addLog(`Tool call: ${toolName} (${toolCallId})`);
         setStreamParts((prev) => [
           ...prev,
           { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() },
@@ -582,7 +578,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       },
       // onToolResult - tool execution completed
       (toolCallId, toolName, result, duration) => {
-        addLog(`Tool result: ${toolName} (${toolCallId}, ${duration}ms)`);
         setStreamParts((prev) =>
           prev.map((part) =>
             part.type === 'tool' && part.toolId === toolCallId
@@ -600,7 +595,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           }
           flushStreamBuffer();
 
-          addLog('Streaming complete');
           setIsStreaming(false);
           setStreamParts([]); // Clear streaming parts - they're now in message history
 
@@ -614,11 +608,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               const userMessageCount = freshSession.messages.filter(m => m.role === 'user').length;
               const hasTitle = !!freshSession.title && freshSession.title !== 'New Chat';
 
-              addLog(`[Title] User messages: ${userMessageCount}, Has title: ${hasTitle}, Current title: ${freshSession.title || 'none'}`);
-
               const isFirstMessage = userMessageCount === 1;
               if (isFirstMessage && !hasTitle) {
-                addLog('[Title] Generating title with streaming...');
                 const { generateSessionTitleWithStreaming } = await import('../../utils/session-title.js');
                 const provider = freshSession.provider;
                 const modelName = freshSession.model;
@@ -639,11 +630,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       }
                     );
 
-                    addLog(`[Title] Generated: ${finalTitle}`);
                     setIsTitleStreaming(false);
                     updateSessionTitle(currentSessionId, finalTitle);
                   } catch (error) {
-                    addLog(`[Title] Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+                    // Only log errors in debug mode
+                    if (process.env.DEBUG) {
+                      addLog(`[Title] Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+                    }
                     setIsTitleStreaming(false);
                     // Fallback to simple title
                     const { generateSessionTitle } = await import('../../utils/session-title.js');
@@ -660,12 +653,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         attachmentsForMessage.length > 0 ? attachmentsForMessage : undefined, // attachments
         // onReasoningStart - reasoning started
         () => {
-          addLog('Reasoning start');
           setStreamParts((prev) => [...prev, { type: 'reasoning', content: '', completed: false, startTime: Date.now() }]);
         },
         // onReasoningDelta - reasoning chunk
         (chunk) => {
-          addLog(`Reasoning chunk: ${chunk.substring(0, 50)}`);
           setStreamParts((prev) => {
             const newParts = [...prev];
             const lastPart = newParts[newParts.length - 1];
@@ -683,7 +674,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // onReasoningEnd - reasoning finished
         (duration) => {
-          addLog(`Reasoning end: ${duration}ms`);
           setStreamParts((prev) => {
             const newParts = [...prev];
 
@@ -704,7 +694,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // onToolError - tool failed
         (toolCallId, toolName, error, duration) => {
-          addLog(`Tool error: ${toolName} (${toolCallId})`);
           setStreamParts((prev) => {
             const newParts = [...prev];
             const toolPart = newParts.find(p => p.type === 'tool' && p.toolId === toolCallId);
@@ -720,14 +709,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // onError - stream error
         (error) => {
-          addLog(`Stream error: ${error}`);
           setStreamParts((prev) => [...prev, { type: 'error', error }]);
         }
       );
     } catch (error) {
       // Error is already handled in useChat hook and added as assistant message
       // This catch prevents unhandled promise rejection
-      addLog(`[handleSubmit] Caught error (already handled in useChat): ${error instanceof Error ? error.message : String(error)}`);
+      // Only log in debug mode
+      if (process.env.DEBUG) {
+        addLog(`[handleSubmit] Caught error (already handled in useChat): ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
   };
 
