@@ -58,8 +58,12 @@ export async function generateSessionTitleWithStreaming(
       providerConfig,
       [
         {
+          role: 'system',
+          content: 'You are a helpful assistant that generates concise, descriptive titles for chat conversations. Create titles that capture the main topic or intent, not just repeat the message. Keep titles under 50 characters. Respond with ONLY the title, no quotes or extra text.'
+        },
+        {
           role: 'user',
-          content: `Generate a concise, descriptive title (max 50 characters) for a chat that starts with this message. Only respond with the title, nothing else:\n\n${firstMessage}`,
+          content: `Create a descriptive title for a conversation that starts with: "${firstMessage}"\n\nTitle:`,
         },
       ],
       [], // no tools for title generation
@@ -72,8 +76,13 @@ export async function generateSessionTitleWithStreaming(
       onChunk(chunk);
     }
 
-    // Clean up title
-    const cleaned = fullTitle.trim().replace(/["\n]/g, '');
+    // Clean up title - remove quotes, newlines, and common prefixes
+    let cleaned = fullTitle.trim();
+    cleaned = cleaned.replace(/^["'「『]+|["'」』]+$/g, ''); // Remove quotes
+    cleaned = cleaned.replace(/^(Title:|标题：)\s*/i, ''); // Remove "Title:" prefix
+    cleaned = cleaned.replace(/\n+/g, ' '); // Replace newlines with spaces
+    cleaned = cleaned.trim();
+
     return cleaned.length > 50 ? cleaned.substring(0, 50) + '...' : cleaned;
   } catch (error) {
     // Fallback to simple title generation
