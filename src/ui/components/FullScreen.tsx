@@ -35,11 +35,9 @@ function useStdoutDimensions(): [number, number] {
 
 /**
  * FullScreen component
- * Enters alternate screen buffer and fills terminal dimensions
+ * Enters alternate screen buffer
  */
 export function FullScreen({ children, ...props }: PropsWithChildren<BoxProps>) {
-  const [columns, rows] = useStdoutDimensions();
-
   useEffect(() => {
     // Enter alternate screen buffer
     process.stdout.write(enterAltScreenCommand);
@@ -55,7 +53,7 @@ export function FullScreen({ children, ...props }: PropsWithChildren<BoxProps>) 
   }, []);
 
   return (
-    <Box width={columns} height={rows} {...props}>
+    <Box flexDirection="column" {...props}>
       {children}
     </Box>
   );
