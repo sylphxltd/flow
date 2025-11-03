@@ -1,6 +1,7 @@
 /**
  * Status Bar Component
  * Display important session info at the bottom
+ * Includes performance monitoring (FPS)
  */
 
 import React, { useEffect, useState } from 'react';
@@ -10,6 +11,7 @@ import { getProvider } from '../../providers/index.js';
 import { getTokenizerInfo } from '../../utils/token-counter.js';
 import { getAgentById } from '../../core/agent-manager.js';
 import { useAppStore } from '../stores/app-store.js';
+import { useFPS } from '../hooks/useFPS.js';
 
 interface StatusBarProps {
   provider: ProviderId;
@@ -35,6 +37,9 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
 
   // Subscribe to enabled rules count
   const enabledRulesCount = useAppStore((state) => state.enabledRuleIds.length);
+
+  // Track rendering performance
+  const { fps, isDegraded, isSlow } = useFPS();
 
   useEffect(() => {
     async function loadModelDetails() {
@@ -81,8 +86,15 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
         </Text>
       </Box>
 
-      {/* Right side: Tokenizer and Context */}
+      {/* Right side: FPS, Tokenizer and Context */}
       <Box>
+        {/* FPS indicator with color based on performance */}
+        <Text color={isSlow ? '#FF3366' : isDegraded ? '#FFD700' : '#00FF88'}>
+          {fps}fps
+        </Text>
+        {(!loading && tokenizerInfo) || (!loading && contextLength) ? (
+          <Text dimColor> │ </Text>
+        ) : null}
         {!loading && tokenizerInfo ? (
           <>
             <Text dimColor>
