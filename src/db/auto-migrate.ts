@@ -150,14 +150,24 @@ async function migrateSessionFiles(
       });
 
       // Add all messages
-      // Note: SessionRepository.getSessionMessages() handles data normalization
-      // No need to normalize here - corrupted data will be filtered on read
+      // Normalize attachments from old JSON files (might have corrupt data like {})
       for (const message of session.messages) {
+        // Normalize attachments: must be array or undefined
+        let normalizedAttachments: typeof message.attachments = undefined;
+        if (message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0) {
+          const validAttachments = message.attachments.filter((a: any) =>
+            a && typeof a === 'object' && a.path && a.relativePath
+          );
+          if (validAttachments.length > 0) {
+            normalizedAttachments = validAttachments;
+          }
+        }
+
         await repository.addMessage(
           session.id,
           message.role,
           message.content,
-          message.attachments,
+          normalizedAttachments,
           message.usage,
           message.finishReason,
           message.metadata,
