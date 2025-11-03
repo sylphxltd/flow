@@ -35,23 +35,10 @@ export class DrizzleDatabase {
 
       const dbPath = path.join(memoryDir, 'memory.db');
 
-      // Pre-create empty database file to ensure it exists
-      // This helps libSQL/SQLite open it successfully on Windows
-      try {
-        if (!fs.existsSync(dbPath)) {
-          fs.writeFileSync(dbPath, '', { flag: 'wx' });
-        }
-      } catch (fileError) {
-        // File already exists or cannot be created
-        // Continue anyway, libSQL will try to open it
-      }
-
-      // For local file databases, normalize path for cross-platform compatibility
-      // Use forward slashes even on Windows as libSQL expects this format
-      const normalizedPath = dbPath.replace(/\\/g, '/');
-
+      // Use local path directly without file: URL scheme
+      // libSQL will automatically create the file if it doesn't exist
       this.client = createClient({
-        url: `file:${normalizedPath}`,
+        url: dbPath,
       });
 
       this.db = drizzle(this.client, { schema });
@@ -61,7 +48,7 @@ export class DrizzleDatabase {
       throw new ConnectionError(
         'Failed to initialize database connection',
         {
-          url: `file:${dbPath}`,
+          url: dbPath,
           dbPath,
           cwd: process.cwd(),
           platform: process.platform,
