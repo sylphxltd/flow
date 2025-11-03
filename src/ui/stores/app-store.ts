@@ -409,9 +409,15 @@ export const useAppStore = create<AppState>()(
           }
         }
 
+        // ⚠️ CRITICAL: Copy todos and nextTodoId BEFORE async database operation
+        // Immer draft proxies are revoked after set() completes
+        // Accessing session.todos after set() will throw "Proxy has been revoked"
+        const todosCopy = JSON.parse(JSON.stringify(session.todos));
+        const nextTodoIdCopy = session.nextTodoId;
+
         // Sync to database asynchronously after state update
         getSessionRepository().then((repo) => {
-          repo.updateTodos(sessionId, session.todos, session.nextTodoId).catch((error) => {
+          repo.updateTodos(sessionId, todosCopy, nextTodoIdCopy).catch((error) => {
             console.error('Failed to update todos in database:', error);
           });
         });
