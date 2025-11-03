@@ -86,7 +86,7 @@ const SHOW_DEBUG_INDICATORS = process.env.DEBUG === 'true' || process.env.DEBUG 
  *
  * @param part - The streaming part to render
  * @param isLastInStream - Whether this is the last text part (shows cursor)
- * @param debugRegion - Debug flag to show which region this part is in (static/dynamic/completed)
+ * @param debugRegion - Debug flag to show which region this part is in (static/dynamic)
  */
 function StreamingPartWrapper({
   part,
@@ -95,32 +95,21 @@ function StreamingPartWrapper({
 }: {
   part: StreamPart;
   isLastInStream?: boolean;
-  debugRegion?: 'static' | 'dynamic' | 'completed';
+  debugRegion?: 'static' | 'dynamic';
 }) {
-  // Determine status for debug label
-  const getPartStatus = (): string => {
-    return part.status;
-  };
-
-  // Show debug indicator if:
-  // 1. debugRegion is provided (streaming mode)
-  // 2. SHOW_DEBUG_INDICATORS is true (global debug mode)
-  const showDebug = debugRegion !== undefined || SHOW_DEBUG_INDICATORS;
-  const displayRegion = debugRegion || 'completed';
-
   return (
     <Box paddingX={1} flexDirection="column">
-      {showDebug && (
+      {(debugRegion || SHOW_DEBUG_INDICATORS) && (
         <Box>
           <Text
             backgroundColor={
-              displayRegion === 'static' ? 'green' :
-              displayRegion === 'dynamic' ? 'blue' :
-              'gray'  // completed
+              debugRegion === 'static' ? 'green' :
+              debugRegion === 'dynamic' ? 'blue' :
+              'gray'  // no debugRegion = completed message
             }
             color="black"
           >
-            {' '}{part.type.toUpperCase()}: {getPartStatus()} [{displayRegion.toUpperCase()}]{' '}
+            {' '}{part.type.toUpperCase()}: {part.status} {debugRegion ? `[${debugRegion.toUpperCase()}]` : ''}{' '}
           </Text>
         </Box>
       )}
@@ -1256,7 +1245,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             <StreamingPartWrapper
                               key={`msg-${msg.timestamp}-part-${idx}`}
                               part={part}
-                              debugRegion={SHOW_DEBUG_INDICATORS ? 'completed' : undefined}
                             />
                           ))
                         ) : (
@@ -1294,7 +1282,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             <StreamingPartWrapper
                               key={`msg-${msg.timestamp}-part-${idx}`}
                               part={part}
-                              debugRegion={SHOW_DEBUG_INDICATORS ? 'completed' : undefined}
                             />
                           ))
                         ) : (
