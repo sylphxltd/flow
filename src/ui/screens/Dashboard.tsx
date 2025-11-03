@@ -423,6 +423,7 @@ export default function Dashboard() {
       { keys: 'ENTER', action: 'Edit mode / Confirm' },
       { keys: '↑↓', action: 'Navigate items (edit mode)' },
       { keys: 'SPACE', action: 'Toggle/Select (edit mode)' },
+      { keys: 'Option+Drag', action: 'Select text (macOS)' },
     ];
 
     return (
@@ -479,13 +480,13 @@ export default function Dashboard() {
       <FullScreen flexDirection="column">
         {/* Header */}
         <Box paddingX={2} paddingY={0}>
-        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
-        <Text dimColor>  Control Panel</Text>
-        <Box flexGrow={1} />
-        {mode === 'edit' && (
-          <Text color="#FFD700">EDIT MODE</Text>
-        )}
-      </Box>
+          <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+          <Text dimColor>  Control Panel</Text>
+          <Box flexGrow={1} />
+          {mode === 'edit' && (
+            <Text color="#FFD700">EDIT MODE</Text>
+          )}
+        </Box>
 
       {/* Main content */}
       <Box flexGrow={1} flexDirection="row">
@@ -545,7 +546,7 @@ export default function Dashboard() {
         <Text dimColor>ESC</Text>
         <Text dimColor>  Exit</Text>
         <Box flexGrow={1} />
-        <Text dimColor italic>Full-screen Interactive Panel</Text>
+        <Text dimColor italic>Option+Drag to select text</Text>
       </Box>
       </FullScreen>
     </MouseProvider>
