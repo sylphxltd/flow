@@ -54,6 +54,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [isTitleStreaming, setIsTitleStreaming] = useState(false);
   const [streamingTitle, setStreamingTitle] = useState('');
 
+  // Abort controller for cancelling AI stream
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Optimized streaming: accumulate chunks in ref, update state in batches
   const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
     chunks: [],
@@ -380,6 +383,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   useKeyboardNavigation({
     input,
     cursor,
+    isStreaming,
     pendingInput,
     pendingCommand,
     filteredFileInfo,
@@ -395,6 +399,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     lastEscapeTime,
     inputResolver,
     commandSessionRef,
+    abortControllerRef,
     cachedOptions,
     setInput,
     setCursor,
@@ -431,7 +436,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // PERFORMANCE: Memoize handleSubmit to provide stable reference to child components
   const handleSubmit = useCallback(async (value: string) => {
-    if (!value.trim() || isStreaming) return;
+    if (!value.trim()) return;
+
+    // If already streaming, ignore submit (don't start new stream)
+    if (isStreaming) {
+      return;
+    }
 
     // Handle pendingInput for text type
     if (pendingInput && pendingInput.type === 'text' && inputResolver.current) {
@@ -538,6 +548,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setIsStreaming(true);
     setStreamParts([]);
     addLog('Starting message send...');
+
+    // Create abort controller for this stream
+    abortControllerRef.current = new AbortController();
 
     // Helper to flush accumulated chunks
     const flushStreamBuffer = () => {
@@ -725,7 +738,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onError - stream error
         (error) => {
           setStreamParts((prev) => [...prev, { type: 'error', error }]);
-        }
+        },
+        abortControllerRef.current.signal // Pass abort signal to sendMessage
       );
     } catch (error) {
       // Error is already handled in useChat hook and added as assistant message
@@ -941,8 +955,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               }}
             />
           ) : isStreaming ? (
-            <Box>
+            <Box flexDirection="column">
               <Text dimColor>Waiting for response...</Text>
+              <Box marginTop={1}>
+                <Text color="yellow">Press ESC to cancel</Text>
+              </Box>
             </Box>
           ) : (
             <>

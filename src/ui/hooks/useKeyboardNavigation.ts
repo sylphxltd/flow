@@ -10,6 +10,7 @@ export interface KeyboardNavigationProps {
   // State
   input: string;
   cursor: number;
+  isStreaming: boolean;
   pendingInput: WaitForInputOptions | null;
   pendingCommand: { command: Command; currentInput: string } | null;
   filteredFileInfo: {
@@ -30,6 +31,7 @@ export interface KeyboardNavigationProps {
   lastEscapeTime: React.MutableRefObject<number>;
   inputResolver: React.MutableRefObject<((value: string | Record<string, string | string[]>) => void) | null>;
   commandSessionRef: React.MutableRefObject<string | null>;
+  abortControllerRef: React.MutableRefObject<AbortController | null>;
   cachedOptions: Map<string, Array<{ id: string; name: string }>>;
 
   // State setters
@@ -63,6 +65,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
   const {
     input,
     cursor,
+    isStreaming,
     pendingInput,
     pendingCommand,
     filteredFileInfo,
@@ -78,6 +81,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
     lastEscapeTime,
     inputResolver,
     commandSessionRef,
+    abortControllerRef,
     cachedOptions,
     setInput,
     setCursor,
@@ -103,6 +107,16 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
 
   useInput(
     async (char, key) => {
+      // ESC to abort streaming AI response (takes priority over other ESC actions)
+      if (key.escape && isStreaming) {
+        if (abortControllerRef.current) {
+          addLog('[abort] Cancelling AI response...');
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+        }
+        return;
+      }
+
       // Double ESC to clear input (works in any mode)
       if (key.escape) {
         const now = Date.now();

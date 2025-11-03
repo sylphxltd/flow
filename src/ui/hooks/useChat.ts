@@ -122,6 +122,7 @@ export function useChat() {
 
   /**
    * Send message and stream response
+   * @param abortSignal - Optional abort signal to cancel the stream
    */
   const sendMessage = async (
     message: string,
@@ -135,7 +136,8 @@ export function useChat() {
     onReasoningDelta?: (text: string) => void,
     onReasoningEnd?: (duration: number) => void,
     onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void,
-    onError?: (error: string) => void
+    onError?: (error: string) => void,
+    abortSignal?: AbortSignal
   ) => {
     if (!currentSession || !currentSessionId) {
       // Don't use setError - this should never happen in normal flow
@@ -334,6 +336,7 @@ export function useChat() {
       const stream = createAIStream({
         model,
         messages,
+        abortSignal, // Pass abort signal for cancellation
 
         // onTransformToolResult: Inject system status into tool outputs
         //
@@ -417,6 +420,25 @@ export function useChat() {
       );
     } catch (error) {
       addDebugLog('[useChat] ERROR CAUGHT!');
+
+      // Check if this is an abort error (user cancelled)
+      if (error instanceof Error && error.name === 'AbortError') {
+        addDebugLog('[useChat] Stream aborted by user');
+
+        // Get fresh session ID
+        const sessionId = currentSessionId || useAppStore.getState().currentSessionId;
+        if (sessionId) {
+          // Add cancelled message
+          addMessage(sessionId, 'assistant', [
+            { type: 'text', content: '⚠️ Response cancelled by user' }
+          ]);
+        }
+
+        // Trigger completion to cleanup UI state
+        onComplete?.();
+        return;
+      }
+
       // Don't log to console - error will be shown as assistant message
       addDebugLog(`[useChat] Error: ${error instanceof Error ? error.message : String(error)}`);
 

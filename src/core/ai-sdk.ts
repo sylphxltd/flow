@@ -186,6 +186,10 @@ export interface CreateAIStreamOptions {
   model: LanguageModelV2;
   messages: ModelMessage[];
   systemPrompt?: string;
+  /**
+   * Optional abort signal to cancel the stream
+   */
+  abortSignal?: AbortSignal;
   onStepFinish?: (step: StepInfo) => void;
   /**
    * Called before each step to prepare messages
@@ -389,6 +393,7 @@ export async function* createAIStream(
     systemPrompt = getSystemPrompt(),
     model,
     messages: initialMessages,
+    abortSignal,
     onStepFinish,
     onPrepareMessages,
     onTransformToolResult,
@@ -418,6 +423,7 @@ export async function* createAIStream(
       messages: preparedMessages,
       system: systemPrompt,
       tools: getAISDKTools(),
+      abortSignal, // Pass abort signal to allow cancellation
       // Don't handle errors here - let them propagate to the caller
       // onError callback is for non-fatal errors, fatal ones should throw
     });
