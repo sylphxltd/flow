@@ -42,7 +42,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <Box flexDirection="column" padding={1}>
           <Box marginBottom={1}>
             <Text color="red" bold>
-              ❌ Application Error
+              [ERROR] Application Error
             </Text>
           </Box>
           <Box marginBottom={1}>

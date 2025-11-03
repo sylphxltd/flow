@@ -36,7 +36,7 @@ export function sendTerminalNotification(title: string, message: string, options
   const border = '─'.repeat(Math.max(title.length + message.length + 4, 50));
   console.log('');
   console.log(`${colors.fg.green}${border}${colors.reset}`);
-  console.log(`${colors.bright}${colors.fg.blue}🔔 ${title}${colors.reset}`);
+  console.log(`${colors.bright}${colors.fg.blue}[!] ${title}${colors.reset}`);
   console.log(`${colors.fg.yellow}   ${message}${colors.reset}`);
   console.log(`${colors.fg.green}${border}${colors.reset}`);
   console.log('');

@@ -152,7 +152,7 @@ export function useChat() {
     // Handle configuration errors as assistant messages
     if (!providerConfig) {
       addMessage(currentSessionId, 'assistant', [
-        { type: 'text', content: '❌ Error: Provider not configured\n\nPlease configure your provider using the /provider command.' }
+        { type: 'text', content: '[ERROR] Provider not configured\n\nPlease configure your provider using the /provider command.' }
       ]);
       onComplete?.();
       return;
@@ -162,7 +162,7 @@ export function useChat() {
     const providerInstance = getProvider(provider);
     if (!providerInstance.isConfigured(providerConfig)) {
       addMessage(currentSessionId, 'assistant', [
-        { type: 'text', content: `❌ Error: ${providerInstance.name} is not properly configured\n\nPlease check your settings with the /provider command.` }
+        { type: 'text', content: `[ERROR] ${providerInstance.name} is not properly configured\n\nPlease check your settings with the /provider command.` }
       ]);
       onComplete?.();
       return;
@@ -430,7 +430,7 @@ export function useChat() {
         if (sessionId) {
           // Add cancelled message
           addMessage(sessionId, 'assistant', [
-            { type: 'text', content: '⚠️ Response cancelled by user' }
+            { type: 'text', content: '[CANCELLED] Response cancelled by user' }
           ]);
         }
 
@@ -455,7 +455,7 @@ export function useChat() {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       addDebugLog(`[useChat] Adding error message to session: ${sessionId}`);
 
-      const displayError = `❌ Error: ${errorMessage}\n\n${
+      const displayError = `[ERROR] ${errorMessage}\n\n${
         error instanceof Error && 'statusCode' in error && (error as any).statusCode === 401
           ? 'This usually means:\n• Invalid or missing API key\n• API key has expired\n\nPlease check your provider configuration with /provider command.'
           : 'Please try again or check your configuration.'

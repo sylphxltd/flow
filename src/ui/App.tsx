@@ -75,7 +75,7 @@ export default function App() {
     <Box flexDirection="column" width="100%" height="100%" paddingX={1}>
       {/* Header */}
       <Box paddingY={1}>
-        <Text bold color="#00D9FF">⚡ SYLPHX FLOW</Text>
+        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
         <Text dimColor> │ </Text>
         <Text dimColor>AI Development Assistant</Text>
       </Box>

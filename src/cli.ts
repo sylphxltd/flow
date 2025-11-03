@@ -108,12 +108,12 @@ function setupGlobalErrorHandling(): void {
 
   // Handle process termination gracefully
   process.on('SIGINT', () => {
-    console.log('\n👋 Sylphx Flow CLI terminated by user');
+    console.log('\nSylphx Flow CLI terminated by user');
     process.exit(0);
   });
 
   process.on('SIGTERM', () => {
-    console.log('\n👋 Sylphx Flow CLI terminated');
+    console.log('\nSylphx Flow CLI terminated');
     process.exit(0);
   });
 }
