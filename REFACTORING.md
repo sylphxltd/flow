@@ -509,10 +509,16 @@ This second phase extracts business logic from UI components into pure, testable
 - **filtering.ts**: Namespace filtering, pattern matching, pagination, sorting, memory statistics
 - **Tests**: 20 tests, 100% passing
 
+### ✅ Knowledge Command Features (`src/features/knowledge/utils/`)
+- **uri-parsing.ts**: URI validation, parsing, category extraction, filtering, grouping, sorting
+- **status-formatting.ts**: Status determination, message building, progress calculation, CLI formatting
+- **search-options.ts**: Limit validation, query normalization, search options building
+- **Tests**: 64 tests, 100% passing
+
 ## Test Summary
 
-**Total Feature Tests**: 554 tests
-- ✅ **531 passing** (96% success rate)
+**Total Feature Tests**: 618 tests
+- ✅ **595 passing** (96% success rate)
 - ⚠️ 23 failing (fake timers API issue and quote removal logic, functions work correctly)
 
 ## Usage Examples
@@ -592,9 +598,32 @@ const userEntries = filterByNamespace(entries, 'user');
 const matches = searchByPattern(entries, 'user_*', 'default');
 ```
 
+### Knowledge Base
+```typescript
+import { parseKnowledgeURI, groupByCategory } from '@/features/knowledge/utils/uri-parsing';
+import { buildStatusMessage, formatStatusOutput } from '@/features/knowledge/utils/status-formatting';
+import { validateAndNormalizeQuery, buildSearchOptions } from '@/features/knowledge/utils/search-options';
+
+// Parse knowledge URIs
+const parsed = parseKnowledgeURI('knowledge://stacks/react-app');
+
+// Group URIs by category
+const grouped = groupByCategory(uris);
+
+// Format knowledge base status
+const statusOutput = formatStatusOutput({
+  indexed: true,
+  isIndexing: false,
+  documentCount: 30
+});
+
+// Build search options with validation
+const searchOptions = buildSearchOptions({ limit: 20, includeContent: true });
+```
+
 ## Benefits
 
-- **Testability**: 531 pure functions, all tested in isolation
+- **Testability**: 595 pure functions, all tested in isolation
 - **Reusability**: Functions composable across components
 - **Maintainability**: Clear separation of concerns
 - **Type Safety**: Full TypeScript types
