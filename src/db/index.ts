@@ -6,37 +6,14 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 import { ConnectionError, DatabaseError } from '../utils/database-errors.js';
 import * as schema from './schema.js';
+import { findPackageRoot } from '../utils/paths.js';
 
 export type Database = ReturnType<typeof drizzle<typeof schema>>;
-
-/**
- * Find package root by walking up from this file
- * Used to locate drizzle migrations folder
- */
-function findPackageRoot(): string {
-  const __filename = fileURLToPath(import.meta.url);
-  let currentDir = path.dirname(__filename);
-
-  // Walk up max 10 levels to find package.json
-  for (let i = 0; i < 10; i++) {
-    const packageJsonPath = path.join(currentDir, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
-      return currentDir;
-    }
-
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) break; // reached filesystem root
-    currentDir = parentDir;
-  }
-
-  throw new Error('Cannot find package.json - drizzle migrations location unknown');
-}
 
 export class DrizzleDatabase {
   private client: ReturnType<typeof createClient>;
@@ -137,7 +114,7 @@ export class DrizzleDatabase {
 
       // Run migrations using Drizzle migrator
       // Use package root to find migrations folder (works with npm install)
-      const packageRoot = findPackageRoot();
+      const packageRoot = findPackageRoot('drizzle migrations');
       const migrationsPath = path.join(packageRoot, 'drizzle');
 
       if (fs.existsSync(migrationsPath)) {
