@@ -930,6 +930,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         )}
       </Box>
 
+        {/* Todo List - Always visible, positioned above input */}
+        <TodoList />
 
         {/* Input Area */}
         {/* Match padding with messages for visual consistency */}
@@ -980,9 +982,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             </Box>
           ) : (
             <>
-              {/* Show todos */}
-              <TodoList />
-
               {/* Show pending attachments */}
               {pendingAttachments.length > 0 && (
                 <Box flexDirection="column" marginBottom={1}>
