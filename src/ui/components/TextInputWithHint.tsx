@@ -78,9 +78,9 @@ function TextInputWithHint({
         validTags={validTags}
         disableUpDownArrows={disableUpDownArrows}
       />
-      {hint && value.length > 0 && (
+      {hint && value.length > 0 ? (
         <Text color="#444444">{hint}</Text>
-      )}
+      ) : null}
     </Box>
   );
 }

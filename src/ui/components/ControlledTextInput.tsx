@@ -622,16 +622,6 @@ function ControlledTextInput({
   const visibleLines = physicalLines.slice(startLine, endLine);
 
   // Render visible lines
-  if (process.env.DEBUG) {
-    console.error('[ControlledTextInput] Rendering:', {
-      startLine,
-      endLine,
-      totalPhysicalLines,
-      visibleLinesCount: visibleLines.length,
-      cursorPhysicalLineIdx,
-    });
-  }
-
   return (
     <Box flexDirection="column">
       {startLine > 0 && (
@@ -641,16 +631,6 @@ function ControlledTextInput({
       )}
       {visibleLines.map((physicalLine, idx) => {
         const actualIdx = startLine + idx;
-
-        if (process.env.DEBUG && idx === 0) {
-          console.error('[ControlledTextInput] First visible line:', {
-            idx,
-            actualIdx,
-            text: physicalLine.text,
-            hasCursor: physicalLine.hasCursor,
-            cursorPos: physicalLine.cursorPos,
-          });
-        }
 
         if (!physicalLine.hasCursor) {
           return (
@@ -665,16 +645,6 @@ function ControlledTextInput({
         const before = physicalLine.text.slice(0, cursorPos);
         const char = physicalLine.text[cursorPos] || ' ';
         const after = physicalLine.text.slice(cursorPos + 1);
-
-        if (process.env.DEBUG) {
-          console.error('[ControlledTextInput] Cursor line:', {
-            cursorPos,
-            before: JSON.stringify(before),
-            char: JSON.stringify(char),
-            after: JSON.stringify(after),
-            showCursor,
-          });
-        }
 
         return (
           <Box key={actualIdx}>
