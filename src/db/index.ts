@@ -4,7 +4,9 @@
  */
 
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
@@ -13,26 +15,61 @@ import * as schema from './schema.js';
 
 export type Database = ReturnType<typeof drizzle<typeof schema>>;
 
+/**
+ * Find package root by walking up from this file
+ * Used to locate drizzle migrations folder
+ */
+function findPackageRoot(): string {
+  const __filename = fileURLToPath(import.meta.url);
+  let currentDir = path.dirname(__filename);
+
+  // Walk up max 10 levels to find package.json
+  for (let i = 0; i < 10; i++) {
+    const packageJsonPath = path.join(currentDir, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      return currentDir;
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) break; // reached filesystem root
+    currentDir = parentDir;
+  }
+
+  throw new Error('Cannot find package.json - drizzle migrations location unknown');
+}
+
 export class DrizzleDatabase {
   private client: ReturnType<typeof createClient>;
   public db: Database;
+  private useHomeDir: boolean;
 
-  constructor() {
+  constructor(options?: { useHomeDir?: boolean }) {
+    // Default to project directory if not specified
+    this.useHomeDir = options?.useHomeDir ?? false;
+
     try {
-      const memoryDir = path.join(process.cwd(), '.sylphx-flow');
+      // Create both home directory and current directory .sylphx-flow folders
+      const homeDir = path.join(os.homedir(), '.sylphx-flow');
+      const projectDir = path.join(process.cwd(), '.sylphx-flow');
 
-      // Ensure directory exists with proper error handling
+      // Ensure both directories exist with proper error handling
       try {
-        if (!fs.existsSync(memoryDir)) {
-          fs.mkdirSync(memoryDir, { recursive: true });
+        if (!fs.existsSync(homeDir)) {
+          fs.mkdirSync(homeDir, { recursive: true });
+        }
+        if (!fs.existsSync(projectDir)) {
+          fs.mkdirSync(projectDir, { recursive: true });
         }
       } catch (dirError) {
         throw new Error(
-          `Failed to create database directory: ${memoryDir}. ` +
+          `Failed to create database directories: ${homeDir}, ${projectDir}. ` +
           `Error: ${(dirError as Error).message}`
         );
       }
 
+      // Determine database location
+      // code command uses home directory, init/run commands use project directory
+      const memoryDir = this.useHomeDir ? homeDir : projectDir;
       const dbPath = path.join(memoryDir, 'memory.db');
 
       // Use local path directly without file: URL scheme
@@ -99,7 +136,9 @@ export class DrizzleDatabase {
       }
 
       // Run migrations using Drizzle migrator
-      const migrationsPath = path.join(process.cwd(), 'drizzle');
+      // Use package root to find migrations folder (works with npm install)
+      const packageRoot = findPackageRoot();
+      const migrationsPath = path.join(packageRoot, 'drizzle');
 
       if (fs.existsSync(migrationsPath)) {
         await migrate(this.db, { migrationsFolder: migrationsPath });
@@ -151,7 +190,9 @@ export class DrizzleDatabase {
    * Get database path for debugging
    */
   getDatabasePath(): string {
-    const memoryDir = path.join(process.cwd(), '.sylphx-flow');
+    const homeDir = path.join(os.homedir(), '.sylphx-flow');
+    const projectDir = path.join(process.cwd(), '.sylphx-flow');
+    const memoryDir = this.useHomeDir ? homeDir : projectDir;
     return path.join(memoryDir, 'memory.db');
   }
 

@@ -30,8 +30,8 @@ export class DrizzleMemoryStorage {
   private drizzleDb: DrizzleDatabase;
   private db: Database;
 
-  constructor() {
-    this.drizzleDb = new DrizzleDatabase();
+  constructor(options?: { useHomeDir?: boolean }) {
+    this.drizzleDb = new DrizzleDatabase(options);
     this.db = this.drizzleDb.db;
   }
 
