@@ -1102,8 +1102,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       <Box flexDirection="column" flexGrow={1} width="70%">
         {/* App Header - Output once in Static */}
         <Static items={headerItems}>
-          {() => (
-            <Box paddingX={1} paddingY={1}>
+          {(item) => (
+            <Box key={item} paddingX={1} paddingY={1}>
               <Text bold color="#00D9FF">SYLPHX FLOW</Text>
               <Text dimColor> │ </Text>
               <Text dimColor>AI Development Assistant</Text>
@@ -1239,11 +1239,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Static items={staticParts}>
                       {(part, idx) => {
                         const isFirst = idx === 0;
+                        // Generate stable key based on part type and position in original streamParts
+                        const globalIdx = streamParts.indexOf(part);
                         const key = part.type === 'tool'
-                          ? `tool-${part.toolId}`
+                          ? `stream-tool-${part.toolId}`
                           : part.type === 'reasoning'
-                          ? `reasoning-${part.startTime}`
-                          : `${part.type}-${idx}`;
+                          ? `stream-reasoning-${part.startTime || globalIdx}`
+                          : part.type === 'error'
+                          ? `stream-error-${globalIdx}`
+                          : `stream-text-${globalIdx}`;
 
                         return (
                           <Box key={key} paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
@@ -1276,11 +1280,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                       {dynamicParts.map((part, idx) => {
                         const isLastPart = idx === dynamicParts.length - 1;
+                        // Generate stable key based on part type and position in original streamParts
+                        const globalIdx = streamParts.indexOf(part);
                         const key = part.type === 'tool'
-                          ? `tool-${part.toolId}`
+                          ? `stream-tool-${part.toolId}`
                           : part.type === 'reasoning'
-                          ? `reasoning-${part.startTime}`
-                          : `${part.type}-${idx}`;
+                          ? `stream-reasoning-${part.startTime || globalIdx}`
+                          : part.type === 'error'
+                          ? `stream-error-${globalIdx}`
+                          : `stream-text-${globalIdx}`;
 
                         return (
                           <MessagePart
