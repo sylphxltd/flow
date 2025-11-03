@@ -52,9 +52,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Normalize cursor to valid range (防禦性：確保 cursor 始終在有效範圍內)
   const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
-  const [staticStreamParts, setStaticStreamParts] = useState<StreamPart[]>([]); // Accumulated completed parts
+  // Two-level streaming state:
+  // 1. Message streaming: New parts being added to message
+  // 2. Part streaming: Deltas being added to current part
+  const [isStreaming, setIsStreaming] = useState(false); // Message streaming active
+  const [streamParts, setStreamParts] = useState<StreamPart[]>([]); // Active part (part streaming)
+  const [staticStreamParts, setStaticStreamParts] = useState<StreamPart[]>([]); // Completed parts (part streaming ended)
   const [isTitleStreaming, setIsTitleStreaming] = useState(false);
   const [streamingTitle, setStreamingTitle] = useState('');
 
@@ -490,6 +493,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     abortControllerRef.current = new AbortController();
 
     // Helper to flush accumulated chunks
+    // This updates the actively streaming part (part-level streaming)
     const flushStreamBuffer = () => {
       const buffer = streamBufferRef.current;
       if (buffer.chunks.length === 0) return;
@@ -500,14 +504,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       setStreamParts((prev) => {
         const activePart = prev[0]; // Should only be one active part
 
-        // If active part is text, update it
+        // Part streaming: Add delta to active text part
         if (activePart && activePart.type === 'text') {
           return [{
             type: 'text',
             content: activePart.content + accumulatedText
           }];
         } else {
-          // No active text part, create new one
+          // No active text part, create new one (new part starts streaming)
           return [{ type: 'text', content: accumulatedText }];
         }
       });
@@ -534,11 +538,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // onToolCall - tool execution started
         (toolCallId, toolName, args) => {
-          // Move current active parts to static before adding new tool
+          // Message streaming: New part (tool) being added
+          // This ends streaming of previous part (if any)
           setStreamParts((prev) => {
             if (prev.length > 0) {
+              // Previous part streaming ended - move to static
               setStaticStreamParts((staticParts) => [...staticParts, ...prev]);
             }
+            // Start new part streaming (tool)
             return [
               { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() }
             ];
@@ -551,7 +558,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               (part) => part.type === 'tool' && part.toolId === toolCallId
             );
             if (completedTool && completedTool.type === 'tool') {
-              // Move completed tool to static
+              // Part streaming ended - tool finished
               const completed = { ...completedTool, status: 'completed' as const, duration, result };
               setStaticStreamParts((staticParts) => [...staticParts, completed]);
               // Remove from active parts
@@ -630,9 +637,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           wasManuallyAbortedRef.current = false;
           lastErrorRef.current = null;
 
+          // Message streaming ended - all parts saved to message history
           setIsStreaming(false);
-          setStreamParts([]); // Clear streaming parts - they're now in message history
-          setStaticStreamParts([]); // Clear static parts too
+          setStreamParts([]); // Clear active part
+          setStaticStreamParts([]); // Clear completed parts
 
           // Generate title with streaming if this is first message
           if (currentSessionId) {
@@ -688,11 +696,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         attachments, // attachments
         // onReasoningStart
         () => {
-          // Move current active parts to static before adding reasoning
+          // Message streaming: New part (reasoning) being added
+          // This ends streaming of previous part (if any)
           setStreamParts((prev) => {
             if (prev.length > 0) {
+              // Previous part streaming ended - move to static
               setStaticStreamParts((staticParts) => [...staticParts, ...prev]);
             }
+            // Start new part streaming (reasoning)
             return [
               { type: 'reasoning', content: '', startTime: Date.now() }
             ];
@@ -700,12 +711,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // onReasoningDelta
         (text) => {
+          // Part streaming: Add delta to active reasoning part
           setStreamParts((prev) => {
-            const lastPart = prev[0]; // Should only be one active part
-            if (lastPart && lastPart.type === 'reasoning') {
+            const activePart = prev[0]; // Should only be one active part
+            if (activePart && activePart.type === 'reasoning') {
               return [{
-                ...lastPart,
-                content: lastPart.content + text
+                ...activePart,
+                content: activePart.content + text
               }];
             }
             return prev;
@@ -716,7 +728,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           setStreamParts((prev) => {
             const reasoningPart = prev[0];
             if (reasoningPart && reasoningPart.type === 'reasoning') {
-              // Move completed reasoning to static
+              // Part streaming ended - reasoning finished
               const completed = {
                 ...reasoningPart,
                 completed: true,
@@ -736,7 +748,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               (part) => part.type === 'tool' && part.toolId === toolCallId
             );
             if (failedTool && failedTool.type === 'tool') {
-              // Move failed tool to static
+              // Part streaming ended - tool failed
               const failed = { ...failedTool, status: 'failed' as const, error, duration };
               setStaticStreamParts((staticParts) => [...staticParts, failed]);
               // Remove from active parts
@@ -994,10 +1006,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               </Static>
             )}
 
-            {/* Currently streaming message */}
+            {/* Message streaming: Parts being added to message */}
             {isStreaming && (
               <>
-                {/* Completed parts - in Static (never re-render) */}
+                {/* Completed parts - part streaming ended, in Static (never re-render) */}
                 {staticStreamParts.length > 0 && (
                   <Static items={staticStreamParts}>
                     {(part, idx) => {
@@ -1023,7 +1035,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   </Static>
                 )}
 
-                {/* Active part - in Dynamic (updates frequently) */}
+                {/* Active part - part streaming ongoing, in Dynamic (updates with each delta) */}
                 <Box paddingX={1} paddingTop={staticStreamParts.length === 0 ? 1 : 0} flexDirection="column">
                   {staticStreamParts.length === 0 && (
                     <Box>
