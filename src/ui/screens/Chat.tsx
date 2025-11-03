@@ -777,7 +777,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       {/* Main chat area */}
       <Box flexDirection="column" flexGrow={1} width="70%">
         {/* Header */}
-        <Box flexShrink={0} paddingBottom={1}>
+        <Box flexShrink={0}>
           <Text color="#00D9FF">▌ CHAT</Text>
           {currentSession && (
             <>
@@ -829,7 +829,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         ) : (
           <Box flexDirection="column">
             {currentSession.messages.map((msg, i) => (
-              <Box key={i} paddingY={1} flexDirection="column">
+              <Box key={i} paddingTop={1} flexDirection="column">
                 {msg.role === 'user' ? (
                   <>
                     <Box>
@@ -893,7 +893,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             ))}
 
             {isStreaming && (
-              <Box paddingY={1} flexDirection="column">
+              <Box paddingTop={1} flexDirection="column">
                 <Box>
                   <Text color="#00FF88">▌ SYLPHX</Text>
                 </Box>
@@ -929,8 +929,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         <Box
           flexDirection="column"
           flexShrink={0}
-          paddingTop={currentSession && currentSession.messages.length === 0 && !isStreaming ? 0 : 1}
-          paddingY={currentSession && currentSession.messages.length === 0 && !isStreaming ? 1 : 0}
+          paddingTop={1}
         >
           <Box>
             <Text color="#00D9FF">▌ YOU</Text>
