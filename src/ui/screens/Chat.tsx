@@ -905,16 +905,24 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onReasoningEnd
         onReasoningEnd: (duration) => {
           // Part streaming: Mark reasoning as completed
-          // Reasoning always ends before next part starts, so it's the last part
+          // Find the last active reasoning part (not necessarily the last part overall)
           setStreamParts((prev) => {
             const newParts = [...prev];
-            const lastPart = newParts[newParts.length - 1];
-            if (lastPart && lastPart.type === 'reasoning') {
-              newParts[newParts.length - 1] = {
-                ...lastPart,
-                status: 'completed',
-                duration
-              };
+
+            // Find last active reasoning part (events can arrive out of order)
+            const lastReasoningIndex = newParts.map((p, i) => ({ p, i }))
+              .reverse()
+              .find(({ p }) => p.type === 'reasoning' && p.status === 'active')?.i;
+
+            if (lastReasoningIndex !== undefined) {
+              const reasoningPart = newParts[lastReasoningIndex];
+              if (reasoningPart.type === 'reasoning') {
+                newParts[lastReasoningIndex] = {
+                  ...reasoningPart,
+                  status: 'completed',
+                  duration
+                };
+              }
             }
 
             // Persist to database asynchronously
@@ -931,15 +939,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onTextEnd - mark text part as completed
         onTextEnd: () => {
           // Part streaming: Mark text as completed
-          // Text always ends before next part starts, so it's the last part
+          // Find the last active text part (not necessarily the last part overall)
           setStreamParts((prev) => {
             const newParts = [...prev];
-            const lastPart = newParts[newParts.length - 1];
-            if (lastPart && lastPart.type === 'text') {
-              newParts[newParts.length - 1] = {
-                ...lastPart,
-                status: 'completed'
-              };
+
+            // Find last active text part (events can arrive out of order)
+            const lastTextIndex = newParts.map((p, i) => ({ p, i }))
+              .reverse()
+              .find(({ p }) => p.type === 'text' && p.status === 'active')?.i;
+
+            if (lastTextIndex !== undefined) {
+              const textPart = newParts[lastTextIndex];
+              if (textPart.type === 'text') {
+                newParts[lastTextIndex] = {
+                  ...textPart,
+                  status: 'completed'
+                };
+              }
             }
 
             // Persist to database asynchronously
