@@ -18,33 +18,9 @@ export function useSessionPersistence() {
         // MASSIVE performance improvement: Database query vs loading 20 JSON files!
         const validSessions = await repository.getRecentSessions(20);
 
-        // Normalize sessions: ensure all messages have valid attachments (self-healing)
-        const normalizedSessions = validSessions.map((session) => ({
-          ...session,
-          messages: session.messages.map((msg) => {
-            // If attachments exists but is not an array, remove it
-            if (msg.attachments && !Array.isArray(msg.attachments)) {
-              const { attachments, ...rest } = msg;
-              return rest;
-            }
-            // If attachments is an array, filter out invalid entries
-            if (msg.attachments && Array.isArray(msg.attachments)) {
-              const validAttachments = msg.attachments.filter((a) =>
-                a && typeof a === 'object' && a.path && a.relativePath
-              );
-              if (validAttachments.length === 0) {
-                const { attachments, ...rest } = msg;
-                return rest;
-              }
-              return { ...msg, attachments: validAttachments };
-            }
-            return msg;
-          }),
-        }));
-
         // Update store with loaded sessions
         const setState = useAppStore.setState;
-        setState({ sessions: normalizedSessions });
+        setState({ sessions: validSessions });
 
         // Don't auto-set current session - let user start fresh or choose from history
         // Sessions are loaded and available but not automatically opened
