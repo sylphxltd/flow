@@ -929,6 +929,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               ) : (
                 <Text color="#FFD700"> Typing...</Text>
               )}
+              <Text dimColor> (ESC to cancel)</Text>
             </>
           ) : (
             <Text> </Text>
