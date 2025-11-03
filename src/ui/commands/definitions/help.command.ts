@@ -10,7 +10,7 @@ export const helpCommand: Command = {
   label: '/help',
   description: 'Show available commands',
   execute: async (context) => {
-    const { commands } = await import('../registry.js');
+    const commands = context.getCommands();
     const commandList = commands
       .map((cmd) => {
         const argsText = cmd.args

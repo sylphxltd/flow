@@ -209,6 +209,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     notificationSettings,
     updateNotificationSettings: (settings) => updateNotificationSettings(settings),
     updateOutput: (content) => addLog(content),
+    getCommands: () => commands,
   });
 
   // Generate hint text for current input
