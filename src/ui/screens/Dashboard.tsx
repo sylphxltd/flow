@@ -1,7 +1,6 @@
 /**
  * Dashboard Screen
- * Modern full-screen control panel with mouse and keyboard support
- * Central hub for all application features
+ * Minimalist borderless design - modern, advanced, clean
  */
 
 import React, { useState } from 'react';
@@ -19,7 +18,6 @@ type DashboardSection =
 interface MenuItem {
   id: DashboardSection;
   label: string;
-  icon: string;
   description: string;
 }
 
@@ -27,44 +25,37 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: 'agents',
     label: 'Agents',
-    icon: '◆',
-    description: 'Manage AI agents and their configurations',
+    description: 'AI agent configurations',
   },
   {
     id: 'rules',
     label: 'Rules',
-    icon: '▣',
-    description: 'Configure custom rules and behaviors',
+    description: 'Custom rules and behaviors',
   },
   {
     id: 'sessions',
     label: 'Sessions',
-    icon: '≡',
-    description: 'View and manage chat sessions',
+    description: 'Chat history and sessions',
   },
   {
     id: 'providers',
     label: 'Providers',
-    icon: '⚙',
-    description: 'Configure AI providers and API keys',
+    description: 'AI provider configurations',
   },
   {
     id: 'settings',
     label: 'Settings',
-    icon: '⊙',
-    description: 'Application settings and preferences',
+    description: 'Application preferences',
   },
   {
     id: 'notifications',
     label: 'Notifications',
-    icon: '♪',
-    description: 'Notification settings and sound preferences',
+    description: 'Notification preferences',
   },
 ];
 
 export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState<DashboardSection>('agents');
-  const [hoveredItem, setHoveredItem] = useState<DashboardSection | null>(null);
 
   const currentAgentId = useAppStore((state) => state.currentAgentId);
   const enabledRuleIds = useAppStore((state) => state.enabledRuleIds);
@@ -73,15 +64,12 @@ export default function Dashboard() {
   const notificationSettings = useAppStore((state) => state.notificationSettings);
   const navigateTo = useAppStore((state) => state.navigateTo);
 
-  // Keyboard navigation
   useInput((input, key) => {
-    // ESC to go back to chat
     if (key.escape) {
       navigateTo('chat');
       return;
     }
 
-    // Up/Down arrow navigation
     if (key.upArrow) {
       const currentIndex = MENU_ITEMS.findIndex((item) => item.id === selectedSection);
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : MENU_ITEMS.length - 1;
@@ -96,7 +84,6 @@ export default function Dashboard() {
       return;
     }
 
-    // Number keys for quick navigation
     const numKey = parseInt(input);
     if (!isNaN(numKey) && numKey >= 1 && numKey <= MENU_ITEMS.length) {
       setSelectedSection(MENU_ITEMS[numKey - 1].id);
@@ -104,27 +91,25 @@ export default function Dashboard() {
     }
   });
 
-  // Get stats for each section
   const getStats = (section: DashboardSection): string => {
     switch (section) {
       case 'agents':
-        return `Active: ${currentAgentId}`;
+        return currentAgentId;
       case 'rules':
-        return `${enabledRuleIds.length} enabled`;
+        return `${enabledRuleIds.length}`;
       case 'sessions':
-        return `${sessions.length} sessions`;
+        return `${sessions.length}`;
       case 'providers':
-        const providerCount = Object.keys(aiConfig?.providers || {}).length;
-        return `${providerCount} configured`;
+        return `${Object.keys(aiConfig?.providers || {}).length}`;
       case 'settings':
-        return 'Configure app';
+        return '';
       case 'notifications':
         const enabled = [
           notificationSettings.osNotifications,
           notificationSettings.terminalNotifications,
           notificationSettings.sound,
         ].filter(Boolean).length;
-        return `${enabled}/3 enabled`;
+        return `${enabled}/3`;
       default:
         return '';
     }
@@ -134,15 +119,14 @@ export default function Dashboard() {
     switch (selectedSection) {
       case 'agents':
         return (
-          <Box flexDirection="column" paddingX={2}>
-            <Box marginBottom={1}>
-              <Text bold color="#00D9FF">Current Agent</Text>
-            </Box>
+          <Box flexDirection="column" paddingX={4} paddingTop={1}>
             <Box marginBottom={2}>
-              <Text dimColor>→ </Text>
-              <Text color="#00FF88">{currentAgentId}</Text>
+              <Text color="#00D9FF">CURRENT AGENT</Text>
             </Box>
-            <Box marginBottom={1}>
+            <Box marginBottom={3}>
+              <Text bold color="#00FF88">{currentAgentId}</Text>
+            </Box>
+            <Box>
               <Text dimColor>
                 Agents control how the AI responds to your requests.
                 Switch between different agent modes for different tasks.
@@ -153,98 +137,124 @@ export default function Dashboard() {
 
       case 'rules':
         return (
-          <Box flexDirection="column" paddingX={2}>
-            <Box marginBottom={1}>
-              <Text bold color="#00D9FF">Enabled Rules</Text>
+          <Box flexDirection="column" paddingX={4} paddingTop={1}>
+            <Box marginBottom={2}>
+              <Text color="#00D9FF">ENABLED RULES</Text>
+              <Box flexGrow={1} />
+              <Text dimColor>{enabledRuleIds.length} active</Text>
             </Box>
             {enabledRuleIds.length === 0 ? (
-              <Box marginBottom={1}>
+              <Box>
                 <Text dimColor>No rules enabled</Text>
               </Box>
             ) : (
-              enabledRuleIds.map((ruleId) => (
-                <Box key={ruleId} marginBottom={1}>
-                  <Text dimColor>→ </Text>
-                  <Text>{ruleId}</Text>
-                </Box>
-              ))
+              <Box flexDirection="column">
+                {enabledRuleIds.map((ruleId, idx) => (
+                  <Box key={ruleId} marginBottom={1}>
+                    <Text dimColor>{idx + 1}  </Text>
+                    <Text color="#00FF88">{ruleId}</Text>
+                  </Box>
+                ))}
+              </Box>
             )}
           </Box>
         );
 
       case 'sessions':
         return (
-          <Box flexDirection="column" paddingX={2}>
-            <Box marginBottom={1}>
-              <Text bold color="#00D9FF">Recent Sessions</Text>
+          <Box flexDirection="column" paddingX={4} paddingTop={1}>
+            <Box marginBottom={2}>
+              <Text color="#00D9FF">RECENT SESSIONS</Text>
+              <Box flexGrow={1} />
+              <Text dimColor>{sessions.length} total</Text>
             </Box>
-            {sessions.slice(0, 10).map((session) => (
-              <Box key={session.id} marginBottom={1}>
-                <Text dimColor>→ </Text>
-                <Text>{session.title || 'New Chat'}</Text>
-                <Text dimColor> · </Text>
-                <Text dimColor>{session.messages.length} messages</Text>
-              </Box>
-            ))}
+            <Box flexDirection="column">
+              {sessions.slice(0, 10).map((session, idx) => (
+                <Box key={session.id} marginBottom={1}>
+                  <Text dimColor>{idx + 1}  </Text>
+                  <Text color="#00FF88">{session.title || 'New Chat'}</Text>
+                  <Text dimColor>  {session.messages.length}</Text>
+                </Box>
+              ))}
+            </Box>
           </Box>
         );
 
       case 'providers':
         return (
-          <Box flexDirection="column" paddingX={2}>
-            <Box marginBottom={1}>
-              <Text bold color="#00D9FF">Configured Providers</Text>
+          <Box flexDirection="column" paddingX={4} paddingTop={1}>
+            <Box marginBottom={2}>
+              <Text color="#00D9FF">PROVIDERS</Text>
+              <Box flexGrow={1} />
+              <Text dimColor>{Object.keys(aiConfig?.providers || {}).length} configured</Text>
             </Box>
-            {aiConfig?.providers && Object.entries(aiConfig.providers).map(([providerId, config]) => (
-              <Box key={providerId} marginBottom={1}>
-                <Text dimColor>→ </Text>
-                <Text>{providerId}</Text>
-                {config.defaultModel && (
-                  <>
-                    <Text dimColor> · </Text>
-                    <Text dimColor>{config.defaultModel}</Text>
-                  </>
-                )}
-              </Box>
-            ))}
+            <Box flexDirection="column">
+              {aiConfig?.providers && Object.entries(aiConfig.providers).map(([providerId, config], idx) => (
+                <Box key={providerId} marginBottom={1} flexDirection="column">
+                  <Box>
+                    <Text dimColor>{idx + 1}  </Text>
+                    <Text bold color="#00FF88">{providerId}</Text>
+                  </Box>
+                  {config.defaultModel && (
+                    <Box marginLeft={4}>
+                      <Text dimColor>{config.defaultModel}</Text>
+                    </Box>
+                  )}
+                </Box>
+              ))}
+            </Box>
           </Box>
         );
 
       case 'settings':
         return (
-          <Box flexDirection="column" paddingX={2}>
-            <Box marginBottom={1}>
-              <Text bold color="#00D9FF">Application Settings</Text>
+          <Box flexDirection="column" paddingX={4} paddingTop={1}>
+            <Box marginBottom={2}>
+              <Text color="#00D9FF">SETTINGS</Text>
             </Box>
-            <Box marginBottom={1}>
+            <Box>
               <Text dimColor>Configure application preferences and behavior</Text>
             </Box>
           </Box>
         );
 
       case 'notifications':
+        const enabledCount = [
+          notificationSettings.osNotifications,
+          notificationSettings.terminalNotifications,
+          notificationSettings.sound,
+        ].filter(Boolean).length;
+
         return (
-          <Box flexDirection="column" paddingX={2}>
-            <Box marginBottom={1}>
-              <Text bold color="#00D9FF">Notification Settings</Text>
+          <Box flexDirection="column" paddingX={4} paddingTop={1}>
+            <Box marginBottom={2}>
+              <Text color="#00D9FF">NOTIFICATIONS</Text>
+              <Box flexGrow={1} />
+              <Text dimColor>{enabledCount}/3 enabled</Text>
             </Box>
-            <Box marginBottom={1} flexDirection="column">
-              <Box>
-                <Text dimColor>→ OS Notifications: </Text>
-                <Text color={notificationSettings.osNotifications ? 'green' : 'red'}>
-                  {notificationSettings.osNotifications ? 'Enabled' : 'Disabled'}
+            <Box flexDirection="column">
+              <Box marginBottom={1}>
+                <Text dimColor>1  </Text>
+                <Text>OS Notifications</Text>
+                <Box flexGrow={1} />
+                <Text color={notificationSettings.osNotifications ? '#00FF88' : '#FF3366'}>
+                  {notificationSettings.osNotifications ? 'ON' : 'OFF'}
                 </Text>
               </Box>
-              <Box>
-                <Text dimColor>→ Terminal Notifications: </Text>
-                <Text color={notificationSettings.terminalNotifications ? 'green' : 'red'}>
-                  {notificationSettings.terminalNotifications ? 'Enabled' : 'Disabled'}
+              <Box marginBottom={1}>
+                <Text dimColor>2  </Text>
+                <Text>Terminal</Text>
+                <Box flexGrow={1} />
+                <Text color={notificationSettings.terminalNotifications ? '#00FF88' : '#FF3366'}>
+                  {notificationSettings.terminalNotifications ? 'ON' : 'OFF'}
                 </Text>
               </Box>
-              <Box>
-                <Text dimColor>→ Sound: </Text>
-                <Text color={notificationSettings.sound ? 'green' : 'red'}>
-                  {notificationSettings.sound ? 'Enabled' : 'Disabled'}
+              <Box marginBottom={1}>
+                <Text dimColor>3  </Text>
+                <Text>Sound</Text>
+                <Box flexGrow={1} />
+                <Text color={notificationSettings.sound ? '#00FF88' : '#FF3366'}>
+                  {notificationSettings.sound ? 'ON' : 'OFF'}
                 </Text>
               </Box>
             </Box>
@@ -258,84 +268,61 @@ export default function Dashboard() {
 
   return (
     <Box flexDirection="column" height="100%" width="100%">
-      {/* Header */}
-      <Box paddingX={2} paddingY={1} borderStyle="single" borderColor="gray">
+      {/* Minimal header */}
+      <Box paddingX={4} paddingY={1}>
         <Text bold color="#00D9FF">CONTROL PANEL</Text>
-        <Text dimColor> · </Text>
-        <Text dimColor>Central hub for all features</Text>
         <Box flexGrow={1} />
-        <Text dimColor>Press ESC to return</Text>
+        <Text dimColor>ESC to exit</Text>
       </Box>
 
-      {/* Main Content Area */}
+      {/* Main content */}
       <Box flexGrow={1} flexDirection="row">
-        {/* Left Sidebar - Menu */}
-        <Box
-          width="30%"
-          borderStyle="single"
-          borderColor="gray"
-          flexDirection="column"
-          paddingX={1}
-          paddingY={1}
-        >
-          <Box marginBottom={1}>
-            <Text bold dimColor>NAVIGATION</Text>
-          </Box>
-
+        {/* Navigation sidebar */}
+        <Box width="30%" flexDirection="column" paddingX={4} paddingY={2}>
           {MENU_ITEMS.map((item, index) => {
             const isSelected = selectedSection === item.id;
-            const isHovered = hoveredItem === item.id;
+            const stat = getStats(item.id);
 
             return (
               <Box
                 key={item.id}
-                marginBottom={1}
-                paddingX={1}
-                paddingY={0}
-                borderStyle={isSelected ? 'single' : undefined}
-                borderColor={isSelected ? '#00D9FF' : undefined}
+                marginBottom={2}
+                flexDirection="column"
               >
-                <Box flexDirection="column" width="100%">
-                  <Box>
-                    <Text dimColor>{index + 1}. </Text>
-                    <Text color={isSelected ? '#00D9FF' : isHovered ? '#00FF88' : 'white'}>
-                      {item.icon} {item.label}
-                    </Text>
-                    <Box flexGrow={1} />
-                    <Text dimColor>{getStats(item.id)}</Text>
-                  </Box>
-                  {isSelected && (
-                    <Box marginTop={0}>
-                      <Text dimColor>{item.description}</Text>
-                    </Box>
+                <Box>
+                  <Text dimColor>{index + 1}  </Text>
+                  <Text bold color={isSelected ? '#00FF88' : 'white'}>
+                    {item.label}
+                  </Text>
+                  {stat && (
+                    <>
+                      <Box flexGrow={1} />
+                      <Text dimColor>{stat}</Text>
+                    </>
                   )}
                 </Box>
+                {isSelected && (
+                  <Box marginTop={0} marginLeft={4}>
+                    <Text dimColor>{item.description}</Text>
+                  </Box>
+                )}
               </Box>
             );
           })}
         </Box>
 
-        {/* Right Content Area */}
-        <Box
-          flexGrow={1}
-          borderStyle="single"
-          borderColor="gray"
-          flexDirection="column"
-          paddingY={1}
-        >
+        {/* Content area */}
+        <Box flexGrow={1} flexDirection="column">
           {renderContent()}
         </Box>
       </Box>
 
-      {/* Footer with keyboard shortcuts */}
-      <Box paddingX={2} paddingY={1} borderStyle="single" borderColor="gray">
-        <Text dimColor>↑↓ Navigate</Text>
-        <Text dimColor> · </Text>
-        <Text dimColor>1-6 Quick select</Text>
-        <Text dimColor> · </Text>
-        <Text dimColor>ESC Exit</Text>
-        <Box flexGrow={1} />
-        <Text dimColor>Mouse ready (coming soon)</Text>
+      {/* Minimal footer */}
+      <Box paddingX={4} paddingY={1}>
+        <Text dimColor>↑↓</Text>
+        <Text dimColor>  Navigate  </Text>
+        <Text dimColor>1-6</Text>
+        <Text dimColor>  Quick Select</Text>
       </Box>
     </Box>
   );
