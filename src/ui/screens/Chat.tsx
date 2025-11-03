@@ -49,6 +49,9 @@ interface ChatProps {
 export default function Chat({ commandFromPalette }: ChatProps) {
   const [input, setInput] = useState('');
   const [cursor, setCursor] = useState(0); // Controlled cursor position
+
+  // Normalize cursor to valid range (防禦性：確保 cursor 始終在有效範圍內)
+  const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
   const [isTitleStreaming, setIsTitleStreaming] = useState(false);
@@ -392,7 +395,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Handle keyboard shortcuts for command menu and selection navigation
   useKeyboardNavigation({
     input,
-    cursor,
+    cursor: normalizedCursor,
     isStreaming,
     pendingInput,
     pendingCommand,
@@ -1024,7 +1027,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         }
                       : setInput
                   }
-                  cursor={pendingInput?.type === 'selection' ? undefined : cursor}
+                  cursor={pendingInput?.type === 'selection' ? undefined : normalizedCursor}
                   onCursorChange={pendingInput?.type === 'selection' ? undefined : setCursor}
                   onSubmit={handleSubmit}
                   placeholder={
