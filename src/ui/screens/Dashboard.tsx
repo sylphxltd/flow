@@ -56,6 +56,7 @@ export default function Dashboard() {
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoveredSection, setHoveredSection] = useState<DashboardSection | null>(null);
+  const [mouseEnabled, setMouseEnabled] = useState(true);
 
   const currentAgentId = useAppStore((state) => state.currentAgentId);
   const enabledRuleIds = useAppStore((state) => state.enabledRuleIds);
@@ -96,6 +97,12 @@ export default function Dashboard() {
       } else {
         handleAction();
       }
+      return;
+    }
+
+    // Toggle mouse (m key in browse mode)
+    if (input === 'm' && mode === 'browse') {
+      setMouseEnabled(!mouseEnabled);
       return;
     }
 
@@ -417,13 +424,13 @@ export default function Dashboard() {
 
   const renderKeybindings = () => {
     const keybindings = [
+      { keys: 'M', action: 'Toggle mouse (for text selection)' },
       { keys: 'ESC', action: 'Exit dashboard / Cancel edit' },
       { keys: 'TAB', action: 'Switch section' },
       { keys: '1-6', action: 'Quick select section' },
       { keys: 'ENTER', action: 'Edit mode / Confirm' },
       { keys: '↑↓', action: 'Navigate items (edit mode)' },
       { keys: 'SPACE', action: 'Toggle/Select (edit mode)' },
-      { keys: 'Option+Drag', action: 'Select text (macOS)' },
     ];
 
     return (
@@ -475,18 +482,22 @@ export default function Dashboard() {
     { id: 'keybindings', label: 'Keybindings', num: 6 },
   ];
 
-  return (
-    <MouseProvider>
-      <FullScreen flexDirection="column">
-        {/* Header */}
-        <Box paddingX={2} paddingY={0}>
-          <Text bold color="#00D9FF">SYLPHX FLOW</Text>
-          <Text dimColor>  Control Panel</Text>
-          <Box flexGrow={1} />
-          {mode === 'edit' && (
-            <Text color="#FFD700">EDIT MODE</Text>
-          )}
-        </Box>
+  const dashboardContent = (
+    <FullScreen flexDirection="column">
+      {/* Header */}
+      <Box paddingX={2} paddingY={0}>
+        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+        <Text dimColor>  Control Panel</Text>
+        <Box flexGrow={1} />
+        {mode === 'edit' ? (
+          <Text color="#FFD700">EDIT MODE</Text>
+        ) : (
+          <>
+            <Text color={mouseEnabled ? '#00FF88' : 'gray'}>{mouseEnabled ? '●' : '○'}</Text>
+            <Text dimColor> Mouse</Text>
+          </>
+        )}
+      </Box>
 
       {/* Main content */}
       <Box flexGrow={1} flexDirection="row">
@@ -541,14 +552,23 @@ export default function Dashboard() {
 
       {/* Footer */}
       <Box paddingX={2} paddingY={0}>
+        <Text dimColor>M</Text>
+        <Text dimColor>  Mouse  </Text>
         <Text dimColor>TAB</Text>
         <Text dimColor>  Next  </Text>
         <Text dimColor>ESC</Text>
         <Text dimColor>  Exit</Text>
         <Box flexGrow={1} />
-        <Text dimColor italic>Option+Drag to select text</Text>
+        <Text dimColor italic>
+          {mouseEnabled ? 'Press M to disable mouse for text selection' : 'Press M to enable mouse'}
+        </Text>
       </Box>
-      </FullScreen>
-    </MouseProvider>
+    </FullScreen>
+  );
+
+  return mouseEnabled ? (
+    <MouseProvider>{dashboardContent}</MouseProvider>
+  ) : (
+    dashboardContent
   );
 }
