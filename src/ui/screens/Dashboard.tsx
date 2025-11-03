@@ -5,7 +5,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Box, Text, useInput, DOMElement } from 'ink';
-import { useOnMouseClick, useOnMouseHover } from '@zenobius/ink-mouse';
+import { MouseProvider, useOnMouseClick, useOnMouseHover } from '@zenobius/ink-mouse';
 import { FullScreen } from '../components/FullScreen.js';
 import { useAppStore } from '../stores/app-store.js';
 import { getAllAgents, switchAgent } from '../../core/agent-manager.js';

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import SelectInput from 'ink-select-input';
 import { useAppStore } from '../stores/app-store.js';
@@ -50,6 +50,11 @@ interface CommandPaletteProps {
 export default function CommandPalette({ onCommand }: CommandPaletteProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const navigateTo = useAppStore((state) => state.navigateTo);
+
+  // Consume mouse events to prevent them from reaching TextInput
+  useInput((input, key) => {
+    // Mouse events will be consumed here and not reach TextInput
+  });
 
   // Filter commands by search query
   const filteredCommands = COMMANDS.filter(
