@@ -38,8 +38,10 @@ function isHorizontalRule(line: string): boolean {
  * Uses @jescalan/ink-markdown for terminal markdown rendering
  * Custom HR rendering with fixed width (48 chars)
  * If prefix is provided, adds it to the beginning of each line
+ *
+ * PERFORMANCE: Memoized to prevent re-rendering when content hasn't changed
  */
-export default function MarkdownText({ children, prefix, prefixColor }: MarkdownTextProps) {
+const MarkdownText = React.memo(function MarkdownText({ children, prefix, prefixColor }: MarkdownTextProps) {
   // Split content into lines for HR detection
   const lines = children.split('\n');
 
@@ -85,4 +87,6 @@ export default function MarkdownText({ children, prefix, prefixColor }: Markdown
       })}
     </Box>
   );
-}
+});
+
+export default MarkdownText;

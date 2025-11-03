@@ -1,6 +1,8 @@
 /**
  * MessagePart Component
  * Unified rendering for both streaming and completed message parts
+ *
+ * PERFORMANCE: Memoized to prevent re-rendering unchanged message parts
  */
 
 import React, { useState, useEffect } from 'react';
@@ -22,7 +24,7 @@ type StreamingPart =
   | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
   | { type: 'error'; error: string };
 
-export function MessagePart({ part, isLastInStream = false }: MessagePartProps) {
+export const MessagePart = React.memo(function MessagePart({ part, isLastInStream = false }: MessagePartProps) {
   // Live duration tracking for streaming parts
   const [liveDuration, setLiveDuration] = useState<number | undefined>(undefined);
 
@@ -125,4 +127,4 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
   }
 
   return null;
-}
+});
