@@ -54,17 +54,22 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamParts, setStreamParts] = useState<StreamPart[]>([]);
+  const [staticStreamParts, setStaticStreamParts] = useState<StreamPart[]>([]); // Accumulated completed parts
   const [isTitleStreaming, setIsTitleStreaming] = useState(false);
   const [streamingTitle, setStreamingTitle] = useState('');
 
   // Abort controller for cancelling AI stream
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Ref to track latest streamParts for error handling
+  // Refs to track latest parts for error handling
   const streamPartsRef = useRef<StreamPart[]>([]);
+  const staticStreamPartsRef = useRef<StreamPart[]>([]);
   useEffect(() => {
     streamPartsRef.current = streamParts;
   }, [streamParts]);
+  useEffect(() => {
+    staticStreamPartsRef.current = staticStreamParts;
+  }, [staticStreamParts]);
 
   // Flag to track if user manually aborted (ESC pressed)
   const wasManuallyAbortedRef = useRef(false);
@@ -474,6 +479,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     setIsStreaming(true);
     setStreamParts([]);
+    setStaticStreamParts([]); // Reset static parts for new stream
     addLog('Starting message send...');
 
     // Reset flags for new stream
@@ -492,20 +498,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       buffer.chunks = [];
 
       setStreamParts((prev) => {
-        const newParts = [...prev];
-        const lastPart = newParts[newParts.length - 1];
+        const activePart = prev[0]; // Should only be one active part
 
-        // If last part is text, append to it
-        if (lastPart && lastPart.type === 'text') {
-          newParts[newParts.length - 1] = {
+        // If active part is text, update it
+        if (activePart && activePart.type === 'text') {
+          return [{
             type: 'text',
-            content: lastPart.content + accumulatedText
-          };
+            content: activePart.content + accumulatedText
+          }];
         } else {
-          // Otherwise create new text part
-          newParts.push({ type: 'text', content: accumulatedText });
+          // No active text part, create new one
+          return [{ type: 'text', content: accumulatedText }];
         }
-        return newParts;
       });
     };
 
@@ -530,20 +534,31 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // onToolCall - tool execution started
         (toolCallId, toolName, args) => {
-          setStreamParts((prev) => [
-            ...prev,
-            { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() },
-          ]);
+          // Move current active parts to static before adding new tool
+          setStreamParts((prev) => {
+            if (prev.length > 0) {
+              setStaticStreamParts((staticParts) => [...staticParts, ...prev]);
+            }
+            return [
+              { type: 'tool', toolId: toolCallId, name: toolName, status: 'running', args, startTime: Date.now() }
+            ];
+          });
         },
         // onToolResult - tool execution completed
         (toolCallId, toolName, result, duration) => {
-          setStreamParts((prev) =>
-            prev.map((part) =>
-              part.type === 'tool' && part.toolId === toolCallId
-                ? { ...part, status: 'completed', duration, result }
-                : part
-            )
-          );
+          setStreamParts((prev) => {
+            const completedTool = prev.find(
+              (part) => part.type === 'tool' && part.toolId === toolCallId
+            );
+            if (completedTool && completedTool.type === 'tool') {
+              // Move completed tool to static
+              const completed = { ...completedTool, status: 'completed' as const, duration, result };
+              setStaticStreamParts((staticParts) => [...staticParts, completed]);
+              // Remove from active parts
+              return prev.filter((part) => part.type !== 'tool' || part.toolId !== toolCallId);
+            }
+            return prev;
+          });
         },
         // onComplete - always check if we need to save content
         async () => {
@@ -551,14 +566,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           // Check if streamParts content is already saved (by checking last message).
           // If not saved yet, save it now.
 
-          const currentStreamParts = streamPartsRef.current;
-          const hasContent = currentStreamParts.length > 0;
+          // Combine all parts (static + active)
+          const allParts = [...staticStreamPartsRef.current, ...streamPartsRef.current];
+          const hasContent = allParts.length > 0;
 
           if (hasContent && currentSessionId) {
-            // Build content from streamParts + buffer
+            // Build content from all parts + buffer
             const bufferedText = streamBufferRef.current.chunks.join('');
             let content = '';
-            for (const part of currentStreamParts) {
+            for (const part of allParts) {
               if (part.type === 'text') {
                 content += part.content;
               } else if (part.type === 'tool' && part.result) {
@@ -616,6 +632,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
           setIsStreaming(false);
           setStreamParts([]); // Clear streaming parts - they're now in message history
+          setStaticStreamParts([]); // Clear static parts too
 
           // Generate title with streaming if this is first message
           if (currentSessionId) {
@@ -671,49 +688,62 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         attachments, // attachments
         // onReasoningStart
         () => {
-          setStreamParts((prev) => [
-            ...prev,
-            { type: 'reasoning', content: '', startTime: Date.now() }
-          ]);
+          // Move current active parts to static before adding reasoning
+          setStreamParts((prev) => {
+            if (prev.length > 0) {
+              setStaticStreamParts((staticParts) => [...staticParts, ...prev]);
+            }
+            return [
+              { type: 'reasoning', content: '', startTime: Date.now() }
+            ];
+          });
         },
         // onReasoningDelta
         (text) => {
           setStreamParts((prev) => {
-            const newParts = [...prev];
-            const lastPart = newParts[newParts.length - 1];
+            const lastPart = prev[0]; // Should only be one active part
             if (lastPart && lastPart.type === 'reasoning') {
-              newParts[newParts.length - 1] = {
+              return [{
                 ...lastPart,
                 content: lastPart.content + text
-              };
+              }];
             }
-            return newParts;
+            return prev;
           });
         },
         // onReasoningEnd
         (duration) => {
           setStreamParts((prev) => {
-            const newParts = [...prev];
-            const lastPart = newParts[newParts.length - 1];
-            if (lastPart && lastPart.type === 'reasoning') {
-              newParts[newParts.length - 1] = {
-                ...lastPart,
+            const reasoningPart = prev[0];
+            if (reasoningPart && reasoningPart.type === 'reasoning') {
+              // Move completed reasoning to static
+              const completed = {
+                ...reasoningPart,
                 completed: true,
                 duration
               };
+              setStaticStreamParts((staticParts) => [...staticParts, completed]);
+              // Remove from active parts
+              return [];
             }
-            return newParts;
+            return prev;
           });
         },
         // onToolError
         (toolCallId, toolName, error, duration) => {
-          setStreamParts((prev) =>
-            prev.map((part) =>
-              part.type === 'tool' && part.toolId === toolCallId
-                ? { ...part, status: 'failed', error, duration }
-                : part
-            )
-          );
+          setStreamParts((prev) => {
+            const failedTool = prev.find(
+              (part) => part.type === 'tool' && part.toolId === toolCallId
+            );
+            if (failedTool && failedTool.type === 'tool') {
+              // Move failed tool to static
+              const failed = { ...failedTool, status: 'failed' as const, error, duration };
+              setStaticStreamParts((staticParts) => [...staticParts, failed]);
+              // Remove from active parts
+              return prev.filter((part) => part.type !== 'tool' || part.toolId !== toolCallId);
+            }
+            return prev;
+          });
         },
         // onError
         (error) => {
@@ -736,6 +766,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
       setIsStreaming(false);
       setStreamParts([]);
+      setStaticStreamParts([]);
     }
   }, [aiConfig, currentSessionId, sendMessage, addMessage, addLog, updateSessionTitle, notificationSettings]);
 
@@ -963,39 +994,66 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               </Static>
             )}
 
-            {/* Currently streaming message - dynamic, stays at bottom */}
+            {/* Currently streaming message */}
             {isStreaming && (
-              <Box paddingX={1} paddingTop={1} flexDirection="column">
-                <Box>
-                  <Text color="#00FF88">▌ SYLPHX</Text>
-                </Box>
+              <>
+                {/* Completed parts - in Static (never re-render) */}
+                {staticStreamParts.length > 0 && (
+                  <Static items={staticStreamParts}>
+                    {(part, idx) => {
+                      // Only render header for first static part
+                      const isFirst = idx === 0;
+                      const key = part.type === 'tool'
+                        ? `tool-${part.toolId}`
+                        : part.type === 'reasoning'
+                        ? `reasoning-${part.startTime}`
+                        : `${part.type}-${idx}`;
 
-                {/* Show placeholder when no parts yet */}
-                {streamParts.length === 0 && (
-                  <Box marginLeft={2}>
-                    <Text dimColor>...</Text>
-                  </Box>
+                      return (
+                        <Box key={key} paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
+                          {isFirst && (
+                            <Box>
+                              <Text color="#00FF88">▌ SYLPHX</Text>
+                            </Box>
+                          )}
+                          <MessagePart part={part} />
+                        </Box>
+                      );
+                    }}
+                  </Static>
                 )}
 
-                {/* Render all parts - MessagePart is already memoized */}
-                {streamParts.map((part, idx) => {
-                  const isLastPart = idx === streamParts.length - 1;
-                  // Generate stable key based on part type and identity
-                  const key = part.type === 'tool'
-                    ? `tool-${part.toolId}`
-                    : part.type === 'reasoning'
-                    ? `reasoning-${part.startTime}`
-                    : `${part.type}-${idx}`;
+                {/* Active part - in Dynamic (updates frequently) */}
+                <Box paddingX={1} paddingTop={staticStreamParts.length === 0 ? 1 : 0} flexDirection="column">
+                  {staticStreamParts.length === 0 && (
+                    <Box>
+                      <Text color="#00FF88">▌ SYLPHX</Text>
+                    </Box>
+                  )}
 
-                  return (
-                    <MessagePart
-                      key={key}
-                      part={part}
-                      isLastInStream={isLastPart && part.type === 'text'}
-                    />
-                  );
-                })}
-              </Box>
+                  {streamParts.length === 0 && (
+                    <Box marginLeft={2}>
+                      <Text dimColor>...</Text>
+                    </Box>
+                  )}
+
+                  {streamParts.map((part, idx) => {
+                    const key = part.type === 'tool'
+                      ? `tool-${part.toolId}`
+                      : part.type === 'reasoning'
+                      ? `reasoning-${part.startTime}`
+                      : `${part.type}-${idx}`;
+
+                    return (
+                      <MessagePart
+                        key={key}
+                        part={part}
+                        isLastInStream={part.type === 'text'}
+                      />
+                    );
+                  })}
+                </Box>
+              </>
             )}
           </>
         )}
