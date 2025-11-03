@@ -63,6 +63,14 @@ export function setQueueUpdateCallback(callback: (count: number) => void) {
 }
 
 /**
+ * Check if user input handler is available
+ * Returns true if interactive mode is enabled (handler is set)
+ */
+export function hasUserInputHandler(): boolean {
+  return userInputHandler !== null;
+}
+
+/**
  * Get current queue length
  */
 export function getQueueLength() {

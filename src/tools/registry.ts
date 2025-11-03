@@ -11,13 +11,16 @@ import { todoTools } from './todo.js';
 
 /**
  * Get all tools in AI SDK Tool format
+ * @param options.interactive - Whether to include interactive tools (ask). Default: true
  */
-export function getAISDKTools() {
+export function getAISDKTools(options: { interactive?: boolean } = {}) {
+  const { interactive = true } = options;
+
   return {
     ...filesystemTools,
     ...shellTools,
     ...searchTools,
-    ...interactionTools,
+    ...(interactive ? interactionTools : {}),
     ...todoTools,
   };
 }

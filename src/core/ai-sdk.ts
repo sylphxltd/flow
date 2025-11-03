@@ -8,6 +8,7 @@ import { streamText, stepCountIs, type UserContent, type AssistantContent, type 
 import type { LanguageModelV2, LanguageModelV2ToolResultOutput } from '@ai-sdk/provider';
 import * as os from 'node:os';
 import { getAISDKTools } from '../tools/index.js';
+import { hasUserInputHandler } from '../tools/interaction.js';
 import { getCurrentSystemPrompt } from './agent-manager.js';
 import { getEnabledRulesContent } from './rule-manager.js';
 import { useAppStore } from '../ui/stores/app-store.js';
@@ -422,7 +423,7 @@ export async function* createAIStream(
       model,
       messages: preparedMessages,
       system: systemPrompt,
-      tools: getAISDKTools(),
+      tools: getAISDKTools({ interactive: hasUserInputHandler() }),
       abortSignal, // Pass abort signal to allow cancellation
       // Don't handle errors here - let them propagate to the caller
       // onError callback is for non-fatal errors, fatal ones should throw
