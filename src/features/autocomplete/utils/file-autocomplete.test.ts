@@ -167,7 +167,7 @@ describe('replaceFileTag', () => {
     const result = replaceFileTag('hello @src/', 11, 6, 'src/index.ts');
     expect(result).toEqual({
       text: 'hello @src/index.ts',
-      cursor: 20,
+      cursor: 19, // atIndex(6) + 1 + selectedPath.length(12) = 19
     });
   });
 
@@ -183,7 +183,7 @@ describe('replaceFileTag', () => {
     const result = replaceFileTag('hello @src/ world', 11, 6, 'src/index.ts');
     expect(result).toEqual({
       text: 'hello @src/index.ts world',
-      cursor: 20,
+      cursor: 19, // atIndex(6) + 1 + selectedPath.length(12) = 19
     });
   });
 
@@ -191,7 +191,7 @@ describe('replaceFileTag', () => {
     const result = replaceFileTag('attach @src/ind more', 15, 7, 'src/index.ts');
     expect(result).toEqual({
       text: 'attach @src/index.ts more',
-      cursor: 21,
+      cursor: 20, // atIndex(7) + 1 + selectedPath.length(12) = 20
     });
   });
 
@@ -199,7 +199,7 @@ describe('replaceFileTag', () => {
     const result = replaceFileTag('hello @ world', 7, 6, 'README.md');
     expect(result).toEqual({
       text: 'hello @README.md world',
-      cursor: 17,
+      cursor: 16, // atIndex(6) + 1 + selectedPath.length(9) = 16
     });
   });
 });
