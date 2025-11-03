@@ -56,11 +56,18 @@ export async function generateSessionTitleWithStreaming(
       console.log(`[Title Gen] Creating AI stream for provider: ${provider}, model: ${modelName}`);
     }
 
-    const stream = createAIStream(
-      provider,
-      modelName,
-      providerConfig,
-      [
+    // Get the provider instance and create the model
+    const { getProvider } = await import('../providers/index.js');
+    const providerInstance = getProvider(provider);
+    const model = providerInstance.createClient(providerConfig, modelName);
+
+    if (process.env.DEBUG) {
+      console.log('[Title Gen] Stream created, starting to read chunks...');
+    }
+
+    const streamGenerator = createAIStream({
+      model,
+      messages: [
         {
           role: 'user',
           content: `You need to generate a SHORT, DESCRIPTIVE title (maximum 50 characters) for a chat conversation.
@@ -81,20 +88,18 @@ Examples:
 Now generate the title:`,
         },
       ],
-      [], // no tools for title generation
-    );
-
-    if (process.env.DEBUG) {
-      console.log('[Title Gen] Stream created, starting to read chunks...');
-    }
+    });
 
     let fullTitle = '';
     let chunkCount = 0;
 
-    for await (const chunk of stream.textStream) {
-      chunkCount++;
-      fullTitle += chunk;
-      onChunk(chunk);
+    // Iterate the async generator
+    for await (const chunk of streamGenerator) {
+      if (chunk.type === 'text-delta' && chunk.textDelta) {
+        chunkCount++;
+        fullTitle += chunk.textDelta;
+        onChunk(chunk.textDelta);
+      }
     }
 
     if (process.env.DEBUG) {
