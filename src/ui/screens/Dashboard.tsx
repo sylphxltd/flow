@@ -3,11 +3,12 @@
  * Features: Mouse support, keyboard navigation, full management capabilities
  */
 
-import React, { useState } from 'react';
-import { Box, Text, useInput, useFocus } from 'ink';
+import React, { useState, useEffect } from 'react';
+import { Box, Text, useInput } from 'ink';
 import { useAppStore } from '../stores/app-store.js';
 import { getAllAgents, switchAgent } from '../../core/agent-manager.js';
 import { getAllRules, toggleRule } from '../../core/rule-manager.js';
+import { useMouse } from '../hooks/useMouse.js';
 
 type DashboardSection =
   | 'agents'
@@ -19,11 +20,19 @@ type DashboardSection =
 
 type InteractionMode = 'browse' | 'edit';
 
+interface ClickableItem {
+  id: string;
+  y: number;
+  height: number;
+  action: () => void;
+}
+
 export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState<DashboardSection>('agents');
   const [mode, setMode] = useState<InteractionMode>('browse');
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [clickableItems, setClickableItems] = useState<ClickableItem[]>([]);
 
   const currentAgentId = useAppStore((state) => state.currentAgentId);
   const enabledRuleIds = useAppStore((state) => state.enabledRuleIds);
@@ -35,6 +44,63 @@ export default function Dashboard() {
 
   const agents = getAllAgents();
   const rules = getAllRules();
+
+  // Mouse support
+  const mouse = useMouse(true);
+
+  // Track clickable items
+  useEffect(() => {
+    const items: ClickableItem[] = [];
+    let currentY = 3; // Header takes 1 line + padding
+
+    // Navigation sidebar items (sections)
+    const sections: DashboardSection[] = ['agents', 'rules', 'sessions', 'providers', 'notifications', 'keybindings'];
+    sections.forEach((section, idx) => {
+      items.push({
+        id: `section-${section}`,
+        y: currentY,
+        height: 1,
+        action: () => {
+          setSelectedSection(section);
+          setSelectedItemIndex(0);
+        },
+      });
+      currentY += 2; // marginBottom={2}
+    });
+
+    setClickableItems(items);
+  }, [selectedSection]);
+
+  // Mouse hover detection
+  useEffect(() => {
+    if (!mouse.position) return;
+
+    const { y } = mouse.position;
+    const hoveredClickable = clickableItems.find(
+      (item) => y >= item.y && y < item.y + item.height
+    );
+
+    if (hoveredClickable) {
+      setHoveredItem(hoveredClickable.id);
+    } else {
+      setHoveredItem(null);
+    }
+  }, [mouse.position, clickableItems]);
+
+  // Mouse click handling
+  useEffect(() => {
+    if (!mouse.lastClick || mouse.lastClick.button !== 'left') return;
+
+    const { y } = mouse.lastClick.position;
+    const clickedItem = clickableItems.find(
+      (item) => y >= item.y && y < item.y + item.height
+    );
+
+    if (clickedItem) {
+      clickedItem.action();
+      mouse.clearClick();
+    }
+  }, [mouse.lastClick, clickableItems, mouse]);
 
   useInput((input, key) => {
     // Global shortcuts
@@ -62,7 +128,6 @@ export default function Dashboard() {
       if (mode === 'browse') {
         setMode('edit');
       } else {
-        // Execute action based on section
         handleAction();
       }
       return;
@@ -92,7 +157,6 @@ export default function Dashboard() {
         return;
       }
 
-      // Space to toggle
       if (input === ' ') {
         handleAction();
         return;
@@ -107,7 +171,7 @@ export default function Dashboard() {
       case 'rules':
         return rules.length - 1;
       case 'notifications':
-        return 2; // 3 notification settings
+        return 2;
       default:
         return 0;
     }
@@ -391,12 +455,13 @@ export default function Dashboard() {
       { keys: 'ENTER', action: 'Edit mode / Confirm' },
       { keys: '↑↓', action: 'Navigate items (edit mode)' },
       { keys: 'SPACE', action: 'Toggle/Select (edit mode)' },
+      { keys: 'MOUSE', action: 'Click to navigate, hover to highlight' },
     ];
 
     return (
       <Box flexDirection="column" paddingX={4} paddingTop={2}>
         <Box marginBottom={2}>
-          <Text color="#00D9FF">KEYBOARD SHORTCUTS</Text>
+          <Text color="#00D9FF">KEYBOARD & MOUSE SHORTCUTS</Text>
         </Box>
 
         <Box flexDirection="column">
@@ -414,7 +479,8 @@ export default function Dashboard() {
         </Box>
 
         <Box marginTop={2}>
-          <Text dimColor italic>Mouse support: Hover for highlights</Text>
+          <Text color="#00FF88">Mouse Enabled</Text>
+          <Text dimColor>  Position: {mouse.position.x}, {mouse.position.y}</Text>
         </Box>
       </Box>
     );
@@ -458,7 +524,10 @@ export default function Dashboard() {
         {mode === 'edit' ? (
           <Text color="#FFD700">EDIT MODE</Text>
         ) : (
-          <Text dimColor>ENTER to edit</Text>
+          <>
+            <Text color="#00FF88">●</Text>
+            <Text dimColor> Mouse Active</Text>
+          </>
         )}
       </Box>
 
@@ -468,6 +537,7 @@ export default function Dashboard() {
         <Box width="25%" flexDirection="column" paddingX={4} paddingY={2}>
           {sections.map((section) => {
             const isSelected = selectedSection === section.id;
+            const isHovered = hoveredItem === `section-${section.id}`;
 
             return (
               <Box
@@ -477,7 +547,13 @@ export default function Dashboard() {
                 <Text dimColor>{section.num}  </Text>
                 <Text
                   bold={isSelected}
-                  color={isSelected ? '#00FF88' : 'white'}
+                  color={
+                    isSelected
+                      ? '#00FF88'
+                      : isHovered
+                      ? '#FFD700'
+                      : 'white'
+                  }
                 >
                   {section.label}
                 </Text>
@@ -500,12 +576,14 @@ export default function Dashboard() {
 
       {/* Footer */}
       <Box paddingX={4} paddingY={1}>
+        <Text dimColor>MOUSE</Text>
+        <Text dimColor>  Click & Hover  </Text>
         <Text dimColor>TAB</Text>
-        <Text dimColor>  Next Section  </Text>
+        <Text dimColor>  Next  </Text>
         <Text dimColor>ESC</Text>
         <Text dimColor>  Exit</Text>
         <Box flexGrow={1} />
-        <Text dimColor italic>Full-screen Control Panel</Text>
+        <Text dimColor italic>Full-screen Interactive Panel</Text>
       </Box>
     </Box>
   );
