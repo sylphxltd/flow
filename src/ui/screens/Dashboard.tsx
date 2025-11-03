@@ -3,7 +3,7 @@
  * Features: Mouse support, keyboard navigation, full management capabilities
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useAppStore } from '../stores/app-store.js';
 import { getAllAgents, switchAgent } from '../../core/agent-manager.js';
@@ -34,7 +34,6 @@ export default function Dashboard() {
   const [mode, setMode] = useState<InteractionMode>('browse');
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
-  const [clickableItems, setClickableItems] = useState<ClickableItem[]>([]);
 
   const currentAgentId = useAppStore((state) => state.currentAgentId);
   const enabledRuleIds = useAppStore((state) => state.enabledRuleIds);
@@ -65,8 +64,8 @@ export default function Dashboard() {
   // Mouse support
   const mouse = useMouse(true);
 
-  // Track clickable items
-  useEffect(() => {
+  // Track clickable items - memoized to prevent infinite loops
+  const clickableItems = useMemo(() => {
     const items: ClickableItem[] = [];
 
     // Get terminal dimensions (approximate)
@@ -175,7 +174,9 @@ export default function Dashboard() {
               const settings = ['osNotifications', 'terminalNotifications', 'sound'] as const;
               const setting = settings[idx];
               if (setting) {
-                updateNotificationSettings({ [setting]: !notificationSettings[setting] });
+                // Read current state at click time, not closure time
+                const currentSettings = useAppStore.getState().notificationSettings;
+                updateNotificationSettings({ [setting]: !currentSettings[setting] });
               }
             },
           });
@@ -188,8 +189,8 @@ export default function Dashboard() {
         break;
     }
 
-    setClickableItems(items);
-  }, [selectedSection, agents, rules, sessions, aiConfig, notificationSettings, updateNotificationSettings]);
+    return items;
+  }, [selectedSection, agents.length, rules.length, sessions.length]);
 
   // Mouse hover detection
   useEffect(() => {
@@ -324,7 +325,9 @@ export default function Dashboard() {
         const settings = ['osNotifications', 'terminalNotifications', 'sound'] as const;
         const setting = settings[selectedItemIndex];
         if (setting) {
-          updateNotificationSettings({ [setting]: !notificationSettings[setting] });
+          // Read current state at action time, not closure time
+          const currentSettings = useAppStore.getState().notificationSettings;
+          updateNotificationSettings({ [setting]: !currentSettings[setting] });
         }
         break;
     }
