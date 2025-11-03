@@ -367,17 +367,6 @@ export class SessionRepository {
     status?: 'active' | 'completed' | 'error' | 'abort'
   ): Promise<string> {
     return await retryOnBusy(async () => {
-      // Normalize attachments at entry point (before writing to DB)
-      let normalizedAttachments: FileAttachment[] | undefined = undefined;
-      if (attachments && Array.isArray(attachments) && attachments.length > 0) {
-        const validAttachments = attachments.filter((a) =>
-          a && typeof a === 'object' && a.path && a.relativePath
-        );
-        if (validAttachments.length > 0) {
-          normalizedAttachments = validAttachments;
-        }
-      }
-
       const messageId = randomUUID();
       const now = Date.now();
 
@@ -415,8 +404,8 @@ export class SessionRepository {
       }
 
       // Insert attachments
-      if (normalizedAttachments && normalizedAttachments.length > 0) {
-        for (const att of normalizedAttachments) {
+      if (attachments && attachments.length > 0) {
+        for (const att of attachments) {
           await tx.insert(messageAttachments).values({
             id: randomUUID(),
             messageId,
