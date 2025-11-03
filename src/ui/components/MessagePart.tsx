@@ -17,31 +17,27 @@ interface MessagePartProps {
   isLastInStream?: boolean;
 }
 
-// Extended type for streaming parts
+// Extended type for streaming parts - UNIFIED with status field
 type StreamingPart =
-  | { type: 'text'; content: string }
-  | { type: 'reasoning'; content: string; completed?: boolean; duration?: number; startTime?: number }
-  | { type: 'tool'; toolId: string; name: string; status: 'running' | 'completed' | 'failed'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
-  | { type: 'error'; error: string };
+  | { type: 'text'; content: string; status: 'active' | 'completed' | 'error' | 'abort' }
+  | { type: 'reasoning'; content: string; status: 'active' | 'completed' | 'error' | 'abort'; duration?: number; startTime?: number }
+  | { type: 'tool'; toolId: string; name: string; status: 'active' | 'completed' | 'error' | 'abort'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
+  | { type: 'error'; error: string; status: 'completed' };
 
 export const MessagePart = React.memo(function MessagePart({ part, isLastInStream = false }: MessagePartProps) {
   // Live duration tracking for streaming parts
   const [liveDuration, setLiveDuration] = useState<number | undefined>(undefined);
 
-  // Extract stable values for dependencies
+  // Extract stable values for dependencies (using unified status field)
   const partType = part.type;
-  const isReasoningCompleted = part.type === 'reasoning' && 'completed' in part ? part.completed : true;
-  const toolStatus = part.type === 'tool' ? part.status : null;
+  const partStatus = 'status' in part ? part.status : 'completed'; // Default to completed for old format
   const startTime = (part.type === 'reasoning' || part.type === 'tool') && 'startTime' in part ? part.startTime : null;
 
   useEffect(() => {
-    // Check if this is a running reasoning part
-    const isRunningReasoning = partType === 'reasoning' && !isReasoningCompleted && startTime;
+    // Check if this is an active (streaming) part with startTime
+    const isActivePart = partStatus === 'active' && startTime;
 
-    // Check if this is a running tool part
-    const isRunningTool = partType === 'tool' && toolStatus === 'running' && startTime;
-
-    if ((isRunningReasoning || isRunningTool) && startTime) {
+    if (isActivePart && startTime) {
       // Set initial duration
       setLiveDuration(Date.now() - startTime);
 
@@ -56,7 +52,7 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
       setLiveDuration(undefined);
       return undefined;
     }
-  }, [partType, isReasoningCompleted, toolStatus, startTime]);
+  }, [partType, partStatus, startTime]);
   if (part.type === 'text') {
     return (
       <Box flexDirection="column" marginLeft={2} marginBottom={1}>
@@ -73,9 +69,11 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
   }
 
   if (part.type === 'reasoning') {
-    const isCompleted = 'completed' in part ? part.completed : true; // Completed messages don't have 'completed' field
+    // Use unified status field
+    const status = 'status' in part ? part.status : 'completed';
+    const isActive = status === 'active';
 
-    if (isCompleted) {
+    if (!isActive) {
       // Show completed reasoning with duration
       const seconds = part.duration ? Math.round(part.duration / 1000) : 0;
       return (
@@ -118,16 +116,24 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
       part.status === 'error' || part.status === 'abort' ? 'failed' :
       'completed';
 
+    // Build props conditionally to satisfy exactOptionalPropertyTypes
+    const toolProps: {
+      name: string;
+      status: 'running' | 'completed' | 'failed';
+      duration?: number;
+      args?: unknown;
+      result?: unknown;
+      error?: string;
+    } = { name: part.name, status: toolStatus };
+
+    if (displayDuration !== undefined) toolProps.duration = displayDuration;
+    if (part.args !== undefined) toolProps.args = part.args;
+    if (part.result !== undefined) toolProps.result = part.result;
+    if (part.error !== undefined) toolProps.error = part.error;
+
     return (
       <Box marginLeft={2} marginBottom={1}>
-        <ToolDisplay
-          name={part.name}
-          status={toolStatus}
-          duration={displayDuration}
-          args={part.args}
-          result={part.result}
-          error={part.error}
-        />
+        <ToolDisplay {...toolProps} />
       </Box>
     );
   }
