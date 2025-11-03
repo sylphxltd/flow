@@ -8,6 +8,13 @@
       "when": 1761262761555,
       "tag": "0000_wooden_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1762132080296,
+      "tag": "0001_material_pyro",
+      "breakpoints": true
     }
   ]
 }

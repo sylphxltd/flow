@@ -98,3 +98,183 @@ export type NewTfidfIdf = typeof tfidfIdf.$inferInsert;
 
 export type CodebaseMetadata = typeof codebaseMetadata.$inferSelect;
 export type NewCodebaseMetadata = typeof codebaseMetadata.$inferInsert;
+
+// ============================================
+// Session Management Tables
+// ============================================
+
+/**
+ * Sessions table - Main chat sessions
+ * Stores session metadata and configuration
+ */
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),
+    title: text('title'),
+    provider: text('provider').notNull(), // 'anthropic' | 'openai' | 'google' | 'openrouter'
+    model: text('model').notNull(),
+    nextTodoId: integer('next_todo_id').notNull().default(1),
+    created: integer('created').notNull(), // Unix timestamp (ms)
+    updated: integer('updated').notNull(), // Unix timestamp (ms)
+  },
+  (table) => ({
+    updatedIdx: index('idx_sessions_updated').on(table.updated),
+    createdIdx: index('idx_sessions_created').on(table.created),
+    providerIdx: index('idx_sessions_provider').on(table.provider),
+    titleIdx: index('idx_sessions_title').on(table.title),
+  })
+);
+
+/**
+ * Messages table - Chat messages in sessions
+ * Stores message metadata and role
+ */
+export const messages = sqliteTable(
+  'messages',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(), // 'user' | 'assistant'
+    timestamp: integer('timestamp').notNull(), // Unix timestamp (ms)
+    ordering: integer('ordering').notNull(), // For display order
+    finishReason: text('finish_reason'), // 'stop' | 'length' | 'tool-calls' | 'error'
+    // Metadata stored as JSON: { cpu?: string, memory?: string }
+    metadata: text('metadata'), // JSON string
+  },
+  (table) => ({
+    sessionIdx: index('idx_messages_session').on(table.sessionId),
+    orderingIdx: index('idx_messages_ordering').on(table.sessionId, table.ordering),
+    timestampIdx: index('idx_messages_timestamp').on(table.timestamp),
+  })
+);
+
+/**
+ * Message parts table - Content parts of messages
+ * Stores text, reasoning, tool calls, errors
+ * Content structure varies by type, stored as JSON
+ */
+export const messageParts = sqliteTable(
+  'message_parts',
+  {
+    id: text('id').primaryKey(),
+    messageId: text('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    ordering: integer('ordering').notNull(), // Order within message
+    type: text('type').notNull(), // 'text' | 'reasoning' | 'tool' | 'error'
+    // Content structure depends on type:
+    // - text: { content: string }
+    // - reasoning: { content: string, duration?: number }
+    // - tool: { name: string, status: string, duration?: number, args?: any, result?: any, error?: string }
+    // - error: { error: string }
+    content: text('content').notNull(), // JSON string
+  },
+  (table) => ({
+    messageIdx: index('idx_message_parts_message').on(table.messageId),
+    orderingIdx: index('idx_message_parts_ordering').on(table.messageId, table.ordering),
+    typeIdx: index('idx_message_parts_type').on(table.type),
+  })
+);
+
+/**
+ * Message attachments table - File attachments to messages
+ */
+export const messageAttachments = sqliteTable(
+  'message_attachments',
+  {
+    id: text('id').primaryKey(),
+    messageId: text('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    relativePath: text('relative_path').notNull(),
+    size: integer('size'),
+  },
+  (table) => ({
+    messageIdx: index('idx_message_attachments_message').on(table.messageId),
+    pathIdx: index('idx_message_attachments_path').on(table.path),
+  })
+);
+
+/**
+ * Message usage table - Token usage for messages
+ * 1:1 relationship with messages (only assistant messages have usage)
+ */
+export const messageUsage = sqliteTable('message_usage', {
+  messageId: text('message_id')
+    .primaryKey()
+    .references(() => messages.id, { onDelete: 'cascade' }),
+  promptTokens: integer('prompt_tokens').notNull(),
+  completionTokens: integer('completion_tokens').notNull(),
+  totalTokens: integer('total_tokens').notNull(),
+});
+
+/**
+ * Todos table - Per-session todo lists
+ */
+export const todos = sqliteTable(
+  'todos',
+  {
+    id: integer('id').notNull(), // Per-session ID (not globally unique!)
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    activeForm: text('active_form').notNull(),
+    status: text('status').notNull(), // 'pending' | 'in_progress' | 'completed'
+    ordering: integer('ordering').notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.sessionId, table.id] }),
+    sessionIdx: index('idx_todos_session').on(table.sessionId),
+    statusIdx: index('idx_todos_status').on(table.status),
+    orderingIdx: index('idx_todos_ordering').on(table.sessionId, table.ordering),
+  })
+);
+
+/**
+ * Message todo snapshots table - Snapshot of todos at message creation time
+ * Enables rewind feature - can restore todo state at any point in conversation
+ */
+export const messageTodoSnapshots = sqliteTable(
+  'message_todo_snapshots',
+  {
+    id: text('id').primaryKey(),
+    messageId: text('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    todoId: integer('todo_id').notNull(), // ID from snapshot (not FK!)
+    content: text('content').notNull(),
+    activeForm: text('active_form').notNull(),
+    status: text('status').notNull(),
+    ordering: integer('ordering').notNull(),
+  },
+  (table) => ({
+    messageIdx: index('idx_message_todo_snapshots_message').on(table.messageId),
+  })
+);
+
+// Export types for TypeScript
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
+
+export type MessagePart = typeof messageParts.$inferSelect;
+export type NewMessagePart = typeof messageParts.$inferInsert;
+
+export type MessageAttachment = typeof messageAttachments.$inferSelect;
+export type NewMessageAttachment = typeof messageAttachments.$inferInsert;
+
+export type MessageUsage = typeof messageUsage.$inferSelect;
+export type NewMessageUsage = typeof messageUsage.$inferInsert;
+
+export type Todo = typeof todos.$inferSelect;
+export type NewTodo = typeof todos.$inferInsert;
+
+export type MessageTodoSnapshot = typeof messageTodoSnapshots.$inferSelect;
+export type NewMessageTodoSnapshot = typeof messageTodoSnapshots.$inferInsert;

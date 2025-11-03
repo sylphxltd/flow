@@ -1,0 +1,441 @@
+/**
+ * Session Repository
+ * Database operations for chat sessions using Drizzle ORM
+ *
+ * Advantages over file-based storage:
+ * - Indexed queries: Fast search by title, provider, date
+ * - Pagination: Load only needed sessions (no memory bloat)
+ * - Aggregations: Count messages without loading full session
+ * - Transactions: Data consistency for complex operations
+ * - Concurrent access: Proper locking and consistency
+ * - Efficient updates: Update specific fields without rewriting entire file
+ */
+
+import { eq, desc, and, like, sql } from 'drizzle-orm';
+import type { LibSQLDatabase } from 'drizzle-orm/libsql';
+import { randomUUID } from 'node:crypto';
+import {
+  sessions,
+  messages,
+  messageParts,
+  messageAttachments,
+  messageUsage,
+  todos,
+  messageTodoSnapshots,
+  type Session,
+  type NewSession,
+  type Message,
+  type NewMessage,
+} from './schema.js';
+import type {
+  Session as SessionType,
+  SessionMessage,
+  MessagePart,
+  FileAttachment,
+  TokenUsage,
+  MessageMetadata,
+} from '../types/session.types.js';
+import type { Todo as TodoType } from '../types/todo.types.js';
+import type { ProviderId } from '../config/ai-config.js';
+
+export class SessionRepository {
+  constructor(private db: LibSQLDatabase) {}
+
+  /**
+   * Create a new session
+   */
+  async createSession(provider: ProviderId, model: string): Promise<SessionType> {
+    const now = Date.now();
+    const sessionId = `session-${now}`;
+
+    const newSession: NewSession = {
+      id: sessionId,
+      provider,
+      model,
+      nextTodoId: 1,
+      created: now,
+      updated: now,
+    };
+
+    await this.db.insert(sessions).values(newSession);
+
+    return {
+      id: sessionId,
+      provider,
+      model,
+      messages: [],
+      todos: [],
+      nextTodoId: 1,
+      created: now,
+      updated: now,
+    };
+  }
+
+  /**
+   * Get recent sessions with pagination
+   * HUGE performance improvement: Only load 20 recent sessions instead of all
+   */
+  async getRecentSessions(limit = 20, offset = 0): Promise<SessionType[]> {
+    // Get session metadata only (no messages yet - lazy loading!)
+    const sessionRecords = await this.db
+      .select()
+      .from(sessions)
+      .orderBy(desc(sessions.updated))
+      .limit(limit)
+      .offset(offset);
+
+    // For each session, load messages, todos, etc.
+    const fullSessions = await Promise.all(
+      sessionRecords.map((session) => this.getSessionById(session.id))
+    );
+
+    return fullSessions.filter((s): s is SessionType => s !== null);
+  }
+
+  /**
+   * Get session by ID with all related data
+   */
+  async getSessionById(sessionId: string): Promise<SessionType | null> {
+    // Get session metadata
+    const [session] = await this.db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1);
+
+    if (!session) {
+      return null;
+    }
+
+    // Get messages with all parts, attachments, usage
+    const sessionMessages = await this.getSessionMessages(sessionId);
+
+    // Get todos
+    const sessionTodos = await this.getSessionTodos(sessionId);
+
+    return {
+      id: session.id,
+      title: session.title || undefined,
+      provider: session.provider as ProviderId,
+      model: session.model,
+      messages: sessionMessages,
+      todos: sessionTodos,
+      nextTodoId: session.nextTodoId,
+      created: session.created,
+      updated: session.updated,
+    };
+  }
+
+  /**
+   * Get messages for a session
+   * Assembles message parts, attachments, usage into SessionMessage format
+   */
+  private async getSessionMessages(sessionId: string): Promise<SessionMessage[]> {
+    // Get all messages for session
+    const messageRecords = await this.db
+      .select()
+      .from(messages)
+      .where(eq(messages.sessionId, sessionId))
+      .orderBy(messages.ordering);
+
+    // For each message, get parts, attachments, usage, todo snapshots
+    const fullMessages = await Promise.all(
+      messageRecords.map(async (msg) => {
+        // Get message parts
+        const parts = await this.db
+          .select()
+          .from(messageParts)
+          .where(eq(messageParts.messageId, msg.id))
+          .orderBy(messageParts.ordering);
+
+        // Get attachments
+        const attachments = await this.db
+          .select()
+          .from(messageAttachments)
+          .where(eq(messageAttachments.messageId, msg.id));
+
+        // Get usage (if exists)
+        const [usage] = await this.db
+          .select()
+          .from(messageUsage)
+          .where(eq(messageUsage.messageId, msg.id))
+          .limit(1);
+
+        // Get todo snapshot
+        const todoSnap = await this.db
+          .select()
+          .from(messageTodoSnapshots)
+          .where(eq(messageTodoSnapshots.messageId, msg.id))
+          .orderBy(messageTodoSnapshots.ordering);
+
+        // Assemble SessionMessage
+        const sessionMessage: SessionMessage = {
+          role: msg.role as 'user' | 'assistant',
+          content: parts.map((p) => JSON.parse(p.content) as MessagePart),
+          timestamp: msg.timestamp,
+        };
+
+        if (msg.metadata) {
+          sessionMessage.metadata = JSON.parse(msg.metadata) as MessageMetadata;
+        }
+
+        if (attachments.length > 0) {
+          sessionMessage.attachments = attachments.map((a) => ({
+            path: a.path,
+            relativePath: a.relativePath,
+            size: a.size || undefined,
+          }));
+        }
+
+        if (usage) {
+          sessionMessage.usage = {
+            promptTokens: usage.promptTokens,
+            completionTokens: usage.completionTokens,
+            totalTokens: usage.totalTokens,
+          };
+        }
+
+        if (msg.finishReason) {
+          sessionMessage.finishReason = msg.finishReason;
+        }
+
+        if (todoSnap.length > 0) {
+          sessionMessage.todoSnapshot = todoSnap.map((t) => ({
+            id: t.todoId,
+            content: t.content,
+            activeForm: t.activeForm,
+            status: t.status as 'pending' | 'in_progress' | 'completed',
+            ordering: t.ordering,
+          }));
+        }
+
+        return sessionMessage;
+      })
+    );
+
+    return fullMessages;
+  }
+
+  /**
+   * Get todos for a session
+   */
+  private async getSessionTodos(sessionId: string): Promise<TodoType[]> {
+    const todoRecords = await this.db
+      .select()
+      .from(todos)
+      .where(eq(todos.sessionId, sessionId))
+      .orderBy(todos.ordering);
+
+    return todoRecords.map((t) => ({
+      id: t.id,
+      content: t.content,
+      activeForm: t.activeForm,
+      status: t.status as 'pending' | 'in_progress' | 'completed',
+      ordering: t.ordering,
+    }));
+  }
+
+  /**
+   * Add message to session
+   * Atomically inserts message with all parts, attachments, usage
+   */
+  async addMessage(
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: MessagePart[],
+    attachments?: FileAttachment[],
+    usage?: TokenUsage,
+    finishReason?: string,
+    metadata?: MessageMetadata,
+    todoSnapshot?: TodoType[]
+  ): Promise<void> {
+    const messageId = randomUUID();
+    const now = Date.now();
+
+    // Get current message count for ordering
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(eq(messages.sessionId, sessionId));
+
+    const ordering = count;
+
+    // Insert in transaction
+    await this.db.transaction(async (tx) => {
+      // Insert message
+      await tx.insert(messages).values({
+        id: messageId,
+        sessionId,
+        role,
+        timestamp: now,
+        ordering,
+        finishReason: finishReason || null,
+        metadata: metadata ? JSON.stringify(metadata) : null,
+      });
+
+      // Insert message parts
+      for (let i = 0; i < content.length; i++) {
+        await tx.insert(messageParts).values({
+          id: randomUUID(),
+          messageId,
+          ordering: i,
+          type: content[i].type,
+          content: JSON.stringify(content[i]),
+        });
+      }
+
+      // Insert attachments
+      if (attachments && attachments.length > 0) {
+        for (const att of attachments) {
+          await tx.insert(messageAttachments).values({
+            id: randomUUID(),
+            messageId,
+            path: att.path,
+            relativePath: att.relativePath,
+            size: att.size || null,
+          });
+        }
+      }
+
+      // Insert usage
+      if (usage) {
+        await tx.insert(messageUsage).values({
+          messageId,
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+        });
+      }
+
+      // Insert todo snapshot
+      if (todoSnapshot && todoSnapshot.length > 0) {
+        for (const todo of todoSnapshot) {
+          await tx.insert(messageTodoSnapshots).values({
+            id: randomUUID(),
+            messageId,
+            todoId: todo.id,
+            content: todo.content,
+            activeForm: todo.activeForm,
+            status: todo.status,
+            ordering: todo.ordering,
+          });
+        }
+      }
+
+      // Update session timestamp
+      await tx
+        .update(sessions)
+        .set({ updated: now })
+        .where(eq(sessions.id, sessionId));
+    });
+  }
+
+  /**
+   * Update session title
+   */
+  async updateSessionTitle(sessionId: string, title: string): Promise<void> {
+    await this.db
+      .update(sessions)
+      .set({ title, updated: Date.now() })
+      .where(eq(sessions.id, sessionId));
+  }
+
+  /**
+   * Update session model
+   */
+  async updateSessionModel(sessionId: string, model: string): Promise<void> {
+    await this.db
+      .update(sessions)
+      .set({ model, updated: Date.now() })
+      .where(eq(sessions.id, sessionId));
+  }
+
+  /**
+   * Update session provider and model
+   */
+  async updateSessionProvider(sessionId: string, provider: ProviderId, model: string): Promise<void> {
+    await this.db
+      .update(sessions)
+      .set({ provider, model, updated: Date.now() })
+      .where(eq(sessions.id, sessionId));
+  }
+
+  /**
+   * Delete session (CASCADE will delete all related data)
+   */
+  async deleteSession(sessionId: string): Promise<void> {
+    await this.db.delete(sessions).where(eq(sessions.id, sessionId));
+  }
+
+  /**
+   * Search sessions by title
+   * HUGE performance improvement: Uses index, no need to load all sessions
+   */
+  async searchSessionsByTitle(query: string, limit = 20): Promise<SessionType[]> {
+    const sessionRecords = await this.db
+      .select()
+      .from(sessions)
+      .where(like(sessions.title, `%${query}%`))
+      .orderBy(desc(sessions.updated))
+      .limit(limit);
+
+    const fullSessions = await Promise.all(
+      sessionRecords.map((session) => this.getSessionById(session.id))
+    );
+
+    return fullSessions.filter((s): s is SessionType => s !== null);
+  }
+
+  /**
+   * Get session count
+   * Efficient: No need to load sessions into memory
+   */
+  async getSessionCount(): Promise<number> {
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(sessions);
+
+    return count;
+  }
+
+  /**
+   * Get message count for session
+   * Efficient: No need to load messages
+   */
+  async getMessageCount(sessionId: string): Promise<number> {
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(eq(messages.sessionId, sessionId));
+
+    return count;
+  }
+
+  /**
+   * Update todos for session
+   */
+  async updateTodos(sessionId: string, newTodos: TodoType[], nextTodoId: number): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      // Delete existing todos
+      await tx.delete(todos).where(eq(todos.sessionId, sessionId));
+
+      // Insert new todos
+      for (const todo of newTodos) {
+        await tx.insert(todos).values({
+          id: todo.id,
+          sessionId,
+          content: todo.content,
+          activeForm: todo.activeForm,
+          status: todo.status,
+          ordering: todo.ordering,
+        });
+      }
+
+      // Update nextTodoId and timestamp
+      await tx
+        .update(sessions)
+        .set({ nextTodoId, updated: Date.now() })
+        .where(eq(sessions.id, sessionId));
+    });
+  }
+}
