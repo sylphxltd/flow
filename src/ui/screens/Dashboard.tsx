@@ -1,14 +1,13 @@
 /**
  * Dashboard Screen - Full-screen interactive control panel
- * Features: Mouse support, keyboard navigation, full management capabilities
+ * Features: Keyboard navigation, full management capabilities
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useAppStore } from '../stores/app-store.js';
 import { getAllAgents, switchAgent } from '../../core/agent-manager.js';
 import { getAllRules, toggleRule } from '../../core/rule-manager.js';
-import { useMouse } from '../hooks/useMouse.js';
 
 type DashboardSection =
   | 'agents'
@@ -20,19 +19,9 @@ type DashboardSection =
 
 type InteractionMode = 'browse' | 'edit';
 
-interface ClickableItem {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  action: () => void;
-}
-
 export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState<DashboardSection>('agents');
   const [mode, setMode] = useState<InteractionMode>('browse');
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
 
   const currentAgentId = useAppStore((state) => state.currentAgentId);
@@ -45,191 +34,6 @@ export default function Dashboard() {
 
   const agents = getAllAgents();
   const rules = getAllRules();
-
-  // Alternate screen buffer for true full-screen (like vim)
-  useEffect(() => {
-    // Enter alternate screen buffer
-    process.stdout.write('\x1b[?1049h');
-    // Clear screen
-    process.stdout.write('\x1b[2J');
-    // Move cursor to home
-    process.stdout.write('\x1b[H');
-
-    return () => {
-      // Exit alternate screen buffer
-      process.stdout.write('\x1b[?1049l');
-    };
-  }, []);
-
-  // Mouse support
-  const mouse = useMouse(true);
-
-  // Track clickable items - memoized to prevent infinite loops
-  const clickableItems = useMemo(() => {
-    const items: ClickableItem[] = [];
-
-    // Get terminal dimensions (approximate)
-    const termWidth = process.stdout.columns || 100;
-    const sidebarWidth = Math.floor(termWidth * 0.25);
-    const contentX = sidebarWidth;
-
-    let sidebarY = 1; // Start at top
-
-    // Navigation sidebar items (sections) - starts at y=1 (paddingY={1})
-    const sections: DashboardSection[] = ['agents', 'rules', 'sessions', 'providers', 'notifications', 'keybindings'];
-    sections.forEach((section, idx) => {
-      items.push({
-        id: `section-${section}`,
-        x: 2, // paddingX={2}
-        y: sidebarY,
-        width: sidebarWidth - 4,
-        height: 1,
-        action: () => {
-          setSelectedSection(section);
-          setSelectedItemIndex(0);
-        },
-      });
-      sidebarY += 2; // marginBottom={2}
-    });
-
-    // Content area items - starts at y=3 (header + padding + title)
-    let contentY = 3;
-
-    switch (selectedSection) {
-      case 'agents':
-        agents.forEach((agent, idx) => {
-          items.push({
-            id: `agent-${idx}`,
-            x: contentX + 2, // paddingX={2}
-            y: contentY,
-            width: termWidth - contentX - 4,
-            height: 1,
-            action: () => {
-              switchAgent(agent.id);
-              setMode('browse');
-            },
-          });
-          contentY += 1; // marginBottom={1}
-        });
-        break;
-
-      case 'rules':
-        rules.forEach((rule, idx) => {
-          items.push({
-            id: `rule-${idx}`,
-            x: contentX + 2,
-            y: contentY,
-            width: termWidth - contentX - 4,
-            height: 1,
-            action: () => {
-              toggleRule(rule.id);
-            },
-          });
-          contentY += 1;
-        });
-        break;
-
-      case 'sessions':
-        sessions.slice(0, 15).forEach((session, idx) => {
-          items.push({
-            id: `session-${idx}`,
-            x: contentX + 2,
-            y: contentY,
-            width: termWidth - contentX - 4,
-            height: 1,
-            action: () => {
-              // TODO: Load session
-            },
-          });
-          contentY += 1;
-        });
-        break;
-
-      case 'providers':
-        Object.entries(aiConfig?.providers || {}).forEach(([providerId], idx) => {
-          items.push({
-            id: `provider-${idx}`,
-            x: contentX + 2,
-            y: contentY,
-            width: termWidth - contentX - 4,
-            height: 1,
-            action: () => {
-              // TODO: Manage provider
-            },
-          });
-          contentY += 2; // Provider takes 2 lines
-        });
-        break;
-
-      case 'notifications':
-        const notifSettings = ['osNotifications', 'terminalNotifications', 'sound'];
-        notifSettings.forEach((_, idx) => {
-          items.push({
-            id: `notif-${idx}`,
-            x: contentX + 2,
-            y: contentY,
-            width: termWidth - contentX - 4,
-            height: 1,
-            action: () => {
-              const settings = ['osNotifications', 'terminalNotifications', 'sound'] as const;
-              const setting = settings[idx];
-              if (setting) {
-                // Read current state at click time, not closure time
-                const currentSettings = useAppStore.getState().notificationSettings;
-                updateNotificationSettings({ [setting]: !currentSettings[setting] });
-              }
-            },
-          });
-          contentY += 1;
-        });
-        break;
-
-      case 'keybindings':
-        // Keybindings are non-interactive
-        break;
-    }
-
-    return items;
-  }, [selectedSection, agents.length, rules.length, sessions.length]);
-
-  // Mouse hover detection
-  useEffect(() => {
-    if (!mouse.position) return;
-
-    const { x, y } = mouse.position;
-    const hoveredClickable = clickableItems.find(
-      (item) =>
-        x >= item.x &&
-        x < item.x + item.width &&
-        y >= item.y &&
-        y < item.y + item.height
-    );
-
-    if (hoveredClickable) {
-      setHoveredItem(hoveredClickable.id);
-    } else {
-      setHoveredItem(null);
-    }
-  }, [mouse.position, clickableItems]);
-
-  // Mouse click handling
-  useEffect(() => {
-    if (!mouse.lastClick || mouse.lastClick.button !== 'left') return;
-
-    const { x, y } = mouse.lastClick.position;
-    const clickedItem = clickableItems.find(
-      (item) =>
-        x >= item.x &&
-        x < item.x + item.width &&
-        y >= item.y &&
-        y < item.y + item.height
-    );
-
-    if (clickedItem) {
-      clickedItem.action();
-      mouse.clearClick();
-    }
-  }, [mouse.lastClick, clickableItems, mouse]);
 
   useInput((input, key) => {
     // Global shortcuts
@@ -346,7 +150,6 @@ export default function Dashboard() {
           {agents.map((agent, idx) => {
             const isActive = agent.id === currentAgentId;
             const isSelected = mode === 'edit' && selectedItemIndex === idx;
-            const isHovered = hoveredItem === `agent-${idx}`;
 
             return (
               <Box
@@ -362,8 +165,6 @@ export default function Dashboard() {
                       ? '#00FF88'
                       : isSelected
                       ? '#00D9FF'
-                      : isHovered
-                      ? '#FFD700'
                       : 'white'
                   }
                 >
@@ -408,7 +209,6 @@ export default function Dashboard() {
           {rules.map((rule, idx) => {
             const isEnabled = enabledRuleIds.includes(rule.id);
             const isSelected = mode === 'edit' && selectedItemIndex === idx;
-            const isHovered = hoveredItem === `rule-${idx}`;
 
             return (
               <Box
@@ -422,8 +222,6 @@ export default function Dashboard() {
                   color={
                     isSelected
                       ? '#00D9FF'
-                      : isHovered
-                      ? '#FFD700'
                       : isEnabled
                       ? '#00FF88'
                       : 'gray'
@@ -466,12 +264,10 @@ export default function Dashboard() {
 
         <Box flexDirection="column">
           {sessions.slice(0, 15).map((session, idx) => {
-            const isHovered = hoveredItem === `session-${idx}`;
-
             return (
               <Box key={session.id} marginBottom={1}>
                 <Text dimColor>{idx + 1}  </Text>
-                <Text color={isHovered ? '#FFD700' : '#00FF88'}>
+                <Text color="#00FF88">
                   {session.title || 'New Chat'}
                 </Text>
                 <Text dimColor>  {session.messages.length} msg</Text>
@@ -496,13 +292,11 @@ export default function Dashboard() {
 
         <Box flexDirection="column">
           {providers.map(([providerId, config], idx) => {
-            const isHovered = hoveredItem === `provider-${idx}`;
-
             return (
               <Box key={providerId} marginBottom={1} flexDirection="column">
                 <Box>
                   <Text dimColor>{idx + 1}  </Text>
-                  <Text bold color={isHovered ? '#FFD700' : '#00FF88'}>
+                  <Text bold color="#00FF88">
                     {providerId}
                   </Text>
                 </Box>
@@ -537,20 +331,13 @@ export default function Dashboard() {
         <Box flexDirection="column">
           {settings.map((setting, idx) => {
             const isSelected = mode === 'edit' && selectedItemIndex === idx;
-            const isHovered = hoveredItem === `notif-${idx}`;
 
             return (
               <Box key={setting.key} marginBottom={1}>
                 <Text dimColor>{idx + 1}  </Text>
                 <Text
                   bold={isSelected}
-                  color={
-                    isSelected
-                      ? '#00D9FF'
-                      : isHovered
-                      ? '#FFD700'
-                      : 'white'
-                  }
+                  color={isSelected ? '#00D9FF' : 'white'}
                 >
                   {setting.label}
                 </Text>
@@ -586,32 +373,24 @@ export default function Dashboard() {
       { keys: 'ENTER', action: 'Edit mode / Confirm' },
       { keys: '↑↓', action: 'Navigate items (edit mode)' },
       { keys: 'SPACE', action: 'Toggle/Select (edit mode)' },
-      { keys: 'MOUSE', action: 'Click to navigate, hover to highlight' },
     ];
 
     return (
       <Box flexDirection="column" paddingX={2} paddingTop={1}>
         <Box marginBottom={2}>
-          <Text color="#00D9FF">KEYBOARD & MOUSE SHORTCUTS</Text>
+          <Text color="#00D9FF">KEYBOARD SHORTCUTS</Text>
         </Box>
 
         <Box flexDirection="column">
           {keybindings.map((kb, idx) => {
-            const isHovered = hoveredItem === `kb-${idx}`;
-
             return (
               <Box key={idx} marginBottom={1}>
-                <Text color={isHovered ? '#FFD700' : '#00FF88'}>{kb.keys}</Text>
+                <Text color="#00FF88">{kb.keys}</Text>
                 <Text dimColor>  →  </Text>
                 <Text dimColor>{kb.action}</Text>
               </Box>
             );
           })}
-        </Box>
-
-        <Box marginTop={2}>
-          <Text color="#00FF88">Mouse Enabled</Text>
-          <Text dimColor>  Position: {mouse.position.x}, {mouse.position.y}</Text>
         </Box>
       </Box>
     );
@@ -652,13 +431,8 @@ export default function Dashboard() {
         <Text bold color="#00D9FF">SYLPHX FLOW</Text>
         <Text dimColor>  Control Panel</Text>
         <Box flexGrow={1} />
-        {mode === 'edit' ? (
+        {mode === 'edit' && (
           <Text color="#FFD700">EDIT MODE</Text>
-        ) : (
-          <>
-            <Text color="#00FF88">●</Text>
-            <Text dimColor> Mouse Active</Text>
-          </>
         )}
       </Box>
 
@@ -668,7 +442,6 @@ export default function Dashboard() {
         <Box width="25%" flexDirection="column" paddingX={2} paddingY={1}>
           {sections.map((section) => {
             const isSelected = selectedSection === section.id;
-            const isHovered = hoveredItem === `section-${section.id}`;
 
             return (
               <Box
@@ -678,13 +451,7 @@ export default function Dashboard() {
                 <Text dimColor>{section.num}  </Text>
                 <Text
                   bold={isSelected}
-                  color={
-                    isSelected
-                      ? '#00FF88'
-                      : isHovered
-                      ? '#FFD700'
-                      : 'white'
-                  }
+                  color={isSelected ? '#00FF88' : 'white'}
                 >
                   {section.label}
                 </Text>
@@ -707,8 +474,6 @@ export default function Dashboard() {
 
       {/* Footer */}
       <Box paddingX={2} paddingY={0}>
-        <Text dimColor>MOUSE</Text>
-        <Text dimColor>  Click & Hover  </Text>
         <Text dimColor>TAB</Text>
         <Text dimColor>  Next  </Text>
         <Text dimColor>ESC</Text>
