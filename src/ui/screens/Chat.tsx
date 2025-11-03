@@ -119,20 +119,18 @@ function StreamingPartWrapper({
           )}
         </Box>
       )}
-      <Box flexDirection="row">
-        {debugRegion && (
-          <Box marginRight={1}>
-            <Text backgroundColor={debugRegion === 'static' ? 'green' : 'blue'}>
-              {' '}
-            </Text>
-          </Box>
-        )}
-        <Box flexGrow={1}>
-          <MessagePart
-            part={part}
-            isLastInStream={isLastInStream}
-          />
-        </Box>
+      <Box
+        flexDirection="column"
+        backgroundColor={
+          debugRegion === 'static' ? 'greenBright' :
+          debugRegion === 'dynamic' ? 'blueBright' :
+          undefined
+        }
+      >
+        <MessagePart
+          part={part}
+          isLastInStream={isLastInStream}
+        />
       </Box>
     </Box>
   );
@@ -1301,6 +1299,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               // Find first non-completed part (this is the boundary)
               const firstIncompleteIndex = streamParts.findIndex(part => !isPartCompleted(part));
+
+              // DEBUG: Log part completion status
+              if (streamParts.length > 0) {
+                console.error('[Static/Dynamic Split]');
+                console.error('  Total parts:', streamParts.length);
+                console.error('  First incomplete index:', firstIncompleteIndex);
+                streamParts.forEach((part, idx) => {
+                  const completed = isPartCompleted(part);
+                  console.error(`  [${idx}] ${part.type}: ${completed ? 'COMPLETED' : 'INCOMPLETE'}`,
+                    part.type === 'tool' ? `status=${part.status}` :
+                    part.type === 'reasoning' ? `completed=${part.completed}` : ''
+                  );
+                });
+              }
 
               // Split into static and dynamic
               // Static: Continuous completed parts from start
