@@ -20,22 +20,38 @@ export abstract class BaseDatabaseClient<TSchema extends Record<string, unknown>
     try {
       const dbDir = path.join(process.cwd(), '.sylphx-flow');
 
-      // Ensure directory exists
-      if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
+      // Ensure directory exists with proper error handling
+      try {
+        if (!fs.existsSync(dbDir)) {
+          fs.mkdirSync(dbDir, { recursive: true });
+        }
+      } catch (dirError) {
+        throw new Error(
+          `Failed to create database directory: ${dbDir}. ` +
+          `Error: ${(dirError as Error).message}`
+        );
       }
 
       const dbPath = path.join(dbDir, `${dbName}.db`);
 
+      // Convert Windows backslashes to forward slashes for file: URL
+      // libSQL expects forward slashes even on Windows
+      const normalizedPath = dbPath.replace(/\\/g, '/');
+
       this.client = createClient({
-        url: `file:${dbPath}`,
+        url: `file:${normalizedPath}`,
       });
 
       this.db = drizzle(this.client, { schema });
     } catch (error) {
+      const dbPath = path.join(process.cwd(), '.sylphx-flow', `${dbName}.db`);
       throw new ConnectionError(
         `Failed to initialize ${dbName} database connection`,
-        { url: `file:${path.join(process.cwd(), '.sylphx-flow', `${dbName}.db`)}` },
+        {
+          url: `file:${dbPath}`,
+          cwd: process.cwd(),
+          platform: process.platform,
+        },
         error as Error
       );
     }
