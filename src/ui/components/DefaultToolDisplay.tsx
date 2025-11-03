@@ -8,7 +8,7 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
 import type { ArgsFormatter, ResultFormatter } from '../utils/tool-formatters.js';
-import type { ToolDisplayProps } from '../utils/tool-configs.js';
+import type { ToolDisplayProps } from '../types/tool.types.js';
 
 interface StatusIndicatorProps {
   status: 'running' | 'completed' | 'failed';

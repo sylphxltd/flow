@@ -5,8 +5,8 @@
 
 import { google } from '@ai-sdk/google';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
-import type { ModelInfo } from '../utils/ai-model-fetcher.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+
 import { getModelMetadata } from '../utils/models-dev.js';
 
 const GOOGLE_MODELS: ModelInfo[] = [

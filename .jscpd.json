@@ -1,0 +1,14 @@
+{
+  "threshold": 0,
+  "reporters": ["console", "markdown"],
+  "ignore": [
+    "**/*.test.ts",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.d.ts"
+  ],
+  "format": ["typescript"],
+  "minLines": 5,
+  "minTokens": 50,
+  "output": "./reports"
+}

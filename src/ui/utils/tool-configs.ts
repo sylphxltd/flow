@@ -7,7 +7,6 @@
  * 2. Custom component (advanced): complete control over rendering
  */
 
-import type { FC } from 'react';
 import type { ArgsFormatter, ResultFormatter } from './tool-formatters.js';
 import {
   truncateString,
@@ -16,24 +15,10 @@ import {
   pluralize,
 } from './tool-formatters.js';
 import { createDefaultToolDisplay } from '../components/DefaultToolDisplay.js';
+import type { ToolDisplayProps, ToolConfig } from '../types/tool.types.js';
 
-/**
- * Tool display props (for custom components)
- */
-export interface ToolDisplayProps {
-  name: string;
-  status: 'running' | 'completed' | 'failed';
-  duration?: number;
-  args?: unknown;
-  result?: unknown;
-  error?: string;
-}
-
-/**
- * Tool configuration
- * Simply a React component that renders the tool display
- */
-export type ToolConfig = FC<ToolDisplayProps>;
+// Re-export types for backward compatibility
+export type { ToolDisplayProps, ToolConfig } from '../types/tool.types.js';
 
 /**
  * Helper to convert result to lines

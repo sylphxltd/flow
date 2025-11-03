@@ -3,7 +3,7 @@
  * Central registry for all AI providers
  */
 
-import type { ProviderId } from '../config/ai-config.js';
+import type { ProviderId } from '../types/provider.types.js';
 import type { AIProvider } from './base-provider.js';
 import { AnthropicProvider } from './anthropic-provider.js';
 import { OpenAIProvider } from './openai-provider.js';

@@ -2,7 +2,7 @@
  * Tests for session lifecycle utils
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createNewSession,
   addMessageToSession,
@@ -24,17 +24,9 @@ import type { Session, SessionMessage } from '../../../types/session.types.js';
 import type { Todo } from '../../../types/todo.types.js';
 
 describe('createNewSession', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('should create new session with default values', () => {
-    const session = createNewSession('anthropic', 'claude-3.5-sonnet');
+    const timestamp = new Date('2025-01-01T00:00:00Z').getTime();
+    const session = createNewSession('anthropic', 'claude-3.5-sonnet', undefined, timestamp);
 
     expect(session).toEqual({
       id: 'session-1735689600000',
@@ -64,38 +56,33 @@ describe('createNewSession', () => {
 describe('addMessageToSession', () => {
   let session: Session;
   let message: SessionMessage;
+  const baseTime = new Date('2025-01-01T00:00:00Z').getTime();
 
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-    session = createNewSession('anthropic', 'claude-3.5-sonnet');
+    session = createNewSession('anthropic', 'claude-3.5-sonnet', undefined, baseTime);
 
     message = {
       role: 'user',
       content: [{ type: 'text', content: 'Hello' }],
-      timestamp: Date.now(),
+      timestamp: baseTime,
     };
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('should add message to empty session', () => {
-    const updated = addMessageToSession(session, message);
+    const updated = addMessageToSession(session, message, baseTime);
 
     expect(updated.messages).toHaveLength(1);
     expect(updated.messages[0]).toBe(message);
   });
 
   it('should append message to existing messages', () => {
-    const session1 = addMessageToSession(session, message);
+    const session1 = addMessageToSession(session, message, baseTime);
     const message2: SessionMessage = {
       role: 'assistant',
       content: [{ type: 'text', content: 'Hi' }],
-      timestamp: Date.now(),
+      timestamp: baseTime,
     };
-    const session2 = addMessageToSession(session1, message2);
+    const session2 = addMessageToSession(session1, message2, baseTime);
 
     expect(session2.messages).toHaveLength(2);
     expect(session2.messages[0]).toBe(message);
@@ -103,15 +90,15 @@ describe('addMessageToSession', () => {
   });
 
   it('should not mutate original session', () => {
-    const updated = addMessageToSession(session, message);
+    const updated = addMessageToSession(session, message, baseTime);
 
     expect(session.messages).toHaveLength(0);
     expect(updated.messages).toHaveLength(1);
   });
 
   it('should update timestamp', () => {
-    vi.setSystemTime(new Date('2025-01-01T00:01:00Z'));
-    const updated = addMessageToSession(session, message);
+    const newTime = baseTime + 60000;
+    const updated = addMessageToSession(session, message, newTime);
 
     expect(updated.updated).toBe(1735689660000);
     expect(session.updated).toBe(1735689600000);
@@ -120,29 +107,24 @@ describe('addMessageToSession', () => {
 
 describe('clearMessages', () => {
   let session: Session;
+  const baseTime = new Date('2025-01-01T00:00:00Z').getTime();
 
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-    session = createNewSession('anthropic', 'claude-3.5-sonnet');
+    session = createNewSession('anthropic', 'claude-3.5-sonnet', undefined, baseTime);
     session = addMessageToSession(session, {
       role: 'user',
       content: [{ type: 'text', content: 'Hello' }],
-      timestamp: Date.now(),
-    });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
+      timestamp: baseTime,
+    }, baseTime);
   });
 
   it('should clear all messages', () => {
-    const cleared = clearMessages(session);
+    const cleared = clearMessages(session, baseTime);
     expect(cleared.messages).toHaveLength(0);
   });
 
   it('should keep other session data', () => {
-    const cleared = clearMessages(session);
+    const cleared = clearMessages(session, baseTime);
     expect(cleared.id).toBe(session.id);
     expect(cleared.provider).toBe(session.provider);
     expect(cleared.model).toBe(session.model);
@@ -150,34 +132,29 @@ describe('clearMessages', () => {
   });
 
   it('should not mutate original session', () => {
-    const cleared = clearMessages(session);
+    const cleared = clearMessages(session, baseTime);
     expect(session.messages).toHaveLength(1);
     expect(cleared.messages).toHaveLength(0);
   });
 
   it('should update timestamp', () => {
-    vi.setSystemTime(new Date('2025-01-01T00:01:00Z'));
-    const cleared = clearMessages(session);
+    const newTime = baseTime + 60000;
+    const cleared = clearMessages(session, newTime);
     expect(cleared.updated).toBe(1735689660000);
   });
 });
 
 describe('updateSessionTimestamp', () => {
   let session: Session;
+  const baseTime = new Date('2025-01-01T00:00:00Z').getTime();
 
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-    session = createNewSession('anthropic', 'claude-3.5-sonnet');
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
+    session = createNewSession('anthropic', 'claude-3.5-sonnet', undefined, baseTime);
   });
 
   it('should update timestamp to current time', () => {
-    vi.setSystemTime(new Date('2025-01-01T00:01:00Z'));
-    const updated = updateSessionTimestamp(session);
+    const newTime = new Date('2025-01-01T00:01:00Z').getTime();
+    const updated = updateSessionTimestamp(session, newTime);
     expect(updated.updated).toBe(1735689660000);
   });
 
@@ -291,51 +268,45 @@ describe('updateSessionTodos', () => {
 });
 
 describe('getSessionAge', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('should return age in milliseconds', () => {
-    const session = createNewSession('anthropic', 'claude-3.5-sonnet');
-    vi.setSystemTime(new Date('2025-01-01T00:05:00Z'));
+    const createdTime = new Date('2025-01-01T00:00:00Z').getTime();
+    const currentTime = new Date('2025-01-01T00:05:00Z').getTime();
 
-    const age = getSessionAge(session);
+    const session = createNewSession('anthropic', 'claude-3.5-sonnet');
+    session.created = createdTime;
+
+    const age = getSessionAge(session, currentTime);
     expect(age).toBe(5 * 60 * 1000); // 5 minutes
   });
 
-  it('should return 0 for brand new session', () => {
+  it('should return 0 for brand new session at same time', () => {
+    const time = new Date('2025-01-01T00:00:00Z').getTime();
     const session = createNewSession('anthropic', 'claude-3.5-sonnet');
-    const age = getSessionAge(session);
+    session.created = time;
+
+    const age = getSessionAge(session, time);
     expect(age).toBe(0);
   });
 });
 
 describe('getTimeSinceUpdate', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('should return time since last update', () => {
-    const session = createNewSession('anthropic', 'claude-3.5-sonnet');
-    vi.setSystemTime(new Date('2025-01-01T00:10:00Z'));
+    const updatedTime = new Date('2025-01-01T00:00:00Z').getTime();
+    const currentTime = new Date('2025-01-01T00:10:00Z').getTime();
 
-    const timeSince = getTimeSinceUpdate(session);
+    const session = createNewSession('anthropic', 'claude-3.5-sonnet');
+    session.updated = updatedTime;
+
+    const timeSince = getTimeSinceUpdate(session, currentTime);
     expect(timeSince).toBe(10 * 60 * 1000); // 10 minutes
   });
 
-  it('should return 0 for brand new session', () => {
+  it('should return 0 for brand new session at same time', () => {
+    const time = new Date('2025-01-01T00:00:00Z').getTime();
     const session = createNewSession('anthropic', 'claude-3.5-sonnet');
-    const timeSince = getTimeSinceUpdate(session);
+    session.updated = time;
+
+    const timeSince = getTimeSinceUpdate(session, time);
     expect(timeSince).toBe(0);
   });
 });

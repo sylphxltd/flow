@@ -98,6 +98,9 @@ export interface CommandContext {
   setUISelectedProvider: (provider: ProviderId | null) => void;
   setUISelectedModel: (model: string | null) => void;
 
+  // Get all available commands (for help command)
+  getCommands: () => Command[];
+
   // Create new session
   createSession: (provider: ProviderId, model: string) => string;
 

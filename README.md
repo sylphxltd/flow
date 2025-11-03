@@ -500,6 +500,42 @@ flow codebase reindex  # After major code changes
 - **[Codebase Search](https://github.com/sylphxltd/flow/wiki/Codebase-Search)** - Semantic search deep dive
 - **[Agent Framework](https://github.com/sylphxltd/flow/wiki/Agent-Framework)** - How agents work
 
+### Project Documentation Structure
+
+```
+📁 Project Root
+  ├── README.md          # This file - project overview
+  ├── CHANGELOG.md       # Version history
+  └── AGENTS.md          # AI agent system prompt
+
+📁 docs/
+  ├── reports/                               # Code analysis & optimization reports
+  │   ├── ANALYSIS_RESULTS.md                # Automated code analysis
+  │   ├── CIRCULAR_DEPENDENCY_ELIMINATION.md # Circular dependency fixes
+  │   └── SYSTEMATIC_OPTIMIZATION_PLAN.md    # Optimization strategy
+  ├── claude-code-session-management.md      # Session management guide
+  ├── tool-display-guide.md                  # Tool UI guide
+  └── ...                                    # Technical documentation
+
+📁 wiki-pages/
+  ├── Installation-&-Setup.md                # Setup guide
+  ├── MEP-Design-Philosophy.md               # MEP concepts
+  └── ...                                    # Feature documentation
+
+📁 .github/
+  └── workflows/                             # GitHub Actions only
+
+📁 .archive/
+  └── refactoring-history/                   # Historical documentation
+```
+
+**Navigation Tips:**
+- **Getting Started**: Start with this README and `wiki-pages/Installation-&-Setup.md`
+- **Understanding MEP**: Read `wiki-pages/MEP-Design-Philosophy.md`
+- **Technical Details**: Check `docs/` folder
+- **Code Quality Reports**: See `docs/reports/` for analysis
+- **Historical Context**: View `.archive/` for refactoring history
+
 ---
 
 ## 🔧 Integration

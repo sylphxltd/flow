@@ -1,10 +1,22 @@
 /**
- * Provider Command
+ * Provider Command (Refactored)
  * Configure and switch AI providers
+ *
+ * REFACTORED: Reduced from 759 lines to ~200 lines by extracting helpers
  */
 
 import type { Command } from '../types.js';
 import { configureProvider } from '../helpers/provider-config.js';
+import {
+  askSelectProvider,
+  ensureConfiguredAndSwitch,
+  switchToProvider,
+  ensureProviderConfigured,
+} from '../helpers/provider-selection.js';
+import {
+  interactiveSetProviderConfig,
+  setProviderConfigValue,
+} from '../helpers/provider-set-value.js';
 
 export const providerCommand: Command = {
   id: 'provider',
@@ -40,29 +52,19 @@ export const providerCommand: Command = {
       description: 'Setting key (for set action)',
       required: false,
       loadOptions: async (previousArgs) => {
-        // previousArgs: [action, provider-name]
-        // Load keys from provider's config schema
-        const providerId = previousArgs[1]; // e.g., "anthropic", "openai", "openrouter"
-
-        if (!providerId) {
-          return [];
-        }
+        const providerId = previousArgs[1];
+        if (!providerId) return [];
 
         try {
           const { getProvider } = await import('../../../providers/index.js');
           const provider = getProvider(providerId as any);
           const schema = provider.getConfigSchema();
-
-          // Convert schema fields to options
-          const keys = schema.map(field => ({
+          return schema.map((field) => ({
             id: field.key,
             label: field.label,
             value: field.key,
           }));
-
-          return keys;
         } catch (error) {
-          // Fallback to empty if provider not found
           return [];
         }
       },
@@ -72,21 +74,15 @@ export const providerCommand: Command = {
       description: 'Setting value (for set action)',
       required: false,
       loadOptions: async (previousArgs) => {
-        // previousArgs: [action, provider-name, key]
         const providerId = previousArgs[1];
         const key = previousArgs[2];
-
-        if (!providerId || !key) {
-          return [];
-        }
+        if (!providerId || !key) return [];
 
         try {
           const { getProvider } = await import('../../../providers/index.js');
           const provider = getProvider(providerId as any);
           const schema = provider.getConfigSchema();
-
-          // Find the field
-          const field = schema.find(f => f.key === key);
+          const field = schema.find((f) => f.key === key);
 
           // If boolean type, provide true/false options
           if (field?.type === 'boolean') {
@@ -105,7 +101,6 @@ export const providerCommand: Command = {
   ],
   execute: async (context) => {
     const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
-    const aiConfig = context.getConfig();
 
     // Case 1: /provider - ask use or set
     if (context.args.length === 0) {
@@ -130,161 +125,19 @@ export const providerCommand: Command = {
       }
 
       // Ask which provider
-      const { getProvider } = await import('../../../providers/index.js');
-      const providerOptions = Object.values(AI_PROVIDERS).map((p) => {
-        let isConfigured = false;
-        try {
-          const provider = getProvider(p.id as any);
-          const providerConfig = aiConfig?.providers?.[p.id as keyof typeof aiConfig.providers];
-          isConfigured = providerConfig ? provider.isConfigured(providerConfig) : false;
-        } catch {
-          // Provider not found or error checking config
-        }
-        return {
-          label: `${p.name} ${isConfigured ? '✓' : ''}`,
-          value: p.id,
-        };
-      });
+      const providerId = await askSelectProvider(
+        context,
+        action === 'use' ? 'Which provider do you want to use?' : 'Which provider do you want to configure?',
+        action === 'use' ? 'Select provider to use:' : 'Select provider to configure:'
+      );
 
-      context.sendMessage(action === 'use' ? 'Which provider do you want to use?' : 'Which provider do you want to configure?');
-      const providerAnswers = await context.waitForInput({
-        type: 'selection',
-        questions: [
-          {
-            id: 'provider',
-            question: action === 'use' ? 'Select provider to use:' : 'Select provider to configure:',
-            options: providerOptions,
-          },
-        ],
-      });
-
-      const providerId = typeof providerAnswers === 'object' && !Array.isArray(providerAnswers) ? providerAnswers['provider'] : '';
       if (!providerId) {
         return 'Provider selection cancelled.';
       }
 
       if (action === 'use') {
-        // Use provider
-        const { getProvider } = await import('../../../providers/index.js');
-        const provider = getProvider(providerId as any);
-        const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
-
-        if (!providerConfig || !provider.isConfigured(providerConfig)) {
-          // Provider not configured - ask if user wants to configure now
-          context.sendMessage(`${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured yet.`);
-          const configureAnswers = await context.waitForInput({
-            type: 'selection',
-            questions: [
-              {
-                id: 'configure',
-                question: 'Do you want to configure it now?',
-                options: [
-                  { label: 'Yes, configure now', value: 'yes' },
-                  { label: 'No, cancel', value: 'no' },
-                ],
-              },
-            ],
-          });
-
-          const shouldConfigure = typeof configureAnswers === 'object' && !Array.isArray(configureAnswers)
-            ? configureAnswers['configure'] === 'yes'
-            : false;
-
-          if (!shouldConfigure) {
-            return 'Cancelled. You can configure later using: /provider set';
-          }
-
-          // Configure the provider
-          const configResult = await configureProvider(context, providerId);
-
-          // After configuration, get fresh config from store
-          const updatedConfig = context.getConfig();
-          const updatedProviderConfig = updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
-
-          // Check if fully configured
-          if (!updatedProviderConfig || !provider.isConfigured(updatedProviderConfig)) {
-            return `${configResult}\n\nProvider still not fully configured. Please continue configuration with: /provider set ${providerId}`;
-          }
-
-          // Continue with "use" flow - update to use this provider
-          context.sendMessage(configResult);
-          const providerConfigToUse = updatedProviderConfig;
-
-          // Now proceed to set as default provider
-          const newConfig = {
-            ...updatedConfig!,
-            defaultProvider: providerId,
-          };
-
-          // Get default model and update config
-          const { getDefaultModel } = await import('../../../core/session-service.js');
-          const defaultModel = await getDefaultModel(providerId as any, providerConfigToUse);
-          if (!defaultModel) {
-            return `Provider configured but failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
-          }
-
-          // Save default model to config
-          newConfig.providers = {
-            ...newConfig.providers,
-            [providerId]: {
-              ...providerConfigToUse,
-              'default-model': defaultModel,
-            },
-          };
-
-          context.setAIConfig(newConfig);
-          await context.saveConfig(newConfig);
-
-          // Update UI state
-          context.setUISelectedProvider(providerId as ProviderId);
-          context.setUISelectedModel(defaultModel);
-
-          // Update current session's provider (preserve history)
-          const currentSessionId = context.getCurrentSessionId();
-          if (currentSessionId) {
-            context.updateSessionProvider(currentSessionId, providerId, defaultModel);
-          } else {
-            // Fallback: create new session if no active session
-            context.createSession(providerId, defaultModel);
-          }
-
-          return `Now using ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} with model: ${defaultModel}`;
-        }
-
-        const newConfig = {
-          ...aiConfig!,
-          defaultProvider: providerId,
-        };
-
-        // Get default model and update config
-        const { getDefaultModel } = await import('../../../core/session-service.js');
-        const defaultModel = await getDefaultModel(providerId as any, providerConfig);
-        if (!defaultModel) {
-          return `Failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
-        }
-
-        // Save default model to config
-        newConfig.providers = {
-          ...newConfig.providers,
-          [providerId]: {
-            ...providerConfig,
-            'default-model': defaultModel,
-          },
-        };
-
-        context.setAIConfig(newConfig);
-        await context.saveConfig(newConfig);
-
-        // Update current session's provider (preserve history)
-        const currentSessionId = context.getCurrentSessionId();
-        if (currentSessionId) {
-          context.updateSessionProvider(currentSessionId, providerId, defaultModel);
-        } else {
-          // Fallback: create new session if no active session
-          context.createSession(providerId, defaultModel);
-        }
-
-        return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+        // Use provider (with optional configuration)
+        return await ensureConfiguredAndSwitch(context, providerId, true);
       } else {
         // Set provider - use helper function
         return await configureProvider(context, providerId);
@@ -293,156 +146,14 @@ export const providerCommand: Command = {
 
     // Case 2: /provider use - ask which provider to use
     if (context.args.length === 1 && context.args[0] === 'use') {
-      const { getProvider } = await import('../../../providers/index.js');
-      const providerOptions = Object.values(AI_PROVIDERS).map((p) => {
-        let isConfigured = false;
-        try {
-          const provider = getProvider(p.id as any);
-          const providerConfig = aiConfig?.providers?.[p.id as keyof typeof aiConfig.providers];
-          isConfigured = providerConfig ? provider.isConfigured(providerConfig) : false;
-        } catch {
-          // Provider not found or error checking config
-        }
-        return {
-          label: `${p.name} ${isConfigured ? '✓' : ''}`,
-          value: p.id,
-        };
-      });
+      const providerId = await askSelectProvider(context, 'Which provider do you want to use?', 'Select provider:');
 
-      context.sendMessage('Which provider do you want to use?');
-      const answers = await context.waitForInput({
-        type: 'selection',
-        questions: [
-          {
-            id: 'provider',
-            question: 'Select provider:',
-            options: providerOptions,
-          },
-        ],
-      });
-
-      const providerId = typeof answers === 'object' && !Array.isArray(answers) ? answers['provider'] : '';
       if (!providerId) {
         return 'Provider selection cancelled.';
       }
 
-      const provider = getProvider(providerId as any);
-      const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
-
-      if (!providerConfig || !provider.isConfigured(providerConfig)) {
-        // Provider not configured - ask if user wants to configure now
-        context.sendMessage(`${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured yet.`);
-        const configureAnswers = await context.waitForInput({
-          type: 'selection',
-          questions: [
-            {
-              id: 'configure',
-              question: 'Do you want to configure it now?',
-              options: [
-                { label: 'Yes, configure now', value: 'yes' },
-                { label: 'No, cancel', value: 'no' },
-              ],
-            },
-          ],
-        });
-
-        const shouldConfigure = typeof configureAnswers === 'object' && !Array.isArray(configureAnswers)
-          ? configureAnswers['configure'] === 'yes'
-          : false;
-
-        if (!shouldConfigure) {
-          return 'Cancelled. You can configure later using: /provider set';
-        }
-
-        // Configure the provider
-        const configResult = await configureProvider(context, providerId);
-
-        // After configuration, check if it's now configured
-        const updatedConfig = context.getConfig();
-        const updatedProviderConfig = updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
-        if (!updatedProviderConfig || !provider.isConfigured(updatedProviderConfig)) {
-          return `${configResult}\n\nProvider still not fully configured. Please continue configuration with: /provider set ${providerId}`;
-        }
-
-        // Continue with "use" flow - update to use this provider
-        context.sendMessage(configResult);
-        const providerConfigToUse = updatedProviderConfig;
-
-        // Now proceed to set as default provider
-        const newConfig = {
-          ...updatedConfig!,
-          defaultProvider: providerId,
-        };
-
-        // Get default model and update config
-        const { getDefaultModel } = await import('../../../core/session-service.js');
-        const defaultModel = await getDefaultModel(providerId as any, providerConfigToUse);
-        if (!defaultModel) {
-          return `Provider configured but failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
-        }
-
-        // Save default model to config
-        newConfig.providers = {
-          ...newConfig.providers,
-          [providerId]: {
-            ...providerConfigToUse,
-            'default-model': defaultModel,
-          },
-        };
-
-        context.setAIConfig(newConfig);
-        await context.saveConfig(newConfig);
-
-        // Update UI state
-        context.setUISelectedProvider(providerId as ProviderId);
-        context.setUISelectedModel(defaultModel);
-
-        // Update current session's provider (preserve history)
-        const currentSessionId = context.getCurrentSessionId();
-        if (currentSessionId) {
-          context.updateSessionProvider(currentSessionId, providerId, defaultModel);
-        } else {
-          // Fallback: create new session if no active session
-          context.createSession(providerId, defaultModel);
-        }
-
-        return `Now using ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} with model: ${defaultModel}`;
-      }
-
-      const newConfig = {
-        ...aiConfig!,
-        defaultProvider: providerId,
-      };
-
-      // Get default model and update config
-      const { getDefaultModel } = await import('../../../core/session-service.js');
-      const defaultModel = await getDefaultModel(providerId as any, providerConfig);
-      if (!defaultModel) {
-        return `Failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
-      }
-
-      // Save default model to config
-      newConfig.providers = {
-        ...newConfig.providers,
-        [providerId]: {
-          ...providerConfig,
-          'default-model': defaultModel,
-        },
-      };
-
-      context.setAIConfig(newConfig);
-      await context.saveConfig(newConfig);
-
-      // Update current session's provider (preserve history)
-      const currentSessionId = context.getCurrentSessionId();
-      if (currentSessionId) {
-        context.updateSessionProvider(currentSessionId, providerId, defaultModel);
-      } else {
-        // Fallback: create new session if no active session
-        context.createSession(providerId, defaultModel);
-      }
-
-      return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+      // Ensure configured and switch
+      return await ensureConfiguredAndSwitch(context, providerId, true);
     }
 
     // Case 3: /provider use [name] - switch to specific provider
@@ -453,52 +164,13 @@ export const providerCommand: Command = {
         return `Invalid provider: ${providerId}. Available: ${Object.keys(AI_PROVIDERS).join(', ')}`;
       }
 
-      const { getProvider } = await import('../../../providers/index.js');
-      const provider = getProvider(providerId as any);
-      const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
-
-      if (!providerConfig || !provider.isConfigured(providerConfig)) {
-        return `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured. Use: /provider set ${providerId}`;
-      }
-
-      const newConfig = {
-        ...aiConfig!,
-        defaultProvider: providerId,
-      };
-
-      // Get default model and update config
-      const { getDefaultModel } = await import('../../../core/session-service.js');
-      const defaultModel = await getDefaultModel(providerId as any, providerConfig);
-      if (!defaultModel) {
-        return `Failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
-      }
-
-      // Save default model to config
-      newConfig.providers = {
-        ...newConfig.providers,
-        [providerId]: {
-          ...providerConfig,
-          'default-model': defaultModel,
-        },
-      };
-
-      context.setAIConfig(newConfig);
-      await context.saveConfig(newConfig);
-
-      // Update current session's provider (preserve history)
-      const currentSessionId = context.getCurrentSessionId();
-      if (currentSessionId) {
-        context.updateSessionProvider(currentSessionId, providerId, defaultModel);
-      } else {
-        // Fallback: create new session if no active session
-        context.createSession(providerId, defaultModel);
-      }
-
-      return `Switched to ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;
+      // Ensure configured and switch (without auto-prompt)
+      return await ensureConfiguredAndSwitch(context, providerId, false);
     }
 
     // Case 4: /provider set - ask which provider to configure
     if (context.args.length === 1 && context.args[0] === 'set') {
+      const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
       const providerOptions = Object.values(AI_PROVIDERS).map((p) => ({
         label: p.name,
         value: p.id,
@@ -521,93 +193,8 @@ export const providerCommand: Command = {
         return 'Provider selection cancelled.';
       }
 
-      // Ask for key
-      const { getProvider } = await import('../../../providers/index.js');
-      const provider = getProvider(providerId as any);
-      const schema = provider.getConfigSchema();
-
-      const availableKeys = schema.map(field => ({
-        label: field.label,
-        value: field.key,
-      }));
-
-
-      context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
-      const keyAnswers = await context.waitForInput({
-        type: 'selection',
-        questions: [
-          {
-            id: 'key',
-            question: 'Which setting do you want to configure?',
-            options: availableKeys,
-          },
-        ],
-      });
-
-      const key = typeof keyAnswers === 'object' && !Array.isArray(keyAnswers) ? keyAnswers['key'] : '';
-      if (!key) {
-        return 'Configuration cancelled.';
-      }
-
-      // Ask for value - check if boolean type for selection
-      {
-        const field = schema.find(f => f.key === key);
-        let value: string;
-
-        if (field?.type === 'boolean') {
-          context.sendMessage(`Select value for ${key}:`);
-          const boolAnswers = await context.waitForInput({
-            type: 'selection',
-            questions: [
-              {
-                id: 'value',
-                question: `${field.label}:`,
-                options: [
-                  { label: 'true', value: 'true' },
-                  { label: 'false', value: 'false' },
-                ],
-              },
-            ],
-          });
-          value = typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
-        } else {
-          context.sendMessage(`Enter value for ${key}:`);
-          const valueAnswers = await context.waitForInput({
-            type: 'text',
-            placeholder: `Enter ${key}...`,
-          });
-          value = typeof valueAnswers === 'string' ? valueAnswers : '';
-        }
-
-        if (!value) {
-          return 'Value is required.';
-        }
-
-        // Update config
-        const newConfig = {
-          ...aiConfig!,
-          providers: {
-            ...aiConfig!.providers,
-            [providerId]: {
-              ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
-              [key]: value,
-            },
-          },
-        };
-
-        if (!aiConfig?.defaultProvider) {
-          newConfig.defaultProvider = providerId;
-        }
-
-        context.setAIConfig(newConfig);
-        await context.saveConfig(newConfig);
-
-        // Mask secret values in response
-        const displayField = schema.find(f => f.key === key);
-        const displayValue = displayField?.secret ? '***' : value;
-
-        return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
-      }
+      // Interactive set provider config
+      return await interactiveSetProviderConfig(context, providerId);
     }
 
     // Case 5: /provider set [name] - ask which key to set
@@ -618,93 +205,8 @@ export const providerCommand: Command = {
         return `Invalid provider: ${providerId}. Available: ${Object.keys(AI_PROVIDERS).join(', ')}`;
       }
 
-      // Ask for key
-      const { getProvider } = await import('../../../providers/index.js');
-      const provider = getProvider(providerId as any);
-      const schema = provider.getConfigSchema();
-
-      const availableKeys = schema.map(field => ({
-        label: field.label,
-        value: field.key,
-      }));
-
-
-      context.sendMessage(`Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`);
-      const keyAnswers = await context.waitForInput({
-        type: 'selection',
-        questions: [
-          {
-            id: 'key',
-            question: 'Which setting do you want to configure?',
-            options: availableKeys,
-          },
-        ],
-      });
-
-      const key = typeof keyAnswers === 'object' && !Array.isArray(keyAnswers) ? keyAnswers['key'] : '';
-      if (!key) {
-        return 'Configuration cancelled.';
-      }
-
-      // Ask for value - check if boolean type for selection
-      {
-        const field = schema.find(f => f.key === key);
-        let value: string;
-
-        if (field?.type === 'boolean') {
-          context.sendMessage(`Select value for ${key}:`);
-          const boolAnswers = await context.waitForInput({
-            type: 'selection',
-            questions: [
-              {
-                id: 'value',
-                question: `${field.label}:`,
-                options: [
-                  { label: 'true', value: 'true' },
-                  { label: 'false', value: 'false' },
-                ],
-              },
-            ],
-          });
-          value = typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
-        } else {
-          context.sendMessage(`Enter value for ${key}:`);
-          const valueAnswers = await context.waitForInput({
-            type: 'text',
-            placeholder: `Enter ${key}...`,
-          });
-          value = typeof valueAnswers === 'string' ? valueAnswers : '';
-        }
-
-        if (!value) {
-          return 'Value is required.';
-        }
-
-        // Update config
-        const newConfig = {
-          ...aiConfig!,
-          providers: {
-            ...aiConfig!.providers,
-            [providerId]: {
-              ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
-              [key]: value,
-            },
-          },
-        };
-
-        if (!aiConfig?.defaultProvider) {
-          newConfig.defaultProvider = providerId;
-        }
-
-        context.setAIConfig(newConfig);
-        await context.saveConfig(newConfig);
-
-        // Mask secret values in response
-        const displayField = schema.find(f => f.key === key);
-        const displayValue = displayField?.secret ? '***' : value;
-
-        return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
-      }
+      // Interactive set provider config
+      return await interactiveSetProviderConfig(context, providerId);
     }
 
     // Case 6: /provider set [name] [key] [value] - direct configuration
@@ -722,37 +224,24 @@ export const providerCommand: Command = {
       const provider = getProvider(providerId as any);
       const schema = provider.getConfigSchema();
 
-      const validKeys = schema.map(f => f.key);
+      const validKeys = schema.map((f) => f.key);
       if (!validKeys.includes(key)) {
         return `Invalid key: ${key}. Valid keys for ${providerId}: ${validKeys.join(', ')}`;
       }
 
-      const newConfig = {
-        ...aiConfig!,
-        providers: {
-          ...aiConfig!.providers,
-          [providerId]: {
-            ...aiConfig!.providers?.[providerId as keyof typeof aiConfig.providers],
-            [key]: value,
-          },
-        },
-      };
-
-      if (!aiConfig?.defaultProvider) {
-        newConfig.defaultProvider = providerId;
-      }
-
-      context.setAIConfig(newConfig);
-      await context.saveConfig(newConfig);
-
-      // Mask secret values in response
-      const field = schema.find(f => f.key === key);
-      const displayValue = field?.secret ? '***' : value;
-
-      return `Set ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} ${key} to: ${displayValue}`;
+      // Set config value directly
+      return await setProviderConfigValue(context, providerId, key, value, schema);
     }
 
-    return 'Usage:\n  /provider - Select action and provider\n  /provider use - Select provider to use\n  /provider use [name] - Switch to provider\n  /provider set - Configure a provider\n  /provider set [name] - Configure specific provider\n  /provider set [name] [key] [value] - Set provider config directly';
+    return (
+      'Usage:\n' +
+      '  /provider - Select action and provider\n' +
+      '  /provider use - Select provider to use\n' +
+      '  /provider use [name] - Switch to provider\n' +
+      '  /provider set - Configure a provider\n' +
+      '  /provider set [name] - Configure specific provider\n' +
+      '  /provider set [name] [key] [value] - Set provider config directly'
+    );
   },
 };
 

@@ -5,8 +5,8 @@
 
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
-import type { ModelInfo } from '../utils/ai-model-fetcher.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+
 
 export class ZaiProvider implements AIProvider {
   readonly id = 'zai' as const;

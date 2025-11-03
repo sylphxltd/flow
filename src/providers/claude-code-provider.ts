@@ -5,8 +5,8 @@
  */
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
-import type { ModelInfo } from '../utils/ai-model-fetcher.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+
 import { ClaudeCodeLanguageModel } from './claude-code-language-model.js';
 
 export class ClaudeCodeProvider implements AIProvider {

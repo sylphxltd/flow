@@ -16,12 +16,18 @@ import { fileURLToPath } from 'node:url';
 import { pathSecurity } from './security.js';
 
 /**
- * Assets location - relative to package root
+ * Find package root by walking up directory tree
+ * Pure function - finds package.json location
  *
- * Strategy: Find package.json by walking up from this file, then assets/ is
- * always at package-root/assets regardless of how the code is bundled.
+ * @param context - Optional context for error message (e.g., 'assets', 'migrations')
+ * @returns Absolute path to package root directory
+ * @throws Error if package.json cannot be found within 10 levels
+ *
+ * @example
+ * const root = findPackageRoot(); // 'Cannot find package.json'
+ * const root = findPackageRoot('drizzle migrations'); // 'Cannot find package.json - drizzle migrations location unknown'
  */
-function findPackageRoot(): string {
+export function findPackageRoot(context?: string): string {
   const __filename = fileURLToPath(import.meta.url);
   let currentDir = path.dirname(__filename);
 
@@ -37,7 +43,10 @@ function findPackageRoot(): string {
     currentDir = parentDir;
   }
 
-  throw new Error('Cannot find package.json - assets location unknown');
+  const errorMsg = context
+    ? `Cannot find package.json - ${context} location unknown`
+    : 'Cannot find package.json';
+  throw new Error(errorMsg);
 }
 
 const ASSETS_ROOT = path.join(findPackageRoot(), 'assets');
