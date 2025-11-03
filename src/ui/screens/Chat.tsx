@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useStdout } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import MarkdownText from '../components/MarkdownText.js';
 import TodoList from '../components/TodoList.js';
@@ -123,6 +123,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
+
+  // Terminal dimensions for height constraints
+  const { stdout } = useStdout();
+  const terminalHeight = stdout.rows || 30;
 
   // Custom hooks for side effects
   const usedTokens = useTokenCalculation(currentSession);
@@ -385,6 +389,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Get hint text for current input
   // PERFORMANCE: Memoize to avoid recalculating on every render
   const hintText = useMemo(() => getHintText(), [input]);
+
+  // Calculate max height for messages to prevent overflow and keep input visible
+  // Reserve space for: header (2), input area (6), status bar (2), todo list (4), padding (2)
+  const maxMessagesHeight = useMemo(() => {
+    return Math.max(10, terminalHeight - 16);
+  }, [terminalHeight]);
 
   // Handle keyboard shortcuts for command menu and selection navigation
   useKeyboardNavigation({
@@ -792,6 +802,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           flexDirection="column"
           flexGrow={!currentSession || (currentSession.messages.length === 0 && !isStreaming) ? 0 : 1}
           minHeight={0}
+          maxHeight={maxMessagesHeight}
+          overflow="hidden"
         >
         {!currentSession ? (
           <Box paddingY={1} flexDirection="column">
