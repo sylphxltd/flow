@@ -75,8 +75,8 @@ function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): strin
     : `stream-text-${globalIdx}`;
 }
 
-// Global debug flag - set via DEBUG env var
-const SHOW_DEBUG_INDICATORS = process.env.DEBUG === 'true' || process.env.DEBUG === '1';
+// Global debug flag - TODO: remove after debugging streaming issues
+const SHOW_DEBUG_INDICATORS = true;  // Temporarily enabled for debugging
 
 /**
  * Streaming Part Wrapper Component
