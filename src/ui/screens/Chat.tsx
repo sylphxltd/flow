@@ -717,6 +717,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
         // onError
         (error) => {
+          // Store error for onComplete handler
+          lastErrorRef.current = error;
           setStreamParts((prev) => [
             ...prev,
             { type: 'error', error }
