@@ -72,21 +72,25 @@ function AppContent() {
     }
   }, [error, setError]);
 
-  // Dashboard is full screen - no padding, no header
+  // Full-screen screens - no app layout padding
+  // These screens manage their own layout to handle Static/Dynamic boundary correctly
   if (currentScreen === 'dashboard') {
     return <Dashboard />;
   }
 
+  if (currentScreen === 'chat') {
+    return <Chat commandFromPalette={commandPaletteCommand} />;
+  }
+
+  // Other screens use app layout with padding
   return (
     <Box flexDirection="column" width="100%" height="100%" paddingX={1}>
-      {/* Header - Only for non-chat screens (chat handles its own header in Static) */}
-      {currentScreen !== 'chat' && (
-        <Box paddingY={1}>
-          <Text bold color="#00D9FF">SYLPHX FLOW</Text>
-          <Text dimColor> │ </Text>
-          <Text dimColor>AI Development Assistant</Text>
-        </Box>
-      )}
+      {/* Header */}
+      <Box paddingY={1}>
+        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+        <Text dimColor> │ </Text>
+        <Text dimColor>AI Development Assistant</Text>
+      </Box>
 
       {/* Error Display */}
       {error && (
@@ -108,7 +112,6 @@ function AppContent() {
 
       {/* Screen Router */}
       <Box flexDirection="column" flexGrow={1} minHeight={0}>
-        {currentScreen === 'chat' && <Chat commandFromPalette={commandPaletteCommand} />}
         {currentScreen === 'provider-management' && <ProviderManagement />}
         {currentScreen === 'model-selection' && <ModelSelection />}
         {currentScreen === 'command-palette' && <CommandPalette onCommand={handleCommand} />}
