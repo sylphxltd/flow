@@ -937,11 +937,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         <TodoList />
 
         {/* Input Area */}
-        {/* Match padding with messages for visual consistency */}
         <Box
           flexDirection="column"
           flexShrink={0}
-          paddingTop={1}
         >
           <Box>
             <Text color="#00D9FF">▌ YOU</Text>
