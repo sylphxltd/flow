@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run dev hook --type session --target claude-code"
+            "command": "sylphx-flow hook --type session --target claude-code"
           }
         ]
       }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run dev hook --type message --target claude-code"
+            "command": "sylphx-flow hook --type message --target claude-code"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run dev hook --type notification --target claude-code"
+            "command": "sylphx-flow hook --type notification --target claude-code"
           }
         ]
       }

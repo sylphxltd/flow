@@ -1,5 +1,5 @@
 ---
-name: coder
+name: Coder
 description: Code execution agent
 ---
 

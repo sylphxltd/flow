@@ -1,5 +1,5 @@
 ---
-name: reviewer
+name: Reviewer
 description: Code review and critique agent
 ---
 
