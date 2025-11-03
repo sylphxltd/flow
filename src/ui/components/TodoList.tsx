@@ -62,17 +62,19 @@ export default function TodoList() {
   }
 
   return (
-    <Box flexDirection="column" marginBottom={1} paddingX={1} borderStyle="round" borderColor="gray">
+    <Box flexDirection="column" paddingTop={1}>
       {/* Header with simple progress */}
-      <Box marginBottom={0}>
-        <Text bold color="#FFD700">
-          Tasks {completedCount}/{totalCount}
+      <Box>
+        <Text color="#FFD700">▌ TASKS</Text>
+        <Text color="#FFD700"> · </Text>
+        <Text dimColor>
+          {completedCount}/{totalCount}
         </Text>
       </Box>
 
       {/* Scroll indicator top */}
       {hasMoreAbove && (
-        <Box>
+        <Box marginLeft={2}>
           <Text dimColor>↑ {scrollOffset} more above</Text>
         </Box>
       )}
@@ -87,7 +89,7 @@ export default function TodoList() {
         const strikethrough = isTodoStrikethrough(todo.status);
 
         return (
-          <Box key={`todo-${todo.id}`}>
+          <Box key={`todo-${todo.id}`} marginLeft={2}>
             <Text color={color} bold={bold} dimColor={dimmed}>
               {icon}{' '}
             </Text>
@@ -100,7 +102,7 @@ export default function TodoList() {
 
       {/* Scroll indicator bottom */}
       {hasMoreBelow && (
-        <Box>
+        <Box marginLeft={2}>
           <Text dimColor>↓ {sortedTodos.length - scrollOffset - MAX_VISIBLE_LINES} more below</Text>
         </Box>
       )}
