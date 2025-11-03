@@ -19,11 +19,13 @@ import agentCommand from './definitions/agent.command.js';
 import rulesCommand from './definitions/rules.command.js';
 import compactCommand from './definitions/compact.command.js';
 import notificationsCommand from './definitions/notifications.command.js';
+import { dashboardCommand } from './definitions/dashboard.command.js';
 
 /**
  * All registered commands
  */
 export const commands: Command[] = [
+  dashboardCommand,
   providerCommand,
   modelCommand,
   agentCommand,

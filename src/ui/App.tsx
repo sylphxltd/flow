@@ -11,6 +11,7 @@ import ModelSelection from './screens/ModelSelection.js';
 import CommandPalette from './screens/CommandPalette.js';
 import Chat from './screens/Chat.js';
 import Logs from './screens/Logs.js';
+import Dashboard from './screens/Dashboard.js';
 import { useAIConfig } from './hooks/useAIConfig.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useSessionPersistence } from './hooks/useSessionPersistence.js';
@@ -105,6 +106,7 @@ export default function App() {
         {currentScreen === 'model-selection' && <ModelSelection />}
         {currentScreen === 'command-palette' && <CommandPalette onCommand={handleCommand} />}
         {currentScreen === 'logs' && <Logs />}
+        {currentScreen === 'dashboard' && <Dashboard />}
       </Box>
     </Box>
   );

@@ -11,7 +11,7 @@ import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata 
 import type { Todo, TodoUpdate } from '../../types/todo.types.js';
 import { getSessionRepository } from '../../db/database.js';
 
-export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs';
+export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs' | 'dashboard';
 export type { Session, MessagePart } from '../../types/session.types.js';
 
 export interface AppState {
