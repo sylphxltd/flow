@@ -1010,6 +1010,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               {/* Text Input with inline hint */}
               <Box marginLeft={2}>
                 <TextInputWithHint
+                  key="main-input"
                   value={
                     pendingInput?.type === 'selection'
                       ? selectionFilter
