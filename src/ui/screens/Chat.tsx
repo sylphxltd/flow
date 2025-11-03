@@ -882,11 +882,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   <Text color="#00FF88">▌ SYLPHX</Text>
                 </Box>
 
-                {/* Show loading when no parts yet */}
+                {/* Show placeholder when no parts yet */}
                 {streamParts.length === 0 && (
                   <Box marginLeft={2}>
-                    <Spinner color="#FFD700" />
-                    <Text dimColor> Thinking...</Text>
+                    <Text dimColor>...</Text>
                   </Box>
                 )}
 
