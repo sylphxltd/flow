@@ -991,7 +991,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           // Message streaming: New part (reasoning) being added
           setStreamParts((prev) => [
             ...prev,
-            { type: 'reasoning', content: '', startTime: Date.now() }
+            { type: 'reasoning', content: '', completed: false, startTime: Date.now() }
           ]);
         },
         // onReasoningDelta
