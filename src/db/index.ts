@@ -21,22 +21,38 @@ export class DrizzleDatabase {
     try {
       const memoryDir = path.join(process.cwd(), '.sylphx-flow');
 
-      // Ensure directory exists
-      if (!fs.existsSync(memoryDir)) {
-        fs.mkdirSync(memoryDir, { recursive: true });
+      // Ensure directory exists with proper error handling
+      try {
+        if (!fs.existsSync(memoryDir)) {
+          fs.mkdirSync(memoryDir, { recursive: true });
+        }
+      } catch (dirError) {
+        throw new Error(
+          `Failed to create database directory: ${memoryDir}. ` +
+          `Error: ${(dirError as Error).message}`
+        );
       }
 
       const dbPath = path.join(memoryDir, 'memory.db');
 
+      // Convert Windows backslashes to forward slashes for file: URL
+      // libSQL expects forward slashes even on Windows
+      const normalizedPath = dbPath.replace(/\\/g, '/');
+
       this.client = createClient({
-        url: `file:${dbPath}`,
+        url: `file:${normalizedPath}`,
       });
 
       this.db = drizzle(this.client, { schema });
     } catch (error) {
+      const dbPath = path.join(process.cwd(), '.sylphx-flow', 'memory.db');
       throw new ConnectionError(
         'Failed to initialize database connection',
-        { url: `file:${path.join(process.cwd(), '.sylphx-flow/memory.db')}` },
+        {
+          url: `file:${dbPath}`,
+          cwd: process.cwd(),
+          platform: process.platform,
+        },
         error as Error
       );
     }
