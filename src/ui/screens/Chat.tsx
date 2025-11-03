@@ -916,6 +916,22 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         {/* Todo List - Always visible, positioned above input */}
         <TodoList />
 
+        {/* LLM Status Indicator */}
+        {isStreaming && (
+          <Box paddingY={1}>
+            <Spinner color="#FFD700" />
+            {streamParts.length === 0 ? (
+              <Text color="#FFD700"> AI is thinking...</Text>
+            ) : streamParts.some(p => p.type === 'tool' && p.status === 'running') ? (
+              <Text color="#FFD700"> Executing tools...</Text>
+            ) : streamParts.some(p => p.type === 'reasoning') ? (
+              <Text color="#FFD700"> Reasoning...</Text>
+            ) : (
+              <Text color="#FFD700"> AI is responding...</Text>
+            )}
+          </Box>
+        )}
+
         {/* Input Area */}
         {/* Match padding with messages for visual consistency */}
         <Box
