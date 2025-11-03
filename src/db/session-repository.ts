@@ -38,6 +38,38 @@ import type {
 import type { Todo as TodoType } from '../types/todo.types.js';
 import type { ProviderId } from '../config/ai-config.js';
 
+/**
+ * Retry helper for handling SQLITE_BUSY errors
+ * Exponential backoff: 50ms, 100ms, 200ms, 400ms, 800ms
+ */
+async function retryOnBusy<T>(
+  operation: () => Promise<T>,
+  maxRetries = 5
+): Promise<T> {
+  let lastError: any;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+
+      // Only retry on SQLITE_BUSY errors
+      if (error.message?.includes('SQLITE_BUSY') || error.code === 'SQLITE_BUSY') {
+        const delay = 50 * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Other errors: throw immediately
+      throw error;
+    }
+  }
+
+  // Max retries exceeded
+  throw lastError;
+}
+
 export class SessionRepository {
   constructor(private db: LibSQLDatabase) {}
 
@@ -83,17 +115,19 @@ export class SessionRepository {
     created: number;
     updated: number;
   }): Promise<void> {
-    const newSession: NewSession = {
-      id: sessionData.id,
-      title: sessionData.title || null,
-      provider: sessionData.provider,
-      model: sessionData.model,
-      nextTodoId: sessionData.nextTodoId,
-      created: sessionData.created,
-      updated: sessionData.updated,
-    };
+    await retryOnBusy(async () => {
+      const newSession: NewSession = {
+        id: sessionData.id,
+        title: sessionData.title || null,
+        provider: sessionData.provider,
+        model: sessionData.model,
+        nextTodoId: sessionData.nextTodoId,
+        created: sessionData.created,
+        updated: sessionData.updated,
+      };
 
-    await this.db.insert(sessions).values(newSession);
+      await this.db.insert(sessions).values(newSession);
+    });
   }
 
   /**
@@ -317,19 +351,20 @@ export class SessionRepository {
     metadata?: MessageMetadata,
     todoSnapshot?: TodoType[]
   ): Promise<void> {
-    const messageId = randomUUID();
-    const now = Date.now();
+    await retryOnBusy(async () => {
+      const messageId = randomUUID();
+      const now = Date.now();
 
-    // Get current message count for ordering
-    const [{ count }] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(messages)
-      .where(eq(messages.sessionId, sessionId));
+      // Get current message count for ordering
+      const [{ count }] = await this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(messages)
+        .where(eq(messages.sessionId, sessionId));
 
-    const ordering = count;
+      const ordering = count;
 
-    // Insert in transaction
-    await this.db.transaction(async (tx) => {
+      // Insert in transaction
+      await this.db.transaction(async (tx) => {
       // Insert message
       await tx.insert(messages).values({
         id: messageId,
@@ -395,6 +430,7 @@ export class SessionRepository {
         .update(sessions)
         .set({ updated: now })
         .where(eq(sessions.id, sessionId));
+      });
     });
   }
 
@@ -503,27 +539,29 @@ export class SessionRepository {
    * Update todos for session
    */
   async updateTodos(sessionId: string, newTodos: TodoType[], nextTodoId: number): Promise<void> {
-    await this.db.transaction(async (tx) => {
-      // Delete existing todos
-      await tx.delete(todos).where(eq(todos.sessionId, sessionId));
+    await retryOnBusy(async () => {
+      await this.db.transaction(async (tx) => {
+        // Delete existing todos
+        await tx.delete(todos).where(eq(todos.sessionId, sessionId));
 
-      // Insert new todos
-      for (const todo of newTodos) {
-        await tx.insert(todos).values({
-          id: todo.id,
-          sessionId,
-          content: todo.content,
-          activeForm: todo.activeForm,
-          status: todo.status,
-          ordering: todo.ordering,
-        });
-      }
+        // Insert new todos
+        for (const todo of newTodos) {
+          await tx.insert(todos).values({
+            id: todo.id,
+            sessionId,
+            content: todo.content,
+            activeForm: todo.activeForm,
+            status: todo.status,
+            ordering: todo.ordering,
+          });
+        }
 
-      // Update nextTodoId and timestamp
-      await tx
-        .update(sessions)
-        .set({ nextTodoId, updated: Date.now() })
-        .where(eq(sessions.id, sessionId));
+        // Update nextTodoId and timestamp
+        await tx
+          .update(sessions)
+          .set({ nextTodoId, updated: Date.now() })
+          .where(eq(sessions.id, sessionId));
+      });
     });
   }
 }

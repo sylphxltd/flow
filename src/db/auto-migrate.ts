@@ -187,9 +187,16 @@ async function migrateSessionFiles(
 export async function autoMigrate(onProgress?: ProgressCallback): Promise<any> {
   const DATABASE_URL = process.env.DATABASE_URL || `file:${DB_PATH}`;
 
-  // Initialize database
+  // Initialize database with optimized settings for concurrency
   const client = createClient({ url: DATABASE_URL });
   const db = drizzle(client);
+
+  // Configure SQLite for better concurrency
+  // WAL mode allows concurrent reads while writing
+  // Busy timeout retries when database is locked (5 seconds)
+  await client.execute('PRAGMA journal_mode = WAL');
+  await client.execute('PRAGMA busy_timeout = 5000');
+  await client.execute('PRAGMA synchronous = NORMAL');
 
   // Check if migration needed
   const shouldMigrate = await needsMigration(db);
