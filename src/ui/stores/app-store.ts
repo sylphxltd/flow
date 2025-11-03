@@ -61,6 +61,14 @@ export interface AppState {
   addDebugLog: (message: string) => void;
   clearDebugLogs: () => void;
 
+  // Notification Settings
+  notificationSettings: {
+    osNotifications: boolean;
+    terminalNotifications: boolean;
+    sound: boolean;
+  };
+  updateNotificationSettings: (settings: Partial<AppState['notificationSettings']>) => void;
+
   // Todo State (per-session, accessed via currentSession)
   updateTodos: (sessionId: string, updates: TodoUpdate[]) => void;
 }
@@ -306,6 +314,20 @@ export const useAppStore = create<AppState>()(
     clearDebugLogs: () =>
       set((state) => {
         state.debugLogs = [];
+      }),
+
+    // Notification Settings
+    notificationSettings: {
+      osNotifications: true,
+      terminalNotifications: true,
+      sound: true,
+    },
+    updateNotificationSettings: (settings) =>
+      set((state) => {
+        state.notificationSettings = {
+          ...state.notificationSettings,
+          ...settings,
+        };
       }),
 
     // Todo State (per-session)

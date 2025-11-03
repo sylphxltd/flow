@@ -111,6 +111,17 @@ export interface CommandContext {
 
   // Add debug log
   addLog: (message: string) => void;
+
+  // Notification settings
+  notificationSettings: {
+    osNotifications: boolean;
+    terminalNotifications: boolean;
+    sound: boolean;
+  };
+  updateNotificationSettings: (settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>) => void;
+
+  // Update output for commands that display information
+  updateOutput: (content: string) => void;
 }
 
 /**
@@ -121,5 +132,5 @@ export interface Command {
   label: string;
   description: string;
   args?: CommandArg[];
-  execute: (context: CommandContext) => Promise<string>;
+  execute: (context: CommandContext) => Promise<void>;
 }

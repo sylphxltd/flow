@@ -109,6 +109,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const addMessage = useAppStore((state) => state.addMessage);
   const setSelectedProvider = useAppStore((state) => state.setSelectedProvider);
   const setSelectedModel = useAppStore((state) => state.setSelectedModel);
+  const updateNotificationSettings = useAppStore((state) => state.updateNotificationSettings);
+  const notificationSettings = useAppStore((state) => state.notificationSettings);
   const sessions = useAppStore((state) => state.sessions);
 
   const { sendMessage, currentSession } = useChat();
@@ -190,6 +192,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setCurrentSession: (sessionId) => setCurrentSession(sessionId),
     navigateTo: (screen) => navigateTo(screen),
     addLog: (message) => addLog(message),
+    notificationSettings,
+    updateNotificationSettings: (settings) => updateNotificationSettings(settings),
+    updateOutput: (content) => addLog(content),
   });
 
   // Generate hint text for current input

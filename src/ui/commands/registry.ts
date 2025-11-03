@@ -18,6 +18,7 @@ import bashesCommand from './definitions/bashes.command.js';
 import agentCommand from './definitions/agent.command.js';
 import rulesCommand from './definitions/rules.command.js';
 import compactCommand from './definitions/compact.command.js';
+import notificationsCommand from './definitions/notifications.command.js';
 
 /**
  * All registered commands
@@ -28,6 +29,7 @@ export const commands: Command[] = [
   agentCommand,
   rulesCommand,
   compactCommand,
+  notificationsCommand,
   logsCommand,
   helpCommand,
   surveyCommand,

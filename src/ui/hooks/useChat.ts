@@ -20,6 +20,7 @@ import {
   type UserInputRequest
 } from '../../tools/interaction.js';
 import type { ModelMessage } from 'ai';
+import { sendNotification } from '../../utils/notifications.js';
 
 // Simple LRU cache for file attachments with mtime validation
 // Prevents re-reading same files from disk multiple times
@@ -117,6 +118,7 @@ export function useChat() {
   const addMessage = useAppStore((state) => state.addMessage);
   const setError = useAppStore((state) => state.setError);
   const addDebugLog = useAppStore((state) => state.addDebugLog);
+  const notificationSettings = useAppStore((state) => state.notificationSettings);
 
   /**
    * Send message and stream response
@@ -396,8 +398,23 @@ export function useChat() {
       // Add assistant message to session with parts and usage
       addMessage(currentSessionId, 'assistant', messageParts, undefined, usage, finishReason);
 
-      // Then trigger UI update
+      // Then trigger UI update and send notification
       onComplete?.();
+      
+      // Send notification when AI response is complete
+      const responsePreview = fullResponse.length > 100 
+        ? fullResponse.substring(0, 97) + '...' 
+        : fullResponse;
+      
+      sendNotification(
+        'AI Response Complete',
+        responsePreview,
+        {
+          osNotification: notificationSettings.osNotifications,
+          terminalNotification: notificationSettings.terminalNotifications,
+          sound: notificationSettings.sound
+        }
+      );
     } catch (error) {
       addDebugLog('[useChat] ERROR CAUGHT!');
       // Don't log to console - error will be shown as assistant message
