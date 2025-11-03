@@ -913,9 +913,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           </>
         )}
 
-        {/* Todo List - Always visible, positioned above input */}
-        <TodoList />
-
         {/* Status Indicator - Always present to prevent layout shift */}
         <Box paddingY={1}>
           {isStreaming ? (
@@ -935,6 +932,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             <Text> </Text>
           )}
         </Box>
+
+        {/* Todo List - Always visible, positioned above input */}
+        <TodoList />
 
         {/* Input Area */}
         {/* Match padding with messages for visual consistency */}
