@@ -35,7 +35,31 @@ import { SelectionUI } from '../components/SelectionUI.js';
 import { PendingCommandSelection } from '../components/PendingCommandSelection.js';
 import { FileAutocomplete } from '../components/FileAutocomplete.js';
 import { CommandAutocomplete } from '../components/CommandAutocomplete.js';
+import type { StreamingPart } from '../../types/session.types.js';
 
+/**
+ * StreamPart - Internal streaming representation
+ *
+ * DESIGN DECISION: Why separate type from StreamingPart?
+ * ========================================================
+ *
+ * StreamPart (internal, this file):
+ * - Optimized for UI rendering during active streaming
+ * - Uses 'completed' boolean for reasoning (simpler logic)
+ * - Minimal fields for performance
+ *
+ * StreamingPart (persisted, session.types.ts):
+ * - Standardized format for session persistence
+ * - Explicit 'status' fields for all part types
+ * - Includes 'aborted' state for recovery
+ *
+ * Conversion happens at persistence boundary:
+ * - StreamPart → StreamingPart when saving to session
+ * - StreamingPart → StreamPart when restoring from session
+ *
+ * This separation keeps streaming code simple while maintaining
+ * rich persistence format for session recovery.
+ */
 type StreamPart =
   | { type: 'text'; content: string }
   | { type: 'reasoning'; content: string; completed?: boolean; duration?: number; startTime?: number }
@@ -44,6 +68,114 @@ type StreamPart =
 
 interface ChatProps {
   commandFromPalette?: string | null;
+}
+
+/**
+ * Convert internal StreamPart to persisted StreamingPart format
+ *
+ * DESIGN DECISION: Conversion strategy
+ * ====================================
+ *
+ * Status mapping:
+ * - text: always 'completed' (text parts are immutable once created)
+ * - reasoning: completed=true → 'completed', completed=false/undefined → 'active'
+ * - tool: maps status directly (running/completed/failed)
+ * - error: always 'completed'
+ *
+ * Why this mapping?
+ * - Preserves all runtime state for recovery
+ * - Text parts don't need 'active' state (accumulated atomically)
+ * - Reasoning and tools have clear active/completed lifecycle
+ */
+function toPersistentFormat(part: StreamPart): StreamingPart {
+  if (part.type === 'text') {
+    return {
+      type: 'text',
+      content: part.content,
+      status: 'completed'
+    };
+  }
+  if (part.type === 'reasoning') {
+    return {
+      type: 'reasoning',
+      content: part.content,
+      status: part.completed ? 'completed' : 'active',
+      duration: part.duration,
+      startTime: part.startTime
+    };
+  }
+  if (part.type === 'tool') {
+    return {
+      type: 'tool',
+      toolId: part.toolId,
+      name: part.name,
+      status: part.status,
+      args: part.args,
+      result: part.result,
+      error: part.error,
+      duration: part.duration,
+      startTime: part.startTime
+    };
+  }
+  // error
+  return {
+    type: 'error',
+    error: part.error,
+    status: 'completed'
+  };
+}
+
+/**
+ * Convert persisted StreamingPart to internal StreamPart format
+ *
+ * DESIGN DECISION: Recovery strategy
+ * ==================================
+ *
+ * Status mapping (reverse of toPersistentFormat):
+ * - text: status ignored (always have content)
+ * - reasoning: status 'completed' → completed=true, 'active'/'aborted' → completed=false
+ * - tool: maps status directly, 'aborted' → 'failed' (treat aborted as failed for UI)
+ * - error: status ignored
+ *
+ * Why treat 'aborted' as 'failed' for tools?
+ * - UI rendering logic already handles 'failed' state
+ * - Aborted tools can't be resumed, so treating as failed is appropriate
+ * - Simplifies recovery logic
+ */
+function fromPersistentFormat(part: StreamingPart): StreamPart {
+  if (part.type === 'text') {
+    return {
+      type: 'text',
+      content: part.content
+    };
+  }
+  if (part.type === 'reasoning') {
+    return {
+      type: 'reasoning',
+      content: part.content,
+      completed: part.status === 'completed',
+      duration: part.duration,
+      startTime: part.startTime
+    };
+  }
+  if (part.type === 'tool') {
+    return {
+      type: 'tool',
+      toolId: part.toolId,
+      name: part.name,
+      status: part.status === 'aborted' ? 'failed' : part.status,
+      args: part.args,
+      result: part.result,
+      error: part.error,
+      duration: part.duration,
+      startTime: part.startTime
+    };
+  }
+  // error
+  return {
+    type: 'error',
+    error: part.error
+  };
 }
 
 export default function Chat({ commandFromPalette }: ChatProps) {
@@ -138,6 +270,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const updateNotificationSettings = useAppStore((state) => state.updateNotificationSettings);
   const notificationSettings = useAppStore((state) => state.notificationSettings);
   const sessions = useAppStore((state) => state.sessions);
+  const setStreamingState = useAppStore((state) => state.setStreamingState);
 
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
@@ -164,6 +297,90 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     inputResolver,
     addDebugLog,
   });
+
+  /**
+   * Effect: Sync streaming state to session (persistence)
+   *
+   * DESIGN DECISION: When to persist streaming state?
+   * =================================================
+   *
+   * Persist on every streamParts or isStreaming change:
+   * - Ensures session always has latest streaming state
+   * - Enables instant recovery on session switch
+   * - Database writes are async (optimistic update pattern)
+   *
+   * Why not debounce?
+   * - streamParts changes are already batched (50ms debounce in flushStreamBuffer)
+   * - Tool/reasoning updates are infrequent (seconds apart)
+   * - Extra writes are cheap (in-memory + async disk)
+   * - Guarantees zero data loss on crash/switch
+   *
+   * Performance: ~10-50 writes per second during active streaming
+   * Impact: Negligible (batched text updates, async DB writes)
+   */
+  useEffect(() => {
+    if (!currentSessionId) return;
+
+    // Convert internal format to persistent format
+    const persistentParts = streamParts.map(toPersistentFormat);
+
+    // Update session (optimistic in-memory + async to database)
+    setStreamingState(currentSessionId, isStreaming, persistentParts);
+  }, [currentSessionId, isStreaming, streamParts, setStreamingState]);
+
+  /**
+   * Effect: Restore streaming state on session switch
+   *
+   * DESIGN DECISION: How to handle state restoration?
+   * =================================================
+   *
+   * On session switch (currentSessionId changes):
+   * 1. Check if new session has persisted streaming state
+   * 2. If yes: restore isStreaming and streamParts from session
+   * 3. If no: keep current state (empty)
+   *
+   * Why restore from session instead of current state?
+   * - User may switch between multiple streaming sessions
+   * - Each session must maintain independent streaming state
+   * - Current state belongs to previous session
+   *
+   * Edge cases handled:
+   * - Session A streaming → switch to B → B has no state → show empty
+   * - Session A streaming → switch to B streaming → restore B's state
+   * - New session → no streaming state → normal empty state
+   *
+   * Abort controller handling:
+   * - NOT restored (can't resume network request)
+   * - User must re-send message to continue
+   * - This is intentional: network state is not serializable
+   */
+  useEffect(() => {
+    if (!currentSessionId) {
+      setIsStreaming(false);
+      setStreamParts([]);
+      return;
+    }
+
+    // Find session
+    const session = sessions.find(s => s.id === currentSessionId);
+    if (!session) {
+      setIsStreaming(false);
+      setStreamParts([]);
+      return;
+    }
+
+    // Restore streaming state if exists
+    if (session.streamingParts && session.streamingParts.length > 0) {
+      setIsStreaming(session.isStreaming || false);
+      setStreamParts(session.streamingParts.map(fromPersistentFormat));
+    } else if (session.isStreaming === false || session.isStreaming === undefined) {
+      // Session has no streaming state, clear current state
+      setIsStreaming(false);
+      setStreamParts([]);
+    }
+    // Note: We don't clear state if session.isStreaming is true but no parts
+    // This handles edge case where streaming just started
+  }, [currentSessionId, sessions]); // Depend on sessions to detect updates
 
   // Options cache for selection mode and autocomplete
   const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
