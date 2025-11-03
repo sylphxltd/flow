@@ -57,6 +57,16 @@ export interface CommandOptions {
 }
 
 /**
+ * Command configuration interface
+ */
+export interface CommandConfig {
+  name: string;
+  description: string;
+  handler: CommandHandler;
+  options?: Record<string, any>;
+}
+
+/**
  * Command handler function type
  * All CLI commands implement this signature
  */

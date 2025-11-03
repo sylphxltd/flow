@@ -125,7 +125,7 @@ function handleCommandError(error: unknown): void {
   if (error instanceof Error) {
     // Handle Commander.js specific errors
     if (error.name === 'CommanderError') {
-      const commanderError = error as { code: string; exitCode: number };
+      const commanderError = error as any;
 
       // Don't exit for help or version commands - they should already be handled
       if (commanderError.code === 'commander.help' || commanderError.code === 'commander.version') {

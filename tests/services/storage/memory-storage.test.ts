@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { MemoryStorage } from '../../../src/services/storage/memory-storage.js';
+import { MemoryStorage } from '../../../src/core/unified-storage.js';
 
 describe('Memory Storage', () => {
   let storage: MemoryStorage;
@@ -31,8 +31,7 @@ describe('Memory Storage', () => {
   afterEach(async () => {
     // Clean up
     try {
-      await storage.clear('default');
-      await storage.clear('test-namespace');
+      await storage.clear();
     } catch {
       // Ignore cleanup errors
     }
@@ -56,26 +55,23 @@ describe('Memory Storage', () => {
   describe('set and get', () => {
     it('should store and retrieve string value', async () => {
       await storage.set('test-key', 'test-value');
-      const entry = await storage.get('test-key');
+      const value = await storage.get('test-key');
 
-      expect(entry).toBeDefined();
-      expect(entry?.key).toBe('test-key');
-      expect(entry?.value).toBe('test-value');
-      expect(entry?.namespace).toBe('default');
+      expect(value).toBe('test-value');
     });
 
     it('should store and retrieve number value', async () => {
       await storage.set('number-key', 42);
-      const entry = await storage.get('number-key');
+      const value = await storage.get('number-key');
 
-      expect(entry?.value).toBe(42);
+      expect(value).toBe(42);
     });
 
     it('should store and retrieve boolean value', async () => {
       await storage.set('bool-key', true);
-      const entry = await storage.get('bool-key');
+      const value = await storage.get('bool-key');
 
-      expect(entry?.value).toBe(true);
+      expect(value).toBe(true);
     });
 
     it('should store and retrieve object value', async () => {

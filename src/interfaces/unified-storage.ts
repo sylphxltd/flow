@@ -10,7 +10,10 @@ import type {
   VectorDocument,
   VectorSearchResult,
   VectorStorage,
-} from '../interfaces/storage.js';
+} from './storage.js';
+
+// Re-export types that are used by other modules
+export type { CacheStats, VectorDocument, VectorSearchResult } from './storage.js';
 
 /**
  * Unified storage configuration

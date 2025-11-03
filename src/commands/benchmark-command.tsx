@@ -104,13 +104,11 @@ async function runParallelAgents(
 ): Promise<InkMonitor> {
   // We only use React+Ink InkMonitor - no fallback needed
   const monitor = new InkMonitor({
-    initialInfo: {
-      agentCount: agentList.length,
-      concurrency: Number.parseInt(String(concurrency), 10),
-      delay: Number.parseInt(String(delay), 10),
-      taskFile,
-      outputDir,
-    },
+    agentCount: agentList.length,
+    concurrency: Number.parseInt(String(concurrency), 10),
+    delay: Number.parseInt(String(delay), 10),
+    taskFile,
+    outputDir,
   });
 
   monitor.start();
@@ -129,7 +127,7 @@ async function runParallelAgents(
     for (const agent of agentList) {
       try {
         const startTime = Date.now();
-        monitor?.updateAgentStatus(agent, 'running');
+        monitor.updateAgentStatus(agent, 'running');
 
         await runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
 
@@ -147,7 +145,7 @@ async function runParallelAgents(
           // Ignore timing write errors
         }
 
-        monitor?.updateAgentStatus(agent, 'completed');
+        monitor.updateAgentStatus(agent, 'completed');
 
         // Add delay between agents (except last one)
         if (agent !== agentList[agentList.length - 1]) {
@@ -169,9 +167,9 @@ async function runParallelAgents(
     for (let i = 0; i < chunks.length; i++) {
       // Update status for all agents in this chunk and track start times
       const chunkStartTimes: { [agent: string]: number } = {};
-      for (const agent of chunks[i]) {
+      for (const agent of chunks[i]!) {
         chunkStartTimes[agent] = Date.now();
-        monitor?.updateAgentStatus(agent, 'running');
+        monitor.updateAgentStatus(agent, 'running');
       }
 
       // Helper function to write timing information
@@ -196,16 +194,16 @@ async function runParallelAgents(
         }
       };
 
-      const promises = chunks[i].map(async (agent) => {
+      const promises = chunks[i]!.map(async (agent) => {
         const startTime = chunkStartTimes[agent];
         try {
           await runAgent(agent, outputDir, taskFile, contextFile, monitor, 3, timeout);
 
           // Record successful agent completion time
           const endTime = Date.now();
-          await writeTimingInfo(agent, startTime, endTime, 'completed');
+          await writeTimingInfo(agent, startTime!, endTime, 'completed');
 
-          monitor?.updateAgentStatus(agent, 'completed');
+          monitor.updateAgentStatus(agent, 'completed');
           return { agent, success: true };
         } catch (error) {
           // Record failed agent completion time
@@ -284,44 +282,44 @@ export const benchmarkCommand: CommandConfig = {
       description: 'Disable real-time monitoring, show minimal output',
     },
   ],
-  handler: async (options: BenchmarkCommandOptions) => {
+  handler: async (options: CommandOptions) => {
     let monitor: InkMonitor | undefined;
 
     try {
       await validateBenchmarkOptions(options);
 
       // Create benchmark directory
-      await createBenchmarkDirectory(options.output);
+      await createBenchmarkDirectory(options.output!);
 
       // Copy task files
-      await copyTaskFiles(options.task, options.context, options.output);
+      await copyTaskFiles(options.task!, options.context!, options.output!);
 
       // Get agent list
-      const agentList = await getAgentList(options.agents);
+      const agentList = await getAgentList(options.agents!);
 
       // Run agents with concurrency control and React+Ink monitor (unless quiet mode)
       if (options.quiet) {
         // Quiet mode - run without React+Ink monitor
         monitor = await runParallelAgents(
           agentList,
-          options.output,
-          options.task,
-          options.context,
-          options.concurrency,
-          options.delay,
-          options.timeout,
+          options.output!,
+          options.task!,
+          options.context!,
+          options.concurrency!,
+          options.delay!,
+          options.timeout!,
           false
         );
       } else {
         // Normal mode - use React+Ink monitor
         monitor = await runParallelAgents(
           agentList,
-          options.output,
-          options.task,
-          options.context,
-          options.concurrency,
-          options.delay,
-          options.timeout,
+          options.output!,
+          options.task!,
+          options.context!,
+          options.concurrency!,
+          options.delay!,
+          options.timeout!,
           true
         );
       }

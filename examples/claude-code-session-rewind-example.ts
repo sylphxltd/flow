@@ -140,7 +140,7 @@ function extractSessionState(result: any): SessionState {
   const headers = result.response?.headers || {};
   return {
     sessionId: headers['x-claude-code-session-id'],
-    messageCount: parseInt(headers['x-claude-code-message-count'] || '0'),
+    messageCount: parseInt(headers['x-claude-code-message-count'] || '0', 10),
     messageFingerprints: JSON.parse(headers['x-claude-code-message-fingerprints'] || '[]'),
   };
 }

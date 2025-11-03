@@ -51,11 +51,11 @@ const MODEL_TO_TOKENIZER: Record<string, string> = {
  * AutoTokenizer will find the right tokenizer automatically
  */
 function getTokenizerForModel(modelName?: string): string {
-  if (!modelName) return MODEL_TO_TOKENIZER['default'];
+  if (!modelName) return MODEL_TO_TOKENIZER['default']!;
 
   // Direct match
   if (MODEL_TO_TOKENIZER[modelName]) {
-    return MODEL_TO_TOKENIZER[modelName];
+    return MODEL_TO_TOKENIZER[modelName]!;
   }
 
   // Fuzzy match (e.g., "gpt-4-turbo-preview" → "gpt-4")
@@ -67,7 +67,7 @@ function getTokenizerForModel(modelName?: string): string {
   }
 
   // Default fallback
-  return MODEL_TO_TOKENIZER['default'];
+  return MODEL_TO_TOKENIZER['default']!;
 }
 
 /**

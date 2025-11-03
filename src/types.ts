@@ -14,6 +14,7 @@
 export type {
   CommandHandler,
   CommandOptions,
+  CommandConfig,
 } from './types/cli.types.js';
 export type {
   CommonOptions,
