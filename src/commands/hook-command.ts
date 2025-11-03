@@ -62,6 +62,14 @@ export const hookCommand = new Command('hook')
 
       // Output the content (no extra formatting, just the content)
       console.log(content);
+
+      // Explicitly exit to ensure process terminates
+      // REASON: Even with parseAsync(), the process may not exit due to:
+      // 1. Logger instances keeping event loop active
+      // 2. Other global resources (timers, listeners) not being cleaned up
+      // 3. This is a short-lived CLI command that should exit immediately after output
+      // Many CLI tools use process.exit() for this reason - it's the right pattern here
+      process.exit(0);
     } catch (error) {
       cli.error(
         `Failed to load hook content: ${error instanceof Error ? error.message : String(error)}`
