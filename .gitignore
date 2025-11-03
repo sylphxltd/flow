@@ -59,3 +59,4 @@ hive-mind-prompt-*.txt
 
 # Hugging Face tokenizer cache
 models/.cache/
+.sylphx-flow/*.db*

@@ -27,7 +27,7 @@ export default function App() {
   // Load AI config on mount
   const { loadConfig } = useAIConfig();
 
-  // Load sessions from disk on mount
+  // Load sessions from database (auto-migrates from files if needed)
   useSessionPersistence();
 
   // Note: useKeyboard is disabled - shortcuts are handled in each screen to avoid conflicts with TextInput
