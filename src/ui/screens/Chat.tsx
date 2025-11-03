@@ -71,6 +71,53 @@ interface ChatProps {
 }
 
 /**
+ * Streaming Part Wrapper Component
+ *
+ * Renders a streaming part with consistent structure for both static and dynamic regions.
+ * Ensures React can properly reuse components when parts move between regions.
+ *
+ * @param part - The streaming part to render
+ * @param isFirst - Whether this is the first part (shows "▌ SYLPHX" header)
+ * @param isLastInStream - Whether this is the last text part (shows cursor)
+ * @param streamParts - Full array of stream parts (for generating stable key)
+ */
+function StreamingPartWrapper({
+  part,
+  isFirst,
+  isLastInStream = false,
+  streamParts,
+}: {
+  part: StreamPart;
+  isFirst: boolean;
+  isLastInStream?: boolean;
+  streamParts: StreamPart[];
+}) {
+  // Generate stable key based on part type and position in original streamParts
+  const globalIdx = streamParts.indexOf(part);
+  const key = part.type === 'tool'
+    ? `stream-tool-${part.toolId}`
+    : part.type === 'reasoning'
+    ? `stream-reasoning-${part.startTime || globalIdx}`
+    : part.type === 'error'
+    ? `stream-error-${globalIdx}`
+    : `stream-text-${globalIdx}`;
+
+  return (
+    <Box key={key} paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
+      {isFirst && (
+        <Box>
+          <Text color="#00FF88">▌ SYLPHX</Text>
+        </Box>
+      )}
+      <MessagePart
+        part={part}
+        isLastInStream={isLastInStream}
+      />
+    </Box>
+  );
+}
+
+/**
  * Convert internal StreamPart to persisted StreamingPart format
  *
  * DESIGN DECISION: Conversion strategy
@@ -1237,29 +1284,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   {/* Static parts - continuous completed from start */}
                   {staticParts.length > 0 && (
                     <Static items={staticParts}>
-                      {(part, idx) => {
-                        const isFirst = idx === 0;
-                        // Generate stable key based on part type and position in original streamParts
-                        const globalIdx = streamParts.indexOf(part);
-                        const key = part.type === 'tool'
-                          ? `stream-tool-${part.toolId}`
-                          : part.type === 'reasoning'
-                          ? `stream-reasoning-${part.startTime || globalIdx}`
-                          : part.type === 'error'
-                          ? `stream-error-${globalIdx}`
-                          : `stream-text-${globalIdx}`;
-
-                        return (
-                          <Box key={key} paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
-                            {isFirst && (
-                              <Box>
-                                <Text color="#00FF88">▌ SYLPHX</Text>
-                              </Box>
-                            )}
-                            <MessagePart part={part} />
-                          </Box>
-                        );
-                      }}
+                      {(part, idx) => (
+                        <StreamingPartWrapper
+                          part={part}
+                          isFirst={idx === 0}
+                          streamParts={streamParts}
+                        />
+                      )}
                     </Static>
                   )}
 
@@ -1280,28 +1311,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       {dynamicParts.map((part, idx) => {
                         const isFirstDynamic = idx === 0 && staticParts.length === 0;
                         const isLastPart = idx === dynamicParts.length - 1;
-                        // Generate stable key based on part type and position in original streamParts
-                        const globalIdx = streamParts.indexOf(part);
-                        const key = part.type === 'tool'
-                          ? `stream-tool-${part.toolId}`
-                          : part.type === 'reasoning'
-                          ? `stream-reasoning-${part.startTime || globalIdx}`
-                          : part.type === 'error'
-                          ? `stream-error-${globalIdx}`
-                          : `stream-text-${globalIdx}`;
 
                         return (
-                          <Box key={key} paddingX={1} paddingTop={isFirstDynamic ? 1 : 0} flexDirection="column">
-                            {isFirstDynamic && (
-                              <Box>
-                                <Text color="#00FF88">▌ SYLPHX</Text>
-                              </Box>
-                            )}
-                            <MessagePart
-                              part={part}
-                              isLastInStream={isLastPart && part.type === 'text'}
-                            />
-                          </Box>
+                          <StreamingPartWrapper
+                            part={part}
+                            isFirst={isFirstDynamic}
+                            isLastInStream={isLastPart && part.type === 'text'}
+                            streamParts={streamParts}
+                          />
                         );
                       })}
                     </>
