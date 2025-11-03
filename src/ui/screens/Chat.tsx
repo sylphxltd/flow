@@ -909,9 +909,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 {/* Render parts in order */}
                 {streamParts.map((part, idx) => {
                   const isLastPart = idx === streamParts.length - 1;
+                  // Generate stable key based on part type and identity
+                  const key = part.type === 'tool'
+                    ? `tool-${part.toolId}`
+                    : part.type === 'reasoning'
+                    ? `reasoning-${part.startTime}`
+                    : `${part.type}-${idx}`;
+
                   return (
                     <MessagePart
-                      key={idx}
+                      key={key}
                       part={part}
                       isLastInStream={isLastPart && part.type === 'text'}
                     />
