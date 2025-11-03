@@ -430,7 +430,7 @@ function ControlledTextInput({
         if (!isCursorLine) {
           return (
             <Box key={actualLineIdx}>
-              <Text>{line || ' '}</Text>
+              <Text wrap="wrap">{line || ' '}</Text>
             </Box>
           );
         }
@@ -441,10 +441,10 @@ function ControlledTextInput({
         const after = line.slice(cursorCol + 1);
 
         return (
-          <Box key={actualLineIdx}>
-            <Text>{before}</Text>
+          <Box key={actualLineIdx} flexWrap="wrap">
+            <Text wrap="wrap">{before}</Text>
             {showCursor && <Text inverse>{char}</Text>}
-            <Text>{after}</Text>
+            <Text wrap="wrap">{after}</Text>
           </Box>
         );
       })}
