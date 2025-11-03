@@ -251,6 +251,17 @@ export const useAppStore = create<AppState>()(
         ? [{ type: 'text', content }]
         : content;
 
+      // Normalize attachments at entry point (before adding to state)
+      let normalizedAttachments: FileAttachment[] | undefined = undefined;
+      if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+        const validAttachments = attachments.filter((a) =>
+          a && typeof a === 'object' && a.path && a.relativePath
+        );
+        if (validAttachments.length > 0) {
+          normalizedAttachments = validAttachments;
+        }
+      }
+
       // Update state immediately (optimistic update)
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
@@ -259,7 +270,7 @@ export const useAppStore = create<AppState>()(
             role,
             content: normalizedContent,
             timestamp: Date.now(),
-            ...(attachments !== undefined && attachments.length > 0 && { attachments }),
+            ...(normalizedAttachments !== undefined && { attachments: normalizedAttachments }),
             ...(usage !== undefined && { usage }),
             ...(finishReason !== undefined && { finishReason }),
             ...(metadata !== undefined && { metadata }),
@@ -271,7 +282,7 @@ export const useAppStore = create<AppState>()(
       // Persist to database asynchronously
       getSessionRepository().then((repo) => {
         repo
-          .addMessage(sessionId, role, normalizedContent, attachments, usage, finishReason, metadata, todoSnapshot)
+          .addMessage(sessionId, role, normalizedContent, normalizedAttachments, usage, finishReason, metadata, todoSnapshot)
           .catch((error) => {
             console.error('Failed to add message to database:', error);
           });
