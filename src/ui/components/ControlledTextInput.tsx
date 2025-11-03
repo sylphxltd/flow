@@ -10,6 +10,7 @@
 
 import React, { useRef, useCallback } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
+import { renderTextWithTags } from '../utils/text-rendering-utils.js';
 
 export interface ControlledTextInputProps {
   value: string;
@@ -20,7 +21,7 @@ export interface ControlledTextInputProps {
   placeholder?: string;
   showCursor?: boolean;
   focus?: boolean;
-  validTags?: Set<string>;
+  validTags?: Set<string>; // Set of valid @file references for highlighting
   maxLines?: number; // Maximum lines to display (default: 10)
   disableUpDownArrows?: boolean; // Disable up/down arrow navigation (for autocomplete)
 }
@@ -272,6 +273,7 @@ function ControlledTextInput({
   placeholder,
   showCursor = true,
   focus = true,
+  validTags,
   maxLines = 10,
   disableUpDownArrows = false,
 }: ControlledTextInputProps) {
@@ -635,24 +637,16 @@ function ControlledTextInput({
         if (!physicalLine.hasCursor) {
           return (
             <Box key={actualIdx}>
-              <Text>{physicalLine.text || ' '}</Text>
+              {renderTextWithTags(physicalLine.text, undefined, false, validTags)}
             </Box>
           );
         }
 
-        // Line with cursor
+        // Line with cursor - render with tags and cursor highlighting
         const cursorPos = physicalLine.cursorPos!;
-        const before = physicalLine.text.slice(0, cursorPos);
-        const char = physicalLine.text[cursorPos] || ' ';
-        const after = physicalLine.text.slice(cursorPos + 1);
-
         return (
           <Box key={actualIdx}>
-            <Text>
-              {before}
-              {showCursor && <Text inverse>{char}</Text>}
-              {after}
-            </Text>
+            {renderTextWithTags(physicalLine.text, cursorPos, showCursor, validTags)}
           </Box>
         );
       })}
