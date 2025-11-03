@@ -2,6 +2,92 @@
  * Claude Code Language Model
  * Custom LanguageModelV2 implementation using Claude Agent SDK
  * Supports Vercel AI SDK tools (executed by Vercel framework via MCP delegation)
+ *
+ * Session Management & Message Tracking:
+ * --------------------------------------
+ * This provider intelligently manages Claude Code sessions to avoid duplication.
+ *
+ * How it works:
+ * 1. Provider tracks which messages were sent to Claude Code session
+ * 2. When resuming, only NEW messages are sent (avoids duplication)
+ * 3. Message count is returned to caller for next request
+ *
+ * Usage Pattern:
+ * ```typescript
+ * // First call - creates new session
+ * const result1 = await generateText({
+ *   model: claudeCode('sonnet'),
+ *   messages: [{ role: 'user', content: 'Hello' }]
+ * });
+ *
+ * // Extract session info for reuse
+ * const sessionId = result1.response.headers['x-claude-code-session-id'];
+ * const messageCount = parseInt(result1.response.headers['x-claude-code-message-count'] || '0');
+ * const fingerprints = JSON.parse(result1.response.headers['x-claude-code-message-fingerprints'] || '[]');
+ *
+ * // Second call - reuses session (provider only sends NEW messages)
+ * const result2 = await generateText({
+ *   model: claudeCode('sonnet'),
+ *   messages: [
+ *     { role: 'user', content: 'Hello' },        // Already in Claude Code session
+ *     { role: 'assistant', content: 'Hi!' },     // Already in Claude Code session
+ *     { role: 'user', content: 'How are you?' }  // NEW - will be sent
+ *   ],
+ *   providerOptions: {
+ *     'claude-code': {
+ *       sessionId: sessionId,                      // Resume this session
+ *       lastProcessedMessageCount: messageCount,   // Skip first N messages
+ *       messageFingerprints: fingerprints          // Detect rewind/edit
+ *     }
+ *   }
+ * });
+ *
+ * // Check if session was force-created due to rewind/edit
+ * if (result2.warnings?.length > 0) {
+ *   console.log('New session created:', result2.warnings[0]);
+ * }
+ * ```
+ *
+ * For streaming (streamText):
+ * ```typescript
+ * const result = await streamText({ ... });
+ * for await (const chunk of result.fullStream) {
+ *   if (chunk.type === 'finish') {
+ *     const metadata = chunk.providerMetadata?.['claude-code'];
+ *     const sessionId = metadata?.sessionId;
+ *     const messageCount = metadata?.messageCount;
+ *     const fingerprints = metadata?.messageFingerprints;
+ *     const forcedNew = metadata?.forcedNewSession;
+ *     // Save these for next request
+ *     if (forcedNew) {
+ *       console.log('Message history changed, new session created');
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * Rewind / Edit Detection:
+ * -------------------------
+ * Provider automatically detects when message history changes:
+ * - Rewind: Message count decreased (user deleted messages)
+ * - Edit: Previously sent message content changed
+ * - When detected: Automatically creates new session, returns warning
+ * - Detection via messageFingerprints (role + first 100 chars of content)
+ *
+ * Fallback behavior (when lastProcessedMessageCount not provided):
+ * - Provider sends only last user message + any tool results after it
+ * - This is safer than sending full history which would duplicate
+ * - But explicit tracking via lastProcessedMessageCount + messageFingerprints is recommended
+ *
+ * Key Points:
+ * -----------
+ * ✅ Provider handles message deduplication automatically
+ * ✅ You always pass full message history to Vercel AI SDK
+ * ✅ Provider internally skips messages already in Claude Code session
+ * ✅ Provider detects rewind/edit and creates new session automatically
+ * ✅ No need to manually track what was sent - just pass tracking info back
+ * ⚠️  Session IDs are stored in ~/.claude/sessions/ by Claude Code CLI
+ * 📦 Tracking data: sessionId, messageCount, messageFingerprints (all in response)
  */
 
 import type {
@@ -88,13 +174,117 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
   }
 
   /**
+   * Simple message fingerprint for detecting changes
+   * Returns a hash of role + first 100 chars of text content
+   */
+  private getMessageFingerprint(message: any): string {
+    const content = Array.isArray(message.content) ? message.content : [message.content];
+    const textParts = content
+      .filter((part: any) => typeof part === 'object' && part.type === 'text')
+      .map((part: any) => part.text)
+      .join('');
+    // Simple fingerprint: role + first 100 chars
+    const preview = textParts.slice(0, 100);
+    return `${message.role}:${preview}`;
+  }
+
+  /**
+   * Detect if message history has been rewound or modified
+   * Returns true if inconsistency detected
+   */
+  private detectMessageInconsistency(
+    messages: any[],
+    lastProcessedCount: number,
+    lastMessageFingerprints?: string[]
+  ): boolean {
+    // If no fingerprints provided, can't detect inconsistency
+    if (!lastMessageFingerprints || lastMessageFingerprints.length === 0) {
+      return false;
+    }
+
+    // Check if message count decreased (rewind)
+    if (messages.length < lastProcessedCount) {
+      return true;
+    }
+
+    // Check if fingerprints of previously sent messages match
+    const checkCount = Math.min(lastProcessedCount, lastMessageFingerprints.length, messages.length);
+    for (let i = 0; i < checkCount; i++) {
+      const currentFingerprint = this.getMessageFingerprint(messages[i]);
+      if (currentFingerprint !== lastMessageFingerprints[i]) {
+        return true; // Message was modified
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Convert Vercel AI SDK messages to a single string prompt
    * Handles tool results by converting them to XML format
+   *
+   * Session Resume Logic:
+   * - When resuming a session (sessionId provided), only sends NEW messages
+   * - Requires lastProcessedMessageCount in providerOptions to track what was sent
+   * - Detects rewind/edit via message fingerprints
+   * - If inconsistency detected, ignores resume and creates new session
+   * - If lastProcessedMessageCount not provided when resuming, sends only the last user message + pending tool results
    */
-  private convertMessagesToString(options: LanguageModelV2CallOptions): string {
+  private convertMessagesToString(
+    options: LanguageModelV2CallOptions,
+    isResuming: boolean
+  ): { prompt: string; shouldForceNewSession: boolean; messageFingerprints: string[] } {
     const promptParts: string[] = [];
+    const messages = options.prompt;
 
-    for (const message of options.prompt) {
+    // Extract provider options
+    const providerOptions = options.providerOptions?.['claude-code'] as
+      | Record<string, unknown>
+      | undefined;
+    const lastProcessedCount =
+      providerOptions && 'lastProcessedMessageCount' in providerOptions &&
+      typeof providerOptions.lastProcessedMessageCount === 'number'
+        ? providerOptions.lastProcessedMessageCount
+        : undefined;
+    const lastMessageFingerprints =
+      providerOptions && 'messageFingerprints' in providerOptions &&
+      Array.isArray(providerOptions.messageFingerprints)
+        ? (providerOptions.messageFingerprints as string[])
+        : undefined;
+
+    // Detect if messages were rewound or modified
+    let shouldForceNewSession = false;
+    if (isResuming && lastProcessedCount !== undefined) {
+      const inconsistent = this.detectMessageInconsistency(
+        messages,
+        lastProcessedCount,
+        lastMessageFingerprints
+      );
+      if (inconsistent) {
+        // Message history changed - can't safely resume, force new session
+        shouldForceNewSession = true;
+        isResuming = false; // Treat as new session
+      }
+    }
+
+    // Determine which messages to process
+    let messagesToProcess = messages;
+    if (isResuming) {
+      if (lastProcessedCount !== undefined) {
+        // Skip already processed messages
+        messagesToProcess = messages.slice(lastProcessedCount);
+      } else {
+        // No tracking info - only send last user message and any tool results after it
+        // This is safer than sending full history which would duplicate
+        const lastUserIndex = messages.findLastIndex((m) => m.role === 'user');
+        if (lastUserIndex !== -1) {
+          messagesToProcess = messages.slice(lastUserIndex);
+        }
+      }
+    }
+
+    // Convert messages to prompt string
+    for (const message of messagesToProcess) {
       if (message.role === 'user') {
         // Handle both array and non-array content
         const content = Array.isArray(message.content) ? message.content : [message.content];
@@ -147,7 +337,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
       }
     }
 
-    return promptParts.join('\n\n');
+    // Generate fingerprints for all messages (for next call's consistency check)
+    const messageFingerprints = messages.map((msg) => this.getMessageFingerprint(msg));
+
+    return {
+      prompt: promptParts.join('\n\n'),
+      shouldForceNewSession,
+      messageFingerprints,
+    };
   }
 
   /**
@@ -204,16 +401,28 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
       queryOptions.includePartialMessages = true;
     }
 
-    // Add maxThinkingTokens from providerOptions if provided
+    // Extract provider-specific options
     const providerOptions = options.providerOptions?.['claude-code'] as
       | Record<string, unknown>
       | undefined;
+
+    // Add maxThinkingTokens from providerOptions if provided
     if (
       providerOptions &&
       'maxThinkingTokens' in providerOptions &&
       typeof providerOptions.maxThinkingTokens === 'number'
     ) {
       queryOptions.maxThinkingTokens = providerOptions.maxThinkingTokens;
+    }
+
+    // Add sessionId (resume) from providerOptions if provided
+    // This allows reusing Claude Code sessions instead of creating new ones each time
+    if (
+      providerOptions &&
+      'sessionId' in providerOptions &&
+      typeof providerOptions.sessionId === 'string'
+    ) {
+      queryOptions.resume = providerOptions.sessionId;
     }
 
     return { queryOptions, systemPrompt };
@@ -266,8 +475,20 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     try {
       // Convert tools and build query options
       const tools = this.convertTools(options.tools || []);
-      const promptString = this.convertMessagesToString(options);
       const { queryOptions } = this.buildQueryOptions(options, tools);
+
+      // Check if resuming existing session
+      const isResuming = !!queryOptions.resume;
+
+      // Convert messages - will skip already processed messages if resuming
+      // Also detects message inconsistencies (rewind/edit)
+      const { prompt: promptString, shouldForceNewSession, messageFingerprints } =
+        this.convertMessagesToString(options, isResuming);
+
+      // If inconsistency detected, clear resume to create new session
+      if (shouldForceNewSession) {
+        delete queryOptions.resume;
+      }
 
       // Execute query
       const queryResult = query({
@@ -280,8 +501,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
       let inputTokens = 0;
       let outputTokens = 0;
       let finishReason: LanguageModelV2FinishReason = 'stop';
+      let sessionId: string | undefined;
 
       for await (const event of queryResult) {
+        // Extract session ID from any event (all events have session_id)
+        if ('session_id' in event && typeof event.session_id === 'string') {
+          sessionId = event.session_id;
+        }
+
         if (event.type === 'assistant') {
           // Extract content from assistant message
           const content = event.message.content;
@@ -339,6 +566,22 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
         }
       }
 
+      // Calculate total message count for next call
+      const totalMessageCount = options.prompt.length;
+
+      // Build response headers with session tracking info
+      const headers: Record<string, string> = {};
+      if (sessionId) {
+        headers['x-claude-code-session-id'] = sessionId;
+        headers['x-claude-code-message-count'] = String(totalMessageCount);
+        // Include fingerprints for next call's consistency check
+        headers['x-claude-code-message-fingerprints'] = JSON.stringify(messageFingerprints);
+      }
+      // Add warning if session was force-created due to inconsistency
+      if (shouldForceNewSession) {
+        headers['x-claude-code-session-forced-new'] = 'true';
+      }
+
       return {
         content: contentParts,
         finishReason,
@@ -347,8 +590,14 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
           outputTokens: outputTokens,
           totalTokens: inputTokens + outputTokens,
         },
-        warnings: [],
-        response: { headers: {} },
+        warnings: shouldForceNewSession
+          ? [
+              'Message history inconsistency detected (rewind or edit). Created new Claude Code session.',
+            ]
+          : [],
+        response: {
+          headers,
+        },
       };
     } catch (error) {
       // Log detailed error information
@@ -369,8 +618,23 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
     try {
       // Convert tools and build query options
       const tools = this.convertTools(options.tools || []);
-      const promptString = this.convertMessagesToString(options);
       const { queryOptions } = this.buildQueryOptions(options, tools, true);
+
+      // Check if resuming existing session
+      const isResuming = !!queryOptions.resume;
+
+      // Convert messages - will skip already processed messages if resuming
+      // Also detects message inconsistencies (rewind/edit)
+      const { prompt: promptString, shouldForceNewSession, messageFingerprints } =
+        this.convertMessagesToString(options, isResuming);
+
+      // If inconsistency detected, clear resume to create new session
+      if (shouldForceNewSession) {
+        delete queryOptions.resume;
+      }
+
+      // Calculate total message count for metadata
+      const totalMessageCount = options.prompt.length;
 
       // Execute query
       const queryResult = query({
@@ -391,12 +655,18 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
             let finishReason: LanguageModelV2FinishReason = 'stop';
             let hasStartedText = false;
             let hasEmittedTextEnd = false;
+            let sessionId: string | undefined;
             // Track thinking block indices for streaming
             const thinkingBlockIndices = new Set<number>();
             // XML parser for streaming tool call detection
             const xmlParser = tools && Object.keys(tools).length > 0 ? new StreamingXMLParser() : null;
 
             for await (const event of queryResult) {
+              // Extract session ID from any event (all events have session_id)
+              if ('session_id' in event && typeof event.session_id === 'string') {
+                sessionId = event.session_id;
+              }
+
               // Handle streaming events from Anthropic SDK
               if (event.type === 'stream_event') {
                 const streamEvent = event.event;
@@ -598,7 +868,16 @@ export class ClaudeCodeLanguageModel implements LanguageModelV2 {
                 outputTokens: outputTokens,
                 totalTokens: inputTokens + outputTokens,
               },
-              providerMetadata: {},
+              providerMetadata: sessionId
+                ? {
+                    'claude-code': {
+                      sessionId,
+                      messageCount: totalMessageCount,
+                      messageFingerprints: messageFingerprints,
+                      forcedNewSession: shouldForceNewSession,
+                    },
+                  }
+                : {},
             });
 
             controller.close();
