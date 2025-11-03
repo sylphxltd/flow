@@ -508,13 +508,11 @@ flow codebase reindex  # After major code changes
   ├── CHANGELOG.md       # Version history
   └── AGENTS.md          # AI agent system prompt
 
-📁 .github/
-  ├── README.md                              # Documentation index
-  ├── ANALYSIS_RESULTS.md                    # Code analysis reports
-  ├── CIRCULAR_DEPENDENCY_ELIMINATION.md     # Refactoring report (9 → 0 circulars)
-  └── SYSTEMATIC_OPTIMIZATION_PLAN.md        # Optimization strategy
-
 📁 docs/
+  ├── reports/                               # Code analysis & optimization reports
+  │   ├── ANALYSIS_RESULTS.md                # Automated code analysis
+  │   ├── CIRCULAR_DEPENDENCY_ELIMINATION.md # Circular dependency fixes
+  │   └── SYSTEMATIC_OPTIMIZATION_PLAN.md    # Optimization strategy
   ├── claude-code-session-management.md      # Session management guide
   ├── tool-display-guide.md                  # Tool UI guide
   └── ...                                    # Technical documentation
@@ -524,6 +522,9 @@ flow codebase reindex  # After major code changes
   ├── MEP-Design-Philosophy.md               # MEP concepts
   └── ...                                    # Feature documentation
 
+📁 .github/
+  └── workflows/                             # GitHub Actions only
+
 📁 .archive/
   └── refactoring-history/                   # Historical documentation
 ```
@@ -532,7 +533,7 @@ flow codebase reindex  # After major code changes
 - **Getting Started**: Start with this README and `wiki-pages/Installation-&-Setup.md`
 - **Understanding MEP**: Read `wiki-pages/MEP-Design-Philosophy.md`
 - **Technical Details**: Check `docs/` folder
-- **Code Quality**: See `.github/` for analysis reports
+- **Code Quality Reports**: See `docs/reports/` for analysis
 - **Historical Context**: View `.archive/` for refactoring history
 
 ---
