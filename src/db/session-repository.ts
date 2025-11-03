@@ -287,12 +287,21 @@ export class SessionRepository {
         sessionMessage.metadata = JSON.parse(msg.metadata) as MessageMetadata;
       }
 
+      // Self-healing: Normalize attachments on read
+      // Old/corrupted data might have invalid entries - filter them out
       if (attachments.length > 0) {
-        sessionMessage.attachments = attachments.map((a) => ({
-          path: a.path,
-          relativePath: a.relativePath,
-          size: a.size || undefined,
-        }));
+        const validAttachments = attachments.filter((a) =>
+          a && typeof a === 'object' && a.path && a.relativePath
+        );
+
+        if (validAttachments.length > 0) {
+          sessionMessage.attachments = validAttachments.map((a) => ({
+            path: a.path,
+            relativePath: a.relativePath,
+            size: a.size || undefined,
+          }));
+        }
+        // If all invalid, leave attachments undefined (no broken data in memory)
       }
 
       if (usage) {

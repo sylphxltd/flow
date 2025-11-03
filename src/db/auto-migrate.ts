@@ -150,20 +150,14 @@ async function migrateSessionFiles(
       });
 
       // Add all messages
+      // Note: SessionRepository.getSessionMessages() handles data normalization
+      // No need to normalize here - corrupted data will be filtered on read
       for (const message of session.messages) {
-        // Normalize attachments: ensure it's an array or undefined
-        // Old data might have wrong format - fix during migration
-        let normalizedAttachments = message.attachments;
-        if (normalizedAttachments !== undefined && !Array.isArray(normalizedAttachments)) {
-          console.warn(`[Migration] Message has invalid attachments format (${typeof normalizedAttachments}), skipping attachments`);
-          normalizedAttachments = undefined;
-        }
-
         await repository.addMessage(
           session.id,
           message.role,
           message.content,
-          normalizedAttachments,
+          message.attachments,
           message.usage,
           message.finishReason,
           message.metadata,
