@@ -4,8 +4,8 @@
 
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import type { LanguageModelV1 } from 'ai';
-import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig } from './base-provider.js';
-import type { ModelInfo } from '../utils/ai-model-fetcher.js';
+import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+
 import { getModelMetadata } from '../utils/models-dev.js';
 
 export class OpenRouterProvider implements AIProvider {

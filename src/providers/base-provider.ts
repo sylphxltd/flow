@@ -4,8 +4,16 @@
  */
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { ProviderId } from '../config/ai-config.js';
-import type { ModelInfo } from '../utils/ai-model-fetcher.js';
+import type { ProviderId } from '../types/provider.types.js';
+
+/**
+ * Model information from provider
+ */
+export interface ModelInfo {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 export interface ProviderModelDetails {
   contextLength?: number;

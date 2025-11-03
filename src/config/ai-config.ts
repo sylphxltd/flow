@@ -15,12 +15,10 @@ import os from 'node:os';
 import { z } from 'zod';
 import { type Result, success, tryCatchAsync } from '../core/functional/result.js';
 import { getAllProviders } from '../providers/index.js';
+import type { ProviderId, ProviderConfigValue as ProviderConfigValueType } from '../types/provider.types.js';
 
-/**
- * Provider IDs
- * Provider metadata (name, config schema, etc) comes from provider registry
- */
-export type ProviderId = 'anthropic' | 'openai' | 'google' | 'openrouter' | 'claude-code' | 'zai';
+// Re-export types for backward compatibility
+export type { ProviderId } from '../types/provider.types.js';
 
 /**
  * AI_PROVIDERS - Provider metadata from registry
@@ -34,10 +32,7 @@ export const AI_PROVIDERS = getAllProviders();
  * Each provider can have different config fields (defined by provider.getConfigSchema())
  * Common fields: apiKey, defaultModel, etc
  */
-export interface ProviderConfigValue {
-  defaultModel?: string;
-  [key: string]: string | number | boolean | undefined;
-}
+export type ProviderConfigValue = ProviderConfigValueType;
 
 /**
  * AI configuration schema
