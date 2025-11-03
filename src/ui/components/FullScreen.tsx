@@ -43,6 +43,10 @@ export function FullScreen({ children, ...props }: PropsWithChildren<BoxProps>) 
   useEffect(() => {
     // Enter alternate screen buffer
     process.stdout.write(enterAltScreenCommand);
+    // Clear screen
+    process.stdout.write('\x1b[2J');
+    // Move cursor to home position
+    process.stdout.write('\x1b[H');
 
     // Exit alternate screen buffer on unmount
     return () => {
