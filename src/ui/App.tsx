@@ -79,12 +79,14 @@ function AppContent() {
 
   return (
     <Box flexDirection="column" width="100%" height="100%" paddingX={1}>
-      {/* Header */}
-      <Box paddingY={1}>
-        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
-        <Text dimColor> │ </Text>
-        <Text dimColor>AI Development Assistant</Text>
-      </Box>
+      {/* Header - Only for non-chat screens (chat handles its own header in Static) */}
+      {currentScreen !== 'chat' && (
+        <Box paddingY={1}>
+          <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+          <Text dimColor> │ </Text>
+          <Text dimColor>AI Development Assistant</Text>
+        </Box>
+      )}
 
       {/* Error Display */}
       {error && (

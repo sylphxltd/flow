@@ -124,6 +124,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
 
+  // Static header items - stable reference to prevent re-rendering
+  const headerItems = useMemo(() => ['header'], []);
+
   // Custom hooks for side effects
   const usedTokens = useTokenCalculation(currentSession);
 
@@ -768,6 +771,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     <Box flexDirection="row" flexGrow={1}>
       {/* Main chat area */}
       <Box flexDirection="column" flexGrow={1} width="70%">
+        {/* App Header - Output once in Static */}
+        <Static items={headerItems}>
+          {() => (
+            <Box paddingY={1}>
+              <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+              <Text dimColor> │ </Text>
+              <Text dimColor>AI Development Assistant</Text>
+            </Box>
+          )}
+        </Static>
+
         {/* Messages - All messages in Static, dynamic UI at bottom */}
         {!currentSession ? (
           <Box paddingY={1} flexDirection="column">
