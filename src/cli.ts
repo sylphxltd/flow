@@ -92,12 +92,18 @@ function setupGlobalErrorHandling(): void {
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
-    console.error('✗ Unhandled Promise Rejection:');
-    console.error(`  Reason: ${reason}`);
-    if (process.env.NODE_ENV === 'development') {
+    // Ignore AbortError - this is expected when user cancels operations
+    if (reason instanceof Error && reason.name === 'AbortError') {
+      return;
+    }
+
+    // Only log unhandled rejections in development mode
+    // Don't exit the process - let the application handle errors gracefully
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+      console.error('✗ Unhandled Promise Rejection:');
+      console.error(`  Reason: ${reason}`);
       console.error('  Promise:', promise);
     }
-    process.exit(1);
   });
 
   // Handle process termination gracefully
