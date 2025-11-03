@@ -60,6 +60,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Abort controller for cancelling AI stream
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Ref to track latest streamParts for error handling
+  const streamPartsRef = useRef<StreamPart[]>([]);
+  useEffect(() => {
+    streamPartsRef.current = streamParts;
+  }, [streamParts]);
+
   // Optimized streaming: accumulate chunks in ref, update state in batches
   const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
     chunks: [],
@@ -649,6 +655,38 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       );
     } catch (error) {
       addLog(`[sendUserMessageToAI] Error: ${error instanceof Error ? error.message : String(error)}`);
+
+      // Save partial content before clearing (important for abort/cancel)
+      const currentStreamParts = streamPartsRef.current;
+      if (currentStreamParts.length > 0 && currentSessionId) {
+        // Flush any remaining buffered chunks
+        if (streamBufferRef.current.timeout) {
+          clearTimeout(streamBufferRef.current.timeout);
+          streamBufferRef.current.timeout = null;
+        }
+        flushStreamBuffer();
+
+        // Build partial response from streamParts
+        let partialContent = '';
+        for (const part of currentStreamParts) {
+          if (part.type === 'text') {
+            partialContent += part.content;
+          } else if (part.type === 'tool' && part.result) {
+            partialContent += `\n[Tool: ${part.name}]\n`;
+          }
+        }
+
+        // Save partial response if we have content
+        if (partialContent.trim()) {
+          const isAborted = error instanceof Error && error.name === 'AbortError';
+          const message = isAborted
+            ? `${partialContent}\n\n[Response cancelled by user]`
+            : `${partialContent}\n\n[Error: ${error instanceof Error ? error.message : String(error)}]`;
+
+          addMessage(currentSessionId, 'assistant', message);
+        }
+      }
+
       setIsStreaming(false);
       setStreamParts([]);
     }
