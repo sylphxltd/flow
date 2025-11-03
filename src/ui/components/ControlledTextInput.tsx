@@ -9,7 +9,7 @@
  */
 
 import React, { useRef, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useStdout } from 'ink';
 
 export interface ControlledTextInputProps {
   value: string;
@@ -100,6 +100,44 @@ function lineToCursor(lines: string[], targetLine: number, targetCol: number): n
   const lineLength = lines[targetLine]?.length || 0;
   cursor += Math.min(targetCol, lineLength);
   return cursor;
+}
+
+// Helper: Wrap a long line into physical lines based on terminal width
+function wrapLine(text: string, width: number): string[] {
+  if (text.length === 0) return [''];
+  if (width <= 0) return [text];
+
+  const wrapped: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= width) {
+      wrapped.push(remaining);
+      break;
+    }
+
+    // Take up to width characters
+    wrapped.push(remaining.slice(0, width));
+    remaining = remaining.slice(width);
+  }
+
+  return wrapped;
+}
+
+// Helper: Calculate physical cursor position after wrapping
+function getPhysicalCursorPos(text: string, logicalCursor: number, terminalWidth: number): {
+  physicalLine: number;
+  physicalCol: number;
+} {
+  if (terminalWidth <= 0) {
+    return { physicalLine: 0, physicalCol: logicalCursor };
+  }
+
+  // Calculate which physical line the cursor is on
+  const physicalLine = Math.floor(logicalCursor / terminalWidth);
+  const physicalCol = logicalCursor % terminalWidth;
+
+  return { physicalLine, physicalCol };
 }
 
 // No reducer needed - fully controlled component
@@ -367,6 +405,12 @@ function ControlledTextInput({
 
   useInput(handleInput, { isActive: focus });
 
+  // Get terminal width for wrapping calculations
+  const { stdout } = useStdout();
+  const terminalWidth = stdout.columns || 80;
+  // Reserve space for margin/padding (e.g., "▌ YOU  " takes about 7 chars)
+  const availableWidth = Math.max(40, terminalWidth - 10);
+
   // Empty with placeholder
   if (value.length === 0 && placeholder) {
     return (
@@ -377,43 +421,84 @@ function ControlledTextInput({
     );
   }
 
-  // Split into lines
-  const lines = value.split('\n');
+  // Split into logical lines (separated by \n)
+  const logicalLines = value.split('\n');
 
-  // Find cursor line and column
+  // Find cursor's logical line and column
   let charCount = 0;
-  let cursorLine = 0;
-  let cursorCol = cursor;
+  let cursorLogicalLine = 0;
+  let cursorLogicalCol = cursor;
 
-  for (let i = 0; i < lines.length; i++) {
-    const lineLength = lines[i].length;
+  for (let i = 0; i < logicalLines.length; i++) {
+    const lineLength = logicalLines[i].length;
     if (cursor <= charCount + lineLength) {
-      cursorLine = i;
-      cursorCol = cursor - charCount;
+      cursorLogicalLine = i;
+      cursorLogicalCol = cursor - charCount;
       break;
     }
     charCount += lineLength + 1; // +1 for \n
   }
 
-  // Calculate visible window (scroll to keep cursor in view)
-  const totalLines = lines.length;
-  let startLine = 0;
-  let endLine = totalLines;
+  // Build physical lines (accounting for wrapping) and track cursor position
+  interface PhysicalLine {
+    text: string;
+    logicalLineIdx: number;
+    hasCursor: boolean;
+    cursorPos?: number;
+  }
 
-  if (totalLines > maxLines) {
-    // Center cursor in viewport if possible
-    const halfWindow = Math.floor(maxLines / 2);
-    startLine = Math.max(0, cursorLine - halfWindow);
-    endLine = Math.min(totalLines, startLine + maxLines);
+  const physicalLines: PhysicalLine[] = [];
 
-    // Adjust if we hit the bottom
-    if (endLine === totalLines) {
-      startLine = Math.max(0, totalLines - maxLines);
+  for (let i = 0; i < logicalLines.length; i++) {
+    const logicalLine = logicalLines[i];
+    const wrappedLines = wrapLine(logicalLine, availableWidth);
+
+    if (i === cursorLogicalLine) {
+      // This logical line contains the cursor
+      const { physicalLine: cursorPhysicalIdx, physicalCol } =
+        getPhysicalCursorPos(logicalLine, cursorLogicalCol, availableWidth);
+
+      // Add each wrapped line
+      wrappedLines.forEach((wrappedText, idx) => {
+        physicalLines.push({
+          text: wrappedText,
+          logicalLineIdx: i,
+          hasCursor: idx === cursorPhysicalIdx,
+          cursorPos: idx === cursorPhysicalIdx ? physicalCol : undefined,
+        });
+      });
+    } else {
+      // No cursor in this logical line
+      wrappedLines.forEach((wrappedText) => {
+        physicalLines.push({
+          text: wrappedText,
+          logicalLineIdx: i,
+          hasCursor: false,
+        });
+      });
     }
   }
 
-  const visibleLines = lines.slice(startLine, endLine);
-  const hasMore = startLine > 0 || endLine < totalLines;
+  // Calculate visible window (scroll to keep cursor in view)
+  const totalPhysicalLines = physicalLines.length;
+  const cursorPhysicalLineIdx = physicalLines.findIndex(line => line.hasCursor);
+
+  let startLine = 0;
+  let endLine = totalPhysicalLines;
+
+  if (totalPhysicalLines > maxLines) {
+    // Center cursor in viewport if possible
+    const halfWindow = Math.floor(maxLines / 2);
+    startLine = Math.max(0, cursorPhysicalLineIdx - halfWindow);
+    endLine = Math.min(totalPhysicalLines, startLine + maxLines);
+
+    // Adjust if we hit the bottom
+    if (endLine === totalPhysicalLines) {
+      startLine = Math.max(0, totalPhysicalLines - maxLines);
+    }
+  }
+
+  const visibleLines = physicalLines.slice(startLine, endLine);
 
   // Render visible lines
   return (
@@ -423,34 +508,34 @@ function ControlledTextInput({
           <Text dimColor>... ({startLine} more lines above)</Text>
         </Box>
       )}
-      {visibleLines.map((line, idx) => {
-        const actualLineIdx = startLine + idx;
-        const isCursorLine = actualLineIdx === cursorLine;
+      {visibleLines.map((physicalLine, idx) => {
+        const actualIdx = startLine + idx;
 
-        if (!isCursorLine) {
+        if (!physicalLine.hasCursor) {
           return (
-            <Box key={actualLineIdx}>
-              <Text wrap="wrap">{line || ' '}</Text>
+            <Box key={actualIdx}>
+              <Text>{physicalLine.text || ' '}</Text>
             </Box>
           );
         }
 
         // Line with cursor
-        const before = line.slice(0, cursorCol);
-        const char = line[cursorCol] || ' ';
-        const after = line.slice(cursorCol + 1);
+        const cursorPos = physicalLine.cursorPos!;
+        const before = physicalLine.text.slice(0, cursorPos);
+        const char = physicalLine.text[cursorPos] || ' ';
+        const after = physicalLine.text.slice(cursorPos + 1);
 
         return (
-          <Box key={actualLineIdx} flexWrap="wrap">
-            <Text wrap="wrap">{before}</Text>
+          <Box key={actualIdx}>
+            <Text>{before}</Text>
             {showCursor && <Text inverse>{char}</Text>}
-            <Text wrap="wrap">{after}</Text>
+            <Text>{after}</Text>
           </Box>
         );
       })}
-      {endLine < totalLines && (
+      {endLine < totalPhysicalLines && (
         <Box>
-          <Text dimColor>... ({totalLines - endLine} more lines below)</Text>
+          <Text dimColor>... ({totalPhysicalLines - endLine} more lines below)</Text>
         </Box>
       )}
     </Box>
