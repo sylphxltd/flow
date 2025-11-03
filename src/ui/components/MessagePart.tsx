@@ -100,7 +100,7 @@ export function MessagePart({ part, isLastInStream = false }: MessagePartProps) 
   if (part.type === 'error') {
     return (
       <Box marginLeft={2} marginBottom={1}>
-        <Text color="red">❌ Error: {part.error}</Text>
+        <Text color="red">{part.error}</Text>
       </Box>
     );
   }
