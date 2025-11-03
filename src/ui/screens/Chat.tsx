@@ -71,6 +71,23 @@ interface ChatProps {
 }
 
 /**
+ * Generate stable key for a streaming part
+ *
+ * Key must remain stable as parts move between static/dynamic regions.
+ * Uses global index in streamParts array to ensure consistency.
+ */
+function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): string {
+  const globalIdx = streamParts.indexOf(part);
+  return part.type === 'tool'
+    ? `stream-tool-${part.toolId}`
+    : part.type === 'reasoning'
+    ? `stream-reasoning-${part.startTime || globalIdx}`
+    : part.type === 'error'
+    ? `stream-error-${globalIdx}`
+    : `stream-text-${globalIdx}`;
+}
+
+/**
  * Streaming Part Wrapper Component
  *
  * Renders a streaming part with consistent structure for both static and dynamic regions.
@@ -79,31 +96,18 @@ interface ChatProps {
  * @param part - The streaming part to render
  * @param isFirst - Whether this is the first part (shows "▌ SYLPHX" header)
  * @param isLastInStream - Whether this is the last text part (shows cursor)
- * @param streamParts - Full array of stream parts (for generating stable key)
  */
 function StreamingPartWrapper({
   part,
   isFirst,
   isLastInStream = false,
-  streamParts,
 }: {
   part: StreamPart;
   isFirst: boolean;
   isLastInStream?: boolean;
-  streamParts: StreamPart[];
 }) {
-  // Generate stable key based on part type and position in original streamParts
-  const globalIdx = streamParts.indexOf(part);
-  const key = part.type === 'tool'
-    ? `stream-tool-${part.toolId}`
-    : part.type === 'reasoning'
-    ? `stream-reasoning-${part.startTime || globalIdx}`
-    : part.type === 'error'
-    ? `stream-error-${globalIdx}`
-    : `stream-text-${globalIdx}`;
-
   return (
-    <Box key={key} paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
+    <Box paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
       {isFirst && (
         <Box>
           <Text color="#00FF88">▌ SYLPHX</Text>
@@ -1286,9 +1290,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Static items={staticParts}>
                       {(part, idx) => (
                         <StreamingPartWrapper
+                          key={getStreamingPartKey(part, streamParts)}
                           part={part}
                           isFirst={idx === 0}
-                          streamParts={streamParts}
                         />
                       )}
                     </Static>
@@ -1314,10 +1318,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
                         return (
                           <StreamingPartWrapper
+                            key={getStreamingPartKey(part, streamParts)}
                             part={part}
                             isFirst={isFirstDynamic}
                             isLastInStream={isLastPart && part.type === 'text'}
-                            streamParts={streamParts}
                           />
                         );
                       })}
