@@ -9,37 +9,20 @@ export function sendTerminalNotification(title: string, message: string, options
   duration?: number;
 }) {
   const { sound = 'glass', duration = 3000 } = options || {};
-  
+
   // Play system sound (macOS)
   if (process.platform === 'darwin') {
     const { spawn } = require('child_process');
-    spawn('afplay', ['/System/Library/Sounds/Glass.aiff'], { 
-      stdio: 'ignore' 
+    spawn('afplay', ['/System/Library/Sounds/Glass.aiff'], {
+      stdio: 'ignore'
     }).unref();
   }
-  
-  // Terminal bell with visual feedback
+
+  // Terminal bell only (no visual output to avoid interfering with Ink UI)
   console.log('\u0007'); // Bell character
-  
-  // ANSI escape codes for visual notification
-  const colors = {
-    reset: '\x1b[0m',
-    bright: '\x1b[1m',
-    fg: {
-      green: '\x1b[32m',
-      blue: '\x1b[34m',
-      yellow: '\x1b[33m',
-    }
-  };
-  
-  // Create notification box
-  const border = '─'.repeat(Math.max(title.length + message.length + 4, 50));
-  console.log('');
-  console.log(`${colors.fg.green}${border}${colors.reset}`);
-  console.log(`${colors.bright}${colors.fg.blue}[!] ${title}${colors.reset}`);
-  console.log(`${colors.fg.yellow}   ${message}${colors.reset}`);
-  console.log(`${colors.fg.green}${border}${colors.reset}`);
-  console.log('');
+
+  // Visual notification removed - interferes with Ink UI
+  // Terminal notifications in TUI apps should use Ink components instead
 }
 
 // OS-level notification using system APIs
