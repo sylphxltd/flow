@@ -1043,6 +1043,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   showCursor
                   hint={hintText}
                   validTags={validTags}
+                  disableUpDownArrows={
+                    // Disable up/down arrows when autocomplete is active
+                    filteredFileInfo.hasAt ||
+                    (input.startsWith('/') && filteredCommands.length > 0)
+                  }
                 />
               </Box>
 

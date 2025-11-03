@@ -22,6 +22,7 @@ export interface ControlledTextInputProps {
   focus?: boolean;
   validTags?: Set<string>;
   maxLines?: number; // Maximum lines to display (default: 10)
+  disableUpDownArrows?: boolean; // Disable up/down arrow navigation (for autocomplete)
 }
 
 // Helper: Find word boundary (left)
@@ -272,6 +273,7 @@ function ControlledTextInput({
   showCursor = true,
   focus = true,
   maxLines = 10,
+  disableUpDownArrows = false,
 }: ControlledTextInputProps) {
   // Kill buffer for Ctrl+K, Ctrl+U, Ctrl+W → Ctrl+Y
   const killBufferRef = useRef('');
@@ -322,14 +324,18 @@ function ControlledTextInput({
       }
 
       // Up Arrow - move to previous physical line (accounting for wrapping)
+      // Skip if autocomplete is active (let parent handle navigation)
       if (key.upArrow) {
+        if (disableUpDownArrows) return; // Let parent handle (autocomplete navigation)
         const newCursor = moveCursorUpPhysical(value, cursor, availableWidth);
         onCursorChange(newCursor);
         return;
       }
 
       // Down Arrow - move to next physical line (accounting for wrapping)
+      // Skip if autocomplete is active (let parent handle navigation)
       if (key.downArrow) {
+        if (disableUpDownArrows) return; // Let parent handle (autocomplete navigation)
         const newCursor = moveCursorDownPhysical(value, cursor, availableWidth);
         onCursorChange(newCursor);
         return;
@@ -522,7 +528,7 @@ function ControlledTextInput({
         onChange(before + normalizedInput + after);
         onCursorChange(cursor + normalizedInput.length);
       }
-  }, [value, cursor, onChange, onCursorChange, onSubmit, availableWidth]);
+  }, [value, cursor, onChange, onCursorChange, onSubmit, availableWidth, disableUpDownArrows]);
 
   useInput(handleInput, { isActive: focus });
 
@@ -666,6 +672,7 @@ export default React.memo(ControlledTextInput, (prevProps, nextProps) => {
     prevProps.placeholder === nextProps.placeholder &&
     prevProps.showCursor === nextProps.showCursor &&
     prevProps.focus === nextProps.focus &&
-    prevProps.maxLines === nextProps.maxLines
+    prevProps.maxLines === nextProps.maxLines &&
+    prevProps.disableUpDownArrows === nextProps.disableUpDownArrows
   );
 });
