@@ -108,12 +108,6 @@ async function processNextAsk() {
   const ask = askQueue.shift()!; // Take first from queue
   notifyQueueUpdate(); // Notify queue changed
 
-  console.error('[processAsk] Processing:', {
-    id: ask.id,
-    question: ask.question.substring(0, 50),
-    queueRemaining: askQueue.length,
-  });
-
   try {
     // Show single question to user
     const result = await userInputHandler({
@@ -129,7 +123,6 @@ async function processNextAsk() {
     // Extract answer (handle both string and string[] for multi-select)
     const rawAnswer = typeof result === 'string' ? result : result[ask.id];
     const answer = Array.isArray(rawAnswer) ? rawAnswer.join(', ') : (rawAnswer || '');
-    console.error('[processAsk] Got answer:', answer);
 
     // Resolve this ask's promise
     ask.resolve(answer);
@@ -141,7 +134,6 @@ async function processNextAsk() {
 
     // Process next ask in queue if any
     if (askQueue.length > 0) {
-      console.error('[processAsk] Processing next in queue...');
       processNextAsk();
     }
   }
@@ -169,15 +161,6 @@ export const askUserSelectionTool = tool({
     return new Promise<string>((resolve) => {
       const callId = `ask_${Date.now()}_${Math.random()}`;
 
-      console.error('[ask execute] Adding to queue:', {
-        id: callId,
-        question: question.substring(0, 50),
-        optionsCount: options?.length || 0,
-        multiSelect: multiSelect || false,
-        queueLength: askQueue.length,
-        isProcessing: isProcessingAsk,
-      });
-
       // Add to queue
       askQueue.push({
         id: callId,
@@ -192,10 +175,7 @@ export const askUserSelectionTool = tool({
 
       // Start processing if not already processing
       if (!isProcessingAsk) {
-        console.error('[ask execute] Starting queue processing...');
         processNextAsk();
-      } else {
-        console.error('[ask execute] Already processing, will queue');
       }
     });
   },
