@@ -110,13 +110,7 @@ function StreamingPartWrapper({
   debugRegion?: 'static' | 'dynamic';
 }) {
   return (
-    <Box
-      paddingX={1}
-      paddingTop={isFirst ? 1 : 0}
-      flexDirection="column"
-      borderStyle={debugRegion ? 'round' : undefined}
-      borderColor={debugRegion === 'static' ? 'green' : debugRegion === 'dynamic' ? 'blue' : undefined}
-    >
+    <Box paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
       {isFirst && (
         <Box>
           <Text color="#00FF88">▌ SYLPHX</Text>
@@ -125,10 +119,21 @@ function StreamingPartWrapper({
           )}
         </Box>
       )}
-      <MessagePart
-        part={part}
-        isLastInStream={isLastInStream}
-      />
+      <Box flexDirection="row">
+        {debugRegion && (
+          <Box marginRight={1}>
+            <Text backgroundColor={debugRegion === 'static' ? 'green' : 'blue'}>
+              {' '}
+            </Text>
+          </Box>
+        )}
+        <Box flexGrow={1}>
+          <MessagePart
+            part={part}
+            isLastInStream={isLastInStream}
+          />
+        </Box>
+      </Box>
     </Box>
   );
 }
