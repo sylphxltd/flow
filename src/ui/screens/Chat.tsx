@@ -963,40 +963,114 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               </Static>
             )}
 
-            {/* Currently streaming message - dynamic, stays at bottom */}
-            {isStreaming && (
-              <Box paddingX={1} paddingTop={1} flexDirection="column">
-                <Box>
-                  <Text color="#00FF88">▌ SYLPHX</Text>
-                </Box>
+            {/* Currently streaming message */}
+            {isStreaming && (() => {
+              // Separate completed parts from active parts
+              // Completed: tool/reasoning finished, text parts except the last one being streamed
+              // Active: tool running, reasoning ongoing, last text part being streamed
 
-                {/* Show placeholder when no parts yet */}
-                {streamParts.length === 0 && (
-                  <Box marginLeft={2}>
-                    <Text dimColor>...</Text>
-                  </Box>
-                )}
+              const completedParts: StreamPart[] = [];
+              const activeParts: StreamPart[] = [];
 
-                {/* Render parts in order */}
-                {streamParts.map((part, idx) => {
-                  const isLastPart = idx === streamParts.length - 1;
-                  // Generate stable key based on part type and identity
-                  const key = part.type === 'tool'
-                    ? `tool-${part.toolId}`
-                    : part.type === 'reasoning'
-                    ? `reasoning-${part.startTime}`
-                    : `${part.type}-${idx}`;
+              streamParts.forEach((part, idx) => {
+                if (part.type === 'tool') {
+                  // Tool is completed if status is not 'running'
+                  if (part.status === 'completed' || part.status === 'failed') {
+                    completedParts.push(part);
+                  } else {
+                    activeParts.push(part);
+                  }
+                } else if (part.type === 'reasoning') {
+                  // Reasoning is completed if it has completed flag
+                  if (part.completed) {
+                    completedParts.push(part);
+                  } else {
+                    activeParts.push(part);
+                  }
+                } else if (part.type === 'text') {
+                  // Text is completed if it's not the last text part
+                  const isLastTextPart = idx === streamParts.length - 1 ||
+                    streamParts.slice(idx + 1).every(p => p.type !== 'text');
+                  if (isLastTextPart) {
+                    activeParts.push(part);
+                  } else {
+                    completedParts.push(part);
+                  }
+                } else {
+                  // Error parts are always completed
+                  completedParts.push(part);
+                }
+              });
 
-                  return (
-                    <MessagePart
-                      key={key}
-                      part={part}
-                      isLastInStream={isLastPart && part.type === 'text'}
-                    />
-                  );
-                })}
-              </Box>
-            )}
+              return (
+                <>
+                  {/* Completed parts - put in Static */}
+                  {completedParts.length > 0 && (
+                    <Static items={[{
+                      role: 'assistant' as const,
+                      content: completedParts,
+                      timestamp: Date.now(),
+                    }]}>
+                      {(msg: any) => (
+                        <Box paddingX={1} paddingTop={1} flexDirection="column">
+                          <Box>
+                            <Text color="#00FF88">▌ SYLPHX</Text>
+                          </Box>
+                          {msg.content.map((part: StreamPart, idx: number) => {
+                            const key = part.type === 'tool'
+                              ? `tool-${part.toolId}`
+                              : part.type === 'reasoning'
+                              ? `reasoning-${part.startTime}`
+                              : `${part.type}-${idx}`;
+                            return <MessagePart key={key} part={part} />;
+                          })}
+                        </Box>
+                      )}
+                    </Static>
+                  )}
+
+                  {/* Active parts - stay dynamic */}
+                  {activeParts.length > 0 && (
+                    <Box paddingX={1} paddingTop={completedParts.length === 0 ? 1 : 0} flexDirection="column">
+                      {completedParts.length === 0 && (
+                        <Box>
+                          <Text color="#00FF88">▌ SYLPHX</Text>
+                        </Box>
+                      )}
+
+                      {activeParts.map((part, idx) => {
+                        const isLastPart = idx === activeParts.length - 1;
+                        const key = part.type === 'tool'
+                          ? `tool-${part.toolId}`
+                          : part.type === 'reasoning'
+                          ? `reasoning-${part.startTime}`
+                          : `${part.type}-${idx}`;
+
+                        return (
+                          <MessagePart
+                            key={key}
+                            part={part}
+                            isLastInStream={isLastPart && part.type === 'text'}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+
+                  {/* Placeholder when no parts yet */}
+                  {streamParts.length === 0 && (
+                    <Box paddingX={1} paddingTop={1} flexDirection="column">
+                      <Box>
+                        <Text color="#00FF88">▌ SYLPHX</Text>
+                      </Box>
+                      <Box marginLeft={2}>
+                        <Text dimColor>...</Text>
+                      </Box>
+                    </Box>
+                  )}
+                </>
+              );
+            })()}
           </>
         )}
 
