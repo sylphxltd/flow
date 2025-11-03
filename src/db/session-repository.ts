@@ -357,7 +357,7 @@ export class SessionRepository {
     todoSnapshot?: TodoType[],
     status?: 'active' | 'completed' | 'error' | 'abort'
   ): Promise<string> {
-    await retryOnBusy(async () => {
+    return await retryOnBusy(async () => {
       const messageId = randomUUID();
       const now = Date.now();
 
