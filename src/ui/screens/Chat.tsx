@@ -1240,7 +1240,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         {/* Render content parts */}
                         {msg.content && Array.isArray(msg.content) ? (
                           msg.content.map((part, idx) => (
-                            <MessagePart key={`msg-${msg.timestamp}-part-${idx}`} part={part} />
+                            <StreamingPartWrapper
+                              key={`msg-${msg.timestamp}-part-${idx}`}
+                              part={part}
+                            />
                           ))
                         ) : (
                           <Box marginLeft={2}>
@@ -1274,7 +1277,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         {/* Render content parts */}
                         {msg.content && Array.isArray(msg.content) ? (
                           msg.content.map((part, idx) => (
-                            <MessagePart key={`msg-${msg.timestamp}-part-${idx}`} part={part} />
+                            <StreamingPartWrapper
+                              key={`msg-${msg.timestamp}-part-${idx}`}
+                              part={part}
+                            />
                           ))
                         ) : (
                           <Box marginLeft={2}>
