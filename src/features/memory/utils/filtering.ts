@@ -4,9 +4,8 @@
  */
 
 import type { Result } from '../../../core/functional/result.js';
-import { success, failure } from '../../../core/functional/result.js';
 import type { AppError } from '../../../core/functional/error-types.js';
-import { validationError } from '../../../core/functional/error-types.js';
+import { validateLimit as validateLimitCore } from '../../../core/validation/limit.js';
 
 // ===== Types =====
 
@@ -99,25 +98,12 @@ export function searchByPattern(
 // ===== Limiting & Pagination =====
 
 /**
- * Validate limit parameter
- * Pure - validation
+ * Validate limit parameter for memory queries
+ * Pure - delegates to shared validation with memory-specific defaults
+ * Default: 50, Max: 1000
  */
 export function validateLimit(limit: string | number | undefined): Result<number, AppError> {
-  if (limit === undefined) {
-    return success(50); // Default limit
-  }
-
-  const numLimit = typeof limit === 'string' ? Number.parseInt(limit, 10) : limit;
-
-  if (Number.isNaN(numLimit) || numLimit < 1) {
-    return failure(validationError('Limit must be a positive number', 'limit', limit));
-  }
-
-  if (numLimit > 1000) {
-    return failure(validationError('Limit cannot exceed 1000', 'limit', limit));
-  }
-
-  return success(numLimit);
+  return validateLimitCore(limit, 50, 1000);
 }
 
 /**

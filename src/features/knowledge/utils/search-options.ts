@@ -7,6 +7,7 @@ import type { Result } from '../../../core/functional/result.js';
 import { success, failure } from '../../../core/functional/result.js';
 import type { AppError } from '../../../core/functional/error-types.js';
 import { validationError } from '../../../core/functional/error-types.js';
+import { validateLimit as validateLimitCore } from '../../../core/validation/limit.js';
 
 // ===== Types =====
 
@@ -23,25 +24,12 @@ export interface RawSearchOptions {
 // ===== Validation =====
 
 /**
- * Validate search limit
- * Pure - number validation
+ * Validate search limit for knowledge queries
+ * Pure - delegates to shared validation with knowledge-specific defaults
+ * Default: 10, Max: 100
  */
 export function validateLimit(limit: string | number | undefined): Result<number, AppError> {
-  if (limit === undefined) {
-    return success(10); // Default limit
-  }
-
-  const numLimit = typeof limit === 'string' ? Number.parseInt(limit, 10) : limit;
-
-  if (Number.isNaN(numLimit) || numLimit < 1) {
-    return failure(validationError('Limit must be a positive number', 'limit', limit));
-  }
-
-  if (numLimit > 100) {
-    return failure(validationError('Limit cannot exceed 100', 'limit', limit));
-  }
-
-  return success(numLimit);
+  return validateLimitCore(limit, 10, 100);
 }
 
 /**
