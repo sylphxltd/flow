@@ -831,60 +831,52 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             )
           );
         },
-        // onComplete - always check if we need to save content
+        // onComplete - save partial content on abort/error only
         async () => {
-          // Philosophy: ALL LLM-generated content belongs in conversation history.
-          // Check if streamParts content is already saved (by checking last message).
-          // If not saved yet, save it now.
+          // DESIGN DECISION: When to save in onComplete?
+          // =============================================
+          //
+          // Normal completion:
+          // - useChat already saves complete message with full parts structure
+          // - DO NOT save again (would create duplicate)
+          //
+          // Abort/Error situations:
+          // - useChat throws before saving
+          // - onComplete must save partial content
+          // - Add note to indicate interruption
+          //
+          // Detection:
+          // - wasManuallyAbortedRef.current = user pressed ESC
+          // - lastErrorRef.current = stream error occurred
+          // - Neither = normal completion, useChat handled it
 
-          // Get all parts
-          const allParts = streamPartsRef.current;
-          const hasContent = allParts.length > 0;
+          const wasAborted = wasManuallyAbortedRef.current;
+          const hasError = lastErrorRef.current;
+          const needsSaving = wasAborted || hasError;
 
-          if (hasContent && currentSessionId) {
-            // Build content from all parts + buffer
-            const bufferedText = streamBufferRef.current.chunks.join('');
-            let content = '';
-            for (const part of allParts) {
-              if (part.type === 'text') {
-                content += part.content;
-              } else if (part.type === 'tool' && part.result) {
-                content += `\n[Tool: ${part.name}]\n`;
-              }
-            }
-            content += bufferedText;
-
-            if (content.trim()) {
-              // Check if this content is already saved (check last assistant message)
-              const sessions = useAppStore.getState().sessions;
-              const session = sessions.find(s => s.id === currentSessionId);
-              let alreadySaved = false;
-
-              if (session && session.messages.length > 0) {
-                const lastMessage = session.messages[session.messages.length - 1];
-                if (lastMessage.role === 'assistant') {
-                  // Extract text content from last message
-                  const lastContent = lastMessage.content
-                    .filter(p => p.type === 'text')
-                    .map(p => (p as any).content)
-                    .join('');
-
-                  // If content matches (or is prefix), it's already saved
-                  alreadySaved = lastContent.includes(content.trim());
+          if (needsSaving && currentSessionId) {
+            const allParts = streamPartsRef.current;
+            if (allParts.length > 0) {
+              // Build partial content from streaming parts
+              const bufferedText = streamBufferRef.current.chunks.join('');
+              let content = '';
+              for (const part of allParts) {
+                if (part.type === 'text') {
+                  content += part.content;
+                } else if (part.type === 'tool' && part.result) {
+                  content += `\n[Tool: ${part.name}]\n`;
                 }
               }
+              content += bufferedText;
 
-              // Save if not already saved
-              if (!alreadySaved) {
-                // Only add note if actually interrupted
-                // Normal completion: useChat already saved, no note needed
+              if (content.trim()) {
+                // Add appropriate note
                 let note = '';
-                if (wasManuallyAbortedRef.current) {
+                if (wasAborted) {
                   note = '\n\n[Response cancelled by user]';
-                } else if (lastErrorRef.current) {
-                  note = `\n\n[Error: ${lastErrorRef.current}]`;
+                } else if (hasError) {
+                  note = `\n\n[Error: ${hasError}]`;
                 }
-                // No "else" - if neither abort nor error, don't add any note
                 addMessage(currentSessionId, 'assistant', content + note);
               }
             }
