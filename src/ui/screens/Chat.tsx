@@ -774,7 +774,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         {/* App Header - Output once in Static */}
         <Static items={headerItems}>
           {() => (
-            <Box paddingY={1}>
+            <Box paddingX={1} paddingY={1}>
               <Text bold color="#00D9FF">SYLPHX FLOW</Text>
               <Text dimColor> │ </Text>
               <Text dimColor>AI Development Assistant</Text>
@@ -810,7 +810,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             {currentSession.messages.length > 0 && (
               <Static items={currentSession.messages}>
                 {(msg, i) => (
-                  <Box key={i} paddingTop={1} flexDirection="column">
+                  <Box key={i} paddingX={1} paddingTop={1} flexDirection="column">
                     {msg.role === 'user' ? (
                       <>
                         <Box>
