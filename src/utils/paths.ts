@@ -16,27 +16,31 @@ import { fileURLToPath } from 'node:url';
 import { pathSecurity } from './security.js';
 
 /**
- * Get the project root directory
+ * Assets location - relative to package root
+ *
+ * Strategy: Find package.json by walking up from this file, then assets/ is
+ * always at package-root/assets regardless of how the code is bundled.
  */
-function getProjectRoot(): string {
+function findPackageRoot(): string {
   const __filename = fileURLToPath(import.meta.url);
+  let currentDir = path.dirname(__filename);
 
-  // From src/utils/paths.ts → find /src/ and go up
-  const srcIndex = __filename.lastIndexOf('/src/');
-  if (srcIndex !== -1) {
-    return __filename.substring(0, srcIndex);
+  // Walk up max 10 levels to find package.json
+  for (let i = 0; i < 10; i++) {
+    const packageJsonPath = path.join(currentDir, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      return currentDir;
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) break; // reached filesystem root
+    currentDir = parentDir;
   }
 
-  // From dist/xxx.js → find /dist/ and go up
-  const distIndex = __filename.lastIndexOf('/dist/');
-  if (distIndex !== -1) {
-    return __filename.substring(0, distIndex);
-  }
-
-  throw new Error('Cannot determine project root - code must be in src/ or dist/');
+  throw new Error('Cannot find package.json - assets location unknown');
 }
 
-const ASSETS_ROOT = path.join(getProjectRoot(), 'assets');
+const ASSETS_ROOT = path.join(findPackageRoot(), 'assets');
 
 /**
  * Get path to agents directory
