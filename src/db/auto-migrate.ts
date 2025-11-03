@@ -12,7 +12,7 @@
 
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { readdir, mkdir, readFile as fsReadFile } from 'node:fs/promises';
+import { readdir, mkdir, readFile as fsReadFile, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
@@ -46,7 +46,9 @@ async function needsFileMigration(db: any): Promise<boolean> {
   try {
     // Check if migration flag exists
     if (existsSync(MIGRATION_FLAG)) {
-      return false; // Already migrated JSON files
+      // Already migrated - cleanup any remaining JSON files
+      await cleanupOldJSONFiles();
+      return false;
     }
 
     // Check if JSON files exist that need migration
@@ -69,6 +71,37 @@ async function needsFileMigration(db: any): Promise<boolean> {
     }
   } catch {
     return false;
+  }
+}
+
+/**
+ * Cleanup old JSON files after migration
+ * Called when migration flag exists (already migrated)
+ */
+async function cleanupOldJSONFiles(): Promise<void> {
+  try {
+    const files = await readdir(SESSION_DIR);
+    const sessionFiles = files.filter((f) => f.endsWith('.json') && !f.startsWith('.'));
+
+    if (sessionFiles.length === 0) {
+      return; // No files to cleanup
+    }
+
+    console.log(`Cleaning up ${sessionFiles.length} old JSON files...`);
+    let deletedCount = 0;
+
+    for (const file of sessionFiles) {
+      try {
+        await unlink(join(SESSION_DIR, file));
+        deletedCount++;
+      } catch (error) {
+        console.warn(`Failed to delete ${file}:`, error);
+      }
+    }
+
+    console.log(`Cleanup complete: deleted ${deletedCount}/${sessionFiles.length} JSON files`);
+  } catch {
+    // Session directory doesn't exist or other error - ignore
   }
 }
 
@@ -180,10 +213,19 @@ async function migrateSessionFiles(
         await repository.updateTodos(session.id, session.todos, session.nextTodoId);
       }
 
+      // Migration successful - delete the JSON file to free space and avoid confusion
+      const filePath = join(SESSION_DIR, file);
+      try {
+        await unlink(filePath);
+      } catch (unlinkError) {
+        console.warn(`Successfully migrated ${sessionId} but failed to delete JSON file:`, unlinkError);
+      }
+
       successCount++;
     } catch (error) {
       console.error(`Error migrating ${sessionId}:`, error);
       errorCount++;
+      // Keep JSON file on error for debugging
     }
   }
 
