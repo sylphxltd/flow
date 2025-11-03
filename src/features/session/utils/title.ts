@@ -57,8 +57,26 @@ export function truncateTitle(title: string, maxLength = 50): string {
  * Used to clean AI-generated titles
  */
 export function removeQuotes(title: string): string {
-  // Remove leading/trailing quotes (English, Chinese, Japanese)
-  return title.replace(/^["'「『]+|["'」』]+$/g, '');
+  // Remove matching leading/trailing quotes (English, Chinese, Japanese)
+  // Only remove if quotes appear at BOTH start and end
+  let result = title;
+
+  // Try to remove matching pairs of quotes
+  const quotesPairs = [
+    ['"', '"'],
+    ["'", "'"],
+    ['「', '」'],
+    ['『', '』'],
+  ];
+
+  for (const [open, close] of quotesPairs) {
+    // Keep removing matching pairs as long as they exist
+    while (result.startsWith(open) && result.endsWith(close) && result.length > 1) {
+      result = result.slice(open.length, -close.length);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -75,11 +93,13 @@ export function removeTitlePrefix(title: string): string {
 export function cleanAITitle(title: string, maxLength = 50): string {
   let cleaned = title.trim();
 
-  // Remove quotes
-  cleaned = removeQuotes(cleaned);
-
-  // Remove "Title:" prefix
-  cleaned = removeTitlePrefix(cleaned);
+  // Remove quotes and prefixes iteratively until no more changes
+  let previous = '';
+  while (previous !== cleaned) {
+    previous = cleaned;
+    cleaned = removeTitlePrefix(cleaned);
+    cleaned = removeQuotes(cleaned);
+  }
 
   // Replace newlines with spaces
   cleaned = cleaned.replace(/\n+/g, ' ');

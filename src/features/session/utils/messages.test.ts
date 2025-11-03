@@ -39,23 +39,16 @@ import {
 import type { SessionMessage, MessagePart } from '../../../types/session.types.js';
 
 describe('createMessage', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  const baseTime = new Date('2025-01-01T00:00:00Z').getTime();
 
   it('should create message with content', () => {
     const content: MessagePart[] = [{ type: 'text', content: 'Hello' }];
-    const msg = createMessage('user', content);
+    const msg = createMessage('user', content, baseTime);
 
     expect(msg).toEqual({
       role: 'user',
       content,
-      timestamp: 1735689600000,
+      timestamp: baseTime,
     });
   });
 

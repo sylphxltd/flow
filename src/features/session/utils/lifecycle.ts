@@ -36,27 +36,30 @@ export function createNewSession(
 /**
  * Add message to session (immutable)
  * Returns new session with message appended
+ * Pure - accepts optional timestamp parameter
  */
 export function addMessageToSession(
   session: Session,
-  message: SessionMessage
+  message: SessionMessage,
+  timestamp?: number
 ): Session {
   return {
     ...session,
     messages: [...session.messages, message],
-    updated: Date.now(),
+    updated: timestamp ?? Date.now(),
   };
 }
 
 /**
  * Clear all messages from session (immutable)
  * Keeps session metadata intact
+ * Pure - accepts optional timestamp parameter
  */
-export function clearMessages(session: Session): Session {
+export function clearMessages(session: Session, timestamp?: number): Session {
   return {
     ...session,
     messages: [],
-    updated: Date.now(),
+    updated: timestamp ?? Date.now(),
   };
 }
 
@@ -72,70 +75,78 @@ export function updateSessionTimestamp(session: Session, timestamp?: number): Se
 
 /**
  * Update session title (immutable)
+ * Pure - accepts optional timestamp parameter
  */
-export function updateSessionTitle(session: Session, title: string): Session {
+export function updateSessionTitle(session: Session, title: string, timestamp?: number): Session {
   return {
     ...session,
     title,
-    updated: Date.now(),
+    updated: timestamp ?? Date.now(),
   };
 }
 
 /**
  * Update session model (immutable)
+ * Pure - accepts optional timestamp parameter
  */
-export function updateSessionModel(session: Session, model: string): Session {
+export function updateSessionModel(session: Session, model: string, timestamp?: number): Session {
   return {
     ...session,
     model,
-    updated: Date.now(),
+    updated: timestamp ?? Date.now(),
   };
 }
 
 /**
  * Update session provider and model (immutable)
+ * Pure - accepts optional timestamp parameter
  */
 export function updateSessionProvider(
   session: Session,
   provider: ProviderId,
-  model: string
+  model: string,
+  timestamp?: number
 ): Session {
   return {
     ...session,
     provider,
     model,
-    updated: Date.now(),
+    updated: timestamp ?? Date.now(),
   };
 }
 
 /**
  * Update session todos (immutable)
+ * Pure - accepts optional timestamp parameter
  */
 export function updateSessionTodos(
   session: Session,
   todos: Todo[],
-  nextTodoId?: number
+  nextTodoId?: number,
+  timestamp?: number
 ): Session {
   return {
     ...session,
     todos,
     nextTodoId: nextTodoId ?? session.nextTodoId,
-    updated: Date.now(),
+    updated: timestamp ?? Date.now(),
   };
 }
 
 /**
  * Get session age in milliseconds
+ * Pure - takes current time as parameter
  */
-export function getSessionAge(session: Session): number {
-  return Date.now() - session.created;
+export function getSessionAge(session: Session, currentTime: number = Date.now()): number {
+  return currentTime - session.created;
 }
 
 /**
  * Get time since last update in milliseconds
+ * Pure - takes current time as parameter
  */
-export function getTimeSinceUpdate(session: Session): number {
-  return Date.now() - session.updated;
+export function getTimeSinceUpdate(session: Session, currentTime: number = Date.now()): number {
+  return currentTime - session.updated;
 }
 
 /**

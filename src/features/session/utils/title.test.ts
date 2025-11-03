@@ -212,12 +212,12 @@ describe('formatRelativeTime', () => {
 describe('needsTruncation', () => {
   it('should return false for short titles', () => {
     expect(needsTruncation('Short')).toBe(false);
-    expect(needsTruncation('Exactly 50 characters.................................', 50)).toBe(false);
+    expect(needsTruncation('12345678901234567890123456789012345678901234567890', 50)).toBe(false); // exactly 50 chars
   });
 
   it('should return true for long titles', () => {
     expect(needsTruncation('This is a very long title that exceeds the maximum length')).toBe(true);
-    expect(needsTruncation('51 chars..............................................', 50)).toBe(true);
+    expect(needsTruncation('123456789012345678901234567890123456789012345678901', 50)).toBe(true); // 51 chars
   });
 });
 
