@@ -1,9 +1,11 @@
 /**
  * Text Input With Hint
  * TextInput with inline ghost text hint and cursor control
+ *
+ * PERFORMANCE: Memoized to prevent unnecessary re-renders
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, Text } from 'ink';
 import ControlledTextInput from './ControlledTextInput.js';
 
@@ -20,7 +22,7 @@ interface TextInputWithHintProps {
   validTags?: Set<string>; // Set of valid @file references
 }
 
-export default function TextInputWithHint({
+function TextInputWithHint({
   value,
   onChange,
   onSubmit,
@@ -50,14 +52,24 @@ export default function TextInputWithHint({
     }
   }, [value.length, controlledCursor, internalCursor]);
 
+  // Memoize onChange to prevent creating new function on every render
+  const handleChange = useCallback((newValue: string) => {
+    onChange(newValue);
+  }, [onChange]);
+
+  // Memoize onSubmit to prevent creating new function on every render
+  const handleSubmit = useCallback((submittedValue: string) => {
+    onSubmit(submittedValue);
+  }, [onSubmit]);
+
   return (
     <Box>
       <ControlledTextInput
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         cursor={cursor}
         onCursorChange={onCursorChange}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         placeholder={placeholder}
         showCursor={showCursor}
         focus={focus}
@@ -69,3 +81,6 @@ export default function TextInputWithHint({
     </Box>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(TextInputWithHint);

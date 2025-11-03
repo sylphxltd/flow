@@ -1,9 +1,14 @@
 /**
  * Chat Screen
  * AI chat interface with session management
+ *
+ * PERFORMANCE OPTIMIZATIONS:
+ * - useMemo for expensive filtering operations
+ * - useCallback for stable function references
+ * - Memo for child components to prevent cascade re-renders
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import MarkdownText from '../components/MarkdownText.js';
@@ -273,7 +278,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   }, [input, currentlyLoading]); // cachedOptions removed from deps to prevent loop, commands are stable
 
   // Get file auto-completion suggestions when @ is typed
-  const getFilteredFiles = () => {
+  // PERFORMANCE: Memoize to avoid recalculating on every render
+  const filteredFileInfo = useMemo(() => {
     // Find @ symbol before cursor position
     const textBeforeCursor = input.slice(0, cursor);
     const atIndex = textBeforeCursor.lastIndexOf('@');
@@ -302,10 +308,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     const filtered = filterFiles(projectFiles, query);
 
     return { files: filtered.slice(0, 10), query, hasAt: true, atIndex }; // Limit to 10 results
-  };
+  }, [input, cursor, projectFiles]); // Only recompute when these change
 
   // Filter commands based on input
-  const getFilteredCommands = () => {
+  // PERFORMANCE: Memoize to avoid recalculating on every render
+  const filteredCommands = useMemo(() => {
     if (!input.startsWith('/')) return [];
 
     const parts = input.split(' ');
@@ -363,11 +370,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         cmd.label.toLowerCase().includes(`/${query}`) ||
         cmd.description.toLowerCase().includes(query)
     );
-  };
+  }, [input, cachedOptions]); // Recompute when input or cached options change
 
-  const filteredCommands = getFilteredCommands();
-  const filteredFileInfo = getFilteredFiles();
-  const hintText = getHintText();
+  // Get hint text for current input
+  // PERFORMANCE: Memoize to avoid recalculating on every render
+  const hintText = useMemo(() => getHintText(), [input]);
 
   // Handle keyboard shortcuts for command menu and selection navigation
   useKeyboardNavigation({
@@ -412,6 +419,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   });
 
   // Reset selected command index when filtered commands change
+  // PERFORMANCE: Use filteredCommands.length to avoid triggering on array identity change
   useEffect(() => {
     setSelectedCommandIndex(0);
   }, [filteredCommands.length]);
@@ -421,7 +429,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setSelectedFileIndex(0);
   }, [filteredFileInfo.files.length]);
 
-  const handleSubmit = async (value: string) => {
+  // PERFORMANCE: Memoize handleSubmit to provide stable reference to child components
+  const handleSubmit = useCallback(async (value: string) => {
     if (!value.trim() || isStreaming) return;
 
     // Handle pendingInput for text type
@@ -726,7 +735,28 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         addLog(`[handleSubmit] Caught error (already handled in useChat): ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-  };
+  }, [
+    isStreaming,
+    pendingInput,
+    inputResolver,
+    commandSessionRef,
+    currentSessionId,
+    createSession,
+    addMessage,
+    filteredCommands,
+    skipNextSubmit,
+    addLog,
+    aiConfig,
+    sendMessage,
+    clearAttachments,
+    pendingAttachments,
+    setInput,
+    setIsStreaming,
+    setStreamParts,
+    setIsTitleStreaming,
+    setStreamingTitle,
+    updateSessionTitle,
+  ]);
 
   return (
     <Box flexDirection="row" flexGrow={1}>

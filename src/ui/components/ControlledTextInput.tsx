@@ -1,9 +1,14 @@
 /**
  * Controlled Text Input - Readline Compatible
  * Implements standard readline keybindings for cross-platform compatibility
+ *
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - useCallback for stable function references
+ * - Optimized key handlers to return early when possible
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 
 export interface ControlledTextInputProps {
@@ -99,7 +104,7 @@ function lineToCursor(lines: string[], targetLine: number, targetCol: number): n
 
 // No reducer needed - fully controlled component
 
-export default function ControlledTextInput({
+function ControlledTextInput({
   value,
   onChange,
   cursor,
@@ -113,8 +118,8 @@ export default function ControlledTextInput({
   // Kill buffer for Ctrl+K, Ctrl+U, Ctrl+W → Ctrl+Y
   const killBufferRef = useRef('');
 
-  useInput(
-    (input, key) => {
+  // Memoize input handler to prevent recreating on every render
+  const handleInput = useCallback((input: string, key: any) => {
       // DEBUG: Log all key presses to understand Mac delete behavior
       if (process.env.DEBUG_INPUT) {
         console.log('[INPUT]', {
@@ -191,20 +196,26 @@ export default function ControlledTextInput({
       // Deletion (Character)
       // ===========================================
 
-      // Delete (Mac) or Backspace (Windows/Linux) or Ctrl+H - delete char left (backward)
+      // Ctrl+H - delete char left (backward) - separate from delete/backspace
+      if (!key.meta && key.ctrl && input?.toLowerCase() === 'h') {
+        if (cursor === 0) return;
+        const before = value.slice(0, cursor - 1);
+        const after = value.slice(cursor);
+        onChange(before + after);
+        onCursorChange(cursor - 1);
+        return;
+      }
+
+      // Delete (Mac) or Backspace (Windows/Linux) - delete char left (backward)
       // Note: Mac Delete key maps to key.delete, but should delete backward like Backspace
-      if (key.delete || key.backspace || (key.ctrl && input?.toLowerCase() === 'h')) {
-        // Don't delete if combined with meta (that's word delete)
-        if (key.meta) {
-          // Fall through to word deletion below
-        } else {
-          if (cursor === 0) return;
-          const before = value.slice(0, cursor - 1);
-          const after = value.slice(cursor);
-          onChange(before + after);
-          onCursorChange(cursor - 1);
-          return;
-        }
+      // Skip if meta is pressed (word delete handled below)
+      if ((key.delete || key.backspace) && !key.meta && !key.ctrl) {
+        if (cursor === 0) return;
+        const before = value.slice(0, cursor - 1);
+        const after = value.slice(cursor);
+        onChange(before + after);
+        onCursorChange(cursor - 1);
+        return;
       }
 
       // Ctrl+D - delete char right (forward)
@@ -352,9 +363,9 @@ export default function ControlledTextInput({
         onChange(before + normalizedInput + after);
         onCursorChange(cursor + normalizedInput.length);
       }
-    },
-    { isActive: focus }
-  );
+  }, [value, cursor, onChange, onCursorChange, onSubmit]);
+
+  useInput(handleInput, { isActive: focus });
 
   // Empty with placeholder
   if (value.length === 0 && placeholder) {
@@ -445,3 +456,16 @@ export default function ControlledTextInput({
     </Box>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+// Only re-render when props actually change
+export default React.memo(ControlledTextInput, (prevProps, nextProps) => {
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.cursor === nextProps.cursor &&
+    prevProps.placeholder === nextProps.placeholder &&
+    prevProps.showCursor === nextProps.showCursor &&
+    prevProps.focus === nextProps.focus &&
+    prevProps.maxLines === nextProps.maxLines
+  );
+});
