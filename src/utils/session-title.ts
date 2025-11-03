@@ -52,28 +52,53 @@ export async function generateSessionTitleWithStreaming(
   }
 
   try {
+    if (process.env.DEBUG) {
+      console.log(`[Title Gen] Creating AI stream for provider: ${provider}, model: ${modelName}`);
+    }
+
     const stream = createAIStream(
       provider,
       modelName,
       providerConfig,
       [
         {
-          role: 'system',
-          content: 'You are a helpful assistant that generates concise, descriptive titles for chat conversations. Create titles that capture the main topic or intent, not just repeat the message. Keep titles under 50 characters. Respond with ONLY the title, no quotes or extra text.'
-        },
-        {
           role: 'user',
-          content: `Create a descriptive title for a conversation that starts with: "${firstMessage}"\n\nTitle:`,
+          content: `You need to generate a SHORT, DESCRIPTIVE title (maximum 50 characters) for a chat conversation.
+
+User's first message: "${firstMessage}"
+
+Requirements:
+- Summarize the TOPIC or INTENT, don't just copy the message
+- Be concise and descriptive
+- Maximum 50 characters
+- Output ONLY the title, nothing else
+
+Examples:
+- Message: "How do I implement authentication?" → Title: "Authentication Implementation"
+- Message: "你好，请帮我修复这个 bug" → Title: "Bug 修复请求"
+- Message: "Can you help me with React hooks?" → Title: "React Hooks Help"
+
+Now generate the title:`,
         },
       ],
       [], // no tools for title generation
     );
 
+    if (process.env.DEBUG) {
+      console.log('[Title Gen] Stream created, starting to read chunks...');
+    }
+
     let fullTitle = '';
+    let chunkCount = 0;
 
     for await (const chunk of stream.textStream) {
+      chunkCount++;
       fullTitle += chunk;
       onChunk(chunk);
+    }
+
+    if (process.env.DEBUG) {
+      console.log(`[Title Gen] Received ${chunkCount} chunks, full title: "${fullTitle}"`);
     }
 
     // Clean up title - remove quotes, newlines, and common prefixes
@@ -83,9 +108,31 @@ export async function generateSessionTitleWithStreaming(
     cleaned = cleaned.replace(/\n+/g, ' '); // Replace newlines with spaces
     cleaned = cleaned.trim();
 
+    // Check if LLM just repeated the message (fallback to simple title)
+    // Calculate similarity: if cleaned title is too similar to original message, use fallback
+    const normalizedCleaned = cleaned.toLowerCase().replace(/[^\w\s]/g, '');
+    const normalizedOriginal = firstMessage.toLowerCase().replace(/[^\w\s]/g, '');
+
+    // If title is essentially the same as original message, use simple truncation
+    if (normalizedCleaned === normalizedOriginal ||
+        normalizedOriginal.includes(normalizedCleaned) ||
+        cleaned === firstMessage.trim()) {
+      if (process.env.DEBUG) {
+        console.log('[Title Gen] LLM title too similar to original, using fallback');
+      }
+      return generateSessionTitle(firstMessage);
+    }
+
+    if (process.env.DEBUG) {
+      console.log(`[Title Gen] Final cleaned title: "${cleaned}"`);
+    }
+
     return cleaned.length > 50 ? cleaned.substring(0, 50) + '...' : cleaned;
   } catch (error) {
     // Fallback to simple title generation
+    if (process.env.DEBUG) {
+      console.error('[Title Gen] Error generating title:', error);
+    }
     return generateSessionTitle(firstMessage);
   }
 }
