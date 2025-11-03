@@ -846,7 +846,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       </Box>
                     )}
                     {/* Display attachments if any */}
-                    {msg.attachments && msg.attachments.length > 0 && (
+                    {msg.attachments && msg.attachments.length > 0 ? (
                       <Box flexDirection="column" marginTop={1}>
                         {msg.attachments.map((att, attIdx) => (
                           <Box key={attIdx} marginLeft={2}>
@@ -862,7 +862,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           </Box>
                         ))}
                       </Box>
-                    )}
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -983,7 +983,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           ) : (
             <>
               {/* Show pending attachments */}
-              {pendingAttachments.length > 0 && (
+              {pendingAttachments.length > 0 ? (
                 <Box flexDirection="column" marginBottom={1}>
                   <Box marginBottom={1}>
                     <Text dimColor>Attachments ({pendingAttachments.length}):</Text>
@@ -1005,7 +1005,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     </Box>
                   ))}
                 </Box>
-              )}
+              ) : null}
 
               {/* Show prompt for text input mode */}
               {pendingInput?.type === 'text' && pendingInput.prompt && (
@@ -1068,14 +1068,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               )}
 
               {/* Command Autocomplete - Shows below input when typing / */}
-              {input.startsWith('/') && !filteredFileInfo.hasAt && filteredCommands.length > 0 && (
+              {input.startsWith('/') && !filteredFileInfo.hasAt && filteredCommands.length > 0 ? (
                 <CommandAutocomplete
                   commands={filteredCommands}
                   selectedCommandIndex={selectedCommandIndex}
                   currentlyLoading={currentlyLoading}
                   loadError={loadError}
                 />
-              )}
+              ) : null}
             </>
           )}
         </Box>
