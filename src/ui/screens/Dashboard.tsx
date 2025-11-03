@@ -204,7 +204,7 @@ export default function Dashboard() {
 
   const renderAgents = () => {
     return (
-      <Box flexDirection="column" paddingX={4} paddingTop={2}>
+      <Box flexDirection="column" paddingX={2} paddingTop={1}>
         <Box marginBottom={2}>
           <Text color="#00D9FF">AGENTS</Text>
           <Box flexGrow={1} />
@@ -266,7 +266,7 @@ export default function Dashboard() {
 
   const renderRules = () => {
     return (
-      <Box flexDirection="column" paddingX={4} paddingTop={2}>
+      <Box flexDirection="column" paddingX={2} paddingTop={1}>
         <Box marginBottom={2}>
           <Text color="#00D9FF">RULES</Text>
           <Box flexGrow={1} />
@@ -326,7 +326,7 @@ export default function Dashboard() {
 
   const renderSessions = () => {
     return (
-      <Box flexDirection="column" paddingX={4} paddingTop={2}>
+      <Box flexDirection="column" paddingX={2} paddingTop={1}>
         <Box marginBottom={2}>
           <Text color="#00D9FF">SESSIONS</Text>
           <Box flexGrow={1} />
@@ -356,7 +356,7 @@ export default function Dashboard() {
     const providers = Object.entries(aiConfig?.providers || {});
 
     return (
-      <Box flexDirection="column" paddingX={4} paddingTop={2}>
+      <Box flexDirection="column" paddingX={2} paddingTop={1}>
         <Box marginBottom={2}>
           <Text color="#00D9FF">PROVIDERS</Text>
           <Box flexGrow={1} />
@@ -396,7 +396,7 @@ export default function Dashboard() {
     ];
 
     return (
-      <Box flexDirection="column" paddingX={4} paddingTop={2}>
+      <Box flexDirection="column" paddingX={2} paddingTop={1}>
         <Box marginBottom={2}>
           <Text color="#00D9FF">NOTIFICATIONS</Text>
           <Box flexGrow={1} />
@@ -459,7 +459,7 @@ export default function Dashboard() {
     ];
 
     return (
-      <Box flexDirection="column" paddingX={4} paddingTop={2}>
+      <Box flexDirection="column" paddingX={2} paddingTop={1}>
         <Box marginBottom={2}>
           <Text color="#00D9FF">KEYBOARD & MOUSE SHORTCUTS</Text>
         </Box>
@@ -517,7 +517,7 @@ export default function Dashboard() {
   return (
     <Box flexDirection="column" width="100%" height="100%">
       {/* Header */}
-      <Box paddingX={4} paddingY={1}>
+      <Box paddingX={2} paddingY={0}>
         <Text bold color="#00D9FF">SYLPHX FLOW</Text>
         <Text dimColor>  Control Panel</Text>
         <Box flexGrow={1} />
@@ -534,7 +534,7 @@ export default function Dashboard() {
       {/* Main content */}
       <Box flexGrow={1} flexDirection="row">
         {/* Navigation sidebar */}
-        <Box width="25%" flexDirection="column" paddingX={4} paddingY={2}>
+        <Box width="25%" flexDirection="column" paddingX={2} paddingY={1}>
           {sections.map((section) => {
             const isSelected = selectedSection === section.id;
             const isHovered = hoveredItem === `section-${section.id}`;
@@ -575,7 +575,7 @@ export default function Dashboard() {
       </Box>
 
       {/* Footer */}
-      <Box paddingX={4} paddingY={1}>
+      <Box paddingX={2} paddingY={0}>
         <Text dimColor>MOUSE</Text>
         <Text dimColor>  Click & Hover  </Text>
         <Text dimColor>TAB</Text>

@@ -18,23 +18,37 @@ export interface MouseEvent {
 }
 
 export function useMouse(enabled = true) {
-  const { stdin, setRawMode } = useStdin();
+  const { stdin, setRawMode, isRawModeSupported } = useStdin();
   const [mousePosition, setMousePosition] = useState<MousePosition>({ x: 0, y: 0 });
   const [lastClick, setLastClick] = useState<MouseEvent | null>(null);
 
   useEffect(() => {
-    if (!enabled || !stdin || !setRawMode) {
+    if (!enabled || !stdin) {
       return;
+    }
+
+    // Enable raw mode if supported
+    if (isRawModeSupported && setRawMode) {
+      setRawMode(true);
     }
 
     // Enable mouse tracking
     // \x1b[?1000h - Enable mouse button tracking
-    // \x1b[?1003h - Enable mouse motion tracking
+    // \x1b[?1003h - Enable mouse motion tracking (all events)
     // \x1b[?1006h - Enable SGR mouse mode (better coordinate handling)
-    process.stdout.write('\x1b[?1000h\x1b[?1003h\x1b[?1006h');
+    // \x1b[?1015h - Enable urxvt mouse mode (for some terminals)
+    stdin.write('\x1b[?1000h');
+    stdin.write('\x1b[?1003h');
+    stdin.write('\x1b[?1006h');
+    stdin.write('\x1b[?1015h');
 
     const handleData = (data: Buffer) => {
       const str = data.toString();
+
+      // Debug: log raw mouse data
+      if (process.env.DEBUG_MOUSE) {
+        console.error('Mouse data:', str.split('').map(c => c.charCodeAt(0).toString(16)).join(' '));
+      }
 
       // Parse SGR mouse events: \x1b[<b;x;y M/m
       const sgrMatch = str.match(/\x1b\[<(\d+);(\d+);(\d+)([Mm])/);
@@ -58,11 +72,26 @@ export function useMouse(enabled = true) {
           setLastClick(clickEvent);
         } else if (button === 32 || button === 35) {
           // Mouse move (with or without button held)
-          const moveEvent: MouseEvent = {
-            position,
-            type: 'move',
-          };
-          // Don't update lastClick for moves, just position
+          // Just update position, not lastClick
+        }
+        return;
+      }
+
+      // Try parsing X10 format: \x1b[Mbxy
+      const x10Match = str.match(/\x1b\[M(.)(.)(.)/);
+      if (x10Match) {
+        const button = x10Match[1].charCodeAt(0) - 32;
+        const x = x10Match[2].charCodeAt(0) - 33;
+        const y = x10Match[3].charCodeAt(0) - 33;
+
+        setMousePosition({ x, y });
+
+        if (button < 3) {
+          setLastClick({
+            position: { x, y },
+            type: 'click',
+            button: button === 0 ? 'left' : button === 1 ? 'middle' : 'right',
+          });
         }
       }
     };
@@ -71,10 +100,19 @@ export function useMouse(enabled = true) {
 
     return () => {
       stdin.off('data', handleData);
+
       // Disable mouse tracking
-      process.stdout.write('\x1b[?1000l\x1b[?1003l\x1b[?1006l');
+      stdin.write('\x1b[?1000l');
+      stdin.write('\x1b[?1003l');
+      stdin.write('\x1b[?1006l');
+      stdin.write('\x1b[?1015l');
+
+      // Restore raw mode
+      if (isRawModeSupported && setRawMode) {
+        setRawMode(false);
+      }
     };
-  }, [enabled, stdin, setRawMode]);
+  }, [enabled, stdin, setRawMode, isRawModeSupported]);
 
   return {
     position: mousePosition,
