@@ -454,48 +454,13 @@ export function useChat() {
       );
     } catch (error) {
       addDebugLog('[useChat] ERROR CAUGHT!');
-
-      // Check if this is an abort error (user cancelled)
-      if (error instanceof Error && error.name === 'AbortError') {
-        addDebugLog('[useChat] Stream aborted by user');
-
-        // Don't add message here - let Chat.tsx handle partial content preservation
-        // Chat.tsx has access to streamParts and can save partial response
-
-        // Trigger completion to cleanup UI state
-        onComplete?.();
-        return;
-      }
-
-      // Don't log to console - error will be shown as assistant message
       addDebugLog(`[useChat] Error: ${error instanceof Error ? error.message : String(error)}`);
 
-      // Get fresh session ID in case it changed
-      const sessionId = currentSessionId || useAppStore.getState().currentSessionId;
+      // Don't add error message here - let Chat.tsx handle it
+      // Chat.tsx has access to streamParts and will save partial content
+      // with appropriate error note
 
-      if (!sessionId) {
-        addDebugLog('[useChat] ERROR: No sessionId available!');
-        console.error('[useChat] Cannot display error - no active session');
-        return;
-      }
-
-      // Format error message for display
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
-      addDebugLog(`[useChat] Adding error message to session: ${sessionId}`);
-
-      const displayError = `[ERROR] ${errorMessage}\n\n${
-        error instanceof Error && 'statusCode' in error && (error as any).statusCode === 401
-          ? 'This usually means:\n• Invalid or missing API key\n• API key has expired\n\nPlease check your provider configuration with /provider command.'
-          : 'Please try again or check your configuration.'
-      }`;
-
-      // Add error as assistant message so user can see it in chat
-      addMessage(sessionId, 'assistant', [
-        { type: 'error', error: displayError }
-      ]);
-      addDebugLog('[useChat] Error message added, calling onComplete');
-
-      // Trigger UI update after adding error message
+      // Just trigger completion to cleanup UI state
       onComplete?.();
       addDebugLog('[useChat] onComplete called');
     } finally {

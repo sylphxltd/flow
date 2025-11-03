@@ -69,6 +69,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Flag to track if user manually aborted (ESC pressed)
   const wasManuallyAbortedRef = useRef(false);
 
+  // Store last error for onComplete handler
+  const lastErrorRef = useRef<string | null>(null);
+
   // Optimized streaming: accumulate chunks in ref, update state in batches
   const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
     chunks: [],
@@ -473,6 +476,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setStreamParts([]);
     addLog('Starting message send...');
 
+    // Reset flags for new stream
+    wasManuallyAbortedRef.current = false;
+    lastErrorRef.current = null;
+
     // Create abort controller for this stream
     abortControllerRef.current = new AbortController();
 
@@ -582,10 +589,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               // Save if not already saved
               if (!alreadySaved) {
-                const interruptionNote = wasManuallyAbortedRef.current
-                  ? '\n\n[Response cancelled by user]'
-                  : '\n\n[Response interrupted]';
-                addMessage(currentSessionId, 'assistant', content + interruptionNote);
+                // Determine note based on interruption type
+                let note = '';
+                if (wasManuallyAbortedRef.current) {
+                  note = '\n\n[Response cancelled by user]';
+                } else if (lastErrorRef.current) {
+                  note = `\n\n[Error: ${lastErrorRef.current}]`;
+                } else {
+                  note = '\n\n[Response interrupted]';
+                }
+                addMessage(currentSessionId, 'assistant', content + note);
               }
             }
           }
@@ -597,8 +610,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           }
           streamBufferRef.current.chunks = [];
 
-          // Reset abort flag
+          // Reset flags
           wasManuallyAbortedRef.current = false;
+          lastErrorRef.current = null;
 
           setIsStreaming(false);
           setStreamParts([]); // Clear streaming parts - they're now in message history
@@ -713,8 +727,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     } catch (error) {
       addLog(`[sendUserMessageToAI] Error: ${error instanceof Error ? error.message : String(error)}`);
 
-      // Note: Abort errors are handled in onComplete callback
-      // Other errors will be handled by useChat's error handler
+      // Store error for onComplete handler
+      lastErrorRef.current = error instanceof Error ? error.message : String(error);
+
+      // Note: onComplete will be called by useChat and will handle saving partial content
 
       setIsStreaming(false);
       setStreamParts([]);
