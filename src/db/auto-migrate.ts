@@ -36,26 +36,20 @@ export interface MigrationProgress {
 export type ProgressCallback = (progress: MigrationProgress) => void;
 
 /**
- * Check if database needs migration
+ * Check if JSON session files need migration to database
+ * Returns true if there are JSON files that need to be migrated
+ *
+ * Note: Schema migrations are handled automatically by Drizzle's migrate()
+ * We only need to check for JSON file migration here
  */
-async function needsMigration(db: any): Promise<boolean> {
+async function needsFileMigration(db: any): Promise<boolean> {
   try {
-    // Check if sessions table exists
-    const result = await db.all(
-      sql`SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'`
-    );
-
-    // If table doesn't exist, need schema migration
-    if (result.length === 0) {
-      return true;
-    }
-
     // Check if migration flag exists
     if (existsSync(MIGRATION_FLAG)) {
-      return false; // Already migrated
+      return false; // Already migrated JSON files
     }
 
-    // Check if JSON files exist
+    // Check if JSON files exist that need migration
     try {
       const files = await readdir(SESSION_DIR);
       const sessionFiles = files.filter((f) => f.endsWith('.json') && !f.startsWith('.'));
@@ -74,7 +68,7 @@ async function needsMigration(db: any): Promise<boolean> {
       return false; // Session directory doesn't exist
     }
   } catch {
-    return true; // Database not initialized
+    return false;
   }
 }
 
@@ -192,6 +186,10 @@ async function migrateSessionFiles(
 /**
  * Auto-migrate on app startup
  * Returns database instance ready to use
+ *
+ * Design: Always run schema migrations (Drizzle handles detection)
+ * 1. Run Drizzle migrate() - automatically applies only new migrations
+ * 2. Check and migrate JSON files if needed
  */
 export async function autoMigrate(onProgress?: ProgressCallback): Promise<any> {
   const DATABASE_URL = process.env.DATABASE_URL || `file:${DB_PATH}`;
@@ -207,58 +205,55 @@ export async function autoMigrate(onProgress?: ProgressCallback): Promise<any> {
   await client.execute('PRAGMA busy_timeout = 5000');
   await client.execute('PRAGMA synchronous = NORMAL');
 
-  // Check if migration needed
-  const shouldMigrate = await needsMigration(db);
-
-  if (!shouldMigrate) {
-    // No migration needed, return database
-    return db;
-  }
-
   onProgress?.({
     total: 2,
     current: 0,
-    status: 'Initializing database...',
+    status: 'Running database migrations...',
   });
 
-  // Run schema migrations
+  // Always run schema migrations
+  // Drizzle's migrate() automatically detects and applies only new migrations
   await runSchemaMigrations(db);
 
   onProgress?.({
     total: 2,
     current: 1,
-    status: 'Database initialized',
+    status: 'Database schema up to date',
   });
 
-  // Check if file migration needed
-  try {
-    const files = await readdir(SESSION_DIR);
-    const sessionFiles = files.filter((f) => f.endsWith('.json') && !f.startsWith('.'));
+  // Check if JSON file migration needed
+  const needsFiles = await needsFileMigration(db);
 
-    if (sessionFiles.length > 0) {
-      onProgress?.({
-        total: 2 + sessionFiles.length,
-        current: 1,
-        status: `Migrating ${sessionFiles.length} sessions from files...`,
-      });
+  if (needsFiles) {
+    try {
+      const files = await readdir(SESSION_DIR);
+      const sessionFiles = files.filter((f) => f.endsWith('.json') && !f.startsWith('.'));
 
-      // Migrate files to database
-      const result = await migrateSessionFiles(db, (fileProgress) => {
+      if (sessionFiles.length > 0) {
         onProgress?.({
-          total: 2 + fileProgress.total,
-          current: 1 + fileProgress.current,
-          status: fileProgress.status,
+          total: 2 + sessionFiles.length,
+          current: 1,
+          status: `Migrating ${sessionFiles.length} sessions from files...`,
         });
-      });
 
-      onProgress?.({
-        total: 2 + sessionFiles.length,
-        current: 2 + sessionFiles.length,
-        status: `Migration complete! ${result.success} sessions migrated`,
-      });
+        // Migrate files to database
+        const result = await migrateSessionFiles(db, (fileProgress) => {
+          onProgress?.({
+            total: 2 + fileProgress.total,
+            current: 1 + fileProgress.current,
+            status: fileProgress.status,
+          });
+        });
+
+        onProgress?.({
+          total: 2 + sessionFiles.length,
+          current: 2 + sessionFiles.length,
+          status: `Migration complete! ${result.success} sessions migrated`,
+        });
+      }
+    } catch {
+      // No session directory, skip file migration
     }
-  } catch {
-    // No session directory, skip file migration
   }
 
   return db;

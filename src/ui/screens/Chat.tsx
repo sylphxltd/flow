@@ -96,26 +96,28 @@ function toPersistentFormat(part: StreamPart): StreamingPart {
     };
   }
   if (part.type === 'reasoning') {
-    return {
-      type: 'reasoning',
+    const base: StreamingPart & { type: 'reasoning' } = {
+      type: 'reasoning' as const,
       content: part.content,
-      status: part.completed ? 'completed' : 'active',
-      duration: part.duration,
-      startTime: part.startTime
+      status: (part.completed ? 'completed' : 'active') as 'active' | 'completed' | 'aborted'
     };
+    if (part.duration !== undefined) base.duration = part.duration;
+    if (part.startTime !== undefined) base.startTime = part.startTime;
+    return base;
   }
   if (part.type === 'tool') {
-    return {
-      type: 'tool',
+    const base: StreamingPart & { type: 'tool' } = {
+      type: 'tool' as const,
       toolId: part.toolId,
       name: part.name,
-      status: part.status,
-      args: part.args,
-      result: part.result,
-      error: part.error,
-      duration: part.duration,
-      startTime: part.startTime
+      status: part.status as 'running' | 'completed' | 'failed' | 'aborted'
     };
+    if (part.args !== undefined) base.args = part.args;
+    if (part.result !== undefined) base.result = part.result;
+    if (part.error !== undefined) base.error = part.error;
+    if (part.duration !== undefined) base.duration = part.duration;
+    if (part.startTime !== undefined) base.startTime = part.startTime;
+    return base;
   }
   // error
   return {
@@ -150,26 +152,29 @@ function fromPersistentFormat(part: StreamingPart): StreamPart {
     };
   }
   if (part.type === 'reasoning') {
-    return {
-      type: 'reasoning',
+    const base: StreamPart & { type: 'reasoning' } = {
+      type: 'reasoning' as const,
       content: part.content,
-      completed: part.status === 'completed',
-      duration: part.duration,
-      startTime: part.startTime
+      completed: part.status === 'completed'
     };
+    if (part.duration !== undefined) base.duration = part.duration;
+    if (part.startTime !== undefined) base.startTime = part.startTime;
+    return base;
   }
   if (part.type === 'tool') {
-    return {
-      type: 'tool',
+    const mappedStatus = part.status === 'aborted' ? 'failed' : part.status;
+    const base: StreamPart & { type: 'tool' } = {
+      type: 'tool' as const,
       toolId: part.toolId,
       name: part.name,
-      status: part.status === 'aborted' ? 'failed' : part.status,
-      args: part.args,
-      result: part.result,
-      error: part.error,
-      duration: part.duration,
-      startTime: part.startTime
+      status: mappedStatus as 'running' | 'completed' | 'failed'
     };
+    if (part.args !== undefined) base.args = part.args;
+    if (part.result !== undefined) base.result = part.result;
+    if (part.error !== undefined) base.error = part.error;
+    if (part.duration !== undefined) base.duration = part.duration;
+    if (part.startTime !== undefined) base.startTime = part.startTime;
+    return base;
   }
   // error
   return {
@@ -353,6 +358,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
    * - NOT restored (can't resume network request)
    * - User must re-send message to continue
    * - This is intentional: network state is not serializable
+   *
+   * CRITICAL: Only runs when currentSessionId changes (session switch)
+   * - NOT on every sessions array update (would cause infinite loop)
+   * - Reads session.streamingParts from the sessions array snapshot
    */
   useEffect(() => {
     if (!currentSessionId) {
@@ -380,7 +389,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     }
     // Note: We don't clear state if session.isStreaming is true but no parts
     // This handles edge case where streaming just started
-  }, [currentSessionId, sessions]); // Depend on sessions to detect updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSessionId]); // ONLY depend on currentSessionId (not sessions)
 
   // Options cache for selection mode and autocomplete
   const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());

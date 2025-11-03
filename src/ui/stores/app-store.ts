@@ -1,6 +1,35 @@
 /**
  * Global App Store
  * Centralized state management for the entire TUI
+ *
+ * Architecture: Optimistic Update Pattern
+ * ========================================
+ *
+ * All persistence actions follow this consistent pattern:
+ *
+ * 1. Update state immediately (optimistic update)
+ *    - UI responds instantly, no blocking
+ *    - User sees changes right away
+ *
+ * 2. Persist to database asynchronously
+ *    - Fire-and-forget, doesn't block UI
+ *    - Error logged but doesn't rollback (eventual consistency)
+ *
+ * Benefits:
+ * - Fast, responsive UI (no database latency)
+ * - Simple error handling (no rollback complexity)
+ * - Clear separation: Store = coordinator, Repository = persistence
+ *
+ * Example:
+ * ```typescript
+ * updateSessionTitle: (sessionId, title) => {
+ *   // 1. Update state first (optimistic)
+ *   set(state => { state.sessions.find(s => s.id === sessionId).title = title });
+ *
+ *   // 2. Persist async (fire-and-forget)
+ *   getSessionRepository().then(repo => repo.updateSessionTitle(...));
+ * }
+ * ```
  */
 
 import { create } from 'zustand';
@@ -168,30 +197,23 @@ export const useAppStore = create<AppState>()(
       return sessionId;
     },
     updateSessionModel: (sessionId, model) => {
-      // Update database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.updateSessionModel(sessionId, model).catch((error) => {
-          console.error('Failed to update session model in database:', error);
-        });
-      });
-
-      // Update state immediately
+      // Update state immediately (optimistic update)
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
           session.model = model;
         }
       });
-    },
-    updateSessionProvider: (sessionId, provider, model) => {
-      // Update database asynchronously
+
+      // Persist to database asynchronously
       getSessionRepository().then((repo) => {
-        repo.updateSessionProvider(sessionId, provider, model).catch((error) => {
-          console.error('Failed to update session provider in database:', error);
+        repo.updateSessionModel(sessionId, model).catch((error) => {
+          console.error('Failed to update session model in database:', error);
         });
       });
-
-      // Update state immediately
+    },
+    updateSessionProvider: (sessionId, provider, model) => {
+      // Update state immediately (optimistic update)
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -199,21 +221,28 @@ export const useAppStore = create<AppState>()(
           session.model = model;
         }
       });
-    },
-    updateSessionTitle: (sessionId, title) => {
-      // Update database asynchronously
+
+      // Persist to database asynchronously
       getSessionRepository().then((repo) => {
-        repo.updateSessionTitle(sessionId, title).catch((error) => {
-          console.error('Failed to update session title in database:', error);
+        repo.updateSessionProvider(sessionId, provider, model).catch((error) => {
+          console.error('Failed to update session provider in database:', error);
         });
       });
-
-      // Update state immediately
+    },
+    updateSessionTitle: (sessionId, title) => {
+      // Update state immediately (optimistic update)
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
         if (session) {
           session.title = title;
         }
+      });
+
+      // Persist to database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.updateSessionTitle(sessionId, title).catch((error) => {
+          console.error('Failed to update session title in database:', error);
+        });
       });
     },
     addMessage: (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) => {
@@ -221,15 +250,6 @@ export const useAppStore = create<AppState>()(
       const normalizedContent: MessagePart[] = typeof content === 'string'
         ? [{ type: 'text', content }]
         : content;
-
-      // Add to database asynchronously
-      getSessionRepository().then((repo) => {
-        repo
-          .addMessage(sessionId, role, normalizedContent, attachments, usage, finishReason, metadata, todoSnapshot)
-          .catch((error) => {
-            console.error('Failed to add message to database:', error);
-          });
-      });
 
       // Update state immediately (optimistic update)
       set((state) => {
@@ -247,19 +267,21 @@ export const useAppStore = create<AppState>()(
           });
         }
       });
+
+      // Persist to database asynchronously
+      getSessionRepository().then((repo) => {
+        repo
+          .addMessage(sessionId, role, normalizedContent, attachments, usage, finishReason, metadata, todoSnapshot)
+          .catch((error) => {
+            console.error('Failed to add message to database:', error);
+          });
+      });
     },
     setCurrentSession: (sessionId) =>
       set((state) => {
         state.currentSessionId = sessionId;
       }),
     deleteSession: (sessionId) => {
-      // Delete from database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.deleteSession(sessionId).catch((error) => {
-          console.error('Failed to delete session from database:', error);
-        });
-      });
-
       // Update state immediately (optimistic update)
       set((state) => {
         state.sessions = state.sessions.filter((s) => s.id !== sessionId);
@@ -267,17 +289,17 @@ export const useAppStore = create<AppState>()(
           state.currentSessionId = null;
         }
       });
+
+      // Delete from database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.deleteSession(sessionId).catch((error) => {
+          console.error('Failed to delete session from database:', error);
+        });
+      });
     },
 
     // Streaming State
     setStreamingState: (sessionId, isStreaming, streamingParts) => {
-      // Update database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.updateStreamingState(sessionId, isStreaming, streamingParts).catch((error) => {
-          console.error('Failed to update streaming state in database:', error);
-        });
-      });
-
       // Update state immediately (optimistic update)
       set((state) => {
         const session = state.sessions.find((s) => s.id === sessionId);
@@ -285,6 +307,13 @@ export const useAppStore = create<AppState>()(
           session.isStreaming = isStreaming;
           session.streamingParts = streamingParts;
         }
+      });
+
+      // Persist to database asynchronously
+      getSessionRepository().then((repo) => {
+        repo.updateStreamingState(sessionId, isStreaming, streamingParts).catch((error) => {
+          console.error('Failed to update streaming state in database:', error);
+        });
       });
     },
 

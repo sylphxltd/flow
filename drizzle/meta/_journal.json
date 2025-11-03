@@ -15,6 +15,13 @@
       "when": 1762132080296,
       "tag": "0001_material_pyro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1762198876177,
+      "tag": "0002_lyrical_random",
+      "breakpoints": true
     }
   ]
 }

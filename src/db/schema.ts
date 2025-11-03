@@ -115,6 +115,12 @@ export const sessions = sqliteTable(
     provider: text('provider').notNull(), // 'anthropic' | 'openai' | 'google' | 'openrouter'
     model: text('model').notNull(),
     nextTodoId: integer('next_todo_id').notNull().default(1),
+
+    // Streaming state - persisted for session recovery
+    // Stored as JSON for flexibility (StreamingPart[] format)
+    streamingParts: text('streaming_parts'), // JSON-serialized StreamingPart[]
+    isStreaming: integer('is_streaming', { mode: 'boolean' }), // boolean flag
+
     created: integer('created').notNull(), // Unix timestamp (ms)
     updated: integer('updated').notNull(), // Unix timestamp (ms)
   },

@@ -34,6 +34,7 @@ import type {
   FileAttachment,
   TokenUsage,
   MessageMetadata,
+  StreamingPart,
 } from '../types/session.types.js';
 import type { Todo as TodoType } from '../types/todo.types.js';
 import type { ProviderId } from '../config/ai-config.js';
@@ -172,7 +173,14 @@ export class SessionRepository {
     // Get todos
     const sessionTodos = await this.getSessionTodos(sessionId);
 
-    return {
+    // Parse streaming state
+    const streamingParts = session.streamingParts
+      ? (JSON.parse(session.streamingParts) as StreamingPart[])
+      : undefined;
+    const isStreaming = session.isStreaming ? true : undefined;
+
+    // Build return object with conditional optional fields
+    const result = {
       id: session.id,
       title: session.title || undefined,
       provider: session.provider as ProviderId,
@@ -182,7 +190,11 @@ export class SessionRepository {
       nextTodoId: session.nextTodoId,
       created: session.created,
       updated: session.updated,
-    };
+      ...(streamingParts && { streamingParts }),
+      ...(isStreaming && { isStreaming }),
+    } as SessionType;
+
+    return result;
   }
 
   /**
@@ -461,6 +473,30 @@ export class SessionRepository {
     await this.db
       .update(sessions)
       .set({ provider, model, updated: Date.now() })
+      .where(eq(sessions.id, sessionId));
+  }
+
+  /**
+   * Update streaming state for session
+   * Persists the current streaming status and parts for session recovery
+   *
+   * Design: Enables session switching during streaming
+   * - Session A streaming → switch to B → state preserved → return to A → exact recovery
+   * - Survives app restarts (if database persisted)
+   * - Parts stored as JSON with full status (active, completed, aborted, failed)
+   */
+  async updateStreamingState(
+    sessionId: string,
+    isStreaming: boolean,
+    streamingParts: StreamingPart[]
+  ): Promise<void> {
+    await this.db
+      .update(sessions)
+      .set({
+        isStreaming: isStreaming,
+        streamingParts: streamingParts.length > 0 ? JSON.stringify(streamingParts) : null,
+        updated: Date.now(),
+      })
       .where(eq(sessions.id, sessionId));
   }
 
