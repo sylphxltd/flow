@@ -14,6 +14,8 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { readdir, mkdir, readFile as fsReadFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
@@ -25,6 +27,29 @@ const SESSION_DIR = join(homedir(), '.sylphx', 'sessions');
 const DB_DIR = join(homedir(), '.sylphx-flow');
 const DB_PATH = join(DB_DIR, 'memory.db');
 const MIGRATION_FLAG = join(DB_DIR, '.session-migrated');
+
+/**
+ * Find package root by walking up from this file
+ * Used to locate drizzle migrations folder
+ */
+function findPackageRoot(): string {
+  const __filename = fileURLToPath(import.meta.url);
+  let currentDir = dirname(__filename);
+
+  // Walk up max 10 levels to find package.json
+  for (let i = 0; i < 10; i++) {
+    const packageJsonPath = join(currentDir, 'package.json');
+    if (existsSync(packageJsonPath)) {
+      return currentDir;
+    }
+
+    const parentDir = dirname(currentDir);
+    if (parentDir === currentDir) break; // reached filesystem root
+    currentDir = parentDir;
+  }
+
+  throw new Error('Cannot find package.json - drizzle migrations location unknown');
+}
 
 export interface MigrationProgress {
   total: number;
@@ -84,8 +109,16 @@ async function runSchemaMigrations(db: any): Promise<void> {
   // Ensure database directory exists
   await mkdir(DB_DIR, { recursive: true });
 
-  // Run Drizzle migrations
-  await migrate(db, { migrationsFolder: './drizzle' });
+  // Run Drizzle migrations using package root to find migrations
+  // This works with npm global install
+  const packageRoot = findPackageRoot();
+  const migrationsPath = join(packageRoot, 'drizzle');
+
+  if (!existsSync(migrationsPath)) {
+    throw new Error(`Drizzle migrations not found at ${migrationsPath}`);
+  }
+
+  await migrate(db, { migrationsFolder: migrationsPath });
 }
 
 /**
