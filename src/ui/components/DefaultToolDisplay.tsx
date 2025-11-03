@@ -46,11 +46,11 @@ const ToolHeader: React.FC<ToolHeaderProps> = ({
 }) => (
   <Box>
     {statusIndicator}
-    <Text color="white">{displayName}</Text>
+    <Text bold>{displayName}</Text>
     {formattedArgs && (
       <>
-        <Text color="white"> </Text>
-        <Text color="white">{formattedArgs}</Text>
+        <Text> </Text>
+        <Text>{formattedArgs}</Text>
       </>
     )}
     {duration !== undefined && (status === 'completed' || status === 'running') && (
@@ -88,7 +88,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({
   if (status === 'completed' && formattedResult.summary) {
     return (
       <Box marginLeft={2}>
-        <Text dimColor>{formattedResult.summary}</Text>
+        <Text>{formattedResult.summary}</Text>
       </Box>
     );
   }

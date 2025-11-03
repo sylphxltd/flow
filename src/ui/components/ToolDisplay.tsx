@@ -28,7 +28,7 @@ function FallbackToolDisplay(props: ToolDisplayProps) {
         )}
         {status === 'completed' && <Text color="#00FF88">✓ </Text>}
         {status === 'failed' && <Text color="#FF3366">✗ </Text>}
-        <Text color="white">{name}</Text>
+        <Text bold>{name}</Text>
         {duration !== undefined && (status === 'completed' || status === 'running') && (
           <Text dimColor> {duration}ms</Text>
         )}
