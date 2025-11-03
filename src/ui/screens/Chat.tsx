@@ -992,15 +992,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     <Box key={idx} marginLeft={2}>
                       <Text color="#00D9FF">{att.relativePath}</Text>
                       <Text dimColor> (</Text>
-                      {att.size && (
+                      {att.size ? (
                         <>
                           <Text dimColor>{(att.size / 1024).toFixed(1)}KB</Text>
                           {attachmentTokens.has(att.path) && <Text dimColor>, </Text>}
                         </>
-                      )}
-                      {attachmentTokens.has(att.path) && (
+                      ) : null}
+                      {attachmentTokens.has(att.path) ? (
                         <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                      )}
+                      ) : null}
                       <Text dimColor>)</Text>
                     </Box>
                   ))}
@@ -1059,13 +1059,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               )}
 
               {/* File Autocomplete - Shows below input when typing @ */}
-              {filteredFileInfo.hasAt && (
+              {filteredFileInfo.hasAt ? (
                 <FileAutocomplete
                   files={filteredFileInfo.files}
                   selectedFileIndex={selectedFileIndex}
                   filesLoading={filesLoading}
                 />
-              )}
+              ) : null}
 
               {/* Command Autocomplete - Shows below input when typing / */}
               {input.startsWith('/') && !filteredFileInfo.hasAt && filteredCommands.length > 0 ? (
