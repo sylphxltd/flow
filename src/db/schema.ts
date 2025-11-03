@@ -116,10 +116,8 @@ export const sessions = sqliteTable(
     model: text('model').notNull(),
     nextTodoId: integer('next_todo_id').notNull().default(1),
 
-    // Streaming state - persisted for session recovery
-    // Stored as JSON for flexibility (StreamingPart[] format)
-    streamingParts: text('streaming_parts'), // JSON-serialized StreamingPart[]
-    isStreaming: integer('is_streaming', { mode: 'boolean' }), // boolean flag
+    // Note: Streaming state moved to messages table (message-level, not session-level)
+    // Each message can be in streaming state with isStreaming flag
 
     created: integer('created').notNull(), // Unix timestamp (ms)
     updated: integer('updated').notNull(), // Unix timestamp (ms)
@@ -147,6 +145,8 @@ export const messages = sqliteTable(
     timestamp: integer('timestamp').notNull(), // Unix timestamp (ms)
     ordering: integer('ordering').notNull(), // For display order
     finishReason: text('finish_reason'), // 'stop' | 'length' | 'tool-calls' | 'error'
+    // Streaming state - messages can be in active streaming state
+    isStreaming: integer('is_streaming', { mode: 'boolean' }), // true while streaming, false when complete
     // Metadata stored as JSON: { cpu?: string, memory?: string }
     metadata: text('metadata'), // JSON string
   },
@@ -154,6 +154,7 @@ export const messages = sqliteTable(
     sessionIdx: index('idx_messages_session').on(table.sessionId),
     orderingIdx: index('idx_messages_ordering').on(table.sessionId, table.ordering),
     timestampIdx: index('idx_messages_timestamp').on(table.timestamp),
+    isStreamingIdx: index('idx_messages_is_streaming').on(table.isStreaming),
   })
 );
 
