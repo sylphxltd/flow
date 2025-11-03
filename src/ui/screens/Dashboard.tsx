@@ -105,7 +105,7 @@ export default function Dashboard() {
       case 'rules':
         return rules.length - 1;
       case 'notifications':
-        return 2;
+        return 3;
       default:
         return 0;
     }
@@ -127,7 +127,7 @@ export default function Dashboard() {
         break;
 
       case 'notifications':
-        const settings = ['osNotifications', 'terminalNotifications', 'sound'] as const;
+        const settings = ['osNotifications', 'terminalNotifications', 'sound', 'autoGenerateTitle'] as const;
         const setting = settings[selectedItemIndex];
         if (setting) {
           // Read current state at action time, not closure time
@@ -311,6 +311,7 @@ export default function Dashboard() {
       { key: 'osNotifications', label: 'OS Notifications', value: notificationSettings.osNotifications },
       { key: 'terminalNotifications', label: 'Terminal', value: notificationSettings.terminalNotifications },
       { key: 'sound', label: 'Sound', value: notificationSettings.sound },
+      { key: 'autoGenerateTitle', label: 'Auto-Generate Title (LLM)', value: notificationSettings.autoGenerateTitle },
     ];
 
     return (
@@ -318,7 +319,7 @@ export default function Dashboard() {
         <Box marginBottom={2}>
           <Text color="#00D9FF">NOTIFICATIONS</Text>
           <Box flexGrow={1} />
-          <Text dimColor>{settings.filter(s => s.value).length}/3 enabled</Text>
+          <Text dimColor>{settings.filter(s => s.value).length}/4 enabled</Text>
         </Box>
 
         <Box flexDirection="column">

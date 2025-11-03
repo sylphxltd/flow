@@ -21,6 +21,7 @@ import {
 } from '../../tools/interaction.js';
 import type { ModelMessage } from 'ai';
 import { sendNotification } from '../../utils/notifications.js';
+import { generateSessionTitle, generateSessionTitleWithStreaming } from '../../utils/session-title.js';
 
 // Simple LRU cache for file attachments with mtime validation
 // Prevents re-reading same files from disk multiple times
@@ -210,6 +211,39 @@ export function useChat() {
       if (!updatedSession) {
         console.error('[useChat] Session not found after addMessage');
         return;
+      }
+
+      // Generate title for first message if enabled
+      if (updatedSession.messages.length === 1 && !updatedSession.title) {
+        const updateSessionTitle = useAppStore.getState().updateSessionTitle;
+        const autoGenerateTitle = notificationSettings.autoGenerateTitle;
+
+        if (autoGenerateTitle) {
+          // Generate title with LLM streaming
+          let accumulatedTitle = '';
+          generateSessionTitleWithStreaming(
+            message,
+            provider,
+            modelName,
+            providerConfig,
+            (chunk) => {
+              // Accumulate chunks and update title in real-time
+              accumulatedTitle += chunk;
+              updateSessionTitle(currentSessionId, accumulatedTitle);
+            }
+          ).then((finalTitle) => {
+            // Update with final cleaned title
+            updateSessionTitle(currentSessionId, finalTitle);
+          }).catch((error) => {
+            // Fallback to simple title on error
+            const simpleTitle = generateSessionTitle(message);
+            updateSessionTitle(currentSessionId, simpleTitle);
+          });
+        } else {
+          // Simple title generation (truncate first message)
+          const simpleTitle = generateSessionTitle(message);
+          updateSessionTitle(currentSessionId, simpleTitle);
+        }
       }
 
       // Build ModelMessage[] from SessionMessage[] for LLM

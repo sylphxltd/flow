@@ -66,6 +66,7 @@ export interface AppState {
     osNotifications: boolean;
     terminalNotifications: boolean;
     sound: boolean;
+    autoGenerateTitle: boolean;
   };
   updateNotificationSettings: (settings: Partial<AppState['notificationSettings']>) => void;
 
@@ -321,6 +322,7 @@ export const useAppStore = create<AppState>()(
       osNotifications: true,
       terminalNotifications: true,
       sound: true,
+      autoGenerateTitle: true,
     },
     updateNotificationSettings: (settings) =>
       set((state) => {
