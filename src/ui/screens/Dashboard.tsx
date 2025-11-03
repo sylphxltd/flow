@@ -421,7 +421,7 @@ export default function Dashboard() {
   return (
     <FullScreen flexDirection="column">
       {/* Header */}
-      <Box paddingX={2} paddingY={0}>
+      <Box flexShrink={0} paddingX={2} paddingY={1}>
         <Text bold color="#00D9FF">SYLPHX FLOW</Text>
         <Text dimColor>  Control Panel</Text>
         <Box flexGrow={1} />
@@ -431,14 +431,14 @@ export default function Dashboard() {
       </Box>
 
       {/* Main content */}
-      <Box flexGrow={1} flexDirection="row">
+      <Box flexGrow={1} minHeight={0} flexDirection="row">
         {/* Navigation sidebar */}
-        <Box width="25%" flexDirection="column" paddingX={2} paddingY={1}>
+        <Box width="25%" flexShrink={0} flexDirection="column" paddingX={2} paddingY={1}>
           {sections.map((section) => {
             const isSelected = selectedSection === section.id;
 
             return (
-              <Box key={section.id} marginBottom={2}>
+              <Box key={section.id} marginBottom={1}>
                 <Text dimColor>{section.num}  </Text>
                 <Text
                   bold={isSelected}
@@ -458,13 +458,13 @@ export default function Dashboard() {
         </Box>
 
         {/* Content area */}
-        <Box flexGrow={1} flexDirection="column">
+        <Box flexGrow={1} minHeight={0} flexDirection="column">
           {renderContent()}
         </Box>
       </Box>
 
       {/* Footer */}
-      <Box paddingX={2} paddingY={0}>
+      <Box flexShrink={0} paddingX={2} paddingY={1}>
         <Text dimColor>TAB</Text>
         <Text dimColor>  Next  </Text>
         <Text dimColor>ENTER</Text>
