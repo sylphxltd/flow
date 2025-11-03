@@ -47,6 +47,14 @@ async function startTUIApp(): Promise<void> {
  * Headless mode - execute prompt and get response
  */
 async function runHeadless(prompt: string, options: any): Promise<void> {
+  // Initialize database before any session operations
+  try {
+    await getDatabase();
+  } catch (error) {
+    console.error(chalk.red('✗ Failed to initialize database:'), error);
+    process.exit(1);
+  }
+
   // Get or create session
   const session = await getOrCreateSession(options.continue || false);
   if (!session) {
