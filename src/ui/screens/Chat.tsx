@@ -724,6 +724,51 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             return newParts;
           });
         },
+        // onToolInputStart - tool input streaming started
+        (toolCallId, toolName) => {
+          // Tool input streaming started - args will be streamed in deltas
+          // No UI update needed, just log
+          addLog(`Tool input streaming: ${toolName}`);
+        },
+        // onToolInputDelta - tool input streaming delta
+        (toolCallId, toolName, argsTextDelta) => {
+          // Part streaming: Update tool args as they stream in
+          setStreamParts((prev) => {
+            const newParts = prev.map((part) => {
+              if (part.type === 'tool' && part.toolId === toolCallId) {
+                // Append args delta to current args
+                const currentArgs = typeof part.args === 'string' ? part.args : JSON.stringify(part.args || '');
+                return { ...part, args: currentArgs + argsTextDelta };
+              }
+              return part;
+            });
+
+            // Note: Don't persist on every delta (too frequent)
+            // Will persist on tool-input-end
+
+            return newParts;
+          });
+        },
+        // onToolInputEnd - tool input streaming completed
+        (toolCallId, toolName, args) => {
+          // Part streaming: Finalize tool args
+          setStreamParts((prev) => {
+            const newParts = prev.map((part) =>
+              part.type === 'tool' && part.toolId === toolCallId
+                ? { ...part, args }
+                : part
+            );
+
+            // Persist final args to database
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist tool args: ${error}`);
+              });
+            }
+
+            return newParts;
+          });
+        },
         // onToolResult - tool execution completed
         (toolCallId, toolName, result, duration) => {
           // Part streaming: Update tool status to completed
@@ -897,6 +942,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onReasoningEnd
         (duration) => {
           // Part streaming: Mark reasoning as completed
+          // Reasoning always ends before next part starts, so it's the last part
           setStreamParts((prev) => {
             const newParts = [...prev];
             const lastPart = newParts[newParts.length - 1];
@@ -912,6 +958,30 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             if (streamingMessageIdRef.current) {
               repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
                 addLog(`Failed to persist reasoning end: ${error}`);
+              });
+            }
+
+            return newParts;
+          });
+        },
+        // onTextEnd - mark text part as completed
+        () => {
+          // Part streaming: Mark text as completed
+          // Text always ends before next part starts, so it's the last part
+          setStreamParts((prev) => {
+            const newParts = [...prev];
+            const lastPart = newParts[newParts.length - 1];
+            if (lastPart && lastPart.type === 'text') {
+              newParts[newParts.length - 1] = {
+                ...lastPart,
+                status: 'completed'
+              };
+            }
+
+            // Persist to database asynchronously
+            if (streamingMessageIdRef.current) {
+              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
+                addLog(`Failed to persist text end: ${error}`);
               });
             }
 

@@ -17,6 +17,9 @@ export interface StreamCallbacks {
   onReasoningDelta?: (text: string) => void;
   onReasoningEnd?: (duration: number) => void;
   onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
+  onToolInputStart?: (toolCallId: string, toolName: string) => void;
+  onToolInputDelta?: (toolCallId: string, toolName: string, argsTextDelta: string) => void;
+  onToolInputEnd?: (toolCallId: string, toolName: string, args: unknown) => void;
   onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
   onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void;
   onError?: (error: string) => void;
@@ -41,7 +44,7 @@ export async function processStream(
   stream: AsyncIterable<StreamChunk>,
   callbacks: StreamCallbacks = {}
 ): Promise<StreamResult> {
-  const { onTextStart, onTextDelta, onTextEnd, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolResult, onToolError, onError, onFinish, onComplete } = callbacks;
+  const { onTextStart, onTextDelta, onTextEnd, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolInputStart, onToolInputDelta, onToolInputEnd, onToolResult, onToolError, onError, onFinish, onComplete } = callbacks;
 
   let fullResponse = '';
   const messageParts: MessagePart[] = [];
@@ -138,7 +141,8 @@ export async function processStream(
       }
 
       case 'tool-input-start': {
-        // Tool input streaming started - nothing to do, just wait for deltas
+        // Tool input streaming started - notify callback
+        onToolInputStart?.(chunk.toolCallId, chunk.toolName);
         break;
       }
 
@@ -154,11 +158,22 @@ export async function processStream(
           const currentArgsText = typeof toolPart.args === 'string' ? toolPart.args : '';
           toolPart.args = currentArgsText + chunk.argsTextDelta;
         }
+
+        // Notify callback for real-time UI update
+        onToolInputDelta?.(chunk.toolCallId, chunk.toolName, chunk.argsTextDelta);
         break;
       }
 
       case 'tool-input-end': {
         // Tool input streaming complete - args are ready
+        // Find tool part to get final args
+        const toolPart = messageParts.find(
+          (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
+        );
+
+        if (toolPart && toolPart.type === 'tool') {
+          onToolInputEnd?.(chunk.toolCallId, chunk.toolName, toolPart.args);
+        }
         break;
       }
 

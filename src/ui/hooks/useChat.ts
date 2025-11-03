@@ -144,6 +144,10 @@ export function useChat() {
     onReasoningStart?: () => void,
     onReasoningDelta?: (text: string) => void,
     onReasoningEnd?: (duration: number) => void,
+    onTextEnd?: () => void,
+    onToolInputStart?: (toolCallId: string, toolName: string) => void,
+    onToolInputDelta?: (toolCallId: string, toolName: string, argsTextDelta: string) => void,
+    onToolInputEnd?: (toolCallId: string, toolName: string, args: unknown) => void,
     onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void,
     onError?: (error: string) => void,
     abortSignal?: AbortSignal
@@ -409,7 +413,7 @@ export function useChat() {
         },
         onTextEnd: () => {
           addDebugLog(`[useChat] text-end`);
-          // Text generation finished
+          onTextEnd?.();
         },
         onReasoningStart: () => {
           addDebugLog(`[useChat] reasoning-start`);
@@ -426,6 +430,18 @@ export function useChat() {
         onToolCall: (toolCallId, toolName, args) => {
           addDebugLog(`[useChat] tool-call: ${toolName} (${toolCallId})`);
           onToolCall?.(toolCallId, toolName, args);
+        },
+        onToolInputStart: (toolCallId, toolName) => {
+          addDebugLog(`[useChat] tool-input-start: ${toolName} (${toolCallId})`);
+          onToolInputStart?.(toolCallId, toolName);
+        },
+        onToolInputDelta: (toolCallId, toolName, argsTextDelta) => {
+          addDebugLog(`[useChat] tool-input-delta: ${toolName} (${toolCallId}) +${argsTextDelta.length} chars`);
+          onToolInputDelta?.(toolCallId, toolName, argsTextDelta);
+        },
+        onToolInputEnd: (toolCallId, toolName, args) => {
+          addDebugLog(`[useChat] tool-input-end: ${toolName} (${toolCallId})`);
+          onToolInputEnd?.(toolCallId, toolName, args);
         },
         onToolResult: (toolCallId, toolName, result, duration) => {
           addDebugLog(`[useChat] tool-result: ${toolName} (${toolCallId}, ${duration}ms)`);
