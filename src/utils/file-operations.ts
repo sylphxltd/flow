@@ -6,6 +6,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathSecurity } from './security.js';
+import { formatFileSize as formatFileSizeCore } from '../core/formatting/bytes.js';
 
 export interface FileReadOptions {
   encoding?: BufferEncoding;
@@ -280,16 +281,7 @@ export async function moveFileSafe(
  * Get file size in human readable format
  */
 export function formatFileSize(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let size = bytes;
-  let unitIndex = 0;
-
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
+  return formatFileSizeCore(bytes);
 }
 
 /**

@@ -4,6 +4,7 @@
  */
 
 import type { ProjectInfo } from './project-detection.js';
+import { formatBytes as formatBytesCore } from '../../../core/formatting/bytes.js';
 
 // ===== Types =====
 
@@ -32,20 +33,11 @@ export interface MessageInfo {
 // ===== Memory Formatting =====
 
 /**
- * Format bytes to human-readable string
- * Pure - number formatting
+ * Format bytes to human-readable string for system info
+ * Pure - delegates to shared formatting (2 decimals, long units)
  */
 export function formatBytes(bytes: number): string {
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-
-  if (bytes === 0) {
-    return '0 Bytes';
-  }
-
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const value = bytes / Math.pow(1024, i);
-
-  return `${Math.round(value * 100) / 100} ${sizes[i]}`;
+  return formatBytesCore(bytes, { decimals: 2, shortUnits: false });
 }
 
 // ===== CPU Usage Calculation =====
