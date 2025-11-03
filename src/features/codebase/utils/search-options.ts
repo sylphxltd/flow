@@ -7,6 +7,7 @@ import type { Result } from '../../../core/functional/result.js';
 import { success, failure } from '../../../core/functional/result.js';
 import type { AppError } from '../../../core/functional/error-types.js';
 import { validationError } from '../../../core/functional/error-types.js';
+import { normalizeQuery as normalizeQueryCore } from '../../../core/validation/query.js';
 
 // ===== Types =====
 
@@ -134,11 +135,11 @@ export function buildSearchOptions(raw: RawSearchOptions): Result<SearchOptions,
 // ===== Query Processing =====
 
 /**
- * Normalize search query
- * Pure - string transformation
+ * Normalize search query for codebase searches
+ * Pure - delegates to shared normalization
  */
 export function normalizeQuery(query: string): string {
-  return query.trim();
+  return normalizeQueryCore(query);
 }
 
 /**
