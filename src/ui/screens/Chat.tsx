@@ -598,15 +598,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               // Save if not already saved
               if (!alreadySaved) {
-                // Determine note based on interruption type
+                // Only add note if actually interrupted
+                // Normal completion: useChat already saved, no note needed
                 let note = '';
                 if (wasManuallyAbortedRef.current) {
                   note = '\n\n[Response cancelled by user]';
                 } else if (lastErrorRef.current) {
                   note = `\n\n[Error: ${lastErrorRef.current}]`;
-                } else {
-                  note = '\n\n[Response interrupted]';
                 }
+                // No "else" - if neither abort nor error, don't add any note
                 addMessage(currentSessionId, 'assistant', content + note);
               }
             }
