@@ -96,21 +96,33 @@ function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): strin
  * @param part - The streaming part to render
  * @param isFirst - Whether this is the first part (shows "▌ SYLPHX" header)
  * @param isLastInStream - Whether this is the last text part (shows cursor)
+ * @param debugRegion - Debug flag to show which region this part is in (static/dynamic)
  */
 function StreamingPartWrapper({
   part,
   isFirst,
   isLastInStream = false,
+  debugRegion,
 }: {
   part: StreamPart;
   isFirst: boolean;
   isLastInStream?: boolean;
+  debugRegion?: 'static' | 'dynamic';
 }) {
   return (
-    <Box paddingX={1} paddingTop={isFirst ? 1 : 0} flexDirection="column">
+    <Box
+      paddingX={1}
+      paddingTop={isFirst ? 1 : 0}
+      flexDirection="column"
+      borderStyle={debugRegion ? 'round' : undefined}
+      borderColor={debugRegion === 'static' ? 'green' : debugRegion === 'dynamic' ? 'blue' : undefined}
+    >
       {isFirst && (
         <Box>
           <Text color="#00FF88">▌ SYLPHX</Text>
+          {debugRegion && (
+            <Text dimColor> [{debugRegion.toUpperCase()}]</Text>
+          )}
         </Box>
       )}
       <MessagePart
@@ -1306,6 +1318,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           key={getStreamingPartKey(part, streamParts)}
                           part={part}
                           isFirst={idx === 0}
+                          debugRegion="static"
                         />
                       )}
                     </Static>
@@ -1335,6 +1348,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                             part={part}
                             isFirst={isFirstDynamic}
                             isLastInStream={isLastPart && part.type === 'text'}
+                            debugRegion="dynamic"
                           />
                         );
                       })}

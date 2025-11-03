@@ -23,11 +23,13 @@ import type { ModelMessage } from 'ai';
 import { sendNotification } from '../../utils/notifications.js';
 import { generateSessionTitle, generateSessionTitleWithStreaming } from '../../utils/session-title.js';
 
-// Simple LRU cache for file attachments with mtime validation
+// Optimized LRU cache for file attachments with mtime validation
 // Prevents re-reading same files from disk multiple times
 // Validates cache entries against file modification time to prevent stale data
+// Uses proper LRU with O(1) eviction instead of O(n log n) sorting
 class FileContentCache {
-  private cache = new Map<string, { content: string; timestamp: number; size: number; mtime: number }>();
+  private cache = new Map<string, { content: string; size: number; mtime: number }>();
+  private accessOrder = new Set<string>(); // Track LRU order
   private maxSize = 50 * 1024 * 1024; // 50MB total cache size
   private currentSize = 0;
 
@@ -46,16 +48,19 @@ class FileContentCache {
       if (currentMtime !== entry.mtime) {
         // File was modified, invalidate cache entry
         this.cache.delete(path);
+        this.accessOrder.delete(path);
         this.currentSize -= entry.size;
         return null;
       }
 
-      // Cache valid, update timestamp for LRU
-      entry.timestamp = Date.now();
+      // Cache valid, update access order for LRU (O(1) operation)
+      this.accessOrder.delete(path); // Remove from current position
+      this.accessOrder.add(path); // Add to end (most recently used)
       return entry.content;
     } catch {
       // File doesn't exist or can't be read, invalidate cache
       this.cache.delete(path);
+      this.accessOrder.delete(path);
       this.currentSize -= entry.size;
       return null;
     }
@@ -80,28 +85,31 @@ class FileContentCache {
       return;
     }
 
-    // Evict oldest entries if cache is full
+    // Evict oldest entries if cache is full (O(1) operation)
     while (this.currentSize + size > this.maxSize && this.cache.size > 0) {
-      const oldestKey = Array.from(this.cache.entries())
-        .sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0];
-
+      // Get first item from accessOrder (least recently used)
+      const oldestKey = this.accessOrder.values().next().value;
+      
       if (oldestKey) {
         const removed = this.cache.get(oldestKey);
         if (removed) {
           this.currentSize -= removed.size;
         }
         this.cache.delete(oldestKey);
+        this.accessOrder.delete(oldestKey);
       } else {
         break;
       }
     }
 
-    this.cache.set(path, { content, timestamp: Date.now(), size, mtime });
+    this.cache.set(path, { content, size, mtime });
+    this.accessOrder.add(path); // Add to end (most recently used)
     this.currentSize += size;
   }
 
   clear(): void {
     this.cache.clear();
+    this.accessOrder.clear();
     this.currentSize = 0;
   }
 }
@@ -304,6 +312,7 @@ export function useChat() {
             // 3. Add file attachments as file parts (use cache with mtime validation)
             if (msg.attachments && msg.attachments.length > 0) {
               try {
+                const attachmentStartTime = Date.now();
                 const { readFile } = await import('node:fs/promises');
                 const fileContents = await Promise.all(
                   msg.attachments.map(async (att) => {
@@ -328,6 +337,8 @@ export function useChat() {
                     }
                   })
                 );
+                const attachmentDuration = Date.now() - attachmentStartTime;
+                addDebugLog(`[useChat] attachments processed: ${msg.attachments.length} files, ${attachmentDuration}ms`);
                 contentParts.push(...fileContents);
               } catch (error) {
                 console.error('Failed to read attachments:', error);
