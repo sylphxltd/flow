@@ -32,6 +32,7 @@ export interface KeyboardNavigationProps {
   inputResolver: React.MutableRefObject<((value: string | Record<string, string | string[]>) => void) | null>;
   commandSessionRef: React.MutableRefObject<string | null>;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
+  wasManuallyAbortedRef: React.MutableRefObject<boolean>;
   cachedOptions: Map<string, Array<{ id: string; name: string }>>;
 
   // State setters
@@ -82,6 +83,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
     inputResolver,
     commandSessionRef,
     abortControllerRef,
+    wasManuallyAbortedRef,
     cachedOptions,
     setInput,
     setCursor,
@@ -111,6 +113,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
       if (key.escape && isStreaming) {
         if (abortControllerRef.current) {
           addLog('[abort] Cancelling AI response...');
+          wasManuallyAbortedRef.current = true; // Mark as manually aborted
           abortControllerRef.current.abort();
           abortControllerRef.current = null;
         }

@@ -66,6 +66,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     streamPartsRef.current = streamParts;
   }, [streamParts]);
 
+  // Flag to track if user manually aborted (ESC pressed)
+  const wasManuallyAbortedRef = useRef(false);
+
   // Optimized streaming: accumulate chunks in ref, update state in batches
   const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
     chunks: [],
@@ -419,6 +422,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     inputResolver,
     commandSessionRef,
     abortControllerRef,
+    wasManuallyAbortedRef,
     cachedOptions,
     setInput,
     setCursor,
@@ -534,14 +538,43 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             )
           );
         },
-        // onComplete - streaming finished
+        // onComplete - streaming finished (or cancelled)
         async () => {
+          // Check if we need to save partial content (abort/cancel case)
+          // This happens when onComplete is called but stream didn't finish normally
+          const currentStreamParts = streamPartsRef.current;
+          const hasPartialContent = currentStreamParts.length > 0;
+
+          if (hasPartialContent && currentSessionId && wasManuallyAbortedRef.current) {
+            // Get buffered chunks that haven't been flushed yet
+            const bufferedText = streamBufferRef.current.chunks.join('');
+
+            // Build partial response from streamParts + buffered text
+            let partialContent = '';
+            for (const part of currentStreamParts) {
+              if (part.type === 'text') {
+                partialContent += part.content;
+              } else if (part.type === 'tool' && part.result) {
+                partialContent += `\n[Tool: ${part.name}]\n`;
+              }
+            }
+            partialContent += bufferedText;
+
+            // Save partial response
+            if (partialContent.trim()) {
+              addMessage(currentSessionId, 'assistant', `${partialContent}\n\n[Response cancelled by user]`);
+            }
+          }
+
           // Flush any remaining buffered chunks
           if (streamBufferRef.current.timeout) {
             clearTimeout(streamBufferRef.current.timeout);
             streamBufferRef.current.timeout = null;
           }
-          flushStreamBuffer();
+          streamBufferRef.current.chunks = [];
+
+          // Reset abort flag
+          wasManuallyAbortedRef.current = false;
 
           setIsStreaming(false);
           setStreamParts([]); // Clear streaming parts - they're now in message history
@@ -657,17 +690,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       addLog(`[sendUserMessageToAI] Error: ${error instanceof Error ? error.message : String(error)}`);
 
       // Save partial content before clearing (important for abort/cancel)
-      const currentStreamParts = streamPartsRef.current;
-      if (currentStreamParts.length > 0 && currentSessionId) {
-        // Flush any remaining buffered chunks
+      if (currentSessionId) {
+        // Get buffered chunks that haven't been flushed yet
+        const bufferedText = streamBufferRef.current.chunks.join('');
         if (streamBufferRef.current.timeout) {
           clearTimeout(streamBufferRef.current.timeout);
           streamBufferRef.current.timeout = null;
         }
-        flushStreamBuffer();
+        streamBufferRef.current.chunks = [];
 
-        // Build partial response from streamParts
+        // Build partial response from streamParts + buffered text
         let partialContent = '';
+        const currentStreamParts = streamPartsRef.current;
+
         for (const part of currentStreamParts) {
           if (part.type === 'text') {
             partialContent += part.content;
@@ -675,6 +710,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             partialContent += `\n[Tool: ${part.name}]\n`;
           }
         }
+
+        // Add any buffered text that wasn't flushed yet
+        partialContent += bufferedText;
 
         // Save partial response if we have content
         if (partialContent.trim()) {

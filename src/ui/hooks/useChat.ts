@@ -459,14 +459,8 @@ export function useChat() {
       if (error instanceof Error && error.name === 'AbortError') {
         addDebugLog('[useChat] Stream aborted by user');
 
-        // Get fresh session ID
-        const sessionId = currentSessionId || useAppStore.getState().currentSessionId;
-        if (sessionId) {
-          // Add cancelled message
-          addMessage(sessionId, 'assistant', [
-            { type: 'text', content: '[CANCELLED] Response cancelled by user' }
-          ]);
-        }
+        // Don't add message here - let Chat.tsx handle partial content preservation
+        // Chat.tsx has access to streamParts and can save partial response
 
         // Trigger completion to cleanup UI state
         onComplete?.();
