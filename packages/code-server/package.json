@@ -17,9 +17,9 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "bun src/web/server.ts",
-    "start": "bun dist/index.js",
+    "build": "bun build src/server/web/server.ts --outdir dist --target node --format esm --sourcemap",
+    "dev": "bun src/server/web/server.ts",
+    "start": "bun dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",

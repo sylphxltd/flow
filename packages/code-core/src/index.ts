@@ -14,8 +14,8 @@
 // ============================================================================
 // AI & Streaming
 // ============================================================================
-export { createAIStream, processStream, getSystemStatus, buildSystemStatusFromMetadata, injectSystemStatusToOutput } from './ai/ai-sdk.js'
-export { default as streamHandler } from './ai/stream-handler.js'
+export { createAIStream, getSystemStatus, buildSystemStatusFromMetadata, injectSystemStatusToOutput } from './ai/ai-sdk.js'
+export { default as streamHandler, processStream, type StreamCallbacks } from './ai/stream-handler.js'
 
 // ============================================================================
 // Providers
@@ -32,12 +32,12 @@ export { ZaiProvider } from './ai/providers/zai-provider.js'
 // Database & Repositories
 // ============================================================================
 export { SessionRepository } from './database/session-repository.js'
-export { createDatabase, getDatabase } from './database/database.js'
+export { createDatabase, getDatabase, getSessionRepository } from './database/database.js'
 
 // ============================================================================
 // Configuration
 // ============================================================================
-export { loadAIConfig, saveAIConfig, getDefaultProviderModel } from './config/ai-config.js'
+export { loadAIConfig, saveAIConfig, getDefaultProviderModel, getAIConfigPaths } from './config/ai-config.js'
 export type { AIConfig, ProviderConfig } from './config/ai-config.js'
 
 // ============================================================================
