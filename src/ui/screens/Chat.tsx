@@ -1219,6 +1219,22 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           <Text dimColor>AI Development Assistant</Text>
         </Box>
 
+        {/* Chat Title - shows current session title with streaming support */}
+        {currentSession && (
+          <Box paddingX={1} paddingBottom={1} flexShrink={0}>
+            <Text color="#00D9FF">▌ CHAT</Text>
+            <Text color="#00D9FF"> · </Text>
+            {isTitleStreaming ? (
+              <>
+                <Text color="white">{streamingTitle}</Text>
+                <Text color="#FFD700">▊</Text>
+              </>
+            ) : (
+              <Text color="white">{currentSession.title || 'New Chat'}</Text>
+            )}
+          </Box>
+        )}
+
         {/* Messages - All messages rendered dynamically */}
         {!currentSession ? (
           <Box paddingY={1} flexDirection="column">
