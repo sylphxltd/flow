@@ -6,26 +6,28 @@
 
 import { useEffect, useRef } from 'react';
 import Message from './Message';
+import MarkdownContent from './MarkdownContent';
+import type { MessagePart } from '../../../types/session.types';
 
 interface MessageListProps {
   messages: any[];
   optimisticUserMessage?: string | null;
   isAssistantTyping?: boolean;
-  streamingAssistantMessage?: string;
+  streamingParts?: MessagePart[];
 }
 
 export default function MessageList({
   messages,
   optimisticUserMessage,
   isAssistantTyping,
-  streamingAssistantMessage,
+  streamingParts = [],
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new messages or streaming updates
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, optimisticUserMessage, isAssistantTyping, streamingAssistantMessage]);
+  }, [messages, optimisticUserMessage, isAssistantTyping, streamingParts]);
 
   const hasContent =
     messages.length > 0 || optimisticUserMessage || isAssistantTyping;
@@ -64,9 +66,50 @@ export default function MessageList({
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 Assistant is typing...
               </div>
-              {streamingAssistantMessage && (
-                <div className="whitespace-pre-wrap">{streamingAssistantMessage}</div>
-              )}
+
+              {/* Render all streaming parts in order */}
+              {streamingParts.map((part, index) => (
+                <div key={index} className="mb-2 last:mb-0">
+                  {part.type === 'reasoning' && (
+                    <div className="pb-2 border-b border-gray-700 mb-2">
+                      <div className="text-xs text-gray-500 mb-1 flex items-center gap-2">
+                        🤔 Thinking...
+                      </div>
+                      <div className="whitespace-pre-wrap text-gray-400 text-sm italic">
+                        {part.content}
+                      </div>
+                    </div>
+                  )}
+                  {part.type === 'text' && (
+                    <div>
+                      <MarkdownContent content={part.content} />
+                    </div>
+                  )}
+                  {part.type === 'tool' && (
+                    <div className="p-2 bg-gray-700/50 rounded text-sm">
+                      <div className="text-gray-400 mb-1">🔧 Tool: {part.name}</div>
+                      {part.status === 'active' && (
+                        <div className="text-gray-500">Running...</div>
+                      )}
+                      {part.status === 'completed' && part.result && (
+                        <div className="text-gray-300 text-xs mt-1">
+                          {typeof part.result === 'string'
+                            ? part.result
+                            : JSON.stringify(part.result, null, 2)}
+                        </div>
+                      )}
+                      {part.status === 'error' && part.error && (
+                        <div className="text-red-400 text-xs mt-1">{part.error}</div>
+                      )}
+                    </div>
+                  )}
+                  {part.type === 'error' && (
+                    <div className="p-2 bg-red-900/30 border border-red-700/50 rounded text-sm text-red-300">
+                      ❌ Error: {part.error}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}

@@ -6,14 +6,19 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { trpc } from '../trpc';
+import type { MessagePart } from '../../../types/session.types';
 
 interface InputAreaProps {
-  sessionId: string;
+  sessionId: string | null;  // null = new session will be created
   toast: any;
   onMessageSent?: (message: string) => void;
   onStreamingStart?: () => void;
-  onStreamingUpdate?: (text: string) => void;
+  onStreamingPartsUpdate?: (parts: MessagePart[]) => void;
   onStreamingComplete?: () => void;
+  onSessionCreated?: (sessionId: string, provider: string, model: string) => void;
+  onTitleStreamingStart?: () => void;
+  onTitleStreamingDelta?: (text: string) => void;
+  onTitleStreamingComplete?: (title: string) => void;
 }
 
 interface FileAttachment {
@@ -23,7 +28,9 @@ interface FileAttachment {
 }
 
 interface StreamRequest {
-  sessionId: string;
+  sessionId: string | null;
+  provider?: string;
+  model?: string;
   userMessage: string;
   attachments?: FileAttachment[];
   key: number; // Used to trigger new subscription
@@ -34,22 +41,31 @@ export default function InputArea({
   toast,
   onMessageSent,
   onStreamingStart,
-  onStreamingUpdate,
+  onStreamingPartsUpdate,
   onStreamingComplete,
+  onSessionCreated,
+  onTitleStreamingStart,
+  onTitleStreamingDelta,
+  onTitleStreamingComplete,
 }: InputAreaProps) {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [streamRequest, setStreamRequest] = useState<StreamRequest | null>(null);
-  const [streamingText, setStreamingText] = useState('');
+  const [streamingParts, setStreamingParts] = useState<MessagePart[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
+
+  // Load config to get provider/model for new sessions
+  const { data: configData } = trpc.config.load.useQuery({});
 
   // Subscribe to streaming - only active when streamRequest is set
   trpc.message.streamResponse.useSubscription(
     streamRequest
       ? {
           sessionId: streamRequest.sessionId,
+          provider: streamRequest.provider,
+          model: streamRequest.model,
           userMessage: streamRequest.userMessage,
           attachments: streamRequest.attachments,
         }
@@ -63,32 +79,113 @@ export default function InputArea({
         console.log('[Subscription] Event:', event.type, event);
 
         switch (event.type) {
+          case 'session-created':
+            console.log('Session created:', event.sessionId);
+            onSessionCreated?.(event.sessionId, event.provider, event.model);
+            break;
+
           case 'assistant-message-created':
             console.log('Message created:', event.messageId);
             onStreamingStart?.();
             break;
 
-          case 'text-start':
+          case 'reasoning-start':
             onStreamingStart?.();
+            setStreamingParts((prev) => {
+              const newParts: MessagePart[] = [...prev, { type: 'reasoning', content: '', status: 'active' }];
+              onStreamingPartsUpdate?.(newParts);
+              return newParts;
+            });
+            break;
+
+          case 'reasoning-delta':
+            setStreamingParts((prev) => {
+              const newParts = [...prev];
+              const lastReasoningIndex = newParts.map((p, i) => p.type === 'reasoning' && p.status === 'active' ? i : -1).filter(i => i !== -1).pop();
+              if (lastReasoningIndex !== undefined && newParts[lastReasoningIndex].type === 'reasoning') {
+                newParts[lastReasoningIndex] = {
+                  ...newParts[lastReasoningIndex],
+                  content: newParts[lastReasoningIndex].content + event.text,
+                };
+              }
+              onStreamingPartsUpdate?.(newParts);
+              return newParts;
+            });
+            break;
+
+          case 'reasoning-end':
+            setStreamingParts((prev) => {
+              const newParts = [...prev];
+              const lastReasoningIndex = newParts.map((p, i) => p.type === 'reasoning' && p.status === 'active' ? i : -1).filter(i => i !== -1).pop();
+              if (lastReasoningIndex !== undefined && newParts[lastReasoningIndex].type === 'reasoning') {
+                newParts[lastReasoningIndex] = {
+                  ...newParts[lastReasoningIndex],
+                  status: 'completed',
+                };
+              }
+              onStreamingPartsUpdate?.(newParts);
+              return newParts;
+            });
+            break;
+
+          case 'text-start':
+            setStreamingParts((prev) => {
+              const newParts: MessagePart[] = [...prev, { type: 'text', content: '', status: 'active' }];
+              onStreamingPartsUpdate?.(newParts);
+              return newParts;
+            });
             break;
 
           case 'text-delta':
-            setStreamingText((prev) => {
-              const newText = prev + event.text;
-              onStreamingUpdate?.(newText);
-              return newText;
+            setStreamingParts((prev) => {
+              const newParts = [...prev];
+              const lastTextIndex = newParts.map((p, i) => p.type === 'text' && p.status === 'active' ? i : -1).filter(i => i !== -1).pop();
+              if (lastTextIndex !== undefined && newParts[lastTextIndex].type === 'text') {
+                newParts[lastTextIndex] = {
+                  ...newParts[lastTextIndex],
+                  content: newParts[lastTextIndex].content + event.text,
+                };
+              }
+              onStreamingPartsUpdate?.(newParts);
+              return newParts;
             });
             break;
 
           case 'text-end':
+            setStreamingParts((prev) => {
+              const newParts = [...prev];
+              const lastTextIndex = newParts.map((p, i) => p.type === 'text' && p.status === 'active' ? i : -1).filter(i => i !== -1).pop();
+              if (lastTextIndex !== undefined && newParts[lastTextIndex].type === 'text') {
+                newParts[lastTextIndex] = {
+                  ...newParts[lastTextIndex],
+                  status: 'completed',
+                };
+              }
+              onStreamingPartsUpdate?.(newParts);
+              return newParts;
+            });
             // Refetch session to get updated messages
             utils.session.getById.invalidate({ sessionId });
+            break;
+
+          case 'session-title-start':
+            onTitleStreamingStart?.();
+            break;
+
+          case 'session-title-delta':
+            onTitleStreamingDelta?.(event.text);
+            break;
+
+          case 'session-title-complete':
+            onTitleStreamingComplete?.(event.title);
+            // Refetch sessions list to show new title
+            utils.session.getRecent.invalidate();
             break;
 
           case 'complete':
             console.log('Streaming complete!', event.usage);
             setStreamRequest(null);
-            setStreamingText('');
+            setStreamingParts([]);
             onStreamingComplete?.();
             // Refetch session
             utils.session.getById.invalidate({ sessionId });
@@ -98,7 +195,7 @@ export default function InputArea({
             console.error('Streaming error:', event.error);
             toast.error(event.error);
             setStreamRequest(null);
-            setStreamingText('');
+            setStreamingParts([]);
             onStreamingComplete?.();
             break;
         }
@@ -107,7 +204,7 @@ export default function InputArea({
         console.error('Subscription error:', err);
         toast.error(`Subscription error: ${err.message || String(err)}`);
         setStreamRequest(null);
-        setStreamingText('');
+        setStreamingParts([]);
         onStreamingComplete?.();
       },
     }
@@ -127,14 +224,36 @@ export default function InputArea({
     setInput('');
     const messageAttachments = attachments;
     setAttachments([]);
-    setStreamingText('');
+    setStreamingParts([]);
 
     // Notify parent of message sent (for optimistic UI)
     onMessageSent?.(trimmedInput);
 
+    // Get provider and model if creating new session
+    let provider: string | undefined;
+    let model: string | undefined;
+
+    if (!sessionId && configData?.config) {
+      const config = configData.config;
+      provider = config.defaultProvider || 'anthropic';
+      const providerConfig = config.providers?.[provider];
+
+      model =
+        providerConfig?.['default-model'] ||
+        (provider === 'anthropic'
+          ? 'claude-3-5-sonnet-20241022'
+          : provider === 'openai'
+          ? 'gpt-4o'
+          : provider === 'google'
+          ? 'gemini-2.0-flash-exp'
+          : 'claude-3-5-sonnet-20241022');
+    }
+
     // Start streaming by setting stream request
-    const request = {
+    const request: StreamRequest = {
       sessionId,
+      provider,
+      model,
       userMessage: trimmedInput,
       attachments: messageAttachments.length > 0 ? messageAttachments : undefined,
       key: Date.now(), // Unique key to force new subscription

@@ -57,6 +57,12 @@ const TodoSnapshotSchema = z.object({
 
 // Streaming event types (unified interface for TUI and Web)
 const StreamEventSchema = z.discriminatedUnion('type', [
+  // Session events
+  z.object({ type: z.literal('session-created'), sessionId: z.string(), provider: z.string(), model: z.string() }),
+  z.object({ type: z.literal('session-title-start') }),
+  z.object({ type: z.literal('session-title-delta'), text: z.string() }),
+  z.object({ type: z.literal('session-title-complete'), title: z.string() }),
+
   // Message creation
   z.object({ type: z.literal('assistant-message-created'), messageId: z.string() }),
 
@@ -241,7 +247,9 @@ export const messageRouter = router({
   streamResponse: publicProcedure
     .input(
       z.object({
-        sessionId: z.string(),
+        sessionId: z.string().nullish(), // Optional - will create if null
+        provider: z.string().optional(),  // Required if sessionId is null
+        model: z.string().optional(),     // Required if sessionId is null
         userMessage: z.string(),
         attachments: z.array(FileAttachmentSchema).optional(),
       })
@@ -254,7 +262,9 @@ export const messageRouter = router({
       return streamAIResponse({
         sessionRepository: ctx.sessionRepository,
         aiConfig: ctx.aiConfig,
-        sessionId: input.sessionId,
+        sessionId: input.sessionId || null,
+        provider: input.provider,
+        model: input.model,
         userMessage: input.userMessage,
         attachments: input.attachments,
       });

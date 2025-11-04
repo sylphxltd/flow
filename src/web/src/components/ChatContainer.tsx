@@ -3,10 +3,11 @@
  * Full-screen, borderless design
  */
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { trpc } from '../trpc';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
+import type { MessagePart } from '../../../types/session.types';
 
 interface ChatContainerProps {
   sessionId: string | null;
@@ -14,28 +15,87 @@ interface ChatContainerProps {
 }
 
 export default function ChatContainer({ sessionId, toast }: ChatContainerProps) {
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionId);
   const [optimisticUserMessage, setOptimisticUserMessage] = useState<string | null>(null);
   const [isAssistantTyping, setIsAssistantTyping] = useState<boolean>(false);
-  const [streamingAssistantMessage, setStreamingAssistantMessage] = useState<string>('');
+  const [streamingParts, setStreamingParts] = useState<MessagePart[]>([]);
+  const [streamingTitle, setStreamingTitle] = useState<string>('');
+  const [isTitleStreaming, setIsTitleStreaming] = useState<boolean>(false);
 
-  // Load session data
+  // Sync currentSessionId with props
+  useEffect(() => {
+    setCurrentSessionId(sessionId);
+  }, [sessionId]);
+
+  // Load session data (only if sessionId exists)
   const { data: session, isLoading } = trpc.session.getById.useQuery(
-    { sessionId: sessionId! },
-    { enabled: !!sessionId }
+    { sessionId: currentSessionId! },
+    { enabled: !!currentSessionId }
   );
 
-  if (!sessionId) {
+  const utils = trpc.useUtils();
+
+  // When sessionId is null, show "New Chat" interface
+  if (!currentSessionId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-950">
-        <div className="text-center">
-          <div className="text-6xl mb-4">💬</div>
-          <h2 className="text-2xl font-bold text-gray-300 mb-2">
-            Welcome to Sylphx Flow
-          </h2>
-          <p className="text-gray-500">
-            Select a chat or create a new one to get started
-          </p>
+      <div className="flex-1 flex flex-col bg-gray-950">
+        {/* Header */}
+        <div className="h-16 flex items-center px-8 bg-gray-900/30 backdrop-blur-sm">
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-gray-100">
+              {isTitleStreaming ? streamingTitle || 'Generating title...' : 'New Chat'}
+            </h2>
+            <div className="text-sm text-gray-500">
+              Start a conversation
+            </div>
+          </div>
         </div>
+
+        {/* Empty state */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4">💬</div>
+            <h2 className="text-2xl font-bold text-gray-300 mb-2">
+              Start a New Conversation
+            </h2>
+            <p className="text-gray-500">
+              Type your message below to begin
+            </p>
+          </div>
+        </div>
+
+        {/* Input */}
+        <InputArea
+          sessionId={null}
+          toast={toast}
+          onMessageSent={() => {
+            setOptimisticUserMessage(null);
+            setIsAssistantTyping(false);
+            setStreamingParts([]);
+          }}
+          onStreamingStart={() => {
+            setIsAssistantTyping(true);
+            setStreamingParts([]);
+          }}
+          onStreamingPartsUpdate={(parts) => {
+            setIsAssistantTyping(true);
+            setStreamingParts(parts);
+          }}
+          onStreamingComplete={() => {
+            setOptimisticUserMessage(null);
+            setIsAssistantTyping(false);
+            setStreamingParts([]);
+            setIsTitleStreaming(false);
+            // Refetch sessions list
+            utils.session.getRecent.invalidate();
+          }}
+          onSessionCreated={(newSessionId, provider, model) => {
+            console.log('Session created:', newSessionId);
+            setCurrentSessionId(newSessionId);
+            setStreamingTitle('');
+            setIsTitleStreaming(true);
+          }}
+        />
       </div>
     );
   }
@@ -75,30 +135,45 @@ export default function ChatContainer({ sessionId, toast }: ChatContainerProps) 
         messages={session.messages}
         optimisticUserMessage={optimisticUserMessage}
         isAssistantTyping={isAssistantTyping}
-        streamingAssistantMessage={streamingAssistantMessage}
+        streamingParts={streamingParts}
       />
 
       {/* Input */}
       <InputArea
-        sessionId={sessionId}
+        sessionId={currentSessionId}
         toast={toast}
         onMessageSent={(message) => {
           setOptimisticUserMessage(message);
           setIsAssistantTyping(false);
-          setStreamingAssistantMessage('');
+          setStreamingParts([]);
         }}
         onStreamingStart={() => {
           setIsAssistantTyping(true);
-          setStreamingAssistantMessage('');
+          setStreamingParts([]);
         }}
-        onStreamingUpdate={(text) => {
+        onStreamingPartsUpdate={(parts) => {
           setIsAssistantTyping(true);
-          setStreamingAssistantMessage(text);
+          setStreamingParts(parts);
         }}
         onStreamingComplete={() => {
           setOptimisticUserMessage(null);
           setIsAssistantTyping(false);
-          setStreamingAssistantMessage('');
+          setStreamingParts([]);
+        }}
+        onSessionCreated={(newSessionId) => {
+          // This shouldn't happen for existing sessions, but handle it just in case
+          console.log('Session created unexpectedly:', newSessionId);
+        }}
+        onTitleStreamingStart={() => {
+          setIsTitleStreaming(true);
+          setStreamingTitle('');
+        }}
+        onTitleStreamingDelta={(text) => {
+          setStreamingTitle((prev) => prev + text);
+        }}
+        onTitleStreamingComplete={(title) => {
+          setStreamingTitle(title);
+          setIsTitleStreaming(false);
         }}
       />
     </div>

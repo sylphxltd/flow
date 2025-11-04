@@ -34,6 +34,11 @@ import type { ToolCallPart, ToolResultPart } from '@ai-sdk/provider';
 
 // Re-export StreamEvent type from message router
 export type StreamEvent =
+  | { type: 'session-created'; sessionId: string; provider: string; model: string }
+  | { type: 'session-title-start' }
+  | { type: 'session-title-delta'; text: string }
+  | { type: 'session-title-complete'; title: string }
+  | { type: 'assistant-message-created'; messageId: string }
   | { type: 'text-start' }
   | { type: 'text-delta'; text: string }
   | { type: 'text-end' }
@@ -50,7 +55,9 @@ export type StreamEvent =
 export interface StreamAIResponseOptions {
   sessionRepository: SessionRepository;
   aiConfig: AIConfig;
-  sessionId: string;
+  sessionId: string | null;  // null = create new session
+  provider?: string;  // Required if sessionId is null
+  model?: string;     // Required if sessionId is null
   userMessage: string;
   attachments?: FileAttachment[];
   abortSignal?: AbortSignal;
@@ -77,13 +84,50 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
         const {
           sessionRepository,
           aiConfig,
-          sessionId,
+          sessionId: inputSessionId,
+          provider: inputProvider,
+          model: inputModel,
           userMessage,
           attachments = [],
           abortSignal,
         } = opts;
 
-        // 1. Load session from database
+        // 1. Handle session creation if sessionId is null
+        let sessionId = inputSessionId;
+        let isNewSession = false;
+
+        if (!sessionId) {
+          // Create new session
+          if (!inputProvider || !inputModel) {
+            observer.error(new Error('Provider and model required when creating new session'));
+            return;
+          }
+
+          const providerConfig = aiConfig?.providers?.[inputProvider];
+          if (!providerConfig) {
+            observer.next({
+              type: 'error',
+              error: '[ERROR] Provider not configured\\n\\nPlease configure your provider using settings.',
+            });
+            observer.complete();
+            return;
+          }
+
+          // Create session in database
+          const newSession = await sessionRepository.createSession(inputProvider as any, inputModel);
+          sessionId = newSession.id;
+          isNewSession = true;
+
+          // Emit session-created event
+          observer.next({
+            type: 'session-created',
+            sessionId: sessionId,
+            provider: inputProvider,
+            model: inputModel,
+          });
+        }
+
+        // 2. Load session from database
         const session = await sessionRepository.getSessionById(sessionId);
         if (!session) {
           observer.error(new Error('Session not found'));
@@ -309,7 +353,48 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           await sessionRepository.updateMessageUsage(assistantMessageId, result.usage);
         }
 
-        // 11. Emit complete event
+        // 11. Generate title if this is a new session (first message)
+        if (isNewSession && !aborted && result.usage) {
+          try {
+            // Import title generation utility
+            const { generateSessionTitleWithStreaming } = await import('../../utils/session-title.js');
+            const { getProvider } = await import('../../providers/index.js');
+
+            // Get provider config
+            const provider = session.provider;
+            const modelName = session.model;
+            const providerConfig = aiConfig?.providers?.[provider];
+
+            if (providerConfig) {
+              const providerInstance = getProvider(provider);
+
+              // Only generate title if provider is configured
+              if (providerInstance.isConfigured(providerConfig)) {
+                observer.next({ type: 'session-title-start' });
+
+                const finalTitle = await generateSessionTitleWithStreaming(
+                  userMessage,
+                  provider,
+                  modelName,
+                  providerConfig,
+                  (chunk) => {
+                    observer.next({ type: 'session-title-delta', text: chunk });
+                  }
+                );
+
+                // Update session title in database
+                await sessionRepository.updateSession(sessionId, { title: finalTitle });
+
+                observer.next({ type: 'session-title-complete', title: finalTitle });
+              }
+            }
+          } catch (error) {
+            // Silently fail title generation - not critical
+            console.error('[Title Generation] Error:', error);
+          }
+        }
+
+        // 12. Emit complete event
         observer.next({
           type: 'complete',
           usage: result.usage,

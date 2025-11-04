@@ -263,6 +263,28 @@ function handleStreamEvent(
   const { currentSessionId } = context;
 
   switch (event.type) {
+    case 'session-created':
+      // New session was created - this is handled in the component, not here
+      // The component should update currentSessionId
+      context.addLog(`[Session] Created: ${event.sessionId}`);
+      break;
+
+    case 'session-title-start':
+      context.setIsTitleStreaming(true);
+      context.setStreamingTitle('');
+      break;
+
+    case 'session-title-delta':
+      context.setStreamingTitle((prev) => prev + event.text);
+      break;
+
+    case 'session-title-complete':
+      context.setIsTitleStreaming(false);
+      if (currentSessionId) {
+        context.updateSessionTitle(currentSessionId, event.title);
+      }
+      break;
+
     case 'assistant-message-created':
       // Backend created assistant message, store the ID
       context.streamingMessageIdRef.current = event.messageId;

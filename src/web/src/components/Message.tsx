@@ -3,10 +3,13 @@
  * Minimalist design with role-based styling
  */
 
+import type { MessagePart } from '../../../types/session.types';
+import MarkdownContent from './MarkdownContent';
+
 interface MessageProps {
   message: {
     role: 'user' | 'assistant';
-    content: any[];
+    content: MessagePart[];
     timestamp: number;
     status?: string;
   };
@@ -15,18 +18,6 @@ interface MessageProps {
 export default function Message({ message }: MessageProps) {
   const isUser = message.role === 'user';
   const isStreaming = message.status === 'active';
-
-  // Extract text content from message parts
-  const textContent = message.content
-    .filter((part: any) => part.type === 'text')
-    .map((part: any) => part.content)
-    .join('\n');
-
-  // Extract reasoning content
-  const reasoningContent = message.content
-    .filter((part: any) => part.type === 'reasoning')
-    .map((part: any) => part.content)
-    .join('\n');
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -45,20 +36,53 @@ export default function Message({ message }: MessageProps) {
           {isUser ? 'You' : 'Assistant'}
         </div>
 
-        {/* Reasoning (if any) */}
-        {reasoningContent && (
-          <div className="mb-3 p-3 bg-black/20 rounded-lg">
-            <div className="text-xs font-medium mb-1 opacity-70">Thinking...</div>
-            <div className="text-sm opacity-80 whitespace-pre-wrap">
-              {reasoningContent}
-            </div>
+        {/* Render all parts in order */}
+        {message.content.length === 0 && (
+          <div className="whitespace-pre-wrap leading-relaxed opacity-50">
+            {isStreaming ? 'Thinking...' : 'No content'}
           </div>
         )}
 
-        {/* Main content */}
-        <div className="whitespace-pre-wrap leading-relaxed">
-          {textContent || (isStreaming ? 'Thinking...' : 'No content')}
-        </div>
+        {message.content.map((part, index) => (
+          <div key={index} className="mb-2 last:mb-0">
+            {part.type === 'reasoning' && (
+              <div className="mb-3 p-3 bg-black/20 rounded-lg">
+                <div className="text-xs font-medium mb-1 opacity-70">🤔 Thinking...</div>
+                <div className="text-sm opacity-80 whitespace-pre-wrap italic">
+                  {part.content}
+                </div>
+              </div>
+            )}
+            {part.type === 'text' && (
+              <div className="leading-relaxed">
+                <MarkdownContent content={part.content} />
+              </div>
+            )}
+            {part.type === 'tool' && (
+              <div className="p-3 bg-black/20 rounded-lg text-sm mb-2">
+                <div className="font-medium mb-1 opacity-70">🔧 Tool: {part.name}</div>
+                {part.status === 'active' && (
+                  <div className="opacity-60">Running...</div>
+                )}
+                {part.status === 'completed' && part.result && (
+                  <div className="opacity-80 text-xs mt-1">
+                    {typeof part.result === 'string'
+                      ? part.result
+                      : JSON.stringify(part.result, null, 2)}
+                  </div>
+                )}
+                {part.status === 'error' && part.error && (
+                  <div className="text-red-300 text-xs mt-1">{part.error}</div>
+                )}
+              </div>
+            )}
+            {part.type === 'error' && (
+              <div className="p-3 bg-red-900/30 border border-red-700/50 rounded-lg text-sm text-red-300">
+                ❌ Error: {part.error}
+              </div>
+            )}
+          </div>
+        ))}
 
         {/* Timestamp */}
         <div className="text-xs opacity-50 mt-2">

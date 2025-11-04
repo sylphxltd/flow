@@ -24,18 +24,7 @@ export default function Sidebar({
   // Load config to get default provider/model
   const { data: configData } = trpc.config.load.useQuery({});
 
-  // Create new session mutation
-  const createSessionMutation = trpc.session.create.useMutation({
-    onSuccess: (data) => {
-      onSelectSession(data.id);
-      toast.success('New chat created!');
-    },
-    onError: (error) => {
-      toast.error(`Failed to create chat: ${error.message}`);
-    },
-  });
-
-  const handleNewChat = async () => {
+  const handleNewChat = () => {
     const config = configData?.config;
     const provider = config?.defaultProvider || 'anthropic';
     const providerConfig = config?.providers?.[provider];
@@ -49,24 +38,8 @@ export default function Sidebar({
       return;
     }
 
-    const model =
-      providerConfig?.['default-model'] ||
-      (provider === 'anthropic'
-        ? 'claude-3-5-sonnet-20241022'
-        : provider === 'openai'
-        ? 'gpt-4o'
-        : provider === 'google'
-        ? 'gemini-2.0-flash-exp'
-        : 'claude-3-5-sonnet-20241022');
-
-    try {
-      await createSessionMutation.mutateAsync({
-        provider: provider as any,
-        model,
-      });
-    } catch (error) {
-      // Error already handled by onError
-    }
+    // Set session to null to trigger new session creation on first message
+    onSelectSession(null as any);
   };
 
   return (
@@ -105,32 +78,22 @@ export default function Sidebar({
         {/* New Chat Button */}
         <button
           onClick={handleNewChat}
-          disabled={createSessionMutation.isPending}
-          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium flex items-center justify-center gap-2"
         >
-          {createSessionMutation.isPending ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Creating...
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Chat
-            </>
-          )}
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          New Chat
         </button>
       </div>
 
