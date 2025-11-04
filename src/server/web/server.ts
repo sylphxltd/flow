@@ -22,13 +22,20 @@ export async function startWebServer() {
   // Static files for Web UI
   try {
     const { existsSync } = await import('fs');
+    const { resolve } = await import('path');
+
     if (existsSync('./src/web/dist')) {
       app.use(express.static('./src/web/dist'));
 
-      // SPA fallback
-      app.get('*', (req, res) => {
-        if (req.path.startsWith('/trpc')) return;
-        res.sendFile('index.html', { root: './src/web/dist' });
+      // SPA fallback - serve index.html for all non-API routes
+      app.use((req, res, next) => {
+        // Skip if it's a tRPC request
+        if (req.path.startsWith('/trpc')) {
+          return next();
+        }
+
+        // Serve index.html for all other routes (SPA routing)
+        res.sendFile(resolve('./src/web/dist/index.html'));
       });
     } else {
       // Development mode - no static files yet
