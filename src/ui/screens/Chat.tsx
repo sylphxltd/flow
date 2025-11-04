@@ -777,11 +777,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         attachments,
         abortSignal: abortControllerRef.current.signal,
 
-        // onChunk - text streaming (batched for performance)
-        onChunk: async (chunk) => {
+        // onTextStart - text generation started, create text part
+        onTextStart: async () => {
           // Create assistant message on first streaming event
           await ensureAssistantMessage();
 
+          // Message streaming: New part (text) being added
+          updateActiveMessageContent((prev) => [
+            ...prev,
+            { type: 'text', content: '', status: 'active' } as StreamPart
+          ]);
+        },
+
+        // onChunk - text streaming (batched for performance)
+        onChunk: async (chunk) => {
           // Accumulate chunks in buffer
           streamBufferRef.current.chunks.push(chunk);
 
