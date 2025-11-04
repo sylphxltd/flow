@@ -1393,8 +1393,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   </MaybeStatic>
                 );
               } else {
-                // ASSISTANT MESSAGE: Parts freeze individually as they complete
+                // ASSISTANT MESSAGE: Split into completed and active parts
                 const streamParts = msg.content;
+
+                // Separate completed and active parts
+                const completedParts = streamParts.filter(part => part.status !== 'active');
+                const activeParts = streamParts.filter(part => part.status === 'active');
+
+                // Footer should be included in completed section if message is not active
+                const showFooter = msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage);
 
                 return (
                   <Box key={`assistant-${msg.timestamp}`} flexDirection="column">
@@ -1405,50 +1412,71 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       </Box>
                     </MaybeStatic>
 
-                    {/* Parts - each freezes when status !== 'active' */}
-                    {streamParts.length > 0 ? (
-                      streamParts.map((part, idx) => (
-                        <MaybeStatic key={getStreamingPartKey(part, idx)} isStatic={part.status !== 'active'}>
-                          <StreamingPartWrapper
-                            part={part}
-                            debugRegion={part.status !== 'active' ? 'static' : 'dynamic'}
-                          />
-                        </MaybeStatic>
-                      ))
-                    ) : msg.status === 'active' ? (
-                      /* No parts yet - show waiting indicator */
-                      <Box paddingX={1} marginLeft={2}>
-                        <Text dimColor>...</Text>
-                      </Box>
-                    ) : null}
-
-                    {/* Footer - freeze when message completes */}
-                    {(msg.status === 'abort' || msg.status === 'error' || msg.usage) && (
-                      <MaybeStatic isStatic={msg.status !== 'active'}>
+                    {/* Completed parts + footer in ONE Static */}
+                    {(completedParts.length > 0 || showFooter) && (
+                      <MaybeStatic isStatic={true}>
                         <Box flexDirection="column">
-                          {/* Status badge */}
-                          {msg.status === 'abort' && (
-                            <Box marginLeft={2} marginBottom={1}>
-                              <Text color="#FFD700">[Aborted]</Text>
-                            </Box>
-                          )}
-                          {msg.status === 'error' && (
-                            <Box marginLeft={2} marginBottom={1}>
-                              <Text color="#FF3366">[Error]</Text>
-                            </Box>
-                          )}
+                          {/* Completed parts */}
+                          {completedParts.map((part, idx) => {
+                            const globalIdx = streamParts.indexOf(part);
+                            return (
+                              <StreamingPartWrapper
+                                key={getStreamingPartKey(part, globalIdx)}
+                                part={part}
+                                debugRegion="static"
+                              />
+                            );
+                          })}
 
-                          {/* Usage */}
-                          {msg.usage && (
-                            <Box marginLeft={2}>
-                              <Text dimColor>
-                                {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                              </Text>
+                          {/* Footer - only if message completed */}
+                          {showFooter && (
+                            <Box flexDirection="column">
+                              {/* Status badge */}
+                              {msg.status === 'abort' && (
+                                <Box marginLeft={2} marginBottom={1}>
+                                  <Text color="#FFD700">[Aborted]</Text>
+                                </Box>
+                              )}
+                              {msg.status === 'error' && (
+                                <Box marginLeft={2} marginBottom={1}>
+                                  <Text color="#FF3366">[Error]</Text>
+                                </Box>
+                              )}
+
+                              {/* Usage */}
+                              {msg.usage && (
+                                <Box marginLeft={2}>
+                                  <Text dimColor>
+                                    {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+                                  </Text>
+                                </Box>
+                              )}
                             </Box>
                           )}
                         </Box>
                       </MaybeStatic>
                     )}
+
+                    {/* Active parts in Dynamic */}
+                    {activeParts.length > 0 ? (
+                      <>
+                        {activeParts.map((part) => {
+                          const globalIdx = streamParts.indexOf(part);
+                          return (
+                            <StreamingPartWrapper
+                              key={getStreamingPartKey(part, globalIdx)}
+                              part={part}
+                              debugRegion="dynamic"
+                            />
+                          );
+                        })}
+                      </>
+                    ) : streamParts.length === 0 && msg.status === 'active' ? (
+                      /* No parts yet - show waiting indicator */
+                      <Box paddingX={1} marginLeft={2}>
+                        <Text dimColor>...</Text>
+                      </Box>
+                    ) : null}
                   </Box>
                 );
               }
