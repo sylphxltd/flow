@@ -392,22 +392,36 @@ export function useChat() {
           }
 
           // Assistant messages: convert parts to AI SDK format
-          const textParts = msg.content
-            .filter((part) => part.type === 'text')
-            .map((part: any) => part.content)
-            .join('\n');
+          const contentParts: any[] = [];
+
+          // Convert all parts to AI SDK format
+          for (const part of msg.content) {
+            if (part.type === 'text') {
+              contentParts.push({
+                type: 'text',
+                text: part.content,
+              });
+            }
+            // Note: reasoning, tool, error parts are internal - not sent to LLM in conversation history
+            // Only text parts are included in assistant message context
+          }
 
           // Add status annotation if message was aborted or errored
-          let content = textParts;
           if (msg.status === 'abort') {
-            content = `${textParts}\n\n[This response was aborted by the user]`;
+            contentParts.push({
+              type: 'text',
+              text: '[This response was aborted by the user]',
+            });
           } else if (msg.status === 'error') {
-            content = `${textParts}\n\n[This response ended with an error]`;
+            contentParts.push({
+              type: 'text',
+              text: '[This response ended with an error]',
+            });
           }
 
           return {
             role: msg.role as 'assistant',
-            content,
+            content: contentParts,
           };
         })
       );
