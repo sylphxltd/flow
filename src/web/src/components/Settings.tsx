@@ -14,9 +14,9 @@ interface SettingsProps {
 type Provider = 'anthropic' | 'openai' | 'google' | 'openrouter' | 'zai';
 
 interface ProviderConfig {
-  apiKey?: string;
-  baseURL?: string;
-  defaultModel?: string;
+  'api-key'?: string;
+  'base-url'?: string;
+  'default-model'?: string;
 }
 
 export default function Settings({ onClose }: SettingsProps) {
@@ -168,8 +168,8 @@ export default function Settings({ onClose }: SettingsProps) {
                 </label>
                 <input
                   type="password"
-                  value={currentProviderConfig.apiKey || ''}
-                  onChange={(e) => updateProviderConfig('apiKey', e.target.value)}
+                  value={currentProviderConfig['api-key'] || ''}
+                  onChange={(e) => updateProviderConfig('api-key', e.target.value)}
                   placeholder="Enter your API key"
                   className="w-full px-4 py-3 bg-gray-800 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-600"
                 />
@@ -186,8 +186,8 @@ export default function Settings({ onClose }: SettingsProps) {
                   </label>
                   <input
                     type="text"
-                    value={currentProviderConfig.baseURL || ''}
-                    onChange={(e) => updateProviderConfig('baseURL', e.target.value)}
+                    value={currentProviderConfig['base-url'] || ''}
+                    onChange={(e) => updateProviderConfig('base-url', e.target.value)}
                     placeholder={
                       activeProvider === 'openrouter'
                         ? 'https://openrouter.ai/api/v1'
@@ -206,11 +206,11 @@ export default function Settings({ onClose }: SettingsProps) {
                 <input
                   type="text"
                   value={
-                    currentProviderConfig.defaultModel ||
+                    currentProviderConfig['default-model'] ||
                     providers.find((p) => p.id === activeProvider)?.defaultModel ||
                     ''
                   }
-                  onChange={(e) => updateProviderConfig('defaultModel', e.target.value)}
+                  onChange={(e) => updateProviderConfig('default-model', e.target.value)}
                   placeholder={
                     providers.find((p) => p.id === activeProvider)?.defaultModel
                   }

@@ -40,8 +40,8 @@ export default function Sidebar({
     const provider = config?.defaultProvider || 'anthropic';
     const providerConfig = config?.providers?.[provider];
 
-    // Check if provider is configured
-    if (!providerConfig?.apiKey && provider !== 'zai') {
+    // Check if provider is configured (use 'api-key' to match backend format)
+    if (!providerConfig?.['api-key'] && provider !== 'zai' && provider !== 'claude-code') {
       toast.warning(
         `${provider.charAt(0).toUpperCase() + provider.slice(1)} is not configured. Please add your API key in Settings.`
       );
@@ -50,7 +50,7 @@ export default function Sidebar({
     }
 
     const model =
-      providerConfig?.defaultModel ||
+      providerConfig?.['default-model'] ||
       (provider === 'anthropic'
         ? 'claude-3-5-sonnet-20241022'
         : provider === 'openai'
