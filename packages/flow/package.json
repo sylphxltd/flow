@@ -1,50 +1,37 @@
 {
   "name": "@sylphx/flow",
-  "version": "0.2.14",
-  "description": "Sylphx Flow - Development guidelines and best practices (legacy)",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Sylphx Flow - Legacy CLI for project initialization and flow management",
   "type": "module",
-  "main": "./dist/index.js",
   "bin": {
-    "sylphx-flow": "./bin/sylphx-flow.js"
+    "sylphx-flow": "./bin/sylphx-flow.ts"
   },
-  "files": [
-    "dist",
-    "bin",
-    "assets",
-    "README.md"
-  ],
   "scripts": {
     "build": "tsup",
-    "dev": "bun src/cli.ts",
+    "dev": "bun bin/sylphx-flow.ts",
+    "start": "bun bin/sylphx-flow.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@sylphx/code-core": "workspace:*",
     "commander": "^14.0.2",
-    "inquirer": "^12.10.0",
     "chalk": "^5.6.2",
     "boxen": "^8.0.1",
-    "gradient-string": "^3.0.0"
+    "gradient-string": "^3.0.0",
+    "ora": "^9.0.0",
+    "inquirer": "^12.10.0",
+    "gray-matter": "^4.0.3",
+    "yaml": "^2.8.1",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^24.9.2",
     "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "vitest": "^4.0.6"
-  },
-  "keywords": [
-    "development",
-    "flow",
-    "guidelines",
-    "best-practices"
-  ],
-  "author": "sylphxltd",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sylphxltd/flow.git",
-    "directory": "packages/flow"
   }
 }
