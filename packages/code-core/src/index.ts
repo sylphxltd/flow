@@ -15,7 +15,7 @@
 // AI & Streaming
 // ============================================================================
 export { createAIStream, getSystemStatus, buildSystemStatusFromMetadata, injectSystemStatusToOutput, getSystemPrompt } from './ai/ai-sdk.js'
-export { default as streamHandler, processStream, type StreamCallbacks } from './ai/stream-handler.js'
+export { processStream, type StreamCallbacks } from './ai/stream-handler.js'
 
 // ============================================================================
 // Agent Manager
@@ -53,12 +53,12 @@ export { ZaiProvider } from './ai/providers/zai-provider.js'
 // Database & Repositories
 // ============================================================================
 export { SessionRepository } from './database/session-repository.js'
-export { createDatabase, getDatabase, getSessionRepository } from './database/database.js'
+export { getDatabase, getSessionRepository } from './database/database.js'
 
 // ============================================================================
 // Configuration
 // ============================================================================
-export { loadAIConfig, saveAIConfig, getDefaultProviderModel, getAIConfigPaths } from './config/ai-config.js'
+export { loadAIConfig, saveAIConfig, getAIConfigPaths } from './config/ai-config.js'
 export type { AIConfig, ProviderConfig } from './config/ai-config.js'
 
 // ============================================================================
@@ -87,7 +87,7 @@ export { filterFiles, type FileInfo } from './utils/file-scanner.js'
 // ============================================================================
 // Tools
 // ============================================================================
-export { default as tools } from './tools/index.js'
+export * from './tools/index.js'
 export { getAISDKTools, getToolCategories, getAllToolNames, type GetToolsOptions } from './tools/registry.js'
 export { createTodoTool, type TodoToolContext } from './tools/todo.js'
 export { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from './tools/interaction.js'

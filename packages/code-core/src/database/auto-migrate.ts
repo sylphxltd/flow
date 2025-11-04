@@ -24,7 +24,7 @@ import { findPackageRoot } from '../utils/paths.js';
 
 const SESSION_DIR = join(homedir(), '.sylphx', 'sessions');
 const DB_DIR = join(homedir(), '.sylphx-code');
-const DB_PATH = join(DB_DIR, 'memory.db');
+const DB_PATH = join(DB_DIR, 'code.db');
 const MIGRATION_FLAG = join(DB_DIR, '.session-migrated');
 
 export interface MigrationProgress {
@@ -247,6 +247,11 @@ async function migrateSessionFiles(
  */
 export async function autoMigrate(onProgress?: ProgressCallback): Promise<any> {
   const DATABASE_URL = process.env.DATABASE_URL || `file:${DB_PATH}`;
+
+  // Ensure database directory exists
+  if (!existsSync(DB_DIR)) {
+    await mkdir(DB_DIR, { recursive: true });
+  }
 
   // Initialize database with optimized settings for concurrency
   const client = createClient({ url: DATABASE_URL });

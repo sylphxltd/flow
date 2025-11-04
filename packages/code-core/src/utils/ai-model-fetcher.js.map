@@ -1,1 +1,0 @@
-{"version":3,"file":"ai-model-fetcher.js","sourceRoot":"","sources":["ai-model-fetcher.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAIH,OAAO,EAAE,WAAW,EAAE,MAAM,0BAA0B,CAAC;AAKvD;;GAEG;AACH,MAAM,CAAC,KAAK,UAAU,WAAW,CAAC,QAAoB,EAAE,SAAyB,EAAE;IACjF,MAAM,gBAAgB,GAAG,WAAW,CAAC,QAAQ,CAAC,CAAC;IAC/C,OAAO,gBAAgB,CAAC,WAAW,CAAC,MAAM,CAAC,CAAC;AAC9C,CAAC"}
