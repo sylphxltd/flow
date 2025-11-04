@@ -56,66 +56,41 @@ async function main() {
     .name('sylphx-code')
     .description('Sylphx Code - AI development assistant')
     .version(VERSION, '-V, --version', 'Show version number')
-    .helpOption('-h, --help', 'Display help for command');
-
-  // Headless mode command
-  program
-    .command('headless [prompt]')
-    .description('Run in headless mode (non-interactive)')
+    .helpOption('-h, --help', 'Display help for command')
+    .argument('[prompt]', 'Prompt to send to AI (headless mode)')
+    .option('-p, --print', 'Print mode - output response and exit (same as providing prompt)')
     .option('-c, --continue', 'Continue last session')
     .option('-q, --quiet', 'Quiet mode - only output assistant response')
     .option('-v, --verbose', 'Show detailed output including tool calls')
     .action(async (prompt, options) => {
-      if (!prompt || !prompt.trim()) {
-        console.error('Error: No prompt provided');
-        console.error('Usage: sylphx-code headless "your prompt here"');
-        process.exit(1);
-      }
-
-      // Setup HTTP tRPC client before running headless
+      // Setup HTTP tRPC client
       const { createClient } = await import('./trpc-client.js');
       const { setTRPCClient } = await import('@sylphx/code-client');
 
       const client = createClient();
       setTRPCClient(client);
 
-      const { runHeadless } = await import('./headless.js');
-      await runHeadless(prompt, options);
-    });
+      // Headless mode: if prompt provided OR --print flag
+      if (prompt || options.print) {
+        if (!prompt) {
+          console.error(chalk.red('Error: No prompt provided'));
+          console.error(chalk.dim('Usage: sylphx-code "your prompt here"'));
+          console.error(chalk.dim('   or: sylphx-code --print "your prompt"'));
+          process.exit(1);
+        }
 
-  // Default action: Launch TUI
-  program.action(async () => {
-    // If no command specified, launch TUI
-    if (process.argv.length === 2 || process.argv[2] === '--help' || process.argv[2] === '-h') {
-      // Show help or launch TUI
-      if (process.argv[2] === '--help' || process.argv[2] === '-h') {
-        program.outputHelp();
+        const { runHeadless } = await import('./headless.js');
+        await runHeadless(prompt, options);
         return;
       }
-    }
 
-    // Check if a subcommand was invoked
-    const hasSubcommand = process.argv.some(arg =>
-      ['headless', 'help', '--help', '-h', '--version', '-V'].includes(arg)
-    );
-
-    if (!hasSubcommand) {
-      // Launch TUI
-      // Setup HTTP tRPC client before launching TUI
-      const { createClient } = await import('./trpc-client.js');
-      const { setTRPCClient } = await import('@sylphx/code-client');
-
-      const client = createClient();
-      setTRPCClient(client);
-
+      // TUI mode: no prompt, no --print
       const React = await import('react');
       const { render } = await import('ink');
       const { default: App } = await import('./App.js');
 
       render(React.createElement(App));
-      return;
-    }
-  });
+    });
 
   try {
     await program.parseAsync(process.argv);
