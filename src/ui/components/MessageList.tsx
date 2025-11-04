@@ -13,10 +13,9 @@ import { formatTokenCount } from '../../utils/token-counter.js';
 interface MessageListProps {
   messages: SessionMessage[];
   attachmentTokens: Map<string, number>;
-  sessionId: string; // Used as React key to force re-mount on session switch
 }
 
-export function MessageList({ messages, attachmentTokens, sessionId }: MessageListProps) {
+export function MessageList({ messages, attachmentTokens }: MessageListProps) {
   return (
     <>
       {messages.map((msg) => (

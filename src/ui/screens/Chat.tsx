@@ -156,11 +156,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const notificationSettings = useAppStore((state) => state.notificationSettings);
   const sessions = useAppStore((state) => state.sessions);
 
-  // Get current session directly from store to ensure reactivity on session switch
-  const currentSessionFromStore = useAppStore((state) =>
-    state.sessions.find((s) => s.id === state.currentSessionId)
-  );
-
   // Helper to schedule a debounced database write
   // Reduces SQLITE_BUSY errors by batching writes
   const scheduleDatabaseWrite = useCallback((content: StreamPart[]) => {
@@ -248,10 +243,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     });
   }, [currentSessionId, scheduleDatabaseWrite]);
 
-  const { sendMessage } = useChat();
-  // Use currentSessionFromStore instead of currentSession from useChat()
-  // to ensure proper reactivity on session switch
-  const currentSession = currentSessionFromStore;
+  const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
 
   // Custom hooks for side effects
@@ -1252,10 +1244,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         ) : (
           <>
             <MessageList
-              key={currentSession.id}
               messages={currentSession.messages}
               attachmentTokens={attachmentTokens}
-              sessionId={currentSession.id}
             />
           </>
         )}
