@@ -71,6 +71,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Normalize cursor to valid range (防禦性：確保 cursor 始終在有效範圍內)
   const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
+
+  // Message history (like bash command history)
+  const [messageHistory, setMessageHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1); // -1 means not browsing history
+  const [tempInput, setTempInput] = useState(''); // Store current input when browsing history
+
   // Streaming state
   const [isStreaming, setIsStreaming] = useState(false); // Message streaming active
   const [isTitleStreaming, setIsTitleStreaming] = useState(false);
@@ -611,6 +617,65 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     createSession,
   });
 
+  // Message history navigation (like bash)
+  // Only works in normal input mode (not in selection, autocomplete, etc.)
+  useInput((char, key) => {
+    // Only handle history in normal input mode
+    const isNormalMode = !pendingInput && !pendingCommand && filteredCommands.length === 0 && !filteredFileInfo.hasAt;
+
+    if (!isNormalMode) return;
+
+    // Up arrow - navigate to previous message in history
+    if (key.upArrow) {
+      if (messageHistory.length === 0) return;
+
+      // First time pressing up - save current input
+      if (historyIndex === -1) {
+        setTempInput(input);
+        const newIndex = messageHistory.length - 1;
+        setHistoryIndex(newIndex);
+        setInput(messageHistory[newIndex]);
+        setCursor(messageHistory[newIndex].length);
+      }
+      // Already browsing history - go to older message
+      else if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(messageHistory[newIndex]);
+        setCursor(messageHistory[newIndex].length);
+      }
+      return;
+    }
+
+    // Down arrow - navigate to next message in history
+    if (key.downArrow) {
+      if (historyIndex === -1) return; // Not browsing history
+
+      // Last message - restore original input
+      if (historyIndex === messageHistory.length - 1) {
+        setHistoryIndex(-1);
+        setInput(tempInput);
+        setCursor(tempInput.length);
+      }
+      // Go to newer message
+      else {
+        const newIndex = historyIndex + 1;
+        setHistoryIndex(newIndex);
+        setInput(messageHistory[newIndex]);
+        setCursor(messageHistory[newIndex].length);
+      }
+      return;
+    }
+
+    // Any other key - exit history browsing mode
+    if (historyIndex !== -1 && char) {
+      setHistoryIndex(-1);
+      setTempInput('');
+    }
+  }, {
+    isActive: !isStreaming,
+  });
+
   // Reset selected command index when filtered commands change
   // PERFORMANCE: Use filteredCommands.length to avoid triggering on array identity change
   useEffect(() => {
@@ -1124,6 +1189,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // PERFORMANCE: Memoize handleSubmit to provide stable reference to child components
   const handleSubmit = useCallback(async (value: string) => {
     if (!value.trim()) return;
+
+    // Add to message history (like bash command history)
+    setMessageHistory(prev => {
+      // Don't add if it's the same as the last entry
+      if (prev.length > 0 && prev[prev.length - 1] === value) {
+        return prev;
+      }
+      // Keep last 100 messages
+      const newHistory = [...prev, value];
+      if (newHistory.length > 100) {
+        return newHistory.slice(-100);
+      }
+      return newHistory;
+    });
+    // Reset history browsing state
+    setHistoryIndex(-1);
+    setTempInput('');
 
     // If already streaming, ignore submit (don't start new stream)
     if (isStreaming) {
