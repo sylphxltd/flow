@@ -1066,8 +1066,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           });
         },
 
-        // onTextEnd - mark text part as completed
+        // onTextEnd - flush buffer and mark text part as completed
         onTextEnd: () => {
+          // Flush any remaining buffered text chunks first
+          if (streamBufferRef.current.timeout) {
+            clearTimeout(streamBufferRef.current.timeout);
+            streamBufferRef.current.timeout = null;
+          }
+          if (streamBufferRef.current.chunks.length > 0) {
+            flushStreamBuffer();
+          }
+
           // Part streaming: Mark text as completed
           // Find the last active text part (not necessarily the last part overall)
           updateActiveMessageContent((prev) => {
