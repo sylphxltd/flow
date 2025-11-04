@@ -310,14 +310,22 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const updateActiveMessageContent = useCallback((updater: (prev: StreamPart[]) => StreamPart[]) => {
     useAppStore.setState((state) => {
       const session = state.sessions.find((s) => s.id === currentSessionId);
-      if (!session) return;
+      if (!session) {
+        console.error('[updateActiveMessageContent] Session not found:', currentSessionId);
+        return;
+      }
 
       const activeMessage = session.messages.find((m) => m.status === 'active');
-      if (!activeMessage) return;
+      if (!activeMessage) {
+        console.error('[updateActiveMessageContent] No active message found');
+        console.error('[updateActiveMessageContent] Messages:', session.messages.map(m => ({ role: m.role, status: m.status, contentLength: m.content?.length })));
+        return;
+      }
 
       // Update content using immer-style mutation
       const newContent = updater(activeMessage.content);
       activeMessage.content = newContent;
+      console.log('[updateActiveMessageContent] Updated content, parts:', newContent.length);
 
       // Schedule debounced database write (batched to reduce SQLITE_BUSY)
       scheduleDatabaseWrite(newContent);
@@ -852,12 +860,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
             // Update app store status (content was updated in real-time by callbacks)
             // NOTE: Using immer-style mutations (immer middleware automatically creates new objects)
+            console.log('[onComplete] Updating app store status to:', finalStatus);
             useAppStore.setState((state) => {
               const session = state.sessions.find((s) => s.id === currentSessionId);
               if (!session) {
                 addLog(`Session not found in store: ${currentSessionId}`);
+                console.error('[onComplete] Session not found:', currentSessionId);
                 return;
               }
+
+              console.log('[onComplete] Session messages:', session.messages.map(m => ({ role: m.role, status: m.status, contentLength: m.content?.length })));
 
               // Find last active assistant message (messages can be added in any order)
               const activeMessage = [...session.messages]
@@ -866,8 +878,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               if (!activeMessage) {
                 addLog(`No active assistant message found in session`);
+                console.error('[onComplete] No active message found. Messages:', session.messages.map(m => ({ role: m.role, status: m.status })));
                 return;
               }
+
+              console.log('[onComplete] Found active message with', activeMessage.content?.length, 'parts');
+              console.log('[onComplete] Before update - status:', activeMessage.status);
 
               // Update message status and metadata using immer-style mutation
               activeMessage.status = finalStatus;
@@ -878,6 +894,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 activeMessage.finishReason = finishReasonRef.current;
               }
 
+              console.log('[onComplete] After update - status:', activeMessage.status);
               addLog(`Updated message status to ${finalStatus} in app store`);
             });
           } catch (error) {
