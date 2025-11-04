@@ -74,3 +74,42 @@ export function getCurrentMessageContent(
   const activeMessage = session.messages.find((m) => m.status === 'active');
   return activeMessage?.content || null;
 }
+
+/**
+ * DEPRECATED: Backward compatibility layer
+ * These will be removed when streaming is fully migrated to subscriptions
+ */
+
+export interface DeprecatedPersistenceRefs {
+  dbWriteTimerRef: React.MutableRefObject<NodeJS.Timeout | null>;
+  pendingDbContentRef: React.MutableRefObject<StreamPart[] | null>;
+  streamingMessageIdRef: React.MutableRefObject<string | null>;
+}
+
+/**
+ * @deprecated Use tRPC subscription instead
+ */
+export function createScheduleDatabaseWrite(_refs: DeprecatedPersistenceRefs) {
+  // No-op during migration - actual sync happens after streaming completes
+  return (_content: StreamPart[]) => {
+    // Intentionally empty
+  };
+}
+
+/**
+ * @deprecated Use syncMessageContentToDatabase instead
+ */
+export function createFlushDatabaseWrite(
+  refs: DeprecatedPersistenceRefs,
+  currentSessionId: string | null
+) {
+  return async () => {
+    // Get content and sync if available
+    if (refs.streamingMessageIdRef.current) {
+      const content = getCurrentMessageContent(currentSessionId);
+      if (content) {
+        await syncMessageContentToDatabase(refs.streamingMessageIdRef.current, content);
+      }
+    }
+  };
+}

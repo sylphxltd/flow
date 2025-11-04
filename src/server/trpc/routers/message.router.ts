@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { observable } from '@trpc/server/observable';
 import { router, publicProcedure } from '../trpc.js';
 
 // Zod schemas for type safety
@@ -53,6 +54,54 @@ const TodoSnapshotSchema = z.object({
   status: z.enum(['pending', 'in_progress', 'completed']),
   ordering: z.number(),
 });
+
+// Streaming event types (unified interface for TUI and Web)
+const StreamEventSchema = z.discriminatedUnion('type', [
+  // Text streaming
+  z.object({ type: z.literal('text-start') }),
+  z.object({ type: z.literal('text-delta'), text: z.string() }),
+  z.object({ type: z.literal('text-end') }),
+
+  // Reasoning streaming
+  z.object({ type: z.literal('reasoning-start') }),
+  z.object({ type: z.literal('reasoning-delta'), text: z.string() }),
+  z.object({ type: z.literal('reasoning-end'), duration: z.number() }),
+
+  // Tool streaming
+  z.object({
+    type: z.literal('tool-call'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.any(),
+  }),
+  z.object({
+    type: z.literal('tool-result'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    result: z.any(),
+    duration: z.number(),
+  }),
+  z.object({
+    type: z.literal('tool-error'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    error: z.string(),
+    duration: z.number(),
+  }),
+
+  // Completion
+  z.object({
+    type: z.literal('complete'),
+    usage: TokenUsageSchema.optional(),
+    finishReason: z.string().optional(),
+  }),
+
+  // Error/Abort
+  z.object({ type: z.literal('error'), error: z.string() }),
+  z.object({ type: z.literal('abort') }),
+]);
+
+export type StreamEvent = z.infer<typeof StreamEventSchema>;
 
 export const messageRouter = router({
   /**
@@ -159,5 +208,69 @@ export const messageRouter = router({
     )
     .query(async ({ ctx, input }) => {
       return await ctx.sessionRepository.getRecentUserMessages(input.limit);
+    }),
+
+  /**
+   * Stream AI response (SUBSCRIPTION)
+   * Unified interface for TUI (in-process) and Web (SSE)
+   *
+   * Usage:
+   * ```typescript
+   * // TUI and Web use same API!
+   * client.message.streamResponse.subscribe(
+   *   { sessionId, userMessage, attachments },
+   *   {
+   *     onData: (event) => {
+   *       if (event.type === 'text-delta') {
+   *         appendText(event.text);
+   *       }
+   *     },
+   *     onError: (error) => console.error(error),
+   *     onComplete: () => console.log('Done'),
+   *   }
+   * );
+   * ```
+   *
+   * Transport:
+   * - TUI: In-process observable (zero overhead)
+   * - Web: SSE (httpSubscriptionLink)
+   */
+  streamResponse: publicProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        userMessage: z.string(),
+        attachments: z.array(FileAttachmentSchema).optional(),
+      })
+    )
+    .subscription(async ({ input }) => {
+      return observable<StreamEvent>((observer) => {
+        // TODO: Implement actual AI streaming here
+        // This is a placeholder that demonstrates the pattern
+
+        // Example implementation:
+        // 1. Call AI provider with streaming
+        // 2. Process stream events
+        // 3. Emit events to observer
+        // 4. Save to database when complete
+
+        // Placeholder: emit some events
+        observer.next({ type: 'text-start' });
+        observer.next({ type: 'text-delta', text: 'Hello ' });
+        observer.next({ type: 'text-delta', text: 'from ' });
+        observer.next({ type: 'text-delta', text: 'tRPC!' });
+        observer.next({ type: 'text-end' });
+        observer.next({
+          type: 'complete',
+          usage: { promptTokens: 10, completionTokens: 3, totalTokens: 13 },
+          finishReason: 'stop',
+        });
+        observer.complete();
+
+        // Return cleanup function
+        return () => {
+          // Cleanup logic (e.g., abort AI stream)
+        };
+      });
     }),
 });

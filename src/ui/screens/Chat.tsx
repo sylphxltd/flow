@@ -218,8 +218,8 @@ export default function Chat(_props: ChatProps) {
   );
 
   const updateActiveMessageContent = useMemo(
-    () => createUpdateActiveMessageContent(currentSessionId, scheduleDatabaseWrite),
-    [currentSessionId, scheduleDatabaseWrite]
+    () => createUpdateActiveMessageContent(currentSessionId),
+    [currentSessionId]
   );
 
   // Create sendUserMessageToAI function
