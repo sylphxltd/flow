@@ -76,7 +76,7 @@ function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): strin
 }
 
 // Global debug flag - TODO: remove after debugging streaming issues
-const SHOW_DEBUG_INDICATORS = false;  // Disabled after fixing
+const SHOW_DEBUG_INDICATORS = true;  // Enabled for debugging text part visibility
 
 /**
  * Streaming Part Wrapper Component
