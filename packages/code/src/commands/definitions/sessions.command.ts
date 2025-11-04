@@ -24,7 +24,7 @@ export const sessionsCommand: Command = {
       // First compare by updated time (descending)
       const updateDiff = b.updated - a.updated;
       if (updateDiff !== 0) return updateDiff;
-      
+
       // If updated is same, compare by created time (descending)
       return b.created - a.created;
     });
@@ -53,7 +53,8 @@ export const sessionsCommand: Command = {
       ],
     });
 
-    const selectedSessionId = typeof answers === 'object' && !Array.isArray(answers) ? answers['session'] : '';
+    const selectedSessionId =
+      typeof answers === 'object' && !Array.isArray(answers) ? answers['session'] : '';
 
     if (!selectedSessionId) {
       return 'Session selection cancelled.';

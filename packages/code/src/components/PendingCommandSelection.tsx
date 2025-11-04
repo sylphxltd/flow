@@ -3,11 +3,11 @@
  * Shows option selection UI when a command requires arguments
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
-import Spinner from './Spinner.js';
 import { calculateScrollViewport } from '@sylphx/code-core';
+import { Box, Text } from 'ink';
+import React from 'react';
 import type { Command } from '../commands/types.js';
+import Spinner from './Spinner.js';
 
 interface PendingCommandSelectionProps {
   pendingCommand: { command: Command; currentInput: string };
@@ -29,9 +29,7 @@ export function PendingCommandSelection({
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text dimColor>
-          Select {pendingCommand.command.args?.[0]?.name || 'option'}:
-        </Text>
+        <Text dimColor>Select {pendingCommand.command.args?.[0]?.name || 'option'}:</Text>
       </Box>
 
       {/* Loading state */}
@@ -53,66 +51,66 @@ export function PendingCommandSelection({
             <Text dimColor>Press Esc to cancel</Text>
           </Box>
         </Box>
-      ) : (() => {
-        /* Options list */
-        const firstArg = pendingCommand.command.args?.[0];
-        const cacheKey = firstArg ? `${pendingCommand.command.id}:${firstArg.name}` : '';
-        const options = cacheKey ? (cachedOptions.get(cacheKey) || []) : [];
+      ) : (
+        (() => {
+          /* Options list */
+          const firstArg = pendingCommand.command.args?.[0];
+          const cacheKey = firstArg ? `${pendingCommand.command.id}:${firstArg.name}` : '';
+          const options = cacheKey ? cachedOptions.get(cacheKey) || [] : [];
 
-        if (options.length === 0) {
-          return (
-            <Box flexDirection="column">
-              <Box marginBottom={1}>
-                <Text color="yellow">No options available</Text>
-              </Box>
-              <Box>
-                <Text dimColor>Press Esc to cancel</Text>
-              </Box>
-            </Box>
-          );
-        }
-
-        // Calculate scroll window to keep selected item visible
-        const viewport = calculateScrollViewport(options, selectedCommandIndex);
-
-        return (
-          <>
-            {viewport.hasItemsAbove && (
-              <Box marginBottom={1}>
-                <Text dimColor>... {viewport.itemsAboveCount} more above</Text>
-              </Box>
-            )}
-            {viewport.visibleItems.map((option, idx) => {
-              const absoluteIdx = viewport.scrollOffset + idx;
-              return (
-                <Box
-                  key={option.value || option.label}
-                  paddingY={0}
-                  onClick={() => onSelect(option)}
-                >
-                  <Text
-                    color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                    bold={absoluteIdx === selectedCommandIndex}
-                  >
-                    {absoluteIdx === selectedCommandIndex ? '> ' : '  '}
-                    {option.label}
-                  </Text>
+          if (options.length === 0) {
+            return (
+              <Box flexDirection="column">
+                <Box marginBottom={1}>
+                  <Text color="yellow">No options available</Text>
                 </Box>
-              );
-            })}
-            {viewport.hasItemsBelow && (
-              <Box marginTop={1}>
-                <Text dimColor>... {viewport.itemsBelowCount} more below</Text>
+                <Box>
+                  <Text dimColor>Press Esc to cancel</Text>
+                </Box>
               </Box>
-            )}
-            <Box marginTop={1}>
-              <Text dimColor>
-                ↑↓ Navigate · Enter Select · Esc Cancel
-              </Text>
-            </Box>
-          </>
-        );
-      })()}
+            );
+          }
+
+          // Calculate scroll window to keep selected item visible
+          const viewport = calculateScrollViewport(options, selectedCommandIndex);
+
+          return (
+            <>
+              {viewport.hasItemsAbove && (
+                <Box marginBottom={1}>
+                  <Text dimColor>... {viewport.itemsAboveCount} more above</Text>
+                </Box>
+              )}
+              {viewport.visibleItems.map((option, idx) => {
+                const absoluteIdx = viewport.scrollOffset + idx;
+                return (
+                  <Box
+                    key={option.value || option.label}
+                    paddingY={0}
+                    onClick={() => onSelect(option)}
+                  >
+                    <Text
+                      color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                      bold={absoluteIdx === selectedCommandIndex}
+                    >
+                      {absoluteIdx === selectedCommandIndex ? '> ' : '  '}
+                      {option.label}
+                    </Text>
+                  </Box>
+                );
+              })}
+              {viewport.hasItemsBelow && (
+                <Box marginTop={1}>
+                  <Text dimColor>... {viewport.itemsBelowCount} more below</Text>
+                </Box>
+              )}
+              <Box marginTop={1}>
+                <Text dimColor>↑↓ Navigate · Enter Select · Esc Cancel</Text>
+              </Box>
+            </>
+          );
+        })()
+      )}
     </Box>
   );
 }

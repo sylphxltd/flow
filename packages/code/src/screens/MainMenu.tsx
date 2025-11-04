@@ -3,10 +3,10 @@
  * Entry point with navigation options
  */
 
-import React, { useState } from 'react';
+import { useAppStore } from '@sylphx/code-client';
 import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
-import { useAppStore } from '@sylphx/code-client';
+import React, { useState } from 'react';
 
 interface MenuItem {
   label: string;

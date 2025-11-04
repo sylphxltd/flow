@@ -3,15 +3,18 @@
  * Select provider and model with dynamic loading
  */
 
-import React, { useState, useEffect } from 'react';
+import { useAIConfig, useAppStore, useKeyboard } from '@sylphx/code-client';
+import {
+  AI_PROVIDERS,
+  fetchModels,
+  getConfiguredProviders,
+  type ModelInfo,
+  type ProviderId,
+} from '@sylphx/code-core';
 import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
-import { useAppStore } from '@sylphx/code-client';
-import { useAIConfig } from '@sylphx/code-client';
-import { useKeyboard } from '@sylphx/code-client';
-import { AI_PROVIDERS, type ProviderId, getConfiguredProviders } from '@sylphx/code-core';
-import { fetchModels, type ModelInfo } from '@sylphx/code-core';
+import React, { useEffect, useState } from 'react';
 
 type Mode = 'provider' | 'model' | 'search';
 
@@ -118,7 +121,7 @@ export default function ModelSelection() {
           </Box>
 
           <Box marginBottom={1}>
-            <Text color="yellow">⚠️  No providers configured</Text>
+            <Text color="yellow">⚠️ No providers configured</Text>
           </Box>
 
           <Box>

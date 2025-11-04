@@ -13,9 +13,7 @@ export const helpCommand: Command = {
     const commands = context.getCommands();
     const commandList = commands
       .map((cmd) => {
-        const argsText = cmd.args
-          ? ` ${cmd.args.map((a) => `[${a.name}]`).join(' ')}`
-          : '';
+        const argsText = cmd.args ? ` ${cmd.args.map((a) => `[${a.name}]`).join(' ')}` : '';
         return `${cmd.label}${argsText} - ${cmd.description}`;
       })
       .join('\n');

@@ -39,20 +39,24 @@ export const modelCommand: Command = {
           try {
             const { fetchModels } = await import('@sylphx/code-core');
             const models = await fetchModels(currentProviderId as any, config);
-            return models.map(m => ({
+            return models.map((m) => ({
               id: m.id,
               label: m.name,
               value: m.id,
             }));
           } catch (error) {
             if (context) {
-              context.addLog(`Failed to fetch models for ${currentProviderId}: ${error instanceof Error ? error.message : String(error)}`);
+              context.addLog(
+                `Failed to fetch models for ${currentProviderId}: ${error instanceof Error ? error.message : String(error)}`
+              );
             }
             return [];
           }
         } catch (error) {
           if (context) {
-            context.addLog(`Error loading models: ${error instanceof Error ? error.message : String(error)}`);
+            context.addLog(
+              `Error loading models: ${error instanceof Error ? error.message : String(error)}`
+            );
           }
           return [];
         }
@@ -89,7 +93,7 @@ export const modelCommand: Command = {
         try {
           const { fetchModels } = await import('@sylphx/code-core');
           const models = await fetchModels(currentProviderId as any, config);
-          allModels = models.map(m => ({ label: m.name, value: m.id }));
+          allModels = models.map((m) => ({ label: m.name, value: m.id }));
           context.addLog(`Loaded ${models.length} models from ${currentProviderId}`);
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);

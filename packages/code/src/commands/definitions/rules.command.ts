@@ -40,9 +40,12 @@ export const rulesCommand: Command = {
     });
 
     // Extract selected rule IDs
-    const selectedRuleIds = typeof answers === 'object' && !Array.isArray(answers)
-      ? (Array.isArray(answers['rules']) ? answers['rules'] : [])
-      : [];
+    const selectedRuleIds =
+      typeof answers === 'object' && !Array.isArray(answers)
+        ? Array.isArray(answers['rules'])
+          ? answers['rules']
+          : []
+        : [];
 
     if (!Array.isArray(selectedRuleIds)) {
       return 'Rule selection cancelled.';

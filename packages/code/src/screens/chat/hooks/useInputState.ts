@@ -3,8 +3,8 @@
  * Manages input field state including message history
  */
 
-import { useState, useMemo, useEffect } from 'react';
 import { getTRPCClient } from '@sylphx/code-client';
+import { useEffect, useMemo, useState } from 'react';
 
 export interface InputState {
   input: string;

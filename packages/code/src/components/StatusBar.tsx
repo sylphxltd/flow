@@ -3,13 +3,11 @@
  * Display important session info at the bottom
  */
 
-import React, { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
-import type { ProviderId } from '@sylphx/code-core';
-import { getProvider } from '@sylphx/code-core';
-import { getTokenizerInfo } from '@sylphx/code-core';
-import { getAgentById } from '@sylphx/code-core';
 import { useAppStore } from '@sylphx/code-client';
+import type { ProviderId } from '@sylphx/code-core';
+import { getAgentById, getProvider, getTokenizerInfo } from '@sylphx/code-core';
+import { Box, Text } from 'ink';
+import React, { useEffect, useState } from 'react';
 
 interface StatusBarProps {
   provider: ProviderId;
@@ -68,16 +66,16 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
   };
 
   // Calculate usage percentage
-  const usagePercent = contextLength && usedTokens > 0
-    ? Math.round((usedTokens / contextLength) * 100)
-    : 0;
+  const usagePercent =
+    contextLength && usedTokens > 0 ? Math.round((usedTokens / contextLength) * 100) : 0;
 
   return (
     <Box flexGrow={1} justifyContent="space-between" marginBottom={1}>
       {/* Left side: Agent, Rules, Provider and Model */}
       <Box>
         <Text dimColor>
-          {agentName && `${agentName} · `}{enabledRulesCount} {enabledRulesCount === 1 ? 'rule' : 'rules'} · {provider} · {model}
+          {agentName && `${agentName} · `}
+          {enabledRulesCount} {enabledRulesCount === 1 ? 'rule' : 'rules'} · {provider} · {model}
         </Text>
       </Box>
 

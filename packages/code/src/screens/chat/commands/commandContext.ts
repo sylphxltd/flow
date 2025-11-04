@@ -3,10 +3,9 @@
  * Creates CommandContext objects for command execution
  */
 
-import type { CommandContext, WaitForInputOptions } from '../../../commands/types.js';
 import type { Session } from '@sylphx/code-client';
 import type { AIConfig, ProviderId } from '../../../../config/ai-config.js';
-import type { Command } from '../../../commands/types.js';
+import type { Command, CommandContext, WaitForInputOptions } from '../../../commands/types.js';
 
 /**
  * Parameters needed to create command context
@@ -20,9 +19,24 @@ export interface CommandContextParams {
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
   setSelectedProvider: (provider: ProviderId | null) => void;
   setSelectedModel: (model: string | null) => void;
-  navigateTo: (screen: 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs') => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, attachments?: any[]) => void;
-  updateNotificationSettings: (settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>) => void;
+  navigateTo: (
+    screen:
+      | 'main-menu'
+      | 'provider-management'
+      | 'model-selection'
+      | 'chat'
+      | 'command-palette'
+      | 'logs'
+  ) => void;
+  addMessage: (
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: string,
+    attachments?: any[]
+  ) => void;
+  updateNotificationSettings: (
+    settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>
+  ) => void;
 
   // Store getters (use getState() to avoid reactivity)
   getAIConfig: () => AIConfig | null;
@@ -38,7 +52,10 @@ export interface CommandContextParams {
   // Hook methods
   saveConfig: (config: AIConfig) => Promise<void>;
   getCurrentSession: () => Session | undefined;
-  sendUserMessageToAI: (message: string, attachments?: Array<{ path: string; relativePath: string; size?: number }>) => Promise<void>;
+  sendUserMessageToAI: (
+    message: string,
+    attachments?: Array<{ path: string; relativePath: string; size?: number }>
+  ) => Promise<void>;
 
   // UI state setters
   setInput: (value: string) => void;
@@ -51,7 +68,9 @@ export interface CommandContextParams {
   setIsFilterMode: (isFilterMode: boolean) => void;
 
   // Refs
-  inputResolver: React.MutableRefObject<((value: string | Record<string, string | string[]>) => void) | null>;
+  inputResolver: React.MutableRefObject<
+    ((value: string | Record<string, string | string[]>) => void) | null
+  >;
   commandSessionRef: React.MutableRefObject<string | null>;
 
   // State
@@ -70,10 +89,7 @@ export interface CommandContextParams {
  * Factory function that creates a CommandContext object with all required methods.
  * Extracted from Chat.tsx to improve modularity and testability.
  */
-export function createCommandContext(
-  args: string[],
-  params: CommandContextParams
-): CommandContext {
+export function createCommandContext(args: string[], params: CommandContextParams): CommandContext {
   const {
     createSession,
     updateProvider,
@@ -114,12 +130,16 @@ export function createCommandContext(
     sendMessage: (content: string) => {
       // Reuse existing command session or create one
       if (!commandSessionRef.current) {
-        commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+        commandSessionRef.current =
+          currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
       addMessage(commandSessionRef.current, 'assistant', content);
     },
 
-    triggerAIResponse: async (message: string, attachments?: Array<{ path: string; relativePath: string; size?: number }>) => {
+    triggerAIResponse: async (
+      message: string,
+      attachments?: Array<{ path: string; relativePath: string; size?: number }>
+    ) => {
       // Clear input
       setInput('');
       // Call the shared helper
@@ -141,8 +161,8 @@ export function createCommandContext(
           if (firstQuestion?.multiSelect) {
             // Priority 1: option.checked (per-option default)
             const checkedOptions = firstQuestion.options
-              .filter(opt => opt.checked)
-              .map(opt => opt.value || opt.label);
+              .filter((opt) => opt.checked)
+              .map((opt) => opt.value || opt.label);
 
             if (checkedOptions.length > 0) {
               setMultiSelectChoices(new Set(checkedOptions));
@@ -169,7 +189,8 @@ export function createCommandContext(
     updateProvider: (provider, data) => updateProvider(provider, data),
     setAIConfig: (config) => setAIConfig(config),
     updateSessionModel: (sessionId, model) => updateSessionModel(sessionId, model),
-    updateSessionProvider: (sessionId, provider, model) => updateSessionProvider(sessionId, provider, model),
+    updateSessionProvider: (sessionId, provider, model) =>
+      updateSessionProvider(sessionId, provider, model),
     setUISelectedProvider: (provider) => setSelectedProvider(provider),
     setUISelectedModel: (model) => setSelectedModel(model),
     createSession: (provider, model) => createSession(provider, model),

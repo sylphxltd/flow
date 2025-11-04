@@ -3,18 +3,18 @@
  * Displays LLM task progress above the input area
  */
 
-import React, { useMemo } from 'react';
-import { Box, Text } from 'ink';
-import { useAppStore } from '@sylphx/code-client';
-import type { Todo } from '@sylphx/code-core';
 import {
-  getTodoIcon,
   getTodoColor,
   getTodoDisplayText,
-  isTodoDimmed,
+  getTodoIcon,
   isTodoBold,
+  isTodoDimmed,
   isTodoStrikethrough,
+  useAppStore,
 } from '@sylphx/code-client';
+import type { Todo } from '@sylphx/code-core';
+import { Box, Text } from 'ink';
+import React, { useMemo } from 'react';
 
 const MAX_VISIBLE_LINES = 5;
 

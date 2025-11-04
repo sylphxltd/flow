@@ -11,12 +11,18 @@ interface ChatHeaderProps {
   streamingTitle: string;
 }
 
-export function ChatHeader({ currentSessionTitle, isTitleStreaming, streamingTitle }: ChatHeaderProps) {
+export function ChatHeader({
+  currentSessionTitle,
+  isTitleStreaming,
+  streamingTitle,
+}: ChatHeaderProps) {
   return (
     <>
       {/* App Header */}
       <Box paddingX={1} paddingY={1}>
-        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+        <Text bold color="#00D9FF">
+          SYLPHX FLOW
+        </Text>
         <Text dimColor> │ </Text>
         <Text dimColor>AI Development Assistant</Text>
       </Box>

@@ -3,8 +3,8 @@
  * Catches React errors to prevent app crashes
  */
 
-import React from 'react';
 import { Box, Text } from 'ink';
+import React from 'react';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -46,9 +46,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </Text>
           </Box>
           <Box marginBottom={1}>
-            <Text color="yellow">
-              The application encountered an error and needs to restart.
-            </Text>
+            <Text color="yellow">The application encountered an error and needs to restart.</Text>
           </Box>
           {this.state.error && (
             <Box flexDirection="column" marginBottom={1}>
@@ -61,9 +59,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </Box>
           )}
           <Box>
-            <Text dimColor>
-              Press Ctrl+C to exit and restart the application.
-            </Text>
+            <Text dimColor>Press Ctrl+C to exit and restart the application.</Text>
           </Box>
         </Box>
       );

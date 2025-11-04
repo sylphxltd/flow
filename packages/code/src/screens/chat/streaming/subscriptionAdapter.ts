@@ -12,12 +12,11 @@
  * - Same interface for both!
  */
 
+import { getTRPCClient, useAppStore } from '@sylphx/code-client';
 import type React from 'react';
 import type { AIConfig } from '../../../../config/ai-config.js';
-import type { FileAttachment, TokenUsage, MessagePart } from '../../../../types/session.types.js';
 import type { StreamEvent } from '../../../../server/trpc/routers/message.router.js';
-import { useAppStore } from '@sylphx/code-client';
-import { getTRPCClient } from '@sylphx/code-client';
+import type { FileAttachment, MessagePart, TokenUsage } from '../../../../types/session.types.js';
 
 /**
  * Parameters for subscription adapter
@@ -28,7 +27,12 @@ export interface SubscriptionAdapterParams {
   currentSessionId: string | null;
 
   // Functions from hooks/store
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, attachments?: FileAttachment[]) => void;
+  addMessage: (
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: string,
+    attachments?: FileAttachment[]
+  ) => void;
   addLog: (message: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
   notificationSettings: { notifyOnCompletion: boolean; notifyOnError: boolean };
@@ -177,7 +181,11 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
           // Add error message part to UI
           updateActiveMessageContent(currentSessionId, (prev) => [
             ...prev,
-            { type: 'error', error: error.message || String(error), status: 'completed' } as MessagePart,
+            {
+              type: 'error',
+              error: error.message || String(error),
+              status: 'completed',
+            } as MessagePart,
           ]);
 
           // Cleanup
@@ -217,7 +225,9 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
         // Mark active parts as aborted
         updateActiveMessageContent(currentSessionId, (prev) =>
-          prev.map((part) => (part.status === 'active' ? { ...part, status: 'abort' as const } : part))
+          prev.map((part) =>
+            part.status === 'active' ? { ...part, status: 'abort' as const } : part
+          )
         );
 
         // Cleanup
@@ -233,7 +243,9 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         });
       });
     } catch (error) {
-      addLog(`[subscriptionAdapter] Error: ${error instanceof Error ? error.message : String(error)}`);
+      addLog(
+        `[subscriptionAdapter] Error: ${error instanceof Error ? error.message : String(error)}`
+      );
       lastErrorRef.current = error instanceof Error ? error.message : String(error);
       setIsStreaming(false);
     }
@@ -417,7 +429,12 @@ function handleStreamEvent(
       updateActiveMessageContent(currentSessionId, (prev) =>
         prev.map((part) =>
           part.type === 'tool' && part.toolId === event.toolCallId
-            ? { ...part, status: 'completed' as const, duration: event.duration, result: event.result }
+            ? {
+                ...part,
+                status: 'completed' as const,
+                duration: event.duration,
+                result: event.result,
+              }
             : part
         )
       );
@@ -544,7 +561,9 @@ function cleanupAfterStream(context: {
     const session = state.currentSession;
     if (!session || session.id !== context.currentSessionId) return;
 
-    const activeMessage = [...session.messages].reverse().find((m) => m.role === 'assistant' && m.status === 'active');
+    const activeMessage = [...session.messages]
+      .reverse()
+      .find((m) => m.role === 'assistant' && m.status === 'active');
 
     if (!activeMessage) return;
 

@@ -3,9 +3,9 @@
  * View debug logs for troubleshooting
  */
 
-import React from 'react';
-import { Box, Text, useInput } from 'ink';
 import { useAppStore } from '@sylphx/code-client';
+import { Box, Text, useInput } from 'ink';
+import React from 'react';
 
 export default function Logs() {
   const debugLogs = useAppStore((state) => state.debugLogs);

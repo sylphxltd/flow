@@ -3,7 +3,7 @@
  * Manages streaming flags, refs, and title generation state
  */
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { MessagePart as StreamPart, TokenUsage } from '../../../../types/session.types.js';
 
 export interface StreamingState {

@@ -3,8 +3,8 @@
  * Creates handleSubmit callback for message submission
  */
 
-import type { CommandContext } from '../../../commands/types.js';
 import type { FileAttachment } from '../../../../types/session.types.js';
+import type { CommandContext } from '../../../commands/types.js';
 
 /**
  * Parameters needed to create handleSubmit
@@ -15,7 +15,12 @@ export interface MessageHandlerParams {
 
   // Store methods
   createSession: (provider: ProviderId, model: string) => string;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string, attachments?: any[]) => void;
+  addMessage: (
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: string,
+    attachments?: any[]
+  ) => void;
 
   // UI state
   pendingInput: WaitForInputOptions | null;
@@ -32,7 +37,9 @@ export interface MessageHandlerParams {
   clearAttachments: () => void;
 
   // Refs
-  inputResolver: React.MutableRefObject<((value: string | Record<string, string | string[]>) => void) | null>;
+  inputResolver: React.MutableRefObject<
+    ((value: string | Record<string, string | string[]>) => void) | null
+  >;
   commandSessionRef: React.MutableRefObject<string | null>;
   skipNextSubmit: React.MutableRefObject<boolean>;
 
@@ -48,12 +55,11 @@ export interface MessageHandlerParams {
   getCommands: () => Command[];
 }
 
+import type { ProviderId } from '../../../../config/ai-config.js';
 /**
  * Type imports needed for parameters
  */
-import type { WaitForInputOptions } from '../../../commands/types.js';
-import type { Command } from '../../../commands/types.js';
-import type { ProviderId } from '../../../../config/ai-config.js';
+import type { Command, WaitForInputOptions } from '../../../commands/types.js';
 
 /**
  * Create handleSubmit callback for message submission
@@ -105,7 +111,8 @@ export function createHandleSubmit(params: MessageHandlerParams) {
 
       // Add user's text input to chat history
       if (!commandSessionRef.current) {
-        commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+        commandSessionRef.current =
+          currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
       addMessage(commandSessionRef.current, 'user', value.trim());
 
@@ -119,7 +126,9 @@ export function createHandleSubmit(params: MessageHandlerParams) {
     // If we're in command mode with active autocomplete, don't handle here
     // Let useInput handle the autocomplete selection
     if (value.startsWith('/') && filteredCommands.length > 0) {
-      addLog(`[handleSubmit] Skipping, autocomplete active (${filteredCommands.length} suggestions)`);
+      addLog(
+        `[handleSubmit] Skipping, autocomplete active (${filteredCommands.length} suggestions)`
+      );
       return;
     }
 
@@ -147,10 +156,15 @@ export function createHandleSubmit(params: MessageHandlerParams) {
         // Unknown command - add to conversation
         setInput('');
         if (!commandSessionRef.current) {
-          commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+          commandSessionRef.current =
+            currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
         }
         addMessage(commandSessionRef.current, 'user', userMessage);
-        addMessage(commandSessionRef.current, 'assistant', `Unknown command: ${commandName}. Type /help for available commands.`);
+        addMessage(
+          commandSessionRef.current,
+          'assistant',
+          `Unknown command: ${commandName}. Type /help for available commands.`
+        );
         return;
       }
 
@@ -159,7 +173,8 @@ export function createHandleSubmit(params: MessageHandlerParams) {
 
       // Add user command to conversation
       if (!commandSessionRef.current) {
-        commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+        commandSessionRef.current =
+          currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
       }
       addMessage(commandSessionRef.current, 'user', userMessage);
 
@@ -167,7 +182,11 @@ export function createHandleSubmit(params: MessageHandlerParams) {
       try {
         await command.execute(createCommandContext(args));
       } catch (error) {
-        addMessage(commandSessionRef.current, 'assistant', `Error: ${error instanceof Error ? error.message : 'Command failed'}`);
+        addMessage(
+          commandSessionRef.current,
+          'assistant',
+          `Error: ${error instanceof Error ? error.message : 'Command failed'}`
+        );
       }
 
       setPendingCommand(null);
@@ -187,7 +206,7 @@ export function createHandleSubmit(params: MessageHandlerParams) {
     await sendUserMessageToAI(userMessage, attachmentsForMessage);
 
     // Add to message history (append since we store oldest-first)
-    setMessageHistory(prev => {
+    setMessageHistory((prev) => {
       // Don't add if it's the same as the last entry (most recent)
       if (prev.length > 0 && prev[prev.length - 1] === userMessage) {
         return prev;

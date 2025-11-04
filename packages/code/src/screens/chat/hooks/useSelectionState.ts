@@ -3,13 +3,15 @@
  * Manages multi-selection, pending input, and filter state for command interactions
  */
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { WaitForInputOptions } from '../../../commands/types.js';
 
 export interface SelectionState {
   pendingInput: WaitForInputOptions | null;
   setPendingInput: (input: WaitForInputOptions | null) => void;
-  inputResolver: React.MutableRefObject<((value: string | Record<string, string | string[]>) => void) | null>;
+  inputResolver: React.MutableRefObject<
+    ((value: string | Record<string, string | string[]>) => void) | null
+  >;
   selectionFilter: string;
   setSelectionFilter: (filter: string) => void;
   isFilterMode: boolean;
@@ -30,11 +32,15 @@ export interface SelectionState {
 
 export function useSelectionState(): SelectionState {
   const [pendingInput, setPendingInput] = useState<WaitForInputOptions | null>(null);
-  const inputResolver = useRef<((value: string | Record<string, string | string[]>) => void) | null>(null);
+  const inputResolver = useRef<
+    ((value: string | Record<string, string | string[]>) => void) | null
+  >(null);
   const [selectionFilter, setSelectionFilter] = useState('');
   const [isFilterMode, setIsFilterMode] = useState(false);
   const [multiSelectionPage, setMultiSelectionPage] = useState(0);
-  const [multiSelectionAnswers, setMultiSelectionAnswers] = useState<Record<string, string | string[]>>({});
+  const [multiSelectionAnswers, setMultiSelectionAnswers] = useState<
+    Record<string, string | string[]>
+  >({});
   const [multiSelectChoices, setMultiSelectChoices] = useState<Set<string>>(new Set());
   const [freeTextInput, setFreeTextInput] = useState('');
   const [isFreeTextMode, setIsFreeTextMode] = useState(false);

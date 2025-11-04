@@ -3,10 +3,10 @@
  * Shows command suggestions when user types /command with arguments
  */
 
-import React from 'react';
 import { Box, Text } from 'ink';
-import Spinner from './Spinner.js';
+import React from 'react';
 import type { Command } from '../commands/types.js';
+import Spinner from './Spinner.js';
 
 interface CommandAutocompleteProps {
   commands: Command[];
@@ -53,7 +53,7 @@ export function CommandAutocomplete({
 
   // Center the selection in the visible window
   let startIdx = Math.max(0, selectedCommandIndex - Math.floor(maxVisible / 2));
-  let endIdx = Math.min(totalCommands, startIdx + maxVisible);
+  const endIdx = Math.min(totalCommands, startIdx + maxVisible);
 
   // Adjust if we're at the end
   if (endIdx === totalCommands) {
@@ -66,7 +66,7 @@ export function CommandAutocomplete({
     <Box flexDirection="column" marginTop={1}>
       {startIdx > 0 && (
         <Box>
-          <Text dimColor>  ↑ {startIdx} more above</Text>
+          <Text dimColor> ↑ {startIdx} more above</Text>
         </Box>
       )}
       {visibleCommands.map((cmd, idx) => {
@@ -86,7 +86,7 @@ export function CommandAutocomplete({
       })}
       {endIdx < totalCommands && (
         <Box>
-          <Text dimColor>  ↓ {totalCommands - endIdx} more below</Text>
+          <Text dimColor> ↓ {totalCommands - endIdx} more below</Text>
         </Box>
       )}
     </Box>

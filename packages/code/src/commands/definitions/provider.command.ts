@@ -5,18 +5,18 @@
  * REFACTORED: Reduced from 759 lines to ~200 lines by extracting helpers
  */
 
-import type { Command } from '../types.js';
 import { configureProvider } from '../helpers/provider-config.js';
 import {
   askSelectProvider,
   ensureConfiguredAndSwitch,
-  switchToProvider,
   ensureProviderConfigured,
+  switchToProvider,
 } from '../helpers/provider-selection.js';
 import {
   interactiveSetProviderConfig,
   setProviderConfigValue,
 } from '../helpers/provider-set-value.js';
+import type { Command } from '../types.js';
 
 export const providerCommand: Command = {
   id: 'provider',
@@ -119,7 +119,10 @@ export const providerCommand: Command = {
         ],
       });
 
-      const action = typeof actionAnswers === 'object' && !Array.isArray(actionAnswers) ? actionAnswers['action'] : '';
+      const action =
+        typeof actionAnswers === 'object' && !Array.isArray(actionAnswers)
+          ? actionAnswers['action']
+          : '';
       if (!action) {
         return 'Action cancelled.';
       }
@@ -127,7 +130,9 @@ export const providerCommand: Command = {
       // Ask which provider
       const providerId = await askSelectProvider(
         context,
-        action === 'use' ? 'Which provider do you want to use?' : 'Which provider do you want to configure?',
+        action === 'use'
+          ? 'Which provider do you want to use?'
+          : 'Which provider do you want to configure?',
         action === 'use' ? 'Select provider to use:' : 'Select provider to configure:'
       );
 
@@ -146,7 +151,11 @@ export const providerCommand: Command = {
 
     // Case 2: /provider use - ask which provider to use
     if (context.args.length === 1 && context.args[0] === 'use') {
-      const providerId = await askSelectProvider(context, 'Which provider do you want to use?', 'Select provider:');
+      const providerId = await askSelectProvider(
+        context,
+        'Which provider do you want to use?',
+        'Select provider:'
+      );
 
       if (!providerId) {
         return 'Provider selection cancelled.';
@@ -188,7 +197,10 @@ export const providerCommand: Command = {
         ],
       });
 
-      const providerId = typeof providerAnswers === 'object' && !Array.isArray(providerAnswers) ? providerAnswers['provider'] : '';
+      const providerId =
+        typeof providerAnswers === 'object' && !Array.isArray(providerAnswers)
+          ? providerAnswers['provider']
+          : '';
       if (!providerId) {
         return 'Provider selection cancelled.';
       }

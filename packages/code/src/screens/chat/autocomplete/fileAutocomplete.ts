@@ -1,5 +1,5 @@
+import { type FileInfo, filterFiles } from '@sylphx/code-core';
 import { useMemo } from 'react';
-import { filterFiles, type FileInfo } from '@sylphx/code-core';
 
 export interface FileFilterResult {
   files: FileInfo[];

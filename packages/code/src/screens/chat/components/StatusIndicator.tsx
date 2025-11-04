@@ -4,8 +4,8 @@
  */
 
 import { Box, Text } from 'ink';
-import Spinner from '../../../components/Spinner.js';
 import type { MessagePart } from '../../../../types/session.types.js';
+import Spinner from '../../../components/Spinner.js';
 
 interface StatusIndicatorProps {
   isStreaming: boolean;
@@ -25,9 +25,9 @@ export function StatusIndicator({ isStreaming, streamParts }: StatusIndicatorPro
   const getStatusText = () => {
     if (streamParts.length === 0) {
       return 'Thinking...';
-    } else if (streamParts.some(p => p.type === 'tool' && p.status === 'active')) {
+    } else if (streamParts.some((p) => p.type === 'tool' && p.status === 'active')) {
       return 'Working...';
-    } else if (streamParts.some(p => p.type === 'reasoning')) {
+    } else if (streamParts.some((p) => p.type === 'reasoning')) {
       return 'Thinking...';
     } else {
       return 'Typing...';

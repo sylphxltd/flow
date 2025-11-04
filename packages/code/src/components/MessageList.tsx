@@ -4,11 +4,11 @@
  * Simple nested rendering - each message renders its own header + parts
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
 import type { SessionMessage } from '@sylphx/code-core';
-import { MessagePart } from './MessagePart.js';
 import { formatTokenCount } from '@sylphx/code-core';
+import { Box, Text } from 'ink';
+import React from 'react';
+import { MessagePart } from './MessagePart.js';
 
 interface MessageListProps {
   messages: SessionMessage[];
@@ -31,9 +31,7 @@ export function MessageList({ messages, attachmentTokens }: MessageListProps) {
 
           {/* Message Content */}
           {msg.content && Array.isArray(msg.content) ? (
-            msg.content.map((part, idx) => (
-              <MessagePart key={`part-${idx}`} part={part} />
-            ))
+            msg.content.map((part, idx) => <MessagePart key={`part-${idx}`} part={part} />)
           ) : msg.content ? (
             <Box marginLeft={2}>
               <Text>{String(msg.content)}</Text>
@@ -45,7 +43,9 @@ export function MessageList({ messages, attachmentTokens }: MessageListProps) {
           ) : null}
 
           {/* Attachments (for user messages) */}
-          {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
+          {msg.role === 'user' &&
+            msg.attachments &&
+            msg.attachments.length > 0 &&
             msg.attachments.map((att) => (
               <Box key={`att-${att.path}`} marginLeft={2}>
                 <Text dimColor>Attached(</Text>
@@ -58,31 +58,33 @@ export function MessageList({ messages, attachmentTokens }: MessageListProps) {
                   </>
                 )}
               </Box>
-            ))
-          )}
+            ))}
 
           {/* Footer (for assistant messages) */}
-          {msg.role === 'assistant' && msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage) && (
-            <Box flexDirection="column">
-              {msg.status === 'abort' && (
-                <Box marginLeft={2} marginBottom={1}>
-                  <Text color="#FFD700">[Aborted]</Text>
-                </Box>
-              )}
-              {msg.status === 'error' && (
-                <Box marginLeft={2} marginBottom={1}>
-                  <Text color="#FF3366">[Error]</Text>
-                </Box>
-              )}
-              {msg.usage && (
-                <Box marginLeft={2}>
-                  <Text dimColor>
-                    {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                  </Text>
-                </Box>
-              )}
-            </Box>
-          )}
+          {msg.role === 'assistant' &&
+            msg.status !== 'active' &&
+            (msg.status === 'abort' || msg.status === 'error' || msg.usage) && (
+              <Box flexDirection="column">
+                {msg.status === 'abort' && (
+                  <Box marginLeft={2} marginBottom={1}>
+                    <Text color="#FFD700">[Aborted]</Text>
+                  </Box>
+                )}
+                {msg.status === 'error' && (
+                  <Box marginLeft={2} marginBottom={1}>
+                    <Text color="#FF3366">[Error]</Text>
+                  </Box>
+                )}
+                {msg.usage && (
+                  <Box marginLeft={2}>
+                    <Text dimColor>
+                      {msg.usage.promptTokens.toLocaleString()} →{' '}
+                      {msg.usage.completionTokens.toLocaleString()}
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            )}
         </Box>
       ))}
     </>

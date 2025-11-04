@@ -8,12 +8,12 @@
  * - Optimized key handlers to return early when possible
  */
 
-import React, { useRef, useCallback } from 'react';
-import { Box, Text, useInput, useStdout } from 'ink';
 import { renderTextWithTags } from '@sylphx/code-client';
 import * as Cursor from '@sylphx/code-core';
 import * as Wrapping from '@sylphx/code-core';
 import * as TextOps from '@sylphx/code-core';
+import { Box, Text, useInput, useStdout } from 'ink';
+import React, { useCallback, useRef } from 'react';
 
 export interface ControlledTextInputProps {
   value: string;
@@ -53,7 +53,8 @@ function ControlledTextInput({
   const availableWidth = Math.max(40, terminalWidth - 10);
 
   // Memoize input handler to prevent recreating on every render
-  const handleInput = useCallback((input: string, key: any) => {
+  const handleInput = useCallback(
+    (input: string, key: any) => {
       // DEBUG: Log all key presses to understand Mac delete behavior
       if (process.env.DEBUG_INPUT) {
         console.log('[INPUT]', {
@@ -270,7 +271,9 @@ function ControlledTextInput({
         onChange(result.text);
         onCursorChange(result.cursor);
       }
-  }, [value, cursor, onChange, onCursorChange, onSubmit, availableWidth, disableUpDownArrows]);
+    },
+    [value, cursor, onChange, onCursorChange, onSubmit, availableWidth, disableUpDownArrows]
+  );
 
   useInput(handleInput, { isActive: focus });
 
@@ -318,8 +321,11 @@ function ControlledTextInput({
 
     if (i === cursorLogicalLine) {
       // This logical line contains the cursor
-      const { physicalLine: cursorPhysicalIdx, physicalCol } =
-        Wrapping.getPhysicalCursorPos(logicalLine, cursorLogicalCol, availableWidth);
+      const { physicalLine: cursorPhysicalIdx, physicalCol } = Wrapping.getPhysicalCursorPos(
+        logicalLine,
+        cursorLogicalCol,
+        availableWidth
+      );
 
       // Add each wrapped line
       wrappedLines.forEach((wrappedText, idx) => {
@@ -344,7 +350,7 @@ function ControlledTextInput({
 
   // Calculate visible window (scroll to keep cursor in view)
   const totalPhysicalLines = physicalLines.length;
-  const cursorPhysicalLineIdx = physicalLines.findIndex(line => line.hasCursor);
+  const cursorPhysicalLineIdx = physicalLines.findIndex((line) => line.hasCursor);
 
   let startLine = 0;
   let endLine = totalPhysicalLines;

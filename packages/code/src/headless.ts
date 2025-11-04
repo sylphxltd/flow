@@ -1,5 +1,5 @@
-import chalk from 'chalk';
 import { getTRPCClient } from '@sylphx/code-client';
+import chalk from 'chalk';
 
 /**
  * Headless mode - execute prompt and get response via tRPC
@@ -17,7 +17,7 @@ export async function runHeadless(prompt: string, options: any): Promise<void> {
 
     // Stream response from server
     const subscription = client.message.streamResponse.subscribe({
-      sessionId: options.continue ? undefined : null,  // undefined = continue last, null = new session
+      sessionId: options.continue ? undefined : null, // undefined = continue last, null = new session
       userMessage: prompt,
     });
 
@@ -46,7 +46,9 @@ export async function runHeadless(prompt: string, options: any): Promise<void> {
 
           case 'tool-result':
             if (options.verbose) {
-              console.error(chalk.dim(`[Result: ${JSON.stringify(event.result).substring(0, 100)}...]`));
+              console.error(
+                chalk.dim(`[Result: ${JSON.stringify(event.result).substring(0, 100)}...]`)
+              );
             }
             break;
 
@@ -71,7 +73,9 @@ export async function runHeadless(prompt: string, options: any): Promise<void> {
       },
       onComplete: () => {
         if (!hasOutput) {
-          console.error(chalk.yellow('\n⚠️  No output received. Model may not support tool calling.'));
+          console.error(
+            chalk.yellow('\n⚠️  No output received. Model may not support tool calling.')
+          );
           process.exit(1);
         }
       },
@@ -84,7 +88,6 @@ export async function runHeadless(prompt: string, options: any): Promise<void> {
         onError: resolve,
       });
     });
-
   } catch (error) {
     console.error(chalk.red('\n✗ Error:'), error instanceof Error ? error.message : String(error));
 

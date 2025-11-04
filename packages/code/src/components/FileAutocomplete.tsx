@@ -3,8 +3,8 @@
  * Shows file suggestions when user types @filename
  */
 
-import React from 'react';
 import { Box, Text } from 'ink';
+import React from 'react';
 import Spinner from './Spinner.js';
 
 interface FileAutocompleteProps {

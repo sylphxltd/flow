@@ -3,16 +3,16 @@
  * Handles all input modes: selection, pending command, and normal input
  */
 
-import { Box, Text } from 'ink';
-import TextInputWithHint from '../../../components/TextInputWithHint.js';
-import { SelectionUI } from '../../../components/SelectionUI.js';
-import { PendingCommandSelection } from '../../../components/PendingCommandSelection.js';
-import { FileAutocomplete } from '../../../components/FileAutocomplete.js';
-import { CommandAutocomplete } from '../../../components/CommandAutocomplete.js';
-import type { WaitForInputOptions, Command } from '../../../commands/types.js';
 import type { FileAttachment } from '@sylphx/code-core';
 import { formatTokenCount } from '@sylphx/code-core';
-import type { FilteredFileInfo, FilteredCommand } from '../autocomplete/types.js';
+import { Box, Text } from 'ink';
+import type { Command, WaitForInputOptions } from '../../../commands/types.js';
+import { CommandAutocomplete } from '../../../components/CommandAutocomplete.js';
+import { FileAutocomplete } from '../../../components/FileAutocomplete.js';
+import { PendingCommandSelection } from '../../../components/PendingCommandSelection.js';
+import { SelectionUI } from '../../../components/SelectionUI.js';
+import TextInputWithHint from '../../../components/TextInputWithHint.js';
+import type { FilteredCommand, FilteredFileInfo } from '../autocomplete/types.js';
 
 interface InputSectionProps {
   // Input state
@@ -126,7 +126,9 @@ export function InputSection({
           cachedOptions={cachedOptions}
           selectedCommandIndex={selectedCommandIndex}
           onSelect={async (option) => {
-            const response = await pendingCommand.command.execute(createCommandContext([option.value || option.label]));
+            const response = await pendingCommand.command.execute(
+              createCommandContext([option.value || option.label])
+            );
             if (currentSessionId && response) {
               addMessage(currentSessionId, 'assistant', response);
             }
@@ -179,7 +181,7 @@ export function InputSection({
               onSubmit={onSubmit}
               placeholder={
                 pendingInput?.type === 'text'
-                  ? (pendingInput.placeholder || 'Type your response...')
+                  ? pendingInput.placeholder || 'Type your response...'
                   : 'Type your message, / for commands, @ for files...'
               }
               showCursor
@@ -187,8 +189,7 @@ export function InputSection({
               validTags={validTags}
               disableUpDownArrows={
                 // Disable up/down arrows when autocomplete is active
-                filteredFileInfo.hasAt ||
-                (input.startsWith('/') && filteredCommands.length > 0)
+                filteredFileInfo.hasAt || (input.startsWith('/') && filteredCommands.length > 0)
               }
             />
           </Box>

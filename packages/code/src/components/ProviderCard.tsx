@@ -3,9 +3,9 @@
  * Display provider information
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
 import { AI_PROVIDERS, type ProviderId } from '@sylphx/code-core';
+import { Box, Text } from 'ink';
+import React from 'react';
 
 interface ProviderCardProps {
   providerId: ProviderId;

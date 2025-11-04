@@ -8,9 +8,9 @@
  * - Prevents awkward line wrapping in narrow containers
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
 import Markdown from '@jescalan/ink-markdown';
+import { Box, Text } from 'ink';
+import React from 'react';
 
 interface MarkdownTextProps {
   children: string;
@@ -20,9 +20,9 @@ interface MarkdownTextProps {
 
 // HR patterns to detect (markdown horizontal rules)
 const HR_PATTERNS = [
-  /^-{3,}\s*$/,  // --- (3 or more dashes)
+  /^-{3,}\s*$/, // --- (3 or more dashes)
   /^\*{3,}\s*$/, // *** (3 or more asterisks)
-  /^_{3,}\s*$/,  // ___ (3 or more underscores)
+  /^_{3,}\s*$/, // ___ (3 or more underscores)
 ];
 
 /**
@@ -41,7 +41,11 @@ function isHorizontalRule(line: string): boolean {
  *
  * PERFORMANCE: Memoized to prevent re-rendering when content hasn't changed
  */
-const MarkdownText = React.memo(function MarkdownText({ children, prefix, prefixColor }: MarkdownTextProps) {
+const MarkdownText = React.memo(function MarkdownText({
+  children,
+  prefix,
+  prefixColor,
+}: MarkdownTextProps) {
   // Split content into lines for HR detection
   const lines = children.split('\n');
 
@@ -81,9 +85,7 @@ const MarkdownText = React.memo(function MarkdownText({ children, prefix, prefix
 
         // Regular line without prefix
         // Return each line individually to maintain proper spacing
-        return (
-          <Markdown key={idx}>{line}</Markdown>
-        );
+        return <Markdown key={idx}>{line}</Markdown>;
       })}
     </Box>
   );

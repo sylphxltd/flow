@@ -3,18 +3,15 @@
  * Root React + Ink component with screen routing
  */
 
-import React, { useEffect, useState } from 'react';
+import { useAIConfig, useAppStore, useKeyboard, useSessionPersistence } from '@sylphx/code-client';
 import { Box, Text } from 'ink';
-import { useAppStore } from '@sylphx/code-client';
-import ProviderManagement from './screens/ProviderManagement.js';
-import ModelSelection from './screens/ModelSelection.js';
-import CommandPalette from './screens/CommandPalette.js';
+import React, { useEffect, useState } from 'react';
 import Chat from './screens/Chat.js';
-import Logs from './screens/Logs.js';
+import CommandPalette from './screens/CommandPalette.js';
 import Dashboard from './screens/Dashboard.js';
-import { useAIConfig } from '@sylphx/code-client';
-import { useKeyboard } from '@sylphx/code-client';
-import { useSessionPersistence } from '@sylphx/code-client';
+import Logs from './screens/Logs.js';
+import ModelSelection from './screens/ModelSelection.js';
+import ProviderManagement from './screens/ProviderManagement.js';
 
 function AppContent() {
   const currentScreen = useAppStore((state) => state.currentScreen);
@@ -69,7 +66,9 @@ function AppContent() {
     <Box flexDirection="column" width="100%" height="100%" paddingX={1}>
       {/* Header */}
       <Box paddingY={1}>
-        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+        <Text bold color="#00D9FF">
+          SYLPHX FLOW
+        </Text>
         <Text dimColor> │ </Text>
         <Text dimColor>AI Development Assistant</Text>
       </Box>
@@ -78,7 +77,10 @@ function AppContent() {
       {error && (
         <Box paddingY={1}>
           <Text color="#FF3366">▌</Text>
-          <Text color="#FF3366" bold> ERROR </Text>
+          <Text color="#FF3366" bold>
+            {' '}
+            ERROR{' '}
+          </Text>
           <Text color="gray">{error}</Text>
         </Box>
       )}
@@ -87,7 +89,10 @@ function AppContent() {
       {isLoading && (
         <Box paddingY={1}>
           <Text color="#FFD700">▌</Text>
-          <Text color="#FFD700" bold> LOADING</Text>
+          <Text color="#FFD700" bold>
+            {' '}
+            LOADING
+          </Text>
           <Text color="gray">...</Text>
         </Box>
       )}

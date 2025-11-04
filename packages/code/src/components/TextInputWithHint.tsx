@@ -5,8 +5,8 @@
  * PERFORMANCE: Memoized to prevent unnecessary re-renders
  */
 
-import React, { useState, useCallback } from 'react';
 import { Box, Text } from 'ink';
+import React, { useCallback, useState } from 'react';
 import ControlledTextInput from './ControlledTextInput.js';
 
 interface TextInputWithHintProps {
@@ -55,14 +55,20 @@ function TextInputWithHint({
   }, [value.length, controlledCursor, internalCursor]);
 
   // Memoize onChange to prevent creating new function on every render
-  const handleChange = useCallback((newValue: string) => {
-    onChange(newValue);
-  }, [onChange]);
+  const handleChange = useCallback(
+    (newValue: string) => {
+      onChange(newValue);
+    },
+    [onChange]
+  );
 
   // Memoize onSubmit to prevent creating new function on every render
-  const handleSubmit = useCallback((submittedValue: string) => {
-    onSubmit(submittedValue);
-  }, [onSubmit]);
+  const handleSubmit = useCallback(
+    (submittedValue: string) => {
+      onSubmit(submittedValue);
+    },
+    [onSubmit]
+  );
 
   return (
     <Box>
@@ -78,9 +84,7 @@ function TextInputWithHint({
         validTags={validTags}
         disableUpDownArrows={disableUpDownArrows}
       />
-      {hint && value.length > 0 ? (
-        <Text color="#444444">{hint}</Text>
-      ) : null}
+      {hint && value.length > 0 ? <Text color="#444444">{hint}</Text> : null}
     </Box>
   );
 }

@@ -44,23 +44,25 @@ export const compactCommand: Command = {
       const model = provider.createClient(providerConfig, currentSession.model);
 
       // Build conversation history for summarization
-      const conversationHistory = currentSession.messages.map((msg) => {
-        // Extract text content from MessagePart array
-        const textParts = msg.content
-          .filter((part) => part.type === 'text')
-          .map((part: any) => part.content);
-        let content = textParts.join('\n');
+      const conversationHistory = currentSession.messages
+        .map((msg) => {
+          // Extract text content from MessagePart array
+          const textParts = msg.content
+            .filter((part) => part.type === 'text')
+            .map((part: any) => part.content);
+          let content = textParts.join('\n');
 
-        // Include attachments info
-        if (msg.attachments && msg.attachments.length > 0) {
-          const attachmentsList = msg.attachments
-            .map((att) => `[Attached: ${att.relativePath}]`)
-            .join('\n');
-          content += `\n${attachmentsList}`;
-        }
+          // Include attachments info
+          if (msg.attachments && msg.attachments.length > 0) {
+            const attachmentsList = msg.attachments
+              .map((att) => `[Attached: ${att.relativePath}]`)
+              .join('\n');
+            content += `\n${attachmentsList}`;
+          }
 
-        return `${msg.role === 'user' ? 'User' : 'Assistant'}: ${content}`;
-      }).join('\n\n---\n\n');
+          return `${msg.role === 'user' ? 'User' : 'Assistant'}: ${content}`;
+        })
+        .join('\n\n---\n\n');
 
       // Create summarization prompt
       const summaryPrompt = `You are a conversation summarizer. Your task is to create a comprehensive, detailed summary of the following conversation that preserves ALL important information.
@@ -109,10 +111,7 @@ Please provide a detailed, structured summary now:`;
       }
 
       // Create new session with same provider/model
-      const newSessionId = context.createSession(
-        currentSession.provider,
-        currentSession.model
-      );
+      const newSessionId = context.createSession(currentSession.provider, currentSession.model);
 
       // Switch to new session
       context.setCurrentSession(newSessionId);

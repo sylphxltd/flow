@@ -3,14 +3,12 @@
  * Features: Keyboard navigation, full management capabilities
  */
 
-import React, { useState, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
-import { FullScreen } from '../components/FullScreen.js';
-import { useAppStore } from '@sylphx/code-client';
-import { getAllAgents, switchAgent } from '@sylphx/code-core';
-import { getAllRules, toggleRule } from '@sylphx/code-core';
-import { getTRPCClient } from '@sylphx/code-client';
 import type { Session } from '@sylphx/code-client';
+import { getTRPCClient, useAppStore } from '@sylphx/code-client';
+import { getAllAgents, getAllRules, switchAgent, toggleRule } from '@sylphx/code-core';
+import { Box, Text, useInput } from 'ink';
+import React, { useEffect, useState } from 'react';
+import { FullScreen } from '../components/FullScreen.js';
 
 type DashboardSection =
   | 'agents'
@@ -68,7 +66,14 @@ export default function Dashboard() {
 
     // Tab to switch sections
     if (key.tab) {
-      const sections: DashboardSection[] = ['agents', 'rules', 'sessions', 'providers', 'notifications', 'keybindings'];
+      const sections: DashboardSection[] = [
+        'agents',
+        'rules',
+        'sessions',
+        'providers',
+        'notifications',
+        'keybindings',
+      ];
       const currentIndex = sections.indexOf(selectedSection);
       const nextIndex = (currentIndex + 1) % sections.length;
       setSelectedSection(sections[nextIndex]);
@@ -90,7 +95,14 @@ export default function Dashboard() {
     if (mode === 'browse') {
       const num = parseInt(input);
       if (num >= 1 && num <= 6) {
-        const sections: DashboardSection[] = ['agents', 'rules', 'sessions', 'providers', 'notifications', 'keybindings'];
+        const sections: DashboardSection[] = [
+          'agents',
+          'rules',
+          'sessions',
+          'providers',
+          'notifications',
+          'keybindings',
+        ];
         setSelectedSection(sections[num - 1]);
         setSelectedItemIndex(0);
         return;
@@ -145,8 +157,13 @@ export default function Dashboard() {
         }
         break;
 
-      case 'notifications':
-        const settings = ['osNotifications', 'terminalNotifications', 'sound', 'autoGenerateTitle'] as const;
+      case 'notifications': {
+        const settings = [
+          'osNotifications',
+          'terminalNotifications',
+          'sound',
+          'autoGenerateTitle',
+        ] as const;
         const setting = settings[selectedItemIndex];
         if (setting) {
           // Read current state at action time, not closure time
@@ -154,6 +171,7 @@ export default function Dashboard() {
           updateNotificationSettings({ [setting]: !currentSettings[setting] });
         }
         break;
+      }
     }
   };
 
@@ -173,28 +191,22 @@ export default function Dashboard() {
 
             return (
               <Box key={agent.id} marginBottom={1} paddingY={0}>
-                <Text dimColor>{idx + 1}  </Text>
+                <Text dimColor>{idx + 1} </Text>
                 <Text
                   bold={isActive || isSelected}
-                  color={
-                    isActive
-                      ? '#00FF88'
-                      : isSelected
-                      ? '#00D9FF'
-                      : 'white'
-                  }
+                  color={isActive ? '#00FF88' : isSelected ? '#00D9FF' : 'white'}
                 >
                   {agent.metadata.name}
                 </Text>
                 {isActive && (
                   <>
-                    <Text dimColor>  </Text>
+                    <Text dimColor> </Text>
                     <Text color="#00FF88">●</Text>
                   </>
                 )}
                 {isSelected && mode === 'edit' && (
                   <>
-                    <Text dimColor>  </Text>
+                    <Text dimColor> </Text>
                     <Text color="#00D9FF">◄</Text>
                   </>
                 )}
@@ -205,7 +217,9 @@ export default function Dashboard() {
 
         {mode === 'edit' && (
           <Box marginTop={2}>
-            <Text dimColor italic>↑↓ Navigate  ENTER/SPACE Switch  ESC Cancel</Text>
+            <Text dimColor italic>
+              ↑↓ Navigate ENTER/SPACE Switch ESC Cancel
+            </Text>
           </Box>
         )}
       </Box>
@@ -218,7 +232,9 @@ export default function Dashboard() {
         <Box marginBottom={2}>
           <Text color="#00D9FF">RULES</Text>
           <Box flexGrow={1} />
-          <Text dimColor>{enabledRuleIds.length}/{rules.length} enabled</Text>
+          <Text dimColor>
+            {enabledRuleIds.length}/{rules.length} enabled
+          </Text>
         </Box>
 
         <Box flexDirection="column">
@@ -228,26 +244,18 @@ export default function Dashboard() {
 
             return (
               <Box key={rule.id} marginBottom={1} paddingY={0}>
-                <Text dimColor>{idx + 1}  </Text>
+                <Text dimColor>{idx + 1} </Text>
                 <Text
                   bold={isSelected}
-                  color={
-                    isSelected
-                      ? '#00D9FF'
-                      : isEnabled
-                      ? '#00FF88'
-                      : 'gray'
-                  }
+                  color={isSelected ? '#00D9FF' : isEnabled ? '#00FF88' : 'gray'}
                 >
                   {rule.id}
                 </Text>
                 <Box flexGrow={1} />
-                <Text color={isEnabled ? '#00FF88' : '#FF3366'}>
-                  {isEnabled ? 'ON' : 'OFF'}
-                </Text>
+                <Text color={isEnabled ? '#00FF88' : '#FF3366'}>{isEnabled ? 'ON' : 'OFF'}</Text>
                 {isSelected && mode === 'edit' && (
                   <>
-                    <Text dimColor>  </Text>
+                    <Text dimColor> </Text>
                     <Text color="#00D9FF">◄</Text>
                   </>
                 )}
@@ -258,7 +266,9 @@ export default function Dashboard() {
 
         {mode === 'edit' && (
           <Box marginTop={2}>
-            <Text dimColor italic>↑↓ Navigate  SPACE Toggle  ESC Cancel</Text>
+            <Text dimColor italic>
+              ↑↓ Navigate SPACE Toggle ESC Cancel
+            </Text>
           </Box>
         )}
       </Box>
@@ -278,11 +288,9 @@ export default function Dashboard() {
           {sessions.slice(0, 15).map((session, idx) => {
             return (
               <Box key={session.id} marginBottom={1}>
-                <Text dimColor>{idx + 1}  </Text>
-                <Text color="#00FF88">
-                  {session.title || 'New Chat'}
-                </Text>
-                <Text dimColor>  {session.messages.length} msg</Text>
+                <Text dimColor>{idx + 1} </Text>
+                <Text color="#00FF88">{session.title || 'New Chat'}</Text>
+                <Text dimColor> {session.messages.length} msg</Text>
               </Box>
             );
           })}
@@ -307,7 +315,7 @@ export default function Dashboard() {
             return (
               <Box key={providerId} marginBottom={1} flexDirection="column">
                 <Box>
-                  <Text dimColor>{idx + 1}  </Text>
+                  <Text dimColor>{idx + 1} </Text>
                   <Text bold color="#00FF88">
                     {providerId}
                   </Text>
@@ -327,10 +335,22 @@ export default function Dashboard() {
 
   const renderNotifications = () => {
     const settings = [
-      { key: 'osNotifications', label: 'OS Notifications', value: notificationSettings.osNotifications },
-      { key: 'terminalNotifications', label: 'Terminal', value: notificationSettings.terminalNotifications },
+      {
+        key: 'osNotifications',
+        label: 'OS Notifications',
+        value: notificationSettings.osNotifications,
+      },
+      {
+        key: 'terminalNotifications',
+        label: 'Terminal',
+        value: notificationSettings.terminalNotifications,
+      },
       { key: 'sound', label: 'Sound', value: notificationSettings.sound },
-      { key: 'autoGenerateTitle', label: 'Auto-Generate Title (LLM)', value: notificationSettings.autoGenerateTitle },
+      {
+        key: 'autoGenerateTitle',
+        label: 'Auto-Generate Title (LLM)',
+        value: notificationSettings.autoGenerateTitle,
+      },
     ];
 
     return (
@@ -338,7 +358,7 @@ export default function Dashboard() {
         <Box marginBottom={2}>
           <Text color="#00D9FF">NOTIFICATIONS</Text>
           <Box flexGrow={1} />
-          <Text dimColor>{settings.filter(s => s.value).length}/4 enabled</Text>
+          <Text dimColor>{settings.filter((s) => s.value).length}/4 enabled</Text>
         </Box>
 
         <Box flexDirection="column">
@@ -347,11 +367,8 @@ export default function Dashboard() {
 
             return (
               <Box key={setting.key} marginBottom={1}>
-                <Text dimColor>{idx + 1}  </Text>
-                <Text
-                  bold={isSelected}
-                  color={isSelected ? '#00D9FF' : 'white'}
-                >
+                <Text dimColor>{idx + 1} </Text>
+                <Text bold={isSelected} color={isSelected ? '#00D9FF' : 'white'}>
                   {setting.label}
                 </Text>
                 <Box flexGrow={1} />
@@ -360,7 +377,7 @@ export default function Dashboard() {
                 </Text>
                 {isSelected && mode === 'edit' && (
                   <>
-                    <Text dimColor>  </Text>
+                    <Text dimColor> </Text>
                     <Text color="#00D9FF">◄</Text>
                   </>
                 )}
@@ -371,7 +388,9 @@ export default function Dashboard() {
 
         {mode === 'edit' && (
           <Box marginTop={2}>
-            <Text dimColor italic>↑↓ Navigate  SPACE Toggle  ESC Cancel</Text>
+            <Text dimColor italic>
+              ↑↓ Navigate SPACE Toggle ESC Cancel
+            </Text>
           </Box>
         )}
       </Box>
@@ -399,7 +418,7 @@ export default function Dashboard() {
             return (
               <Box key={idx} marginBottom={1}>
                 <Text color="#00FF88">{kb.keys}</Text>
-                <Text dimColor>  →  </Text>
+                <Text dimColor> → </Text>
                 <Text dimColor>{kb.action}</Text>
               </Box>
             );
@@ -441,12 +460,12 @@ export default function Dashboard() {
     <FullScreen flexDirection="column">
       {/* Header */}
       <Box flexShrink={0} paddingX={2} paddingY={1}>
-        <Text bold color="#00D9FF">SYLPHX FLOW</Text>
-        <Text dimColor>  Control Panel</Text>
+        <Text bold color="#00D9FF">
+          SYLPHX FLOW
+        </Text>
+        <Text dimColor> Control Panel</Text>
         <Box flexGrow={1} />
-        {mode === 'edit' && (
-          <Text color="#FFD700">EDIT MODE</Text>
-        )}
+        {mode === 'edit' && <Text color="#FFD700">EDIT MODE</Text>}
       </Box>
 
       {/* Main content */}
@@ -458,16 +477,13 @@ export default function Dashboard() {
 
             return (
               <Box key={section.id} marginBottom={1}>
-                <Text dimColor>{section.num}  </Text>
-                <Text
-                  bold={isSelected}
-                  color={isSelected ? '#00FF88' : 'white'}
-                >
+                <Text dimColor>{section.num} </Text>
+                <Text bold={isSelected} color={isSelected ? '#00FF88' : 'white'}>
                   {section.label}
                 </Text>
                 {isSelected && (
                   <>
-                    <Text dimColor>  </Text>
+                    <Text dimColor> </Text>
                     <Text color="#00FF88">●</Text>
                   </>
                 )}
@@ -485,11 +501,11 @@ export default function Dashboard() {
       {/* Footer */}
       <Box flexShrink={0} paddingX={2} paddingY={1}>
         <Text dimColor>TAB</Text>
-        <Text dimColor>  Next  </Text>
+        <Text dimColor> Next </Text>
         <Text dimColor>ENTER</Text>
-        <Text dimColor>  Edit  </Text>
+        <Text dimColor> Edit </Text>
         <Text dimColor>ESC</Text>
-        <Text dimColor>  Exit</Text>
+        <Text dimColor> Exit</Text>
         <Box flexGrow={1} />
         <Text dimColor italic>
           Press number keys 1-6 for quick navigation

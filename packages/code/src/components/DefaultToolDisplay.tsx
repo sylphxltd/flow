@@ -4,12 +4,12 @@
  * Generic - does not know about specific tools
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
-import Spinner from './Spinner.js';
+import type { ToolDisplayProps } from '@sylphx/code-client';
 import { useElapsedTime } from '@sylphx/code-client';
 import type { ArgsFormatter, ResultFormatter } from '@sylphx/code-core';
-import type { ToolDisplayProps } from '@sylphx/code-client';
+import { Box, Text } from 'ink';
+import type React from 'react';
+import Spinner from './Spinner.js';
 
 interface StatusIndicatorProps {
   status: 'running' | 'completed' | 'failed';
@@ -25,9 +25,7 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
     );
   }
 
-  return status === 'completed'
-    ? <Text color="#00FF88">✓ </Text>
-    : <Text color="#FF3366">✗ </Text>;
+  return status === 'completed' ? <Text color="#00FF88">✓ </Text> : <Text color="#FF3366">✗ </Text>;
 };
 
 interface ToolHeaderProps {
@@ -67,11 +65,7 @@ interface ResultDisplayProps {
   error?: string;
 }
 
-const ResultDisplay: React.FC<ResultDisplayProps> = ({
-  status,
-  formattedResult,
-  error,
-}) => {
+const ResultDisplay: React.FC<ResultDisplayProps> = ({ status, formattedResult, error }) => {
   // Don't show anything for running tools
   if (status === 'running') {
     return null;

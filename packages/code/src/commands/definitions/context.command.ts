@@ -46,7 +46,9 @@ export const contextCommand: Command = {
     const contextLimit = getContextLimit(modelName);
 
     // Calculate token counts
-    context.addLog(`[Context] Calculating token counts for ${modelName} (limit: ${formatTokenCount(contextLimit)})...`);
+    context.addLog(
+      `[Context] Calculating token counts for ${modelName} (limit: ${formatTokenCount(contextLimit)})...`
+    );
 
     // System prompt tokens - use the actual system prompt that gets sent
     const systemPrompt = getSystemPrompt();
@@ -57,7 +59,7 @@ export const contextCommand: Command = {
     const { getCurrentSystemPrompt } = await import('@sylphx/code-core');
     const BASE_SYSTEM_PROMPT = `You are Sylphx, an AI development assistant.`;
 
-    let systemPromptBreakdown: Record<string, number> = {};
+    const systemPromptBreakdown: Record<string, number> = {};
     try {
       systemPromptBreakdown['Base prompt'] = await countTokens(BASE_SYSTEM_PROMPT, modelName);
 
@@ -83,7 +85,7 @@ export const contextCommand: Command = {
       const toolRepresentation = {
         name: toolName,
         description: toolDef.description || '',
-        parameters: toolDef.parameters || {}
+        parameters: toolDef.parameters || {},
       };
       const toolJson = JSON.stringify(toolRepresentation, null, 0); // No spaces for compact representation
       const tokens = await countTokens(toolJson, modelName);
@@ -152,10 +154,16 @@ export const contextCommand: Command = {
       const line1 = '█'.repeat(systemPromptBlocks) + '░'.repeat(totalBlocks - systemPromptBlocks);
 
       // Line 2: Tools (green)
-      const line2 = '░'.repeat(systemPromptBlocks) + '█'.repeat(toolsBlocks) + '░'.repeat(totalBlocks - systemPromptBlocks - toolsBlocks);
+      const line2 =
+        '░'.repeat(systemPromptBlocks) +
+        '█'.repeat(toolsBlocks) +
+        '░'.repeat(totalBlocks - systemPromptBlocks - toolsBlocks);
 
       // Line 3: Messages (yellow)
-      const line3 = '░'.repeat(systemPromptBlocks + toolsBlocks) + '█'.repeat(messagesBlocks) + '░'.repeat(freeBlocks);
+      const line3 =
+        '░'.repeat(systemPromptBlocks + toolsBlocks) +
+        '█'.repeat(messagesBlocks) +
+        '░'.repeat(freeBlocks);
 
       return [line1, line2, line3];
     };

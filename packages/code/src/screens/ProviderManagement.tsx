@@ -3,15 +3,13 @@
  * Add, edit, remove AI providers
  */
 
-import React, { useState } from 'react';
+import { useAIConfig, useAppStore, useKeyboard } from '@sylphx/code-client';
+import { AI_PROVIDERS, getConfiguredProviders, type ProviderId } from '@sylphx/code-core';
 import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
-import { useAppStore } from '@sylphx/code-client';
-import { useAIConfig } from '@sylphx/code-client';
-import { useKeyboard } from '@sylphx/code-client';
+import React, { useState } from 'react';
 import ProviderCard from '../components/ProviderCard.js';
-import { AI_PROVIDERS, type ProviderId, getConfiguredProviders } from '@sylphx/code-core';
 
 type Mode = 'menu' | 'add' | 'remove' | 'view';
 
@@ -38,9 +36,7 @@ export default function ProviderManagement() {
     const items: MenuItem[] = [
       { label: 'Add/Update Provider', value: 'add' },
       { label: 'View Providers', value: 'view' },
-      ...(configuredProviders.length > 0
-        ? [{ label: 'Remove Provider', value: 'remove' }]
-        : []),
+      ...(configuredProviders.length > 0 ? [{ label: 'Remove Provider', value: 'remove' }] : []),
       { label: 'Back to Chat', value: 'back' },
     ];
 

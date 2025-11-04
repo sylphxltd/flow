@@ -3,8 +3,8 @@
  * Animated loading indicator
  */
 
-import React, { useState, useEffect } from 'react';
 import { Text } from 'ink';
+import React, { useEffect, useState } from 'react';
 
 const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 

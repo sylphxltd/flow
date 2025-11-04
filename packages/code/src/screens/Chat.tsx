@@ -10,47 +10,45 @@
  * - All UI rendering extracted to separate components
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  useAIConfig,
+  useAppStore,
+  useAskToolHandler,
+  useChat,
+  useFileAttachments,
+  useKeyboardNavigation,
+  useProjectFiles,
+  useSessionInitialization,
+  useTokenCalculation,
+} from '@sylphx/code-client';
 import { Box, useInput } from 'ink';
-import TodoList from '../components/TodoList.js';
-import { useAppStore } from '@sylphx/code-client';
-import { useChat } from '@sylphx/code-client';
-import { useAIConfig } from '@sylphx/code-client';
-import StatusBar from '../components/StatusBar.js';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { commands } from '../commands/registry.js';
-import { useFileAttachments } from '@sylphx/code-client';
-import { useKeyboardNavigation } from '@sylphx/code-client';
-import { useTokenCalculation } from '@sylphx/code-client';
-import { useProjectFiles } from '@sylphx/code-client';
-import { useAskToolHandler } from '@sylphx/code-client';
-import { useSessionInitialization } from '@sylphx/code-client';
-
-// Custom hooks
-import { useInputState } from './chat/hooks/useInputState.js';
-import { useStreamingState } from './chat/hooks/useStreamingState.js';
-import { useSelectionState } from './chat/hooks/useSelectionState.js';
-import { useCommandState } from './chat/hooks/useCommandState.js';
-
-// Streaming utilities
-import { createSubscriptionSendUserMessageToAI } from './chat/streaming/subscriptionAdapter.js';
-
+import StatusBar from '../components/StatusBar.js';
+import TodoList from '../components/TodoList.js';
+import { useCommandAutocomplete } from './chat/autocomplete/commandAutocomplete.js';
+import { useFileAutocomplete } from './chat/autocomplete/fileAutocomplete.js';
+// Autocomplete
+import { createGetHintText } from './chat/autocomplete/hintText.js';
+import { useCommandOptionLoader } from './chat/autocomplete/optionLoader.js';
 // Command handling
 import { createCommandContext } from './chat/commands/commandContext.js';
 import { createHandleSubmit } from './chat/handlers/messageHandler.js';
-
-// Autocomplete
-import { createGetHintText } from './chat/autocomplete/hintText.js';
-import { useFileAutocomplete } from './chat/autocomplete/fileAutocomplete.js';
-import { useCommandAutocomplete } from './chat/autocomplete/commandAutocomplete.js';
-import { useCommandOptionLoader } from './chat/autocomplete/optionLoader.js';
+import { useCommandState } from './chat/hooks/useCommandState.js';
+// Custom hooks
+import { useInputState } from './chat/hooks/useInputState.js';
+import { useSelectionState } from './chat/hooks/useSelectionState.js';
+import { useStreamingState } from './chat/hooks/useStreamingState.js';
+// Streaming utilities
+import { createSubscriptionSendUserMessageToAI } from './chat/streaming/subscriptionAdapter.js';
 
 // Note: useMessageHistory not needed - using useInputState which includes history management
 
 // UI components
 import { ChatHeader } from './chat/components/ChatHeader.js';
 import { ChatMessages } from './chat/components/ChatMessages.js';
-import { StatusIndicator } from './chat/components/StatusIndicator.js';
 import { InputSection } from './chat/components/InputSection.js';
+import { StatusIndicator } from './chat/components/StatusIndicator.js';
 
 interface ChatProps {
   commandFromPalette?: string | null;
@@ -300,7 +298,13 @@ export default function Chat(_props: ChatProps) {
 
   // Autocomplete hooks
   const filteredFileInfo = useFileAutocomplete(input, normalizedCursor, projectFiles);
-  const filteredCommands = useCommandAutocomplete(input, normalizedCursor, cachedOptions, createCommandContextForArgs, commands);
+  const filteredCommands = useCommandAutocomplete(
+    input,
+    normalizedCursor,
+    cachedOptions,
+    createCommandContextForArgs,
+    commands
+  );
 
   // Get hint text for current input
   const hintText = useMemo(() => getHintText(input), [input, getHintText]);
@@ -536,41 +540,41 @@ export default function Chat(_props: ChatProps) {
         {/* Input Area */}
         <Box flexShrink={0}>
           <InputSection
-          input={input}
-          cursor={normalizedCursor}
-          pendingInput={pendingInput}
-          pendingCommand={pendingCommand}
-          multiSelectionPage={multiSelectionPage}
-          multiSelectionAnswers={multiSelectionAnswers}
-          multiSelectChoices={multiSelectChoices}
-          selectionFilter={selectionFilter}
-          isFilterMode={isFilterMode}
-          freeTextInput={freeTextInput}
-          isFreeTextMode={isFreeTextMode}
-          selectedCommandIndex={selectedCommandIndex}
-          askQueueLength={askQueueLength}
-          pendingAttachments={pendingAttachments}
-          attachmentTokens={attachmentTokens}
-          showEscHint={showEscHint}
-          filteredFileInfo={filteredFileInfo}
-          filteredCommands={filteredCommands}
-          filesLoading={filesLoading}
-          selectedFileIndex={selectedFileIndex}
-          currentlyLoading={currentlyLoading}
-          loadError={loadError}
-          cachedOptions={cachedOptions}
-          hintText={hintText}
-          validTags={validTags}
-          currentSessionId={currentSessionId}
-          setInput={setInput}
-          setCursor={setCursor}
-          setSelectionFilter={setSelectionFilter}
-          setSelectedCommandIndex={setSelectedCommandIndex}
-          onSubmit={handleSubmit}
-          addMessage={addMessage}
-          createCommandContext={createCommandContextForArgs}
-          setPendingCommand={setPendingCommand}
-        />
+            input={input}
+            cursor={normalizedCursor}
+            pendingInput={pendingInput}
+            pendingCommand={pendingCommand}
+            multiSelectionPage={multiSelectionPage}
+            multiSelectionAnswers={multiSelectionAnswers}
+            multiSelectChoices={multiSelectChoices}
+            selectionFilter={selectionFilter}
+            isFilterMode={isFilterMode}
+            freeTextInput={freeTextInput}
+            isFreeTextMode={isFreeTextMode}
+            selectedCommandIndex={selectedCommandIndex}
+            askQueueLength={askQueueLength}
+            pendingAttachments={pendingAttachments}
+            attachmentTokens={attachmentTokens}
+            showEscHint={showEscHint}
+            filteredFileInfo={filteredFileInfo}
+            filteredCommands={filteredCommands}
+            filesLoading={filesLoading}
+            selectedFileIndex={selectedFileIndex}
+            currentlyLoading={currentlyLoading}
+            loadError={loadError}
+            cachedOptions={cachedOptions}
+            hintText={hintText}
+            validTags={validTags}
+            currentSessionId={currentSessionId}
+            setInput={setInput}
+            setCursor={setCursor}
+            setSelectionFilter={setSelectionFilter}
+            setSelectedCommandIndex={setSelectedCommandIndex}
+            onSubmit={handleSubmit}
+            addMessage={addMessage}
+            createCommandContext={createCommandContextForArgs}
+            setPendingCommand={setPendingCommand}
+          />
         </Box>
 
         {/* Status Bar */}

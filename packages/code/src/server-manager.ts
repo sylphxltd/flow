@@ -3,12 +3,12 @@
  * Manages code-server daemon lifecycle
  */
 
-import { spawn, ChildProcess } from 'child_process';
-import { checkServer, waitForServer } from './trpc-client.js';
 import chalk from 'chalk';
+import { ChildProcess, spawn } from 'child_process';
 import { existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { checkServer, waitForServer } from './trpc-client.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,11 +52,9 @@ function isServerAvailable(): boolean {
  *
  * @returns true if server is running/started
  */
-export async function ensureServer(options: {
-  autoStart?: boolean;
-  timeout?: number;
-  quiet?: boolean;
-} = {}): Promise<boolean> {
+export async function ensureServer(
+  options: { autoStart?: boolean; timeout?: number; quiet?: boolean } = {}
+): Promise<boolean> {
   const { autoStart = true, timeout = 5000, quiet = false } = options;
 
   // 1. Check if server already running
@@ -90,9 +88,9 @@ export async function ensureServer(options: {
 
   try {
     const serverProcess = spawn(serverCommand.command, serverCommand.args, {
-      detached: true,      // Run independently
-      stdio: 'ignore',     // Don't pipe stdio
-      shell: false,        // Direct execution
+      detached: true, // Run independently
+      stdio: 'ignore', // Don't pipe stdio
+      shell: false, // Direct execution
     });
 
     // Unref to allow parent to exit

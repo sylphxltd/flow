@@ -21,9 +21,8 @@ export const bashesCommand: Command = {
     const processOptions = processes.map((proc) => {
       const status = proc.isRunning ? '[*] Running' : '[x] Completed';
       const duration = Math.floor(proc.duration / 1000);
-      const durationStr = duration > 60
-        ? `${Math.floor(duration / 60)}m ${duration % 60}s`
-        : `${duration}s`;
+      const durationStr =
+        duration > 60 ? `${Math.floor(duration / 60)}m ${duration % 60}s` : `${duration}s`;
 
       return {
         label: `${status} [${durationStr}] ${proc.command}`,
@@ -31,7 +30,9 @@ export const bashesCommand: Command = {
       };
     });
 
-    context.sendMessage(`Found ${processes.length} background bash process${processes.length !== 1 ? 'es' : ''}:`);
+    context.sendMessage(
+      `Found ${processes.length} background bash process${processes.length !== 1 ? 'es' : ''}:`
+    );
     const answers = await context.waitForInput({
       type: 'selection',
       questions: [
@@ -66,9 +67,10 @@ export const bashesCommand: Command = {
       ],
     });
 
-    const selectedId = typeof processAnswers === 'object' && !Array.isArray(processAnswers)
-      ? processAnswers['process']
-      : '';
+    const selectedId =
+      typeof processAnswers === 'object' && !Array.isArray(processAnswers)
+        ? processAnswers['process']
+        : '';
 
     if (!selectedId) {
       return 'No process selected.';

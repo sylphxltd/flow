@@ -3,9 +3,9 @@
  * Handles rendering of selection mode for questions with options
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
 import { calculateScrollViewport } from '@sylphx/code-core';
+import { Box, Text } from 'ink';
+import React from 'react';
 import type { WaitForInputOptions } from '../commands/types.js';
 
 interface SelectionUIProps {
@@ -76,21 +76,19 @@ export function SelectionUI({
       {questions.map((q, qIdx) => {
         const isCurrentQuestion = qIdx === multiSelectionPage;
         const answer = multiSelectionAnswers[q.id];
-        const answerOption = answer ? q.options.find((opt) => (opt.value || opt.label) === answer) : null;
+        const answerOption = answer
+          ? q.options.find((opt) => (opt.value || opt.label) === answer)
+          : null;
 
         return (
           <Box key={q.id} marginBottom={1} flexDirection="column">
             {/* Question header */}
             <Box>
-              {!isSingleQuestion && (
-                <Text color="#00D9FF">Q{qIdx + 1}. </Text>
-              )}
+              {!isSingleQuestion && <Text color="#00D9FF">Q{qIdx + 1}. </Text>}
               <Text bold={isCurrentQuestion} color={isCurrentQuestion ? '#00D9FF' : 'gray'}>
                 {q.question}
               </Text>
-              {isCurrentQuestion && !isSingleQuestion && (
-                <Text color="#00FF88"> ← </Text>
-              )}
+              {isCurrentQuestion && !isSingleQuestion && <Text color="#00FF88"> ← </Text>}
             </Box>
 
             {/* Answer or expanded options */}
@@ -100,7 +98,7 @@ export function SelectionUI({
                 {/* Free Text Input */}
                 {isFreeTextMode ? (
                   <Box marginBottom={1}>
-                    <Text dimColor>✏️  </Text>
+                    <Text dimColor>✏️ </Text>
                     <Text color="#00FF88">{freeTextInput}</Text>
                     <Text color="#00FF88">▊</Text>
                     <Text dimColor> (Enter to submit, Esc to cancel)</Text>
@@ -127,63 +125,67 @@ export function SelectionUI({
                 )}
 
                 {/* Options */}
-                {!isFreeTextMode && (() => {
-                  // Safety check: ensure options exist
-                  if (!q.options || !Array.isArray(q.options)) {
-                    return (
-                      <Box>
-                        <Text color="red">⚠ Error: No options available for this question</Text>
-                        <Text dimColor>Question data: {JSON.stringify(q)}</Text>
-                      </Box>
+                {!isFreeTextMode &&
+                  (() => {
+                    // Safety check: ensure options exist
+                    if (!q.options || !Array.isArray(q.options)) {
+                      return (
+                        <Box>
+                          <Text color="red">⚠ Error: No options available for this question</Text>
+                          <Text dimColor>Question data: {JSON.stringify(q)}</Text>
+                        </Box>
+                      );
+                    }
+
+                    const filteredOptions = q.options.filter(
+                      (option) =>
+                        option.label.toLowerCase().includes(selectionFilter.toLowerCase()) ||
+                        (option.value &&
+                          option.value.toLowerCase().includes(selectionFilter.toLowerCase()))
                     );
-                  }
 
-                  const filteredOptions = q.options.filter(
-                    (option) =>
-                      option.label.toLowerCase().includes(selectionFilter.toLowerCase()) ||
-                      (option.value && option.value.toLowerCase().includes(selectionFilter.toLowerCase()))
-                  );
+                    if (filteredOptions.length === 0) {
+                      return <Text color="yellow">⚠ No matches found</Text>;
+                    }
 
-                  if (filteredOptions.length === 0) {
-                    return <Text color="yellow">⚠ No matches found</Text>;
-                  }
+                    // Calculate scroll window to keep selected item visible
+                    const viewport = calculateScrollViewport(filteredOptions, selectedCommandIndex);
 
-                  // Calculate scroll window to keep selected item visible
-                  const viewport = calculateScrollViewport(filteredOptions, selectedCommandIndex);
-
-                  return (
-                    <>
-                      {viewport.hasItemsAbove && (
-                        <Box marginBottom={1}>
-                          <Text dimColor>... {viewport.itemsAboveCount} more above</Text>
-                        </Box>
-                      )}
-                      {viewport.visibleItems.map((option, idx) => {
-                        const absoluteIdx = viewport.scrollOffset + idx;
-                        const optionValue = option.value || option.label;
-                        const isChecked = q.multiSelect && multiSelectChoices.has(optionValue);
-                        const cursor = absoluteIdx === selectedCommandIndex ? '▶ ' : '  ';
-                        const checkbox = q.multiSelect ? (isChecked ? '[✓] ' : '[ ] ') : '';
-
-                        return (
-                          <Box key={option.value || option.label} paddingY={0}>
-                            <Text
-                              color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
-                              bold={absoluteIdx === selectedCommandIndex}
-                            >
-                              {cursor}{checkbox}{option.label}
-                            </Text>
+                    return (
+                      <>
+                        {viewport.hasItemsAbove && (
+                          <Box marginBottom={1}>
+                            <Text dimColor>... {viewport.itemsAboveCount} more above</Text>
                           </Box>
-                        );
-                      })}
-                      {viewport.hasItemsBelow && (
-                        <Box marginTop={1}>
-                          <Text dimColor>... {viewport.itemsBelowCount} more below</Text>
-                        </Box>
-                      )}
-                    </>
-                  );
-                })()}
+                        )}
+                        {viewport.visibleItems.map((option, idx) => {
+                          const absoluteIdx = viewport.scrollOffset + idx;
+                          const optionValue = option.value || option.label;
+                          const isChecked = q.multiSelect && multiSelectChoices.has(optionValue);
+                          const cursor = absoluteIdx === selectedCommandIndex ? '▶ ' : '  ';
+                          const checkbox = q.multiSelect ? (isChecked ? '[✓] ' : '[ ] ') : '';
+
+                          return (
+                            <Box key={option.value || option.label} paddingY={0}>
+                              <Text
+                                color={absoluteIdx === selectedCommandIndex ? '#00FF88' : 'gray'}
+                                bold={absoluteIdx === selectedCommandIndex}
+                              >
+                                {cursor}
+                                {checkbox}
+                                {option.label}
+                              </Text>
+                            </Box>
+                          );
+                        })}
+                        {viewport.hasItemsBelow && (
+                          <Box marginTop={1}>
+                            <Text dimColor>... {viewport.itemsBelowCount} more below</Text>
+                          </Box>
+                        )}
+                      </>
+                    );
+                  })()}
               </Box>
             ) : (
               // Other questions: show answer or not answered
@@ -192,9 +194,7 @@ export function SelectionUI({
                   <>
                     <Text color="#00FF88">✓ </Text>
                     <Text color="#00FF88">
-                      {Array.isArray(answer)
-                        ? answer.join(', ')
-                        : (answerOption?.label || answer)}
+                      {Array.isArray(answer) ? answer.join(', ') : answerOption?.label || answer}
                     </Text>
                   </>
                 ) : (
@@ -231,17 +231,17 @@ export function SelectionUI({
               <Text dimColor> · /: </Text>
               <Text color="#00D9FF">Filter</Text>
             </>
-          ) : !isFilterMode ? (
+          ) : isFilterMode ? (
             <>
               <Text dimColor> · Enter: </Text>
               <Text color="#00FF88">Select</Text>
-              <Text dimColor> · /: </Text>
-              <Text color="#00D9FF">Filter</Text>
             </>
           ) : (
             <>
               <Text dimColor> · Enter: </Text>
               <Text color="#00FF88">Select</Text>
+              <Text dimColor> · /: </Text>
+              <Text color="#00D9FF">Filter</Text>
             </>
           )}
           {!isSingleQuestion && !isFilterMode && (

@@ -3,14 +3,16 @@
  * Extract duplicated provider selection and switching logic
  */
 
-import type { CommandContext } from '../types.js';
 import type { ProviderId } from '../../../types/provider.types.js';
+import type { CommandContext } from '../types.js';
 import { configureProvider } from './provider-config.js';
 
 /**
  * Get provider options with configured status
  */
-export async function getProviderOptions(context: CommandContext): Promise<Array<{ label: string; value: string }>> {
+export async function getProviderOptions(
+  context: CommandContext
+): Promise<Array<{ label: string; value: string }>> {
   const { AI_PROVIDERS } = await import('@sylphx/code-core');
   const { getProvider } = await import('@sylphx/code-core');
   const aiConfig = context.getConfig();
@@ -53,7 +55,8 @@ export async function askSelectProvider(
     ],
   });
 
-  const providerId = typeof answers === 'object' && !Array.isArray(answers) ? answers['provider'] : '';
+  const providerId =
+    typeof answers === 'object' && !Array.isArray(answers) ? answers['provider'] : '';
   return providerId || null;
 }
 
@@ -87,7 +90,9 @@ export async function ensureProviderConfigured(
   }
 
   // Ask if user wants to configure now
-  context.sendMessage(`${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured yet.`);
+  context.sendMessage(
+    `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured yet.`
+  );
   const configureAnswers = await context.waitForInput({
     type: 'selection',
     questions: [
@@ -119,7 +124,8 @@ export async function ensureProviderConfigured(
 
   // Check if now configured
   const updatedConfig = context.getConfig();
-  const updatedProviderConfig = updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
+  const updatedProviderConfig =
+    updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
 
   if (!updatedProviderConfig || !provider.isConfigured(updatedProviderConfig)) {
     return {

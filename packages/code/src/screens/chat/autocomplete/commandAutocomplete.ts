@@ -42,7 +42,7 @@ export function useCommandAutocomplete(
     // Multi-level autocomplete: if command has args and user is typing args
     if (matchedCommand && matchedCommand.args && parts.length > 1) {
       // Determine which arg we're currently on
-      const args = parts.slice(1).filter(p => p.trim() !== '');
+      const args = parts.slice(1).filter((p) => p.trim() !== '');
       const lastPart = parts[parts.length - 1];
       const isTypingNewArg = lastPart === ''; // User just typed space
 
@@ -59,9 +59,11 @@ export function useCommandAutocomplete(
 
         if (options.length > 0) {
           return options
-            .filter((option) =>
-              option.label.toLowerCase().includes(currentArgInput?.toLowerCase() || '') ||
-              (option.value && option.value.toLowerCase().includes(currentArgInput?.toLowerCase() || ''))
+            .filter(
+              (option) =>
+                option.label.toLowerCase().includes(currentArgInput?.toLowerCase() || '') ||
+                (option.value &&
+                  option.value.toLowerCase().includes(currentArgInput?.toLowerCase() || ''))
             )
             .map((option) => {
               // Build the full command string with all args
@@ -87,9 +89,7 @@ export function useCommandAutocomplete(
     // 2. Commands where description matches (secondary)
     const query = input.slice(1).toLowerCase();
 
-    const labelMatches = commands.filter((cmd) =>
-      cmd.label.toLowerCase().includes(`/${query}`)
-    );
+    const labelMatches = commands.filter((cmd) => cmd.label.toLowerCase().includes(`/${query}`));
 
     const descriptionMatches = commands.filter(
       (cmd) =>

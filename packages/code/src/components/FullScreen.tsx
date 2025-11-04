@@ -4,8 +4,8 @@
  * Based on: https://github.com/vadimdemedes/ink/issues/263
  */
 
-import React, { useEffect, useState, PropsWithChildren } from 'react';
-import { Box, BoxProps, useStdout } from 'ink';
+import { Box, type BoxProps, useStdout } from 'ink';
+import React, { type PropsWithChildren, useEffect, useState } from 'react';
 
 const enterAltScreenCommand = '\x1b[?1049h';
 const leaveAltScreenCommand = '\x1b[?1049l';
@@ -17,7 +17,7 @@ function useStdoutDimensions(): [number, number] {
   const { stdout } = useStdout();
   const [size, setSize] = useState({
     columns: stdout.columns || 100,
-    rows: stdout.rows || 30
+    rows: stdout.rows || 30,
   });
 
   useEffect(() => {

@@ -15,11 +15,10 @@ export const getRelativePath = (filePath: string): string => {
   return filePath.startsWith(cwd) ? '.' + filePath.slice(cwd.length) : filePath;
 };
 
-export const isDefaultCwd = (dir: string | undefined): boolean =>
-  !dir || dir === process.cwd();
+export const isDefaultCwd = (dir: string | undefined): boolean => !dir || dir === process.cwd();
 
 export const pluralize = (count: number, singular: string, plural?: string): string =>
-  count === 1 ? singular : (plural || `${singular}s`);
+  count === 1 ? singular : plural || `${singular}s`;
 
 /**
  * Tool formatter types

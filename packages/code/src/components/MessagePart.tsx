@@ -5,13 +5,13 @@
  * PERFORMANCE: Memoized to prevent re-rendering unchanged message parts
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
-import Spinner from './Spinner.js';
-import MarkdownText from './MarkdownText.js';
-import { ToolDisplay } from './ToolDisplay.js';
 import { useElapsedTime } from '@sylphx/code-client';
 import type { MessagePart as MessagePartType } from '@sylphx/code-core';
+import { Box, Text } from 'ink';
+import React from 'react';
+import MarkdownText from './MarkdownText.js';
+import Spinner from './Spinner.js';
+import { ToolDisplay } from './ToolDisplay.js';
 
 interface MessagePartProps {
   part: MessagePartType | StreamingPart;
@@ -20,17 +20,31 @@ interface MessagePartProps {
 // Extended type for streaming parts - UNIFIED with status field
 type StreamingPart =
   | { type: 'text'; content: string; status: 'active' | 'completed' | 'error' | 'abort' }
-  | { type: 'reasoning'; content: string; status: 'active' | 'completed' | 'error' | 'abort'; duration?: number; startTime?: number }
-  | { type: 'tool'; toolId: string; name: string; status: 'active' | 'completed' | 'error' | 'abort'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
+  | {
+      type: 'reasoning';
+      content: string;
+      status: 'active' | 'completed' | 'error' | 'abort';
+      duration?: number;
+      startTime?: number;
+    }
+  | {
+      type: 'tool';
+      toolId: string;
+      name: string;
+      status: 'active' | 'completed' | 'error' | 'abort';
+      duration?: number;
+      args?: unknown;
+      result?: unknown;
+      error?: string;
+      startTime?: number;
+    }
   | { type: 'error'; error: string; status: 'completed' };
 
 export const MessagePart = React.memo(function MessagePart({ part }: MessagePartProps) {
   if (part.type === 'text') {
     return (
       <Box flexDirection="column" marginLeft={2} marginBottom={1}>
-        <MarkdownText>
-          {part.content}
-        </MarkdownText>
+        <MarkdownText>{part.content}</MarkdownText>
       </Box>
     );
   }
@@ -47,23 +61,23 @@ export const MessagePart = React.memo(function MessagePart({ part }: MessagePart
       isRunning: isActive,
     });
 
-    if (!isActive) {
-      // Show completed reasoning with duration
-      const seconds = part.duration ? Math.round(part.duration / 1000) : 0;
-      return (
-        <Box flexDirection="column" marginLeft={2} marginBottom={1}>
-          <Box>
-            <Text dimColor>Thought {seconds}s</Text>
-          </Box>
-        </Box>
-      );
-    } else {
+    if (isActive) {
       // Still streaming - show spinner with real-time duration
       return (
         <Box flexDirection="column" marginLeft={2} marginBottom={1}>
           <Box>
             <Spinner color="#FFD700" />
             <Text dimColor> Thinking... {durationDisplay}</Text>
+          </Box>
+        </Box>
+      );
+    } else {
+      // Show completed reasoning with duration
+      const seconds = part.duration ? Math.round(part.duration / 1000) : 0;
+      return (
+        <Box flexDirection="column" marginLeft={2} marginBottom={1}>
+          <Box>
+            <Text dimColor>Thought {seconds}s</Text>
           </Box>
         </Box>
       );
@@ -82,9 +96,11 @@ export const MessagePart = React.memo(function MessagePart({ part }: MessagePart
   if (part.type === 'tool') {
     // Map MessagePart status to ToolDisplay status
     const toolStatus: 'running' | 'completed' | 'failed' =
-      part.status === 'active' ? 'running' :
-      part.status === 'error' || part.status === 'abort' ? 'failed' :
-      'completed';
+      part.status === 'active'
+        ? 'running'
+        : part.status === 'error' || part.status === 'abort'
+          ? 'failed'
+          : 'completed';
 
     // Build props conditionally to satisfy exactOptionalPropertyTypes
     const toolProps: {

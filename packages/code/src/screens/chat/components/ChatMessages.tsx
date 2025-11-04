@@ -4,8 +4,8 @@
  */
 
 import { Box, Text } from 'ink';
-import { MessageList } from '../../../components/MessageList.js';
 import type { SessionMessage } from '../../../../types/session.types.js';
+import { MessageList } from '../../../components/MessageList.js';
 
 interface ChatMessagesProps {
   hasSession: boolean;
@@ -19,7 +19,10 @@ export function ChatMessages({ hasSession, messages = [], attachmentTokens }: Ch
       <Box paddingY={1} flexDirection="column">
         <Box paddingBottom={2}>
           <Text color="#00D9FF">▌</Text>
-          <Text bold color="white"> WELCOME</Text>
+          <Text bold color="white">
+            {' '}
+            WELCOME
+          </Text>
         </Box>
         <Box paddingBottom={1}>
           <Text dimColor>No AI provider configured yet.</Text>
@@ -41,10 +44,7 @@ export function ChatMessages({ hasSession, messages = [], attachmentTokens }: Ch
 
   return (
     <Box flexGrow={1} flexDirection="column">
-      <MessageList
-        messages={messages}
-        attachmentTokens={attachmentTokens}
-      />
+      <MessageList messages={messages} attachmentTokens={attachmentTokens} />
     </Box>
   );
 }

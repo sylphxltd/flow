@@ -3,8 +3,13 @@
  * Connects to code-server via HTTP/SSE
  */
 
-import { createTRPCProxyClient, httpBatchLink, splitLink, httpSubscriptionLink } from '@trpc/client';
 import type { AppRouter } from '@sylphx/code-client';
+import {
+  createTRPCProxyClient,
+  httpBatchLink,
+  httpSubscriptionLink,
+  splitLink,
+} from '@trpc/client';
 
 const SERVER_URL = process.env.CODE_SERVER_URL || 'http://localhost:3000';
 
@@ -60,7 +65,7 @@ export async function waitForServer(timeoutMs: number = 5000): Promise<boolean> 
     if (await checkServer()) {
       return true;
     }
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   return false;

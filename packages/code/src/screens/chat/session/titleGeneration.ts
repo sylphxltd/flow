@@ -23,7 +23,7 @@ export async function generateTitleAfterFirstMessage(
   setIsTitleStreaming: (streaming: boolean) => void,
   setStreamingTitle: (updater: string | ((prev: string) => string)) => void,
   provider: string,
-  modelName: string,
+  modelName: string
 ) {
   const providerConfig = aiConfig?.providers?.[provider];
 
@@ -43,7 +43,7 @@ export async function generateTitleAfterFirstMessage(
       modelName,
       providerConfig,
       (chunk) => {
-        setStreamingTitle(prev => prev + chunk);
+        setStreamingTitle((prev) => prev + chunk);
       }
     );
 

@@ -3,8 +3,8 @@
  * Shared types for command system
  */
 
-import type { AIConfig, ProviderId } from '@sylphx/code-core';
 import type { Session } from '@sylphx/code-client';
+import type { AIConfig, ProviderId } from '@sylphx/code-core';
 
 /**
  * Option for selection
@@ -67,14 +67,19 @@ export interface CommandContext {
 
   // Send user message and trigger AI response
   // Used for commands that want to continue the conversation (like compact)
-  triggerAIResponse: (message: string, attachments?: Array<{ path: string; relativePath: string; size?: number }>) => Promise<void>;
+  triggerAIResponse: (
+    message: string,
+    attachments?: Array<{ path: string; relativePath: string; size?: number }>
+  ) => Promise<void>;
 
   // Wait for user input (text or selection)
   // Returns: string for text, Record<string, string | string[]> for selection
   //   - Single-select: question id -> answer id (string)
   //   - Multi-select: question id -> answer ids (string[])
   // Note: selection with 1 question and 10 questions use the same interface
-  waitForInput: (options: WaitForInputOptions) => Promise<string | Record<string, string | string[]>>;
+  waitForInput: (
+    options: WaitForInputOptions
+  ) => Promise<string | Record<string, string | string[]>>;
 
   // Get current AI config
   getConfig: () => AIConfig | null;
@@ -117,7 +122,15 @@ export interface CommandContext {
   setCurrentSession: (sessionId: string | null) => void;
 
   // Navigate to different screen
-  navigateTo: (screen: 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs') => void;
+  navigateTo: (
+    screen:
+      | 'main-menu'
+      | 'provider-management'
+      | 'model-selection'
+      | 'chat'
+      | 'command-palette'
+      | 'logs'
+  ) => void;
 
   // Add debug log
   addLog: (message: string) => void;
@@ -128,7 +141,9 @@ export interface CommandContext {
     terminalNotifications: boolean;
     sound: boolean;
   };
-  updateNotificationSettings: (settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>) => void;
+  updateNotificationSettings: (
+    settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>
+  ) => void;
 
   // Update output for commands that display information
   updateOutput: (content: string) => void;

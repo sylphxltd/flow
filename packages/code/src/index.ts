@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * Sylphx Code - Unified CLI Tool
  *
@@ -14,12 +15,12 @@
  * - Server: code --server
  */
 
-import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { spawn } from 'child_process';
+import { Command } from 'commander';
 import { ensureServer, getServerStatus } from './server-manager.js';
 import { launchWeb } from './web-launcher.js';
 
@@ -46,7 +47,7 @@ async function main() {
     .option('-c, --continue', 'Continue last session')
     .option('--web', 'Launch Web GUI in browser')
     .option('--server', 'Start server only (daemon mode)')
-    .option('--no-auto-server', 'Don\'t auto-start server')
+    .option('--no-auto-server', "Don't auto-start server")
     .option('--status', 'Check server status')
     .option('-q, --quiet', 'Quiet mode')
     .option('-v, --verbose', 'Verbose mode')
@@ -86,7 +87,7 @@ async function main() {
       // Ensure server is running (unless --no-auto-server)
       const ready = await ensureServer({
         autoStart: options.autoServer !== false,
-        quiet: options.quiet
+        quiet: options.quiet,
       });
 
       if (!ready) {

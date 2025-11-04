@@ -42,7 +42,7 @@ export function useCommandOptionLoader(
     // If command has args with loadOptions and user is typing args
     if (matchedCommand && matchedCommand.args && parts.length > 1) {
       // Determine which arg we're currently on
-      const args = parts.slice(1).filter(p => p.trim() !== '');
+      const args = parts.slice(1).filter((p) => p.trim() !== '');
       const lastPart = parts[parts.length - 1];
       const isTypingNewArg = lastPart === ''; // User just typed space
 
@@ -62,7 +62,8 @@ export function useCommandOptionLoader(
           // Create context for loadOptions
           const context = createCommandContext([]);
 
-          arg.loadOptions(args, context)
+          arg
+            .loadOptions(args, context)
             .then((options) => {
               // Use functional update to avoid dependency on cachedOptions
               setCachedOptions((prev) => new Map(prev).set(cacheKey, options));
@@ -77,5 +78,15 @@ export function useCommandOptionLoader(
         }
       }
     }
-  }, [input, currentlyLoading, cachedOptions, setCachedOptions, setCurrentlyLoading, setLoadError, createCommandContext, commands, addLog]); // cachedOptions removed from deps to prevent loop, commands are stable
+  }, [
+    input,
+    currentlyLoading,
+    cachedOptions,
+    setCachedOptions,
+    setCurrentlyLoading,
+    setLoadError,
+    createCommandContext,
+    commands,
+    addLog,
+  ]); // cachedOptions removed from deps to prevent loop, commands are stable
 }

@@ -23,7 +23,4 @@ export async function configureProvider(
 /**
  * Options cache for dynamic option loading
  */
-export const optionsCache = new Map<
-  string,
-  Array<{ id: string; name: string }>
->();
+export const optionsCache = new Map<string, Array<{ id: string; name: string }>>();

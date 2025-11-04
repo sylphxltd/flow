@@ -3,7 +3,7 @@
  * Manages command menu, pending commands, and selection state
  */
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { Command } from '../../../commands/types.js';
 
 export interface CommandState {
@@ -34,12 +34,17 @@ export function useCommandState(): CommandState {
   const [ctrlPressed, setCtrlPressed] = useState(false);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
-  const [pendingCommand, setPendingCommand] = useState<{ command: Command; currentInput: string } | null>(null);
+  const [pendingCommand, setPendingCommand] = useState<{
+    command: Command;
+    currentInput: string;
+  } | null>(null);
   const skipNextSubmit = useRef(false);
   const lastEscapeTime = useRef<number>(0);
   const [showEscHint, setShowEscHint] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
-  const [cachedOptions, setCachedOptions] = useState<Map<string, Array<{ id: string; name: string }>>>(new Map());
+  const [cachedOptions, setCachedOptions] = useState<
+    Map<string, Array<{ id: string; name: string }>>
+  >(new Map());
   const [currentlyLoading, setCurrentlyLoading] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const commandSessionRef = useRef<string | null>(null);
