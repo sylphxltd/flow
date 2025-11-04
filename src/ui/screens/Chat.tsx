@@ -1313,38 +1313,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         ) : (
           <>
             {/**
-             * Message Rendering Strategy: Static vs Dynamic
-             * ==============================================
+             * COMPLETED MESSAGES: Entire message in Static
              *
-             * Overview:
-             * ---------
-             * We use Ink's Static component to enable terminal auto-scrolling while
-             * maintaining real-time updates for streaming content. The key insight:
-             * Static content triggers scroll updates, Dynamic content doesn't.
-             *
-             * Architecture:
-             * ------------
-             * 1. COMPLETED MESSAGES (this section)
-             *    - Entire message (header + content) in Static
-             *    - Never changes after completion → safe to freeze
-             *    - Efficient: render once, never re-render
-             *
-             * 2. ACTIVE MESSAGE (below)
-             *    - Header in Static → triggers scroll, never changes
-             *    - Content split: Static (completed parts) + Dynamic (active parts)
-             *    - Balance: frozen performance + real-time updates
-             *
-             * Critical Ink behavior:
-             * ---------------------
-             * - Static only re-renders when NEW items ADDED to array
-             * - Changing properties of EXISTING items = no re-render
-             * - Terminal auto-scroll only works with Static components
-             *
-             * Why this matters:
-             * ----------------
-             * Without Static for headers, terminal won't auto-scroll as content
-             * streams in, causing UI to appear "stuck" at the top. Users would
-             * need to manually scroll to see new content.
+             * Why: Ink auto-scroll only works with Static. Dynamic content = no scroll.
+             * How: Completed messages never change → safe to freeze in Static.
              */}
             {(() => {
               // Filter to get only non-active messages for Static rendering
@@ -1469,56 +1441,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               return (
                 <>
                   {/**
-                   * CRITICAL: Active message header MUST be in Static component
+                   * ACTIVE MESSAGE HEADER: Must be in Static for auto-scroll
                    *
-                   * Problem we're solving:
-                   * ----------------------
-                   * Ink's terminal auto-scroll behavior only works correctly when content
-                   * is rendered via Static component. If we put the header in the Dynamic
-                   * region (outside Static), the terminal fails to auto-scroll as new
-                   * streaming content appears, causing the view to stay stuck at the top.
+                   * Critical Ink behavior:
+                   * - Static re-renders only when NEW items added to array
+                   * - Updating existing item properties = no re-render
+                   * - Terminal auto-scroll = Static only, not Dynamic
                    *
-                   * Why this happens:
-                   * -----------------
-                   * - Ink's Static component "freezes" content once rendered
-                   * - Terminal calculates scroll position based on Static content changes
-                   * - When new items are added to Static arrays, Ink triggers scroll update
-                   * - Dynamic content (regular React rendering) doesn't trigger scroll
+                   * Strategy:
+                   * - Header in Static → renders once, triggers scroll
+                   * - Content in Static (completed parts) + Dynamic (active parts)
+                   * - Balance: performance (frozen) + real-time updates
                    *
-                   * Solution architecture:
-                   * ---------------------
-                   * 1. Completed messages: Entire message (header + content) in Static
-                   *    → These never change, safe to freeze
-                   *
-                   * 2. Active message header: In separate Static (this one)
-                   *    → Header rendered once, never changes during streaming
-                   *    → Triggers initial scroll to bring message into view
-                   *    → Content below can update without re-rendering header
-                   *
-                   * 3. Active message content: Split into Static (completed parts) + Dynamic (active parts)
-                   *    → Completed parts frozen in Static for performance
-                   *    → Active parts in Dynamic for real-time updates
-                   *
-                   * Why not put entire active message in Static?
-                   * --------------------------------------------
-                   * - Static only re-renders when items are ADDED to array
-                   * - Changing properties of existing items (like updating part.content)
-                   *   does NOT trigger re-render
-                   * - We need real-time updates for streaming content (text delta, tool progress)
-                   * - Therefore: header in Static (never changes), content in Dynamic (updates frequently)
-                   *
-                   * Attempted alternatives that FAILED:
-                   * -----------------------------------
-                   * ❌ Header in Dynamic: Terminal doesn't auto-scroll
-                   * ❌ Entire active message in Static: Content doesn't update during streaming
-                   * ❌ All headers in one Static at top: Works but duplicates logic, harder to maintain
-                   *
-                   * Current approach benefits:
-                   * -------------------------
-                   * ✅ Terminal auto-scrolls correctly
-                   * ✅ Header renders once (performance)
-                   * ✅ Content updates in real-time
-                   * ✅ Clean separation: Static = frozen, Dynamic = updating
+                   * Failed alternatives:
+                   * ❌ Header in Dynamic → no auto-scroll
+                   * ❌ Entire message in Static → content doesn't update
                    */}
                   <Static items={[activeMessage]}>
                     {(msg) => (
