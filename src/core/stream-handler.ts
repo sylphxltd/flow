@@ -230,21 +230,29 @@ export async function processStream(
         break;
       }
 
-      case 'error': {
+      case 'abort': {
         // Save current text part if any
         if (currentTextContent) {
           messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
           currentTextContent = '';
         }
 
-        // If this is an abort error, mark all active parts as 'abort'
-        const isAbort = chunk.error === 'Stream aborted';
-        if (isAbort) {
-          messageParts.forEach(part => {
-            if (part.status === 'active') {
-              part.status = 'abort';
-            }
-          });
+        // Mark all active parts as 'abort'
+        messageParts.forEach(part => {
+          if (part.status === 'active') {
+            part.status = 'abort';
+          }
+        });
+
+        // Don't add error part - abort is not an error
+        break;
+      }
+
+      case 'error': {
+        // Save current text part if any
+        if (currentTextContent) {
+          messageParts.push({ type: 'text', content: currentTextContent, status: 'completed' });
+          currentTextContent = '';
         }
 
         // Add error part

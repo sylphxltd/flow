@@ -140,6 +140,10 @@ export type StreamErrorChunk = {
   error: string;
 };
 
+export type AbortChunk = {
+  type: 'abort';
+};
+
 export type FinishChunk = {
   type: 'finish';
   finishReason: string;
@@ -164,6 +168,7 @@ export type StreamChunk =
   | ToolResultChunk
   | ToolErrorChunk
   | StreamErrorChunk
+  | AbortChunk
   | FinishChunk;
 
 /**
@@ -529,8 +534,7 @@ export async function* createAIStream(
 
         case 'abort':
           yield {
-            type: 'error',
-            error: 'Stream aborted',
+            type: 'abort',
           };
           break;
 
