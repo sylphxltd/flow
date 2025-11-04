@@ -92,7 +92,7 @@ export async function loadSession(sessionId: string): Promise<Session | null> {
         if (typeof msg.content === 'string') {
           return {
             ...msg,
-            content: [{ type: 'text', content: msg.content }],
+            content: [{ type: 'text', text: msg.content }], // FIX: Use 'text' field
           };
         }
         return msg;
@@ -149,7 +149,7 @@ export function addMessage(
       ...session.messages,
       {
         role,
-        content: [{ type: 'text', content }], // Convert to MessagePart[]
+        content: [{ type: 'text', text: content }], // FIX: Use 'text' field, not 'content'
         timestamp: Date.now(),
       },
     ],

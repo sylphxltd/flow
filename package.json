@@ -40,11 +40,9 @@
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules/.cache",
     "clean:all": "rm -rf packages/*/dist packages/*/node_modules node_modules .turbo",
-
     "dev:web": "bun --cwd packages/code-web dev",
     "dev:tui": "bun --cwd packages/code-tui dev",
     "dev:server": "bun --cwd packages/code-server dev",
-
     "build:core": "bun --cwd packages/code-core build",
     "build:server": "bun --cwd packages/code-server build",
     "build:client": "bun --cwd packages/code-client build",
@@ -63,6 +61,7 @@
     "@ai-sdk/google": "^2.0.26",
     "@ai-sdk/openai": "^2.0.59",
     "@ai-sdk/openai-compatible": "^1.0.25",
+    "@anthropic-ai/claude-agent-sdk": "^0.1.30",
     "@huggingface/transformers": "^3.7.6",
     "@jescalan/ink-markdown": "^2.0.0",
     "@lancedb/lancedb": "^0.22.2",

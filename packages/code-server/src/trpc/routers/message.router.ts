@@ -289,10 +289,14 @@ export const messageRouter = router({
       })
     )
     .subscription(async ({ ctx, input }) => {
+      // DEBUG: Log subscription received
+      console.error('[DEBUG message.router] Subscription received:', { sessionId: input.sessionId, userMessage: input.userMessage?.substring(0, 50) });
+
       // Import streaming service
       const { streamAIResponse } = await import('../../services/streaming.service.js');
 
       // Stream AI response using service
+      console.error('[DEBUG message.router] Calling streamAIResponse...');
       return streamAIResponse({
         sessionRepository: ctx.sessionRepository,
         aiConfig: ctx.aiConfig,

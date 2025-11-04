@@ -24,6 +24,9 @@ export {
   initializeAgentManager,
   setAppStoreGetter,
   getAllAgents,
+  getAgentById,
+  getCurrentAgent,
+  getCurrentAgentId,
   getCurrentSystemPrompt
 } from './ai/agent-manager.js'
 
@@ -34,6 +37,12 @@ export {
   initializeRuleManager,
   setRuleAppStoreGetter,
   getAllRules,
+  getRuleById,
+  getEnabledRuleIds,
+  getEnabledRules,
+  toggleRule,
+  enableRule,
+  disableRule,
   setEnabledRules,
   getEnabledRulesContent
 } from './ai/rule-manager.js'

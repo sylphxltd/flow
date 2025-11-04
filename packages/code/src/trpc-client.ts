@@ -10,6 +10,7 @@ import {
   httpSubscriptionLink,
   splitLink,
 } from '@trpc/client';
+import { EventSource } from 'eventsource';
 
 const SERVER_URL = process.env.CODE_SERVER_URL || 'http://localhost:3000';
 
@@ -27,9 +28,10 @@ export function createClient() {
     links: [
       splitLink({
         condition: (op) => op.type === 'subscription',
-        // Subscriptions: Use SSE
+        // Subscriptions: Use SSE with EventSource polyfill for Node.js/Bun
         true: httpSubscriptionLink({
           url: `${SERVER_URL}/trpc`,
+          EventSource: EventSource as any, // Provide EventSource polyfill for non-browser environments
         }),
         // Queries/Mutations: Use batched HTTP
         false: httpBatchLink({

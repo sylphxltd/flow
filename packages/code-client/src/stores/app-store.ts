@@ -302,7 +302,7 @@ export const useAppStore = create<AppState>()(
       addMessage: async (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) => {
         // Normalize content
         const normalizedContent: MessagePart[] =
-          typeof content === 'string' ? [{ type: 'text', content }] : content;
+          typeof content === 'string' ? [{ type: 'text', text: content }] : content; // FIX: Use 'text' field
 
         // Optimistic update if it's the current session
         if (get().currentSessionId === sessionId && get().currentSession) {

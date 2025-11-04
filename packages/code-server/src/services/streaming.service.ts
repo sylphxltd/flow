@@ -163,7 +163,7 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
         const messageId = await sessionRepository.addMessage(
           sessionId,
           'user',
-          [{ type: 'text', content: userMessage }],
+          [{ type: 'text', content: userMessage, status: 'completed' }], // MessagePart schema
           attachments,
           undefined,
           undefined,
@@ -205,7 +205,7 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
 
               // Add message content
               msg.content.forEach((part) => {
-                if (part.type === 'text') {
+                if (part.type === 'text' && part.content) {
                   contentParts.push({ type: 'text', text: part.content });
                 }
               });

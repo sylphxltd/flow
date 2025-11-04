@@ -1,4 +1,5 @@
 import { getTRPCClient } from '@sylphx/code-client';
+import { loadAIConfig } from '@sylphx/code-core';
 import chalk from 'chalk';
 
 /**
@@ -9,81 +10,89 @@ export async function runHeadless(prompt: string, options: any): Promise<void> {
   try {
     const client = getTRPCClient();
 
+    // Load AI config to get default provider/model
+    const aiConfig = await loadAIConfig();
+    const provider = aiConfig.defaultProvider || 'openrouter';
+    const model = aiConfig.defaultModel || 'x-ai/grok-code-fast-1';
+
     // Show provider/model info (unless quiet)
     if (!options.quiet) {
-      // TODO: Get current session provider/model from server
       console.error(chalk.dim(`\nConnecting to code-server...\n`));
     }
 
     // Stream response from server
-    const subscription = client.message.streamResponse.subscribe({
-      sessionId: options.continue ? undefined : null, // undefined = continue last, null = new session
-      userMessage: prompt,
-    });
-
     let hasOutput = false;
 
     // Promise to wait for completion
     await new Promise<void>((resolve, reject) => {
       // Handle streaming events
-      subscription.subscribe({
-        onData: (event: any) => {
-          switch (event.type) {
-            case 'session-created':
-              if (options.verbose) {
-                console.error(chalk.dim(`Session: ${event.sessionId}`));
-              }
-              break;
-
-            case 'text-delta':
-              process.stdout.write(event.text);
-              hasOutput = true;
-              break;
-
-            case 'tool-call':
-              if (options.verbose) {
-                console.error(chalk.yellow(`\n[Tool: ${event.toolName}]`));
-              }
-              break;
-
-            case 'tool-result':
-              if (options.verbose) {
-                console.error(
-                  chalk.dim(`[Result: ${JSON.stringify(event.result).substring(0, 100)}...]`)
-                );
-              }
-              break;
-
-            case 'complete':
-              if (!options.quiet) {
-                console.error(chalk.dim(`\n\n[Complete]`));
-              }
-              if (options.verbose && event.usage) {
-                console.error(chalk.dim(`Tokens: ${event.usage.totalTokens || 'N/A'}`));
-              }
-              break;
-
-            case 'error':
-              console.error(chalk.red(`\n✗ Error: ${event.error}`));
-              reject(new Error(event.error));
-              return;
-          }
+      // tRPC v11: subscribe(input, callbacks)
+      client.message.streamResponse.subscribe(
+        {
+          sessionId: options.continue ? undefined : null, // undefined = continue last, null = new session
+          provider: options.continue ? undefined : provider, // Provider for new sessions
+          model: options.continue ? undefined : model, // Model for new sessions
+          userMessage: prompt,
         },
-        onError: (err: Error) => {
-          console.error(chalk.red(`\n✗ Subscription error: ${err.message}`));
-          reject(err);
-        },
-        onComplete: () => {
-          if (!hasOutput) {
-            console.error(
-              chalk.yellow('\n⚠️  No output received. Model may not support tool calling.')
-            );
-            reject(new Error('No output received'));
-          } else {
-            resolve();
-          }
-        },
-      });
+        {
+          onData: (event: any) => {
+            switch (event.type) {
+              case 'session-created':
+                if (options.verbose) {
+                  console.error(chalk.dim(`Session: ${event.sessionId}`));
+                }
+                break;
+
+              case 'text-delta':
+                process.stdout.write(event.text);
+                hasOutput = true;
+                break;
+
+              case 'tool-call':
+                if (options.verbose) {
+                  console.error(chalk.yellow(`\n[Tool: ${event.toolName}]`));
+                }
+                break;
+
+              case 'tool-result':
+                if (options.verbose) {
+                  console.error(
+                    chalk.dim(`[Result: ${JSON.stringify(event.result).substring(0, 100)}...]`)
+                  );
+                }
+                break;
+
+              case 'complete':
+                if (!options.quiet) {
+                  console.error(chalk.dim(`\n\n[Complete]`));
+                }
+                if (options.verbose && event.usage) {
+                  console.error(chalk.dim(`Tokens: ${event.usage.totalTokens || 'N/A'}`));
+                }
+                break;
+
+              case 'error':
+                console.error(chalk.red(`\n✗ Error: ${event.error}`));
+                reject(new Error(event.error));
+                return;
+            }
+          },
+          onError: (err: Error) => {
+            console.error(chalk.red(`\n✗ Subscription error: ${err.message}`));
+            reject(err);
+          },
+          onComplete: () => {
+            if (!hasOutput) {
+              console.error(
+                chalk.yellow('\n⚠️  No output received. Model may not support tool calling.')
+              );
+              reject(new Error('No output received'));
+            } else {
+              resolve();
+            }
+          },
+        }
+      );
     });
   } catch (error) {
     console.error(chalk.red('\n✗ Error:'), error instanceof Error ? error.message : String(error));
