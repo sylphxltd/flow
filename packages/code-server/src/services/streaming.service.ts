@@ -19,10 +19,13 @@ import {
   getSystemStatus,
   buildSystemStatusFromMetadata,
   injectSystemStatusToOutput,
+  buildSystemPrompt,
+  getAgentById,
 } from '@sylphx/code-core';
 import { processStream, type StreamCallbacks } from '@sylphx/code-core';
 import { getProvider } from '@sylphx/code-core';
 import { buildTodoContext } from '@sylphx/code-core';
+import { DEFAULT_AGENT_ID } from '@sylphx/code-core';
 import type { AIConfig } from '@sylphx/code-core';
 import type { ModelMessage, UserContent, AssistantContent } from 'ai';
 import type {
@@ -56,6 +59,7 @@ export interface StreamAIResponseOptions {
   sessionRepository: SessionRepository;
   aiConfig: AIConfig;
   sessionId: string | null;  // null = create new session
+  agentId?: string;   // Optional - override session agent
   provider?: string;  // Required if sessionId is null
   model?: string;     // Required if sessionId is null
   userMessage: string;
@@ -85,6 +89,7 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           sessionRepository,
           aiConfig,
           sessionId: inputSessionId,
+          agentId: inputAgentId,
           provider: inputProvider,
           model: inputModel,
           userMessage,
@@ -114,7 +119,8 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           }
 
           // Create session in database
-          const newSession = await sessionRepository.createSession(inputProvider as any, inputModel);
+          const agentId = inputAgentId || DEFAULT_AGENT_ID;
+          const newSession = await sessionRepository.createSession(inputProvider as any, inputModel, agentId);
           sessionId = newSession.id;
           isNewSession = true;
 
@@ -286,13 +292,19 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           })
         );
 
-        // 6. Create AI model
+        // 6. Determine agentId and build system prompt
+        // STATELESS: Use explicit parameters, not global state
+        const agentId = inputAgentId || session.agentId || DEFAULT_AGENT_ID;
+        const systemPrompt = buildSystemPrompt(agentId);
+
+        // 7. Create AI model
         const model = providerInstance.createClient(providerConfig, modelName);
 
-        // 7. Create AI stream
+        // 8. Create AI stream with system prompt
         const stream = createAIStream({
           model,
           messages,
+          system: systemPrompt,
           ...(abortSignal ? { abortSignal } : {}),
           onTransformToolResult: (output, toolName) => {
             const systemStatus = getSystemStatus();
@@ -300,7 +312,7 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           },
         });
 
-        // 8. Create assistant message in database (status: active)
+        // 9. Create assistant message in database (status: active)
         const assistantMessageId = await sessionRepository.addMessage(
           sessionId,
           'assistant',
@@ -313,10 +325,10 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           'active'
         );
 
-        // 8.1. Emit assistant message created event
+        // 9.1. Emit assistant message created event
         observer.next({ type: 'assistant-message-created', messageId: assistantMessageId });
 
-        // 9. Process stream and emit events
+        // 10. Process stream and emit events
         const callbacks: StreamCallbacks = {
           onTextStart: () => observer.next({ type: 'text-start' }),
           onTextDelta: (text) => observer.next({ type: 'text-delta', text }),
@@ -341,7 +353,7 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
 
         const result = await processStream(stream, callbacks);
 
-        // 10. Save final message to database
+        // 11. Save final message to database
         await sessionRepository.updateMessageParts(assistantMessageId, result.messageParts);
         await sessionRepository.updateMessageStatus(
           assistantMessageId,
@@ -353,7 +365,7 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           await sessionRepository.updateMessageUsage(assistantMessageId, result.usage);
         }
 
-        // 11. Generate title if this is a new session (first message)
+        // 12. Generate title if this is a new session (first message)
         if (isNewSession && !aborted && result.usage) {
           try {
             // Import title generation utility
@@ -394,7 +406,7 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           }
         }
 
-        // 12. Emit complete event
+        // 13. Emit complete event
         observer.next({
           type: 'complete',
           usage: result.usage,

@@ -77,7 +77,7 @@ export class SessionRepository {
   /**
    * Create a new session
    */
-  async createSession(provider: ProviderId, model: string): Promise<SessionType> {
+  async createSession(provider: ProviderId, model: string, agentId: string = 'coder'): Promise<SessionType> {
     const now = Date.now();
     const sessionId = `session-${now}`;
 
@@ -85,6 +85,7 @@ export class SessionRepository {
       id: sessionId,
       provider,
       model,
+      agentId,
       nextTodoId: 1,
       created: now,
       updated: now,
@@ -96,6 +97,7 @@ export class SessionRepository {
       id: sessionId,
       provider,
       model,
+      agentId,
       messages: [],
       todos: [],
       nextTodoId: 1,
@@ -111,6 +113,7 @@ export class SessionRepository {
     id: string;
     provider: ProviderId;
     model: string;
+    agentId?: string;
     title?: string;
     nextTodoId: number;
     created: number;
@@ -122,6 +125,7 @@ export class SessionRepository {
         title: sessionData.title || null,
         provider: sessionData.provider,
         model: sessionData.model,
+        agentId: sessionData.agentId || 'coder',
         nextTodoId: sessionData.nextTodoId,
         created: sessionData.created,
         updated: sessionData.updated,
@@ -179,6 +183,7 @@ export class SessionRepository {
       title: session.title || undefined,
       provider: session.provider as ProviderId,
       model: session.model,
+      agentId: session.agentId,
       messages: sessionMessages,
       todos: sessionTodos,
       nextTodoId: session.nextTodoId,
@@ -479,6 +484,21 @@ export class SessionRepository {
     await this.db
       .update(sessions)
       .set({ provider, model, updated: Date.now() })
+      .where(eq(sessions.id, sessionId));
+  }
+
+  /**
+   * Update session (partial update)
+   */
+  async updateSession(sessionId: string, updates: {
+    title?: string;
+    provider?: ProviderId;
+    model?: string;
+    agentId?: string;
+  }): Promise<void> {
+    await this.db
+      .update(sessions)
+      .set({ ...updates, updated: Date.now() })
       .where(eq(sessions.id, sessionId));
   }
 

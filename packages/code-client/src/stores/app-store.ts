@@ -87,9 +87,9 @@ export interface AppState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
-  // Agent State
-  currentAgentId: string;
-  setCurrentAgentId: (agentId: string) => void;
+  // Agent State (UI selection, not server state)
+  selectedAgentId: string;
+  setSelectedAgent: (agentId: string) => void;
 
   // Rule State
   enabledRuleIds: string[];
@@ -213,7 +213,8 @@ export const useAppStore = create<AppState>()(
        */
       createSession: async (provider, model) => {
         const client = await getTRPCClient();
-        const session = await client.session.create({ provider, model });
+        const { selectedAgentId } = get();
+        const session = await client.session.create({ provider, model, agentId: selectedAgentId });
 
         // Set as current session
         set((state) => {
@@ -349,11 +350,11 @@ export const useAppStore = create<AppState>()(
           state.error = error;
         }),
 
-      // Agent State
-      currentAgentId: 'coder',
-      setCurrentAgentId: (agentId) =>
+      // Agent State (UI selection, not server state)
+      selectedAgentId: 'coder',
+      setSelectedAgent: (agentId) =>
         set((state) => {
-          state.currentAgentId = agentId;
+          state.selectedAgentId = agentId;
         }),
 
       // Rule State

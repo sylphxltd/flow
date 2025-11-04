@@ -282,6 +282,7 @@ export const messageRouter = router({
     .input(
       z.object({
         sessionId: z.string().nullish(), // Optional - will create if null
+        agentId: z.string().optional(),   // Optional - override session agent
         provider: z.string().optional(),  // Required if sessionId is null
         model: z.string().optional(),     // Required if sessionId is null
         userMessage: z.string(),
@@ -301,6 +302,7 @@ export const messageRouter = router({
         sessionRepository: ctx.sessionRepository,
         aiConfig: ctx.aiConfig,
         sessionId: input.sessionId || null,
+        agentId: input.agentId,
         provider: input.provider,
         model: input.model,
         userMessage: input.userMessage,

@@ -22,14 +22,17 @@ export { processStream, type StreamCallbacks } from './ai/stream-handler.js'
 // ============================================================================
 export {
   initializeAgentManager,
-  setAppStoreGetter,
   getAllAgents,
   getAgentById,
-  getCurrentAgent,
-  getCurrentAgentId,
-  switchAgent,
-  getCurrentSystemPrompt
+  reloadAgents
 } from './ai/agent-manager.js'
+
+export { DEFAULT_AGENT_ID } from './ai/builtin-agents.js'
+
+// ============================================================================
+// System Prompt Builder
+// ============================================================================
+export { buildSystemPrompt } from './ai/system-prompt-builder.js'
 
 // ============================================================================
 // Rule Manager

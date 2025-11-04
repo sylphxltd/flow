@@ -202,6 +202,7 @@ export interface Session {
   title?: string; // Auto-generated from first user message
   provider: ProviderId;
   model: string;
+  agentId: string;       // Agent configuration for this session
   messages: SessionMessage[];
   todos: Todo[];         // Per-session todo list (not global!)
   nextTodoId: number;    // Next todo ID for this session (starts at 1)

@@ -5,7 +5,7 @@
 
 import type { Session } from '@sylphx/code-client';
 import { getTRPCClient, useAppStore } from '@sylphx/code-client';
-import { getAllAgents, getAllRules, switchAgent, toggleRule } from '@sylphx/code-core';
+import { getAllAgents, getAllRules, toggleRule } from '@sylphx/code-core';
 import { Box, Text, useInput } from 'ink';
 import React, { useEffect, useState } from 'react';
 import { FullScreen } from '../components/FullScreen.js';
@@ -26,7 +26,8 @@ export default function Dashboard() {
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [sessions, setSessions] = useState<Session[]>([]);
 
-  const currentAgentId = useAppStore((state) => state.currentAgentId);
+  const selectedAgentId = useAppStore((state) => state.selectedAgentId);
+  const setSelectedAgent = useAppStore((state) => state.setSelectedAgent);
   const enabledRuleIds = useAppStore((state) => state.enabledRuleIds);
   const aiConfig = useAppStore((state) => state.aiConfig);
   const notificationSettings = useAppStore((state) => state.notificationSettings);
@@ -146,7 +147,7 @@ export default function Dashboard() {
     switch (selectedSection) {
       case 'agents':
         if (agents[selectedItemIndex]) {
-          switchAgent(agents[selectedItemIndex].id);
+          setSelectedAgent(agents[selectedItemIndex].id);
           setMode('browse');
         }
         break;
@@ -186,25 +187,25 @@ export default function Dashboard() {
 
         <Box flexDirection="column">
           {agents.map((agent, idx) => {
-            const isActive = agent.id === currentAgentId;
-            const isSelected = mode === 'edit' && selectedItemIndex === idx;
+            const isSelected = agent.id === selectedAgentId;
+            const isHighlighted = mode === 'edit' && selectedItemIndex === idx;
 
             return (
               <Box key={agent.id} marginBottom={1} paddingY={0}>
                 <Text dimColor>{idx + 1} </Text>
                 <Text
-                  bold={isActive || isSelected}
-                  color={isActive ? '#00FF88' : isSelected ? '#00D9FF' : 'white'}
+                  bold={isSelected || isHighlighted}
+                  color={isSelected ? '#00FF88' : isHighlighted ? '#00D9FF' : 'white'}
                 >
                   {agent.metadata.name}
                 </Text>
-                {isActive && (
+                {isSelected && (
                   <>
                     <Text dimColor> </Text>
                     <Text color="#00FF88">●</Text>
                   </>
                 )}
-                {isSelected && mode === 'edit' && (
+                {isHighlighted && mode === 'edit' && (
                   <>
                     <Text dimColor> </Text>
                     <Text color="#00D9FF">◄</Text>

@@ -75,10 +75,15 @@ export const sessionRouter = router({
       z.object({
         provider: z.string() as z.ZodType<ProviderId>,
         model: z.string(),
+        agentId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const session = await ctx.sessionRepository.createSession(input.provider, input.model);
+      const session = await ctx.sessionRepository.createSession(
+        input.provider,
+        input.model,
+        input.agentId || 'coder'
+      );
 
       // Emit event for reactive clients
       eventBus.emitEvent({

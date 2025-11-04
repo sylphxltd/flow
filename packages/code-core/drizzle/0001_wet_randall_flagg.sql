@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `agent_id` text DEFAULT 'coder' NOT NULL;

@@ -9,7 +9,6 @@ import type { LanguageModelV2, LanguageModelV2ToolResultOutput } from '@ai-sdk/p
 import * as os from 'node:os';
 import { getAISDKTools } from '../tools/index.js';
 import { hasUserInputHandler } from '../tools/interaction.js';
-import { getCurrentSystemPrompt } from './agent-manager.js';
 import { getEnabledRulesContent } from './rule-manager.js';
 import { buildTodoContext } from '../utils/todo-context.js';
 
@@ -36,33 +35,12 @@ const BASE_SYSTEM_PROMPT = `You are Sylphx, an AI development assistant.`;
 
 /**
  * Get the system prompt to use (combines base + rules + agent)
+ * @deprecated Use buildSystemPrompt(agentId) instead for stateless architecture
  */
 export function getSystemPrompt(): string {
-  const parts: string[] = [];
-
-  // 1. Base prompt (introduces Sylphx)
-  parts.push(BASE_SYSTEM_PROMPT);
-
-  // 2. Enabled rules (shared across all agents)
-  try {
-    const rulesContent = getEnabledRulesContent();
-    if (rulesContent) {
-      parts.push(rulesContent);
-    }
-  } catch {
-    // Rule manager not initialized or no rules enabled
-  }
-
-  // 3. Agent-specific prompt
-  try {
-    const agentPrompt = getCurrentSystemPrompt();
-    parts.push(agentPrompt);
-  } catch {
-    // Fallback to legacy if agent manager not initialized
-    parts.push(LEGACY_SYSTEM_PROMPT);
-  }
-
-  return parts.join('\n\n');
+  // Fallback to legacy for backwards compatibility
+  // New code should use buildSystemPrompt(agentId) from system-prompt-builder.ts
+  return LEGACY_SYSTEM_PROMPT;
 }
 
 // Export for backwards compatibility
