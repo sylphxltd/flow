@@ -29,7 +29,7 @@ export default function Settings({ onClose }: SettingsProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   // Load config
-  const { data: configData } = trpc.config.load.useQuery({ cwd: process.cwd() });
+  const { data: configData } = trpc.config.load.useQuery({});
   const saveMutation = trpc.config.save.useMutation();
 
   useEffect(() => {
@@ -53,7 +53,6 @@ export default function Settings({ onClose }: SettingsProps) {
     try {
       const result = await saveMutation.mutateAsync({
         config,
-        cwd: process.cwd(),
       });
 
       if (result.success) {

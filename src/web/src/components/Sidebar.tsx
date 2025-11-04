@@ -22,7 +22,7 @@ export default function Sidebar({
   const { data: sessions, isLoading } = trpc.session.getRecent.useQuery({ limit: 50 });
 
   // Load config to get default provider/model
-  const { data: configData } = trpc.config.load.useQuery({ cwd: process.cwd() });
+  const { data: configData } = trpc.config.load.useQuery({});
 
   // Create new session mutation
   const createSessionMutation = trpc.session.create.useMutation({
