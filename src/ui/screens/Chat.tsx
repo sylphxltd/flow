@@ -61,18 +61,24 @@ interface ChatProps {
 /**
  * Generate stable key for a streaming part
  *
- * Key must remain stable as parts move between static/dynamic regions.
- * Uses global index in streamParts array to ensure consistency.
+ * Key strategy:
+ * - Tool: Use toolId (unique identifier from stream)
+ * - Reasoning: Use startTime (unique timestamp)
+ * - Text/Error: Use index in parts array (stable, append-only)
+ *
+ * Why this works:
+ * - Parts array is append-only (parts never reorder or removed)
+ * - Index is stable for each part once added
+ * - Tool/reasoning have natural unique identifiers
  */
-function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): string {
-  const globalIdx = streamParts.indexOf(part);
+function getStreamingPartKey(part: StreamPart, idx: number): string {
   return part.type === 'tool'
-    ? `stream-tool-${part.toolId}`
+    ? `part-tool-${part.toolId}`
     : part.type === 'reasoning'
-    ? `stream-reasoning-${part.startTime || globalIdx}`
+    ? `part-reasoning-${part.startTime}`
     : part.type === 'error'
-    ? `stream-error-${globalIdx}`
-    : `stream-text-${globalIdx}`;
+    ? `part-error-${idx}`
+    : `part-text-${idx}`;
 }
 
 // Global debug flag - TODO: remove after debugging streaming issues
@@ -1404,14 +1410,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 // Find first non-completed part (boundary between static/dynamic)
                 const firstIncompleteIndex = streamParts.findIndex(part => !isPartCompleted(part));
 
-                // Split into static and dynamic
-                const staticParts = firstIncompleteIndex === -1
-                  ? streamParts  // All completed
-                  : streamParts.slice(0, firstIncompleteIndex);
+                // Split into static and dynamic, preserving original indices
+                // Create array of {part, idx} to maintain global index
+                const partsWithIdx = streamParts.map((part, idx) => ({ part, idx }));
 
-                const dynamicParts = firstIncompleteIndex === -1
+                const staticPartsWithIdx = firstIncompleteIndex === -1
+                  ? partsWithIdx  // All completed
+                  : partsWithIdx.slice(0, firstIncompleteIndex);
+
+                const dynamicPartsWithIdx = firstIncompleteIndex === -1
                   ? []  // All in static
-                  : streamParts.slice(firstIncompleteIndex);
+                  : partsWithIdx.slice(firstIncompleteIndex);
 
                 return (
                   <Box key={`assistant-${msg.timestamp}`} flexDirection="column">
@@ -1425,11 +1434,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     </Static>
 
                     {/* Static parts - completed parts */}
-                    {staticParts.length > 0 && (
-                      <Static items={staticParts}>
-                        {(part) => (
+                    {staticPartsWithIdx.length > 0 && (
+                      <Static items={staticPartsWithIdx}>
+                        {({ part, idx }) => (
                           <StreamingPartWrapper
-                            key={getStreamingPartKey(part, streamParts)}
+                            key={getStreamingPartKey(part, idx)}
                             part={part}
                             debugRegion="static"
                           />
@@ -1438,11 +1447,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     )}
 
                     {/* Dynamic parts - active parts (only for active messages) */}
-                    {dynamicParts.length > 0 ? (
+                    {dynamicPartsWithIdx.length > 0 ? (
                       <>
-                        {dynamicParts.map((part) => (
+                        {dynamicPartsWithIdx.map(({ part, idx }) => (
                           <StreamingPartWrapper
-                            key={getStreamingPartKey(part, streamParts)}
+                            key={getStreamingPartKey(part, idx)}
                             part={part}
                             debugRegion="dynamic"
                           />
