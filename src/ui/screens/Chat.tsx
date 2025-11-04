@@ -306,45 +306,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Helper to update active message content in session
   // Defined after currentSessionId to avoid initialization error
+  // NOTE: Using immer-style mutations (immer middleware automatically creates new objects)
   const updateActiveMessageContent = useCallback((updater: (prev: StreamPart[]) => StreamPart[]) => {
     useAppStore.setState((state) => {
-      const sessionIndex = state.sessions.findIndex((s) => s.id === currentSessionId);
-      if (sessionIndex === -1) return state;
+      const session = state.sessions.find((s) => s.id === currentSessionId);
+      if (!session) return;
 
-      const session = state.sessions[sessionIndex];
-      const messageIndex = session.messages.findIndex((m) => m.status === 'active');
-      if (messageIndex === -1) return state;
+      const activeMessage = session.messages.find((m) => m.status === 'active');
+      if (!activeMessage) return;
 
-      const activeMessage = session.messages[messageIndex];
+      // Update content using immer-style mutation
       const newContent = updater(activeMessage.content);
+      activeMessage.content = newContent;
 
       // Schedule debounced database write (batched to reduce SQLITE_BUSY)
       scheduleDatabaseWrite(newContent);
-
-      // Create new message object with updated content
-      const updatedMessage = {
-        ...activeMessage,
-        content: newContent,
-      };
-
-      // Create new messages array with updated message
-      const newMessages = [...session.messages];
-      newMessages[messageIndex] = updatedMessage;
-
-      // Create new session with new messages array
-      const newSession = {
-        ...session,
-        messages: newMessages,
-      };
-
-      // Create new sessions array with updated session
-      const newSessions = [...state.sessions];
-      newSessions[sessionIndex] = newSession;
-
-      return {
-        ...state,
-        sessions: newSessions,
-      };
     });
   }, [currentSessionId, scheduleDatabaseWrite]);
 
@@ -875,56 +851,34 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             }
 
             // Update app store status (content was updated in real-time by callbacks)
-            // Create new objects to ensure Zustand triggers re-render
+            // NOTE: Using immer-style mutations (immer middleware automatically creates new objects)
             useAppStore.setState((state) => {
-              const sessionIndex = state.sessions.findIndex((s) => s.id === currentSessionId);
-              if (sessionIndex === -1) {
+              const session = state.sessions.find((s) => s.id === currentSessionId);
+              if (!session) {
                 addLog(`Session not found in store: ${currentSessionId}`);
-                return state;
+                return;
               }
 
-              const session = state.sessions[sessionIndex];
-              const messageIndex = [...session.messages]
+              // Find last active assistant message (messages can be added in any order)
+              const activeMessage = [...session.messages]
                 .reverse()
-                .findIndex((m) => m.role === 'assistant' && m.status === 'active');
+                .find((m) => m.role === 'assistant' && m.status === 'active');
 
-              if (messageIndex === -1) {
+              if (!activeMessage) {
                 addLog(`No active assistant message found in session`);
-                return state;
+                return;
               }
 
-              // Convert reversed index to actual index
-              const actualIndex = session.messages.length - 1 - messageIndex;
-              const activeMessage = session.messages[actualIndex];
-
-              // Create new message object with updated status
-              const updatedMessage = {
-                ...activeMessage,
-                status: finalStatus,
-                usage: usageRef.current || activeMessage.usage,
-                finishReason: finishReasonRef.current || activeMessage.finishReason,
-              };
-
-              // Create new messages array with updated message
-              const newMessages = [...session.messages];
-              newMessages[actualIndex] = updatedMessage;
-
-              // Create new session with new messages array
-              const newSession = {
-                ...session,
-                messages: newMessages,
-              };
-
-              // Create new sessions array with updated session
-              const newSessions = [...state.sessions];
-              newSessions[sessionIndex] = newSession;
+              // Update message status and metadata using immer-style mutation
+              activeMessage.status = finalStatus;
+              if (usageRef.current) {
+                activeMessage.usage = usageRef.current;
+              }
+              if (finishReasonRef.current) {
+                activeMessage.finishReason = finishReasonRef.current;
+              }
 
               addLog(`Updated message status to ${finalStatus} in app store`);
-
-              return {
-                ...state,
-                sessions: newSessions,
-              };
             });
           } catch (error) {
             // Critical error in onComplete - log but don't throw
