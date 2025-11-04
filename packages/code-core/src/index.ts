@@ -69,6 +69,13 @@ export type * from './types/common.types.js'
 export type * from './types/interaction.types.js'
 
 // ============================================================================
+// Session Management
+// ============================================================================
+export { getOrCreateSession, showModelToolSupportError } from './ai/session-service.js'
+export { createHeadlessDisplay } from './ai/headless-display.js'
+export { addMessage } from './utils/session-manager.js'
+
+// ============================================================================
 // Utils
 // ============================================================================
 export { buildTodoContext } from './utils/todo-context.js'

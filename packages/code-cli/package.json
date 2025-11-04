@@ -13,7 +13,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "bun build src/cli.ts src/headless.ts --outdir dist --target node --format esm --sourcemap",
     "dev": "bun src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@types/node": "^24.9.2",
-    "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "vitest": "^4.0.6"
   },

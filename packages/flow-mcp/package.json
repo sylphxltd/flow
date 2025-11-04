@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "sylphx-flow-mcp": "./bin/sylphx-flow-mcp.js"
+    "sylphx-flow-mcp": "./bin/sylphx-flow-mcp.ts"
   },
   "files": [
     "dist",
@@ -13,7 +13,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
     "dev": "bun src/index.ts",
     "start": "bun dist/index.js",
     "test": "vitest run",
@@ -27,7 +27,6 @@
   },
   "devDependencies": {
     "@types/node": "^24.9.2",
-    "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "vitest": "^4.0.6"
   },
