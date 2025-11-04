@@ -10,6 +10,7 @@ import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
 import MarkdownText from './MarkdownText.js';
 import { ToolDisplay } from './ToolDisplay.js';
+import { useElapsedTime } from '../hooks/useElapsedTime.js';
 import type { MessagePart as MessagePartType } from '../../types/session.types.js';
 
 interface MessagePartProps {
@@ -45,6 +46,13 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
     const status = 'status' in part ? part.status : 'completed';
     const isActive = status === 'active';
 
+    // Calculate real-time elapsed time for active reasoning
+    const { display: durationDisplay } = useElapsedTime({
+      startTime: part.startTime,
+      duration: part.duration,
+      isRunning: isActive,
+    });
+
     if (!isActive) {
       // Show completed reasoning with duration
       const seconds = part.duration ? Math.round(part.duration / 1000) : 0;
@@ -56,13 +64,12 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
         </Box>
       );
     } else {
-      // Still streaming - show spinner
-      // Duration will be calculated by useElapsedTime hook if needed
+      // Still streaming - show spinner with real-time duration
       return (
         <Box flexDirection="column" marginLeft={2} marginBottom={1}>
           <Box>
             <Spinner color="#FFD700" />
-            <Text dimColor> Thinking...</Text>
+            <Text dimColor> Thinking... {durationDisplay}</Text>
           </Box>
         </Box>
       );
