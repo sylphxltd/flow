@@ -72,6 +72,8 @@
     "@libsql/client": "^0.15.15",
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@openrouter/ai-sdk-provider": "^1.2.0",
+    "@trpc/client": "^11.7.1",
+    "@trpc/server": "^11.7.1",
     "ai": "^5.0.86",
     "ai-sdk-provider-claude-code": "^2.1.0",
     "apache-arrow": "^21.1.0",

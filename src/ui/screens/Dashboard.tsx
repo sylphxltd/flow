@@ -3,12 +3,14 @@
  * Features: Keyboard navigation, full management capabilities
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { FullScreen } from '../components/FullScreen.js';
 import { useAppStore } from '../stores/app-store.js';
 import { getAllAgents, switchAgent } from '../../core/agent-manager.js';
 import { getAllRules, toggleRule } from '../../core/rule-manager.js';
+import { getTRPCClient } from '../../server/trpc/client.js';
+import type { Session } from '../stores/app-store.js';
 
 type DashboardSection =
   | 'agents'
@@ -24,10 +26,10 @@ export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState<DashboardSection>('agents');
   const [mode, setMode] = useState<InteractionMode>('browse');
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [sessions, setSessions] = useState<Session[]>([]);
 
   const currentAgentId = useAppStore((state) => state.currentAgentId);
   const enabledRuleIds = useAppStore((state) => state.enabledRuleIds);
-  const sessions = useAppStore((state) => state.sessions);
   const aiConfig = useAppStore((state) => state.aiConfig);
   const notificationSettings = useAppStore((state) => state.notificationSettings);
   const updateNotificationSettings = useAppStore((state) => state.updateNotificationSettings);
@@ -35,6 +37,23 @@ export default function Dashboard() {
 
   const agents = getAllAgents();
   const rules = getAllRules();
+
+  // Load sessions when entering sessions section (tRPC on-demand loading)
+  useEffect(() => {
+    if (selectedSection === 'sessions') {
+      const loadSessions = async () => {
+        try {
+          const client = await getTRPCClient();
+          const recentSessions = await client.session.getRecent({ limit: 50 });
+          setSessions(recentSessions);
+        } catch (error) {
+          console.error('Failed to load sessions:', error);
+          setSessions([]);
+        }
+      };
+      loadSessions();
+    }
+  }, [selectedSection]);
 
   useInput((input, key) => {
     // Global shortcuts

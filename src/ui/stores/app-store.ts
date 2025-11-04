@@ -1,34 +1,30 @@
 /**
- * Global App Store
- * Centralized state management for the entire TUI
+ * Global App Store V2
+ * Enterprise-grade state management with tRPC backend
  *
- * Architecture: Optimistic Update Pattern
- * ========================================
+ * Architecture: On-Demand Loading + Optimistic Updates
+ * =====================================================
  *
- * All persistence actions follow this consistent pattern:
+ * Key Changes from V1:
+ * - NO sessions array in memory (huge memory savings!)
+ * - Only currentSession cached in store
+ * - All other sessions fetched on-demand via tRPC
+ * - Optimistic updates to currentSession, immediate tRPC sync
  *
- * 1. Update state immediately (optimistic update)
- *    - UI responds instantly, no blocking
- *    - User sees changes right away
- *
- * 2. Persist to database asynchronously
- *    - Fire-and-forget, doesn't block UI
- *    - Error logged but doesn't rollback (eventual consistency)
- *
- * Benefits:
- * - Fast, responsive UI (no database latency)
- * - Simple error handling (no rollback complexity)
- * - Clear separation: Store = coordinator, Repository = persistence
+ * Performance Benefits:
+ * - Memory: O(n) sessions → O(1) current session
+ * - Startup: No loading all sessions, instant boot
+ * - Scalability: Works with 10 or 10,000 sessions
+ * - Network: Zero HTTP overhead (in-process tRPC)
  *
  * Example:
  * ```typescript
- * updateSessionTitle: (sessionId, title) => {
- *   // 1. Update state first (optimistic)
- *   set(state => { state.sessions.find(s => s.id === sessionId).title = title });
+ * // V1 (inefficient): Load all sessions into memory
+ * const sessions = useAppStore(state => state.sessions); // O(n) memory!
  *
- *   // 2. Persist async (fire-and-forget)
- *   getSessionRepository().then(repo => repo.updateSessionTitle(...));
- * }
+ * // V2 (efficient): Fetch on-demand
+ * const sessions = await trpc.session.getRecent({ limit: 20 });
+ * const currentSession = useAppStore(state => state.currentSession); // O(1) memory!
  * ```
  */
 
@@ -36,9 +32,9 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { AIConfig, ProviderId } from '../../config/ai-config.js';
-import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata, StreamingPart } from '../../types/session.types.js';
+import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata } from '../../types/session.types.js';
 import type { Todo, TodoUpdate } from '../../types/todo.types.js';
-import { getSessionRepository } from '../../db/database.js';
+import { getTRPCClient } from '../../server/trpc/client.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs' | 'dashboard';
 export type { Session, MessagePart } from '../../types/session.types.js';
@@ -60,19 +56,30 @@ export interface AppState {
   setSelectedProvider: (provider: ProviderId | null) => void;
   setSelectedModel: (model: string | null) => void;
 
-  // Chat Sessions
-  sessions: Session[];
+  // Chat Sessions (NEW: on-demand architecture)
   currentSessionId: string | null;
-  createSession: (provider: ProviderId, model: string) => string;
-  updateSessionModel: (sessionId: string, model: string) => void;
-  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
-  updateSessionTitle: (sessionId: string, title: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string | MessagePart[], attachments?: FileAttachment[], usage?: TokenUsage, finishReason?: string, metadata?: MessageMetadata, todoSnapshot?: Todo[]) => void;
-  setCurrentSession: (sessionId: string | null) => void;
-  deleteSession: (sessionId: string) => void;
+  currentSession: Session | null; // Only cache current session
+  setCurrentSession: (sessionId: string | null) => Promise<void>;
+  refreshCurrentSession: () => Promise<void>;
 
-  // Note: No separate streaming state needed
-  // Derived from data: session.messages.some(m => m.status === 'active')
+  // Session mutations (optimistic updates to currentSession + tRPC sync)
+  createSession: (provider: ProviderId, model: string) => Promise<string>;
+  updateSessionModel: (sessionId: string, model: string) => Promise<void>;
+  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => Promise<void>;
+  updateSessionTitle: (sessionId: string, title: string) => Promise<void>;
+  deleteSession: (sessionId: string) => Promise<void>;
+
+  // Message mutations
+  addMessage: (
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: string | MessagePart[],
+    attachments?: FileAttachment[],
+    usage?: TokenUsage,
+    finishReason?: string,
+    metadata?: MessageMetadata,
+    todoSnapshot?: Todo[]
+  ) => Promise<void>;
 
   // UI State
   isLoading: boolean;
@@ -102,364 +109,390 @@ export interface AppState {
   };
   updateNotificationSettings: (settings: Partial<AppState['notificationSettings']>) => void;
 
-  // Todo State (per-session, accessed via currentSession)
-  updateTodos: (sessionId: string, updates: TodoUpdate[]) => void;
+  // Todo State
+  updateTodos: (sessionId: string, updates: TodoUpdate[]) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
   subscribeWithSelector(
-    immer((set) => ({
-    // Navigation
-    currentScreen: 'chat',
-    navigateTo: (screen) =>
-      set((state) => {
-        state.currentScreen = screen;
-      }),
+    immer((set, get) => ({
+      // Navigation
+      currentScreen: 'chat',
+      navigateTo: (screen) =>
+        set((state) => {
+          state.currentScreen = screen;
+        }),
 
-    // AI Configuration
-    aiConfig: null,
-    setAIConfig: (config) =>
-      set((state) => {
-        state.aiConfig = config;
-      }),
-    updateProvider: (provider, data) =>
-      set((state) => {
-        if (!state.aiConfig) {
-          state.aiConfig = { providers: {} };
-        }
-        if (!state.aiConfig.providers) {
-          state.aiConfig.providers = {};
-        }
-        state.aiConfig.providers[provider] = {
-          ...state.aiConfig.providers[provider],
-          ...data,
-        };
-      }),
-    removeProvider: (provider) =>
-      set((state) => {
-        if (state.aiConfig?.providers) {
-          delete state.aiConfig.providers[provider];
-        }
-        if (state.aiConfig?.defaultProvider === provider) {
-          state.aiConfig.defaultProvider = undefined;
-          state.aiConfig.defaultModel = undefined;
-        }
-      }),
+      // AI Configuration
+      aiConfig: null,
+      setAIConfig: (config) =>
+        set((state) => {
+          state.aiConfig = config;
+        }),
+      updateProvider: (provider, data) =>
+        set((state) => {
+          if (!state.aiConfig) {
+            state.aiConfig = { providers: {} };
+          }
+          if (!state.aiConfig.providers) {
+            state.aiConfig.providers = {};
+          }
+          state.aiConfig.providers[provider] = {
+            ...state.aiConfig.providers[provider],
+            ...data,
+          };
+        }),
+      removeProvider: (provider) =>
+        set((state) => {
+          if (state.aiConfig?.providers) {
+            delete state.aiConfig.providers[provider];
+          }
+          if (state.aiConfig?.defaultProvider === provider) {
+            state.aiConfig.defaultProvider = undefined;
+            state.aiConfig.defaultModel = undefined;
+          }
+        }),
 
-    // Model Selection
-    selectedProvider: null,
-    selectedModel: null,
-    setSelectedProvider: (provider) =>
-      set((state) => {
-        state.selectedProvider = provider;
-      }),
-    setSelectedModel: (model) =>
-      set((state) => {
-        state.selectedModel = model;
-      }),
+      // Model Selection
+      selectedProvider: null,
+      selectedModel: null,
+      setSelectedProvider: (provider) =>
+        set((state) => {
+          state.selectedProvider = provider;
+        }),
+      setSelectedModel: (model) =>
+        set((state) => {
+          state.selectedModel = model;
+        }),
 
-    // Chat Sessions
-    sessions: [],
-    currentSessionId: null,
-    createSession: (provider, model) => {
-      const sessionId = `session-${Date.now()}`;
-      const now = Date.now();
+      // Chat Sessions (NEW: tRPC-backed)
+      currentSessionId: null,
+      currentSession: null,
 
-      // Update state immediately (optimistic update)
-      set((state) => {
-        state.sessions.push({
-          id: sessionId,
-          provider,
-          model,
-          messages: [],
-          todos: [], // Initialize empty todos for this session
-          nextTodoId: 1, // Start todo IDs from 1
-          created: now,
-          updated: now,
+      /**
+       * Set current session and load it from database
+       */
+      setCurrentSession: async (sessionId) => {
+        set((state) => {
+          state.currentSessionId = sessionId;
+          state.currentSession = null; // Clear immediately
         });
-        state.currentSessionId = sessionId;
-      });
 
-      // Create in database asynchronously with SAME ID (critical for consistency!)
-      getSessionRepository().then((repo) => {
-        repo.createSessionFromData({
-          id: sessionId,
-          provider,
-          model,
-          nextTodoId: 1,
-          created: now,
-          updated: now,
-        }).catch((error) => {
-          console.error('Failed to create session in database:', error);
-        });
-      });
-
-      return sessionId;
-    },
-    updateSessionModel: (sessionId, model) => {
-      // Update state immediately (optimistic update)
-      set((state) => {
-        const session = state.sessions.find((s) => s.id === sessionId);
-        if (session) {
-          session.model = model;
-        }
-      });
-
-      // Persist to database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.updateSessionModel(sessionId, model).catch((error) => {
-          console.error('Failed to update session model in database:', error);
-        });
-      });
-    },
-    updateSessionProvider: (sessionId, provider, model) => {
-      // Update state immediately (optimistic update)
-      set((state) => {
-        const session = state.sessions.find((s) => s.id === sessionId);
-        if (session) {
-          session.provider = provider;
-          session.model = model;
-        }
-      });
-
-      // Persist to database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.updateSessionProvider(sessionId, provider, model).catch((error) => {
-          console.error('Failed to update session provider in database:', error);
-        });
-      });
-    },
-    updateSessionTitle: (sessionId, title) => {
-      // Update state immediately (optimistic update)
-      set((state) => {
-        const session = state.sessions.find((s) => s.id === sessionId);
-        if (session) {
-          session.title = title;
-        }
-      });
-
-      // Persist to database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.updateSessionTitle(sessionId, title).catch((error) => {
-          console.error('Failed to update session title in database:', error);
-        });
-      });
-    },
-    addMessage: (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) => {
-      // Normalize content to MessagePart[] format
-      const normalizedContent: MessagePart[] = typeof content === 'string'
-        ? [{ type: 'text', content }]
-        : content;
-
-      // Update state immediately (optimistic update)
-      set((state) => {
-        const session = state.sessions.find((s) => s.id === sessionId);
-        if (session) {
-          session.messages.push({
-            role,
-            content: normalizedContent,
-            timestamp: Date.now(),
-            status: 'completed', // Default status for messages added through addMessage
-            ...(attachments !== undefined && attachments.length > 0 && { attachments }),
-            ...(usage !== undefined && { usage }),
-            ...(finishReason !== undefined && { finishReason }),
-            ...(metadata !== undefined && { metadata }),
-            ...(todoSnapshot !== undefined && todoSnapshot.length > 0 && { todoSnapshot }),
-          });
-        }
-      });
-
-      // Persist to database asynchronously
-      getSessionRepository().then((repo) => {
-        repo
-          .addMessage(sessionId, role, normalizedContent, attachments, usage, finishReason, metadata, todoSnapshot)
-          .catch((error) => {
-            console.error('Failed to add message to database:', error);
-          });
-      });
-    },
-    setCurrentSession: (sessionId) =>
-      set((state) => {
-        state.currentSessionId = sessionId;
-      }),
-    deleteSession: (sessionId) => {
-      // Update state immediately (optimistic update)
-      set((state) => {
-        state.sessions = state.sessions.filter((s) => s.id !== sessionId);
-        if (state.currentSessionId === sessionId) {
-          state.currentSessionId = null;
-        }
-      });
-
-      // Delete from database asynchronously
-      getSessionRepository().then((repo) => {
-        repo.deleteSession(sessionId).catch((error) => {
-          console.error('Failed to delete session from database:', error);
-        });
-      });
-    },
-
-    // UI State
-    isLoading: false,
-    error: null,
-    setLoading: (loading) =>
-      set((state) => {
-        state.isLoading = loading;
-      }),
-    setError: (error) =>
-      set((state) => {
-        state.error = error;
-      }),
-
-    // Agent State
-    currentAgentId: 'coder',
-    setCurrentAgentId: (agentId) =>
-      set((state) => {
-        state.currentAgentId = agentId;
-      }),
-
-    // Rule State
-    enabledRuleIds: [],
-    setEnabledRuleIds: (ruleIds) =>
-      set((state) => {
-        state.enabledRuleIds = ruleIds;
-      }),
-
-    // Debug Logs
-    debugLogs: [],
-    addDebugLog: (message) =>
-      set((state) => {
-        // Only log in debug mode (controlled by DEBUG env var)
-        // In production, this is a no-op to avoid performance overhead
-        if (!process.env.DEBUG) {
+        if (!sessionId) {
           return;
         }
 
-        const timestamp = new Date().toLocaleTimeString();
-        state.debugLogs.push(`[${timestamp}] ${message}`);
+        // Fetch session from tRPC
+        const client = await getTRPCClient();
+        const session = await client.session.getById({ sessionId });
 
-        // Log rotation: keep max 1000 entries to prevent memory leak
-        const MAX_LOGS = 1000;
-        if (state.debugLogs.length > MAX_LOGS) {
-          // Remove oldest half when limit reached
-          state.debugLogs = state.debugLogs.slice(-MAX_LOGS / 2);
+        set((state) => {
+          state.currentSession = session;
+        });
+      },
+
+      /**
+       * Refresh current session from database
+       */
+      refreshCurrentSession: async () => {
+        const { currentSessionId } = get();
+        if (!currentSessionId) {
+          return;
         }
-      }),
-    clearDebugLogs: () =>
-      set((state) => {
-        state.debugLogs = [];
-      }),
 
-    // Notification Settings
-    notificationSettings: {
-      osNotifications: true,
-      terminalNotifications: true,
-      sound: true,
-      autoGenerateTitle: true,
-    },
-    updateNotificationSettings: (settings) =>
-      set((state) => {
-        state.notificationSettings = {
-          ...state.notificationSettings,
-          ...settings,
-        };
-      }),
+        const client = await getTRPCClient();
+        const session = await client.session.getById({ sessionId: currentSessionId });
 
-    // Todo State (per-session)
-    updateTodos: (sessionId, updates) =>
-      set((state) => {
-        const session = state.sessions.find((s) => s.id === sessionId);
-        if (!session) return;
+        set((state) => {
+          state.currentSession = session;
+        });
+      },
 
-        for (const update of updates) {
-          if (update.id === undefined || update.id === null) {
-            // Add new todo
-            const newId = session.nextTodoId;
-            const maxOrdering = session.todos.length > 0
-              ? Math.max(...session.todos.map((t) => t.ordering))
-              : 0;
+      /**
+       * Create new session
+       */
+      createSession: async (provider, model) => {
+        const client = await getTRPCClient();
+        const session = await client.session.create({ provider, model });
 
-            session.todos.push({
-              id: newId,
-              content: update.content || '',
-              activeForm: update.activeForm || '',
-              status: update.status || 'pending',
-              ordering: maxOrdering + 10,
-            });
-            session.nextTodoId = newId + 1;
-          } else {
-            // Update existing todo
-            const todo = session.todos.find((t) => t.id === update.id);
-            if (!todo) continue;
+        // Set as current session
+        set((state) => {
+          state.currentSessionId = session.id;
+          state.currentSession = session;
+        });
 
-            // Update fields
-            if (update.content !== undefined) todo.content = update.content;
-            if (update.activeForm !== undefined) todo.activeForm = update.activeForm;
-            if (update.status !== undefined) todo.status = update.status;
+        return session.id;
+      },
 
-            // Handle reordering
-            if (update.reorder) {
-              const { type, id: targetId } = update.reorder;
+      /**
+       * Update session model
+       */
+      updateSessionModel: async (sessionId, model) => {
+        // Optimistic update if it's the current session
+        if (get().currentSessionId === sessionId && get().currentSession) {
+          set((state) => {
+            if (state.currentSession) {
+              state.currentSession.model = model;
+            }
+          });
+        }
 
-              if (type === 'top') {
-                const minOrdering = Math.min(...session.todos.map((t) => t.ordering));
-                todo.ordering = minOrdering - 10;
-              } else if (type === 'last') {
-                const maxOrdering = Math.max(...session.todos.map((t) => t.ordering));
-                todo.ordering = maxOrdering + 10;
-              } else if (type === 'before' && targetId !== undefined) {
-                const target = session.todos.find((t) => t.id === targetId);
-                if (target) {
-                  // Find the todo before target (lower ordering, shows earlier)
-                  const sorted = [...session.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
-                  const targetIdx = sorted.findIndex((t) => t.id === targetId);
-                  const before = targetIdx > 0 ? sorted[targetIdx - 1] : null;
+        // Sync to database via tRPC
+        const client = await getTRPCClient();
+        await client.session.updateModel({ sessionId, model });
+      },
 
-                  if (before) {
-                    // Insert between before and target
-                    todo.ordering = Math.floor((before.ordering + target.ordering) / 2);
-                  } else {
-                    // Target is first, put this todo before it
-                    todo.ordering = target.ordering - 10;
-                  }
-                }
-              } else if (type === 'after' && targetId !== undefined) {
-                const target = session.todos.find((t) => t.id === targetId);
-                if (target) {
-                  // Find the todo after target (higher ordering, shows later)
-                  const sorted = [...session.todos].sort((a, b) => a.ordering - b.ordering || a.id - b.id);
-                  const targetIdx = sorted.findIndex((t) => t.id === targetId);
-                  const after = targetIdx < sorted.length - 1 ? sorted[targetIdx + 1] : null;
+      /**
+       * Update session provider
+       */
+      updateSessionProvider: async (sessionId, provider, model) => {
+        // Optimistic update if it's the current session
+        if (get().currentSessionId === sessionId && get().currentSession) {
+          set((state) => {
+            if (state.currentSession) {
+              state.currentSession.provider = provider;
+              state.currentSession.model = model;
+            }
+          });
+        }
 
-                  if (after) {
-                    // Insert between target and after
-                    todo.ordering = Math.floor((target.ordering + after.ordering) / 2);
-                  } else {
-                    // Target is last, put this todo after it
-                    todo.ordering = target.ordering + 10;
+        // Sync to database via tRPC
+        const client = await getTRPCClient();
+        await client.session.updateProvider({ sessionId, provider, model });
+      },
+
+      /**
+       * Update session title
+       */
+      updateSessionTitle: async (sessionId, title) => {
+        // Optimistic update if it's the current session
+        if (get().currentSessionId === sessionId && get().currentSession) {
+          set((state) => {
+            if (state.currentSession) {
+              state.currentSession.title = title;
+            }
+          });
+        }
+
+        // Sync to database via tRPC
+        const client = await getTRPCClient();
+        await client.session.updateTitle({ sessionId, title });
+      },
+
+      /**
+       * Delete session
+       */
+      deleteSession: async (sessionId) => {
+        // Clear if it's the current session
+        if (get().currentSessionId === sessionId) {
+          set((state) => {
+            state.currentSessionId = null;
+            state.currentSession = null;
+          });
+        }
+
+        // Delete from database via tRPC
+        const client = await getTRPCClient();
+        await client.session.delete({ sessionId });
+      },
+
+      /**
+       * Add message to session
+       */
+      addMessage: async (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) => {
+        // Normalize content
+        const normalizedContent: MessagePart[] =
+          typeof content === 'string' ? [{ type: 'text', content }] : content;
+
+        // Optimistic update if it's the current session
+        if (get().currentSessionId === sessionId && get().currentSession) {
+          set((state) => {
+            if (state.currentSession) {
+              state.currentSession.messages.push({
+                role,
+                content: normalizedContent,
+                timestamp: Date.now(),
+                status: 'completed',
+                ...(attachments !== undefined && attachments.length > 0 && { attachments }),
+                ...(usage !== undefined && { usage }),
+                ...(finishReason !== undefined && { finishReason }),
+                ...(metadata !== undefined && { metadata }),
+                ...(todoSnapshot !== undefined && todoSnapshot.length > 0 && { todoSnapshot }),
+              });
+            }
+          });
+        }
+
+        // Persist via tRPC
+        const client = await getTRPCClient();
+        await client.message.add({
+          sessionId,
+          role,
+          content: normalizedContent,
+          attachments,
+          usage,
+          finishReason,
+          metadata,
+          todoSnapshot,
+        });
+      },
+
+      // UI State
+      isLoading: false,
+      error: null,
+      setLoading: (loading) =>
+        set((state) => {
+          state.isLoading = loading;
+        }),
+      setError: (error) =>
+        set((state) => {
+          state.error = error;
+        }),
+
+      // Agent State
+      currentAgentId: 'coder',
+      setCurrentAgentId: (agentId) =>
+        set((state) => {
+          state.currentAgentId = agentId;
+        }),
+
+      // Rule State
+      enabledRuleIds: [],
+      setEnabledRuleIds: (ruleIds) =>
+        set((state) => {
+          state.enabledRuleIds = ruleIds;
+        }),
+
+      // Debug Logs
+      debugLogs: [],
+      addDebugLog: (message) =>
+        set((state) => {
+          if (!process.env.DEBUG) {
+            return;
+          }
+
+          const timestamp = new Date().toLocaleTimeString();
+          state.debugLogs.push(`[${timestamp}] ${message}`);
+
+          const MAX_LOGS = 1000;
+          if (state.debugLogs.length > MAX_LOGS) {
+            state.debugLogs = state.debugLogs.slice(-MAX_LOGS / 2);
+          }
+        }),
+      clearDebugLogs: () =>
+        set((state) => {
+          state.debugLogs = [];
+        }),
+
+      // Notification Settings
+      notificationSettings: {
+        osNotifications: true,
+        terminalNotifications: true,
+        sound: true,
+        autoGenerateTitle: true,
+      },
+      updateNotificationSettings: (settings) =>
+        set((state) => {
+          state.notificationSettings = {
+            ...state.notificationSettings,
+            ...settings,
+          };
+        }),
+
+      // Todo State
+      updateTodos: async (sessionId, updates) => {
+        const { currentSession } = get();
+
+        // Optimistic update if it's the current session
+        if (get().currentSessionId === sessionId && currentSession) {
+          set((state) => {
+            if (!state.currentSession) return;
+
+            const session = state.currentSession;
+
+            for (const update of updates) {
+              if (update.id === undefined || update.id === null) {
+                // Add new todo
+                const newId = session.nextTodoId;
+                const maxOrdering =
+                  session.todos.length > 0 ? Math.max(...session.todos.map((t) => t.ordering)) : 0;
+
+                session.todos.push({
+                  id: newId,
+                  content: update.content || '',
+                  activeForm: update.activeForm || '',
+                  status: update.status || 'pending',
+                  ordering: maxOrdering + 10,
+                });
+                session.nextTodoId = newId + 1;
+              } else {
+                // Update existing todo
+                const todo = session.todos.find((t) => t.id === update.id);
+                if (!todo) continue;
+
+                if (update.content !== undefined) todo.content = update.content;
+                if (update.activeForm !== undefined) todo.activeForm = update.activeForm;
+                if (update.status !== undefined) todo.status = update.status;
+
+                // Handle reordering
+                if (update.reorder) {
+                  const { type, id: targetId } = update.reorder;
+
+                  if (type === 'top') {
+                    const minOrdering = Math.min(...session.todos.map((t) => t.ordering));
+                    todo.ordering = minOrdering - 10;
+                  } else if (type === 'last') {
+                    const maxOrdering = Math.max(...session.todos.map((t) => t.ordering));
+                    todo.ordering = maxOrdering + 10;
+                  } else if (type === 'before' && targetId !== undefined) {
+                    const target = session.todos.find((t) => t.id === targetId);
+                    if (target) {
+                      const sorted = [...session.todos].sort(
+                        (a, b) => a.ordering - b.ordering || a.id - b.id
+                      );
+                      const targetIdx = sorted.findIndex((t) => t.id === targetId);
+                      const before = targetIdx > 0 ? sorted[targetIdx - 1] : null;
+
+                      if (before) {
+                        todo.ordering = Math.floor((before.ordering + target.ordering) / 2);
+                      } else {
+                        todo.ordering = target.ordering - 10;
+                      }
+                    }
+                  } else if (type === 'after' && targetId !== undefined) {
+                    const target = session.todos.find((t) => t.id === targetId);
+                    if (target) {
+                      const sorted = [...session.todos].sort(
+                        (a, b) => a.ordering - b.ordering || a.id - b.id
+                      );
+                      const targetIdx = sorted.findIndex((t) => t.id === targetId);
+                      const after = targetIdx < sorted.length - 1 ? sorted[targetIdx + 1] : null;
+
+                      if (after) {
+                        todo.ordering = Math.floor((target.ordering + after.ordering) / 2);
+                      } else {
+                        todo.ordering = target.ordering + 10;
+                      }
+                    }
                   }
                 }
               }
             }
-          }
+          });
         }
 
-        // ⚠️ CRITICAL: Copy todos and nextTodoId BEFORE async database operation
-        // Immer draft proxies are revoked after set() completes
-        // Accessing session.todos after set() will throw "Proxy has been revoked"
-        const todosCopy = JSON.parse(JSON.stringify(session.todos));
-        const nextTodoIdCopy = session.nextTodoId;
-
-        // Sync to database asynchronously after state update
-        getSessionRepository().then((repo) => {
-          repo.updateTodos(sessionId, todosCopy, nextTodoIdCopy).catch((error) => {
-            console.error('Failed to update todos in database:', error);
+        // Sync to database via tRPC
+        // Need to get fresh copy after optimistic update
+        const updatedSession = get().currentSession;
+        if (updatedSession && updatedSession.id === sessionId) {
+          const client = await getTRPCClient();
+          await client.todo.update({
+            sessionId,
+            todos: updatedSession.todos,
+            nextTodoId: updatedSession.nextTodoId,
           });
-        });
-      }),
+        }
+      },
     }))
   )
 );
-
-// Database persistence is now handled via optimistic updates in each action
-// No need for separate subscription - each CRUD operation syncs to DB immediately

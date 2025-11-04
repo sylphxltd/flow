@@ -11,7 +11,7 @@ export const sessionsCommand: Command = {
   description: 'View and switch between chat sessions',
   execute: async (context) => {
     const { formatSessionDisplay } = await import('../../../utils/session-title.js');
-    const sessions = context.getSessions();
+    const sessions = await context.getSessions();
 
     if (sessions.length === 0) {
       return 'No sessions available. Start chatting to create a session.';

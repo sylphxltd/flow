@@ -163,8 +163,8 @@ export function createSendUserMessageToAI(params: MessageStreamingParams) {
 
       // Sync to app store immediately
       useAppStore.setState((state) => {
-        const session = state.sessions.find((s) => s.id === currentSessionId);
-        if (session) {
+        const session = state.currentSession;
+        if (session && session.id === currentSessionId) {
           session.messages.push({
             role: 'assistant',
             content: [],
@@ -205,11 +205,10 @@ export function createSendUserMessageToAI(params: MessageStreamingParams) {
 
         // Generate title with streaming if this is first message
         if (currentSessionId) {
-          // Get fresh session from store (currentSession might be stale)
-          const sessions = useAppStore.getState().sessions;
-          const freshSession = sessions.find(s => s.id === currentSessionId);
+          // Get fresh session from store
+          const freshSession = useAppStore.getState().currentSession;
 
-          if (freshSession) {
+          if (freshSession && freshSession.id === currentSessionId) {
             const userMessageCount = freshSession.messages.filter(m => m.role === 'user').length;
             const hasTitle = !!freshSession.title && freshSession.title !== 'New Chat';
 

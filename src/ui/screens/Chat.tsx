@@ -275,7 +275,11 @@ export default function Chat(_props: ChatProps) {
         addMessage,
         updateNotificationSettings,
         getAIConfig: () => useAppStore.getState().aiConfig,
-        getSessions: () => useAppStore.getState().sessions,
+        getSessions: async () => {
+          const { getTRPCClient } = await import('../../server/trpc/client.js');
+          const client = await getTRPCClient();
+          return await client.session.getRecent({ limit: 100 });
+        },
         getCurrentSessionId: () => currentSessionId,
         setCurrentSession,
         getNotificationSettings: () => notificationSettings,
@@ -362,10 +366,9 @@ export default function Chat(_props: ChatProps) {
       return;
     }
 
-    // Find session in store (use getState to avoid dependency on sessions)
-    const sessions = useAppStore.getState().sessions;
-    const session = sessions.find((s) => s.id === currentSessionId);
-    if (!session) {
+    // Get current session from store (tRPC: already cached)
+    const session = useAppStore.getState().currentSession;
+    if (!session || session.id !== currentSessionId) {
       setIsStreaming(false);
       return;
     }

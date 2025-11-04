@@ -1,55 +1,43 @@
 /**
  * Session Persistence Hook
- * Load sessions from database (auto-migrates from files on first run)
+ * Loads last session from database (tRPC architecture)
+ *
+ * tRPC Pattern:
+ * - No mass loading of sessions (huge memory saving!)
+ * - Only load last session if exists
+ * - Other sessions fetched on-demand via /sessions command
  */
 
 import { useEffect } from 'react';
 import { useAppStore } from '../stores/app-store.js';
-import { getSessionRepository } from '../../db/database.js';
+import { getTRPCClient } from '../../server/trpc/client.js';
 
 export function useSessionPersistence() {
   useEffect(() => {
-    const loadSessions = async () => {
+    const loadLastSession = async () => {
       try {
-        // Get database repository (auto-initializes and migrates if needed)
-        const repository = await getSessionRepository();
+        // Get tRPC client
+        const client = await getTRPCClient();
 
-        // Load recent 20 sessions from database
-        // MASSIVE performance improvement: Database query vs loading 20 JSON files!
-        const validSessions = await repository.getRecentSessions(20);
+        // Load last session (most recently updated)
+        // MASSIVE performance improvement: Only load 1 session instead of all!
+        const lastSession = await client.session.getLast();
 
-        // Update store with loaded sessions
-        const setState = useAppStore.setState;
-        setState({ sessions: validSessions });
-
-        // Don't auto-set current session - let user start fresh or choose from history
-        // Sessions are loaded and available but not automatically opened
-      } catch (error) {
-        console.error('Failed to load sessions from database:', error);
-      }
-    };
-
-    // Load sessions on mount
-    loadSessions();
-
-    // Subscribe to sessions array changes to detect new sessions created
-    // When a new session is created, it's added to the store, triggering this
-    const unsubscribe = useAppStore.subscribe(
-      (state) => state.sessions.length,
-      (newLength, prevLength) => {
-        // Only reload if sessions were added (not removed)
-        if (newLength > prevLength) {
-          // Re-sort sessions by updated time
-          const setState = useAppStore.setState;
-          const currentSessions = useAppStore.getState().sessions;
-          const sortedSessions = [...currentSessions].sort((a, b) => b.updated - a.updated);
-          setState({ sessions: sortedSessions });
+        if (lastSession) {
+          // Set as current session (cached in store)
+          const { setCurrentSession } = useAppStore.getState();
+          await setCurrentSession(lastSession.id);
         }
-      }
-    );
 
-    return () => {
-      unsubscribe();
+        // Don't auto-set if no session - let user start fresh
+      } catch (error) {
+        console.error('Failed to load last session:', error);
+      }
     };
+
+    // Load last session on mount
+    loadLastSession();
+
+    // No subscription needed - currentSession updates handled by tRPC
   }, []);
 }

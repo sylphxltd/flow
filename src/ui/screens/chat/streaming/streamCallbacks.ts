@@ -327,8 +327,8 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
             // If aborted, mark all active parts as 'abort' in database
             if (wasAborted) {
               const state = useAppStore.getState();
-              const session = state.sessions.find((s) => s.id === currentSessionId);
-              if (session) {
+              const session = state.currentSession;
+              if (session && session.id === currentSessionId) {
                 const activeMessage = [...session.messages]
                   .reverse()
                   .find((m) => m.role === 'assistant' && m.status === 'active');
@@ -353,8 +353,8 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
         // Update app store status (content was updated in real-time by callbacks)
         // NOTE: Using immer-style mutations (immer middleware automatically creates new objects)
         useAppStore.setState((state) => {
-          const session = state.sessions.find((s) => s.id === currentSessionId);
-          if (!session) return;
+          const session = state.currentSession;
+          if (!session || session.id !== currentSessionId) return;
 
           // Find last active assistant message (messages can be added in any order)
           const activeMessage = [...session.messages]

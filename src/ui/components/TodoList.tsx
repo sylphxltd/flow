@@ -19,10 +19,8 @@ import {
 const MAX_VISIBLE_LINES = 5;
 
 export default function TodoList() {
-  // Get current session's todos
-  const currentSessionId = useAppStore((state) => state.currentSessionId);
-  const sessions = useAppStore((state) => state.sessions);
-  const currentSession = sessions.find((s) => s.id === currentSessionId);
+  // Get current session's todos (tRPC: cached in store)
+  const currentSession = useAppStore((state) => state.currentSession);
   const todos = currentSession?.todos || [];
 
   // Calculate progress

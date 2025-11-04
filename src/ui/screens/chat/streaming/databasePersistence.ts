@@ -66,8 +66,8 @@ export function createFlushDatabaseWrite(refs: PersistenceRefs, currentSessionId
     // If no pending content, read from app store (handles abort/error cases)
     if (!contentToWrite && refs.streamingMessageIdRef.current) {
       const state = useAppStore.getState();
-      const session = state.sessions.find((s) => s.id === currentSessionId);
-      if (session) {
+      const session = state.currentSession;
+      if (session && session.id === currentSessionId) {
         const activeMessage = session.messages.find((m) => m.status === 'active');
         if (activeMessage) {
           contentToWrite = activeMessage.content;
@@ -101,8 +101,8 @@ export function createUpdateActiveMessageContent(
 ) {
   return (updater: (prev: StreamPart[]) => StreamPart[]) => {
     useAppStore.setState((state) => {
-      const session = state.sessions.find((s) => s.id === currentSessionId);
-      if (!session) return;
+      const session = state.currentSession;
+      if (!session || session.id !== currentSessionId) return;
 
       const activeMessage = session.messages.find((m) => m.status === 'active');
       if (!activeMessage) return;

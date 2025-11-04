@@ -107,8 +107,8 @@ export interface CommandContext {
   // Create new session
   createSession: (provider: ProviderId, model: string) => string;
 
-  // Get all sessions
-  getSessions: () => Session[];
+  // Get all sessions (tRPC: fetches from database)
+  getSessions: () => Promise<Session[]>;
 
   // Get current session ID
   getCurrentSessionId: () => string | null;

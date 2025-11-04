@@ -119,11 +119,8 @@ const fileContentCache = new FileContentCache();
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
-  // Optimized: select only current session instead of entire sessions array
-  // This prevents re-renders when other sessions change
-  const currentSession = useAppStore((state) =>
-    state.sessions.find((s) => s.id === state.currentSessionId)
-  );
+  // tRPC: currentSession cached in store, no need to search array
+  const currentSession = useAppStore((state) => state.currentSession);
   const addMessage = useAppStore((state) => state.addMessage);
   const setError = useAppStore((state) => state.setError);
   const addDebugLog = useAppStore((state) => state.addDebugLog);
@@ -233,7 +230,7 @@ export function useChat() {
 
       // Capture full todo state snapshot at message creation time
       // Store Todo[] (structured data) for rewind capability
-      const currentSession = useAppStore.getState().sessions.find((s) => s.id === currentSessionId);
+      const currentSession = useAppStore.getState().currentSession;
       const todoSnapshot = currentSession?.todos ? [...currentSession.todos] : [];
 
       // Add user message to session
@@ -256,10 +253,8 @@ export function useChat() {
       );
 
       // Get updated session (after addMessage)
-      // ⚠️ IMPORTANT: Must get fresh state from store, not use hook's sessions variable
-      // The sessions variable is stale - it was captured at hook render time
-      const freshSessions = useAppStore.getState().sessions;
-      const updatedSession = freshSessions.find((s) => s.id === currentSessionId);
+      // tRPC: currentSession is always fresh in store
+      const updatedSession = useAppStore.getState().currentSession;
       if (!updatedSession) {
         console.error('[useChat] Session not found after addMessage');
         return;
