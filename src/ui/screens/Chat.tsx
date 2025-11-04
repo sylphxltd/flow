@@ -577,6 +577,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     multiSelectChoices,
     selectionFilter,
     isFilterMode,
+    freeTextInput,
+    isFreeTextMode,
     selectedCommandIndex,
     selectedFileIndex,
     skipNextSubmit,
@@ -594,6 +596,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setMultiSelectChoices,
     setSelectionFilter,
     setIsFilterMode,
+    setFreeTextInput,
+    setIsFreeTextMode,
     setSelectedFileIndex,
     setPendingInput,
     setPendingCommand,
@@ -1338,6 +1342,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               multiSelectChoices={multiSelectChoices}
               selectionFilter={selectionFilter}
               isFilterMode={isFilterMode}
+              freeTextInput={freeTextInput}
+              isFreeTextMode={isFreeTextMode}
               selectedCommandIndex={selectedCommandIndex}
               askQueueLength={askQueueLength}
             />

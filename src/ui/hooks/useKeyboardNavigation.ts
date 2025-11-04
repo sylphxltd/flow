@@ -178,17 +178,106 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             return;
           }
 
-          // Escape - exit filter mode (keep filter text) or clear filter
-          if (key.escape && (isFilterMode || selectionFilter.length > 0)) {
-            if (isFilterMode) {
-              // First Esc: exit filter mode but keep filter text
+          // Escape - exit free text mode, filter mode, or clear filter
+          if (key.escape) {
+            if (isFreeTextMode) {
+              // Exit free text mode without saving
+              setIsFreeTextMode(false);
+              setFreeTextInput('');
+              addLog('[freetext] Cancelled free text input');
+              return;
+            } else if (isFilterMode) {
+              // Exit filter mode but keep filter text
               setIsFilterMode(false);
               addLog('[filter] Exited filter mode, filter text preserved');
+              return;
             } else if (selectionFilter.length > 0) {
-              // Second Esc: clear filter text
+              // Clear filter text
               setSelectionFilter('');
               setSelectedCommandIndex(0);
               addLog('[filter] Cleared filter text');
+              return;
+            }
+          }
+
+          // Free text mode - handle text input
+          if (isFreeTextMode) {
+            // Enter - submit free text
+            if (key.return) {
+              const selectedOption = filteredOptions[selectedCommandIndex];
+              if (!selectedOption || !freeTextInput.trim()) {
+                addLog('[freetext] Cannot submit empty free text');
+                return;
+              }
+
+              const customValue = freeTextInput.trim();
+              addLog(`[freetext] Submitted: ${customValue}`);
+
+              // Add user's answer to chat history
+              if (!commandSessionRef.current) {
+                commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+              }
+              addMessage(commandSessionRef.current, 'user', customValue);
+
+              if (isSingleQuestion) {
+                // Single question: submit immediately
+                inputResolver.current({ [currentQuestion.id]: customValue });
+                inputResolver.current = null;
+                setPendingInput(null);
+                setMultiSelectionPage(0);
+                setMultiSelectionAnswers({});
+                setIsFreeTextMode(false);
+                setFreeTextInput('');
+                setSelectionFilter('');
+                setIsFilterMode(false);
+              } else {
+                // Multi-question: save answer and move to next
+                const newAnswers = {
+                  ...multiSelectionAnswers,
+                  [currentQuestion.id]: customValue,
+                };
+                setMultiSelectionAnswers(newAnswers);
+                setIsFreeTextMode(false);
+                setFreeTextInput('');
+
+                // Check if all questions are answered
+                const allAnswered = questions.every((q) => newAnswers[q.id]);
+
+                if (allAnswered) {
+                  // All answered: auto-submit
+                  addLog(`[selection] All answered, auto-submitting: ${JSON.stringify(newAnswers)}`);
+                  inputResolver.current(newAnswers);
+                  inputResolver.current = null;
+                  setPendingInput(null);
+                  setMultiSelectionPage(0);
+                  setMultiSelectionAnswers({});
+                  setSelectionFilter('');
+                  setIsFilterMode(false);
+                } else {
+                  // Move to next unanswered question
+                  const nextUnanswered = questions.findIndex(
+                    (q, idx) => idx > multiSelectionPage && !newAnswers[q.id]
+                  );
+                  if (nextUnanswered !== -1) {
+                    setMultiSelectionPage(nextUnanswered);
+                  }
+                  setSelectedCommandIndex(0);
+                  setSelectionFilter('');
+                }
+              }
+              return;
+            }
+
+            // Backspace - delete character
+            if (key.backspace || key.delete) {
+              setFreeTextInput((prev) => prev.slice(0, -1));
+              return;
+            }
+
+            // Character - add to input
+            if (char && !key.ctrl) {
+              setFreeTextInput((prev) => prev + char);
+              return;
             }
             return;
           }
@@ -338,8 +427,19 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             return;
           }
 
-          // Enter - select option / confirm multi-select
+          // Enter - select option / confirm multi-select / enter free text mode
           if (key.return) {
+            const selectedOption = filteredOptions[selectedCommandIndex];
+
+            // Check if selected option is a free text option
+            if (selectedOption?.freeText) {
+              // Enter free text mode
+              setIsFreeTextMode(true);
+              setFreeTextInput('');
+              addLog('[freetext] Entered free text mode');
+              return;
+            }
+
             // Multi-select mode: confirm current choices
             if (currentQuestion.multiSelect) {
               if (multiSelectChoices.size === 0) {

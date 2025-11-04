@@ -15,6 +15,8 @@ interface SelectionUIProps {
   multiSelectChoices: Set<string>;
   selectionFilter: string;
   isFilterMode: boolean;
+  freeTextInput: string;
+  isFreeTextMode: boolean;
   selectedCommandIndex: number;
   askQueueLength: number;
 }
@@ -26,6 +28,8 @@ export function SelectionUI({
   multiSelectChoices,
   selectionFilter,
   isFilterMode,
+  freeTextInput,
+  isFreeTextMode,
   selectedCommandIndex,
   askQueueLength,
 }: SelectionUIProps) {
@@ -93,27 +97,37 @@ export function SelectionUI({
             {isCurrentQuestion ? (
               // Current question: show options
               <Box marginLeft={4} flexDirection="column" marginTop={1}>
-                {/* Filter */}
-                <Box marginBottom={1}>
-                  <Text dimColor>🔍 </Text>
-                  {isFilterMode ? (
-                    <>
-                      <Text color="#00FF88">{selectionFilter}</Text>
-                      <Text color="#00FF88">▊</Text>
-                      <Text dimColor> (Esc to exit, type to continue)</Text>
-                    </>
-                  ) : selectionFilter ? (
-                    <>
-                      <Text color="#00D9FF">{selectionFilter}</Text>
-                      <Text dimColor> (/ to edit, Esc to clear)</Text>
-                    </>
-                  ) : (
-                    <Text dimColor>(press / to filter)</Text>
-                  )}
-                </Box>
+                {/* Free Text Input */}
+                {isFreeTextMode ? (
+                  <Box marginBottom={1}>
+                    <Text dimColor>✏️  </Text>
+                    <Text color="#00FF88">{freeTextInput}</Text>
+                    <Text color="#00FF88">▊</Text>
+                    <Text dimColor> (Enter to submit, Esc to cancel)</Text>
+                  </Box>
+                ) : (
+                  /* Filter */
+                  <Box marginBottom={1}>
+                    <Text dimColor>🔍 </Text>
+                    {isFilterMode ? (
+                      <>
+                        <Text color="#00FF88">{selectionFilter}</Text>
+                        <Text color="#00FF88">▊</Text>
+                        <Text dimColor> (Esc to exit, type to continue)</Text>
+                      </>
+                    ) : selectionFilter ? (
+                      <>
+                        <Text color="#00D9FF">{selectionFilter}</Text>
+                        <Text dimColor> (/ to edit, Esc to clear)</Text>
+                      </>
+                    ) : (
+                      <Text dimColor>(press / to filter)</Text>
+                    )}
+                  </Box>
+                )}
 
                 {/* Options */}
-                {(() => {
+                {!isFreeTextMode && (() => {
                   // Safety check: ensure options exist
                   if (!q.options || !Array.isArray(q.options)) {
                     return (
