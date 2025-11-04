@@ -15,7 +15,6 @@ import type { MessagePart as MessagePartType } from '../../types/session.types.j
 
 interface MessagePartProps {
   part: MessagePartType | StreamingPart;
-  isLastInStream?: boolean;
 }
 
 // Extended type for streaming parts - UNIFIED with status field
@@ -25,18 +24,13 @@ type StreamingPart =
   | { type: 'tool'; toolId: string; name: string; status: 'active' | 'completed' | 'error' | 'abort'; duration?: number; args?: unknown; result?: unknown; error?: string; startTime?: number }
   | { type: 'error'; error: string; status: 'completed' };
 
-export const MessagePart = React.memo(function MessagePart({ part, isLastInStream = false }: MessagePartProps) {
+export const MessagePart = React.memo(function MessagePart({ part }: MessagePartProps) {
   if (part.type === 'text') {
     return (
       <Box flexDirection="column" marginLeft={2} marginBottom={1}>
         <MarkdownText>
           {part.content}
         </MarkdownText>
-        {isLastInStream && (
-          <Box>
-            <Text color="#FFD700">▊</Text>
-          </Box>
-        )}
       </Box>
     );
   }
