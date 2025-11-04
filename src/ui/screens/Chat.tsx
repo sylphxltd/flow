@@ -1437,10 +1437,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               return (
                 <>
-                  {/* Message header - message level, not part level */}
-                  <Box paddingX={1} paddingTop={1}>
-                    <Text color="#00FF88">▌ SYLPHX</Text>
-                  </Box>
+                  {/* Message header in Static - ensures proper scrolling */}
+                  <Static items={[activeMessage]}>
+                    {() => (
+                      <Box paddingX={1} paddingTop={1}>
+                        <Text color="#00FF88">▌ SYLPHX</Text>
+                      </Box>
+                    )}
+                  </Static>
 
                   {/* Static parts - continuous completed from start */}
                   {staticParts.length > 0 && (
