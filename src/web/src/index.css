@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-0;
+  }
+
+  body {
+    @apply bg-gray-950 text-gray-100;
+    @apply m-0 p-0;
+    @apply overflow-hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    @apply w-screen h-screen;
+    @apply flex;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-800 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-700;
+  }
+}
+
+@layer utilities {
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/10 transition-all duration-200;
+  }
+
+  /* Subtle separators instead of borders */
+  .section-divide {
+    @apply bg-gradient-to-r from-transparent via-gray-800/50 to-transparent h-px;
+  }
+}

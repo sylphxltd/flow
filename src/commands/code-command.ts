@@ -35,6 +35,28 @@ async function startTUIApp(): Promise<void> {
     process.exit(1);
   }
 
+  // Start web server in background (non-blocking)
+  try {
+    const { startWebServer } = await import('../server/web/server.js');
+    startWebServer().catch(err => {
+      if (process.env.DEBUG) {
+        console.error(chalk.dim('Web server error:'), err);
+      }
+    });
+
+    // Give server a moment to start
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Show web UI info
+    console.log(chalk.dim('🌐 Web UI: http://localhost:3000'));
+    console.log(chalk.dim('📡 SSE Streaming: Ready\n'));
+  } catch (error) {
+    // Web server is optional, don't fail if it can't start
+    if (process.env.DEBUG) {
+      console.error(chalk.dim('Could not start web server:'), error);
+    }
+  }
+
   // Render React + Ink app wrapped in error boundary
   render(
     React.createElement(ErrorBoundary, null,

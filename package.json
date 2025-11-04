@@ -84,6 +84,7 @@
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
     "drizzle-orm": "^0.44.7",
+    "express": "^5.1.0",
     "gradient-string": "^3.0.0",
     "gray-matter": "^4.0.3",
     "ignore": "^7.0.5",
