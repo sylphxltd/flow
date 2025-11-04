@@ -5,7 +5,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import type { Question, SelectOption } from '../ui/commands/types.js';
+import type { Question, SelectOption } from '../types/interaction.types.js';
 
 /**
  * User input request - matches WaitForInputOptions from command system

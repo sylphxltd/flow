@@ -5,7 +5,7 @@
 
 import type { AIConfig } from '@sylphx/code-core';
 import { useAppStore } from '../stores/app-store.js';
-import { getTRPCClient } from '@sylphx/code-server/server/trpc/client';
+import { getTRPCClient } from '@sylphx/code-server';
 
 export function useAIConfig() {
   const setAIConfig = useAppStore((state) => state.setAIConfig);

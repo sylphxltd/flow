@@ -10,7 +10,7 @@
 
 import { useEffect } from 'react';
 import { useAppStore } from '../stores/app-store.js';
-import { getTRPCClient } from '@sylphx/code-server/server/trpc/client';
+import { getTRPCClient } from '@sylphx/code-server';
 
 export function useSessionPersistence() {
   useEffect(() => {

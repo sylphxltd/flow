@@ -45,6 +45,7 @@ export type { AIConfig, ProviderConfig } from './config/ai-config.js'
 // ============================================================================
 export type * from './types/session.types.js'
 export type * from './types/common.types.js'
+export type * from './types/interaction.types.js'
 
 // ============================================================================
 // Utils
@@ -59,6 +60,9 @@ export { formatTodoChange, formatTodoCount } from './utils/todo-formatters.js'
 export { default as tools } from './tools/index.js'
 export { getAISDKTools, getToolCategories, getAllToolNames, type GetToolsOptions } from './tools/registry.js'
 export { createTodoTool, type TodoToolContext } from './tools/todo.js'
+export { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from './tools/interaction.js'
+export { scanProjectFiles } from './utils/file-scanner.js'
+export { sendNotification } from './utils/notifications.js'
 
 // ============================================================================
 // Version
