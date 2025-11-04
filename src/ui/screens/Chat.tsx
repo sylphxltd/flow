@@ -72,6 +72,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Normalize cursor to valid range (防禦性：確保 cursor 始終在有效範圍內)
   const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
 
+  // Get sessions from store (needed for message history)
+  const sessions = useAppStore((state) => state.sessions);
+
   // Message history (like bash command history)
   // Extract from all user messages across all sessions
   const messageHistory = useMemo(() => {
@@ -194,7 +197,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const setSelectedModel = useAppStore((state) => state.setSelectedModel);
   const updateNotificationSettings = useAppStore((state) => state.updateNotificationSettings);
   const notificationSettings = useAppStore((state) => state.notificationSettings);
-  const sessions = useAppStore((state) => state.sessions);
 
   // Helper to schedule a debounced database write
   // Reduces SQLITE_BUSY errors by batching writes
