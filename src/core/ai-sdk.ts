@@ -4,16 +4,13 @@
  * Content parts based design - own type system with proper conversion
  */
 
-import { streamText, stepCountIs, type UserContent, type AssistantContent, type DataContent, type ModelMessage } from 'ai';
+import { streamText, type AssistantContent, type ModelMessage } from 'ai';
 import type { LanguageModelV2, LanguageModelV2ToolResultOutput } from '@ai-sdk/provider';
 import * as os from 'node:os';
-import { appendFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { getAISDKTools } from '../tools/index.js';
 import { hasUserInputHandler } from '../tools/interaction.js';
 import { getCurrentSystemPrompt } from './agent-manager.js';
 import { getEnabledRulesContent } from './rule-manager.js';
-import { useAppStore } from '../ui/stores/app-store.js';
 import { buildTodoContext } from '../utils/todo-context.js';
 
 // Legacy system prompt - kept for backwards compatibility and fallback
@@ -408,20 +405,6 @@ export async function* createAIStream(
   let stepNumber = 0;
   const MAX_STEPS = 1000;
 
-  // DEBUG: Create log file for stream chunks
-  const logFile = join(os.tmpdir(), `ai-stream-debug-${Date.now()}.log`);
-  const logChunk = (message: string) => {
-    try {
-      appendFileSync(logFile, `${new Date().toISOString()} ${message}\n`);
-    } catch (e) {
-      // Ignore logging errors
-    }
-  };
-
-  logChunk(`=== Stream Started ===`);
-  logChunk(`Log file: ${logFile}`);
-  console.error(`[AI Stream Debug] Logging to: ${logFile}`);
-
   while (stepNumber < MAX_STEPS) {
     // Emit step-start event
     yield {
@@ -429,7 +412,6 @@ export async function* createAIStream(
       stepNumber,
     };
 
-    logChunk(`\n--- Step ${stepNumber} Start ---`);
 
     // Prepare messages for this step (caller can inject context)
     const preparedMessages = onPrepareMessages
@@ -450,7 +432,6 @@ export async function* createAIStream(
     // Stream all chunks to user
     for await (const chunk of fullStream) {
       // DEBUG: Log every chunk
-      logChunk(`[${chunk.type}] ${JSON.stringify(chunk)}`);
 
       switch (chunk.type) {
         case 'text-start':
@@ -592,7 +573,6 @@ export async function* createAIStream(
 
     const currentFinishReason = await finishReason;
 
-    logChunk(`--- Step ${stepNumber} End: ${currentFinishReason} ---\n`);
 
     // Emit step-end event
     yield {
@@ -604,14 +584,12 @@ export async function* createAIStream(
     // Check if we should continue the loop
     if (currentFinishReason !== 'tool-calls') {
       // No more tool calls, exit loop
-      logChunk(`=== Stream Ended (${currentFinishReason}) ===`);
       break;
     }
 
     stepNumber++;
   }
 
-  logChunk(`=== Stream Complete ===`);
 }
 
 /**

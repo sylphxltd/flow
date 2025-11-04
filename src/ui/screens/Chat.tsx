@@ -295,14 +295,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         const repo = await getSessionRepository();
         await repo.updateMessageParts(streamingMessageIdRef.current, contentToWrite);
         pendingDbContentRef.current = null;
-        addLog(`Flushed ${contentToWrite.length} parts to database`);
       } catch (error) {
-        addLog(`Failed to flush parts: ${error}`);
+        if (process.env.DEBUG) {
+          console.error(`Failed to flush parts: ${error}`);
+        }
       }
-    } else {
-      addLog(`No content to flush (messageId=${streamingMessageIdRef.current}, content=${contentToWrite ? 'exists' : 'null'})`);
     }
-  }, [currentSessionId, addLog]);
+  }, [currentSessionId]);
 
   // Helper to update active message content in session
   // Defined after currentSessionId to avoid initialization error
@@ -310,22 +309,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const updateActiveMessageContent = useCallback((updater: (prev: StreamPart[]) => StreamPart[]) => {
     useAppStore.setState((state) => {
       const session = state.sessions.find((s) => s.id === currentSessionId);
-      if (!session) {
-        console.error('[updateActiveMessageContent] Session not found:', currentSessionId);
-        return;
-      }
+      if (!session) return;
 
       const activeMessage = session.messages.find((m) => m.status === 'active');
-      if (!activeMessage) {
-        console.error('[updateActiveMessageContent] No active message found');
-        console.error('[updateActiveMessageContent] Messages:', session.messages.map(m => ({ role: m.role, status: m.status, contentLength: m.content?.length })));
-        return;
-      }
+      if (!activeMessage) return;
 
       // Update content using immer-style mutation
       const newContent = updater(activeMessage.content);
       activeMessage.content = newContent;
-      console.log('[updateActiveMessageContent] Updated content, parts:', newContent.length);
 
       // Schedule debounced database write (batched to reduce SQLITE_BUSY)
       scheduleDatabaseWrite(newContent);
@@ -699,7 +690,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     }
 
     setIsStreaming(true);
-    addLog('Starting message send...');
 
     // Reset flags for new stream
     wasManuallyAbortedRef.current = false;
@@ -735,7 +725,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         'active' // Mark as active for streaming
       );
       streamingMessageIdRef.current = messageId;
-      addLog(`Created assistant message: ${messageId}`);
 
       // Sync to app store immediately
       useAppStore.setState((state) => {
@@ -867,39 +856,26 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             if (streamingMessageIdRef.current) {
               try {
                 await repo.updateMessageStatus(streamingMessageIdRef.current, finalStatus);
-                addLog(`Updated message status to: ${finalStatus}`);
               } catch (error) {
-                addLog(`Failed to update message status: ${error}`);
+                if (process.env.DEBUG) {
+                  console.error(`Failed to update message status: ${error}`);
+                }
                 // Continue execution - status update failure shouldn't block UI cleanup
               }
             }
 
             // Update app store status (content was updated in real-time by callbacks)
             // NOTE: Using immer-style mutations (immer middleware automatically creates new objects)
-            console.log('[onComplete] Updating app store status to:', finalStatus);
             useAppStore.setState((state) => {
               const session = state.sessions.find((s) => s.id === currentSessionId);
-              if (!session) {
-                addLog(`Session not found in store: ${currentSessionId}`);
-                console.error('[onComplete] Session not found:', currentSessionId);
-                return;
-              }
-
-              console.log('[onComplete] Session messages:', session.messages.map(m => ({ role: m.role, status: m.status, contentLength: m.content?.length })));
+              if (!session) return;
 
               // Find last active assistant message (messages can be added in any order)
               const activeMessage = [...session.messages]
                 .reverse()
                 .find((m) => m.role === 'assistant' && m.status === 'active');
 
-              if (!activeMessage) {
-                addLog(`No active assistant message found in session`);
-                console.error('[onComplete] No active message found. Messages:', session.messages.map(m => ({ role: m.role, status: m.status })));
-                return;
-              }
-
-              console.log('[onComplete] Found active message with', activeMessage.content?.length, 'parts');
-              console.log('[onComplete] Before update - status:', activeMessage.status);
+              if (!activeMessage) return;
 
               // Update message status and metadata using immer-style mutation
               activeMessage.status = finalStatus;
@@ -909,13 +885,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               if (finishReasonRef.current) {
                 activeMessage.finishReason = finishReasonRef.current;
               }
-
-              console.log('[onComplete] After update - status:', activeMessage.status);
-              addLog(`Updated message status to ${finalStatus} in app store`);
             });
           } catch (error) {
             // Critical error in onComplete - log but don't throw
-            addLog(`Critical error in onComplete: ${error instanceof Error ? error.message : String(error)}`);
+            if (process.env.DEBUG) {
+              console.error(`Critical error in onComplete: ${error instanceof Error ? error.message : String(error)}`);
+            }
           } finally {
             // ALWAYS cleanup state, even if there are errors
             // This prevents UI from getting stuck in streaming state
@@ -1089,8 +1064,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onToolInputStart - tool input streaming started
         onToolInputStart: (toolCallId, toolName) => {
           // Tool input streaming started - args will be streamed in deltas
-          // No UI update needed, just log
-          addLog(`Tool input streaming: ${toolName}`);
+          // No UI update needed
         },
 
         // onToolInputDelta - tool input streaming delta
@@ -1147,8 +1121,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
         // onFinish - save usage and finishReason
         onFinish: async (usage, finishReason) => {
-          addLog(`[onFinish] Saving usage and finishReason: ${finishReason}`);
-
           // Store for onComplete to update app store
           usageRef.current = usage;
           finishReasonRef.current = finishReason;
@@ -1158,7 +1130,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             try {
               // Save usage
               await repo.updateMessageUsage(streamingMessageIdRef.current, usage);
-              addLog(`[onFinish] Saved usage: ${usage.totalTokens} tokens`);
 
               // Save finishReason
               await repo.updateMessageStatus(
@@ -1166,9 +1137,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 'active', // Keep status as active, will be updated in onComplete
                 finishReason
               );
-              addLog(`[onFinish] Saved finishReason: ${finishReason}`);
             } catch (error) {
-              addLog(`[onFinish] Failed to save usage/finishReason: ${error}`);
+              if (process.env.DEBUG) {
+                console.error(`Failed to save usage/finishReason: ${error}`);
+              }
             }
           }
         },
@@ -1349,25 +1321,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 m => m.status !== 'active'
               );
 
-              console.log('[Static Filter] Total messages:', currentSession.messages.length);
-              console.log('[Static Filter] Messages:', currentSession.messages.map(m => ({ role: m.role, status: m.status })));
-              console.log('[Static Filter] Completed messages count:', completedMessages.length);
-              console.log('[Static Filter] Completed messages:', completedMessages.map(m => ({ role: m.role, status: m.status })));
-
               return completedMessages.length > 0 && (
                 <Static items={completedMessages}>
-                  {(msg, i) => {
-                    console.log(`[Static Render] Rendering message ${i}:`, {
-                      role: msg.role,
-                      status: msg.status,
-                      contentType: typeof msg.content,
-                      isArray: Array.isArray(msg.content),
-                      contentLength: msg.content?.length,
-                      content: msg.content
-                    });
-
-                    return (
-                      <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
+                  {(msg, i) => (
+                    <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
                         {msg.role === 'user' ? (
                         <>
                           <Box>
@@ -1433,9 +1390,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           )}
                         </>
                       )}
-                      </Box>
-                    );
-                  }}
+                    </Box>
+                  )}
                 </Static>
               );
             })()}
