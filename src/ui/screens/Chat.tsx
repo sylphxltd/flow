@@ -101,7 +101,7 @@ function StreamingPartWrapper({
   const status = 'status' in part ? part.status : 'completed';
 
   return (
-    <Box paddingX={1} flexDirection="column">
+    <Box flexDirection="column">
       {(debugRegion || SHOW_DEBUG_INDICATORS) && (
         <Box>
           <Text
