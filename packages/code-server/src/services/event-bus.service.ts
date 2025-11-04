@@ -60,9 +60,34 @@ const MessageEventSchema = z.discriminatedUnion('type', [
 ]);
 
 const ConfigEventSchema = z.discriminatedUnion('type', [
+  // Coarse-grained: Full config update (for load/save)
   z.object({
     type: z.literal('config-updated'),
     config: z.any(),
+  }),
+  // Fine-grained: Specific field updates
+  z.object({
+    type: z.literal('config:default-provider-updated'),
+    provider: z.string(),
+  }),
+  z.object({
+    type: z.literal('config:default-model-updated'),
+    model: z.string(),
+  }),
+  z.object({
+    type: z.literal('config:provider-added'),
+    providerId: z.string(),
+    config: z.any(),
+  }),
+  z.object({
+    type: z.literal('config:provider-updated'),
+    providerId: z.string(),
+    field: z.string(), // 'defaultModel', 'apiKey', etc.
+    value: z.any(),
+  }),
+  z.object({
+    type: z.literal('config:provider-removed'),
+    providerId: z.string(),
   }),
 ]);
 
