@@ -6,18 +6,44 @@
 import { spawn, ChildProcess } from 'child_process';
 import { checkServer, waitForServer } from './trpc-client.js';
 import chalk from 'chalk';
+import { existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
- * Check if code-server binary is available
+ * Get server command and args
+ * Supports both development mode (monorepo) and production (global install)
+ */
+function getServerCommand(): { command: string; args: string[] } | null {
+  // 1. Check for development mode (monorepo)
+  const devServerPath = join(__dirname, '../../code-server/src/cli.ts');
+  if (existsSync(devServerPath)) {
+    return {
+      command: 'bun',
+      args: [devServerPath],
+    };
+  }
+
+  // 2. Check for global install
+  const globalCommand = Bun.which('sylphx-code-server');
+  if (globalCommand) {
+    return {
+      command: 'sylphx-code-server',
+      args: [],
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Check if code-server is available (dev mode or global install)
  */
 function isServerAvailable(): boolean {
-  try {
-    // Use Bun.which to check if binary exists in PATH
-    const result = Bun.which('sylphx-code-server');
-    return !!result;
-  } catch {
-    return false;
-  }
+  return getServerCommand() !== null;
 }
 
 /**
@@ -46,22 +72,24 @@ export async function ensureServer(options: {
     return false;
   }
 
-  // 3. Check if server binary available
-  if (!isServerAvailable()) {
+  // 3. Check if server is available (dev mode or global)
+  const serverCommand = getServerCommand();
+  if (!serverCommand) {
     console.error(chalk.red('✗ code-server not found'));
     console.error(chalk.yellow('\nPlease install @sylphx/code-server:'));
     console.error(chalk.dim('  $ bun add -g @sylphx/code-server'));
-    console.error(chalk.dim('\nOr ensure it\'s in your PATH'));
+    console.error(chalk.dim('\nOr run from monorepo root directory'));
     return false;
   }
 
   // 4. Spawn detached daemon
   if (!quiet) {
-    console.error(chalk.dim('Starting code-server daemon...'));
+    const mode = serverCommand.command === 'bun' ? '(dev mode)' : '(global)';
+    console.error(chalk.dim(`Starting code-server daemon... ${mode}`));
   }
 
   try {
-    const serverProcess = spawn('sylphx-code-server', [], {
+    const serverProcess = spawn(serverCommand.command, serverCommand.args, {
       detached: true,      // Run independently
       stdio: 'ignore',     // Don't pipe stdio
       shell: false,        // Direct execution
