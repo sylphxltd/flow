@@ -22,29 +22,32 @@
 │  code-core  │ ← 基礎 SDK (無依賴)
 └──────┬──────┘
        │
-       ├──────────────────┐
-       │                  │
-┌──────▼──────┐    ┌──────▼──────┐
-│ code-server │    │  code-cli   │ ← Headless CLI
-└──────┬──────┘    └─────────────┘
-       │
-       ├──────────────────┐
-       │                  │
-┌──────▼──────┐    ┌──────▼──────┐
-│ code-client │    │  code-web   │ ← Web GUI
-└──────┬──────┘    └─────────────┘
+┌──────▼──────┐
+│ code-server │ ← tRPC Server (依賴 code-core)
+└──────┬──────┘
        │
 ┌──────▼──────┐
-│  code-tui   │ ← TUI 應用
+│ code-client │ ← React hooks & shared logic (依賴 code-core + code-server)
+└──────┬──────┘
+       │
+       ├──────────────────┐
+       │                  │
+┌──────▼──────┐    ┌──────▼──────┐
+│  code-tui   │    │  code-web   │ ← UI 應用 (React-based, 依賴 code-client)
+└─────────────┘    └─────────────┘
+
+獨立 CLI:
+┌─────────────┐
+│  code-cli   │ ← Headless CLI (依賴 code-core)
 └─────────────┘
 
-獨立分支：
+完全獨立項目 (不依賴 code-* packages):
 ┌─────────────┐
-│    flow     │ ← Legacy CLI (依賴 code-core)
+│    flow     │ ← Legacy CLI for project management
 └─────────────┘
 
 ┌─────────────┐
-│  flow-mcp   │ ← MCP Server (依賴 code-core)
+│  flow-mcp   │ ← MCP Server
 └─────────────┘
 ```
 
@@ -52,6 +55,7 @@
 - ✅ 無循環依賴
 - ✅ 依賴方向清晰（從核心到應用層）
 - ✅ packages/ 之間沒有交叉引用 root src/
+- ✅ flow 和 flow-mcp 是完全獨立的項目，不依賴 code-* packages
 
 ### 3. Separation of Concerns (SoC) ✅
 
@@ -60,11 +64,11 @@
 | **code-core** | SDK library - AI providers, tools, session management | Library | ✅ 正確 |
 | **code-server** | tRPC server - Multi-session streaming API | Library + Server | ✅ 正確 |
 | **code-client** | React hooks & stores - Shared client logic | Library | ✅ 正確 |
-| **code-tui** | TUI application - Ink-based terminal UI | Application | ✅ 正確 |
-| **code-web** | Web GUI - Vite + React 19 | Application | ✅ 正確 |
-| **code-cli** | Headless CLI - Command-line interface | CLI | ✅ 正確 |
-| **flow** | Legacy CLI - Project initialization & flow management | CLI | ✅ 正確（無 MCP） |
-| **flow-mcp** | MCP Server - Standalone Model Context Protocol server | Server | ✅ 正確（完全獨立） |
+| **code-tui** | TUI application - Ink-based terminal UI (依賴 code-client) | Application | ✅ 正確 |
+| **code-web** | Web GUI - Vite + React 19 (依賴 code-client) | Application | ✅ 正確 |
+| **code-cli** | Headless CLI - Command-line interface (依賴 code-core) | CLI | ⚠️ 待合併到 code-tui |
+| **flow** | Legacy CLI - Project initialization & flow management | CLI | ✅ 正確（完全獨立，不依賴 code-*） |
+| **flow-mcp** | MCP Server - Standalone Model Context Protocol server | Server | ✅ 正確（完全獨立，不依賴 code-*） |
 
 **驗證結果:**
 - ✅ core 是 SDK library only（不包含 CLI 代碼）
@@ -96,19 +100,18 @@
 
 ## 🔧 已修正的問題
 
-### 問題 1: code-cli headless.ts 未構建 ✅ 已修正
+### 問題 1: 依賴關係錯誤 ✅ 已修正
 **問題:**
-- `src/index.ts` 動態 import `./headless.js`
-- 但 build 只構建 `index.ts`，導致 runtime 錯誤
+- flow 和 flow-mcp 依賴 `@sylphx/code-core`，但它們應該是完全獨立的項目
+- code-web 直接依賴 `code-core` 和 `code-server`，應該依賴 `code-client`（共享 React 邏輯）
+- code-client 未 re-export AppRouter 類型
 
 **修正:**
-```json
-{
-  "scripts": {
-    "build": "bun build src/index.ts src/headless.ts --outdir dist ..."
-  }
-}
-```
+1. 移除 flow 的 `@sylphx/code-core` 依賴
+2. 移除 flow-mcp 的 `@sylphx/code-core` 依賴
+3. 修改 code-web 依賴：移除 `code-core` 和 `code-server`，添加 `code-client`
+4. code-client re-export AppRouter 類型
+5. 更新 code-web 所有 imports 使用 `@sylphx/code-client`
 
 ### 問題 2: code-server build 配置不一致 ✅ 已修正
 **問題:**
@@ -172,6 +175,8 @@
 ### Git 提交記錄
 
 ```
+[待提交] fix: correct package dependencies - remove flow/flow-mcp code-core deps, code-web use code-client
+852f326 refactor: flatten code-server structure and remove redundant server/ directory
 aaa3231 fix: correct build configurations for code-cli and code-server
 65ed9c9 fix: rename code-tui index-cli.ts to index.ts for consistency
 41dac51 refactor: use src/index.ts as CLI entry point instead of bin/ folder

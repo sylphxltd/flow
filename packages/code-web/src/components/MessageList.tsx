@@ -7,7 +7,7 @@
 import { useEffect, useRef } from 'react';
 import Message from './Message';
 import MarkdownContent from './MarkdownContent';
-import type { MessagePart } from '@sylphx/code-core';
+import type { MessagePart } from '@sylphx/code-client';
 
 interface MessageListProps {
   messages: any[];

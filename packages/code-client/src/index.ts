@@ -13,7 +13,12 @@
 // State Management
 // ============================================================================
 export { useAppStore, type AppState, type Screen } from './stores/app-store.js'
+
+// ============================================================================
+// Types (re-exported from dependencies)
+// ============================================================================
 export type { Session, MessagePart } from '@sylphx/code-core'
+export type { AppRouter } from '@sylphx/code-server'
 
 // ============================================================================
 // React Hooks

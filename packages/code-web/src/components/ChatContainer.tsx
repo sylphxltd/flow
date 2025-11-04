@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { trpc } from '../trpc';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
-import type { MessagePart } from '@sylphx/code-core';
+import type { MessagePart } from '@sylphx/code-client';
 
 interface ChatContainerProps {
   sessionId: string | null;

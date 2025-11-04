@@ -6,7 +6,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { trpc } from '../trpc';
-import type { MessagePart } from '@sylphx/code-core';
+import type { MessagePart } from '@sylphx/code-client';
 
 interface InputAreaProps {
   sessionId: string | null;  // null = new session will be created

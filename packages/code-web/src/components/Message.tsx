@@ -3,7 +3,7 @@
  * Minimalist design with role-based styling
  */
 
-import type { MessagePart } from '@sylphx/code-core';
+import type { MessagePart } from '@sylphx/code-client';
 import MarkdownContent from './MarkdownContent';
 
 interface MessageProps {

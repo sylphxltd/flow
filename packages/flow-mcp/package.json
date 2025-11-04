@@ -21,7 +21,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@sylphx/code-core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.20.2"
   },
   "devDependencies": {

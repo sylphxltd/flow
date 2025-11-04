@@ -8,7 +8,7 @@ import { httpBatchLink, splitLink } from '@trpc/client';
 import { httpSubscriptionLink } from '@trpc/client';
 
 // Import AppRouter type - using type-only import to avoid bundling backend code
-import type { AppRouter } from '@sylphx/code-server';
+import type { AppRouter } from '@sylphx/code-client';
 
 // Create tRPC React hooks
 export const trpc = createTRPCReact<AppRouter>();

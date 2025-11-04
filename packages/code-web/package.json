@@ -11,8 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sylphx/code-core": "workspace:*",
-    "@sylphx/code-server": "workspace:*",
+    "@sylphx/code-client": "workspace:*",
     "@tanstack/react-query": "^5.90.6",
     "@trpc/client": "^11.7.1",
     "@trpc/react-query": "^11.7.1",
