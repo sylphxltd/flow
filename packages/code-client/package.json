@@ -17,19 +17,22 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
+    "dev": "bun --watch src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@sylphx/code-core": "workspace:*",
+    "@sylphx/code-server": "workspace:*",
     "@trpc/client": "^11.7.1",
     "@trpc/react-query": "^11.7.1",
     "@tanstack/react-query": "^5.70.0",
     "react": "^19.2.0",
     "zustand": "^5.0.8",
+    "immer": "^10.2.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },
