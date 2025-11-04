@@ -9,6 +9,7 @@ import { trpc } from '../trpc';
 
 interface InputAreaProps {
   sessionId: string;
+  toast: any;
 }
 
 interface FileAttachment {
@@ -24,7 +25,7 @@ interface StreamRequest {
   key: number; // Used to trigger new subscription
 }
 
-export default function InputArea({ sessionId }: InputAreaProps) {
+export default function InputArea({ sessionId, toast }: InputAreaProps) {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [streamRequest, setStreamRequest] = useState<StreamRequest | null>(null);
@@ -44,7 +45,12 @@ export default function InputArea({ sessionId }: InputAreaProps) {
       : undefined as any,
     {
       enabled: streamRequest !== null,
+      onStarted: () => {
+        console.log('[Subscription] Started streaming');
+      },
       onData: (event: any) => {
+        console.log('[Subscription] Event:', event.type, event);
+
         switch (event.type) {
           case 'assistant-message-created':
             console.log('Message created:', event.messageId);
@@ -69,6 +75,7 @@ export default function InputArea({ sessionId }: InputAreaProps) {
 
           case 'error':
             console.error('Streaming error:', event.error);
+            toast.error(event.error);
             setStreamRequest(null);
             setStreamingText('');
             break;
@@ -76,6 +83,7 @@ export default function InputArea({ sessionId }: InputAreaProps) {
       },
       onError: (err) => {
         console.error('Subscription error:', err);
+        toast.error(`Subscription error: ${err.message || String(err)}`);
         setStreamRequest(null);
         setStreamingText('');
       },
@@ -86,6 +94,12 @@ export default function InputArea({ sessionId }: InputAreaProps) {
     const trimmedInput = input.trim();
     if (!trimmedInput || streamRequest !== null) return;
 
+    console.log('[Submit] Starting submission...', {
+      sessionId,
+      messageLength: trimmedInput.length,
+      attachmentCount: attachments.length,
+    });
+
     // Clear input and attachments immediately
     setInput('');
     const messageAttachments = attachments;
@@ -93,12 +107,15 @@ export default function InputArea({ sessionId }: InputAreaProps) {
     setStreamingText('');
 
     // Start streaming by setting stream request
-    setStreamRequest({
+    const request = {
       sessionId,
       userMessage: trimmedInput,
       attachments: messageAttachments.length > 0 ? messageAttachments : undefined,
       key: Date.now(), // Unique key to force new subscription
-    });
+    };
+
+    console.log('[Submit] Setting stream request:', request);
+    setStreamRequest(request);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

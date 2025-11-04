@@ -9,9 +9,10 @@ import InputArea from './InputArea';
 
 interface ChatContainerProps {
   sessionId: string | null;
+  toast: any;
 }
 
-export default function ChatContainer({ sessionId }: ChatContainerProps) {
+export default function ChatContainer({ sessionId, toast }: ChatContainerProps) {
   // Load session data
   const { data: session, isLoading } = trpc.session.getById.useQuery(
     { sessionId: sessionId! },
@@ -68,7 +69,7 @@ export default function ChatContainer({ sessionId }: ChatContainerProps) {
       <MessageList messages={session.messages} />
 
       {/* Input */}
-      <InputArea sessionId={sessionId} />
+      <InputArea sessionId={sessionId} toast={toast} />
     </div>
   );
 }
