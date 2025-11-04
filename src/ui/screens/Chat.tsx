@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Box, Text, useInput, Static } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import MarkdownText from '../components/MarkdownText.js';
 import TodoList from '../components/TodoList.js';
@@ -37,6 +37,7 @@ import { FileAutocomplete } from '../components/FileAutocomplete.js';
 import { CommandAutocomplete } from '../components/CommandAutocomplete.js';
 import type { MessagePart as StreamPart } from '../../types/session.types.js';
 import { getSessionRepository } from '../../db/database.js';
+import { MaybeStatic } from '../components/MaybeStatic.js';
 
 /**
  * StreamPart - Alias for MessagePart
@@ -1355,143 +1356,103 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
             {currentSession.messages.map((msg, msgIdx) => {
               if (msg.role === 'user') {
-                // USER MESSAGE: Wrap in Static (never changes)
+                // USER MESSAGE: Always static (never changes after creation)
                 return (
-                  <Static key={`user-${msg.timestamp}`} items={[msg]}>
-                    {(m) => (
-                      <Box key={`user-box-${m.timestamp}`} paddingTop={1} flexDirection="column">
-                        <Box paddingX={1}>
-                          <Text color="#00D9FF">▌ YOU</Text>
-                        </Box>
-                        {/* Render content parts */}
-                        {m.content && Array.isArray(m.content) ? (
-                          m.content.map((part, idx) => (
-                            <StreamingPartWrapper
-                              key={`user-${m.timestamp}-part-${idx}`}
-                              part={part}
-                            />
-                          ))
-                        ) : (
-                          <Box marginLeft={2}>
-                            <Text>{String(m.content || '')}</Text>
-                          </Box>
-                        )}
-                        {/* Display attachments if any */}
-                        {m.attachments && m.attachments.length > 0 ? (
-                          <Box flexDirection="column" marginTop={1}>
-                            {m.attachments.map((att) => (
-                              <Box key={`user-${m.timestamp}-att-${att.path}`} marginLeft={2}>
-                                <Text dimColor>Attached(</Text>
-                                <Text color="#00D9FF">{att.relativePath}</Text>
-                                <Text dimColor>)</Text>
-                                {attachmentTokens.has(att.path) && (
-                                  <>
-                                    <Text dimColor> </Text>
-                                    <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                                  </>
-                                )}
-                              </Box>
-                            ))}
-                          </Box>
-                        ) : null}
+                  <MaybeStatic key={`user-${msg.timestamp}`} isStatic={true}>
+                    <Box paddingTop={1} flexDirection="column">
+                      <Box paddingX={1}>
+                        <Text color="#00D9FF">▌ YOU</Text>
                       </Box>
-                    )}
-                  </Static>
+                      {/* Render content parts */}
+                      {msg.content && Array.isArray(msg.content) ? (
+                        msg.content.map((part, idx) => (
+                          <StreamingPartWrapper
+                            key={`user-${msg.timestamp}-part-${idx}`}
+                            part={part}
+                          />
+                        ))
+                      ) : (
+                        <Box marginLeft={2}>
+                          <Text>{String(msg.content || '')}</Text>
+                        </Box>
+                      )}
+                      {/* Display attachments if any */}
+                      {msg.attachments && msg.attachments.length > 0 ? (
+                        <Box flexDirection="column" marginTop={1}>
+                          {msg.attachments.map((att) => (
+                            <Box key={`user-${msg.timestamp}-att-${att.path}`} marginLeft={2}>
+                              <Text dimColor>Attached(</Text>
+                              <Text color="#00D9FF">{att.relativePath}</Text>
+                              <Text dimColor>)</Text>
+                              {attachmentTokens.has(att.path) && (
+                                <>
+                                  <Text dimColor> </Text>
+                                  <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                                </>
+                              )}
+                            </Box>
+                          ))}
+                        </Box>
+                      ) : null}
+                    </Box>
+                  </MaybeStatic>
                 );
               } else {
-                // ASSISTANT MESSAGE: Part-based rendering
+                // ASSISTANT MESSAGE: Parts freeze individually as they complete
                 const streamParts = msg.content;
-
-                // Helper to check if part is completed
-                const isPartCompleted = (part: StreamPart): boolean => {
-                  return part.status === 'completed' || part.status === 'error' || part.status === 'abort';
-                };
-
-                // Find first non-completed part (boundary between static/dynamic)
-                const firstIncompleteIndex = streamParts.findIndex(part => !isPartCompleted(part));
-
-                // Split into static and dynamic, preserving original indices
-                // Create array of {part, idx} to maintain global index
-                const partsWithIdx = streamParts.map((part, idx) => ({ part, idx }));
-
-                const staticPartsWithIdx = firstIncompleteIndex === -1
-                  ? partsWithIdx  // All completed
-                  : partsWithIdx.slice(0, firstIncompleteIndex);
-
-                const dynamicPartsWithIdx = firstIncompleteIndex === -1
-                  ? []  // All in static
-                  : partsWithIdx.slice(firstIncompleteIndex);
 
                 return (
                   <Box key={`assistant-${msg.timestamp}`} flexDirection="column">
-                    {/* Header in Static for auto-scroll */}
-                    <Static items={[msg]}>
-                      {(m) => (
-                        <Box key={`assistant-header-${m.timestamp}`} paddingX={1} paddingTop={1}>
-                          <Text color="#00FF88">▌ SYLPHX</Text>
-                        </Box>
-                      )}
-                    </Static>
+                    {/* Header - always static for auto-scroll */}
+                    <MaybeStatic isStatic={true}>
+                      <Box paddingX={1} paddingTop={1}>
+                        <Text color="#00FF88">▌ SYLPHX</Text>
+                      </Box>
+                    </MaybeStatic>
 
-                    {/* Static parts - completed parts */}
-                    {staticPartsWithIdx.length > 0 && (
-                      <Static items={staticPartsWithIdx}>
-                        {({ part, idx }) => (
+                    {/* Parts - each freezes when status !== 'active' */}
+                    {streamParts.length > 0 ? (
+                      streamParts.map((part, idx) => (
+                        <MaybeStatic key={getStreamingPartKey(part, idx)} isStatic={part.status !== 'active'}>
                           <StreamingPartWrapper
-                            key={getStreamingPartKey(part, idx)}
                             part={part}
-                            debugRegion="static"
+                            debugRegion={part.status !== 'active' ? 'static' : 'dynamic'}
                           />
-                        )}
-                      </Static>
-                    )}
-
-                    {/* Dynamic parts - active parts (only for active messages) */}
-                    {dynamicPartsWithIdx.length > 0 ? (
-                      <>
-                        {dynamicPartsWithIdx.map(({ part, idx }) => (
-                          <StreamingPartWrapper
-                            key={getStreamingPartKey(part, idx)}
-                            part={part}
-                            debugRegion="dynamic"
-                          />
-                        ))}
-                      </>
-                    ) : streamParts.length === 0 && msg.status === 'active' ? (
-                      /* No parts yet - show waiting indicator (only for active) */
+                        </MaybeStatic>
+                      ))
+                    ) : msg.status === 'active' ? (
+                      /* No parts yet - show waiting indicator */
                       <Box paddingX={1} marginLeft={2}>
                         <Text dimColor>...</Text>
                       </Box>
                     ) : null}
 
-                    {/* Footer - wrap in Static for completed messages */}
-                    {msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage) && (
-                      <Static items={[msg]}>
-                        {(m) => (
-                          <Box key={`assistant-footer-${m.timestamp}`} flexDirection="column">
-                            {/* Status badge */}
-                            {m.status === 'abort' && (
-                              <Box marginLeft={2} marginBottom={1}>
-                                <Text color="#FFD700">[Aborted]</Text>
-                              </Box>
-                            )}
-                            {m.status === 'error' && (
-                              <Box marginLeft={2} marginBottom={1}>
-                                <Text color="#FF3366">[Error]</Text>
-                              </Box>
-                            )}
+                    {/* Footer - freeze when message completes */}
+                    {(msg.status === 'abort' || msg.status === 'error' || msg.usage) && (
+                      <MaybeStatic isStatic={msg.status !== 'active'}>
+                        <Box flexDirection="column">
+                          {/* Status badge */}
+                          {msg.status === 'abort' && (
+                            <Box marginLeft={2} marginBottom={1}>
+                              <Text color="#FFD700">[Aborted]</Text>
+                            </Box>
+                          )}
+                          {msg.status === 'error' && (
+                            <Box marginLeft={2} marginBottom={1}>
+                              <Text color="#FF3366">[Error]</Text>
+                            </Box>
+                          )}
 
-                            {/* Usage */}
-                            {m.usage && (
-                              <Box marginLeft={2}>
-                                <Text dimColor>
-                                  {m.usage.promptTokens.toLocaleString()} → {m.usage.completionTokens.toLocaleString()}
-                                </Text>
-                              </Box>
-                            )}
-                          </Box>
-                        )}
-                      </Static>
+                          {/* Usage */}
+                          {msg.usage && (
+                            <Box marginLeft={2}>
+                              <Text dimColor>
+                                {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+                              </Text>
+                            </Box>
+                          )}
+                        </Box>
+                      </MaybeStatic>
                     )}
                   </Box>
                 );
