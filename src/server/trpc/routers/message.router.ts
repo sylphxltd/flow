@@ -57,6 +57,9 @@ const TodoSnapshotSchema = z.object({
 
 // Streaming event types (unified interface for TUI and Web)
 const StreamEventSchema = z.discriminatedUnion('type', [
+  // Message creation
+  z.object({ type: z.literal('assistant-message-created'), messageId: z.string() }),
+
   // Text streaming
   z.object({ type: z.literal('text-start') }),
   z.object({ type: z.literal('text-delta'), text: z.string() }),

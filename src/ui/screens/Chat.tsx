@@ -32,8 +32,7 @@ import { useSelectionState } from './chat/hooks/useSelectionState.js';
 import { useCommandState } from './chat/hooks/useCommandState.js';
 
 // Streaming utilities
-import { createScheduleDatabaseWrite, createFlushDatabaseWrite, createUpdateActiveMessageContent } from './chat/streaming/databasePersistence.js';
-import { createSendUserMessageToAI } from './chat/streaming/messageStreaming.js';
+import { createSubscriptionSendUserMessageToAI } from './chat/streaming/subscriptionAdapter.js';
 
 // Command handling
 import { createCommandContext } from './chat/commands/commandContext.js';
@@ -193,47 +192,15 @@ export default function Chat(_props: ChatProps) {
     addDebugLog,
   });
 
-  // Database persistence functions
-  const scheduleDatabaseWrite = useMemo(
-    () =>
-      createScheduleDatabaseWrite({
-        dbWriteTimerRef,
-        pendingDbContentRef,
-        streamingMessageIdRef,
-      }),
-    []
-  );
-
-  const flushDatabaseWrite = useMemo(
-    () =>
-      createFlushDatabaseWrite(
-        {
-          dbWriteTimerRef,
-          pendingDbContentRef,
-          streamingMessageIdRef,
-        },
-        currentSessionId
-      ),
-    [currentSessionId]
-  );
-
-  const updateActiveMessageContent = useMemo(
-    () => createUpdateActiveMessageContent(currentSessionId),
-    [currentSessionId]
-  );
-
-  // Create sendUserMessageToAI function
+  // Create sendUserMessageToAI function using new subscription adapter
   const sendUserMessageToAI = useCallback(
-    createSendUserMessageToAI({
+    createSubscriptionSendUserMessageToAI({
       aiConfig,
       currentSessionId,
-      sendMessage,
       addMessage,
       addLog,
       updateSessionTitle,
       notificationSettings,
-      flushDatabaseWrite,
-      updateActiveMessageContent,
       abortControllerRef,
       lastErrorRef,
       wasAbortedRef,
@@ -247,13 +214,10 @@ export default function Chat(_props: ChatProps) {
     [
       aiConfig,
       currentSessionId,
-      sendMessage,
       addMessage,
       addLog,
       updateSessionTitle,
       notificationSettings,
-      flushDatabaseWrite,
-      updateActiveMessageContent,
       setIsStreaming,
       setIsTitleStreaming,
       setStreamingTitle,

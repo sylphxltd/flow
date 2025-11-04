@@ -269,6 +269,9 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
           'active'
         );
 
+        // 8.1. Emit assistant message created event
+        observer.next({ type: 'assistant-message-created', messageId: assistantMessageId });
+
         // 9. Process stream and emit events
         const callbacks: StreamCallbacks = {
           onTextStart: () => observer.next({ type: 'text-start' }),
