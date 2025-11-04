@@ -12,6 +12,9 @@ import type { Session } from '../stores/app-store.js';
 export interface SelectOption {
   label: string;
   value?: string;
+  freeText?: boolean; // If true, user can input custom text instead of selecting
+  placeholder?: string; // Placeholder text for free text input (e.g., "Enter custom option...")
+  checked?: boolean; // Default checked state for multi-select (overrides Question.preSelected)
 }
 
 /**

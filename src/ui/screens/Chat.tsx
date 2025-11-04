@@ -130,6 +130,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const [multiSelectionPage, setMultiSelectionPage] = useState(0); // Current page index (0 = Q1, 1 = Q2, ..., n = Review)
   const [multiSelectionAnswers, setMultiSelectionAnswers] = useState<Record<string, string | string[]>>({}); // question id -> answer id(s)
   const [multiSelectChoices, setMultiSelectChoices] = useState<Set<string>>(new Set()); // Current question's selected choices (for multi-select mode)
+  const [freeTextInput, setFreeTextInput] = useState(''); // Free text input for custom options
+  const [isFreeTextMode, setIsFreeTextMode] = useState(false); // Whether user is entering free text
 
   // Ask queue state
   const [askQueueLength, setAskQueueLength] = useState(0);
@@ -332,8 +334,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           setMultiSelectionAnswers({});
           // Initialize pre-selected choices for first question if multi-select
           const firstQuestion = options.questions[0];
-          if (firstQuestion?.multiSelect && firstQuestion.preSelected) {
-            setMultiSelectChoices(new Set(firstQuestion.preSelected));
+          if (firstQuestion?.multiSelect) {
+            // Priority 1: option.checked (per-option default)
+            const checkedOptions = firstQuestion.options
+              .filter(opt => opt.checked)
+              .map(opt => opt.value || opt.label);
+
+            if (checkedOptions.length > 0) {
+              setMultiSelectChoices(new Set(checkedOptions));
+            }
+            // Priority 2: question.preSelected (question-level default)
+            else if (firstQuestion.preSelected) {
+              setMultiSelectChoices(new Set(firstQuestion.preSelected));
+            } else {
+              setMultiSelectChoices(new Set());
+            }
           } else {
             setMultiSelectChoices(new Set());
           }

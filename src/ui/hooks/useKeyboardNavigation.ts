@@ -25,6 +25,8 @@ export interface KeyboardNavigationProps {
   multiSelectChoices: Set<string>;
   selectionFilter: string;
   isFilterMode: boolean;
+  freeTextInput: string;
+  isFreeTextMode: boolean;
   selectedCommandIndex: number;
   selectedFileIndex: number;
   skipNextSubmit: React.MutableRefObject<boolean>;
@@ -44,6 +46,8 @@ export interface KeyboardNavigationProps {
   setMultiSelectChoices: (value: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   setSelectionFilter: (value: string | ((prev: string) => string)) => void;
   setIsFilterMode: (value: boolean) => void;
+  setFreeTextInput: (value: string | ((prev: string) => string)) => void;
+  setIsFreeTextMode: (value: boolean) => void;
   setSelectedFileIndex: (value: number | ((prev: number) => number)) => void;
   setPendingInput: (value: WaitForInputOptions | null) => void;
   setPendingCommand: (value: { command: Command; currentInput: string } | null) => void;
@@ -75,6 +79,8 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
     multiSelectChoices,
     selectionFilter,
     isFilterMode,
+    freeTextInput,
+    isFreeTextMode,
     selectedCommandIndex,
     selectedFileIndex,
     skipNextSubmit,
@@ -92,6 +98,8 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
     setMultiSelectChoices,
     setSelectionFilter,
     setIsFilterMode,
+    setFreeTextInput,
+    setIsFreeTextMode,
     setSelectedFileIndex,
     setPendingInput,
     setPendingCommand,
@@ -229,11 +237,22 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
                   const savedAnswer = multiSelectionAnswers[nextQuestion.id];
                   setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
                 }
-                // Otherwise, use preSelected if available
-                else if (nextQuestion.preSelected) {
-                  setMultiSelectChoices(new Set(nextQuestion.preSelected));
-                } else {
-                  setMultiSelectChoices(new Set());
+                // Otherwise, initialize with defaults
+                else {
+                  // Priority 1: option.checked
+                  const checkedOptions = nextQuestion.options
+                    .filter(opt => opt.checked)
+                    .map(opt => opt.value || opt.label);
+
+                  if (checkedOptions.length > 0) {
+                    setMultiSelectChoices(new Set(checkedOptions));
+                  }
+                  // Priority 2: question.preSelected
+                  else if (nextQuestion.preSelected) {
+                    setMultiSelectChoices(new Set(nextQuestion.preSelected));
+                  } else {
+                    setMultiSelectChoices(new Set());
+                  }
                 }
               } else {
                 setMultiSelectChoices(new Set());
@@ -254,11 +273,22 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
                   const savedAnswer = multiSelectionAnswers[prevQuestion.id];
                   setMultiSelectChoices(new Set(Array.isArray(savedAnswer) ? savedAnswer : []));
                 }
-                // Otherwise, use preSelected if available
-                else if (prevQuestion.preSelected) {
-                  setMultiSelectChoices(new Set(prevQuestion.preSelected));
-                } else {
-                  setMultiSelectChoices(new Set());
+                // Otherwise, initialize with defaults
+                else {
+                  // Priority 1: option.checked
+                  const checkedOptions = prevQuestion.options
+                    .filter(opt => opt.checked)
+                    .map(opt => opt.value || opt.label);
+
+                  if (checkedOptions.length > 0) {
+                    setMultiSelectChoices(new Set(checkedOptions));
+                  }
+                  // Priority 2: question.preSelected
+                  else if (prevQuestion.preSelected) {
+                    setMultiSelectChoices(new Set(prevQuestion.preSelected));
+                  } else {
+                    setMultiSelectChoices(new Set());
+                  }
                 }
               } else {
                 setMultiSelectChoices(new Set());
