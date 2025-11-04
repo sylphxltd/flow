@@ -392,40 +392,55 @@ export function useChat() {
           }
 
           // Assistant messages: convert parts to AI SDK format
-          const contentParts: any[] = [];
+          const contentParts: any[] = msg.content.flatMap(part => {
+            switch (part.type) {
+              case 'text':
+                return [{
+                  type: 'text',
+                  text: part.content,
+                }];
 
-          // Convert all parts to AI SDK format
-          for (const part of msg.content) {
-            if (part.type === 'text') {
-              contentParts.push({
-                type: 'text',
-                text: part.content,
-              });
-            } else if (part.type === 'reasoning') {
-              contentParts.push({
-                type: 'reasoning',
-                text: part.content,
-              });
-            } else if (part.type === 'tool') {
-              // Tool call
-              contentParts.push({
-                type: 'tool-call',
-                toolCallId: part.toolId,
-                toolName: part.name,
-                input: part.args,
-              });
-              // Tool result (if available)
-              if (part.result !== undefined) {
-                contentParts.push({
-                  type: 'tool-result',
+              case 'reasoning':
+                return [{
+                  type: 'reasoning',
+                  text: part.content,
+                }];
+
+              case 'tool': {
+                // Tool call + optional tool result
+                const parts: any[] = [{
+                  type: 'tool-call',
                   toolCallId: part.toolId,
                   toolName: part.name,
-                  output: part.result,
-                });
+                  input: part.args,
+                }];
+
+                // Add tool result if available
+                if (part.result !== undefined) {
+                  parts.push({
+                    type: 'tool-result',
+                    toolCallId: part.toolId,
+                    toolName: part.name,
+                    output: part.result,
+                  });
+                }
+
+                return parts;
               }
+
+              case 'error':
+                // Convert error to text so LLM knows what happened
+                return [{
+                  type: 'text',
+                  text: `[Error: ${part.error}]`,
+                }];
+
+              default:
+                // Exhaustive check - TypeScript will error if we miss a type
+                const _exhaustive: never = part;
+                return [];
             }
-            // error parts are not sent to LLM - they're UI-only
-          }
+          });
 
           // Add status annotation if message was aborted or errored
           if (msg.status === 'abort') {
