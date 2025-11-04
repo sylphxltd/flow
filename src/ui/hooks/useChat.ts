@@ -391,8 +391,56 @@ export function useChat() {
             };
           }
 
-          // Assistant messages: pass through content as-is, only append status annotation
-          const contentParts: any[] = [...msg.content];
+          // Assistant messages: convert parts to AI SDK format
+          const contentParts: any[] = msg.content.flatMap(part => {
+            switch (part.type) {
+              case 'text':
+                return [{
+                  type: 'text',
+                  text: part.content,
+                }];
+
+              case 'reasoning':
+                return [{
+                  type: 'reasoning',
+                  text: part.content,
+                }];
+
+              case 'tool': {
+                // Tool call + optional tool result
+                const parts: any[] = [{
+                  type: 'tool-call',
+                  toolCallId: part.toolId,
+                  toolName: part.name,
+                  input: part.args,
+                }];
+
+                // Add tool result if available
+                if (part.result !== undefined) {
+                  parts.push({
+                    type: 'tool-result',
+                    toolCallId: part.toolId,
+                    toolName: part.name,
+                    output: part.result,
+                  });
+                }
+
+                return parts;
+              }
+
+              case 'error':
+                // Convert error to text so LLM knows what happened
+                return [{
+                  type: 'text',
+                  text: `[Error: ${part.error}]`,
+                }];
+
+              default:
+                // Exhaustive check - TypeScript will error if we miss a type
+                const _exhaustive: never = part;
+                return [];
+            }
+          });
 
           // Add status annotation if message was aborted or errored
           if (msg.status === 'abort') {
