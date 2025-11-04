@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Box, Text, useInput, Static } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import MarkdownText from '../components/MarkdownText.js';
 import TodoList from '../components/TodoList.js';
@@ -1220,18 +1220,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     <Box flexDirection="row" flexGrow={1}>
       {/* Main chat area */}
       <Box flexDirection="column" flexGrow={1} width="70%">
-        {/* App Header - Output once in Static */}
-        <Static items={[{ key: 'header' }]}>
-          {(item) => (
-            <Box key={item.key} paddingX={1} paddingY={1}>
-              <Text bold color="#00D9FF">SYLPHX FLOW</Text>
-              <Text dimColor> │ </Text>
-              <Text dimColor>AI Development Assistant</Text>
-            </Box>
-          )}
-        </Static>
+        {/* App Header */}
+        <Box paddingX={1} paddingY={1}>
+          <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+          <Text dimColor> │ </Text>
+          <Text dimColor>AI Development Assistant</Text>
+        </Box>
 
-        {/* Messages - All messages in Static, dynamic UI at bottom */}
+        {/* Messages - All messages rendered dynamically */}
         {!currentSession ? (
           <Box paddingY={1} flexDirection="column">
             <Box paddingBottom={2}>
