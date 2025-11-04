@@ -2,10 +2,10 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Config } from 'drizzle-kit';
 
-const DB_PATH = join(homedir(), '.sylphx-flow', 'memory.db');
+const DB_PATH = join(homedir(), '.sylphx-code', 'code.db');
 
 export default {
-  schema: './src/db/schema.ts',
+  schema: './src/database/schema.ts',
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: {

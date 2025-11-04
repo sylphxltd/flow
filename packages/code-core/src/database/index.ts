@@ -25,9 +25,9 @@ export class DrizzleDatabase {
     this.useHomeDir = options?.useHomeDir ?? false;
 
     try {
-      // Create both home directory and current directory .sylphx-flow folders
-      const homeDir = path.join(os.homedir(), '.sylphx-flow');
-      const projectDir = path.join(process.cwd(), '.sylphx-flow');
+      // Create both home directory and current directory .sylphx-code folders
+      const homeDir = path.join(os.homedir(), '.sylphx-code');
+      const projectDir = path.join(process.cwd(), '.sylphx-code');
 
       // Ensure both directories exist with proper error handling
       try {
@@ -57,7 +57,7 @@ export class DrizzleDatabase {
 
       this.db = drizzle(this.client, { schema });
     } catch (error) {
-      const dbPath = path.join(process.cwd(), '.sylphx-flow', 'memory.db');
+      const dbPath = path.join(process.cwd(), '.sylphx-code', 'memory.db');
 
       throw new ConnectionError(
         'Failed to initialize database connection',
@@ -167,8 +167,8 @@ export class DrizzleDatabase {
    * Get database path for debugging
    */
   getDatabasePath(): string {
-    const homeDir = path.join(os.homedir(), '.sylphx-flow');
-    const projectDir = path.join(process.cwd(), '.sylphx-flow');
+    const homeDir = path.join(os.homedir(), '.sylphx-code');
+    const projectDir = path.join(process.cwd(), '.sylphx-code');
     const memoryDir = this.useHomeDir ? homeDir : projectDir;
     return path.join(memoryDir, 'memory.db');
   }

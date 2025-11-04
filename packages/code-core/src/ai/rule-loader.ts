@@ -105,8 +105,8 @@ export async function getSystemRulesPath(): Promise<string> {
  * Get all rule search paths
  */
 export function getRuleSearchPaths(cwd: string): string[] {
-  const globalPath = join(homedir(), '.sylphx-flow', 'rules');
-  const projectPath = join(cwd, '.sylphx-flow', 'rules');
+  const globalPath = join(homedir(), '.sylphx-code', 'rules');
+  const projectPath = join(cwd, '.sylphx-code', 'rules');
 
   return [globalPath, projectPath];
 }

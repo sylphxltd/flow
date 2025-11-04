@@ -107,7 +107,7 @@ export function loadGitignore(codebaseRoot: string): Ignore {
     '*.njsproj',
     '*.sln',
     '*.swp',
-    '.sylphx-flow',
+    '.sylphx-code',
     '.cache',
     'dist',
     'build',

@@ -157,7 +157,7 @@ function createConfiguration(): IConfiguration {
     config.set('env', process.env.NODE_ENV || 'development');
     config.set('debug', process.env.DEBUG === 'true');
     config.set('logLevel', process.env.LOG_LEVEL || 'info');
-    config.set('databasePath', process.env.DATABASE_PATH || '.sylphx-flow/memory.db');
+    config.set('databasePath', process.env.DATABASE_PATH || '.sylphx-code/memory.db');
     config.set('embeddings.provider', process.env.EMBEDDINGS_PROVIDER || 'local');
     config.set(
       'embeddings.dimension',

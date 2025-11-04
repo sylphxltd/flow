@@ -143,7 +143,7 @@ export class MemoryDatabaseClient extends BaseDatabaseClient<typeof schema> {
    * Get database path for debugging
    */
   getDatabasePath(): string {
-    const memoryDir = path.join(process.cwd(), '.sylphx-flow');
+    const memoryDir = path.join(process.cwd(), '.sylphx-code');
     return path.join(memoryDir, 'memory.db');
   }
 }

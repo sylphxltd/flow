@@ -2,9 +2,9 @@
  * AI Configuration Management
  *
  * Three-tier configuration system:
- * 1. Global: ~/.sylphx-flow/settings.json (user defaults, contains API keys)
- * 2. Project: ./.sylphx-flow/settings.json (project preferences, no secrets)
- * 3. Local: ./.sylphx-flow/settings.local.json (local overrides, gitignored)
+ * 1. Global: ~/.sylphx-code/settings.json (user defaults, contains API keys)
+ * 2. Project: ./.sylphx-code/settings.json (project preferences, no secrets)
+ * 3. Local: ./.sylphx-code/settings.local.json (local overrides, gitignored)
  *
  * Priority: local > project > global
  */
@@ -54,14 +54,14 @@ export type AIConfig = z.infer<typeof aiConfigSchema>;
 /**
  * Configuration file paths
  */
-const GLOBAL_CONFIG_FILE = path.join(os.homedir(), '.sylphx-flow', 'settings.json');
-const PROJECT_CONFIG_FILE = '.sylphx-flow/settings.json';
-const LOCAL_CONFIG_FILE = '.sylphx-flow/settings.local.json';
+const GLOBAL_CONFIG_FILE = path.join(os.homedir(), '.sylphx-code', 'settings.json');
+const PROJECT_CONFIG_FILE = '.sylphx-code/settings.json';
+const LOCAL_CONFIG_FILE = '.sylphx-code/settings.local.json';
 
 /**
  * Deprecated config file (for migration)
  */
-const LEGACY_CONFIG_FILE = '.sylphx-flow/ai-config.json';
+const LEGACY_CONFIG_FILE = '.sylphx-code/ai-config.json';
 
 /**
  * Get AI config file paths in priority order
@@ -201,7 +201,7 @@ export const loadAIConfig = async (cwd: string = process.cwd()): Promise<Result<
 
 /**
  * Save AI configuration to global settings
- * By default, all configuration (including API keys) goes to ~/.sylphx-flow/settings.json
+ * By default, all configuration (including API keys) goes to ~/.sylphx-code/settings.json
  * Automatically sets default provider if not set
  */
 export const saveAIConfig = async (

@@ -436,4 +436,25 @@ http://localhost:3000
 
 **可以投入使用！** 🎉
 
-**最後更新:** 2025-01-04 23:45
+---
+
+## 🔧 最新修正 (2025-01-04 23:55)
+
+### Database 路徑統一 ✅
+
+**問題:** code-core 中所有檔案使用錯誤的路徑 `.sylphx-flow`
+
+**修正:**
+- ✅ 所有 code-core 檔案: `.sylphx-flow` → `.sylphx-code`
+- ✅ drizzle.config.ts: 修正 schema 路徑 `./src/db/schema.ts` → `./src/database/schema.ts`
+- ✅ database.ts: 修正 DB 路徑 `.sylphx-flow/memory.db` → `.sylphx-code/code.db`
+- ✅ 所有配置檔案統一使用 `~/.sylphx-code/`
+
+**確認:**
+- code-core: 使用 `.sylphx-code` ✅
+- flow: 使用 `.sylphx-flow` ✅ (正確，因為獨立)
+- Schema 在正確位置 (code-core) ✅
+
+---
+
+**最後更新:** 2025-01-04 23:55

@@ -23,7 +23,7 @@ import { loadSession } from '../utils/session-manager.js';
 import { findPackageRoot } from '../utils/paths.js';
 
 const SESSION_DIR = join(homedir(), '.sylphx', 'sessions');
-const DB_DIR = join(homedir(), '.sylphx-flow');
+const DB_DIR = join(homedir(), '.sylphx-code');
 const DB_PATH = join(DB_DIR, 'memory.db');
 const MIGRATION_FLAG = join(DB_DIR, '.session-migrated');
 

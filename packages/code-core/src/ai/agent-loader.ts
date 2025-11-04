@@ -104,8 +104,8 @@ export async function getSystemAgentsPath(): Promise<string> {
  * Get all agent search paths
  */
 export function getAgentSearchPaths(cwd: string): string[] {
-  const globalPath = join(homedir(), '.sylphx-flow', 'agents');
-  const projectPath = join(cwd, '.sylphx-flow', 'agents');
+  const globalPath = join(homedir(), '.sylphx-code', 'agents');
+  const projectPath = join(cwd, '.sylphx-code', 'agents');
 
   return [globalPath, projectPath];
 }

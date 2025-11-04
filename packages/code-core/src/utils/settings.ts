@@ -14,7 +14,7 @@ export interface ProjectSettings {
   version?: string;
 }
 
-const SETTINGS_FILE = '.sylphx-flow/settings.json';
+const SETTINGS_FILE = '.sylphx-code/settings.json';
 const CURRENT_VERSION = '1.0.0';
 
 /**

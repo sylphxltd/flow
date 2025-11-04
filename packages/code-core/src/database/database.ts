@@ -10,7 +10,7 @@ import { homedir } from 'node:os';
 import { SessionRepository } from './session-repository.js';
 import { initializeDatabase } from './auto-migrate.js';
 
-const DB_PATH = join(homedir(), '.sylphx-flow', 'memory.db');
+const DB_PATH = join(homedir(), '.sylphx-code', 'code.db');
 const DATABASE_URL = process.env.DATABASE_URL || `file:${DB_PATH}`;
 
 // Global database instance

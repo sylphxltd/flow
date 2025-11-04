@@ -208,7 +208,7 @@ export class CacheDatabaseClient extends BaseDatabaseClient<typeof schema> {
    * Get database path for debugging
    */
   getDatabasePath(): string {
-    const cacheDir = path.join(process.cwd(), '.sylphx-flow');
+    const cacheDir = path.join(process.cwd(), '.sylphx-code');
     return path.join(cacheDir, 'cache.db');
   }
 }

@@ -18,7 +18,7 @@ export abstract class BaseDatabaseClient<TSchema extends Record<string, unknown>
     this.dbName = dbName;
 
     try {
-      const dbDir = path.join(process.cwd(), '.sylphx-flow');
+      const dbDir = path.join(process.cwd(), '.sylphx-code');
 
       // Ensure directory exists with proper error handling
       try {
@@ -42,7 +42,7 @@ export abstract class BaseDatabaseClient<TSchema extends Record<string, unknown>
 
       this.db = drizzle(this.client, { schema });
     } catch (error) {
-      const dbPath = path.join(process.cwd(), '.sylphx-flow', `${dbName}.db`);
+      const dbPath = path.join(process.cwd(), '.sylphx-code', `${dbName}.db`);
 
       throw new ConnectionError(
         `Failed to initialize ${dbName} database connection`,
@@ -90,7 +90,7 @@ export abstract class BaseDatabaseClient<TSchema extends Record<string, unknown>
    * Get database path for debugging
    */
   getDatabasePath(): string {
-    return path.join(process.cwd(), '.sylphx-flow', `${this.dbName}.db`);
+    return path.join(process.cwd(), '.sylphx-code', `${this.dbName}.db`);
   }
 
   /**
