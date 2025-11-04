@@ -141,6 +141,7 @@ export function useChat() {
     // Lifecycle callbacks (required/optional)
     onChunk: (chunk: string) => void;
     onComplete?: () => void;
+    onAbort?: () => void;
     onError?: (error: string) => void;
     onFinish?: (usage: TokenUsage, finishReason: string) => void;
 
@@ -174,6 +175,7 @@ export function useChat() {
       abortSignal,
       onChunk,
       onComplete,
+      onAbort,
       onError,
       onFinish,
       onToolCall,
@@ -543,6 +545,10 @@ export function useChat() {
         onToolError: (toolCallId, toolName, error, duration) => {
           addDebugLog(`[useChat] tool-error: ${toolName} (${toolCallId}, ${duration}ms) - ${error}`);
           onToolError?.(toolCallId, toolName, error, duration);
+        },
+        onAbort: () => {
+          addDebugLog(`[useChat] abort`);
+          onAbort?.();
         },
         onError: (error) => {
           addDebugLog(`[useChat] error: ${error}`);

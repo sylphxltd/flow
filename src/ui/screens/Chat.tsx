@@ -154,11 +154,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Abort controller for cancelling AI stream
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Flag to track if user manually aborted (ESC pressed)
-  const wasManuallyAbortedRef = useRef(false);
-
   // Store last error for onComplete handler
   const lastErrorRef = useRef<string | null>(null);
+
+  // Flag to track if stream was aborted
+  const wasAbortedRef = useRef(false);
 
   // Store current streaming message ID for persistence
   const streamingMessageIdRef = useRef<string | null>(null);
@@ -642,7 +642,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     inputResolver,
     commandSessionRef,
     abortControllerRef,
-    wasManuallyAbortedRef,
     cachedOptions,
     setInput,
     setCursor,
@@ -692,7 +691,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setIsStreaming(true);
 
     // Reset flags for new stream
-    wasManuallyAbortedRef.current = false;
+    wasAbortedRef.current = false;
     lastErrorRef.current = null;
     usageRef.current = null;
     finishReasonRef.current = null;
@@ -833,7 +832,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             // Parts were updated via updateMessageParts() during streaming.
             // Now just update message status to 'completed', 'abort', or 'error'.
 
-            const wasAborted = wasManuallyAbortedRef.current;
+            const wasAborted = wasAbortedRef.current;
             const hasError = lastErrorRef.current;
 
             // Flush any remaining buffered text chunks first
@@ -928,7 +927,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             // This prevents UI from getting stuck in streaming state
 
             // Reset flags
-            wasManuallyAbortedRef.current = false;
+            wasAbortedRef.current = false;
             lastErrorRef.current = null;
             streamingMessageIdRef.current = null;
             usageRef.current = null;
@@ -1136,6 +1135,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 : part
             )
           );
+        },
+
+        // onAbort - stream was aborted by user
+        onAbort: async () => {
+          // Create assistant message on first streaming event
+          await ensureAssistantMessage();
+
+          // Mark as aborted for onComplete handler
+          wasAbortedRef.current = true;
         },
 
         // onError

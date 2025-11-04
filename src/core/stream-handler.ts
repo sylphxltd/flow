@@ -22,6 +22,7 @@ export interface StreamCallbacks {
   onToolInputEnd?: (toolCallId: string, toolName: string, args: unknown) => void;
   onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
   onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void;
+  onAbort?: () => void;
   onError?: (error: string) => void;
   onFinish?: (usage: TokenUsage, finishReason: string) => void;
   onComplete?: () => void;
@@ -44,7 +45,7 @@ export async function processStream(
   stream: AsyncIterable<StreamChunk>,
   callbacks: StreamCallbacks = {}
 ): Promise<StreamResult> {
-  const { onTextStart, onTextDelta, onTextEnd, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolInputStart, onToolInputDelta, onToolInputEnd, onToolResult, onToolError, onError, onFinish, onComplete } = callbacks;
+  const { onTextStart, onTextDelta, onTextEnd, onReasoningStart, onReasoningDelta, onReasoningEnd, onToolCall, onToolInputStart, onToolInputDelta, onToolInputEnd, onToolResult, onToolError, onAbort, onError, onFinish, onComplete } = callbacks;
 
   let fullResponse = '';
   const messageParts: MessagePart[] = [];
@@ -244,7 +245,8 @@ export async function processStream(
           }
         });
 
-        // Don't add error part - abort is not an error
+        // Notify callback
+        onAbort?.();
         break;
       }
 
