@@ -480,7 +480,8 @@ export function useChat() {
       const stream = createAIStream({
         model,
         messages,
-        abortSignal, // Pass abort signal for cancellation
+        // Only pass abortSignal if provided (exactOptionalPropertyTypes compliance)
+        ...(abortSignal ? { abortSignal } : {}),
 
         // onTransformToolResult: Inject system status into tool outputs
         //
