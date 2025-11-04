@@ -185,16 +185,18 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             return;
           }
 
-          // Handle text input for filtering
-          if (char && !key.return && !key.escape && !key.tab && !key.ctrl) {
-            // In filter mode or any alphanumeric char: enter/stay in filter mode
-            if (isFilterMode || char !== ' ') {
-              setSelectionFilter((prev) => prev + char);
-              setIsFilterMode(true);
-              setSelectedCommandIndex(0);
-              return;
-            }
-            // Not in filter mode and char is space: don't filter (will be handled by space toggle below)
+          // "/" - Enter filter mode
+          if (char === '/' && !isFilterMode) {
+            setIsFilterMode(true);
+            addLog('[filter] Entered filter mode (press / to filter)');
+            return;
+          }
+
+          // Handle text input for filtering (only when in filter mode)
+          if (char && !key.return && !key.escape && !key.tab && !key.ctrl && isFilterMode) {
+            setSelectionFilter((prev) => prev + char);
+            setSelectedCommandIndex(0);
+            return;
           }
 
           // Handle backspace for filtering

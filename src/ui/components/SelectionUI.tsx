@@ -105,10 +105,10 @@ export function SelectionUI({
                   ) : selectionFilter ? (
                     <>
                       <Text color="#00D9FF">{selectionFilter}</Text>
-                      <Text dimColor> (type to edit, Esc to clear)</Text>
+                      <Text dimColor> (/ to edit, Esc to clear)</Text>
                     </>
                   ) : (
-                    <Text dimColor>(type to filter)</Text>
+                    <Text dimColor>(press / to filter)</Text>
                   )}
                 </Box>
 
@@ -214,16 +214,20 @@ export function SelectionUI({
               <Text color={multiSelectChoices.size > 0 ? '#00FF88' : 'gray'}>
                 Confirm{multiSelectChoices.size === 0 && ' (select at least one)'}
               </Text>
+              <Text dimColor> · /: </Text>
+              <Text color="#00D9FF">Filter</Text>
             </>
           ) : !isFilterMode ? (
             <>
               <Text dimColor> · Enter: </Text>
               <Text color="#00FF88">Select</Text>
+              <Text dimColor> · /: </Text>
+              <Text color="#00D9FF">Filter</Text>
             </>
           ) : (
             <>
-              <Text dimColor> · Space/Type: </Text>
-              <Text color="#00FF88">Filter</Text>
+              <Text dimColor> · Enter: </Text>
+              <Text color="#00FF88">Select</Text>
             </>
           )}
           {!isSingleQuestion && !isFilterMode && (
