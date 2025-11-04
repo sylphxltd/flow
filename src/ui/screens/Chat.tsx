@@ -1351,9 +1351,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               if (msg.role === 'user') {
                 // USER MESSAGE: Wrap in Static (never changes)
                 return (
-                  <Static key={`msg-${msg.timestamp}`} items={[msg]}>
+                  <Static key={`msg-${msgIdx}-${msg.timestamp}`} items={[msg]}>
                     {(m) => (
-                      <Box key={`user-${m.timestamp}`} paddingTop={1} flexDirection="column">
+                      <Box key={`user-${msgIdx}-${m.timestamp}`} paddingTop={1} flexDirection="column">
                         <Box paddingX={1}>
                           <Text color="#00D9FF">▌ YOU</Text>
                         </Box>
@@ -1361,7 +1361,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         {m.content && Array.isArray(m.content) ? (
                           m.content.map((part, idx) => (
                             <StreamingPartWrapper
-                              key={`msg-${m.timestamp}-part-${idx}`}
+                              key={`msg-${msgIdx}-${m.timestamp}-part-${idx}`}
                               part={part}
                             />
                           ))
@@ -1374,7 +1374,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         {m.attachments && m.attachments.length > 0 ? (
                           <Box flexDirection="column" marginTop={1}>
                             {m.attachments.map((att) => (
-                              <Box key={`msg-${m.timestamp}-att-${att.path}`} marginLeft={2}>
+                              <Box key={`msg-${msgIdx}-${m.timestamp}-att-${att.path}`} marginLeft={2}>
                                 <Text dimColor>Attached(</Text>
                                 <Text color="#00D9FF">{att.relativePath}</Text>
                                 <Text dimColor>)</Text>
@@ -1414,11 +1414,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                   : streamParts.slice(firstIncompleteIndex);
 
                 return (
-                  <Box key={`msg-${msg.timestamp}`} flexDirection="column">
+                  <Box key={`msg-${msgIdx}-${msg.timestamp}`} flexDirection="column">
                     {/* Header in Static for auto-scroll */}
                     <Static items={[msg]}>
                       {(m) => (
-                        <Box key={`header-${m.timestamp}`} paddingX={1} paddingTop={1}>
+                        <Box key={`header-${msgIdx}-${m.timestamp}`} paddingX={1} paddingTop={1}>
                           <Text color="#00FF88">▌ SYLPHX</Text>
                         </Box>
                       )}
@@ -1459,7 +1459,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                     {msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage) && (
                       <Static items={[msg]}>
                         {(m) => (
-                          <Box key={`footer-${m.timestamp}`} flexDirection="column">
+                          <Box key={`footer-${msgIdx}-${m.timestamp}`} flexDirection="column">
                             {/* Status badge */}
                             {m.status === 'abort' && (
                               <Box marginLeft={2} marginBottom={1}>
