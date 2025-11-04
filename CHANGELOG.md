@@ -5,6 +5,125 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.12] - 2025-11-04
+
+### ✨ Features
+
+#### Selection UI Enhancements
+- **Free Text Input**: Allow users to input custom answers instead of selecting from predefined options (`b769fcb`, `aef7239`, `4b36597`)
+- **Per-Option Checked State**: Each option can have default checked state for multi-select (included in commits above)
+- **Filter Mode Improvement**: Require "/" key to enter filter mode, preventing accidental filtering (`7051ea7`)
+
+#### UI Improvements
+- **Chat Title Restored**: Display current session title with streaming animation support (`74364db`)
+- **Command Autocomplete**: Prioritize command name matches over description matches (`0b90edd`)
+- **Session Switching**: Fixed session switching issues caused by Static component (`d058b2e`, `604de1c`, `c911024`, `d06a0f6`)
+
+### 🔧 Refactoring
+
+#### Architecture Simplification
+- **Removed Flat Rendering**: Reverted to simple nested structure for better maintainability (`604de1c`, `d058b2e`)
+- **Extracted Rendering Logic**: Split Chat.tsx into smaller, focused modules (`486d681`, `76cd1f5`)
+
+#### Code Quality Improvements
+- **DRY Principle**: Eliminated code duplication across the codebase (`8a1e914`, `c639884`, `f18f6d1`, `1581ad2`, `e7195c3`)
+- **Provider Refactoring**: Reduced provider-related code from 759→246 lines (`cb798a5`, `36ca514`, `d6dd8b3`)
+- **Circular Dependencies**: Completely eliminated all circular dependencies - achieved 0 circulars (`18ae9c9`, `e2689f5`, `ad78657`, `3022be7`)
+
+#### Feature Extraction
+- **Pure Function Extraction**: Extracted business logic into testable pure functions
+  - Session utils (`bf3dd0e`, `ae06aad`)
+  - Memory utils (`6b7ce82`) - 20 tests
+  - Codebase utils (`6b7ce82`) - 45 tests
+  - Run command (`d5fd6af`)
+  - Knowledge utils (`261721d`)
+  - Hook utils (`b2ee60b`)
+  - Autocomplete (`d993921`)
+  - Commands (`f5352b4`)
+  - Streaming (`18b61e5`)
+  - Input handling (`8310748`)
+
+### 🐛 Bug Fixes
+
+#### Streaming and Message Handling
+- **Text Part Handling**: Fixed missing text content display (`00216e0`, `81187f5`, `4212915`, `461ceb7`)
+- **Abort Handling**: Improved abort detection and state management (`564bd01`, `9366de6`, `ebbbfe1`, `5d798df`)
+- **Message Persistence**: Multiple fixes for content preservation (`fbee92e`, `4a05b89`, `f8233c3`, `0a109b2`)
+- **Key Stability**: Fixed React key issues (`db1081d`, `e6ffd2d`, `2a4b4ae`)
+
+#### Data Migration
+- **Attachment Normalization**: Fixed invalid attachment format issues (`21ee2ed`, `2e4d77e`, `c3a1b51`, `de026da`)
+- **Migration Fixes**: Restored missing migrations (`7b4f907`)
+
+### 🎨 UI/UX Improvements
+
+#### Chat Layout and Scrolling
+- **Natural Terminal Scroll**: Embraced natural terminal behavior (`3159a8a`, `a0ab44e`, `07ab6e1`)
+- **Status Indicators**: Enhanced streaming status display (`658da0f`, `92eb2da`, `11fc07c`)
+- **Input Box Improvements**: Better input handling during streaming (`c8d8614`, `d2b937c`, `fae8dda`)
+
+#### Content Display
+- **Reasoning Duration**: Real-time duration updates with adaptive frequency (`830cc4d`, `652b7d1`, `2f3f5ae`)
+- **Tool Display**: Improved LLM tool display colors (`bad2a21`, `7b4f907`)
+
+#### Message Handling
+- **Error and Abort Display**: Better error and abort message handling (`1ba600c`, `53a18e2`, `bf11c67`, `c51e313`, `7a5b2e8`, `0fe71be`, `e9e9e3b`, `79b90e7`)
+- **Message Structure**: Improved message content handling (`ee0d705`, `03908c9`, `ff14431`, `0f9ebf5`, `db8a9b1`)
+
+### 🔄 Message State Management
+
+- **Message-Based Streaming**: Refactored streaming state from session to message level (`ccf95c4`, `2b0dbf6`, `4fc941b`, `2996237`, `a856091`)
+- **Data Persistence**: Enhanced streaming state persistence with auto-migration (`19e7dfd`, `6b1164e`)
+
+### 🛠️ Development Experience
+
+#### Debug and Monitoring
+- **Debug Indicators**: Visual indicators for Static/Dynamic regions (`dc56409`, `d4ae5ef`, `ecc9808`)
+- **Performance Monitoring**: FPS counter (added and removed) (`c53a07b`, `87ce639`, `628a289`)
+- **Logging**: Comprehensive stream chunk logging (`4bee994`)
+
+#### Tool Integration
+- **Ask Tool**: Interactive question support for AI (`cc9f5f6`, `e119f41`, `3e2eb84`)
+
+### 🔧 Technical Improvements
+
+#### Type Safety
+- **TypeScript Improvements**: Better type safety for AI SDK (`67ccf43`, `ebbbfe1`, `5d798df`)
+
+#### Performance
+- **Optimization**: Improved rendering performance (`c2f5882`, `d3eb858`, `aa8b408`)
+
+#### API Changes
+- **Parameter Refactoring**: Better parameter organization (`b2d1a5d`, `c0ce45c`)
+
+#### Platform Compatibility
+- **Windows Support**: Fixed path handling for Windows (`8310748`)
+
+### 📝 Documentation
+
+- **Comprehensive Documentation**: Added extensive design and refactoring docs (`61b6360`, `d94e1a7`, `c2f6f8f`, `a432aea`, `1b8d362`, `59d92d5`, `9a8f0b8`, `77d09a2`)
+
+---
+
+### Summary
+
+This release focuses on **significant UI/UX improvements** for the selection system, **architectural simplification**, and **comprehensive code quality optimization**. The major highlights include:
+
+- ✨ **Free text input** and **per-option checked state** for selection UI
+- 🔧 **Simplified architecture** by removing flat rendering complexity
+- 🐛 **Fixed session switching** issues
+- 📦 **Eliminated all circular dependencies** (100% success)
+- 🧹 **Massive code cleanup** with DRY principle applied throughout
+- 📝 **Comprehensive documentation** added for all major features
+
+**Stats:**
+- **159 commits** since v0.2.11
+- **Zero circular dependencies** achieved
+- **400+ lines of code eliminated** through refactoring
+- **100+ tests added** for pure function utilities
+
+---
+
 ## [0.2.11] - 2025-11-03
 
 ### Bug Fixes
