@@ -3,38 +3,36 @@
  * Unified client for TUI (in-process) and Web GUI (HTTP)
  *
  * Architecture:
- * - TUI: Uses in-process links (zero overhead)
- * - Web: Uses HTTP links (network transport)
- * - Same API, different transport layer!
+ * - TUI: Uses router.createCaller() for direct in-process calls (zero overhead)
+ * - Web: Uses createTRPCClient() with HTTP links (network transport)
+ * - Same API, different implementation!
  */
 
-import { createTRPCClient } from '@trpc/client';
 import { appRouter, type AppRouter } from './routers/index.js';
 import { createContext } from './context.js';
-import { inProcessSubscriptionLink } from './links/inProcessSubscriptionLink.js';
 
 /**
  * Global client instance (lazy initialized)
  * Reuses same context for all calls (efficient for in-process)
  */
-let clientInstance: ReturnType<typeof createTRPCClient<AppRouter>> | null = null;
 let callerInstance: ReturnType<typeof appRouter.createCaller> | null = null;
 let contextPromise: Promise<any> | null = null;
 
 /**
- * Get tRPC client instance
- * In-process calls with full type safety and zero HTTP overhead
+ * Get tRPC client instance (in-process caller)
+ * Direct function calls with full type safety and zero overhead
  *
  * Features:
- * - Queries/Mutations: Direct function calls
- * - Subscriptions: In-process observables (no SSE)
+ * - Queries: Direct async function calls
+ * - Mutations: Direct async function calls
+ * - Subscriptions: Returns observables directly (no SSE)
  * - Type-safe: Full end-to-end types
  *
- * @returns Type-safe tRPC client with subscription support
+ * @returns Type-safe tRPC caller with subscription support
  */
 export async function getTRPCClient() {
-  if (clientInstance) {
-    return clientInstance;
+  if (callerInstance) {
+    return callerInstance;
   }
 
   // Create context once and reuse
@@ -44,28 +42,16 @@ export async function getTRPCClient() {
 
   const ctx = await contextPromise;
 
-  // Create caller for in-process link
-  if (!callerInstance) {
-    callerInstance = appRouter.createCaller(ctx);
-  }
+  // Create caller for in-process usage (supports queries, mutations, and subscriptions)
+  callerInstance = appRouter.createCaller(ctx);
 
-  // Create client with in-process subscription link
-  clientInstance = createTRPCClient<AppRouter>({
-    links: [
-      inProcessSubscriptionLink({
-        caller: callerInstance,
-      }),
-    ],
-  });
-
-  return clientInstance;
+  return callerInstance;
 }
 
 /**
  * Reset client instance (for testing or context refresh)
  */
 export function resetTRPCClient() {
-  clientInstance = null;
   callerInstance = null;
   contextPromise = null;
 }
@@ -76,7 +62,7 @@ export function resetTRPCClient() {
 export type TRPCClient = Awaited<ReturnType<typeof getTRPCClient>>;
 
 /**
- * Example: How to use for Web GUI
+ * Example: How to use for Web GUI (different implementation, same API)
  *
  * ```typescript
  * import { createTRPCClient } from '@trpc/client';
@@ -85,7 +71,7 @@ export type TRPCClient = Awaited<ReturnType<typeof getTRPCClient>>;
  * import { splitLink } from '@trpc/client';
  * import type { AppRouter } from './routers/index.js';
  *
- * // Web GUI client (HTTP + SSE)
+ * // Web GUI client (HTTP + SSE over network)
  * const webClient = createTRPCClient<AppRouter>({
  *   links: [
  *     splitLink({
@@ -100,10 +86,12 @@ export type TRPCClient = Awaited<ReturnType<typeof getTRPCClient>>;
  *   ],
  * });
  *
- * // Same API as TUI!
+ * // Same API as TUI caller!
  * await webClient.session.getRecent.query({ limit: 20 });
- * webClient.message.stream.subscribe({ sessionId: 'xyz' }, {
+ * webClient.message.streamResponse.subscribe({ sessionId: 'xyz', userMessage: 'hi' }, {
  *   onData: (data) => console.log(data),
+ *   onError: (err) => console.error(err),
+ *   onComplete: () => console.log('done'),
  * });
  * ```
  */

@@ -142,72 +142,72 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
     abortControllerRef.current = new AbortController();
 
     try {
-      // Get tRPC client
-      const client = await getTRPCClient();
+      // Get tRPC caller (in-process client)
+      const caller = await getTRPCClient();
 
-      // Subscribe to streaming
-      const subscription = client.message.streamResponse.subscribe(
-        {
-          sessionId: currentSessionId,
-          userMessage,
-          attachments,
+      // Call subscription procedure (returns Observable)
+      const observable = await caller.message.streamResponse({
+        sessionId: currentSessionId,
+        userMessage,
+        attachments,
+      });
+
+      // Subscribe to observable
+      const subscription = observable.subscribe({
+        next: (event: StreamEvent) => {
+          handleStreamEvent(event, {
+            currentSessionId,
+            updateSessionTitle,
+            setIsTitleStreaming,
+            setStreamingTitle,
+            streamingMessageIdRef,
+            usageRef,
+            finishReasonRef,
+            lastErrorRef,
+            addLog,
+            aiConfig,
+            userMessage,
+            notificationSettings,
+          });
         },
-        {
-          onData: (event: StreamEvent) => {
-            handleStreamEvent(event, {
-              currentSessionId,
-              updateSessionTitle,
-              setIsTitleStreaming,
-              setStreamingTitle,
-              streamingMessageIdRef,
-              usageRef,
-              finishReasonRef,
-              lastErrorRef,
-              addLog,
-              aiConfig,
-              userMessage,
-              notificationSettings,
-            });
-          },
-          onError: (error: any) => {
-            addLog(`[Subscription] Error: ${error.message || String(error)}`);
-            lastErrorRef.current = error.message || String(error);
+        error: (error: any) => {
+          addLog(`[Subscription] Error: ${error.message || String(error)}`);
+          lastErrorRef.current = error.message || String(error);
 
-            // Add error message part to UI
-            updateActiveMessageContent(currentSessionId, (prev) => [
-              ...prev,
-              { type: 'error', error: error.message || String(error), status: 'completed' } as MessagePart,
-            ]);
+          // Add error message part to UI
+          updateActiveMessageContent(currentSessionId, (prev) => [
+            ...prev,
+            { type: 'error', error: error.message || String(error), status: 'completed' } as MessagePart,
+          ]);
 
-            // Cleanup
-            cleanupAfterStream({
-              currentSessionId,
-              wasAbortedRef,
-              lastErrorRef,
-              usageRef,
-              finishReasonRef,
-              streamingMessageIdRef,
-              setIsStreaming,
-              notificationSettings,
-            });
-          },
-          onComplete: () => {
-            addLog('[Subscription] Complete');
+          // Cleanup
+          cleanupAfterStream({
+            currentSessionId,
+            wasAbortedRef,
+            lastErrorRef,
+            usageRef,
+            finishReasonRef,
+            streamingMessageIdRef,
+            setIsStreaming,
+            notificationSettings,
+          });
+        },
+        complete: () => {
+          addLog('[Subscription] Complete');
 
-            // Cleanup
-            cleanupAfterStream({
-              currentSessionId,
-              wasAbortedRef,
-              lastErrorRef,
-              usageRef,
-              finishReasonRef,
-              streamingMessageIdRef,
-              setIsStreaming,
-              notificationSettings,
-            });
-          },
-        }
-      );
+          // Cleanup
+          cleanupAfterStream({
+            currentSessionId,
+            wasAbortedRef,
+            lastErrorRef,
+            usageRef,
+            finishReasonRef,
+            streamingMessageIdRef,
+            setIsStreaming,
+            notificationSettings,
+          });
+        },
+      });
 
       // Handle abort
       abortControllerRef.current.signal.addEventListener('abort', () => {

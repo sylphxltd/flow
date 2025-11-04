@@ -27,9 +27,9 @@ async function testSubscription() {
     }
 
     // 2. Get tRPC client
-    console.log('\n📡 Creating tRPC client...');
-    const client = await getTRPCClient();
-    console.log('   ✅ Client created');
+    console.log('\n📡 Creating tRPC caller...');
+    const caller = await getTRPCClient();
+    console.log('   ✅ Caller created');
 
     // 3. Subscribe to streaming
     console.log('\n🚀 Starting subscription...');
@@ -38,13 +38,15 @@ async function testSubscription() {
     let eventCount = 0;
     const events: string[] = [];
 
-    const subscription = client.message.streamResponse.subscribe(
-      {
-        sessionId: session.id,
-        userMessage: 'Hello! Please say hi back.',
-      },
-      {
-        onData: (event) => {
+    // Call subscription procedure (returns Observable)
+    const observable = await caller.message.streamResponse({
+      sessionId: session.id,
+      userMessage: 'Hello! Please say hi back.',
+    });
+
+    // Subscribe to observable
+    const subscription = observable.subscribe({
+      next: (event) => {
           eventCount++;
           events.push(event.type);
 
@@ -106,17 +108,16 @@ async function testSubscription() {
               break;
           }
         },
-        onError: (error) => {
-          console.error('\n❌ Subscription error:', error);
-        },
-        onComplete: () => {
-          console.log('\n✅ Subscription completed');
-          console.log(`\n📊 Summary:`);
-          console.log(`   Total events: ${eventCount}`);
-          console.log(`   Event types: ${[...new Set(events)].join(', ')}`);
-        },
-      }
-    );
+      error: (error) => {
+        console.error('\n❌ Subscription error:', error);
+      },
+      complete: () => {
+        console.log('\n✅ Subscription completed');
+        console.log(`\n📊 Summary:`);
+        console.log(`   Total events: ${eventCount}`);
+        console.log(`   Event types: ${[...new Set(events)].join(', ')}`);
+      },
+    });
 
     // Wait for completion (or timeout after 30s)
     await new Promise((resolve, reject) => {
