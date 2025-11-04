@@ -1,115 +1,93 @@
 import chalk from 'chalk';
-import { loadAIConfig, getProvider, createAIStream, processStream, createHeadlessDisplay, getOrCreateSession, showModelToolSupportError, addMessage, getSessionRepository, getDatabase } from '@sylphx/code-core';
+import { getTRPCClient } from '@sylphx/code-client';
 
 /**
- * Headless mode - execute prompt and get response
+ * Headless mode - execute prompt and get response via tRPC
+ * All logic handled by code-server
  */
 export async function runHeadless(prompt: string, options: any): Promise<void> {
-  // Initialize database before any session operations
   try {
-    await getDatabase();
-  } catch (error) {
-    console.error(chalk.red('✗ Failed to initialize database:'), error);
-    process.exit(1);
-  }
+    const client = getTRPCClient();
 
-  // Get or create session
-  const session = await getOrCreateSession(options.continue || false);
-  if (!session) {
-    process.exit(1);
-  }
+    // Show provider/model info (unless quiet)
+    if (!options.quiet) {
+      // TODO: Get current session provider/model from server
+      console.error(chalk.dim(`\nConnecting to code-server...\n`));
+    }
 
-  // Get provider and model
-  const providerInstance = getProvider(session.provider);
-  const configResult = await loadAIConfig();
-  if (configResult._tag === 'Failure') {
-    console.error(chalk.red('✗ Failed to load config'));
-    process.exit(1);
-  }
-
-  const config = configResult.value;
-  const providerConfig = config.providers?.[session.provider];
-  if (!providerConfig) {
-    console.error(chalk.red(`✗ Provider ${session.provider} not configured`));
-    process.exit(1);
-  }
-
-  // Check if provider is properly configured
-  if (!providerInstance.isConfigured(providerConfig)) {
-    console.error(chalk.red(`✗ ${providerInstance.name} is not properly configured`));
-    process.exit(1);
-  }
-
-  const model = providerInstance.createClient(providerConfig, session.model);
-
-  // Add user message to session (in-memory and database)
-  const updatedSession = addMessage(session, 'user', prompt);
-
-  // Save user message to database
-  const repository = await getSessionRepository();
-  await repository.addMessage(
-    session.id,
-    'user',
-    [{ type: 'text', content: prompt }]
-  );
-
-  // Show user message (unless quiet)
-  if (!options.quiet) {
-    console.error(chalk.dim(`\n${session.provider} · ${session.model}\n`));
-  }
-
-  try {
-    // Convert session messages to AI SDK format
-    const messages = updatedSession.messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    // Create display callbacks
-    const display = createHeadlessDisplay(options.quiet || false);
-
-    // Create AI stream
-    const stream = createAIStream({
-      model,
-      messages,
+    // Stream response from server
+    const subscription = client.message.streamResponse.subscribe({
+      sessionId: options.continue ? undefined : null,  // undefined = continue last, null = new session
+      userMessage: prompt,
     });
 
-    // Process stream with unified handler
-    const { fullResponse } = await processStream(stream, {
-      onTextDelta: display.onTextDelta,
-      onToolCall: display.onToolCall,
-      onToolResult: display.onToolResult,
-      onComplete: display.onComplete,
+    let hasOutput = false;
+
+    // Handle streaming events
+    subscription.subscribe({
+      onData: (event: any) => {
+        switch (event.type) {
+          case 'session-created':
+            if (options.verbose) {
+              console.error(chalk.dim(`Session: ${event.sessionId}`));
+            }
+            break;
+
+          case 'text-delta':
+            process.stdout.write(event.text);
+            hasOutput = true;
+            break;
+
+          case 'tool-call':
+            if (options.verbose) {
+              console.error(chalk.yellow(`\n[Tool: ${event.toolName}]`));
+            }
+            break;
+
+          case 'tool-result':
+            if (options.verbose) {
+              console.error(chalk.dim(`[Result: ${JSON.stringify(event.result).substring(0, 100)}...]`));
+            }
+            break;
+
+          case 'complete':
+            if (!options.quiet) {
+              console.error(chalk.dim(`\n\n[Complete]`));
+            }
+            if (options.verbose && event.usage) {
+              console.error(chalk.dim(`Tokens: ${event.usage.totalTokens || 'N/A'}`));
+            }
+            break;
+
+          case 'error':
+            console.error(chalk.red(`\n✗ Error: ${event.error}`));
+            process.exit(1);
+            break;
+        }
+      },
+      onError: (err: Error) => {
+        console.error(chalk.red(`\n✗ Subscription error: ${err.message}`));
+        process.exit(1);
+      },
+      onComplete: () => {
+        if (!hasOutput) {
+          console.error(chalk.yellow('\n⚠️  No output received. Model may not support tool calling.'));
+          process.exit(1);
+        }
+      },
     });
 
-    if (options.verbose) {
-      console.error(chalk.dim(`\n[Stream complete. Response length: ${fullResponse.length}]`));
-    }
+    // Wait for subscription to complete
+    await new Promise((resolve) => {
+      subscription.subscribe({
+        onComplete: resolve,
+        onError: resolve,
+      });
+    });
 
-    // If no output, model may not support multi-step tool calling
-    if (!display.hasOutput() || fullResponse.length === 0) {
-      showModelToolSupportError();
-      process.exit(1);
-    }
-
-    // Add assistant message to session and save to database
-    const finalSession = addMessage(updatedSession, 'assistant', fullResponse);
-
-    // Save assistant message to database
-    await repository.addMessage(
-      finalSession.id,
-      'assistant',
-      [{ type: 'text', content: fullResponse }]
-    );
-
-    if (options.verbose) {
-      console.error(chalk.dim(`\nSession: ${finalSession.id}`));
-      console.error(chalk.dim(`Messages: ${finalSession.messages.length}\n`));
-    }
   } catch (error) {
     console.error(chalk.red('\n✗ Error:'), error instanceof Error ? error.message : String(error));
 
-    // Provide helpful context for common errors
     if (error instanceof Error && 'statusCode' in error && (error as any).statusCode === 401) {
       console.error(chalk.yellow('\nThis usually means:'));
       console.error(chalk.dim('  • Invalid or missing API key'));

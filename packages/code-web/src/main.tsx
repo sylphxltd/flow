@@ -2,6 +2,7 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, createTRPCClient } from './trpc';
+import { setTRPCClient } from '@sylphx/code-client';
 import './index.css';
 import App from './App.tsx';
 
@@ -16,7 +17,12 @@ function Root() {
     },
   }));
 
-  const [trpcClient] = useState(() => createTRPCClient());
+  const [trpcClient] = useState(() => {
+    const client = createTRPCClient();
+    // Also set for code-client hooks (for potential shared usage)
+    setTRPCClient(client as any);
+    return client;
+  });
 
   return (
     <StrictMode>

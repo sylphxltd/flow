@@ -67,7 +67,7 @@
       "dependencies": {
         "@jescalan/ink-markdown": "^2.0.0",
         "@sylphx/code-client": "workspace:*",
-        "@sylphx/code-core": "workspace:*",
+        "@trpc/client": "^11.7.1",
         "chalk": "^5.6.2",
         "commander": "^14.0.2",
         "ink": "^6.4.0",

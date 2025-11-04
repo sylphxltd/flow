@@ -72,6 +72,13 @@ async function main() {
         process.exit(1);
       }
 
+      // Setup HTTP tRPC client before running headless
+      const { createClient } = await import('./trpc-client.js');
+      const { setTRPCClient } = await import('@sylphx/code-client');
+
+      const client = createClient();
+      setTRPCClient(client);
+
       const { runHeadless } = await import('./headless.js');
       await runHeadless(prompt, options);
     });
@@ -94,6 +101,13 @@ async function main() {
 
     if (!hasSubcommand) {
       // Launch TUI
+      // Setup HTTP tRPC client before launching TUI
+      const { createClient } = await import('./trpc-client.js');
+      const { setTRPCClient } = await import('@sylphx/code-client');
+
+      const client = createClient();
+      setTRPCClient(client);
+
       const React = await import('react');
       const { render } = await import('ink');
       const { default: App } = await import('./App.js');

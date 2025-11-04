@@ -3,7 +3,7 @@
  * Connects to code-server via HTTP/SSE
  */
 
-import { createTRPCClient, httpBatchLink, splitLink, httpSubscriptionLink } from '@trpc/client';
+import { createTRPCProxyClient, httpBatchLink, splitLink, httpSubscriptionLink } from '@trpc/client';
 import type { AppRouter } from '@sylphx/code-client';
 
 const SERVER_URL = process.env.CODE_SERVER_URL || 'http://localhost:3000';
@@ -18,7 +18,7 @@ const SERVER_URL = process.env.CODE_SERVER_URL || 'http://localhost:3000';
  * This allows code TUI to share data with code-web in real-time
  */
 export function createClient() {
-  return createTRPCClient<AppRouter>({
+  return createTRPCProxyClient<AppRouter>({
     links: [
       splitLink({
         condition: (op) => op.type === 'subscription',

@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { getTRPCClient } from '@sylphx/code-server';
+import { getTRPCClient } from '@sylphx/code-client';
 
 export interface InputState {
   input: string;

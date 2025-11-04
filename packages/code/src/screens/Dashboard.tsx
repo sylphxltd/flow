@@ -9,7 +9,7 @@ import { FullScreen } from '../components/FullScreen.js';
 import { useAppStore } from '@sylphx/code-client';
 import { getAllAgents, switchAgent } from '@sylphx/code-core';
 import { getAllRules, toggleRule } from '@sylphx/code-core';
-import { getTRPCClient } from '@sylphx/code-server';
+import { getTRPCClient } from '@sylphx/code-client';
 import type { Session } from '@sylphx/code-client';
 
 type DashboardSection =

@@ -8,7 +8,7 @@
 // ============================================================================
 export { appRouter } from './trpc/routers/index.js'
 export { createContext, type Context } from './trpc/context.js'
-export { getTRPCClient } from './trpc/client.js'
+// NOTE: No in-process client - all clients should use HTTP tRPC
 
 // ============================================================================
 // Streaming Service
