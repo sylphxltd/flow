@@ -525,13 +525,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       }
     }
 
-    // Command filtering
+    // Command filtering with priority:
+    // 1. Commands where label matches (exact command name match)
+    // 2. Commands where description matches (secondary)
     const query = input.slice(1).toLowerCase();
-    return commands.filter(
+
+    const labelMatches = commands.filter((cmd) =>
+      cmd.label.toLowerCase().includes(`/${query}`)
+    );
+
+    const descriptionMatches = commands.filter(
       (cmd) =>
-        cmd.label.toLowerCase().includes(`/${query}`) ||
+        !cmd.label.toLowerCase().includes(`/${query}`) &&
         cmd.description.toLowerCase().includes(query)
     );
+
+    // Return label matches first, then description matches
+    return [...labelMatches, ...descriptionMatches];
   }, [input, cachedOptions]); // Recompute when input or cached options change
 
   // Get hint text for current input
