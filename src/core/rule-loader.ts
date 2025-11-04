@@ -4,8 +4,9 @@
  */
 
 import { readFile, readdir, access } from 'node:fs/promises';
-import { join, parse, relative } from 'node:path';
+import { join, parse, relative, dirname } from 'node:path';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import type { Rule, RuleMetadata } from '../types/rule.types.js';
 
@@ -82,8 +83,9 @@ export async function loadRulesFromDirectory(dirPath: string, isBuiltin: boolean
  * Get system rules path (bundled with the app)
  */
 export async function getSystemRulesPath(): Promise<string> {
-  // Get the directory of the current module
-  const currentDir = new URL('.', import.meta.url).pathname;
+  // Get the directory of the current module (cross-platform)
+  const currentFile = fileURLToPath(import.meta.url);
+  const currentDir = dirname(currentFile);
 
   // In production (dist), assets are at dist/assets/rules
   // In development (src), go up to project root: src/core -> project root

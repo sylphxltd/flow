@@ -4,8 +4,9 @@
  */
 
 import { readFile, readdir, access } from 'node:fs/promises';
-import { join, parse, relative } from 'node:path';
+import { join, parse, relative, dirname } from 'node:path';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import type { Agent, AgentMetadata } from '../types/agent.types.js';
 
@@ -81,8 +82,9 @@ export async function loadAgentsFromDirectory(dirPath: string, isBuiltin: boolea
  * Get system agents path (bundled with the app)
  */
 export async function getSystemAgentsPath(): Promise<string> {
-  // Get the directory of the current module
-  const currentDir = new URL('.', import.meta.url).pathname;
+  // Get the directory of the current module (cross-platform)
+  const currentFile = fileURLToPath(import.meta.url);
+  const currentDir = dirname(currentFile);
 
   // In production (dist), assets are at dist/assets/agents
   // In development (src), go up to project root: src/core -> project root
