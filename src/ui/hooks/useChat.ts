@@ -139,7 +139,6 @@ export function useChat() {
     abortSignal?: AbortSignal;
 
     // Lifecycle callbacks (required/optional)
-    onChunk: (chunk: string) => void;
     onComplete?: () => void;
     onAbort?: () => void;
     onError?: (error: string) => void;
@@ -175,7 +174,6 @@ export function useChat() {
     const {
       attachments,
       abortSignal,
-      onChunk,
       onComplete,
       onAbort,
       onError,
@@ -510,7 +508,6 @@ export function useChat() {
         onTextDelta: (text) => {
           addDebugLog(`[useChat] text-delta: ${text.substring(0, 50)}`);
           onTextDelta?.(text);
-          onChunk(text);  // Legacy: onChunk for backward compatibility
         },
         onTextEnd: () => {
           addDebugLog(`[useChat] text-end`);

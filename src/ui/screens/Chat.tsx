@@ -789,10 +789,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           ]);
         },
 
-        // onChunk - text streaming (batched for performance)
-        onChunk: async (chunk) => {
+        // onTextDelta - text streaming (batched for performance)
+        onTextDelta: async (text) => {
           // Accumulate chunks in buffer
-          streamBufferRef.current.chunks.push(chunk);
+          streamBufferRef.current.chunks.push(text);
 
           // Clear existing timeout
           if (streamBufferRef.current.timeout) {
