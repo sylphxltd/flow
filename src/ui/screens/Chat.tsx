@@ -273,11 +273,26 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       dbWriteTimerRef.current = null;
     }
 
-    // Write immediately if there's pending content
-    if (streamingMessageIdRef.current && pendingDbContentRef.current) {
+    // Get content to persist
+    let contentToWrite: StreamPart[] | null = pendingDbContentRef.current;
+
+    // If no pending content, read from app store (handles abort/error cases)
+    if (!contentToWrite && streamingMessageIdRef.current) {
+      const state = useAppStore.getState();
+      const session = state.sessions.find((s) => s.id === currentSessionId);
+      if (session) {
+        const activeMessage = session.messages.find((m) => m.status === 'active');
+        if (activeMessage) {
+          contentToWrite = activeMessage.content;
+        }
+      }
+    }
+
+    // Write to database if we have content
+    if (streamingMessageIdRef.current && contentToWrite && contentToWrite.length > 0) {
       try {
         const repo = await getSessionRepository();
-        await repo.updateMessageParts(streamingMessageIdRef.current, pendingDbContentRef.current);
+        await repo.updateMessageParts(streamingMessageIdRef.current, contentToWrite);
         pendingDbContentRef.current = null;
       } catch (error) {
         if (process.env.DEBUG) {
@@ -285,7 +300,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         }
       }
     }
-  }, []);
+  }, [currentSessionId]);
 
   // Helper to update active message content in session
   // Defined after currentSessionId to avoid initialization error
@@ -793,71 +808,84 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
         // onComplete - finalize message status
         onComplete: async () => {
-          // NEW DESIGN: Message-based streaming
-          // ====================================
-          //
-          // Message was created with status='active' when streaming started.
-          // Parts were updated via updateMessageParts() during streaming.
-          // Now just update message status to 'completed', 'abort', or 'error'.
+          try {
+            // NEW DESIGN: Message-based streaming
+            // ====================================
+            //
+            // Message was created with status='active' when streaming started.
+            // Parts were updated via updateMessageParts() during streaming.
+            // Now just update message status to 'completed', 'abort', or 'error'.
 
-          const wasAborted = wasManuallyAbortedRef.current;
-          const hasError = lastErrorRef.current;
+            const wasAborted = wasManuallyAbortedRef.current;
+            const hasError = lastErrorRef.current;
 
-          // Flush any remaining buffered text chunks first
-          if (streamBufferRef.current.timeout) {
-            clearTimeout(streamBufferRef.current.timeout);
-            streamBufferRef.current.timeout = null;
-          }
-          if (streamBufferRef.current.chunks.length > 0) {
-            flushStreamBuffer();
-          }
-          streamBufferRef.current.chunks = [];
+            // Flush any remaining buffered text chunks first
+            if (streamBufferRef.current.timeout) {
+              clearTimeout(streamBufferRef.current.timeout);
+              streamBufferRef.current.timeout = null;
+            }
+            if (streamBufferRef.current.chunks.length > 0) {
+              flushStreamBuffer();
+            }
+            streamBufferRef.current.chunks = [];
 
-          // Flush pending database writes immediately
-          // This ensures final message content is persisted before status update
-          await flushDatabaseWrite();
+            // Flush pending database writes immediately
+            // This ensures final message content is persisted before status update
+            await flushDatabaseWrite();
 
-          // Update message status in database
-          // Note: finishReason is already saved by onFinish, don't pass it here
-          const finalStatus = wasAborted ? 'abort' : hasError ? 'error' : 'completed';
-          if (streamingMessageIdRef.current) {
-            await repo.updateMessageStatus(streamingMessageIdRef.current, finalStatus);
-            addLog(`Updated message status to: ${finalStatus}`);
-          }
-
-          // Update app store status (content was updated in real-time by callbacks)
-          useAppStore.setState((state) => {
-            const session = state.sessions.find((s) => s.id === currentSessionId);
-            if (session) {
-              // Find the active message we created at streaming start
-              const activeMessage = session.messages
-                .slice()
-                .reverse()
-                .find((m) => m.role === 'assistant' && m.status === 'active');
-
-              if (activeMessage) {
-                // Update final status and metadata
-                // Note: content was already updated in real-time via updateActiveMessageContent
-                activeMessage.status = finalStatus;
-                if (usageRef.current) {
-                  activeMessage.usage = usageRef.current;
-                }
-                if (finishReasonRef.current) {
-                  activeMessage.finishReason = finishReasonRef.current;
-                }
+            // Update message status in database
+            // Note: finishReason is already saved by onFinish, don't pass it here
+            const finalStatus = wasAborted ? 'abort' : hasError ? 'error' : 'completed';
+            if (streamingMessageIdRef.current) {
+              try {
+                await repo.updateMessageStatus(streamingMessageIdRef.current, finalStatus);
+                addLog(`Updated message status to: ${finalStatus}`);
+              } catch (error) {
+                addLog(`Failed to update message status: ${error}`);
+                // Continue execution - status update failure shouldn't block UI cleanup
               }
             }
-          });
 
-          // Reset flags
-          wasManuallyAbortedRef.current = false;
-          lastErrorRef.current = null;
-          streamingMessageIdRef.current = null;
-          usageRef.current = null;
-          finishReasonRef.current = null;
+            // Update app store status (content was updated in real-time by callbacks)
+            useAppStore.setState((state) => {
+              const session = state.sessions.find((s) => s.id === currentSessionId);
+              if (session) {
+                // Find the active message we created at streaming start
+                const activeMessage = session.messages
+                  .slice()
+                  .reverse()
+                  .find((m) => m.role === 'assistant' && m.status === 'active');
 
-          // Message streaming ended - all parts saved to message history
-          setIsStreaming(false);
+                if (activeMessage) {
+                  // Update final status and metadata
+                  // Note: content was already updated in real-time via updateActiveMessageContent
+                  activeMessage.status = finalStatus;
+                  if (usageRef.current) {
+                    activeMessage.usage = usageRef.current;
+                  }
+                  if (finishReasonRef.current) {
+                    activeMessage.finishReason = finishReasonRef.current;
+                  }
+                }
+              }
+            });
+          } catch (error) {
+            // Critical error in onComplete - log but don't throw
+            addLog(`Critical error in onComplete: ${error instanceof Error ? error.message : String(error)}`);
+          } finally {
+            // ALWAYS cleanup state, even if there are errors
+            // This prevents UI from getting stuck in streaming state
+
+            // Reset flags
+            wasManuallyAbortedRef.current = false;
+            lastErrorRef.current = null;
+            streamingMessageIdRef.current = null;
+            usageRef.current = null;
+            finishReasonRef.current = null;
+
+            // Message streaming ended - all parts saved to message history
+            setIsStreaming(false);
+          }
 
           // Generate title with streaming if this is first message
           if (currentSessionId) {
