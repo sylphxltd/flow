@@ -1,350 +1,263 @@
-# Sylphx Monorepo Architecture
+# Sylphx Code Architecture
 
-## 🏗️ System Architecture
+**Last Updated:** 2025-01-05
+**Status:** ✅ Architecture Finalized
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENTS (No Logic)                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │  @sylphx/web │  │  @sylphx/tui │  │  @sylphx/cli │         │
-│  │              │  │              │  │              │         │
-│  │  React 19    │  │  React Ink   │  │  Headless    │         │
-│  │  Vite        │  │              │  │              │         │
-│  │  TailwindCSS │  │  Terminal    │  │  Commands    │         │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘         │
-│         │                 │                  │                  │
-│         └────────┬────────┴──────────────────┘                  │
-│                  │                                              │
-│         ┌────────▼────────┐                                     │
-│         │ @sylphx/client  │                                     │
-│         │                 │                                     │
-│         │ Shared React    │                                     │
-│         │ - Hooks         │                                     │
-│         │ - Components    │                                     │
-│         │ - Adapters      │                                     │
-│         │ - Stores        │                                     │
-│         └────────┬────────┘                                     │
-│                  │                                              │
-└──────────────────┼──────────────────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────────────────┐
-│                    SERVER (Stateless API)                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│              ┌───────────────────────┐                          │
-│              │   @sylphx/server      │                          │
-│              │                       │                          │
-│              │  ┌─────────────────┐  │                          │
-│              │  │  tRPC Router    │  │                          │
-│              │  │                 │  │                          │
-│              │  │  - Sessions     │  │                          │
-│              │  │  - Messages     │  │                          │
-│              │  │  - Config       │  │                          │
-│              │  │  - Streaming    │  │                          │
-│              │  └────────┬────────┘  │                          │
-│              │           │           │                          │
-│              │  ┌────────▼────────┐  │                          │
-│              │  │  Web Server     │  │                          │
-│              │  │                 │  │                          │
-│              │  │  Express        │  │                          │
-│              │  │  SSE Streaming  │  │                          │
-│              │  │  CORS           │  │                          │
-│              │  └─────────────────┘  │                          │
-│              └───────────┬───────────┘                          │
-│                          │                                      │
-└──────────────────────────┼──────────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────────┐
-│                    CORE (All Logic)                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│                    ┌────────────────┐                           │
-│                    │  @sylphx/core  │                           │
-│                    │                │                           │
-│  ┌─────────────────┼────────────────┼─────────────────┐        │
-│  │                 │                │                 │        │
-│  ▼                 ▼                ▼                 ▼        │
-│ ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│ │    AI    │  │ Session  │  │ Message  │  │ Database │       │
-│ │          │  │          │  │          │  │          │       │
-│ │ Stream   │  │ CRUD     │  │ Stream   │  │ SQLite   │       │
-│ │ Provider │  │ Manage   │  │ Title    │  │ Repos    │       │
-│ │ Models   │  │ Lifecycle│  │ Parts    │  │ Migration│       │
-│ └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
-│                                                                  │
-│ ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│ │  Tools   │  │  Config  │  │  Utils   │  │  Types   │       │
-│ │          │  │          │  │          │  │          │       │
-│ │ Bash     │  │ Load     │  │ Format   │  │ Shared   │       │
-│ │ Read     │  │ Validate │  │ Parse    │  │ Schemas  │       │
-│ │ Write    │  │ Persist  │  │ Transform│  │ Zod      │       │
-│ └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
-```
+---
 
-## 🔄 Data Flow
-
-### Real-Time Streaming Flow
+## 📦 Package Overview
 
 ```
-User Input (Client)
-       │
-       ▼
-┌──────────────────┐
-│  InputArea.tsx   │  (Web/TUI)
-│  - Capture input │
-│  - Clear input   │
-└────────┬─────────┘
-         │ tRPC Subscription
-         ▼
-┌──────────────────┐
-│ @sylphx/server   │
-│ streamResponse   │
-│ subscription     │
-└────────┬─────────┘
-         │ Call SDK
-         ▼
-┌──────────────────┐
-│  @sylphx/core    │
-│ streamAIResponse │  ← Main logic here
-│                  │
-│ 1. Create/Load   │
-│    session       │
-│ 2. Add user msg  │
-│ 3. Build context │
-│ 4. Stream AI     │
-│ 5. Save result   │
-│ 6. Generate      │
-│    title         │
-└────────┬─────────┘
-         │ Events
-         ▼
-┌──────────────────┐
-│ Observable<      │
-│  StreamEvent>    │
-│                  │
-│ - session-created│
-│ - text-start     │
-│ - text-delta     │
-│ - text-end       │
-│ - tool-call      │
-│ - tool-result    │
-│ - title-delta    │
-│ - complete       │
-└────────┬─────────┘
-         │ SSE/WebSocket
-         ▼
-┌──────────────────┐
-│ @sylphx/client   │
-│ Subscription     │
-│ Adapter          │
-│                  │
-│ - Handle events  │
-│ - Update state   │
-│ - Notify UI      │
-└────────┬─────────┘
-         │ React State
-         ▼
-┌──────────────────┐
-│  UI Components   │
-│  - MessageList   │
-│  - InputArea     │
-│  - Sidebar       │
-└──────────────────┘
+@sylphx/code (CLI Tool)
+  ├─ TUI mode (Ink + React)
+  ├─ headless mode
+  ├─ server manager (auto-spawn daemon)
+  └─ web launcher (--web)
+
+@sylphx/code-web (Web Application)
+  ├─ Vite + React 19
+  ├─ Modern browser UI
+  └─ HTTP/SSE tRPC client
+
+@sylphx/code-server (Background Daemon)
+  ├─ HTTP/Express server
+  ├─ tRPC router + SSE streaming
+  ├─ Session management
+  └─ Business logic
+
+@sylphx/code-client (Shared Client Logic)
+  ├─ React hooks
+  ├─ tRPC provider
+  ├─ Zustand stores
+  └─ Type exports
+
+@sylphx/code-core (SDK Core)
+  ├─ AI providers (Anthropic, OpenAI, Google, etc.)
+  ├─ Database (SQLite + Drizzle ORM)
+  ├─ Session management
+  └─ Tool definitions
 ```
 
-## 📦 Package Dependencies
+---
+
+## 🔄 Dependency Graph
 
 ```
-                    ┌──────────────┐
-                    │ sylphx-flow  │ (Legacy Facade)
-                    │   (v0.x)     │
-                    └──────┬───────┘
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-    ┌─────▼─────┐    ┌────▼────┐    ┌─────▼─────┐
-    │@sylphx/web│    │@sylphx/ │    │@sylphx/cli│
-    │           │    │   tui   │    │           │
-    └─────┬─────┘    └────┬────┘    └─────┬─────┘
-          │               │               │
-          └───────┬───────┴───────┬───────┘
-                  │               │
-            ┌─────▼─────┐   ┌─────▼─────┐
-            │@sylphx/   │   │@sylphx/   │
-            │  client   │   │  server   │
-            └─────┬─────┘   └─────┬─────┘
-                  │               │
-                  └───────┬───────┘
-                          │
-                    ┌─────▼─────┐
-                    │@sylphx/   │
-                    │   core    │ (No dependencies on UI)
-                    └───────────┘
+┌────────────────┐    ┌────────────────┐
+│   code (CLI)   │    │  code-web (Web)│
+└────────┬───────┘    └────────┬───────┘
+         │ import              │ import
+         └──────────┬──────────┘
+                    ↓
+         ┌──────────────────┐
+         │   code-client    │  ← Shared client logic
+         │  (Client Logic)  │
+         └──────────────────┘
+                    │ HTTP tRPC
+                    ↓
+         ┌──────────────────┐
+         │   code-server    │  ← Independent daemon
+         │  (HTTP Daemon)   │
+         └──────────┬───────┘
+                    │ import
+                    ↓
+         ┌──────────────────┐
+         │    code-core     │  ← SDK library
+         │   (SDK Core)     │
+         └──────────────────┘
 ```
 
-## 🎯 Core Design Principles
+---
 
-### 1. **Separation of Concerns**
-- **Core**: Pure business logic, no UI
-- **Server**: API layer, orchestration
-- **Client**: Shared presentation logic
-- **Web/TUI/CLI**: Platform-specific UI
+## 🎯 Architecture Principles
 
-### 2. **Functional Composition**
-```typescript
-// ✅ Pure functions
-export function createSession(provider: string, model: string): Session {
-  return {
-    id: generateId(),
-    provider,
-    model,
-    messages: [],
-    createdAt: Date.now()
-  }
-}
+### 1. Clear Separation of Concerns ✅
 
-// ✅ Composition
-export const streamWithTitle = compose(
-  streamAIResponse,
-  generateTitle,
-  saveToDatabase
-)
+**code-server = Server daemon import code-core**
+- Server implements business logic using core
+- Provides HTTP/tRPC API
+- Manages sessions, database, AI streaming
 
-// ❌ Avoid classes with state
-class SessionManager { ... } // NO
-```
+**code-client = Client logic**
+- React hooks (useChat, useSession, etc.)
+- tRPC client provider
+- Shared logic for both TUI and Web
 
-### 3. **Feature-First Organization**
-```
-packages/core/src/
-├── session/          # Session feature
-│   ├── create.ts
-│   ├── update.ts
-│   ├── query.ts
-│   └── types.ts
-├── message/          # Message feature
-│   ├── add.ts
-│   ├── stream.ts
-│   └── types.ts
-└── ai/              # AI feature
-    ├── streaming.ts
-    ├── providers.ts
-    └── types.ts
-```
+**code + code-web import code-client**
+- Both UIs use shared client logic
+- Connect via HTTP tRPC
+- Real-time data synchronization
 
-### 4. **Immutability**
-```typescript
-// ✅ Immutable updates
-export function addMessage(session: Session, message: Message): Session {
-  return {
-    ...session,
-    messages: [...session.messages, message]
-  }
-}
+### 2. Independent Daemon ✅
 
-// ❌ Mutations
-session.messages.push(message) // NO
-```
+**code-server runs independently:**
+- Can be spawned by `code` (auto-start)
+- Can run manually: `sylphx-code-server`
+- Can be system service (systemd/launchd)
+- Can be deployed in Docker/production
 
-### 5. **Explicit Dependencies**
-```typescript
-// ✅ Inject dependencies
-export function streamMessage(
-  sessionRepo: SessionRepository,
-  aiConfig: AIConfig,
-  sessionId: string
-) { ... }
+### 3. Modular and Reusable ✅
 
-// ❌ Hidden dependencies
-import { db } from './globals' // NO
-```
+**Each package has clear responsibility:**
+- `code-core`: SDK and business logic
+- `code-server`: HTTP service layer
+- `code-client`: Shared client logic
+- `code`: CLI tool (TUI + headless)
+- `code-web`: Web application
 
-## 🚀 Server Independence
+---
 
-The server can run completely independently:
+## 🚀 User Experience
+
+### CLI Users (90%)
 
 ```bash
-# Start server
-npm run server:start
+$ bun add -g @sylphx/code
 
-# Multiple sessions simultaneously
-curl http://localhost:3000/trpc/session.create
-curl http://localhost:3000/trpc/message.stream
-
-# Background work
-# Server continues processing even if clients disconnect
+$ code                    # TUI mode (auto-start server)
+$ code "fix bug"          # headless mode (auto-start server)
+$ code --web              # Launch Web GUI + browser
+$ code --server           # Server-only mode (daemon)
+$ code --no-auto-server   # Don't auto-start server
 ```
 
-**Features**:
-- ✅ Multi-session support (concurrent users)
-- ✅ Background jobs (title generation, etc.)
-- ✅ Stateless API (horizontal scaling)
-- ✅ Session persistence (database)
-- ✅ WebSocket/SSE for real-time updates
+### Web-Only Users
 
-## 🔌 Integration Example
+```bash
+$ bun add -g @sylphx/code-web
 
-Third-party developers can use the SDK:
-
-```typescript
-import {
-  createSession,
-  streamMessage,
-  addMessage
-} from '@sylphx/core'
-
-// Create session
-const session = await createSession('anthropic', 'claude-3-5-sonnet')
-
-// Stream AI response
-for await (const event of streamMessage(session.id, 'Hello!')) {
-  console.log(event.type, event.data)
-}
-
-// Custom integration
-import { getRepository } from '@sylphx/core'
-const repo = getRepository()
-const sessions = await repo.getAllSessions()
+$ code-web                # Standalone Web application
 ```
 
-## 📊 Performance Benefits
+### Advanced Users (Production)
 
-### Build Performance
-- **Incremental builds**: Only changed packages
-- **Parallel builds**: Turborepo orchestration
-- **Smart caching**: Never rebuild same code twice
+```bash
+$ bun add -g @sylphx/code-server
 
-### Runtime Performance
-- **Code splitting**: Load only needed packages
-- **Tree shaking**: Remove unused code
-- **Lazy loading**: Dynamic imports
+$ sylphx-code-server      # Manual daemon
+$ systemctl start sylphx-code-server  # System service
+```
 
-### Developer Experience
-- **Fast tests**: Test packages independently
-- **Type safety**: Shared types, compile-time checks
-- **Clear boundaries**: Know where to add code
+---
 
-## 🎨 Naming Philosophy
+## 📁 Database & Configuration
 
-### Packages: Short & Semantic
-- `@sylphx/core` - The brain
-- `@sylphx/server` - The API
-- `@sylphx/client` - Shared UI
-- `@sylphx/web` - Browser UI
-- `@sylphx/tui` - Terminal UI
-- `@sylphx/cli` - Commands
+### Database Location
 
-### Functions: Action + Subject
-- `createSession` not `newSession`
-- `streamMessage` not `stream`
-- `formatMarkdown` not `markdown`
+```
+~/.sylphx-code/
+  ├─ code.db              # Main database (SQLite)
+  ├─ settings.json        # User configuration
+  ├─ agents/              # Custom agents
+  └─ rules/               # Custom rules
+```
 
-### Types: Descriptive
-- `SessionCreateInput`
-- `MessageStreamEvent`
-- `AIProviderConfig`
+### Auto-Migration
 
+**Automatic migration from JSON to SQLite:**
+1. App startup → Initialize database
+2. Run Drizzle migrations (schema)
+3. Check for JSON files
+4. Migrate JSON → SQLite (if exists)
+5. Delete old JSON files
+6. Create migration flag
+
+---
+
+## 🔧 Multi-Client Architecture
+
+### Real-Time Data Sharing
+
+```bash
+# Terminal 1: Start server (daemon)
+$ sylphx-code-server
+🚀 Server running on http://localhost:3000
+
+# Terminal 2: TUI
+$ code
+✓ Connected to server
+[TUI interface]
+
+# Terminal 3: headless
+$ code "write hello world"
+[Streaming output...]
+
+# Browser: Web GUI
+http://localhost:3000
+✓ Connected to server
+[Web interface]
+
+# All clients share same data source
+✓ TUI creates session → Web sees immediately
+✓ Web sends message → TUI updates in real-time
+```
+
+---
+
+## 📊 Technical Stack
+
+### Backend
+- **Runtime:** Bun
+- **Server:** Express + tRPC
+- **Database:** SQLite (libsql) + Drizzle ORM
+- **Streaming:** Server-Sent Events (SSE)
+- **AI:** Anthropic, OpenAI, Google, etc.
+
+### Frontend
+- **CLI:** Ink (React for terminal)
+- **Web:** Vite + React 19
+- **State:** Zustand
+- **Queries:** TanStack Query (React Query)
+- **Types:** TypeScript + tRPC
+
+---
+
+## ✅ Architecture Validation
+
+### Checklist
+
+- [x] **code-server imports code-core** ✅
+  - Server uses core business logic
+
+- [x] **code-client is shared client logic** ✅
+  - Provides React hooks and tRPC provider
+
+- [x] **code imports code-client** ✅
+  - CLI uses shared client logic
+
+- [x] **code-web imports code-client** ✅
+  - Web uses shared client logic
+
+- [x] **code spawns code-server** ✅
+  - CLI can auto-start daemon
+
+- [x] **Clear responsibility separation** ✅
+  - Each package has clear role
+
+- [x] **Independent deployment** ✅
+  - Server can run standalone
+  - Web can be deployed independently
+
+---
+
+## 🎉 Summary
+
+**Architecture is finalized and ready for implementation!**
+
+**Key Design:**
+1. `code-server` = daemon import `code-core` ✅
+2. `code-client` = shared client logic ✅
+3. `code` + `code-web` import `code-client` ✅
+
+**Advantages:**
+- ✅ Modular: Clear separation of concerns
+- ✅ Reusable: Shared client logic
+- ✅ Scalable: Each layer can evolve independently
+- ✅ Deployable: Server can run standalone
+
+---
+
+**Next Steps:**
+1. Implement server auto-start (spawn daemon)
+2. Implement `code --web` mode
+3. Test complete user flow
