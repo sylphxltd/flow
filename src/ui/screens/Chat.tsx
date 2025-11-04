@@ -710,36 +710,46 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Create abort controller for this stream
     abortControllerRef.current = new AbortController();
 
-    // Create assistant message with status='active' to track streaming
-    // This enables recovery: query WHERE status='active' to restore
+    // NOTE: Assistant message will be created on first streaming event
+    // This ensures correct message order: [user, assistant]
+    // (user added by sendMessage first, then assistant created)
     const repo = await getSessionRepository();
-    const timestamp = Date.now();
-    const messageId = await repo.addMessage(
-      currentSessionId!,
-      'assistant',
-      [], // Start with empty parts
-      undefined, // no attachments
-      undefined, // no usage yet
-      undefined, // no finishReason yet
-      undefined, // no metadata
-      undefined, // no todoSnapshot
-      'active' // Mark as active for streaming
-    );
-    streamingMessageIdRef.current = messageId;
-    addLog(`Created streaming message: ${messageId}`);
+    const assistantTimestamp = Date.now();
+    let assistantMessageCreated = false;
 
-    // Sync to app store immediately so UI can show it when streaming completes
-    useAppStore.setState((state) => {
-      const session = state.sessions.find((s) => s.id === currentSessionId);
-      if (session) {
-        session.messages.push({
-          role: 'assistant',
-          content: [],
-          timestamp,
-          status: 'active',
-        });
-      }
-    });
+    // Helper to create assistant message on first streaming event
+    const ensureAssistantMessage = async () => {
+      if (assistantMessageCreated) return;
+      assistantMessageCreated = true;
+
+      // Create assistant message in database
+      const messageId = await repo.addMessage(
+        currentSessionId!,
+        'assistant',
+        [], // Start with empty parts
+        undefined, // no attachments
+        undefined, // no usage yet
+        undefined, // no finishReason yet
+        undefined, // no metadata
+        undefined, // no todoSnapshot
+        'active' // Mark as active for streaming
+      );
+      streamingMessageIdRef.current = messageId;
+      addLog(`Created assistant message: ${messageId}`);
+
+      // Sync to app store immediately
+      useAppStore.setState((state) => {
+        const session = state.sessions.find((s) => s.id === currentSessionId);
+        if (session) {
+          session.messages.push({
+            role: 'assistant',
+            content: [],
+            timestamp: assistantTimestamp,
+            status: 'active',
+          });
+        }
+      });
+    };
 
     // Helper to flush accumulated chunks
     // This updates the last text part (part-level streaming)
@@ -780,7 +790,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         abortSignal: abortControllerRef.current.signal,
 
         // onChunk - text streaming (batched for performance)
-        onChunk: (chunk) => {
+        onChunk: async (chunk) => {
+          // Create assistant message on first streaming event
+          await ensureAssistantMessage();
+
           // Accumulate chunks in buffer
           streamBufferRef.current.chunks.push(chunk);
 
@@ -797,7 +810,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
 
         // onToolCall - tool execution started
-        onToolCall: (toolCallId, toolName, args) => {
+        onToolCall: async (toolCallId, toolName, args) => {
+          // Create assistant message on first streaming event
+          await ensureAssistantMessage();
+
           // Message streaming: New part (tool) being added
           // Can be parallel - multiple tools can be active simultaneously
           updateActiveMessageContent((prev) => [
@@ -990,7 +1006,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
 
         // onReasoningStart
-        onReasoningStart: () => {
+        onReasoningStart: async () => {
+          // Create assistant message on first streaming event
+          await ensureAssistantMessage();
+
           // Message streaming: New part (reasoning) being added
           updateActiveMessageContent((prev) => [
             ...prev,
@@ -1114,7 +1133,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         },
 
         // onError
-        onError: (error) => {
+        onError: async (error) => {
+          // Create assistant message on first streaming event (even if it's an error)
+          await ensureAssistantMessage();
+
           // Store error for onComplete handler
           lastErrorRef.current = error;
           updateActiveMessageContent((prev) => [
