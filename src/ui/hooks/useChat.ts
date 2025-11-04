@@ -19,7 +19,7 @@ import {
   clearUserInputHandler,
   type UserInputRequest
 } from '../../tools/interaction.js';
-import type { ModelMessage } from 'ai';
+import type { ModelMessage, UserContent, AssistantContent, ToolCallPart, ToolResultPart } from 'ai';
 import { sendNotification } from '../../utils/notifications.js';
 import { generateSessionTitle, generateSessionTitleWithStreaming } from '../../utils/session-title.js';
 
@@ -312,7 +312,7 @@ export function useChat() {
         updatedSession.messages.map(async (msg) => {
           // User messages: inject system status from metadata + extract text + add file attachments
           if (msg.role === 'user') {
-            const contentParts: any[] = [];
+            const contentParts: UserContent = [];
 
             // 1. Inject context from STORED data (not current values!)
             //    ⚠️ Using stored data preserves prompt cache - messages stay immutable
@@ -345,7 +345,7 @@ export function useChat() {
             for (const part of textParts) {
               contentParts.push({
                 type: 'text',
-                text: (part as any).content,
+                text: part.content,
               });
             }
 
@@ -366,12 +366,12 @@ export function useChat() {
                         await fileContentCache.set(att.path, content);
                       }
                       return {
-                        type: 'text',
+                        type: 'text' as const,
                         text: `\n\n<file path="${att.relativePath}">\n${content}\n</file>`,
                       };
                     } catch {
                       return {
-                        type: 'text',
+                        type: 'text' as const,
                         text: `\n\n<file path="${att.relativePath}">\n[Error reading file]\n</file>`,
                       };
                     }
@@ -392,37 +392,37 @@ export function useChat() {
           }
 
           // Assistant messages: convert parts to AI SDK format
-          const contentParts: any[] = msg.content.flatMap(part => {
+          const contentParts: AssistantContent = msg.content.flatMap(part => {
             switch (part.type) {
               case 'text':
                 return [{
-                  type: 'text',
+                  type: 'text' as const,
                   text: part.content,
                 }];
 
               case 'reasoning':
                 return [{
-                  type: 'reasoning',
+                  type: 'reasoning' as const,
                   text: part.content,
                 }];
 
               case 'tool': {
                 // Tool call + optional tool result
-                const parts: any[] = [{
-                  type: 'tool-call',
+                const parts: AssistantContent = [{
+                  type: 'tool-call' as const,
                   toolCallId: part.toolId,
                   toolName: part.name,
                   input: part.args,
-                }];
+                } as ToolCallPart];
 
                 // Add tool result if available
                 if (part.result !== undefined) {
                   parts.push({
-                    type: 'tool-result',
+                    type: 'tool-result' as const,
                     toolCallId: part.toolId,
                     toolName: part.name,
                     output: part.result,
-                  });
+                  } as ToolResultPart);
                 }
 
                 return parts;
@@ -431,13 +431,12 @@ export function useChat() {
               case 'error':
                 // Convert error to text so LLM knows what happened
                 return [{
-                  type: 'text',
+                  type: 'text' as const,
                   text: `[Error: ${part.error}]`,
                 }];
 
               default:
                 // Exhaustive check - TypeScript will error if we miss a type
-                const _exhaustive: never = part;
                 return [];
             }
           });
