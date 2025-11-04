@@ -29,9 +29,9 @@ export const compactCommand: Command = {
 
     try {
       // Import necessary modules
-      const { getProvider } = await import('../../../providers/index.js');
+      const { getProvider } = await import('@sylphx/code-core');
       const { streamText } = await import('ai');
-      const { getSystemPrompt } = await import('../../../core/ai-sdk.js');
+      const { getSystemPrompt } = await import('@sylphx/code-core');
 
       // Get provider and model
       const provider = getProvider(currentSession.provider);

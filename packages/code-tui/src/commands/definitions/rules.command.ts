@@ -10,7 +10,7 @@ export const rulesCommand: Command = {
   label: '/rules',
   description: 'Select enabled shared system prompt rules',
   execute: async (context) => {
-    const { getAllRules, getEnabledRuleIds, setEnabledRules } = await import('../../../core/rule-manager.js');
+    const { getAllRules, getEnabledRuleIds, setEnabledRules } = await import('@sylphx/code-core');
 
     const allRules = getAllRules();
     const enabledIds = getEnabledRuleIds();

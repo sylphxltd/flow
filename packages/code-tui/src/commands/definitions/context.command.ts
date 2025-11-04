@@ -10,9 +10,9 @@ export const contextCommand: Command = {
   label: '/context',
   description: 'Display context window usage and token breakdown',
   execute: async (context) => {
-    const { countTokens, formatTokenCount } = await import('../../../utils/token-counter.js');
-    const { getSystemPrompt } = await import('../../../core/ai-sdk.js');
-    const { getAISDKTools } = await import('../../../tools/index.js');
+    const { countTokens, formatTokenCount } = await import('@sylphx/code-core');
+    const { getSystemPrompt } = await import('@sylphx/code-core');
+    const { getAISDKTools } = await import('@sylphx/code-core');
 
     const currentSession = context.getCurrentSession();
     if (!currentSession) {
@@ -53,8 +53,8 @@ export const contextCommand: Command = {
     const systemPromptTokens = await countTokens(systemPrompt, modelName);
 
     // Also calculate breakdown of system prompt components for debugging
-    const { getEnabledRulesContent } = await import('../../../core/rule-manager.js');
-    const { getCurrentSystemPrompt } = await import('../../../core/agent-manager.js');
+    const { getEnabledRulesContent } = await import('@sylphx/code-core');
+    const { getCurrentSystemPrompt } = await import('@sylphx/code-core');
     const BASE_SYSTEM_PROMPT = `You are Sylphx, an AI development assistant.`;
 
     let systemPromptBreakdown: Record<string, number> = {};

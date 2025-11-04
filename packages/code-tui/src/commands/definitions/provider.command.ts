@@ -39,7 +39,7 @@ export const providerCommand: Command = {
       description: 'Provider name (anthropic, openai, google, openrouter)',
       required: false,
       loadOptions: async (previousArgs) => {
-        const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
+        const { AI_PROVIDERS } = await import('@sylphx/code-core');
         return Object.values(AI_PROVIDERS).map((p) => ({
           id: p.id,
           label: p.name,
@@ -56,7 +56,7 @@ export const providerCommand: Command = {
         if (!providerId) return [];
 
         try {
-          const { getProvider } = await import('../../../providers/index.js');
+          const { getProvider } = await import('@sylphx/code-core');
           const provider = getProvider(providerId as any);
           const schema = provider.getConfigSchema();
           return schema.map((field) => ({
@@ -79,7 +79,7 @@ export const providerCommand: Command = {
         if (!providerId || !key) return [];
 
         try {
-          const { getProvider } = await import('../../../providers/index.js');
+          const { getProvider } = await import('@sylphx/code-core');
           const provider = getProvider(providerId as any);
           const schema = provider.getConfigSchema();
           const field = schema.find((f) => f.key === key);
@@ -100,7 +100,7 @@ export const providerCommand: Command = {
     },
   ],
   execute: async (context) => {
-    const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
+    const { AI_PROVIDERS } = await import('@sylphx/code-core');
 
     // Case 1: /provider - ask use or set
     if (context.args.length === 0) {
@@ -170,7 +170,7 @@ export const providerCommand: Command = {
 
     // Case 4: /provider set - ask which provider to configure
     if (context.args.length === 1 && context.args[0] === 'set') {
-      const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
+      const { AI_PROVIDERS } = await import('@sylphx/code-core');
       const providerOptions = Object.values(AI_PROVIDERS).map((p) => ({
         label: p.name,
         value: p.id,
@@ -220,7 +220,7 @@ export const providerCommand: Command = {
       }
 
       // Get valid keys from provider schema
-      const { getProvider } = await import('../../../providers/index.js');
+      const { getProvider } = await import('@sylphx/code-core');
       const provider = getProvider(providerId as any);
       const schema = provider.getConfigSchema();
 

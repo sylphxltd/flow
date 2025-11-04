@@ -110,7 +110,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
     // Add user message to Zustand store immediately (optimistic update)
     // Backend will persist it to database with system status and todo snapshot
-    const { getSystemStatus } = await import('../../../../core/ai-sdk.js');
+    const { getSystemStatus } = await import('@sylphx/code-core');
     const systemStatus = getSystemStatus();
     const currentSession = useAppStore.getState().currentSession;
     const todoSnapshot = currentSession?.todos ? [...currentSession.todos] : [];
@@ -483,7 +483,7 @@ async function generateTitleIfNeeded(context: {
 
   const isFirstMessage = userMessageCount === 1;
   if (isFirstMessage && !hasTitle) {
-    const { generateSessionTitleWithStreaming } = await import('../../../../utils/session-title.js');
+    const { generateSessionTitleWithStreaming } = await import('@sylphx/code-core');
     const provider = freshSession.provider;
     const modelName = freshSession.model;
     const providerConfig = context.aiConfig?.providers?.[provider];
@@ -513,7 +513,7 @@ async function generateTitleIfNeeded(context: {
         context.setIsTitleStreaming(false);
 
         // Fallback to simple title
-        const { generateSessionTitle } = await import('../../../../utils/session-title.js');
+        const { generateSessionTitle } = await import('@sylphx/code-core');
         const title = generateSessionTitle(context.userMessage);
         context.updateSessionTitle(context.currentSessionId, title);
       }

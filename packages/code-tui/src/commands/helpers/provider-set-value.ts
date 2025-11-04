@@ -13,7 +13,7 @@ export async function askSelectProviderKey(
   providerId: string,
   schema: Array<{ key: string; label: string }>
 ): Promise<string | null> {
-  const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
+  const { AI_PROVIDERS } = await import('@sylphx/code-core');
 
   const availableKeys = schema.map((field) => ({
     label: field.label,
@@ -84,7 +84,7 @@ export async function setProviderConfigValue(
   value: string,
   schema: Array<{ key: string; label: string; secret?: boolean }>
 ): Promise<string> {
-  const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
+  const { AI_PROVIDERS } = await import('@sylphx/code-core');
   const aiConfig = context.getConfig();
 
   const newConfig = {
@@ -119,7 +119,7 @@ export async function interactiveSetProviderConfig(
   context: CommandContext,
   providerId: string
 ): Promise<string> {
-  const { getProvider } = await import('../../../providers/index.js');
+  const { getProvider } = await import('@sylphx/code-core');
   const provider = getProvider(providerId as any);
   const schema = provider.getConfigSchema();
 

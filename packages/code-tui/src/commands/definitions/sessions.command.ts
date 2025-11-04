@@ -10,7 +10,7 @@ export const sessionsCommand: Command = {
   label: '/sessions',
   description: 'View and switch between chat sessions',
   execute: async (context) => {
-    const { formatSessionDisplay } = await import('../../../utils/session-title.js');
+    const { formatSessionDisplay } = await import('@sylphx/code-core');
     const sessions = await context.getSessions();
 
     if (sessions.length === 0) {

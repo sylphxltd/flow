@@ -11,8 +11,8 @@ import { configureProvider } from './provider-config.js';
  * Get provider options with configured status
  */
 export async function getProviderOptions(context: CommandContext): Promise<Array<{ label: string; value: string }>> {
-  const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
-  const { getProvider } = await import('../../../providers/index.js');
+  const { AI_PROVIDERS } = await import('@sylphx/code-core');
+  const { getProvider } = await import('@sylphx/code-core');
   const aiConfig = context.getConfig();
 
   return Object.values(AI_PROVIDERS).map((p) => {
@@ -66,8 +66,8 @@ export async function ensureProviderConfigured(
   providerId: string,
   autoPromptConfigure: boolean = true
 ): Promise<{ success: true; config: any } | { success: false; message: string }> {
-  const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
-  const { getProvider } = await import('../../../providers/index.js');
+  const { AI_PROVIDERS } = await import('@sylphx/code-core');
+  const { getProvider } = await import('@sylphx/code-core');
   const aiConfig = context.getConfig();
 
   const provider = getProvider(providerId as any);
@@ -140,7 +140,7 @@ export async function switchToProvider(
   providerId: string,
   providerConfig: any
 ): Promise<string> {
-  const { AI_PROVIDERS } = await import('../../../config/ai-config.js');
+  const { AI_PROVIDERS } = await import('@sylphx/code-core');
   const aiConfig = context.getConfig();
 
   const newConfig = {
@@ -149,7 +149,7 @@ export async function switchToProvider(
   };
 
   // Get default model and update config
-  const { getDefaultModel } = await import('../../../core/session-service.js');
+  const { getDefaultModel } = await import('@sylphx/code-core');
   const defaultModel = await getDefaultModel(providerId as any, providerConfig);
   if (!defaultModel) {
     return `Failed to get default model for ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name}`;

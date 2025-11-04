@@ -240,7 +240,7 @@ export default function Chat(_props: ChatProps) {
         updateNotificationSettings,
         getAIConfig: () => useAppStore.getState().aiConfig,
         getSessions: async () => {
-          const { getTRPCClient } = await import('../../server/trpc/client.js');
+          const { getTRPCClient } = await import('@sylphx/code-server');
           const client = await getTRPCClient();
           return await client.session.getRecent({ limit: 100 });
         },

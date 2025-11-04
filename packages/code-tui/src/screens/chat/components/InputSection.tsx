@@ -10,8 +10,8 @@ import { PendingCommandSelection } from '../../../components/PendingCommandSelec
 import { FileAutocomplete } from '../../../components/FileAutocomplete.js';
 import { CommandAutocomplete } from '../../../components/CommandAutocomplete.js';
 import type { WaitForInputOptions, Command } from '../../../commands/types.js';
-import type { FileAttachment } from '../../../../types/session.types.js';
-import { formatTokenCount } from '../../../../utils/token-counter.js';
+import type { FileAttachment } from '@sylphx/code-core';
+import { formatTokenCount } from '@sylphx/code-core';
 import type { FilteredFileInfo, FilteredCommand } from '../autocomplete/types.js';
 
 interface InputSectionProps {

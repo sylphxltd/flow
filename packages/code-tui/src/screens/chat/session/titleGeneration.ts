@@ -35,7 +35,7 @@ export async function generateTitleAfterFirstMessage(
   setStreamingTitle('');
 
   try {
-    const { generateSessionTitleWithStreaming } = await import('../../../../utils/session-title.js');
+    const { generateSessionTitleWithStreaming } = await import('@sylphx/code-core');
 
     const finalTitle = await generateSessionTitleWithStreaming(
       userMessage,
@@ -57,7 +57,7 @@ export async function generateTitleAfterFirstMessage(
     setIsTitleStreaming(false);
 
     // Fallback to simple title
-    const { generateSessionTitle } = await import('../../../../utils/session-title.js');
+    const { generateSessionTitle } = await import('@sylphx/code-core');
     const title = generateSessionTitle(userMessage);
     updateSessionTitle(currentSessionId, title);
   }

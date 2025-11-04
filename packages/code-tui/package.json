@@ -4,9 +4,13 @@
   "private": true,
   "description": "Sylphx Code TUI - Terminal user interface",
   "type": "module",
+  "bin": {
+    "sylphx-code-tui": "./bin/sylphx-code-tui.ts"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "bun src/index.ts",
+    "start": "bun bin/sylphx-code-tui.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",

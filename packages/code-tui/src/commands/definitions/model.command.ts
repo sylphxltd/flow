@@ -37,7 +37,7 @@ export const modelCommand: Command = {
           }
 
           try {
-            const { fetchModels } = await import('../../../utils/ai-model-fetcher.js');
+            const { fetchModels } = await import('@sylphx/code-core');
             const models = await fetchModels(currentProviderId as any, config);
             return models.map(m => ({
               id: m.id,
@@ -87,7 +87,7 @@ export const modelCommand: Command = {
         // Fetch models from current provider
         let allModels: Array<{ label: string; value: string }> = [];
         try {
-          const { fetchModels } = await import('../../../utils/ai-model-fetcher.js');
+          const { fetchModels } = await import('@sylphx/code-core');
           const models = await fetchModels(currentProviderId as any, config);
           allModels = models.map(m => ({ label: m.name, value: m.id }));
           context.addLog(`Loaded ${models.length} models from ${currentProviderId}`);

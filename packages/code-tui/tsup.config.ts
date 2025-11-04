@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],
-  dts: true,
+  dts: false, // Disabled until workspace packages have proper type exports
   sourcemap: true,
   clean: true,
   external: [
@@ -11,5 +11,6 @@ export default defineConfig({
     'ink',
     '@sylphx/code-core',
     '@sylphx/code-client',
+    '@sylphx/code-server',
   ],
 });

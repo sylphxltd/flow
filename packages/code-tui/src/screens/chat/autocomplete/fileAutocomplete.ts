@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { filterFiles, type FileInfo } from '../../../../utils/file-scanner.js';
+import { filterFiles, type FileInfo } from '@sylphx/code-core';
 
 export interface FileFilterResult {
   files: FileInfo[];

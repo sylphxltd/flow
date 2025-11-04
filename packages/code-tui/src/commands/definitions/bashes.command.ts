@@ -10,7 +10,7 @@ export const bashesCommand: Command = {
   label: '/bashes',
   description: 'Manage background bash processes',
   execute: async (context) => {
-    const { bashManager } = await import('../../../tools/bash-manager.js');
+    const { bashManager } = await import('@sylphx/code-core');
     const processes = bashManager.list();
 
     if (processes.length === 0) {
