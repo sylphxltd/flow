@@ -73,7 +73,39 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
 
   // Message history (like bash command history)
-  const [messageHistory, setMessageHistory] = useState<string[]>([]);
+  // Extract from all user messages across all sessions
+  const messageHistory = useMemo(() => {
+    const allUserMessages = sessions.flatMap(session =>
+      session.messages
+        .filter(msg => msg.role === 'user')
+        .map(msg => {
+          // Extract text content from message parts
+          if (Array.isArray(msg.content)) {
+            return msg.content
+              .filter(part => part.type === 'text')
+              .map(part => part.content)
+              .join(' ')
+              .trim();
+          }
+          return typeof msg.content === 'string' ? msg.content : '';
+        })
+        .filter(text => text.length > 0)
+        .map(text => ({ text, timestamp: msg.timestamp }))
+    );
+
+    // Sort by timestamp and get unique messages
+    const sorted = allUserMessages
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(item => item.text);
+
+    // Remove consecutive duplicates and keep last 100
+    const unique = sorted.filter((msg, idx) =>
+      idx === 0 || msg !== sorted[idx - 1]
+    );
+
+    return unique.slice(-100);
+  }, [sessions]);
+
   const [historyIndex, setHistoryIndex] = useState(-1); // -1 means not browsing history
   const [tempInput, setTempInput] = useState(''); // Store current input when browsing history
 
@@ -1190,20 +1222,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const handleSubmit = useCallback(async (value: string) => {
     if (!value.trim()) return;
 
-    // Add to message history (like bash command history)
-    setMessageHistory(prev => {
-      // Don't add if it's the same as the last entry
-      if (prev.length > 0 && prev[prev.length - 1] === value) {
-        return prev;
-      }
-      // Keep last 100 messages
-      const newHistory = [...prev, value];
-      if (newHistory.length > 100) {
-        return newHistory.slice(-100);
-      }
-      return newHistory;
-    });
     // Reset history browsing state
+    // (messageHistory will auto-update from sessions after message is added)
     setHistoryIndex(-1);
     setTempInput('');
 
