@@ -142,6 +142,7 @@ export function useChat() {
     onChunk: (chunk: string) => void;
     onComplete?: () => void;
     onError?: (error: string) => void;
+    onFinish?: (usage: TokenUsage, finishReason: string) => void;
 
     // Tool streaming callbacks
     onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
@@ -174,6 +175,7 @@ export function useChat() {
       onChunk,
       onComplete,
       onError,
+      onFinish,
       onToolCall,
       onToolResult,
       onToolInputStart,
@@ -488,6 +490,10 @@ export function useChat() {
         onError: (error) => {
           addDebugLog(`[useChat] error: ${error}`);
           onError?.(error);
+        },
+        onFinish: (usage, finishReason) => {
+          addDebugLog(`[useChat] finish: ${finishReason}, tokens: ${usage.totalTokens}`);
+          onFinish?.(usage, finishReason);
         },
       });
 

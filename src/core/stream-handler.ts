@@ -150,9 +150,9 @@ export async function processStream(
 
       case 'tool-input-delta': {
         // Update tool args as they stream in
-        // Find the running tool part and update its args
+        // Find the active tool part and update its args
         const toolPart = messageParts.find(
-          (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
+          (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'active'
         );
 
         if (toolPart && toolPart.type === 'tool') {
@@ -170,7 +170,7 @@ export async function processStream(
         // Tool input streaming complete - args are ready
         // Find tool part to get final args
         const toolPart = messageParts.find(
-          (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
+          (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'active'
         );
 
         if (toolPart && toolPart.type === 'tool') {
@@ -187,7 +187,7 @@ export async function processStream(
 
           // Update tool part status and result
           const toolPart = messageParts.find(
-            (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
+            (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'active'
           );
 
           if (toolPart && toolPart.type === 'tool') {
@@ -215,11 +215,11 @@ export async function processStream(
 
           // Update tool part status and error
           const toolPart = messageParts.find(
-            (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'running'
+            (p) => p.type === 'tool' && p.name === chunk.toolName && p.status === 'active'
           );
 
           if (toolPart && toolPart.type === 'tool') {
-            toolPart.status = 'failed';
+            toolPart.status = 'error';
             toolPart.duration = duration;
             toolPart.error = chunk.error;
           }

@@ -146,22 +146,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Normalize cursor to valid range (防禦性：確保 cursor 始終在有效範圍內)
   const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
-  // Two-level streaming state:
-  // 1. Message streaming: New parts being added to message (can be parallel)
-  // 2. Part streaming: Deltas being added to parts (can be multiple active parts)
+  // Streaming state
   const [isStreaming, setIsStreaming] = useState(false); // Message streaming active
-  const [streamParts, setStreamParts] = useState<StreamPart[]>([]); // All parts in message order
   const [isTitleStreaming, setIsTitleStreaming] = useState(false);
   const [streamingTitle, setStreamingTitle] = useState('');
 
   // Abort controller for cancelling AI stream
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Ref to track latest parts for error handling
-  const streamPartsRef = useRef<StreamPart[]>([]);
-  useEffect(() => {
-    streamPartsRef.current = streamParts;
-  }, [streamParts]);
 
   // Flag to track if user manually aborted (ESC pressed)
   const wasManuallyAbortedRef = useRef(false);
@@ -171,6 +162,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
   // Store current streaming message ID for persistence
   const streamingMessageIdRef = useRef<string | null>(null);
+
+  // Store usage and finishReason for onComplete
+  const usageRef = useRef<TokenUsage | null>(null);
+  const finishReasonRef = useRef<string | null>(null);
 
   // Optimized streaming: accumulate chunks in ref, update state in batches
   const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
@@ -236,6 +231,33 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const notificationSettings = useAppStore((state) => state.notificationSettings);
   const sessions = useAppStore((state) => state.sessions);
 
+  // Helper to update active message content in session
+  // Defined after currentSessionId to avoid initialization error
+  const updateActiveMessageContent = useCallback((updater: (prev: StreamPart[]) => StreamPart[]) => {
+    useAppStore.setState((state) => {
+      const session = state.sessions.find((s) => s.id === currentSessionId);
+      if (session) {
+        const activeMessage = session.messages.find((m) => m.status === 'active');
+        if (activeMessage) {
+          const newContent = updater(activeMessage.content);
+          activeMessage.content = newContent;
+
+          // Also persist to database asynchronously
+          if (streamingMessageIdRef.current) {
+            const repo = getSessionRepository();
+            repo.then((r) => {
+              r.updateMessageParts(streamingMessageIdRef.current!, newContent).catch((error) => {
+                if (process.env.DEBUG) {
+                  console.error(`Failed to persist parts: ${error}`);
+                }
+              });
+            });
+          }
+        }
+      }
+    });
+  }, [currentSessionId]);
+
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
 
@@ -268,25 +290,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
    * NEW DESIGN: Message-based streaming state
    * ==========================================
    *
-   * Streaming state is now stored in database messages with status='active':
-   * 1. On streaming start: Create message with status='active'
-   * 2. During streaming: Update message.parts via updateMessageParts()
-   * 3. On completion: Update message.status via updateMessageStatus()
-   * 4. On session switch: Query messages WHERE status='active' to restore
-   *
-   * This effect restores UI streaming state (isStreaming, streamParts) from
-   * database messages when switching sessions.
-   *
-   * Benefits:
-   * - Single source of truth (database)
-   * - No conversion between formats
-   * - Natural recovery (query by status)
-   * - Works with session archiving (status field)
+   * Streaming state is now stored in session.messages with status='active':
+   * - UI directly reads from session.messages
+   * - No separate streamParts state needed
+   * - Just need to set isStreaming flag
    */
   useEffect(() => {
     if (!currentSessionId) {
       setIsStreaming(false);
-      setStreamParts([]);
       return;
     }
 
@@ -294,21 +305,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     const session = sessions.find(s => s.id === currentSessionId);
     if (!session) {
       setIsStreaming(false);
-      setStreamParts([]);
       return;
     }
 
     // Find active (streaming) message in session
     const activeMessage = session.messages.find(m => m.status === 'active');
-    if (activeMessage) {
-      // Restore streaming state from active message
-      setIsStreaming(true);
-      setStreamParts(activeMessage.content);
-    } else {
-      // No active message, clear streaming state
-      setIsStreaming(false);
-      setStreamParts([]);
-    }
+    setIsStreaming(!!activeMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSessionId]); // ONLY depend on currentSessionId (not sessions)
 
@@ -623,12 +625,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     }
 
     setIsStreaming(true);
-    setStreamParts([]);
     addLog('Starting message send...');
 
     // Reset flags for new stream
     wasManuallyAbortedRef.current = false;
     lastErrorRef.current = null;
+    usageRef.current = null;
+    finishReasonRef.current = null;
 
     // Create abort controller for this stream
     abortControllerRef.current = new AbortController();
@@ -636,6 +639,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Create assistant message with status='active' to track streaming
     // This enables recovery: query WHERE status='active' to restore
     const repo = await getSessionRepository();
+    const timestamp = Date.now();
     const messageId = await repo.addMessage(
       currentSessionId!,
       'assistant',
@@ -650,6 +654,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     streamingMessageIdRef.current = messageId;
     addLog(`Created streaming message: ${messageId}`);
 
+    // Sync to app store immediately so UI can show it when streaming completes
+    useAppStore.setState((state) => {
+      const session = state.sessions.find((s) => s.id === currentSessionId);
+      if (session) {
+        session.messages.push({
+          role: 'assistant',
+          content: [],
+          timestamp,
+          status: 'active',
+        });
+      }
+    });
+
     // Helper to flush accumulated chunks
     // This updates the last text part (part-level streaming)
     const flushStreamBuffer = () => {
@@ -659,12 +676,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       const accumulatedText = buffer.chunks.join('');
       buffer.chunks = [];
 
-      setStreamParts((prev) => {
+      updateActiveMessageContent((prev) => {
         const newParts = [...prev];
         const lastPart = newParts[newParts.length - 1];
 
         // Part streaming: Add delta to last text part
-        if (lastPart && lastPart.type === 'text') {
+        if (lastPart && lastPart.type === 'text' && lastPart.status === 'active') {
           newParts[newParts.length - 1] = {
             type: 'text',
             content: lastPart.content + accumulatedText,
@@ -676,13 +693,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             type: 'text',
             content: accumulatedText,
             status: 'active' as const
-          });
-        }
-
-        // Persist to database asynchronously
-        if (streamingMessageIdRef.current) {
-          repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-            addLog(`Failed to persist parts: ${error}`);
           });
         }
 
@@ -716,43 +726,22 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         onToolCall: (toolCallId, toolName, args) => {
           // Message streaming: New part (tool) being added
           // Can be parallel - multiple tools can be active simultaneously
-          setStreamParts((prev) => {
-            const newParts = [
-              ...prev,
-              { type: 'tool', toolId: toolCallId, name: toolName, status: 'active', args, startTime: Date.now() } as StreamPart
-            ];
-
-            // Persist to database asynchronously
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist tool start: ${error}`);
-              });
-            }
-
-            return newParts;
-          });
+          updateActiveMessageContent((prev) => [
+            ...prev,
+            { type: 'tool', toolId: toolCallId, name: toolName, status: 'active', args, startTime: Date.now() } as StreamPart
+          ]);
         },
 
         // onToolResult - tool execution completed
         onToolResult: (toolCallId, toolName, result, duration) => {
           // Part streaming: Update tool status to completed
-          // Keep in parts array - may not be movable to static yet
-          setStreamParts((prev) => {
-            const newParts = prev.map((part) =>
+          updateActiveMessageContent((prev) =>
+            prev.map((part) =>
               part.type === 'tool' && part.toolId === toolCallId
                 ? { ...part, status: 'completed' as const, duration, result }
                 : part
-            );
-
-            // Persist to database asynchronously
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist tool result: ${error}`);
-              });
-            }
-
-            return newParts;
-          });
+            )
+          );
         },
 
         // onComplete - finalize message status
@@ -778,20 +767,46 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           streamBufferRef.current.chunks = [];
 
           // Update message status in database
+          // Note: finishReason is already saved by onFinish, don't pass it here
+          const finalStatus = wasAborted ? 'abort' : hasError ? 'error' : 'completed';
           if (streamingMessageIdRef.current) {
-            const finalStatus = wasAborted ? 'abort' : hasError ? 'error' : 'completed';
             await repo.updateMessageStatus(streamingMessageIdRef.current, finalStatus);
             addLog(`Updated message status to: ${finalStatus}`);
           }
+
+          // Update app store status (content was updated in real-time by callbacks)
+          useAppStore.setState((state) => {
+            const session = state.sessions.find((s) => s.id === currentSessionId);
+            if (session) {
+              // Find the active message we created at streaming start
+              const activeMessage = session.messages
+                .slice()
+                .reverse()
+                .find((m) => m.role === 'assistant' && m.status === 'active');
+
+              if (activeMessage) {
+                // Update final status and metadata
+                // Note: content was already updated in real-time via updateActiveMessageContent
+                activeMessage.status = finalStatus;
+                if (usageRef.current) {
+                  activeMessage.usage = usageRef.current;
+                }
+                if (finishReasonRef.current) {
+                  activeMessage.finishReason = finishReasonRef.current;
+                }
+              }
+            }
+          });
 
           // Reset flags
           wasManuallyAbortedRef.current = false;
           lastErrorRef.current = null;
           streamingMessageIdRef.current = null;
+          usageRef.current = null;
+          finishReasonRef.current = null;
 
           // Message streaming ended - all parts saved to message history
           setIsStreaming(false);
-          setStreamParts([]); // Clear all parts
 
           // Generate title with streaming if this is first message
           if (currentSessionId) {
@@ -870,27 +885,16 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onReasoningStart
         onReasoningStart: () => {
           // Message streaming: New part (reasoning) being added
-          setStreamParts((prev) => {
-            const newParts = [
-              ...prev,
-              { type: 'reasoning', content: '', status: 'active', startTime: Date.now() } as StreamPart
-            ];
-
-            // Persist to database asynchronously
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist reasoning start: ${error}`);
-              });
-            }
-
-            return newParts;
-          });
+          updateActiveMessageContent((prev) => [
+            ...prev,
+            { type: 'reasoning', content: '', status: 'active', startTime: Date.now() } as StreamPart
+          ]);
         },
 
         // onReasoningDelta
         onReasoningDelta: (text) => {
           // Part streaming: Add delta to last reasoning part
-          setStreamParts((prev) => {
+          updateActiveMessageContent((prev) => {
             const newParts = [...prev];
             const lastPart = newParts[newParts.length - 1];
             if (lastPart && lastPart.type === 'reasoning') {
@@ -899,10 +903,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 content: lastPart.content + text
               };
             }
-
-            // Persist to database asynchronously (but not on every delta - too frequent)
-            // The periodic flushStreamBuffer will handle persistence
-
             return newParts;
           });
         },
@@ -911,7 +911,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         onReasoningEnd: (duration) => {
           // Part streaming: Mark reasoning as completed
           // Find the last active reasoning part (not necessarily the last part overall)
-          setStreamParts((prev) => {
+          updateActiveMessageContent((prev) => {
             const newParts = [...prev];
 
             // Find last active reasoning part (events can arrive out of order)
@@ -930,13 +930,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               }
             }
 
-            // Persist to database asynchronously
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist reasoning end: ${error}`);
-              });
-            }
-
             return newParts;
           });
         },
@@ -945,7 +938,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         onTextEnd: () => {
           // Part streaming: Mark text as completed
           // Find the last active text part (not necessarily the last part overall)
-          setStreamParts((prev) => {
+          updateActiveMessageContent((prev) => {
             const newParts = [...prev];
 
             // Find last active text part (events can arrive out of order)
@@ -963,13 +956,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               }
             }
 
-            // Persist to database asynchronously
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist text end: ${error}`);
-              });
-            }
-
             return newParts;
           });
         },
@@ -984,84 +970,78 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         // onToolInputDelta - tool input streaming delta
         onToolInputDelta: (toolCallId, toolName, argsTextDelta) => {
           // Part streaming: Update tool args as they stream in
-          setStreamParts((prev) => {
-            const newParts = prev.map((part) => {
+          updateActiveMessageContent((prev) =>
+            prev.map((part) => {
               if (part.type === 'tool' && part.toolId === toolCallId) {
                 // Append args delta to current args
                 const currentArgs = typeof part.args === 'string' ? part.args : JSON.stringify(part.args || '');
                 return { ...part, args: currentArgs + argsTextDelta };
               }
               return part;
-            });
-
-            // Note: Don't persist on every delta (too frequent)
-            // Will persist on tool-input-end
-
-            return newParts;
-          });
+            })
+          );
         },
 
         // onToolInputEnd - tool input streaming completed
         onToolInputEnd: (toolCallId, toolName, args) => {
           // Part streaming: Finalize tool args
-          setStreamParts((prev) => {
-            const newParts = prev.map((part) =>
+          updateActiveMessageContent((prev) =>
+            prev.map((part) =>
               part.type === 'tool' && part.toolId === toolCallId
                 ? { ...part, args }
                 : part
-            );
-
-            // Persist final args to database
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist tool args: ${error}`);
-              });
-            }
-
-            return newParts;
-          });
+            )
+          );
         },
 
         // onToolError
         onToolError: (toolCallId, toolName, error, duration) => {
           // Part streaming: Update tool status to error
-          setStreamParts((prev) => {
-            const newParts = prev.map((part) =>
+          updateActiveMessageContent((prev) =>
+            prev.map((part) =>
               part.type === 'tool' && part.toolId === toolCallId
                 ? { ...part, status: 'error' as const, error, duration }
                 : part
-            );
-
-            // Persist to database asynchronously
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist tool error: ${error}`);
-              });
-            }
-
-            return newParts;
-          });
+            )
+          );
         },
 
         // onError
         onError: (error) => {
           // Store error for onComplete handler
           lastErrorRef.current = error;
-          setStreamParts((prev) => {
-            const newParts = [
-              ...prev,
-              { type: 'error', error, status: 'completed' } as StreamPart
-            ];
+          updateActiveMessageContent((prev) => [
+            ...prev,
+            { type: 'error', error, status: 'completed' } as StreamPart
+          ]);
+        },
 
-            // Persist to database asynchronously
-            if (streamingMessageIdRef.current) {
-              repo.updateMessageParts(streamingMessageIdRef.current, newParts).catch((error) => {
-                addLog(`Failed to persist error: ${error}`);
-              });
+        // onFinish - save usage and finishReason
+        onFinish: async (usage, finishReason) => {
+          addLog(`[onFinish] Saving usage and finishReason: ${finishReason}`);
+
+          // Store for onComplete to update app store
+          usageRef.current = usage;
+          finishReasonRef.current = finishReason;
+
+          // Save usage and finishReason to database
+          if (streamingMessageIdRef.current) {
+            try {
+              // Save usage
+              await repo.updateMessageUsage(streamingMessageIdRef.current, usage);
+              addLog(`[onFinish] Saved usage: ${usage.totalTokens} tokens`);
+
+              // Save finishReason
+              await repo.updateMessageStatus(
+                streamingMessageIdRef.current,
+                'active', // Keep status as active, will be updated in onComplete
+                finishReason
+              );
+              addLog(`[onFinish] Saved finishReason: ${finishReason}`);
+            } catch (error) {
+              addLog(`[onFinish] Failed to save usage/finishReason: ${error}`);
             }
-
-            return newParts;
-          });
+          }
         },
       });
     } catch (error) {
@@ -1073,7 +1053,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       // Note: onComplete will be called by useChat and will handle saving partial content
 
       setIsStreaming(false);
-      setStreamParts([]);
     }
   }, [aiConfig, currentSessionId, sendMessage, addMessage, addLog, updateSessionTitle, notificationSettings]);
 
@@ -1232,7 +1211,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           </Box>
         ) : (
           <>
-            {/* Completed messages - using Static to keep them above */}
+            {/* All messages in Static */}
+            {/* Note: Active message will have empty content here, real content rendered in Dynamic */}
             {currentSession.messages.length > 0 && (
               <Static items={currentSession.messages}>
                 {(msg, i) => (
@@ -1274,6 +1254,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           </Box>
                         ) : null}
                       </>
+                    ) : msg.status === 'active' ? (
+                      // Active message: don't render here, will be rendered in Dynamic region
+                      null
                     ) : (
                       <>
                         <Box>
@@ -1307,8 +1290,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               </Static>
             )}
 
-            {/* Message streaming: Parts being added to message */}
-            {isStreaming && (() => {
+            {/* Active (streaming) message - render directly from session.messages */}
+            {(() => {
+              // Find active message in session
+              const activeMessage = currentSession.messages.find(m => m.status === 'active');
+              if (!activeMessage) return null;
+
+              const streamParts = activeMessage.content;
+
               // Helper to check if part is completed
               const isPartCompleted = (part: StreamPart): boolean => {
                 // All parts now have status field - check if it's completed
@@ -1393,15 +1382,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           {isStreaming ? (
             <>
               <Spinner color="#FFD700" />
-              {streamParts.length === 0 ? (
-                <Text color="#FFD700"> Thinking...</Text>
-              ) : streamParts.some(p => p.type === 'tool' && p.status === 'running') ? (
-                <Text color="#FFD700"> Working...</Text>
-              ) : streamParts.some(p => p.type === 'reasoning') ? (
-                <Text color="#FFD700"> Thinking...</Text>
-              ) : (
-                <Text color="#FFD700"> Typing...</Text>
-              )}
+              {(() => {
+                const activeMessage = currentSession.messages.find(m => m.status === 'active');
+                const streamParts = activeMessage?.content || [];
+
+                if (streamParts.length === 0) {
+                  return <Text color="#FFD700"> Thinking...</Text>;
+                } else if (streamParts.some(p => p.type === 'tool' && p.status === 'active')) {
+                  return <Text color="#FFD700"> Working...</Text>;
+                } else if (streamParts.some(p => p.type === 'reasoning')) {
+                  return <Text color="#FFD700"> Thinking...</Text>;
+                } else {
+                  return <Text color="#FFD700"> Typing...</Text>;
+                }
+              })()}
               <Text dimColor> (ESC to cancel)</Text>
             </>
           ) : (

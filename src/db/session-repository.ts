@@ -514,13 +514,57 @@ export class SessionRepository {
     status: 'active' | 'completed' | 'error' | 'abort',
     finishReason?: string
   ): Promise<void> {
-    await this.db
-      .update(messages)
-      .set({
-        status,
-        finishReason: finishReason || null,
-      })
-      .where(eq(messages.id, messageId));
+    await retryOnBusy(async () => {
+      // Only update finishReason if explicitly provided
+      const updates: {
+        status: 'active' | 'completed' | 'error' | 'abort';
+        finishReason?: string | null;
+      } = { status };
+
+      if (finishReason !== undefined) {
+        updates.finishReason = finishReason || null;
+      }
+
+      await this.db
+        .update(messages)
+        .set(updates)
+        .where(eq(messages.id, messageId));
+    });
+  }
+
+  /**
+   * Update message usage (used when streaming completes)
+   * Inserts or replaces usage data for a message
+   */
+  async updateMessageUsage(messageId: string, usage: TokenUsage): Promise<void> {
+    await retryOnBusy(async () => {
+      // Check if usage already exists
+      const [existing] = await this.db
+        .select()
+        .from(messageUsage)
+        .where(eq(messageUsage.messageId, messageId))
+        .limit(1);
+
+      if (existing) {
+        // Update existing usage
+        await this.db
+          .update(messageUsage)
+          .set({
+            promptTokens: usage.promptTokens,
+            completionTokens: usage.completionTokens,
+            totalTokens: usage.totalTokens,
+          })
+          .where(eq(messageUsage.messageId, messageId));
+      } else {
+        // Insert new usage
+        await this.db.insert(messageUsage).values({
+          messageId,
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+        });
+      }
+    });
   }
 
   /**
