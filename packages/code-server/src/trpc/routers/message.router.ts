@@ -1,11 +1,13 @@
 /**
  * Message Router
  * Efficient message operations with lazy loading and streaming support
+ * REACTIVE: Emits events for all state changes
  */
 
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
 import { router, publicProcedure } from '../trpc.js';
+import { eventBus } from '../../services/event-bus.service.js';
 
 // Zod schemas for type safety
 const MessagePartSchema = z.union([
@@ -126,6 +128,7 @@ export const messageRouter = router({
   /**
    * Add message to session
    * Used for both user messages and assistant messages
+   * REACTIVE: Emits message-added event
    */
   add: publicProcedure
     .input(
@@ -142,7 +145,7 @@ export const messageRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return await ctx.sessionRepository.addMessage(
+      const message = await ctx.sessionRepository.addMessage(
         input.sessionId,
         input.role,
         input.content,
@@ -153,11 +156,22 @@ export const messageRouter = router({
         input.todoSnapshot,
         input.status
       );
+
+      // Emit event for reactive clients
+      eventBus.emitEvent({
+        type: 'message-added',
+        sessionId: input.sessionId,
+        messageId: message.id,
+        role: input.role,
+      });
+
+      return message;
     }),
 
   /**
    * Update message parts (during streaming)
    * Replaces all parts atomically
+   * REACTIVE: Emits message-updated event
    */
   updateParts: publicProcedure
     .input(
@@ -168,11 +182,18 @@ export const messageRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await ctx.sessionRepository.updateMessageParts(input.messageId, input.parts);
+
+      eventBus.emitEvent({
+        type: 'message-updated',
+        messageId: input.messageId,
+        field: 'parts',
+      });
     }),
 
   /**
    * Update message status
    * Used when streaming completes/aborts
+   * REACTIVE: Emits message-updated event
    */
   updateStatus: publicProcedure
     .input(
@@ -188,11 +209,18 @@ export const messageRouter = router({
         input.status,
         input.finishReason
       );
+
+      eventBus.emitEvent({
+        type: 'message-updated',
+        messageId: input.messageId,
+        field: 'status',
+      });
     }),
 
   /**
    * Update message usage
    * Used when streaming completes with token counts
+   * REACTIVE: Emits message-updated event
    */
   updateUsage: publicProcedure
     .input(
@@ -203,6 +231,12 @@ export const messageRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await ctx.sessionRepository.updateMessageUsage(input.messageId, input.usage);
+
+      eventBus.emitEvent({
+        type: 'message-updated',
+        messageId: input.messageId,
+        field: 'usage',
+      });
     }),
 
   /**
@@ -267,6 +301,48 @@ export const messageRouter = router({
         model: input.model,
         userMessage: input.userMessage,
         attachments: input.attachments,
+      });
+    }),
+
+  /**
+   * Subscribe to message changes (SUBSCRIPTION)
+   * Real-time sync for all clients (non-streaming updates)
+   *
+   * Emits events:
+   * - message-added: New message added to session
+   * - message-updated: Message parts/status/usage updated
+   */
+  onChange: publicProcedure
+    .input(
+      z.object({
+        sessionId: z.string().optional(), // Optional - subscribe to all if not provided
+      })
+    )
+    .subscription(({ input }) => {
+      return observable<{
+        type: 'message-added' | 'message-updated';
+        sessionId?: string;
+        messageId: string;
+        role?: 'user' | 'assistant';
+        field?: 'parts' | 'status' | 'usage';
+      }>((emit) => {
+        // Subscribe to event bus
+        const unsubscribe = eventBus.onAppEvent((event) => {
+          // Filter message events
+          if (event.type === 'message-added') {
+            // If sessionId filter provided, only emit matching events
+            if (!input.sessionId || event.sessionId === input.sessionId) {
+              emit.next(event);
+            }
+          } else if (event.type === 'message-updated') {
+            emit.next(event);
+          }
+        });
+
+        // Cleanup on unsubscribe
+        return () => {
+          unsubscribe();
+        };
       });
     }),
 });

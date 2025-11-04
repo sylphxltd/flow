@@ -1,11 +1,14 @@
 /**
  * Config Router
  * Backend-only configuration management (file system access)
+ * REACTIVE: Emits events for all state changes
  */
 
 import { z } from 'zod';
+import { observable } from '@trpc/server/observable';
 import { router, publicProcedure } from '../trpc.js';
 import { loadAIConfig, saveAIConfig, getAIConfigPaths } from '@sylphx/code-core';
+import { eventBus } from '../../services/event-bus.service.js';
 
 const AIConfigSchema = z.object({
   defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']).optional(),
@@ -37,6 +40,7 @@ export const configRouter = router({
   /**
    * Save AI config to file system
    * Backend writes files, UI stays clean
+   * REACTIVE: Emits config-updated event
    */
   save: publicProcedure
     .input(
@@ -48,6 +52,12 @@ export const configRouter = router({
     .mutation(async ({ input }) => {
       const result = await saveAIConfig(input.config, input.cwd);
       if (result._tag === 'Success') {
+        // Emit event for reactive clients
+        eventBus.emitEvent({
+          type: 'config-updated',
+          config: input.config,
+        });
+
         return { success: true as const };
       }
       return { success: false as const, error: result.error.message };
@@ -62,4 +72,31 @@ export const configRouter = router({
     .query(async ({ input }) => {
       return getAIConfigPaths(input.cwd);
     }),
+
+  /**
+   * Subscribe to config changes (SUBSCRIPTION)
+   * Real-time sync for all clients
+   *
+   * Emits events:
+   * - config-updated: Configuration changed
+   */
+  onChange: publicProcedure.subscription(() => {
+    return observable<{
+      type: 'config-updated';
+      config: any;
+    }>((emit) => {
+      // Subscribe to event bus
+      const unsubscribe = eventBus.onAppEvent((event) => {
+        // Filter config events
+        if (event.type === 'config-updated') {
+          emit.next(event);
+        }
+      });
+
+      // Cleanup on unsubscribe
+      return () => {
+        unsubscribe();
+      };
+    });
+  }),
 });
