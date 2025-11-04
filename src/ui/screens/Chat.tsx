@@ -1474,8 +1474,17 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               });
 
               // Split into completed and active
-              const completedItems = items.filter((item) => item.isCompleted);
-              const activeItems = items.filter((item) => !item.isCompleted);
+              // Find first non-completed item (boundary)
+              const firstActiveIndex = items.findIndex((item) => !item.isCompleted);
+
+              // Split: continuous completed items from start, rest goes to active
+              const completedItems = firstActiveIndex === -1
+                ? items  // All completed
+                : items.slice(0, firstActiveIndex);
+
+              const activeItems = firstActiveIndex === -1
+                ? []  // No active items
+                : items.slice(firstActiveIndex);
 
               return (
                 <>
