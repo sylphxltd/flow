@@ -1,12 +1,17 @@
 #!/usr/bin/env bun
 /**
  * Sylphx Code - Unified CLI Tool
- * Connects to code-server for multi-client data sharing
  *
  * Architecture:
- * - Requires code-server to be running
+ * - Auto-manages code-server daemon
  * - Connects via HTTP/SSE tRPC
  * - Shares data with code-web in real-time
+ *
+ * Modes:
+ * - TUI: code
+ * - headless: code "prompt"
+ * - Web: code --web
+ * - Server: code --server
  */
 
 import { Command } from 'commander';
@@ -14,7 +19,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
-import { checkServer, waitForServer } from './trpc-client.js';
+import { spawn } from 'child_process';
+import { ensureServer, getServerStatus } from './server-manager.js';
+import { launchWeb } from './web-launcher.js';
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
@@ -24,32 +31,9 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 const VERSION = packageJson.version;
 
 /**
- * Ensure code-server is running
- */
-async function ensureServer(): Promise<boolean> {
-  // Check if server is already running
-  if (await checkServer()) {
-    return true;
-  }
-
-  console.error(chalk.yellow('\n⚠️  code-server is not running'));
-  console.error(chalk.dim('   This tool requires code-server to be running first.\n'));
-  console.error(chalk.cyan('   Start the server in a separate terminal:'));
-  console.error(chalk.dim('   $ sylphx-code-server\n'));
-  console.error(chalk.dim('   Or install globally:'));
-  console.error(chalk.dim('   $ bun add -g @sylphx/code-server\n'));
-
-  return false;
-}
-
-/**
  * Main CLI entry point
  */
 async function main() {
-  // Check server connection first
-  if (!await ensureServer()) {
-    process.exit(1);
-  }
   const program = new Command();
 
   program
@@ -58,11 +42,62 @@ async function main() {
     .version(VERSION, '-V, --version', 'Show version number')
     .helpOption('-h, --help', 'Display help for command')
     .argument('[prompt]', 'Prompt to send to AI (headless mode)')
-    .option('-p, --print', 'Print mode - output response and exit (same as providing prompt)')
+    .option('-p, --print', 'Print mode (headless)')
     .option('-c, --continue', 'Continue last session')
-    .option('-q, --quiet', 'Quiet mode - only output assistant response')
-    .option('-v, --verbose', 'Show detailed output including tool calls')
+    .option('--web', 'Launch Web GUI in browser')
+    .option('--server', 'Start server only (daemon mode)')
+    .option('--no-auto-server', 'Don\'t auto-start server')
+    .option('--status', 'Check server status')
+    .option('-q, --quiet', 'Quiet mode')
+    .option('-v, --verbose', 'Verbose mode')
     .action(async (prompt, options) => {
+      // Status check
+      if (options.status) {
+        const status = await getServerStatus();
+        console.log('Server status:');
+        console.log(`  Running: ${status.running ? chalk.green('✓') : chalk.red('✗')}`);
+        console.log(`  Available: ${status.available ? chalk.green('✓') : chalk.red('✗')}`);
+        process.exit(status.running ? 0 : 1);
+      }
+
+      // Server-only mode
+      if (options.server) {
+        console.log(chalk.cyan('Starting code-server daemon...'));
+        console.log(chalk.dim('Use Ctrl+C to stop'));
+
+        // Execute server binary and wait
+        const serverProcess = spawn('sylphx-code-server', [], {
+          stdio: 'inherit',
+        });
+
+        await new Promise((resolve) => {
+          serverProcess.on('exit', resolve);
+        });
+        return;
+      }
+
+      // Web mode
+      if (options.web) {
+        await launchWeb();
+        return;
+      }
+
+      // CLI mode (TUI or headless)
+      // Ensure server is running (unless --no-auto-server)
+      const ready = await ensureServer({
+        autoStart: options.autoServer !== false,
+        quiet: options.quiet
+      });
+
+      if (!ready) {
+        console.error(chalk.red('\n✗ Server not available'));
+        console.error(chalk.yellow('\nOptions:'));
+        console.error(chalk.dim('  1. Install server: bun add -g @sylphx/code-server'));
+        console.error(chalk.dim('  2. Start manually: sylphx-code-server'));
+        console.error(chalk.dim('  3. Check status: code --status'));
+        process.exit(1);
+      }
+
       // Setup HTTP tRPC client
       const { createClient } = await import('./trpc-client.js');
       const { setTRPCClient } = await import('@sylphx/code-client');
@@ -84,7 +119,7 @@ async function main() {
         return;
       }
 
-      // TUI mode: no prompt, no --print
+      // TUI mode (default)
       const React = await import('react');
       const { render } = await import('ink');
       const { default: App } = await import('./App.js');
