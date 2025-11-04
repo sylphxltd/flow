@@ -401,9 +401,30 @@ export function useChat() {
                 type: 'text',
                 text: part.content,
               });
+            } else if (part.type === 'reasoning') {
+              contentParts.push({
+                type: 'reasoning',
+                text: part.content,
+              });
+            } else if (part.type === 'tool') {
+              // Tool call
+              contentParts.push({
+                type: 'tool-call',
+                toolCallId: part.toolId,
+                toolName: part.name,
+                input: part.args,
+              });
+              // Tool result (if available)
+              if (part.result !== undefined) {
+                contentParts.push({
+                  type: 'tool-result',
+                  toolCallId: part.toolId,
+                  toolName: part.name,
+                  output: part.result,
+                });
+              }
             }
-            // Note: reasoning, tool, error parts are internal - not sent to LLM in conversation history
-            // Only text parts are included in assistant message context
+            // error parts are not sent to LLM - they're UI-only
           }
 
           // Add status annotation if message was aborted or errored
