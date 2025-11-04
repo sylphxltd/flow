@@ -1318,84 +1318,89 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           </Box>
         ) : (
           <>
-            {/* All messages in Static */}
-            {/* Note: Active message will have empty content here, real content rendered in Dynamic */}
-            {currentSession.messages.length > 0 && (
-              <Static items={currentSession.messages}>
-                {(msg, i) => (
-                  <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
-                    {msg.role === 'user' ? (
-                      <>
-                        <Box>
-                          <Text color="#00D9FF">▌ YOU</Text>
-                        </Box>
-                        {/* Render content parts */}
-                        {msg.content && Array.isArray(msg.content) ? (
-                          msg.content.map((part, idx) => (
-                            <StreamingPartWrapper
-                              key={`msg-${msg.timestamp}-part-${idx}`}
-                              part={part}
-                            />
-                          ))
-                        ) : (
-                          <Box marginLeft={2}>
-                            <Text>{String(msg.content || '')}</Text>
+            {/* Completed messages in Static - filter out active messages */}
+            {/* IMPORTANT: Static items should only contain completed/error/abort messages */}
+            {/* Static component does NOT re-render when item properties change */}
+            {(() => {
+              // Filter to get only non-active messages for Static rendering
+              const completedMessages = currentSession.messages.filter(
+                m => m.status !== 'active'
+              );
+
+              return completedMessages.length > 0 && (
+                <Static items={completedMessages}>
+                  {(msg, i) => (
+                    <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
+                      {msg.role === 'user' ? (
+                        <>
+                          <Box>
+                            <Text color="#00D9FF">▌ YOU</Text>
                           </Box>
-                        )}
-                        {/* Display attachments if any */}
-                        {msg.attachments && msg.attachments.length > 0 ? (
-                          <Box flexDirection="column" marginTop={1}>
-                            {msg.attachments.map((att, attIdx) => (
-                              <Box key={`msg-${msg.timestamp}-att-${att.path}`} marginLeft={2}>
-                                <Text dimColor>Attached(</Text>
-                                <Text color="#00D9FF">{att.relativePath}</Text>
-                                <Text dimColor>)</Text>
-                                {attachmentTokens.has(att.path) && (
-                                  <>
-                                    <Text dimColor> </Text>
-                                    <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                                  </>
-                                )}
-                              </Box>
-                            ))}
+                          {/* Render content parts */}
+                          {msg.content && Array.isArray(msg.content) ? (
+                            msg.content.map((part, idx) => (
+                              <StreamingPartWrapper
+                                key={`msg-${msg.timestamp}-part-${idx}`}
+                                part={part}
+                              />
+                            ))
+                          ) : (
+                            <Box marginLeft={2}>
+                              <Text>{String(msg.content || '')}</Text>
+                            </Box>
+                          )}
+                          {/* Display attachments if any */}
+                          {msg.attachments && msg.attachments.length > 0 ? (
+                            <Box flexDirection="column" marginTop={1}>
+                              {msg.attachments.map((att, attIdx) => (
+                                <Box key={`msg-${msg.timestamp}-att-${att.path}`} marginLeft={2}>
+                                  <Text dimColor>Attached(</Text>
+                                  <Text color="#00D9FF">{att.relativePath}</Text>
+                                  <Text dimColor>)</Text>
+                                  {attachmentTokens.has(att.path) && (
+                                    <>
+                                      <Text dimColor> </Text>
+                                      <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                                    </>
+                                  )}
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <Box>
+                            <Text color="#00FF88">▌ SYLPHX</Text>
                           </Box>
-                        ) : null}
-                      </>
-                    ) : msg.status === 'active' ? (
-                      // Active message: don't render here, will be rendered in Dynamic region
-                      null
-                    ) : (
-                      <>
-                        <Box>
-                          <Text color="#00FF88">▌ SYLPHX</Text>
-                        </Box>
-                        {/* Render content parts */}
-                        {msg.content && Array.isArray(msg.content) ? (
-                          msg.content.map((part, idx) => (
-                            <StreamingPartWrapper
-                              key={`msg-${msg.timestamp}-part-${idx}`}
-                              part={part}
-                            />
-                          ))
-                        ) : (
-                          <Box marginLeft={2}>
-                            <Text>{String(msg.content || '')}</Text>
-                          </Box>
-                        )}
-                        {/* Show usage if available - simplified */}
-                        {msg.usage && (
-                          <Box marginLeft={2}>
-                            <Text dimColor>
-                              {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                            </Text>
-                          </Box>
-                        )}
-                      </>
-                    )}
-                  </Box>
-                )}
-              </Static>
-            )}
+                          {/* Render content parts */}
+                          {msg.content && Array.isArray(msg.content) ? (
+                            msg.content.map((part, idx) => (
+                              <StreamingPartWrapper
+                                key={`msg-${msg.timestamp}-part-${idx}`}
+                                part={part}
+                              />
+                            ))
+                          ) : (
+                            <Box marginLeft={2}>
+                              <Text>{String(msg.content || '')}</Text>
+                            </Box>
+                          )}
+                          {/* Show usage if available - simplified */}
+                          {msg.usage && (
+                            <Box marginLeft={2}>
+                              <Text dimColor>
+                                {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+                              </Text>
+                            </Box>
+                          )}
+                        </>
+                      )}
+                    </Box>
+                  )}
+                </Static>
+              );
+            })()}
 
             {/* Active (streaming) message - render directly from session.messages */}
             {(() => {
