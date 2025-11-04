@@ -1,3 +1,9 @@
+#!/usr/bin/env bun
+/**
+ * Sylphx Code CLI - Headless AI Assistant
+ * Headless mode for running prompts without TUI
+ */
+
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
@@ -109,3 +115,6 @@ function handleCommandError(error: unknown): void {
 
   process.exit(1);
 }
+
+// Execute CLI when run as script
+runCLI();

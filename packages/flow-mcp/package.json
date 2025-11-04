@@ -5,11 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "sylphx-flow-mcp": "./bin/sylphx-flow-mcp.ts"
+    "sylphx-flow-mcp": "./dist/index.js"
   },
   "files": [
     "dist",
-    "bin",
     "README.md"
   ],
   "scripts": {

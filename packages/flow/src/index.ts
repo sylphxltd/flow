@@ -1,3 +1,9 @@
+#!/usr/bin/env bun
+/**
+ * Sylphx Flow - Legacy CLI
+ * Project initialization and development flow management
+ */
+
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -147,3 +153,6 @@ function handleCommandError(error: unknown): void {
 
   process.exit(1);
 }
+
+// Execute CLI when run as script
+runCLI();

@@ -5,16 +5,15 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "sylphx-code": "./bin/sylphx-code.js"
+    "sylphx-code": "./dist/index.js"
   },
   "files": [
     "dist",
-    "bin",
     "README.md"
   ],
   "scripts": {
-    "build": "bun build src/cli.ts src/headless.ts --outdir dist --target node --format esm --sourcemap",
-    "dev": "bun src/cli.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
+    "dev": "bun src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",

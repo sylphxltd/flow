@@ -5,12 +5,12 @@
   "description": "Sylphx Flow - Legacy CLI for project initialization and flow management",
   "type": "module",
   "bin": {
-    "sylphx-flow": "./bin/sylphx-flow.ts"
+    "sylphx-flow": "./dist/index.js"
   },
   "scripts": {
-    "build": "bun build src/cli.ts --outdir dist --target node --format esm --sourcemap",
-    "dev": "bun bin/sylphx-flow.ts",
-    "start": "bun bin/sylphx-flow.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
+    "dev": "bun src/index.ts",
+    "start": "bun dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",

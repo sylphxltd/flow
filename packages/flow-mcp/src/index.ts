@@ -1,3 +1,9 @@
+#!/usr/bin/env bun
+/**
+ * Sylphx Flow MCP Server
+ * Standalone MCP server for Claude Desktop and other MCP clients
+ */
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -85,3 +91,20 @@ process.on('SIGTERM', () => {
   Logger.info('\n🛑 Shutting down MCP server...');
   process.exit(0);
 });
+
+// Execute when run as script
+if (import.meta.main) {
+  // Parse command line arguments for configuration
+  const args = process.argv.slice(2);
+  const config = {
+    disableTime: args.includes('--disable-time'),
+    disableKnowledge: args.includes('--disable-knowledge'),
+    disableCodebase: args.includes('--disable-codebase'),
+  };
+
+  // Start the MCP server
+  startMCPServer(config).catch((error) => {
+    Logger.error('Failed to start MCP server', error);
+    process.exit(1);
+  });
+}
