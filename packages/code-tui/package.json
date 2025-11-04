@@ -8,8 +8,8 @@
     "sylphx-code-tui": "./dist/index.js"
   },
   "scripts": {
-    "build": "bun build src/index-cli.ts --outdir dist --target node --format esm --sourcemap --outfile index.js",
-    "dev": "bun src/index-cli.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
+    "dev": "bun src/index.ts",
     "start": "bun dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
