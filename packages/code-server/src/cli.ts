@@ -1,19 +1,47 @@
 #!/usr/bin/env bun
 /**
  * code-server CLI
- * Standalone tRPC + Express server
- * HTTP + SSE server for Web GUI
+ * Background daemon server for multi-client access
+ *
+ * Clients:
+ * - code (TUI) - in-process tRPC
+ * - code-web (GUI) - HTTP/SSE tRPC
+ *
+ * All clients share same data source in real-time
  */
 
 import express from 'express';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { appRouter } from './trpc/routers/index.js';
 import { createContext } from './trpc/context.js';
+import { initializeAgentManager, initializeRuleManager, getDatabase } from '@sylphx/code-core';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+/**
+ * Initialize server-side resources
+ * Must be called before accepting any client connections
+ */
+async function initializeServer() {
+  const cwd = process.cwd();
+
+  // Initialize database
+  await getDatabase();
+
+  // Initialize agent and rule managers (server-side singletons)
+  await initializeAgentManager(cwd);
+  await initializeRuleManager(cwd);
+}
 
 export async function startWebServer() {
+  // Initialize server resources first
+  try {
+    await initializeServer();
+  } catch (error) {
+    console.error('Failed to initialize server:', error);
+    throw error;
+  }
   // tRPC middleware with SSE support
   app.use('/trpc', createExpressMiddleware({
     router: appRouter,
@@ -60,11 +88,18 @@ export async function startWebServer() {
 
   return new Promise((resolve, reject) => {
     const server = app.listen(PORT, () => {
-      console.log(`🌐 Web server: http://localhost:${PORT}`);
+      console.log(`\n🚀 Sylphx Code Server (Background Daemon)`);
+      console.log(`   HTTP Server: http://localhost:${PORT}`);
+      console.log(`   tRPC Endpoint: http://localhost:${PORT}/trpc`);
+      console.log(`\n📡 Accepting connections from:`);
+      console.log(`   - code (TUI): in-process tRPC`);
+      console.log(`   - code-web (GUI): HTTP/SSE tRPC`);
+      console.log(`\n💾 All clients share same data source\n`);
       resolve(server);
     }).on('error', (err: any) => {
       if (err.code === 'EADDRINUSE') {
-        console.log('ℹ️  Web server already running on port', PORT);
+        console.log(`ℹ️  Server already running on port ${PORT}`);
+        console.log(`   Clients can connect to: http://localhost:${PORT}`);
         resolve(null);
       } else {
         reject(err);

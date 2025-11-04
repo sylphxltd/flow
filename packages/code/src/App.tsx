@@ -15,8 +15,6 @@ import Dashboard from './screens/Dashboard.js';
 import { useAIConfig } from '@sylphx/code-client';
 import { useKeyboard } from '@sylphx/code-client';
 import { useSessionPersistence } from '@sylphx/code-client';
-import { initializeAgentManager, setAppStoreGetter } from '@sylphx/code-core';
-import { initializeRuleManager, setRuleAppStoreGetter } from '@sylphx/code-core';
 
 function AppContent() {
   const currentScreen = useAppStore((state) => state.currentScreen);
@@ -40,23 +38,7 @@ function AppContent() {
   };
 
   useEffect(() => {
-    const cwd = process.cwd();
-
-    // Set up agent and rule managers to use app store
-    setAppStoreGetter(() => useAppStore);
-    setRuleAppStoreGetter(() => useAppStore);
-
-    // Initialize agent manager
-    initializeAgentManager(cwd).catch((err) => {
-      console.error('Failed to initialize agent manager:', err);
-    });
-
-    // Initialize rule manager
-    initializeRuleManager(cwd).catch((err) => {
-      console.error('Failed to initialize rule manager:', err);
-    });
-
-    // Load AI config
+    // Load AI config (via tRPC)
     loadConfig().catch((err) => {
       console.error('Failed to load config:', err);
     });
