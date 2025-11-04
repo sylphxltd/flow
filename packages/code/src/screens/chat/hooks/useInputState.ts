@@ -31,8 +31,8 @@ export function useInputState(): InputState {
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const client = await getTRPCClient();
-        const history = await client.message.getRecentUserMessages({ limit: 100 });
+        const client = getTRPCClient();
+        const history = await client.message.getRecentUserMessages.query({ limit: 100 });
         // Reverse to get oldest-first order (for bash-like navigation)
         setMessageHistory(history.reverse());
       } catch (error) {

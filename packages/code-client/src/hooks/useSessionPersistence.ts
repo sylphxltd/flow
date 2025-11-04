@@ -16,12 +16,12 @@ export function useSessionPersistence() {
   useEffect(() => {
     const loadLastSession = async () => {
       try {
-        // Get tRPC client
-        const client = await getTRPCClient();
+        // Get tRPC client (synchronous)
+        const client = getTRPCClient();
 
         // Load last session (most recently updated)
         // MASSIVE performance improvement: Only load 1 session instead of all!
-        const lastSession = await client.session.getLast();
+        const lastSession = await client.session.getLast.query();
 
         if (lastSession) {
           // Set as current session (cached in store)
