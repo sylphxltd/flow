@@ -288,35 +288,63 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       }
     }
 
-    // Write to database if we have content
-    if (streamingMessageIdRef.current && contentToWrite && contentToWrite.length > 0) {
+    // ALWAYS write to database if we have a message ID
+    // Even if content is empty, we need to save the final state
+    if (streamingMessageIdRef.current && contentToWrite) {
       try {
         const repo = await getSessionRepository();
         await repo.updateMessageParts(streamingMessageIdRef.current, contentToWrite);
         pendingDbContentRef.current = null;
+        addLog(`Flushed ${contentToWrite.length} parts to database`);
       } catch (error) {
-        if (process.env.DEBUG) {
-          console.error(`Failed to flush parts: ${error}`);
-        }
+        addLog(`Failed to flush parts: ${error}`);
       }
+    } else {
+      addLog(`No content to flush (messageId=${streamingMessageIdRef.current}, content=${contentToWrite ? 'exists' : 'null'})`);
     }
-  }, [currentSessionId]);
+  }, [currentSessionId, addLog]);
 
   // Helper to update active message content in session
   // Defined after currentSessionId to avoid initialization error
   const updateActiveMessageContent = useCallback((updater: (prev: StreamPart[]) => StreamPart[]) => {
     useAppStore.setState((state) => {
-      const session = state.sessions.find((s) => s.id === currentSessionId);
-      if (session) {
-        const activeMessage = session.messages.find((m) => m.status === 'active');
-        if (activeMessage) {
-          const newContent = updater(activeMessage.content);
-          activeMessage.content = newContent;
+      const sessionIndex = state.sessions.findIndex((s) => s.id === currentSessionId);
+      if (sessionIndex === -1) return state;
 
-          // Schedule debounced database write (batched to reduce SQLITE_BUSY)
-          scheduleDatabaseWrite(newContent);
-        }
-      }
+      const session = state.sessions[sessionIndex];
+      const messageIndex = session.messages.findIndex((m) => m.status === 'active');
+      if (messageIndex === -1) return state;
+
+      const activeMessage = session.messages[messageIndex];
+      const newContent = updater(activeMessage.content);
+
+      // Schedule debounced database write (batched to reduce SQLITE_BUSY)
+      scheduleDatabaseWrite(newContent);
+
+      // Create new message object with updated content
+      const updatedMessage = {
+        ...activeMessage,
+        content: newContent,
+      };
+
+      // Create new messages array with updated message
+      const newMessages = [...session.messages];
+      newMessages[messageIndex] = updatedMessage;
+
+      // Create new session with new messages array
+      const newSession = {
+        ...session,
+        messages: newMessages,
+      };
+
+      // Create new sessions array with updated session
+      const newSessions = [...state.sessions];
+      newSessions[sessionIndex] = newSession;
+
+      return {
+        ...state,
+        sessions: newSessions,
+      };
     });
   }, [currentSessionId, scheduleDatabaseWrite]);
 
@@ -847,27 +875,56 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             }
 
             // Update app store status (content was updated in real-time by callbacks)
+            // Create new objects to ensure Zustand triggers re-render
             useAppStore.setState((state) => {
-              const session = state.sessions.find((s) => s.id === currentSessionId);
-              if (session) {
-                // Find the active message we created at streaming start
-                const activeMessage = session.messages
-                  .slice()
-                  .reverse()
-                  .find((m) => m.role === 'assistant' && m.status === 'active');
-
-                if (activeMessage) {
-                  // Update final status and metadata
-                  // Note: content was already updated in real-time via updateActiveMessageContent
-                  activeMessage.status = finalStatus;
-                  if (usageRef.current) {
-                    activeMessage.usage = usageRef.current;
-                  }
-                  if (finishReasonRef.current) {
-                    activeMessage.finishReason = finishReasonRef.current;
-                  }
-                }
+              const sessionIndex = state.sessions.findIndex((s) => s.id === currentSessionId);
+              if (sessionIndex === -1) {
+                addLog(`Session not found in store: ${currentSessionId}`);
+                return state;
               }
+
+              const session = state.sessions[sessionIndex];
+              const messageIndex = [...session.messages]
+                .reverse()
+                .findIndex((m) => m.role === 'assistant' && m.status === 'active');
+
+              if (messageIndex === -1) {
+                addLog(`No active assistant message found in session`);
+                return state;
+              }
+
+              // Convert reversed index to actual index
+              const actualIndex = session.messages.length - 1 - messageIndex;
+              const activeMessage = session.messages[actualIndex];
+
+              // Create new message object with updated status
+              const updatedMessage = {
+                ...activeMessage,
+                status: finalStatus,
+                usage: usageRef.current || activeMessage.usage,
+                finishReason: finishReasonRef.current || activeMessage.finishReason,
+              };
+
+              // Create new messages array with updated message
+              const newMessages = [...session.messages];
+              newMessages[actualIndex] = updatedMessage;
+
+              // Create new session with new messages array
+              const newSession = {
+                ...session,
+                messages: newMessages,
+              };
+
+              // Create new sessions array with updated session
+              const newSessions = [...state.sessions];
+              newSessions[sessionIndex] = newSession;
+
+              addLog(`Updated message status to ${finalStatus} in app store`);
+
+              return {
+                ...state,
+                sessions: newSessions,
+              };
             });
           } catch (error) {
             // Critical error in onComplete - log but don't throw
