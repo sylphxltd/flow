@@ -259,6 +259,7 @@ export const useAppStore = create<AppState>()(
             role,
             content: normalizedContent,
             timestamp: Date.now(),
+            status: 'completed', // Default status for messages added through addMessage
             ...(attachments !== undefined && attachments.length > 0 && { attachments }),
             ...(usage !== undefined && { usage }),
             ...(finishReason !== undefined && { finishReason }),

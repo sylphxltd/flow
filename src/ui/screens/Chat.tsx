@@ -76,7 +76,7 @@ function getStreamingPartKey(part: StreamPart, streamParts: StreamPart[]): strin
 }
 
 // Global debug flag - TODO: remove after debugging streaming issues
-const SHOW_DEBUG_INDICATORS = true;  // Temporarily enabled for debugging
+const SHOW_DEBUG_INDICATORS = false;  // Disabled after fixing
 
 /**
  * Streaming Part Wrapper Component
@@ -1326,6 +1326,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               const completedMessages = currentSession.messages.filter(
                 m => m.status !== 'active'
               );
+
+              console.log('[Static Filter] Total messages:', currentSession.messages.length);
+              console.log('[Static Filter] Messages:', currentSession.messages.map(m => ({ role: m.role, status: m.status })));
+              console.log('[Static Filter] Completed messages count:', completedMessages.length);
+              console.log('[Static Filter] Completed messages:', completedMessages.map(m => ({ role: m.role, status: m.status })));
 
               return completedMessages.length > 0 && (
                 <Static items={completedMessages}>
