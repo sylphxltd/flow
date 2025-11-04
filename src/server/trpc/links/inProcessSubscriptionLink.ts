@@ -36,44 +36,49 @@ export function inProcessSubscriptionLink<TRouter extends AnyRouter>(opts: {
 
         // For subscriptions: call the procedure and handle the observable
         if (type === 'subscription') {
-          try {
-            // Navigate to the procedure using path
-            const procedure = getNestedProperty(opts.caller, path.split('.'));
+          let subscription: any = null;
 
-            if (typeof procedure !== 'function') {
-              observer.error(
-                new TRPCClientError('Procedure not found: ' + path)
-              );
-              return;
-            }
+          // Async wrapper to handle promise returned by subscription procedure
+          (async () => {
+            try {
+              // Navigate to the procedure using path
+              const procedure = getNestedProperty(opts.caller, path.split('.'));
 
-            // Call the subscription procedure (returns an observable)
-            const result = procedure(input);
-
-            // Subscribe to the result
-            const subscription = result.subscribe({
-              next: (data: any) => {
-                observer.next({ result: { data } });
-              },
-              error: (error: any) => {
+              if (typeof procedure !== 'function') {
                 observer.error(
-                  TRPCClientError.from(error)
+                  new TRPCClientError('Procedure not found: ' + path)
                 );
-              },
-              complete: () => {
-                observer.complete();
-              },
-            });
+                return;
+              }
 
-            // Return unsubscribe function
-            return () => {
-              subscription.unsubscribe();
-            };
-          } catch (error) {
-            observer.error(
-              TRPCClientError.from(error)
-            );
-          }
+              // Call the subscription procedure (async, returns promise of observable)
+              const observableResult = await procedure(input);
+
+              // Subscribe to the observable
+              subscription = observableResult.subscribe({
+                next: (data: any) => {
+                  observer.next({ result: { data } });
+                },
+                error: (error: any) => {
+                  observer.error(
+                    TRPCClientError.from(error)
+                  );
+                },
+                complete: () => {
+                  observer.complete();
+                },
+              });
+            } catch (error) {
+              observer.error(
+                TRPCClientError.from(error)
+              );
+            }
+          })();
+
+          // Return unsubscribe function
+          return () => {
+            subscription?.unsubscribe();
+          };
         }
 
         // For queries and mutations: just call directly
