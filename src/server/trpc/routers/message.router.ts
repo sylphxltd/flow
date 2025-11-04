@@ -243,34 +243,17 @@ export const messageRouter = router({
         attachments: z.array(FileAttachmentSchema).optional(),
       })
     )
-    .subscription(async ({ input }) => {
-      return observable<StreamEvent>((observer) => {
-        // TODO: Implement actual AI streaming here
-        // This is a placeholder that demonstrates the pattern
+    .subscription(async ({ ctx, input }) => {
+      // Import streaming service
+      const { streamAIResponse } = await import('../../services/streaming.service.js');
 
-        // Example implementation:
-        // 1. Call AI provider with streaming
-        // 2. Process stream events
-        // 3. Emit events to observer
-        // 4. Save to database when complete
-
-        // Placeholder: emit some events
-        observer.next({ type: 'text-start' });
-        observer.next({ type: 'text-delta', text: 'Hello ' });
-        observer.next({ type: 'text-delta', text: 'from ' });
-        observer.next({ type: 'text-delta', text: 'tRPC!' });
-        observer.next({ type: 'text-end' });
-        observer.next({
-          type: 'complete',
-          usage: { promptTokens: 10, completionTokens: 3, totalTokens: 13 },
-          finishReason: 'stop',
-        });
-        observer.complete();
-
-        // Return cleanup function
-        return () => {
-          // Cleanup logic (e.g., abort AI stream)
-        };
+      // Stream AI response using service
+      return streamAIResponse({
+        sessionRepository: ctx.sessionRepository,
+        aiConfig: ctx.aiConfig,
+        sessionId: input.sessionId,
+        userMessage: input.userMessage,
+        attachments: input.attachments,
       });
     }),
 });
