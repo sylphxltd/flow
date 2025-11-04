@@ -1,0 +1,47 @@
+{
+  "name": "@sylphx/flow-mcp",
+  "version": "0.1.0",
+  "description": "Sylphx Flow MCP - Model Context Protocol server",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "sylphx-flow-mcp": "./bin/sylphx-flow-mcp.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "bun src/index.ts",
+    "start": "bun dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@sylphx/code-core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.20.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.6"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai"
+  ],
+  "author": "sylphxltd",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sylphxltd/flow.git",
+    "directory": "packages/flow-mcp"
+  }
+}

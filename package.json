@@ -1,18 +1,11 @@
 {
-  "name": "@sylphx/flow",
-  "version": "0.2.13",
-  "description": "Sylphx Flow - Type-safe development flow for modern web development",
+  "name": "sylphx-ai",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Sylphx AI - Code SDK, Flow, and MCP monorepo",
   "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "sylphx-flow": "dist/index.js"
-  },
-  "files": [
-    "dist",
-    "drizzle",
-    "assets",
-    "README.md",
-    "LICENSE"
+  "workspaces": [
+    "packages/*"
   ],
   "repository": {
     "type": "git",
@@ -39,23 +32,27 @@
   },
   "homepage": "https://github.com/sylphxltd/flow#readme",
   "scripts": {
-    "build": "bun run build.ts",
-    "prepare": "bun run build.ts",
-    "dev": "bun src/index.ts",
-    "start": "bun dist/index.js",
-    "start:node": "node dist/index.js",
-    "clean": "rm -rf dist",
-    "clean:all": "rm -rf dist node_modules/.cache",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
     "format": "biome format --write .",
-    "format:check": "biome format .",
-    "type-check": "tsc --noEmit",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:chat": "bun src/test-chat.ts",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules/.cache",
+    "clean:all": "rm -rf packages/*/dist packages/*/node_modules node_modules .turbo",
+
+    "dev:web": "bun --cwd packages/code-web dev",
+    "dev:tui": "bun --cwd packages/code-tui dev",
+    "dev:server": "bun --cwd packages/code-server dev",
+
+    "build:core": "bun --cwd packages/code-core build",
+    "build:server": "bun --cwd packages/code-server build",
+    "build:client": "bun --cwd packages/code-client build",
+    "build:web": "bun --cwd packages/code-web build",
+    "build:tui": "bun --cwd packages/code-tui build",
+    "build:cli": "bun --cwd packages/code-cli build",
+    "build:flow": "bun --cwd packages/flow build",
+    "build:mcp": "bun --cwd packages/flow-mcp build"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -111,7 +108,7 @@
     "jscpd": "^4.0.5",
     "madge": "^8.0.0",
     "ts-prune": "^0.10.3",
-    "tsx": "^4.20.6",
+    "turbo": "^2.3.3",
     "typescript": "^5.9.3",
     "vitest": "^4.0.6"
   }

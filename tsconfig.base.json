@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "incremental": true,
+
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+
+    "types": ["bun-types"],
+
+    "paths": {
+      "@sylphx/code-core": ["./packages/code-core/src"],
+      "@sylphx/code-server": ["./packages/code-server/src"],
+      "@sylphx/code-client": ["./packages/code-client/src"],
+      "@sylphx/code-web": ["./packages/code-web/src"],
+      "@sylphx/code-tui": ["./packages/code-tui/src"],
+      "@sylphx/code-cli": ["./packages/code-cli/src"],
+      "@sylphx/flow": ["./packages/flow/src"],
+      "@sylphx/flow-mcp": ["./packages/flow-mcp/src"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    ".turbo",
+    "coverage"
+  ]
+}

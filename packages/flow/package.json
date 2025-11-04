@@ -1,0 +1,50 @@
+{
+  "name": "@sylphx/flow",
+  "version": "0.2.14",
+  "description": "Sylphx Flow - Development guidelines and best practices (legacy)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "sylphx-flow": "./bin/sylphx-flow.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "assets",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "bun src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "inquirer": "^12.10.0",
+    "chalk": "^5.6.2",
+    "boxen": "^8.0.1",
+    "gradient-string": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.6"
+  },
+  "keywords": [
+    "development",
+    "flow",
+    "guidelines",
+    "best-practices"
+  ],
+  "author": "sylphxltd",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sylphxltd/flow.git",
+    "directory": "packages/flow"
+  }
+}
