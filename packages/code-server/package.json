@@ -17,7 +17,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build src/server/web/server.ts --outdir dist --target node --format esm --sourcemap",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
+    "build:server": "bun build src/server/web/server.ts --outdir dist --target node --format esm --sourcemap",
     "dev": "bun src/server/web/server.ts",
     "start": "bun dist/server.js",
     "test": "vitest run",
