@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, Static } from 'ink';
 import TextInputWithHint from '../components/TextInputWithHint.js';
 import MarkdownText from '../components/MarkdownText.js';
 import TodoList from '../components/TodoList.js';
@@ -37,7 +37,6 @@ import { FileAutocomplete } from '../components/FileAutocomplete.js';
 import { CommandAutocomplete } from '../components/CommandAutocomplete.js';
 import type { MessagePart as StreamPart } from '../../types/session.types.js';
 import { getSessionRepository } from '../../db/database.js';
-import { MaybeStatic } from '../components/MaybeStatic.js';
 
 /**
  * StreamPart - Alias for MessagePart
@@ -1289,13 +1288,15 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       {/* Main chat area */}
       <Box flexDirection="column" flexGrow={1} width="70%">
         {/* App Header - Output once in Static */}
-        <MaybeStatic isStatic={true}>
-          <Box paddingX={1} paddingY={1}>
-            <Text bold color="#00D9FF">SYLPHX FLOW</Text>
-            <Text dimColor> │ </Text>
-            <Text dimColor>AI Development Assistant</Text>
-          </Box>
-        </MaybeStatic>
+        <Static items={[{ key: 'header' }]}>
+          {(item) => (
+            <Box key={item.key} paddingX={1} paddingY={1}>
+              <Text bold color="#00D9FF">SYLPHX FLOW</Text>
+              <Text dimColor> │ </Text>
+              <Text dimColor>AI Development Assistant</Text>
+            </Box>
+          )}
+        </Static>
 
         {/* Messages - All messages in Static, dynamic UI at bottom */}
         {!currentSession ? (
@@ -1322,165 +1323,176 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         ) : (
           <>
             {/**
-             * UNIFIED MESSAGE RENDERING: Part-based static/dynamic split
+             * FLAT RENDERING: Collect all elements into flat array
              *
-             * Design: Every assistant message uses part-level rendering
-             * ==========================================================
+             * Design: Build flat list of all UI elements, split by completion status
+             * ========================================================================
              *
-             * Why unified:
-             * - Conversation is accumulated (messages constantly added)
-             * - Cannot wrap all messages in single Static (prevents updates)
-             * - Each message needs independent rendering
+             * Strategy:
+             * 1. Collect ALL elements (headers, parts, footers) into single flat array
+             * 2. Each element tagged with { component, isCompleted, key }
+             * 3. Split into completedItems and activeItems
+             * 4. Render completedItems in single Static
+             * 5. Render activeItems in Dynamic
              *
-             * User messages:
-             * - Never change after creation
-             * - Render with messages.map() (React handles efficiently)
-             *
-             * Assistant messages:
-             * - Use part-level static/dynamic split for ALL messages
-             * - Header in Static (for auto-scroll)
-             * - Completed parts in Static (frozen)
-             * - Active parts in Dynamic (for active messages only)
-             * - When message completes: all parts frozen in Static, no dynamic parts
-             *
-             * Why this works:
-             * - Parts incrementally freeze as they complete (stay in same Static)
-             * - No movement when message status changes (parts already in Static)
-             * - New messages simply append to the list (React key stability)
+             * Benefits:
+             * - No nested Static components
+             * - Single Static for all completed content
+             * - Simple, linear logic
+             * - Easy to understand and debug
              */}
 
-            {currentSession.messages.map((msg, msgIdx) => {
-              if (msg.role === 'user') {
-                // USER MESSAGE: Always static (never changes after creation)
-                return (
-                  <MaybeStatic key={`user-${msg.timestamp}`} isStatic={true}>
-                    <Box paddingTop={1} flexDirection="column">
-                      <Box paddingX={1}>
+            {(() => {
+              const items: Array<{ component: React.ReactNode; isCompleted: boolean; key: string }> = [];
+
+              // Process each message
+              currentSession.messages.forEach((msg, msgIdx) => {
+                if (msg.role === 'user') {
+                  // User message header
+                  items.push({
+                    key: `user-header-${msg.timestamp}`,
+                    isCompleted: true,
+                    component: (
+                      <Box paddingTop={1} paddingX={1}>
                         <Text color="#00D9FF">▌ YOU</Text>
                       </Box>
-                      {/* Render content parts */}
-                      {msg.content && Array.isArray(msg.content) ? (
-                        msg.content.map((part, idx) => (
-                          <StreamingPartWrapper
-                            key={`user-${msg.timestamp}-part-${idx}`}
-                            part={part}
-                          />
-                        ))
-                      ) : (
+                    ),
+                  });
+
+                  // User message parts
+                  if (msg.content && Array.isArray(msg.content)) {
+                    msg.content.forEach((part, idx) => {
+                      items.push({
+                        key: `user-${msg.timestamp}-part-${idx}`,
+                        isCompleted: true,
+                        component: <StreamingPartWrapper part={part} />,
+                      });
+                    });
+                  } else if (msg.content) {
+                    items.push({
+                      key: `user-${msg.timestamp}-content`,
+                      isCompleted: true,
+                      component: (
                         <Box marginLeft={2}>
-                          <Text>{String(msg.content || '')}</Text>
+                          <Text>{String(msg.content)}</Text>
                         </Box>
-                      )}
-                      {/* Display attachments if any */}
-                      {msg.attachments && msg.attachments.length > 0 ? (
-                        <Box flexDirection="column" marginTop={1}>
-                          {msg.attachments.map((att) => (
-                            <Box key={`user-${msg.timestamp}-att-${att.path}`} marginLeft={2}>
-                              <Text dimColor>Attached(</Text>
-                              <Text color="#00D9FF">{att.relativePath}</Text>
-                              <Text dimColor>)</Text>
-                              {attachmentTokens.has(att.path) && (
-                                <>
-                                  <Text dimColor> </Text>
-                                  <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                                </>
-                              )}
-                            </Box>
-                          ))}
-                        </Box>
-                      ) : null}
-                    </Box>
-                  </MaybeStatic>
-                );
-              } else {
-                // ASSISTANT MESSAGE: Split into completed and active parts
-                const streamParts = msg.content;
+                      ),
+                    });
+                  }
 
-                // Separate completed and active parts
-                const completedParts = streamParts.filter(part => part.status !== 'active');
-                const activeParts = streamParts.filter(part => part.status === 'active');
-
-                // Footer should be included in completed section if message is not active
-                const showFooter = msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage);
-
-                return (
-                  <Box key={`assistant-${msg.timestamp}`} flexDirection="column">
-                    {/* Header - always static for auto-scroll */}
-                    <MaybeStatic isStatic={true}>
+                  // User message attachments
+                  if (msg.attachments && msg.attachments.length > 0) {
+                    msg.attachments.forEach((att) => {
+                      items.push({
+                        key: `user-${msg.timestamp}-att-${att.path}`,
+                        isCompleted: true,
+                        component: (
+                          <Box marginLeft={2}>
+                            <Text dimColor>Attached(</Text>
+                            <Text color="#00D9FF">{att.relativePath}</Text>
+                            <Text dimColor>)</Text>
+                            {attachmentTokens.has(att.path) && (
+                              <>
+                                <Text dimColor> </Text>
+                                <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                              </>
+                            )}
+                          </Box>
+                        ),
+                      });
+                    });
+                  }
+                } else {
+                  // Assistant message header
+                  items.push({
+                    key: `assistant-header-${msg.timestamp}`,
+                    isCompleted: true,
+                    component: (
                       <Box paddingX={1} paddingTop={1}>
                         <Text color="#00FF88">▌ SYLPHX</Text>
                       </Box>
-                    </MaybeStatic>
+                    ),
+                  });
 
-                    {/* Completed parts + footer in ONE Static */}
-                    {(completedParts.length > 0 || showFooter) && (
-                      <MaybeStatic isStatic={true}>
+                  // Assistant message parts
+                  const streamParts = msg.content;
+                  if (streamParts.length > 0) {
+                    streamParts.forEach((part, idx) => {
+                      items.push({
+                        key: getStreamingPartKey(part, idx),
+                        isCompleted: part.status !== 'active',
+                        component: (
+                          <StreamingPartWrapper
+                            part={part}
+                            debugRegion={part.status !== 'active' ? 'static' : 'dynamic'}
+                          />
+                        ),
+                      });
+                    });
+                  } else if (msg.status === 'active') {
+                    // No parts yet, show waiting indicator
+                    items.push({
+                      key: `assistant-${msg.timestamp}-waiting`,
+                      isCompleted: false,
+                      component: (
+                        <Box paddingX={1} marginLeft={2}>
+                          <Text dimColor>...</Text>
+                        </Box>
+                      ),
+                    });
+                  }
+
+                  // Assistant message footer
+                  if (msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage)) {
+                    items.push({
+                      key: `assistant-footer-${msg.timestamp}`,
+                      isCompleted: true,
+                      component: (
                         <Box flexDirection="column">
-                          {/* Completed parts */}
-                          {completedParts.map((part, idx) => {
-                            const globalIdx = streamParts.indexOf(part);
-                            return (
-                              <StreamingPartWrapper
-                                key={getStreamingPartKey(part, globalIdx)}
-                                part={part}
-                                debugRegion="static"
-                              />
-                            );
-                          })}
-
-                          {/* Footer - only if message completed */}
-                          {showFooter && (
-                            <Box flexDirection="column">
-                              {/* Status badge */}
-                              {msg.status === 'abort' && (
-                                <Box marginLeft={2} marginBottom={1}>
-                                  <Text color="#FFD700">[Aborted]</Text>
-                                </Box>
-                              )}
-                              {msg.status === 'error' && (
-                                <Box marginLeft={2} marginBottom={1}>
-                                  <Text color="#FF3366">[Error]</Text>
-                                </Box>
-                              )}
-
-                              {/* Usage */}
-                              {msg.usage && (
-                                <Box marginLeft={2}>
-                                  <Text dimColor>
-                                    {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                                  </Text>
-                                </Box>
-                              )}
+                          {msg.status === 'abort' && (
+                            <Box marginLeft={2} marginBottom={1}>
+                              <Text color="#FFD700">[Aborted]</Text>
+                            </Box>
+                          )}
+                          {msg.status === 'error' && (
+                            <Box marginLeft={2} marginBottom={1}>
+                              <Text color="#FF3366">[Error]</Text>
+                            </Box>
+                          )}
+                          {msg.usage && (
+                            <Box marginLeft={2}>
+                              <Text dimColor>
+                                {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+                              </Text>
                             </Box>
                           )}
                         </Box>
-                      </MaybeStatic>
-                    )}
+                      ),
+                    });
+                  }
+                }
+              });
 
-                    {/* Active parts in Dynamic */}
-                    {activeParts.length > 0 ? (
-                      <>
-                        {activeParts.map((part) => {
-                          const globalIdx = streamParts.indexOf(part);
-                          return (
-                            <StreamingPartWrapper
-                              key={getStreamingPartKey(part, globalIdx)}
-                              part={part}
-                              debugRegion="dynamic"
-                            />
-                          );
-                        })}
-                      </>
-                    ) : streamParts.length === 0 && msg.status === 'active' ? (
-                      /* No parts yet - show waiting indicator */
-                      <Box paddingX={1} marginLeft={2}>
-                        <Text dimColor>...</Text>
-                      </Box>
-                    ) : null}
-                  </Box>
-                );
-              }
-            })}
+              // Split into completed and active
+              const completedItems = items.filter((item) => item.isCompleted);
+              const activeItems = items.filter((item) => !item.isCompleted);
+
+              return (
+                <>
+                  {/* All completed items in single Static */}
+                  {completedItems.length > 0 && (
+                    <Static items={completedItems}>
+                      {(item) => <Box key={item.key}>{item.component}</Box>}
+                    </Static>
+                  )}
+
+                  {/* Active items in Dynamic */}
+                  {activeItems.map((item) => (
+                    <Box key={item.key}>{item.component}</Box>
+                  ))}
+                </>
+              );
+            })()}
           </>
         )}
 
