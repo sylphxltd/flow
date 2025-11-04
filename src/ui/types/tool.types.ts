@@ -15,6 +15,7 @@ export interface ToolDisplayProps {
   name: string;
   status: 'running' | 'completed' | 'failed';
   duration?: number;
+  startTime?: number;
   args?: unknown;
   result?: unknown;
   error?: string;

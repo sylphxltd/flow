@@ -6,6 +6,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
+import { useElapsedTime } from '../hooks/useElapsedTime.js';
 import {
   getToolComponent,
   type ToolDisplayProps,
@@ -15,7 +16,14 @@ import {
  * Fallback display for unregistered tools
  */
 function FallbackToolDisplay(props: ToolDisplayProps) {
-  const { name, status, duration, args, error } = props;
+  const { name, status, duration, startTime, args, error } = props;
+
+  // Calculate real-time elapsed time for running tools
+  const { display: durationDisplay } = useElapsedTime({
+    startTime,
+    duration,
+    isRunning: status === 'running',
+  });
 
   return (
     <Box flexDirection="column">
@@ -29,8 +37,8 @@ function FallbackToolDisplay(props: ToolDisplayProps) {
         {status === 'completed' && <Text color="#00FF88">✓ </Text>}
         {status === 'failed' && <Text color="#FF3366">✗ </Text>}
         <Text bold>{name}</Text>
-        {duration !== undefined && (status === 'completed' || status === 'running') && (
-          <Text dimColor> {duration}ms</Text>
+        {durationDisplay && (status === 'completed' || status === 'running') && (
+          <Text dimColor> {durationDisplay}</Text>
         )}
       </Box>
       {status === 'failed' && error && (

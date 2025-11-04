@@ -7,6 +7,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
+import { useElapsedTime } from '../hooks/useElapsedTime.js';
 import type { ArgsFormatter, ResultFormatter } from '../utils/tool-formatters.js';
 import type { ToolDisplayProps } from '../types/tool.types.js';
 
@@ -33,7 +34,7 @@ interface ToolHeaderProps {
   statusIndicator: React.ReactNode;
   displayName: string;
   formattedArgs: string;
-  duration?: number;
+  durationDisplay?: string;
   status: 'running' | 'completed' | 'failed';
 }
 
@@ -41,7 +42,7 @@ const ToolHeader: React.FC<ToolHeaderProps> = ({
   statusIndicator,
   displayName,
   formattedArgs,
-  duration,
+  durationDisplay,
   status,
 }) => (
   <Box>
@@ -53,8 +54,8 @@ const ToolHeader: React.FC<ToolHeaderProps> = ({
         <Text>{formattedArgs}</Text>
       </>
     )}
-    {duration !== undefined && (status === 'completed' || status === 'running') && (
-      <Text dimColor> {duration}ms</Text>
+    {durationDisplay && (status === 'completed' || status === 'running') && (
+      <Text dimColor> {durationDisplay}</Text>
     )}
   </Box>
 );
@@ -110,7 +111,14 @@ export function createDefaultToolDisplay(
   formatResult: ResultFormatter
 ): React.FC<ToolDisplayProps> {
   return function DefaultToolDisplay(props: ToolDisplayProps) {
-    const { status, duration, args, result, error } = props;
+    const { status, duration, args, result, error, startTime } = props;
+
+    // Calculate real-time elapsed time for running tools
+    const { display: durationDisplay } = useElapsedTime({
+      startTime,
+      duration,
+      isRunning: status === 'running',
+    });
 
     const formattedArgs = formatArgs(args as Record<string, unknown>);
     const formattedResult = formatResult(result);
@@ -121,7 +129,7 @@ export function createDefaultToolDisplay(
           statusIndicator={<StatusIndicator status={status} />}
           displayName={displayName}
           formattedArgs={formattedArgs}
-          duration={duration}
+          durationDisplay={durationDisplay}
           status={status}
         />
         <ResultDisplay

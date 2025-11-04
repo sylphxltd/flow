@@ -5,7 +5,7 @@
  * PERFORMANCE: Memoized to prevent re-rendering unchanged message parts
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
 import MarkdownText from './MarkdownText.js';
@@ -25,34 +25,6 @@ type StreamingPart =
   | { type: 'error'; error: string; status: 'completed' };
 
 export const MessagePart = React.memo(function MessagePart({ part, isLastInStream = false }: MessagePartProps) {
-  // Live duration tracking for streaming parts
-  const [liveDuration, setLiveDuration] = useState<number | undefined>(undefined);
-
-  // Extract stable values for dependencies (using unified status field)
-  const partType = part.type;
-  const partStatus = 'status' in part ? part.status : 'completed'; // Default to completed for old format
-  const startTime = (part.type === 'reasoning' || part.type === 'tool') && 'startTime' in part ? part.startTime : null;
-
-  useEffect(() => {
-    // Check if this is an active (streaming) part with startTime
-    const isActivePart = partStatus === 'active' && startTime;
-
-    if (isActivePart && startTime) {
-      // Set initial duration
-      setLiveDuration(Date.now() - startTime);
-
-      // Update every second
-      const interval = setInterval(() => {
-        setLiveDuration(Date.now() - startTime);
-      }, 1000);
-
-      return () => clearInterval(interval);
-    } else {
-      // Clear live duration when part completes
-      setLiveDuration(undefined);
-      return undefined;
-    }
-  }, [partType, partStatus, startTime]);
   if (part.type === 'text') {
     return (
       <Box flexDirection="column" marginLeft={2} marginBottom={1}>
@@ -84,13 +56,13 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
         </Box>
       );
     } else {
-      // Still streaming - show spinner with live duration
-      const seconds = liveDuration ? Math.round(liveDuration / 1000) : 0;
+      // Still streaming - show spinner
+      // Duration will be calculated by useElapsedTime hook if needed
       return (
         <Box flexDirection="column" marginLeft={2} marginBottom={1}>
           <Box>
             <Spinner color="#FFD700" />
-            <Text dimColor> Thinking... {seconds}s</Text>
+            <Text dimColor> Thinking...</Text>
           </Box>
         </Box>
       );
@@ -107,9 +79,6 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
 
   // Tool part
   if (part.type === 'tool') {
-    // Use liveDuration for running tools, part.duration for completed/failed
-    const displayDuration = part.status === 'active' ? liveDuration : part.duration;
-
     // Map MessagePart status to ToolDisplay status
     const toolStatus: 'running' | 'completed' | 'failed' =
       part.status === 'active' ? 'running' :
@@ -121,12 +90,16 @@ export const MessagePart = React.memo(function MessagePart({ part, isLastInStrea
       name: string;
       status: 'running' | 'completed' | 'failed';
       duration?: number;
+      startTime?: number;
       args?: unknown;
       result?: unknown;
       error?: string;
     } = { name: part.name, status: toolStatus };
 
-    if (displayDuration !== undefined) toolProps.duration = displayDuration;
+    // Pass duration for completed/failed tools
+    if (part.duration !== undefined) toolProps.duration = part.duration;
+    // Pass startTime for running tools (ToolDisplay will calculate elapsed time)
+    if (part.startTime !== undefined) toolProps.startTime = part.startTime;
     if (part.args !== undefined) toolProps.args = part.args;
     if (part.result !== undefined) toolProps.result = part.result;
     if (part.error !== undefined) toolProps.error = part.error;
