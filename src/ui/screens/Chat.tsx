@@ -485,6 +485,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     if (atIndex === -1) return { files: [], query: '', hasAt: false, atIndex: -1 };
 
+    // Only trigger if cursor is AFTER the @ symbol
+    // This prevents autocomplete when cursor is before @ (e.g., |@ should not trigger)
+    if (cursor <= atIndex) {
+      return { files: [], query: '', hasAt: false, atIndex };
+    }
+
     // Check character before @ to avoid triggering on emails (user@example.com)
     // Only trigger if @ is at start OR preceded by whitespace/newline
     if (atIndex > 0) {
@@ -499,12 +505,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Extract query after @ up to cursor
     const query = textBeforeCursor.slice(atIndex + 1);
 
-    // Don't show suggestions if cursor is right at @ (no query yet)
-    // This allows up/down arrows to work for history navigation
-    if (query.length === 0 && cursor === atIndex + 1) {
-      return { files: [], query: '', hasAt: false, atIndex };
-    }
-
     // Don't show suggestions if there's a space in the query
     // (user has moved past this @ token)
     if (query.includes(' ')) return { files: [], query: '', hasAt: false, atIndex };
@@ -516,13 +516,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   }, [input, cursor, projectFiles]); // Only recompute when these change
 
   // Filter commands based on input
-  // PERFORMANCE: Memoize to avoid recalculating on every render
+  // PERFORMANCE: Memoize to avoid recallocating on every render
   const filteredCommands = useMemo(() => {
     if (!input.startsWith('/')) return [];
 
-    // Don't show suggestions if cursor is right at / (no command typed yet)
-    // This allows up/down arrows to work for history navigation
-    if (input.length === 1 && cursor <= 1) {
+    // Only trigger if cursor is AFTER the / symbol
+    // This prevents autocomplete when cursor is before / (e.g., |/ should not trigger)
+    if (cursor === 0) {
       return [];
     }
 
