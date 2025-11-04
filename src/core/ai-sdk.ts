@@ -429,7 +429,8 @@ export async function* createAIStream(
       messages: preparedMessages,
       system: systemPrompt,
       tools: getAISDKTools({ interactive: hasUserInputHandler() }),
-      abortSignal, // Pass abort signal to allow cancellation
+      // Only pass abortSignal if provided (exactOptionalPropertyTypes compliance)
+      ...(abortSignal ? { abortSignal } : {}),
       // Don't handle errors here - let them propagate to the caller
       // onError callback is for non-fatal errors, fatal ones should throw
     });
