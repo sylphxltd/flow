@@ -35,7 +35,7 @@ import { SelectionUI } from '../components/SelectionUI.js';
 import { PendingCommandSelection } from '../components/PendingCommandSelection.js';
 import { FileAutocomplete } from '../components/FileAutocomplete.js';
 import { CommandAutocomplete } from '../components/CommandAutocomplete.js';
-import type { MessagePart as StreamPart } from '../../types/session.types.js';
+import type { MessagePart as StreamPart, SessionMessage } from '../../types/session.types.js';
 import { getSessionRepository } from '../../db/database.js';
 
 /**
@@ -59,17 +59,16 @@ interface ChatProps {
 }
 
 /**
+ * Render item type for flat rendering
+ */
+type RenderItem = {
+  key: string;
+  isCompleted: boolean;
+  component: React.ReactNode;
+};
+
+/**
  * Generate stable key for a streaming part
- *
- * Key strategy:
- * - Tool: Use toolId (unique identifier from stream)
- * - Reasoning: Use startTime (unique timestamp)
- * - Text/Error: Use index in parts array (stable, append-only)
- *
- * Why this works:
- * - Parts array is append-only (parts never reorder or removed)
- * - Index is stable for each part once added
- * - Tool/reasoning have natural unique identifiers
  */
 function getStreamingPartKey(part: StreamPart, idx: number): string {
   return part.type === 'tool'
@@ -81,8 +80,172 @@ function getStreamingPartKey(part: StreamPart, idx: number): string {
     : `part-text-${idx}`;
 }
 
-// Global debug flag - TODO: remove after debugging streaming issues
-const SHOW_DEBUG_INDICATORS = true;  // Enabled for debugging text part visibility
+/**
+ * Collect user message items (header, parts, attachments)
+ */
+function collectUserMessageItems(
+  msg: SessionMessage,
+  attachmentTokens: Map<string, number>
+): RenderItem[] {
+  const items: RenderItem[] = [];
+
+  // Header
+  items.push({
+    key: `user-header-${msg.timestamp}`,
+    isCompleted: true,
+    component: (
+      <Box paddingTop={1} paddingX={1}>
+        <Text color="#00D9FF">▌ YOU</Text>
+      </Box>
+    ),
+  });
+
+  // Content parts
+  if (msg.content && Array.isArray(msg.content)) {
+    msg.content.forEach((part, idx) => {
+      items.push({
+        key: `user-${msg.timestamp}-part-${idx}`,
+        isCompleted: true,
+        component: <StreamingPartWrapper part={part} />,
+      });
+    });
+  } else if (msg.content) {
+    items.push({
+      key: `user-${msg.timestamp}-content`,
+      isCompleted: true,
+      component: (
+        <Box marginLeft={2}>
+          <Text>{String(msg.content)}</Text>
+        </Box>
+      ),
+    });
+  }
+
+  // Attachments
+  if (msg.attachments && msg.attachments.length > 0) {
+    msg.attachments.forEach((att) => {
+      items.push({
+        key: `user-${msg.timestamp}-att-${att.path}`,
+        isCompleted: true,
+        component: (
+          <Box marginLeft={2}>
+            <Text dimColor>Attached(</Text>
+            <Text color="#00D9FF">{att.relativePath}</Text>
+            <Text dimColor>)</Text>
+            {attachmentTokens.has(att.path) && (
+              <>
+                <Text dimColor> </Text>
+                <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+              </>
+            )}
+          </Box>
+        ),
+      });
+    });
+  }
+
+  return items;
+}
+
+/**
+ * Collect assistant message items (header, parts, footer)
+ */
+function collectAssistantMessageItems(msg: SessionMessage): RenderItem[] {
+  const items: RenderItem[] = [];
+
+  // Header
+  items.push({
+    key: `assistant-header-${msg.timestamp}`,
+    isCompleted: true,
+    component: (
+      <Box paddingX={1} paddingTop={1}>
+        <Text color="#00FF88">▌ SYLPHX</Text>
+      </Box>
+    ),
+  });
+
+  // Content parts
+  const streamParts = msg.content;
+  if (streamParts.length > 0) {
+    streamParts.forEach((part, idx) => {
+      items.push({
+        key: getStreamingPartKey(part, idx),
+        isCompleted: part.status !== 'active',
+        component: (
+          <StreamingPartWrapper
+            part={part}
+            debugRegion={part.status !== 'active' ? 'static' : 'dynamic'}
+          />
+        ),
+      });
+    });
+  } else if (msg.status === 'active') {
+    // No parts yet - waiting indicator
+    items.push({
+      key: `assistant-${msg.timestamp}-waiting`,
+      isCompleted: false,
+      component: (
+        <Box paddingX={1} marginLeft={2}>
+          <Text dimColor>...</Text>
+        </Box>
+      ),
+    });
+  }
+
+  // Footer (status badges + usage)
+  if (msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage)) {
+    items.push({
+      key: `assistant-footer-${msg.timestamp}`,
+      isCompleted: true,
+      component: (
+        <Box flexDirection="column">
+          {msg.status === 'abort' && (
+            <Box marginLeft={2} marginBottom={1}>
+              <Text color="#FFD700">[Aborted]</Text>
+            </Box>
+          )}
+          {msg.status === 'error' && (
+            <Box marginLeft={2} marginBottom={1}>
+              <Text color="#FF3366">[Error]</Text>
+            </Box>
+          )}
+          {msg.usage && (
+            <Box marginLeft={2}>
+              <Text dimColor>
+                {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
+              </Text>
+            </Box>
+          )}
+        </Box>
+      ),
+    });
+  }
+
+  return items;
+}
+
+/**
+ * Split items into continuous completed and remaining active
+ */
+function splitItemsByCompletion(items: RenderItem[]): {
+  completedItems: RenderItem[];
+  activeItems: RenderItem[];
+} {
+  const firstActiveIndex = items.findIndex((item) => !item.isCompleted);
+
+  if (firstActiveIndex === -1) {
+    // All completed
+    return { completedItems: items, activeItems: [] };
+  }
+
+  return {
+    completedItems: items.slice(0, firstActiveIndex),
+    activeItems: items.slice(firstActiveIndex),
+  };
+}
+
+// Global debug flag
+const SHOW_DEBUG_INDICATORS = false;
 
 /**
  * Streaming Part Wrapper Component
@@ -1323,179 +1486,39 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         ) : (
           <>
             {/**
-             * FLAT RENDERING: Collect all elements into flat array
+             * FLAT RENDERING: Single Static for all completed content
              *
-             * Design: Build flat list of all UI elements, split by completion status
-             * ========================================================================
-             *
-             * Strategy:
-             * 1. Collect ALL elements (headers, parts, footers) into single flat array
-             * 2. Each element tagged with { component, isCompleted, key }
-             * 3. Split into completedItems and activeItems
-             * 4. Render completedItems in single Static
-             * 5. Render activeItems in Dynamic
+             * Architecture:
+             * 1. Flatten all messages into array of RenderItems
+             * 2. Split into continuous completed + remaining active
+             * 3. Render completed in ONE Static, active in Dynamic
              *
              * Benefits:
+             * - Simple, predictable behavior
              * - No nested Static components
-             * - Single Static for all completed content
-             * - Simple, linear logic
-             * - Easy to understand and debug
+             * - Easy to debug and understand
              */}
-
             {(() => {
-              const items: Array<{ component: React.ReactNode; isCompleted: boolean; key: string }> = [];
+              // Collect all render items from messages
+              const items: RenderItem[] = currentSession.messages.flatMap((msg) =>
+                msg.role === 'user'
+                  ? collectUserMessageItems(msg, attachmentTokens)
+                  : collectAssistantMessageItems(msg)
+              );
 
-              // Process each message
-              currentSession.messages.forEach((msg, msgIdx) => {
-                if (msg.role === 'user') {
-                  // User message header
-                  items.push({
-                    key: `user-header-${msg.timestamp}`,
-                    isCompleted: true,
-                    component: (
-                      <Box paddingTop={1} paddingX={1}>
-                        <Text color="#00D9FF">▌ YOU</Text>
-                      </Box>
-                    ),
-                  });
-
-                  // User message parts
-                  if (msg.content && Array.isArray(msg.content)) {
-                    msg.content.forEach((part, idx) => {
-                      items.push({
-                        key: `user-${msg.timestamp}-part-${idx}`,
-                        isCompleted: true,
-                        component: <StreamingPartWrapper part={part} />,
-                      });
-                    });
-                  } else if (msg.content) {
-                    items.push({
-                      key: `user-${msg.timestamp}-content`,
-                      isCompleted: true,
-                      component: (
-                        <Box marginLeft={2}>
-                          <Text>{String(msg.content)}</Text>
-                        </Box>
-                      ),
-                    });
-                  }
-
-                  // User message attachments
-                  if (msg.attachments && msg.attachments.length > 0) {
-                    msg.attachments.forEach((att) => {
-                      items.push({
-                        key: `user-${msg.timestamp}-att-${att.path}`,
-                        isCompleted: true,
-                        component: (
-                          <Box marginLeft={2}>
-                            <Text dimColor>Attached(</Text>
-                            <Text color="#00D9FF">{att.relativePath}</Text>
-                            <Text dimColor>)</Text>
-                            {attachmentTokens.has(att.path) && (
-                              <>
-                                <Text dimColor> </Text>
-                                <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                              </>
-                            )}
-                          </Box>
-                        ),
-                      });
-                    });
-                  }
-                } else {
-                  // Assistant message header
-                  items.push({
-                    key: `assistant-header-${msg.timestamp}`,
-                    isCompleted: true,
-                    component: (
-                      <Box paddingX={1} paddingTop={1}>
-                        <Text color="#00FF88">▌ SYLPHX</Text>
-                      </Box>
-                    ),
-                  });
-
-                  // Assistant message parts
-                  const streamParts = msg.content;
-                  if (streamParts.length > 0) {
-                    streamParts.forEach((part, idx) => {
-                      items.push({
-                        key: getStreamingPartKey(part, idx),
-                        isCompleted: part.status !== 'active',
-                        component: (
-                          <StreamingPartWrapper
-                            part={part}
-                            debugRegion={part.status !== 'active' ? 'static' : 'dynamic'}
-                          />
-                        ),
-                      });
-                    });
-                  } else if (msg.status === 'active') {
-                    // No parts yet, show waiting indicator
-                    items.push({
-                      key: `assistant-${msg.timestamp}-waiting`,
-                      isCompleted: false,
-                      component: (
-                        <Box paddingX={1} marginLeft={2}>
-                          <Text dimColor>...</Text>
-                        </Box>
-                      ),
-                    });
-                  }
-
-                  // Assistant message footer
-                  if (msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage)) {
-                    items.push({
-                      key: `assistant-footer-${msg.timestamp}`,
-                      isCompleted: true,
-                      component: (
-                        <Box flexDirection="column">
-                          {msg.status === 'abort' && (
-                            <Box marginLeft={2} marginBottom={1}>
-                              <Text color="#FFD700">[Aborted]</Text>
-                            </Box>
-                          )}
-                          {msg.status === 'error' && (
-                            <Box marginLeft={2} marginBottom={1}>
-                              <Text color="#FF3366">[Error]</Text>
-                            </Box>
-                          )}
-                          {msg.usage && (
-                            <Box marginLeft={2}>
-                              <Text dimColor>
-                                {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                              </Text>
-                            </Box>
-                          )}
-                        </Box>
-                      ),
-                    });
-                  }
-                }
-              });
-
-              // Split into completed and active
-              // Find first non-completed item (boundary)
-              const firstActiveIndex = items.findIndex((item) => !item.isCompleted);
-
-              // Split: continuous completed items from start, rest goes to active
-              const completedItems = firstActiveIndex === -1
-                ? items  // All completed
-                : items.slice(0, firstActiveIndex);
-
-              const activeItems = firstActiveIndex === -1
-                ? []  // No active items
-                : items.slice(firstActiveIndex);
+              // Split into continuous completed and remaining active
+              const { completedItems, activeItems } = splitItemsByCompletion(items);
 
               return (
                 <>
-                  {/* All completed items in single Static */}
+                  {/* Completed items frozen in single Static */}
                   {completedItems.length > 0 && (
                     <Static items={completedItems}>
                       {(item) => <Box key={item.key}>{item.component}</Box>}
                     </Static>
                   )}
 
-                  {/* Active items in Dynamic */}
+                  {/* Active items rendered dynamically */}
                   {activeItems.map((item) => (
                     <Box key={item.key}>{item.component}</Box>
                   ))}
