@@ -167,11 +167,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const usageRef = useRef<TokenUsage | null>(null);
   const finishReasonRef = useRef<string | null>(null);
 
-  // Optimized streaming: accumulate chunks in ref, update state in batches
-  const streamBufferRef = useRef<{ chunks: string[]; timeout: NodeJS.Timeout | null }>({
-    chunks: [],
-    timeout: null
-  });
 
   // Debounced database persistence
   // Reduces write frequency to avoid SQLITE_BUSY errors
@@ -739,38 +734,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       });
     };
 
-    // Helper to flush accumulated chunks
-    // This updates the last text part (part-level streaming)
-    const flushStreamBuffer = () => {
-      const buffer = streamBufferRef.current;
-      if (buffer.chunks.length === 0) return;
-
-      const accumulatedText = buffer.chunks.join('');
-      buffer.chunks = [];
-
-      updateActiveMessageContent((prev) => {
-        const newParts = [...prev];
-        const lastPart = newParts[newParts.length - 1];
-
-        // Part streaming: Add delta to last text part
-        if (lastPart && lastPart.type === 'text' && lastPart.status === 'active') {
-          newParts[newParts.length - 1] = {
-            type: 'text',
-            content: lastPart.content + accumulatedText,
-            status: 'active' as const  // Text is active while streaming
-          };
-        } else {
-          // No text part at end, create new one
-          newParts.push({
-            type: 'text',
-            content: accumulatedText,
-            status: 'active' as const
-          });
-        }
-
-        return newParts;
-      });
-    };
 
     try {
       await sendMessage(userMessage, {
@@ -789,21 +752,32 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           ]);
         },
 
-        // onTextDelta - text streaming (batched for performance)
+        // onTextDelta - text streaming
         onTextDelta: async (text) => {
-          // Accumulate chunks in buffer
-          streamBufferRef.current.chunks.push(text);
+          // Part streaming: Add delta to last text part
+          updateActiveMessageContent((prev) => {
+            const newParts = [...prev];
+            const lastPart = newParts[newParts.length - 1];
 
-          // Clear existing timeout
-          if (streamBufferRef.current.timeout) {
-            clearTimeout(streamBufferRef.current.timeout);
-          }
+            if (lastPart && lastPart.type === 'text' && lastPart.status === 'active') {
+              // Append to existing active text part
+              newParts[newParts.length - 1] = {
+                type: 'text',
+                content: lastPart.content + text,
+                status: 'active' as const
+              };
+            } else {
+              // This shouldn't happen if onTextStart was called first
+              console.warn('[onTextDelta] No active text part found, creating new one');
+              newParts.push({
+                type: 'text',
+                content: text,
+                status: 'active' as const
+              });
+            }
 
-          // Schedule flush after 50ms of inactivity (debounce)
-          streamBufferRef.current.timeout = setTimeout(() => {
-            flushStreamBuffer();
-            streamBufferRef.current.timeout = null;
-          }, 50);
+            return newParts;
+          });
         },
 
         // onToolCall - tool execution started
@@ -843,16 +817,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
             const wasAborted = wasAbortedRef.current;
             const hasError = lastErrorRef.current;
-
-            // Flush any remaining buffered text chunks first
-            if (streamBufferRef.current.timeout) {
-              clearTimeout(streamBufferRef.current.timeout);
-              streamBufferRef.current.timeout = null;
-            }
-            if (streamBufferRef.current.chunks.length > 0) {
-              flushStreamBuffer();
-            }
-            streamBufferRef.current.chunks = [];
 
             // Flush pending database writes immediately
             // This ensures final message content is persisted before status update
