@@ -5,12 +5,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import type { Question } from '../ui/commands/types.js';
-
-export interface SelectOption {
-  label: string;
-  value?: string;
-}
+import type { Question, SelectOption } from '../ui/commands/types.js';
 
 /**
  * User input request - matches WaitForInputOptions from command system
@@ -38,6 +33,7 @@ interface AskCall {
   question: string;
   options: SelectOption[];
   multiSelect?: boolean;
+  preSelected?: string[];
   resolve: (answer: string) => void;
 }
 
@@ -117,6 +113,7 @@ async function processNextAsk() {
         question: ask.question,
         options: ask.options,
         multiSelect: ask.multiSelect,
+        preSelected: ask.preSelected,
       }],
     });
 
@@ -143,16 +140,20 @@ async function processNextAsk() {
  * Ask user a multiple choice question
  */
 export const askUserSelectionTool = tool({
-  description: 'Ask the user a multiple choice question and wait for their selection',
+  description: 'Ask the user a multiple choice question and wait for their selection. Supports predefined options, free text input, and default selections.',
   inputSchema: z.object({
-    question: z.string().describe('Question to ask. Use only when you have specific options, not for free-form text'),
+    question: z.string().describe('Question to ask'),
     options: z.array(z.object({
-      label: z.string().describe('Display text'),
-      value: z.string().optional().describe('Return value'),
-    })).min(2).describe('Options to choose from'),
-    multiSelect: z.boolean().optional().describe('Allow multiple selections. Returns comma-separated. Call multiple times in same response to batch questions'),
+      label: z.string().describe('Display text for this option'),
+      value: z.string().optional().describe('Return value (defaults to label if not provided)'),
+      freeText: z.boolean().optional().describe('If true, selecting this option lets user type custom text instead of selecting from list. Use for "Other..." options'),
+      placeholder: z.string().optional().describe('Placeholder text shown when user enters free text mode (e.g., "Enter custom option...")'),
+      checked: z.boolean().optional().describe('Default checked state (only for multiSelect). If true, option is pre-selected'),
+    })).min(1).describe('Options to choose from. Can include free text options for custom input'),
+    multiSelect: z.boolean().optional().describe('Allow multiple selections. Returns comma-separated values. Use checked field to pre-select options'),
+    preSelected: z.array(z.string()).optional().describe('Pre-selected values for multi-select (question-level default). Use option.checked for per-option control'),
   }),
-  execute: async ({ question, options, multiSelect }) => {
+  execute: async ({ question, options, multiSelect, preSelected }) => {
     if (!userInputHandler) {
       throw new Error('User input handler not available. This tool can only be used in interactive mode.');
     }
@@ -167,6 +168,7 @@ export const askUserSelectionTool = tool({
         question,
         options,
         multiSelect,
+        preSelected,
         resolve,
       });
 
