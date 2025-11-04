@@ -40,9 +40,11 @@ export function ChatMessages({ hasSession, messages = [], attachmentTokens }: Ch
   }
 
   return (
-    <MessageList
-      messages={messages}
-      attachmentTokens={attachmentTokens}
-    />
+    <Box flexGrow={1} flexDirection="column">
+      <MessageList
+        messages={messages}
+        attachmentTokens={attachmentTokens}
+      />
+    </Box>
   );
 }

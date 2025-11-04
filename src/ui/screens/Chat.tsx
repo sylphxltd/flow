@@ -376,9 +376,9 @@ export default function Chat(_props: ChatProps) {
   }, [currentSessionId, setIsStreaming]);
 
   // Create handleSubmit function with filteredCommands
-  const handleSubmit = useCallback(
-    (value: string) => {
-      const submit = createHandleSubmit({
+  const handleSubmit = useMemo(
+    () =>
+      createHandleSubmit({
         isStreaming,
         createSession,
         addMessage,
@@ -400,9 +400,7 @@ export default function Chat(_props: ChatProps) {
         sendUserMessageToAI,
         createCommandContext: createCommandContextForArgs,
         getCommands: () => commands,
-      });
-      submit(value);
-    },
+      }),
     [
       isStreaming,
       createSession,
@@ -540,32 +538,39 @@ export default function Chat(_props: ChatProps) {
       {/* Main chat area */}
       <Box flexDirection="column" flexGrow={1} width="70%">
         {/* App Header and Chat Title */}
-        <ChatHeader
-          currentSessionTitle={currentSession?.title || undefined}
-          isTitleStreaming={isTitleStreaming}
-          streamingTitle={streamingTitle}
-        />
+        <Box flexShrink={0}>
+          <ChatHeader
+            currentSessionTitle={currentSession?.title}
+            isTitleStreaming={isTitleStreaming}
+            streamingTitle={streamingTitle}
+          />
+        </Box>
 
         {/* Messages */}
         <ChatMessages
           hasSession={!!currentSession}
-          messages={currentSession?.messages || undefined}
+          messages={currentSession?.messages}
           attachmentTokens={attachmentTokens}
         />
 
         {/* Status Indicator */}
-        <StatusIndicator
-          isStreaming={isStreaming}
-          streamParts={currentSession?.messages.find((m) => m.status === 'active')?.content || []}
-        />
+        <Box flexShrink={0}>
+          <StatusIndicator
+            isStreaming={isStreaming}
+            streamParts={currentSession?.messages.find((m) => m.status === 'active')?.content || []}
+          />
+        </Box>
 
         {/* Todo List */}
-        <TodoList />
+        <Box flexShrink={0}>
+          <TodoList />
+        </Box>
 
         {/* Input Area */}
-        <InputSection
+        <Box flexShrink={0}>
+          <InputSection
           input={input}
-          normalizedCursor={normalizedCursor}
+          cursor={normalizedCursor}
           pendingInput={pendingInput}
           pendingCommand={pendingCommand}
           multiSelectionPage={multiSelectionPage}
@@ -594,10 +599,12 @@ export default function Chat(_props: ChatProps) {
           setCursor={setCursor}
           setSelectionFilter={setSelectionFilter}
           setSelectedCommandIndex={setSelectedCommandIndex}
-          handleSubmit={handleSubmit}
-          commandContext={createCommandContextForArgs}
+          onSubmit={handleSubmit}
+          addMessage={addMessage}
+          createCommandContext={createCommandContextForArgs}
           setPendingCommand={setPendingCommand}
         />
+        </Box>
 
         {/* Status Bar */}
         <Box flexShrink={0} paddingTop={1} flexDirection="row">

@@ -38,7 +38,7 @@ import type { AIConfig } from '../../../../config/ai-config.js';
 import type { FileAttachment, TokenUsage } from '../../../../types/session.types.js';
 import { getSessionRepository } from '../../../../db/database.js';
 import { useAppStore } from '../../../stores/app-store.js';
-import type { StreamCallbackParams, ExtendedStreamCallbacks } from './streamCallbacks.js';
+import { createStreamCallbacks, type StreamCallbackParams, type ExtendedStreamCallbacks } from './streamCallbacks.js';
 
 /**
  * Parameters required to create sendUserMessageToAI callback
@@ -76,9 +76,6 @@ export interface MessageStreamingParams {
 
   // Content update function
   updateActiveMessageContent: (updater: (prev: import('../../../../types/session.types.js').MessagePart[]) => import('../../../../types/session.types.js').MessagePart[]) => void;
-
-  // Callback factory
-  createStreamCallbacks: (params: StreamCallbackParams) => ExtendedStreamCallbacks;
 }
 
 /**
@@ -115,7 +112,6 @@ export function createSendUserMessageToAI(params: MessageStreamingParams) {
     setIsTitleStreaming,
     setStreamingTitle,
     updateActiveMessageContent,
-    createStreamCallbacks,
   } = params;
 
   return async (userMessage: string, attachments?: FileAttachment[]) => {

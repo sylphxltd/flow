@@ -3,7 +3,8 @@
  * Manages input text, cursor position, and message history navigation
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { getSessionRepository } from '../../../../db/database.js';
 
 export interface InputState {
   input: string;
@@ -25,6 +26,21 @@ export function useInputState(): InputState {
   const [messageHistory, setMessageHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempInput, setTempInput] = useState('');
+
+  // Load message history from database on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const repo = await getSessionRepository();
+        const history = await repo.getRecentUserMessages(100);
+        // Reverse to get oldest-first order (for bash-like navigation)
+        setMessageHistory(history.reverse());
+      } catch (error) {
+        console.error('Failed to load message history:', error);
+      }
+    };
+    loadHistory();
+  }, []); // Only load once on mount
 
   // Normalize cursor to valid range
   const normalizedCursor = useMemo(

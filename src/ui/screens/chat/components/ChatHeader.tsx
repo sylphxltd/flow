@@ -22,7 +22,7 @@ export function ChatHeader({ currentSessionTitle, isTitleStreaming, streamingTit
       </Box>
 
       {/* Chat Title - shows current session title with streaming support */}
-      {currentSessionTitle !== undefined && (
+      {currentSessionTitle && (
         <Box paddingX={1} paddingBottom={1} flexShrink={0}>
           <Text color="#00D9FF">▌ CHAT</Text>
           <Text color="#00D9FF"> · </Text>

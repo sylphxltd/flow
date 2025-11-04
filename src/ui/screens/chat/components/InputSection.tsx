@@ -20,7 +20,7 @@ interface InputSectionProps {
   setInput: (value: string) => void;
   cursor: number;
   setCursor: (pos: number) => void;
-  onSubmit: (value: string) => Promise<void>;
+  onSubmit: (value: string) => void | Promise<void>;
 
   // Selection mode
   pendingInput: WaitForInputOptions | null;
