@@ -1248,8 +1248,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         ) : (
           <>
             <MessageList
+              key={currentSession.id}
               messages={currentSession.messages}
               attachmentTokens={attachmentTokens}
+              sessionId={currentSession.id}
             />
           </>
         )}

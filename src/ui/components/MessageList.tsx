@@ -17,9 +17,10 @@ import {
 interface MessageListProps {
   messages: SessionMessage[];
   attachmentTokens: Map<string, number>;
+  sessionId: string; // Used as React key to force re-mount on session switch
 }
 
-export function MessageList({ messages, attachmentTokens }: MessageListProps) {
+export function MessageList({ messages, attachmentTokens, sessionId }: MessageListProps) {
   // Collect all render items from messages
   const items: RenderItem[] = messages.flatMap((msg) =>
     msg.role === 'user'
