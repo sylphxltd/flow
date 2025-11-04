@@ -1327,10 +1327,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
               return completedMessages.length > 0 && (
                 <Static items={completedMessages}>
                   {(msg, i) => (
-                    <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
+                    <Box key={`msg-${msg.timestamp}-${i}`} paddingTop={1} flexDirection="column">
                         {msg.role === 'user' ? (
                         <>
-                          <Box>
+                          <Box paddingX={1}>
                             <Text color="#00D9FF">▌ YOU</Text>
                           </Box>
                           {/* Render content parts */}
@@ -1367,7 +1367,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         </>
                       ) : (
                         <>
-                          <Box>
+                          <Box paddingX={1}>
                             <Text color="#00FF88">▌ SYLPHX</Text>
                           </Box>
                           {/* Render content parts */}
