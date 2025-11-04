@@ -11,6 +11,7 @@ interface InputAreaProps {
   sessionId: string;
   toast: any;
   onMessageSent?: (message: string) => void;
+  onStreamingStart?: () => void;
   onStreamingUpdate?: (text: string) => void;
   onStreamingComplete?: () => void;
 }
@@ -32,6 +33,7 @@ export default function InputArea({
   sessionId,
   toast,
   onMessageSent,
+  onStreamingStart,
   onStreamingUpdate,
   onStreamingComplete,
 }: InputAreaProps) {
@@ -63,6 +65,11 @@ export default function InputArea({
         switch (event.type) {
           case 'assistant-message-created':
             console.log('Message created:', event.messageId);
+            onStreamingStart?.();
+            break;
+
+          case 'text-start':
+            onStreamingStart?.();
             break;
 
           case 'text-delta':

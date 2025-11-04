@@ -15,6 +15,7 @@ interface ChatContainerProps {
 
 export default function ChatContainer({ sessionId, toast }: ChatContainerProps) {
   const [optimisticUserMessage, setOptimisticUserMessage] = useState<string | null>(null);
+  const [isAssistantTyping, setIsAssistantTyping] = useState<boolean>(false);
   const [streamingAssistantMessage, setStreamingAssistantMessage] = useState<string>('');
 
   // Load session data
@@ -73,6 +74,7 @@ export default function ChatContainer({ sessionId, toast }: ChatContainerProps) 
       <MessageList
         messages={session.messages}
         optimisticUserMessage={optimisticUserMessage}
+        isAssistantTyping={isAssistantTyping}
         streamingAssistantMessage={streamingAssistantMessage}
       />
 
@@ -82,13 +84,20 @@ export default function ChatContainer({ sessionId, toast }: ChatContainerProps) 
         toast={toast}
         onMessageSent={(message) => {
           setOptimisticUserMessage(message);
+          setIsAssistantTyping(false);
+          setStreamingAssistantMessage('');
+        }}
+        onStreamingStart={() => {
+          setIsAssistantTyping(true);
           setStreamingAssistantMessage('');
         }}
         onStreamingUpdate={(text) => {
+          setIsAssistantTyping(true);
           setStreamingAssistantMessage(text);
         }}
         onStreamingComplete={() => {
           setOptimisticUserMessage(null);
+          setIsAssistantTyping(false);
           setStreamingAssistantMessage('');
         }}
       />

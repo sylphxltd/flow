@@ -10,12 +10,14 @@ import Message from './Message';
 interface MessageListProps {
   messages: any[];
   optimisticUserMessage?: string | null;
+  isAssistantTyping?: boolean;
   streamingAssistantMessage?: string;
 }
 
 export default function MessageList({
   messages,
   optimisticUserMessage,
+  isAssistantTyping,
   streamingAssistantMessage,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -23,10 +25,10 @@ export default function MessageList({
   // Auto-scroll to bottom on new messages or streaming updates
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, optimisticUserMessage, streamingAssistantMessage]);
+  }, [messages, optimisticUserMessage, isAssistantTyping, streamingAssistantMessage]);
 
   const hasContent =
-    messages.length > 0 || optimisticUserMessage || streamingAssistantMessage;
+    messages.length > 0 || optimisticUserMessage || isAssistantTyping;
 
   if (!hasContent) {
     return (
@@ -55,14 +57,16 @@ export default function MessageList({
         )}
 
         {/* Streaming assistant message (shown in real-time) */}
-        {streamingAssistantMessage && (
+        {isAssistantTyping && (
           <div className="flex justify-start">
             <div className="max-w-[80%] px-4 py-3 bg-gray-800 text-gray-200 rounded-xl">
               <div className="text-xs text-gray-500 mb-2 flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 Assistant is typing...
               </div>
-              <div className="whitespace-pre-wrap">{streamingAssistantMessage}</div>
+              {streamingAssistantMessage && (
+                <div className="whitespace-pre-wrap">{streamingAssistantMessage}</div>
+              )}
             </div>
           </div>
         )}
