@@ -27,6 +27,7 @@ export {
   getAgentById,
   getCurrentAgent,
   getCurrentAgentId,
+  switchAgent,
   getCurrentSystemPrompt
 } from './ai/agent-manager.js'
 
@@ -67,8 +68,8 @@ export { getDatabase, getSessionRepository } from './database/database.js'
 // ============================================================================
 // Configuration
 // ============================================================================
-export { loadAIConfig, saveAIConfig, getAIConfigPaths } from './config/ai-config.js'
-export type { AIConfig, ProviderConfig } from './config/ai-config.js'
+export { loadAIConfig, saveAIConfig, getAIConfigPaths, AI_PROVIDERS, getConfiguredProviders } from './config/ai-config.js'
+export type { AIConfig, ProviderConfig, ProviderId } from './config/ai-config.js'
 
 // ============================================================================
 // Types
@@ -93,6 +94,7 @@ export { generateSessionTitle } from './session/utils/title.js'
 export { formatTodoChange, formatTodoCount } from './utils/todo-formatters.js'
 export { formatTokenCount, getTokenizerInfo } from './utils/token-counter.js'
 export { filterFiles, type FileInfo } from './utils/file-scanner.js'
+export { fetchModels, type ModelInfo } from './utils/ai-model-fetcher.js'
 
 // ============================================================================
 // Tools

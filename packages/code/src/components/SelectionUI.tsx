@@ -3,9 +3,9 @@
  * Handles rendering of selection mode for questions with options
  */
 
-import { calculateScrollViewport } from '@sylphx/code-core';
 import { Box, Text } from 'ink';
 import React from 'react';
+import { calculateScrollViewport } from '../utils/scroll-viewport.js';
 import type { WaitForInputOptions } from '../commands/types.js';
 
 interface SelectionUIProps {
