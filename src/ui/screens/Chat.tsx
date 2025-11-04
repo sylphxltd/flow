@@ -306,7 +306,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       return;
     }
 
-    // Find session in store
+    // Find session in store (use getState to avoid dependency on sessions)
+    const sessions = useAppStore.getState().sessions;
     const session = sessions.find(s => s.id === currentSessionId);
     if (!session) {
       setIsStreaming(false);
@@ -389,7 +390,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     setUISelectedProvider: (provider) => setSelectedProvider(provider),
     setUISelectedModel: (model) => setSelectedModel(model),
     createSession: (provider, model) => createSession(provider, model),
-    getSessions: () => sessions,
+    getSessions: () => useAppStore.getState().sessions,
     getCurrentSessionId: () => currentSessionId,
     setCurrentSession: (sessionId) => setCurrentSession(sessionId),
     navigateTo: (screen) => navigateTo(screen),
