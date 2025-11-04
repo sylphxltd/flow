@@ -1401,6 +1401,18 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                         <>
                           <Box paddingX={1}>
                             <Text color="#00FF88">▌ SYLPHX</Text>
+                            {msg.status === 'abort' && (
+                              <>
+                                <Text dimColor> </Text>
+                                <Text color="#FFD700">[Aborted]</Text>
+                              </>
+                            )}
+                            {msg.status === 'error' && (
+                              <>
+                                <Text dimColor> </Text>
+                                <Text color="#FF3366">[Error]</Text>
+                              </>
+                            )}
                           </Box>
                           {/* Render content parts */}
                           {msg.content && Array.isArray(msg.content) ? (
