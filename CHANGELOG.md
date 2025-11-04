@@ -5,6 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.13] - 2025-11-04
+
+### ✨ Features
+
+#### Message History
+- **Bash-like Navigation**: Navigate through previous messages using up/down arrow keys (`cf52287`)
+- **Database Persistence**: Message history persisted in database with 100-message limit (`f92e03f`)
+
+### 🐛 Bug Fixes
+
+#### Windows Compatibility
+- **Path Resolution**: Fixed agents and rules not being found on Windows by using `fileURLToPath` instead of `URL.pathname` (`620395f`)
+  - Issue: Windows path format caused builtin assets to fail loading
+  - Solution: Use Node.js `fileURLToPath` for cross-platform compatibility
+
+#### Chat Refactoring Fixes
+- **Critical Issues**: Resolved input box malfunction, missing messages, and streaming errors after refactoring (`d8bbee6`)
+  - Fixed InputSection props: `onSubmit`, `cursor`, `addMessage`, `createCommandContext`
+  - Fixed `createStreamCallbacks` import (removed duplicate param definition)
+  - Fixed layout with proper flexGrow/flexShrink attributes
+  - Restored message submission and display functionality
+- **TypeScript Errors**: Resolved all compilation errors in refactored chat modules (`8eb908d`)
+  - Exported `FileInfo` interface from file-scanner.ts
+  - Added null checks and type assertions in streamCallbacks.ts
+  - Fixed unused parameter warnings
+
+#### Input System
+- **Autocomplete Cursor**: Only trigger autocomplete when cursor is AFTER special characters (/, @) (`1ca0f34`)
+  - Prevents autocomplete when typing before special chars
+- **History Navigation**: Prevent autocomplete from blocking up/down arrow history navigation (`064cd66`)
+  - Fixed autocomplete intercepting arrow keys
+  - Cursor positioned at start when navigating history
+- **State Management**: Fixed sessions variable initialization order (`34d16c0`, `a05947a`)
+
+### 🚀 Performance
+
+#### Database Optimization
+- **Message History Query**: Use indexed database query instead of traversing all sessions (`2e8bb2f`)
+  - Load once on mount, update in-place
+  - Avoid O(n) sessions traversal on every state change
+
+### 🔧 Refactoring
+
+#### Chat Architecture
+- **Modular Extraction**: Complete refactoring of Chat.tsx into 21 focused modules (`2caf765`)
+  - Reduced from 1595 → 616 lines (61% reduction)
+  - **State Hooks** (4 files): useInputState, useStreamingState, useSelectionState, useCommandState
+  - **Streaming Logic** (4 files): streamingHelpers, databasePersistence, streamCallbacks, messageStreaming
+  - **Command Handling** (2 files): commandContext, messageHandler
+  - **Autocomplete** (5 files): hintText, fileAutocomplete, commandAutocomplete, optionLoader, types
+  - **UI Components** (4 files): ChatHeader, ChatMessages, StatusIndicator, InputSection
+  - **Session Management** (2 files): messageHistory, titleGeneration
+
+#### Guidelines Optimization
+- **MEP Principles**: Optimized core guidelines with Minimal Effective Prompt principles (`9d6fd6b`)
+  - Clearer structure and reduced verbosity
+  - Better focus on critical information
+
+### 📊 Summary
+
+This release focuses on **message history navigation**, **Windows compatibility**, and **major architecture refactoring**. Key highlights:
+
+- ✨ **Bash-like message history** with up/down arrow navigation
+- 🪟 **Windows compatibility** for builtin agents and rules
+- 🔧 **Chat.tsx refactoring** - 61% code reduction with better modularity
+- 🐛 **Critical bug fixes** after refactoring
+- 🚀 **Performance optimization** for message history queries
+
+**Stats:**
+- **12 commits** since v0.2.12
+- **Chat.tsx reduced** from 1595 → 616 lines
+- **21 new modules** created for better separation of concerns
+- **Windows path resolution** fixed for global npm installs
+
+---
+
 ## [0.2.12] - 2025-11-04
 
 ### ✨ Features
