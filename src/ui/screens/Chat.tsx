@@ -1404,17 +1404,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 // Find first non-completed part (boundary between static/dynamic)
                 const firstIncompleteIndex = streamParts.findIndex(part => !isPartCompleted(part));
 
-                // DEBUG: Log part completion status (only for active messages)
-                if (SHOW_DEBUG_INDICATORS && streamParts.length > 0 && msg.status === 'active') {
-                  console.error(`[Message ${msgIdx} Static/Dynamic Split]`);
-                  console.error('  Total parts:', streamParts.length);
-                  console.error('  First incomplete index:', firstIncompleteIndex);
-                  streamParts.forEach((part, idx) => {
-                    const completed = isPartCompleted(part);
-                    console.error(`  [${idx}] ${part.type}: ${completed ? 'COMPLETED' : 'INCOMPLETE'} status=${part.status}`);
-                  });
-                }
-
                 // Split into static and dynamic
                 const staticParts = firstIncompleteIndex === -1
                   ? streamParts  // All completed
