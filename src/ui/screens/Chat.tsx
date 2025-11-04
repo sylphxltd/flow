@@ -499,6 +499,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     // Extract query after @ up to cursor
     const query = textBeforeCursor.slice(atIndex + 1);
 
+    // Don't show suggestions if cursor is right at @ (no query yet)
+    // This allows up/down arrows to work for history navigation
+    if (query.length === 0 && cursor === atIndex + 1) {
+      return { files: [], query: '', hasAt: false, atIndex };
+    }
+
     // Don't show suggestions if there's a space in the query
     // (user has moved past this @ token)
     if (query.includes(' ')) return { files: [], query: '', hasAt: false, atIndex };
@@ -513,6 +519,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // PERFORMANCE: Memoize to avoid recalculating on every render
   const filteredCommands = useMemo(() => {
     if (!input.startsWith('/')) return [];
+
+    // Don't show suggestions if cursor is right at / (no command typed yet)
+    // This allows up/down arrows to work for history navigation
+    if (input.length === 1 && cursor <= 1) {
+      return [];
+    }
 
     const parts = input.split(' ');
     const commandName = parts[0];
@@ -579,7 +591,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     // Return label matches first, then description matches
     return [...labelMatches, ...descriptionMatches];
-  }, [input, cachedOptions]); // Recompute when input or cached options change
+  }, [input, cursor, cachedOptions]); // Recompute when input, cursor or cached options change
 
   // Get hint text for current input
   // PERFORMANCE: Memoize to avoid recalculating on every render
@@ -634,10 +646,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   });
 
   // Message history navigation (like bash)
-  // Only works in normal input mode (not in selection, autocomplete, etc.)
+  // Only works in normal input mode (not in selection or pending command)
+  // Has higher priority than autocomplete - allows navigation even with / or @ at cursor
   useInput((char, key) => {
-    // Only handle history in normal input mode
-    const isNormalMode = !pendingInput && !pendingCommand && filteredCommands.length === 0 && !filteredFileInfo.hasAt;
+    // Only handle history in normal input mode (not in selection or command mode)
+    const isNormalMode = !pendingInput && !pendingCommand;
 
     if (!isNormalMode) return;
 
@@ -651,14 +664,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
         const newIndex = messageHistory.length - 1;
         setHistoryIndex(newIndex);
         setInput(messageHistory[newIndex]);
-        setCursor(messageHistory[newIndex].length);
+        setCursor(0); // Cursor at start
       }
       // Already browsing history - go to older message
       else if (historyIndex > 0) {
         const newIndex = historyIndex - 1;
         setHistoryIndex(newIndex);
         setInput(messageHistory[newIndex]);
-        setCursor(messageHistory[newIndex].length);
+        setCursor(0); // Cursor at start
       }
       return;
     }
@@ -671,14 +684,14 @@ export default function Chat({ commandFromPalette }: ChatProps) {
       if (historyIndex === messageHistory.length - 1) {
         setHistoryIndex(-1);
         setInput(tempInput);
-        setCursor(tempInput.length);
+        setCursor(0); // Cursor at start
       }
       // Go to newer message
       else {
         const newIndex = historyIndex + 1;
         setHistoryIndex(newIndex);
         setInput(messageHistory[newIndex]);
-        setCursor(messageHistory[newIndex].length);
+        setCursor(0); // Cursor at start
       }
       return;
     }
