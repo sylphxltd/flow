@@ -22,7 +22,7 @@ import { commands } from '../commands/registry.js';
 import type { CommandContext, WaitForInputOptions, Question } from '../commands/types.js';
 import { ToolDisplay } from '../components/ToolDisplay.js';
 import { filterFiles } from '../../utils/file-scanner.js';
-import type { FileAttachment } from '../../types/session.types.js';
+import type { FileAttachment, TokenUsage } from '../../types/session.types.js';
 import { formatTokenCount } from '../../utils/token-counter.js';
 import { useFileAttachments } from '../hooks/useFileAttachments.js';
 import { MessagePart } from '../components/MessagePart.js';
@@ -172,6 +172,11 @@ export default function Chat({ commandFromPalette }: ChatProps) {
     chunks: [],
     timeout: null
   });
+
+  // Debounced database persistence
+  // Reduces write frequency to avoid SQLITE_BUSY errors
+  const dbWriteTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingDbContentRef = useRef<StreamPart[] | null>(null);
   const debugLogs = useAppStore((state) => state.debugLogs);
   const addDebugLog = useAppStore((state) => state.addDebugLog);
   const [ctrlPressed, setCtrlPressed] = useState(false);
@@ -231,6 +236,57 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   const notificationSettings = useAppStore((state) => state.notificationSettings);
   const sessions = useAppStore((state) => state.sessions);
 
+  // Helper to schedule a debounced database write
+  // Reduces SQLITE_BUSY errors by batching writes
+  const scheduleDatabaseWrite = useCallback((content: StreamPart[]) => {
+    // Store pending content
+    pendingDbContentRef.current = content;
+
+    // Clear existing timer
+    if (dbWriteTimerRef.current) {
+      clearTimeout(dbWriteTimerRef.current);
+    }
+
+    // Schedule write after 500ms of inactivity
+    dbWriteTimerRef.current = setTimeout(async () => {
+      if (streamingMessageIdRef.current && pendingDbContentRef.current) {
+        try {
+          const repo = await getSessionRepository();
+          await repo.updateMessageParts(streamingMessageIdRef.current, pendingDbContentRef.current);
+          pendingDbContentRef.current = null;
+        } catch (error) {
+          if (process.env.DEBUG) {
+            console.error(`Failed to persist parts: ${error}`);
+          }
+        }
+      }
+      dbWriteTimerRef.current = null;
+    }, 500);
+  }, []);
+
+  // Helper to immediately flush pending database write
+  // Used on message completion to ensure final state is saved
+  const flushDatabaseWrite = useCallback(async () => {
+    // Clear timer
+    if (dbWriteTimerRef.current) {
+      clearTimeout(dbWriteTimerRef.current);
+      dbWriteTimerRef.current = null;
+    }
+
+    // Write immediately if there's pending content
+    if (streamingMessageIdRef.current && pendingDbContentRef.current) {
+      try {
+        const repo = await getSessionRepository();
+        await repo.updateMessageParts(streamingMessageIdRef.current, pendingDbContentRef.current);
+        pendingDbContentRef.current = null;
+      } catch (error) {
+        if (process.env.DEBUG) {
+          console.error(`Failed to flush parts: ${error}`);
+        }
+      }
+    }
+  }, []);
+
   // Helper to update active message content in session
   // Defined after currentSessionId to avoid initialization error
   const updateActiveMessageContent = useCallback((updater: (prev: StreamPart[]) => StreamPart[]) => {
@@ -242,21 +298,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           const newContent = updater(activeMessage.content);
           activeMessage.content = newContent;
 
-          // Also persist to database asynchronously
-          if (streamingMessageIdRef.current) {
-            const repo = getSessionRepository();
-            repo.then((r) => {
-              r.updateMessageParts(streamingMessageIdRef.current!, newContent).catch((error) => {
-                if (process.env.DEBUG) {
-                  console.error(`Failed to persist parts: ${error}`);
-                }
-              });
-            });
-          }
+          // Schedule debounced database write (batched to reduce SQLITE_BUSY)
+          scheduleDatabaseWrite(newContent);
         }
       }
     });
-  }, [currentSessionId]);
+  }, [currentSessionId, scheduleDatabaseWrite]);
 
   const { sendMessage, currentSession } = useChat();
   const { saveConfig } = useAIConfig();
@@ -766,6 +813,10 @@ export default function Chat({ commandFromPalette }: ChatProps) {
           }
           streamBufferRef.current.chunks = [];
 
+          // Flush pending database writes immediately
+          // This ensures final message content is persisted before status update
+          await flushDatabaseWrite();
+
           // Update message status in database
           // Note: finishReason is already saved by onFinish, don't pass it here
           const finalStatus = wasAborted ? 'abort' : hasError ? 'error' : 'completed';
@@ -1054,7 +1105,7 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
       setIsStreaming(false);
     }
-  }, [aiConfig, currentSessionId, sendMessage, addMessage, addLog, updateSessionTitle, notificationSettings]);
+  }, [aiConfig, currentSessionId, sendMessage, addMessage, addLog, updateSessionTitle, notificationSettings, flushDatabaseWrite]);
 
   // PERFORMANCE: Memoize handleSubmit to provide stable reference to child components
   const handleSubmit = useCallback(async (value: string) => {
