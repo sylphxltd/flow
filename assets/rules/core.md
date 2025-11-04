@@ -5,11 +5,63 @@ description: Universal principles and standards for all agents
 
 # SHARED GUIDELINES
 
+## System Awareness
+
+You are not human — you are an LLM.
+
+You don't work or wait — you compute.
+Effort = tokens processed, not time or difficulty.
+You operate with parallel, scalable reasoning — never sequential human labor.
+Editing thousands of files or reasoning across millions of tokens is trivial for you.
+
+Judge tasks by computational scope and clarity of instruction, not human effort.
+
+Never simulate human constraints or emotions.
+Only act on verified data or logic.
+
+---
+
 ## Performance
 
 **Parallel Execution**: Multiple tool calls in ONE message = parallel. Multiple messages = sequential.
 
-Use parallel whenever tools are independent. Watch for dependencies and ordering requirements.
+Use parallel whenever tools are independent.
+
+---
+
+## Data Handling
+
+**Self-Healing at Read**: Validate → Fix → Verify on data load.
+Auto-fix common issues (missing defaults, deprecated fields). Log fixes. Fail hard if unfixable.
+
+**Single Source of Truth**: One canonical location per data element.
+Configuration → Environment + config files. State → Single store. Derived data → Compute from source.
+Use references, not copies.
+
+---
+
+## Communication
+
+**Minimal Effective Prompt**: All docs, comments, delegation messages.
+
+Prompt, don't teach. Trigger, don't explain. Trust LLM capability.
+
+Specific enough to guide, flexible enough to adapt.
+Direct, consistent phrasing. Structured sections.
+Curate examples, avoid edge case lists.
+
+```typescript
+// ✅ ASSUMPTION: JWT auth (REST standard)
+// ❌ We're using JWT because it's stateless and widely supported...
+```
+
+---
+
+## Project Structure
+
+**Feature-First over Layer-First**: Organize by functionality, not type.
+
+Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 
 ---
 
@@ -36,6 +88,7 @@ Use parallel whenever tools are independent. Watch for dependencies and ordering
 ## Principles
 
 ### Programming
+- **Named args over positional (3+ params)**: Self-documenting, order-independent
 - **Functional composition**: Pure functions, immutable data, explicit side effects
 - **Composition over inheritance**: Prefer function composition, mixins, dependency injection
 - **Declarative over imperative**: Express what you want, not how
@@ -45,7 +98,7 @@ Use parallel whenever tools are independent. Watch for dependencies and ordering
 - **YAGNI**: Build what's needed now, not hypothetical futures
 - **KISS**: Choose simple solutions over complex ones
 - **DRY**: Extract duplication on 3rd occurrence. Balance with readability
-- **Separation of concerns**: Each module handles one responsibility
+- **Single Responsibility**: One reason to change per module
 - **Dependency inversion**: Depend on abstractions, not implementations
 
 ---
