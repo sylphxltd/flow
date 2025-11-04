@@ -6,14 +6,14 @@
 // ============================================================================
 // tRPC Router & Context
 // ============================================================================
-export { appRouter } from './server/trpc/routers/index.js'
-export { createContext, type Context } from './server/trpc/context.js'
-export { getTRPCClient } from './server/trpc/client.js'
+export { appRouter } from './trpc/routers/index.js'
+export { createContext, type Context } from './trpc/context.js'
+export { getTRPCClient } from './trpc/client.js'
 
 // ============================================================================
 // Streaming Service
 // ============================================================================
-export { type StreamEvent } from './server/services/streaming.service.js'
+export { type StreamEvent } from './services/streaming.service.js'
 
 // ============================================================================
 // Version

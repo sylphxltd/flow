@@ -1,13 +1,14 @@
+#!/usr/bin/env bun
 /**
- * Web Server
+ * code-server CLI
+ * Standalone tRPC + Express server
  * HTTP + SSE server for Web GUI
- * Serves tRPC API and static files
  */
 
 import express from 'express';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
-import { appRouter } from '../trpc/routers/index.js';
-import { createContext } from '../trpc/context.js';
+import { appRouter } from './trpc/routers/index.js';
+import { createContext } from './trpc/context.js';
 
 const app = express();
 const PORT = 3000;
@@ -72,7 +73,8 @@ export async function startWebServer() {
   });
 }
 
-// Allow running standalone
-if (import.meta.url === `file://${process.argv[1]}`) {
-  startWebServer();
-}
+// Start server when run as script
+startWebServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});

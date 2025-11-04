@@ -6,6 +6,9 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "sylphx-code-server": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -17,10 +20,9 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
-    "build:server": "bun build src/server/web/server.ts --outdir dist --target node --format esm --sourcemap",
-    "dev": "bun src/server/web/server.ts",
-    "start": "bun dist/server.js",
+    "build": "bun build src/index.ts src/cli.ts --outdir dist --target node --format esm --sourcemap",
+    "dev": "bun src/cli.ts",
+    "start": "bun dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
