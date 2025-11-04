@@ -896,13 +896,21 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               // If aborted, mark all active parts as 'abort'
               if (wasAborted) {
-                activeMessage.content = activeMessage.content.map(part =>
-                  part.status === 'active' ? { ...part, status: 'abort' as const } : part
-                );
+                activeMessage.content.forEach(part => {
+                  if (part.status === 'active') {
+                    part.status = 'abort';
+                  }
+                });
+                if (process.env.DEBUG) {
+                  console.error(`[abort] Marked ${activeMessage.content.filter(p => p.status === 'abort').length} parts as abort`);
+                }
               }
 
               // Update message status and metadata using immer-style mutation
               activeMessage.status = finalStatus;
+              if (process.env.DEBUG) {
+                console.error(`[abort] Message status updated to: ${finalStatus}`);
+              }
               if (usageRef.current) {
                 activeMessage.usage = usageRef.current;
               }
@@ -910,12 +918,6 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 activeMessage.finishReason = finishReasonRef.current;
               }
             });
-
-            // If aborted, add a user message to record the abort action
-            // This tells the LLM that the previous response was cancelled by the user
-            if (wasAborted && currentSessionId) {
-              addMessage(currentSessionId, 'user', '[Aborted]');
-            }
           } catch (error) {
             // Critical error in onComplete - log but don't throw
             if (process.env.DEBUG) {

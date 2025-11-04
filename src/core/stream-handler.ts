@@ -237,6 +237,16 @@ export async function processStream(
           currentTextContent = '';
         }
 
+        // If this is an abort error, mark all active parts as 'abort'
+        const isAbort = chunk.error === 'Stream aborted';
+        if (isAbort) {
+          messageParts.forEach(part => {
+            if (part.status === 'active') {
+              part.status = 'abort';
+            }
+          });
+        }
+
         // Add error part
         messageParts.push({ type: 'error', error: chunk.error, status: 'completed' });
 

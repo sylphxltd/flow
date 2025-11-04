@@ -397,9 +397,17 @@ export function useChat() {
             .map((part: any) => part.content)
             .join('\n');
 
+          // Add status annotation if message was aborted or errored
+          let content = textParts;
+          if (msg.status === 'abort') {
+            content = `${textParts}\n\n[This response was aborted by the user]`;
+          } else if (msg.status === 'error') {
+            content = `${textParts}\n\n[This response ended with an error]`;
+          }
+
           return {
             role: msg.role as 'assistant',
-            content: textParts,
+            content,
           };
         })
       );
