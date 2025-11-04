@@ -163,11 +163,11 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
 
         if (lastTextIndex !== undefined) {
           const textPart = newParts[lastTextIndex];
-          if (textPart.type === 'text') {
+          if (textPart && textPart.type === 'text') {
             newParts[lastTextIndex] = {
               ...textPart,
               status: 'completed'
-            };
+            } as MessagePart;
           }
         }
 
@@ -189,7 +189,7 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
     },
 
     // onToolResult - tool execution completed
-    onToolResult: (toolCallId, toolName, result, duration) => {
+    onToolResult: (toolCallId, _toolName, result, duration) => {
       // Part streaming: Update tool status to completed
       updateActiveMessageContent((prev) =>
         prev.map((part) =>
@@ -201,7 +201,7 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
     },
 
     // onToolError
-    onToolError: (toolCallId, toolName, error, duration) => {
+    onToolError: (toolCallId, _toolName, error, duration) => {
       // Part streaming: Update tool status to error
       updateActiveMessageContent((prev) =>
         prev.map((part) =>
@@ -213,13 +213,13 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
     },
 
     // onToolInputStart - tool input streaming started
-    onToolInputStart: (toolCallId, toolName) => {
+    onToolInputStart: (_toolCallId, _toolName) => {
       // Tool input streaming started - args will be streamed in deltas
       // No UI update needed
     },
 
     // onToolInputDelta - tool input streaming delta
-    onToolInputDelta: (toolCallId, toolName, argsTextDelta) => {
+    onToolInputDelta: (toolCallId, _toolName, argsTextDelta) => {
       // Part streaming: Update tool args as they stream in
       updateActiveMessageContent((prev) =>
         prev.map((part) => {
@@ -234,7 +234,7 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
     },
 
     // onToolInputEnd - tool input streaming completed
-    onToolInputEnd: (toolCallId, toolName, args) => {
+    onToolInputEnd: (toolCallId, _toolName, args) => {
       // Part streaming: Finalize tool args
       updateActiveMessageContent((prev) =>
         prev.map((part) =>
@@ -287,12 +287,12 @@ export function createStreamCallbacks(params: StreamCallbackParams): ExtendedStr
 
         if (lastReasoningIndex !== undefined) {
           const reasoningPart = newParts[lastReasoningIndex];
-          if (reasoningPart.type === 'reasoning') {
+          if (reasoningPart && reasoningPart.type === 'reasoning') {
             newParts[lastReasoningIndex] = {
               ...reasoningPart,
               status: 'completed',
               duration
-            };
+            } as MessagePart;
           }
         }
 

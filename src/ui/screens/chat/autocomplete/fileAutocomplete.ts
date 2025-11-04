@@ -40,6 +40,9 @@ export function useFileAutocomplete(
     // Only trigger if @ is at start OR preceded by whitespace/newline
     if (atIndex > 0) {
       const charBeforeAt = textBeforeCursor[atIndex - 1];
+      if (!charBeforeAt) {
+        return { files: [], query: '', hasAt: false, atIndex };
+      }
       const isWhitespace = /\s/.test(charBeforeAt); // space, tab, newline, etc.
       if (!isWhitespace) {
         // @ is preceded by non-whitespace (likely email), don't trigger

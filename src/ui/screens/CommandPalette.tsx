@@ -3,7 +3,7 @@
  * VSCode-style command palette with search and autocomplete
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
 import SelectInput from 'ink-select-input';
@@ -105,7 +105,7 @@ export default function CommandPalette({ onCommand }: CommandPaletteProps) {
             </Box>
             <SelectInput
               items={filteredCommands.map((cmd) => ({
-                label: `${cmd.label} ${Text.dimColor ? '· ' + cmd.description : ''}`,
+                label: `${cmd.label} · ${cmd.description}`,
                 value: cmd.value,
               }))}
               onSelect={(item) => {

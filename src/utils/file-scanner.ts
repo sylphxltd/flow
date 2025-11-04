@@ -8,7 +8,7 @@ import { join, relative } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 
-interface FileInfo {
+export interface FileInfo {
   path: string;
   relativePath: string;
   size: number;
