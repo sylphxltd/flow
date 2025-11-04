@@ -1,10 +1,11 @@
 /**
  * AI Config Hook
- * Load and save AI configuration
+ * Load and save AI configuration via tRPC (backend handles file system)
  */
 
-import { loadAIConfig, saveAIConfig, type AIConfig } from '../../config/ai-config.js';
+import type { AIConfig } from '../../config/ai-config.js';
 import { useAppStore } from '../stores/app-store.js';
+import { getTRPCClient } from '../../server/trpc/client.js';
 
 export function useAIConfig() {
   const setAIConfig = useAppStore((state) => state.setAIConfig);
@@ -14,9 +15,11 @@ export function useAIConfig() {
   const loadConfig = async (cwd: string = process.cwd()) => {
     setLoading(true);
     try {
-      const result = await loadAIConfig(cwd);
-      if (result._tag === 'Success') {
-        setAIConfig(result.value);
+      const client = await getTRPCClient();
+      const result = await client.config.load({ cwd });
+
+      if (result.success) {
+        setAIConfig(result.config);
       } else {
         // No config yet, start with empty
         setAIConfig({ providers: {} });
@@ -31,12 +34,14 @@ export function useAIConfig() {
   const saveConfig = async (config: AIConfig, cwd: string = process.cwd()) => {
     setLoading(true);
     try {
-      const result = await saveAIConfig(config, cwd);
-      if (result._tag === 'Success') {
+      const client = await getTRPCClient();
+      const result = await client.config.save({ config, cwd });
+
+      if (result.success) {
         setAIConfig(config);
         return true;
       }
-      setError(result.error.message);
+      setError(result.error || 'Failed to save AI config');
       return false;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save AI config');

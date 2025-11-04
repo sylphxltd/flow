@@ -1,10 +1,10 @@
 /**
  * Input State Hook
- * Manages input text, cursor position, and message history navigation
+ * Manages input field state including message history
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { getSessionRepository } from '../../../../db/database.js';
+import { getTRPCClient } from '../../../../server/trpc/client.js';
 
 export interface InputState {
   input: string;
@@ -27,12 +27,12 @@ export function useInputState(): InputState {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempInput, setTempInput] = useState('');
 
-  // Load message history from database on mount
+  // Load message history via tRPC on mount (backend handles database access)
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const repo = await getSessionRepository();
-        const history = await repo.getRecentUserMessages(100);
+        const client = await getTRPCClient();
+        const history = await client.message.getRecentUserMessages({ limit: 100 });
         // Reverse to get oldest-first order (for bash-like navigation)
         setMessageHistory(history.reverse());
       } catch (error) {
@@ -42,7 +42,6 @@ export function useInputState(): InputState {
     loadHistory();
   }, []); // Only load once on mount
 
-  // Normalize cursor to valid range
   const normalizedCursor = useMemo(
     () => Math.max(0, Math.min(cursor, input.length)),
     [cursor, input.length]
