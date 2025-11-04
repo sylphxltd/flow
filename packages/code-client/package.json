@@ -17,7 +17,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
+    "build": "tsc",
     "dev": "bun --watch src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
