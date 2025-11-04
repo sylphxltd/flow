@@ -72,45 +72,26 @@ export default function Chat({ commandFromPalette }: ChatProps) {
   // Normalize cursor to valid range (防禦性：確保 cursor 始終在有效範圍內)
   const normalizedCursor = Math.max(0, Math.min(cursor, input.length));
 
-  // Get sessions from store (needed for message history)
-  const sessions = useAppStore((state) => state.sessions);
-
   // Message history (like bash command history)
-  // Extract from all user messages across all sessions
-  const messageHistory = useMemo(() => {
-    const allUserMessages = sessions.flatMap(session =>
-      session.messages
-        .filter(msg => msg.role === 'user')
-        .map(msg => {
-          // Extract text content from message parts
-          if (Array.isArray(msg.content)) {
-            return msg.content
-              .filter(part => part.type === 'text')
-              .map(part => part.content)
-              .join(' ')
-              .trim();
-          }
-          return typeof msg.content === 'string' ? msg.content : '';
-        })
-        .filter(text => text.length > 0)
-        .map(text => ({ text, timestamp: msg.timestamp }))
-    );
-
-    // Sort by timestamp and get unique messages
-    const sorted = allUserMessages
-      .sort((a, b) => a.timestamp - b.timestamp)
-      .map(item => item.text);
-
-    // Remove consecutive duplicates and keep last 100
-    const unique = sorted.filter((msg, idx) =>
-      idx === 0 || msg !== sorted[idx - 1]
-    );
-
-    return unique.slice(-100);
-  }, [sessions]);
-
+  // Loaded from database on mount and refreshed after sending messages
+  const [messageHistory, setMessageHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1); // -1 means not browsing history
   const [tempInput, setTempInput] = useState(''); // Store current input when browsing history
+
+  // Load message history from database on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const repo = await getSessionRepository();
+        const history = await repo.getRecentUserMessages(100);
+        // Reverse to get oldest-first order (for bash-like navigation)
+        setMessageHistory(history.reverse());
+      } catch (error) {
+        console.error('Failed to load message history:', error);
+      }
+    };
+    loadHistory();
+  }, []); // Only load once on mount
 
   // Streaming state
   const [isStreaming, setIsStreaming] = useState(false); // Message streaming active
@@ -1324,6 +1305,20 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
     // Regular message - send to AI using shared helper
     await sendUserMessageToAI(userMessage, attachmentsForMessage);
+
+    // Add to message history (append since we store oldest-first)
+    setMessageHistory(prev => {
+      // Don't add if it's the same as the last entry (most recent)
+      if (prev.length > 0 && prev[prev.length - 1] === userMessage) {
+        return prev;
+      }
+      // Append new message and keep last 100
+      const newHistory = [...prev, userMessage];
+      if (newHistory.length > 100) {
+        return newHistory.slice(-100); // Keep most recent 100
+      }
+      return newHistory;
+    });
   }, [
     isStreaming,
     pendingInput,

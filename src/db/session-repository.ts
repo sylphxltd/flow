@@ -667,4 +667,67 @@ export class SessionRepository {
       });
     });
   }
+
+  /**
+   * Get recent user messages for command history
+   * Returns last N user messages across all sessions (most recent first)
+   */
+  async getRecentUserMessages(limit = 100): Promise<string[]> {
+    return retryOnBusy(async () => {
+      // Query user messages ordered by timestamp DESC
+      const userMessages = await this.db
+        .select({
+          messageId: messages.id,
+          timestamp: messages.timestamp,
+        })
+        .from(messages)
+        .where(eq(messages.role, 'user'))
+        .orderBy(desc(messages.timestamp))
+        .limit(limit);
+
+      if (userMessages.length === 0) {
+        return [];
+      }
+
+      // Get text parts for these messages
+      const messageIds = userMessages.map(m => m.messageId);
+      const parts = await this.db
+        .select()
+        .from(messageParts)
+        .where(
+          and(
+            inArray(messageParts.messageId, messageIds),
+            eq(messageParts.type, 'text')
+          )
+        )
+        .orderBy(messageParts.ordering);
+
+      // Group parts by message and extract text content
+      const messageTexts = new Map<string, string[]>();
+      for (const part of parts) {
+        const content = JSON.parse(part.content);
+        const text = content.content || '';
+        if (text.trim()) {
+          if (!messageTexts.has(part.messageId)) {
+            messageTexts.set(part.messageId, []);
+          }
+          messageTexts.get(part.messageId)!.push(text);
+        }
+      }
+
+      // Build result in timestamp order (most recent first)
+      const result: string[] = [];
+      for (const msg of userMessages) {
+        const texts = messageTexts.get(msg.messageId);
+        if (texts && texts.length > 0) {
+          const fullText = texts.join(' ').trim();
+          if (fullText) {
+            result.push(fullText);
+          }
+        }
+      }
+
+      return result;
+    });
+  }
 }
