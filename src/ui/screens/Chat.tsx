@@ -1439,8 +1439,8 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 <>
                   {/* Message header in Static - ensures proper scrolling */}
                   <Static items={[activeMessage]}>
-                    {() => (
-                      <Box paddingX={1} paddingTop={1}>
+                    {(msg) => (
+                      <Box key={`active-header-${msg.timestamp}`} paddingX={1} paddingTop={1}>
                         <Text color="#00FF88">▌ SYLPHX</Text>
                       </Box>
                     )}
