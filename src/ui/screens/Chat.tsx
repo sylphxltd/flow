@@ -1334,9 +1334,19 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               return completedMessages.length > 0 && (
                 <Static items={completedMessages}>
-                  {(msg, i) => (
-                    <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
-                      {msg.role === 'user' ? (
+                  {(msg, i) => {
+                    console.log(`[Static Render] Rendering message ${i}:`, {
+                      role: msg.role,
+                      status: msg.status,
+                      contentType: typeof msg.content,
+                      isArray: Array.isArray(msg.content),
+                      contentLength: msg.content?.length,
+                      content: msg.content
+                    });
+
+                    return (
+                      <Box key={`msg-${msg.timestamp}-${i}`} paddingX={1} paddingTop={1} flexDirection="column">
+                        {msg.role === 'user' ? (
                         <>
                           <Box>
                             <Text color="#00D9FF">▌ YOU</Text>
@@ -1401,8 +1411,9 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                           )}
                         </>
                       )}
-                    </Box>
-                  )}
+                      </Box>
+                    );
+                  }}
                 </Static>
               );
             })()}
