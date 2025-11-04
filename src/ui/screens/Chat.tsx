@@ -1349,44 +1349,48 @@ export default function Chat({ commandFromPalette }: ChatProps) {
              */}
             {currentSession.messages.map((msg, msgIdx) => {
               if (msg.role === 'user') {
-                // USER MESSAGE: Simple static rendering
+                // USER MESSAGE: Entire message in Static (never changes)
                 return (
-                  <Box key={`msg-${msg.timestamp}-${msgIdx}`} paddingTop={1} flexDirection="column">
-                    <Box paddingX={1}>
-                      <Text color="#00D9FF">▌ YOU</Text>
-                    </Box>
-                    {/* Render content parts */}
-                    {msg.content && Array.isArray(msg.content) ? (
-                      msg.content.map((part, idx) => (
-                        <StreamingPartWrapper
-                          key={`msg-${msg.timestamp}-part-${idx}`}
-                          part={part}
-                        />
-                      ))
-                    ) : (
-                      <Box marginLeft={2}>
-                        <Text>{String(msg.content || '')}</Text>
+                  <Static key={`msg-${msg.timestamp}-${msgIdx}`} items={[msg]}>
+                    {(m) => (
+                      <Box key={`user-${m.timestamp}`} paddingTop={1} flexDirection="column">
+                        <Box paddingX={1}>
+                          <Text color="#00D9FF">▌ YOU</Text>
+                        </Box>
+                        {/* Render content parts */}
+                        {m.content && Array.isArray(m.content) ? (
+                          m.content.map((part, idx) => (
+                            <StreamingPartWrapper
+                              key={`msg-${m.timestamp}-part-${idx}`}
+                              part={part}
+                            />
+                          ))
+                        ) : (
+                          <Box marginLeft={2}>
+                            <Text>{String(m.content || '')}</Text>
+                          </Box>
+                        )}
+                        {/* Display attachments if any */}
+                        {m.attachments && m.attachments.length > 0 ? (
+                          <Box flexDirection="column" marginTop={1}>
+                            {m.attachments.map((att, attIdx) => (
+                              <Box key={`msg-${m.timestamp}-att-${att.path}`} marginLeft={2}>
+                                <Text dimColor>Attached(</Text>
+                                <Text color="#00D9FF">{att.relativePath}</Text>
+                                <Text dimColor>)</Text>
+                                {attachmentTokens.has(att.path) && (
+                                  <>
+                                    <Text dimColor> </Text>
+                                    <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
+                                  </>
+                                )}
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : null}
                       </Box>
                     )}
-                    {/* Display attachments if any */}
-                    {msg.attachments && msg.attachments.length > 0 ? (
-                      <Box flexDirection="column" marginTop={1}>
-                        {msg.attachments.map((att, attIdx) => (
-                          <Box key={`msg-${msg.timestamp}-att-${att.path}`} marginLeft={2}>
-                            <Text dimColor>Attached(</Text>
-                            <Text color="#00D9FF">{att.relativePath}</Text>
-                            <Text dimColor>)</Text>
-                            {attachmentTokens.has(att.path) && (
-                              <>
-                                <Text dimColor> </Text>
-                                <Text dimColor>{formatTokenCount(attachmentTokens.get(att.path)!)} Tokens</Text>
-                              </>
-                            )}
-                          </Box>
-                        ))}
-                      </Box>
-                    ) : null}
-                  </Box>
+                  </Static>
                 );
               } else {
                 // ASSISTANT MESSAGE: Part-based rendering (active OR completed)
@@ -1481,25 +1485,34 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                       </Box>
                     ) : null}
 
-                    {/* Show status badge after all parts (only for completed messages) */}
-                    {msg.status === 'abort' && (
-                      <Box marginLeft={2} marginBottom={1}>
-                        <Text color="#FFD700">[Aborted]</Text>
-                      </Box>
-                    )}
-                    {msg.status === 'error' && (
-                      <Box marginLeft={2} marginBottom={1}>
-                        <Text color="#FF3366">[Error]</Text>
-                      </Box>
-                    )}
+                    {/* Footer (status badges + usage) - Static when message completed */}
+                    {msg.status !== 'active' && (msg.status === 'abort' || msg.status === 'error' || msg.usage) && (
+                      <Static items={[msg]}>
+                        {(m) => (
+                          <Box key={`footer-${m.timestamp}`}>
+                            {/* Show status badge after all parts */}
+                            {m.status === 'abort' && (
+                              <Box marginLeft={2} marginBottom={1}>
+                                <Text color="#FFD700">[Aborted]</Text>
+                              </Box>
+                            )}
+                            {m.status === 'error' && (
+                              <Box marginLeft={2} marginBottom={1}>
+                                <Text color="#FF3366">[Error]</Text>
+                              </Box>
+                            )}
 
-                    {/* Show usage if available (only for completed messages) */}
-                    {msg.usage && msg.status !== 'active' && (
-                      <Box marginLeft={2}>
-                        <Text dimColor>
-                          {msg.usage.promptTokens.toLocaleString()} → {msg.usage.completionTokens.toLocaleString()}
-                        </Text>
-                      </Box>
+                            {/* Show usage if available */}
+                            {m.usage && (
+                              <Box marginLeft={2}>
+                                <Text dimColor>
+                                  {m.usage.promptTokens.toLocaleString()} → {m.usage.completionTokens.toLocaleString()}
+                                </Text>
+                              </Box>
+                            )}
+                          </Box>
+                        )}
+                      </Static>
                     )}
                   </Box>
                 );
