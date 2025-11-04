@@ -3,8 +3,8 @@
  * Pure functions operating on immutable data
  */
 
-import type { Option } from '../core/functional/option.js';
-import { none, some } from '../core/functional/option.js';
+import type { Option } from '../ai/functional/option.js';
+import { none, some } from '../ai/functional/option.js';
 import { claudeCodeTarget } from '../targets/claude-code.js';
 import { opencodeTarget } from '../targets/opencode.js';
 import type { Target } from '../types.js';

@@ -6,7 +6,7 @@ import { openai } from '@ai-sdk/openai';
 import type { LanguageModelV1 } from 'ai';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
 
-import { getModelMetadata } from '../utils/models-dev.js';
+import { getModelMetadata } from '../../utils/models-dev.js';
 
 const OPENAI_MODELS: ModelInfo[] = [
   { id: 'gpt-4o', name: 'GPT-4o' },

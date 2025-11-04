@@ -5,7 +5,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { type Result, success, tryCatchAsync } from '../core/functional/result.js';
+import { type Result, success, tryCatchAsync } from '../ai/functional/result.js';
 
 export interface ProjectSettings {
   /** Default target for the project */

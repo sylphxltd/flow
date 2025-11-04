@@ -13,8 +13,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { z } from 'zod';
-import { type Result, success, tryCatchAsync } from '../core/functional/result.js';
-import { getAllProviders } from '../providers/index.js';
+import { type Result, success, tryCatchAsync } from '../ai/functional/result.js';
+import { getAllProviders } from '../ai/providers/index.js';
 import type { ProviderId, ProviderConfigValue as ProviderConfigValueType } from '../types/provider.types.js';
 
 // Re-export types for backward compatibility
@@ -220,7 +220,7 @@ export const saveAIConfig = async (
       const configToSave = { ...config };
       if (!configToSave.defaultProvider && configToSave.providers) {
         // Get configured providers (those that pass isConfigured check)
-        const { getProvider } = await import('../providers/index.js');
+        const { getProvider } = await import('../ai/providers/index.js');
         const configuredProviders: ProviderId[] = [];
 
         for (const [providerId, providerConfig] of Object.entries(configToSave.providers)) {
@@ -324,7 +324,7 @@ export const getConfiguredProviders = async (
   }
 
   // Dynamically import provider registry to avoid circular dependency
-  const { getProvider } = await import('../providers/index.js');
+  const { getProvider } = await import('../ai/providers/index.js');
 
   for (const [providerId, providerConfig] of Object.entries(config.providers)) {
     try {

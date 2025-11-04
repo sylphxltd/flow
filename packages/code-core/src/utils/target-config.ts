@@ -7,7 +7,7 @@ import {
   MCP_SERVER_REGISTRY,
   type MCPServerID,
 } from '../config/servers.js';
-import { targetManager } from '../core/target-manager.js';
+import { targetManager } from '../ai/target-manager.js';
 import { resolveConfig } from '../services/mcp-service.js';
 import { deleteNestedProperty, getNestedProperty, setNestedProperty } from './object-utils.js';
 import { secretUtils } from './secret-utils.js';

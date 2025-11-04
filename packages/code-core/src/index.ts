@@ -51,11 +51,14 @@ export type * from './types/common.types.js'
 // ============================================================================
 export { buildTodoContext } from './utils/todo-context.js'
 export { generateSessionTitleWithStreaming } from './utils/session-title.js'
+export { formatTodoChange, formatTodoCount } from './utils/todo-formatters.js'
 
 // ============================================================================
 // Tools
 // ============================================================================
 export { default as tools } from './tools/index.js'
+export { getAISDKTools, getToolCategories, getAllToolNames, type GetToolsOptions } from './tools/registry.js'
+export { createTodoTool, type TodoToolContext } from './tools/todo.js'
 
 // ============================================================================
 // Version

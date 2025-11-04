@@ -6,7 +6,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import type { LanguageModelV1 } from 'ai';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
 
-import { getModelMetadata } from '../utils/models-dev.js';
+import { getModelMetadata } from '../../utils/models-dev.js';
 
 const ANTHROPIC_MODELS: ModelInfo[] = [
   { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Latest)' },

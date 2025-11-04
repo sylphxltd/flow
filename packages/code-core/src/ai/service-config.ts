@@ -2,7 +2,7 @@
  * Service configuration and registration for DI container
  */
 
-import { targetManager } from '../core/target-manager.js';
+import { targetManager } from '../ai/target-manager.js';
 import { MemoryDatabaseClient } from '../db/memory-db.js';
 import { createMCPService } from '../services/mcp-service.js';
 import { getDefaultEmbeddingProvider } from '../services/search/embeddings.js';

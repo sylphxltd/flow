@@ -7,7 +7,7 @@ import { google } from '@ai-sdk/google';
 import type { LanguageModelV1 } from 'ai';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
 
-import { getModelMetadata } from '../utils/models-dev.js';
+import { getModelMetadata } from '../../utils/models-dev.js';
 
 const GOOGLE_MODELS: ModelInfo[] = [
   { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash (Experimental)' },

@@ -9,7 +9,7 @@ import {
   getTargetsWithMCPSupport,
   isTargetImplemented,
 } from '../config/targets.js';
-import { getOrElse, isSome } from '../core/functional/option.js';
+import { getOrElse, isSome } from '../ai/functional/option.js';
 import { projectSettings } from '../utils/settings.js';
 
 /**

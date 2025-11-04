@@ -3,17 +3,17 @@
  * Re-exports pure functions from feature and adds streaming functionality
  */
 
-import { createAIStream } from '../core/ai-sdk.js';
+import { createAIStream } from '../ai/ai-sdk.js';
 import type { ProviderId } from '../types/config.types.js';
 
-// Re-export pure functions from feature
+// Re-export pure functions from session feature
 export {
   generateSessionTitle,
   formatSessionDisplay,
   formatRelativeTime,
   cleanTitle,
   truncateTitle,
-} from '../features/session/utils/title.js';
+} from '../session/utils/title.js';
 
 /**
  * Generate a session title using LLM with streaming
@@ -31,7 +31,7 @@ export async function generateSessionTitleWithStreaming(
 
   try {
     // Get the provider instance and create the model
-    const { getProvider } = await import('../providers/index.js');
+    const { getProvider } = await import('../ai/providers/index.js');
     const providerInstance = getProvider(provider);
     const model = providerInstance.createClient(providerConfig, modelName);
 
