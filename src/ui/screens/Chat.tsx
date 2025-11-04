@@ -855,6 +855,23 @@ export default function Chat({ commandFromPalette }: ChatProps) {
             const finalStatus = wasAborted ? 'abort' : hasError ? 'error' : 'completed';
             if (streamingMessageIdRef.current) {
               try {
+                // If aborted, mark all active parts as 'abort' in database
+                if (wasAborted) {
+                  const state = useAppStore.getState();
+                  const session = state.sessions.find((s) => s.id === currentSessionId);
+                  if (session) {
+                    const activeMessage = [...session.messages]
+                      .reverse()
+                      .find((m) => m.role === 'assistant' && m.status === 'active');
+                    if (activeMessage) {
+                      const updatedParts = activeMessage.content.map(part =>
+                        part.status === 'active' ? { ...part, status: 'abort' as const } : part
+                      );
+                      await repo.updateMessageParts(streamingMessageIdRef.current, updatedParts);
+                    }
+                  }
+                }
+
                 await repo.updateMessageStatus(streamingMessageIdRef.current, finalStatus);
               } catch (error) {
                 if (process.env.DEBUG) {
@@ -877,6 +894,13 @@ export default function Chat({ commandFromPalette }: ChatProps) {
 
               if (!activeMessage) return;
 
+              // If aborted, mark all active parts as 'abort'
+              if (wasAborted) {
+                activeMessage.content = activeMessage.content.map(part =>
+                  part.status === 'active' ? { ...part, status: 'abort' as const } : part
+                );
+              }
+
               // Update message status and metadata using immer-style mutation
               activeMessage.status = finalStatus;
               if (usageRef.current) {
@@ -886,6 +910,12 @@ export default function Chat({ commandFromPalette }: ChatProps) {
                 activeMessage.finishReason = finishReasonRef.current;
               }
             });
+
+            // If aborted, add a user message to record the abort action
+            // This tells the LLM that the previous response was cancelled by the user
+            if (wasAborted && currentSessionId) {
+              addMessage(currentSessionId, 'user', '[Aborted]');
+            }
           } catch (error) {
             // Critical error in onComplete - log but don't throw
             if (process.env.DEBUG) {
