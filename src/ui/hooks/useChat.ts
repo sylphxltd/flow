@@ -159,6 +159,8 @@ export function useChat() {
     onReasoningEnd?: (duration: number) => void;
 
     // Text streaming callbacks
+    onTextStart?: () => void;
+    onTextDelta?: (text: string) => void;
     onTextEnd?: () => void;
 
     // User interaction
@@ -187,6 +189,8 @@ export function useChat() {
       onReasoningStart,
       onReasoningDelta,
       onReasoningEnd,
+      onTextStart,
+      onTextDelta,
       onTextEnd,
       onUserInputRequest,
     } = options;
@@ -501,11 +505,12 @@ export function useChat() {
       const { fullResponse, messageParts, usage, finishReason } = await processStream(stream, {
         onTextStart: () => {
           addDebugLog(`[useChat] text-start`);
-          // Text generation started - could show typing indicator
+          onTextStart?.();
         },
         onTextDelta: (text) => {
           addDebugLog(`[useChat] text-delta: ${text.substring(0, 50)}`);
-          onChunk(text);
+          onTextDelta?.(text);
+          onChunk(text);  // Legacy: onChunk for backward compatibility
         },
         onTextEnd: () => {
           addDebugLog(`[useChat] text-end`);
