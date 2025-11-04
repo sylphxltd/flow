@@ -9,11 +9,11 @@
  */
 
 import { renderTextWithTags } from '@sylphx/code-client';
-import * as Cursor from '@sylphx/code-core';
-import * as Wrapping from '@sylphx/code-core';
-import * as TextOps from '@sylphx/code-core';
 import { Box, Text, useInput, useStdout } from 'ink';
 import React, { useCallback, useRef } from 'react';
+import * as Cursor from '../utils/cursor-ops.js';
+import * as TextOps from '../utils/text-ops.js';
+import * as Wrapping from '../utils/wrapping-ops.js';
 
 export interface ControlledTextInputProps {
   value: string;
@@ -28,8 +28,6 @@ export interface ControlledTextInputProps {
   maxLines?: number; // Maximum lines to display (default: 10)
   disableUpDownArrows?: boolean; // Disable up/down arrow navigation (for autocomplete)
 }
-
-// Helpers now imported from features/input/utils/*
 
 function ControlledTextInput({
   value,
