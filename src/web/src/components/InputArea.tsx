@@ -10,6 +10,9 @@ import { trpc } from '../trpc';
 interface InputAreaProps {
   sessionId: string;
   toast: any;
+  onMessageSent?: (message: string) => void;
+  onStreamingUpdate?: (text: string) => void;
+  onStreamingComplete?: () => void;
 }
 
 interface FileAttachment {
@@ -25,7 +28,13 @@ interface StreamRequest {
   key: number; // Used to trigger new subscription
 }
 
-export default function InputArea({ sessionId, toast }: InputAreaProps) {
+export default function InputArea({
+  sessionId,
+  toast,
+  onMessageSent,
+  onStreamingUpdate,
+  onStreamingComplete,
+}: InputAreaProps) {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [streamRequest, setStreamRequest] = useState<StreamRequest | null>(null);
@@ -57,7 +66,11 @@ export default function InputArea({ sessionId, toast }: InputAreaProps) {
             break;
 
           case 'text-delta':
-            setStreamingText((prev) => prev + event.text);
+            setStreamingText((prev) => {
+              const newText = prev + event.text;
+              onStreamingUpdate?.(newText);
+              return newText;
+            });
             break;
 
           case 'text-end':
@@ -69,6 +82,7 @@ export default function InputArea({ sessionId, toast }: InputAreaProps) {
             console.log('Streaming complete!', event.usage);
             setStreamRequest(null);
             setStreamingText('');
+            onStreamingComplete?.();
             // Refetch session
             utils.session.getById.invalidate({ sessionId });
             break;
@@ -78,6 +92,7 @@ export default function InputArea({ sessionId, toast }: InputAreaProps) {
             toast.error(event.error);
             setStreamRequest(null);
             setStreamingText('');
+            onStreamingComplete?.();
             break;
         }
       },
@@ -86,6 +101,7 @@ export default function InputArea({ sessionId, toast }: InputAreaProps) {
         toast.error(`Subscription error: ${err.message || String(err)}`);
         setStreamRequest(null);
         setStreamingText('');
+        onStreamingComplete?.();
       },
     }
   );
@@ -105,6 +121,9 @@ export default function InputArea({ sessionId, toast }: InputAreaProps) {
     const messageAttachments = attachments;
     setAttachments([]);
     setStreamingText('');
+
+    // Notify parent of message sent (for optimistic UI)
+    onMessageSent?.(trimmedInput);
 
     // Start streaming by setting stream request
     const request = {
@@ -163,16 +182,6 @@ export default function InputArea({ sessionId, toast }: InputAreaProps) {
 
   return (
     <div className="px-8 py-6 bg-gray-900/30 backdrop-blur-sm">
-      {/* Streaming preview */}
-      {streamingText && (
-        <div className="mb-4 p-4 bg-gray-800/50 rounded-xl max-w-4xl mx-auto">
-          <div className="text-xs text-gray-500 mb-2">Assistant is typing...</div>
-          <div className="text-gray-200 whitespace-pre-wrap">
-            {streamingText}
-          </div>
-        </div>
-      )}
-
       {/* Input area */}
       <div className="max-w-4xl mx-auto">
         {/* File attachments */}

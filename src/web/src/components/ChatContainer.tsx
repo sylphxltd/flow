@@ -3,6 +3,7 @@
  * Full-screen, borderless design
  */
 
+import { useState } from 'react';
 import { trpc } from '../trpc';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
@@ -13,6 +14,9 @@ interface ChatContainerProps {
 }
 
 export default function ChatContainer({ sessionId, toast }: ChatContainerProps) {
+  const [optimisticUserMessage, setOptimisticUserMessage] = useState<string | null>(null);
+  const [streamingAssistantMessage, setStreamingAssistantMessage] = useState<string>('');
+
   // Load session data
   const { data: session, isLoading } = trpc.session.getById.useQuery(
     { sessionId: sessionId! },
@@ -66,10 +70,28 @@ export default function ChatContainer({ sessionId, toast }: ChatContainerProps) 
       </div>
 
       {/* Messages */}
-      <MessageList messages={session.messages} />
+      <MessageList
+        messages={session.messages}
+        optimisticUserMessage={optimisticUserMessage}
+        streamingAssistantMessage={streamingAssistantMessage}
+      />
 
       {/* Input */}
-      <InputArea sessionId={sessionId} toast={toast} />
+      <InputArea
+        sessionId={sessionId}
+        toast={toast}
+        onMessageSent={(message) => {
+          setOptimisticUserMessage(message);
+          setStreamingAssistantMessage('');
+        }}
+        onStreamingUpdate={(text) => {
+          setStreamingAssistantMessage(text);
+        }}
+        onStreamingComplete={() => {
+          setOptimisticUserMessage(null);
+          setStreamingAssistantMessage('');
+        }}
+      />
     </div>
   );
 }
