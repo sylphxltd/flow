@@ -16,9 +16,14 @@ export const providerProtoCommand: Command = {
   args: [],
 
   execute: async (context) => {
-    // Return special marker to trigger settings mode
-    // The command handler in Chat.tsx will detect this and call setSettingsMode
-    return '__SETTINGS_MODE__:provider-selection:use';
+    // Directly trigger settings mode - command has full control
+    context.setSettingsMode({
+      type: 'provider-selection',
+      action: 'use',
+      step: 'select-provider',
+    });
+
+    context.addLog('[provider2] Settings mode activated');
   },
 };
 

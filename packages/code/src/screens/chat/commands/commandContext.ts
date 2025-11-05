@@ -6,6 +6,7 @@
 import type { Session } from '@sylphx/code-client';
 import type { AIConfig, ProviderId } from '../../../../config/ai-config.js';
 import type { Command, CommandContext, WaitForInputOptions } from '../../../commands/types.js';
+import type { SettingsMode } from '../types/settings-mode.js';
 
 /**
  * Parameters needed to create command context
@@ -72,6 +73,7 @@ export interface CommandContextParams {
   setSelectedCommandIndex: (index: number) => void;
   setSelectionFilter: (filter: string) => void;
   setIsFilterMode: (isFilterMode: boolean) => void;
+  setSettingsMode: (mode: SettingsMode) => void;
 
   // Refs
   inputResolver: React.MutableRefObject<
@@ -123,6 +125,7 @@ export function createCommandContext(args: string[], params: CommandContextParam
     setSelectedCommandIndex,
     setSelectionFilter,
     setIsFilterMode,
+    setSettingsMode,
     inputResolver,
     commandSessionRef,
     currentSessionId,
@@ -229,5 +232,6 @@ export function createCommandContext(args: string[], params: CommandContextParam
     updateNotificationSettings: (settings) => updateNotificationSettings(settings),
     updateOutput: (content) => addLog(content),
     getCommands: () => getCommands(),
+    setSettingsMode: (mode) => setSettingsMode(mode),
   };
 }

@@ -5,6 +5,7 @@
 
 import type { Session } from '@sylphx/code-client';
 import type { AIConfig, ProviderId } from '@sylphx/code-core';
+import type { SettingsMode } from '../screens/chat/types/settings-mode.js';
 
 /**
  * Option for selection
@@ -147,6 +148,9 @@ export interface CommandContext {
 
   // Update output for commands that display information
   updateOutput: (content: string) => void;
+
+  // Settings mode - replace input area with interactive component
+  setSettingsMode: (mode: SettingsMode) => void;
 }
 
 /**
