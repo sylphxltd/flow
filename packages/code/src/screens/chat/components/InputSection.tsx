@@ -281,6 +281,8 @@ export function InputSection({
           ) : null}
         </>
       )}
+      </>
+      )}
     </Box>
   );
 }

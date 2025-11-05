@@ -209,25 +209,47 @@ export function ProviderManagement({
   // Render: Step 1 - Select action
   if (step === 'select-action') {
     const actions = [
-      { id: 'use', name: 'Use a provider' },
-      { id: 'configure', name: 'Configure a provider' },
+      {
+        id: 'use',
+        name: 'Use a provider',
+        description: 'Switch to a different AI provider'
+      },
+      {
+        id: 'configure',
+        name: 'Configure a provider',
+        description: 'Set up API keys and settings'
+      },
     ];
 
     return (
       <Box flexDirection="column">
+        {/* Subtitle */}
+        <Box marginBottom={1}>
+          <Text dimColor>Manage your AI provider settings</Text>
+        </Box>
+
+        {/* Options */}
         {actions.map((action, idx) => {
           const isSelected = idx === selectedIndex;
 
           return (
-            <Box key={action.id}>
-              <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
-                {isSelected ? '> ' : '  '}
-                {action.name}
-              </Text>
+            <Box key={action.id} flexDirection="column" marginBottom={1}>
+              <Box>
+                <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
+                  {isSelected ? '> ' : '  '}
+                  {action.name}
+                </Text>
+              </Box>
+              {action.description && (
+                <Box marginLeft={3}>
+                  <Text dimColor>{action.description}</Text>
+                </Box>
+              )}
             </Box>
           );
         })}
 
+        {/* Help */}
         <Box marginTop={1}>
           <Text dimColor>↑↓: Navigate  |  Enter: Select  |  Esc: Cancel</Text>
         </Box>
@@ -239,11 +261,21 @@ export function ProviderManagement({
   if (step === 'select-provider') {
     return (
       <Box flexDirection="column">
+        {/* Subtitle */}
+        <Box marginBottom={1}>
+          <Text dimColor>
+            {action === 'use'
+              ? 'Choose which provider to use for new conversations'
+              : 'Select a provider to configure'}
+          </Text>
+        </Box>
+
+        {/* Providers */}
         {providerOptions.map((provider, idx) => {
           const isSelected = idx === selectedIndex;
 
           return (
-            <Box key={provider.id}>
+            <Box key={provider.id} marginBottom={idx < providerOptions.length - 1 ? 1 : 0}>
               <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
                 {isSelected ? '> ' : '  '}
                 {provider.name}
@@ -253,6 +285,7 @@ export function ProviderManagement({
           );
         })}
 
+        {/* Help */}
         <Box marginTop={1}>
           <Text dimColor>↑↓: Navigate  |  Enter: Select  |  Esc: Cancel</Text>
         </Box>
@@ -262,68 +295,79 @@ export function ProviderManagement({
 
   // Render: Step 3 - Configure provider
   if (step === 'configure-provider' && selectedProvider) {
+    const providerName = providerOptions.find((p) => p.id === selectedProvider)?.name || selectedProvider;
+
     return (
       <Box flexDirection="column">
+        {/* Subtitle */}
+        <Box marginBottom={1}>
+          <Text dimColor>Enter your {providerName} credentials</Text>
+        </Box>
 
-        {configSchema.map((field, idx) => {
-          const isSelected = idx === currentFieldIndex && !editingField;
-          const value = formValues[field.key];
-          const isEmpty = field.type === 'string' && !value;
+        {/* Fields */}
+        <Box flexDirection="column" marginBottom={1}>
+          {configSchema.map((field, idx) => {
+            const isSelected = idx === currentFieldIndex && !editingField;
+            const value = formValues[field.key];
+            const isEmpty = field.type === 'string' && !value;
 
-          return (
-            <Box key={field.key} flexDirection="column" marginBottom={1}>
-              <Box>
-                <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
-                  {isSelected ? '> ' : '  '}
-                  {field.label}
-                  {field.required && <Text color="red"> *</Text>}
-                </Text>
-              </Box>
-
-              {field.description && (
-                <Box marginLeft={3}>
-                  <Text dimColor>{field.description}</Text>
+            return (
+              <Box key={field.key} flexDirection="column" marginBottom={1}>
+                <Box>
+                  <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
+                    {isSelected ? '> ' : '  '}
+                    {field.label}
+                    {field.required && <Text color="red"> *</Text>}
+                  </Text>
                 </Box>
-              )}
 
-              <Box marginLeft={3}>
-                {field.type === 'boolean' ? (
-                  <Text color={isSelected ? 'cyan' : 'gray'}>
-                    [{value ? 'X' : ' '}] {value ? 'Enabled' : 'Disabled'}
-                  </Text>
-                ) : editingField && idx === currentFieldIndex ? (
-                  <TextInputWithHint
-                    value={tempStringValue}
-                    onChange={setTempStringValue}
-                    onSubmit={(val) => {
-                      const finalValue = field.type === 'number' ? Number(val) : val;
-                      setFormValues((prev) => ({
-                        ...prev,
-                        [field.key]: finalValue,
-                      }));
-                      setEditingField(false);
-                      setTempStringValue('');
-                    }}
-                    placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
-                    showCursor
-                  />
-                ) : (
-                  <Text color={isEmpty ? 'gray' : isSelected ? 'cyan' : 'white'}>
-                    {field.secret && value ? '•'.repeat(String(value).length) : value || '(empty)'}
-                  </Text>
+                {field.description && (
+                  <Box marginLeft={3}>
+                    <Text dimColor>{field.description}</Text>
+                  </Box>
                 )}
-              </Box>
-            </Box>
-          );
-        })}
 
-        <Box marginTop={1}>
+                <Box marginLeft={3}>
+                  {field.type === 'boolean' ? (
+                    <Text color={isSelected ? 'cyan' : 'gray'}>
+                      [{value ? 'X' : ' '}] {value ? 'Enabled' : 'Disabled'}
+                    </Text>
+                  ) : editingField && idx === currentFieldIndex ? (
+                    <TextInputWithHint
+                      value={tempStringValue}
+                      onChange={setTempStringValue}
+                      onSubmit={(val) => {
+                        const finalValue = field.type === 'number' ? Number(val) : val;
+                        setFormValues((prev) => ({
+                          ...prev,
+                          [field.key]: finalValue,
+                        }));
+                        setEditingField(false);
+                        setTempStringValue('');
+                      }}
+                      placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
+                      showCursor
+                    />
+                  ) : (
+                    <Text color={isEmpty ? 'gray' : isSelected ? 'cyan' : 'white'}>
+                      {field.secret && value ? '•'.repeat(String(value).length) : value || '(empty)'}
+                    </Text>
+                  )}
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+
+        {/* Save Button */}
+        <Box marginBottom={1}>
           <Text bold color={currentFieldIndex === configSchema.length ? 'green' : 'white'}>
             {currentFieldIndex === configSchema.length ? '> ' : '  '}
             Save Configuration
           </Text>
         </Box>
 
+        {/* Help */}
         <Box marginTop={1}>
           <Text dimColor>
             {editingField
