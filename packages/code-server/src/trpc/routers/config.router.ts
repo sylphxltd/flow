@@ -2,12 +2,12 @@
  * Config Router
  * Backend-only configuration management (file system access)
  * REACTIVE: Emits events for all state changes
- * SECURITY: Protected mutations (OWASP API2)
+ * SECURITY: Protected mutations (OWASP API2) + Rate limiting (OWASP API4)
  */
 
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
-import { router, publicProcedure, protectedProcedure } from '../trpc.js';
+import { router, publicProcedure, moderateProcedure } from '../trpc.js';
 import { loadAIConfig, saveAIConfig, getAIConfigPaths, getProvider } from '@sylphx/code-core';
 import type { AIConfig, ProviderId } from '@sylphx/code-core';
 import { eventBus } from '../../services/event-bus.service.js';
@@ -115,9 +115,9 @@ export const configRouter = router({
   /**
    * Update default provider
    * REACTIVE: Emits config:default-provider-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateDefaultProvider: protectedProcedure
+  updateDefaultProvider: moderateProcedure
     .input(
       z.object({
         provider: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']),
@@ -146,9 +146,9 @@ export const configRouter = router({
   /**
    * Update default model
    * REACTIVE: Emits config:default-model-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateDefaultModel: protectedProcedure
+  updateDefaultModel: moderateProcedure
     .input(
       z.object({
         model: z.string(),
@@ -177,9 +177,9 @@ export const configRouter = router({
   /**
    * Update provider configuration
    * REACTIVE: Emits config:provider-updated or config:provider-added event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateProviderConfig: protectedProcedure
+  updateProviderConfig: moderateProcedure
     .input(
       z.object({
         providerId: z.string(),
@@ -233,9 +233,9 @@ export const configRouter = router({
   /**
    * Remove provider configuration
    * REACTIVE: Emits config:provider-removed event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  removeProvider: protectedProcedure
+  removeProvider: moderateProcedure
     .input(
       z.object({
         providerId: z.string(),
@@ -268,9 +268,9 @@ export const configRouter = router({
    * Save AI config to file system
    * Backend writes files, UI stays clean
    * REACTIVE: Emits config-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  save: protectedProcedure
+  save: moderateProcedure
     .input(
       z.object({
         config: AIConfigSchema,

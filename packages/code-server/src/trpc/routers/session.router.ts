@@ -2,12 +2,17 @@
  * Session Router
  * Enterprise-grade session management with pagination and lazy loading
  * REACTIVE: Emits events for all state changes
- * SECURITY: Protected mutations (OWASP API2)
+ * SECURITY: Protected mutations (OWASP API2) + Rate limiting (OWASP API4)
  */
 
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
-import { router, publicProcedure, protectedProcedure } from '../trpc.js';
+import {
+  router,
+  publicProcedure,
+  strictProcedure,
+  moderateProcedure,
+} from '../trpc.js';
 import type { ProviderId } from '@sylphx/code-core';
 import { eventBus } from '../../services/event-bus.service.js';
 
@@ -75,9 +80,9 @@ export const sessionRouter = router({
   /**
    * Create new session
    * REACTIVE: Emits session-created event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + strict rate limiting (10 req/min)
    */
-  create: protectedProcedure
+  create: strictProcedure
     .input(
       z.object({
         provider: z.string() as z.ZodType<ProviderId>,
@@ -106,9 +111,9 @@ export const sessionRouter = router({
   /**
    * Update session title
    * REACTIVE: Emits session-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateTitle: protectedProcedure
+  updateTitle: moderateProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -129,9 +134,9 @@ export const sessionRouter = router({
   /**
    * Update session model
    * REACTIVE: Emits session-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateModel: protectedProcedure
+  updateModel: moderateProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -152,9 +157,9 @@ export const sessionRouter = router({
   /**
    * Update session provider and model
    * REACTIVE: Emits session-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateProvider: protectedProcedure
+  updateProvider: moderateProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -181,9 +186,9 @@ export const sessionRouter = router({
    * Delete session
    * CASCADE: Automatically deletes all messages, todos, attachments
    * REACTIVE: Emits session-deleted event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + strict rate limiting (10 req/min)
    */
-  delete: protectedProcedure
+  delete: strictProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.sessionRepository.deleteSession(input.sessionId);

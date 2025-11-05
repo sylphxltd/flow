@@ -2,12 +2,17 @@
  * Message Router
  * Efficient message operations with lazy loading and streaming support
  * REACTIVE: Emits events for all state changes
- * SECURITY: Protected mutations (OWASP API2)
+ * SECURITY: Protected mutations (OWASP API2) + Rate limiting (OWASP API4)
  */
 
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
-import { router, publicProcedure, protectedProcedure } from '../trpc.js';
+import {
+  router,
+  publicProcedure,
+  moderateProcedure,
+  streamingProcedure,
+} from '../trpc.js';
 import { eventBus } from '../../services/event-bus.service.js';
 
 // Zod schemas for type safety
@@ -153,9 +158,9 @@ export const messageRouter = router({
    * Add message to session
    * Used for both user messages and assistant messages
    * REACTIVE: Emits message-added event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  add: protectedProcedure
+  add: moderateProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -197,9 +202,9 @@ export const messageRouter = router({
    * Update message parts (during streaming)
    * Replaces all parts atomically
    * REACTIVE: Emits message-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateParts: protectedProcedure
+  updateParts: moderateProcedure
     .input(
       z.object({
         messageId: z.string(),
@@ -220,9 +225,9 @@ export const messageRouter = router({
    * Update message status
    * Used when streaming completes/aborts
    * REACTIVE: Emits message-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateStatus: protectedProcedure
+  updateStatus: moderateProcedure
     .input(
       z.object({
         messageId: z.string(),
@@ -248,9 +253,9 @@ export const messageRouter = router({
    * Update message usage
    * Used when streaming completes with token counts
    * REACTIVE: Emits message-updated event
-   * SECURITY: Protected mutation (OWASP API2)
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
-  updateUsage: protectedProcedure
+  updateUsage: moderateProcedure
     .input(
       z.object({
         messageId: z.string(),
@@ -309,9 +314,9 @@ export const messageRouter = router({
    * - TUI: In-process observable (zero overhead)
    * - Web: SSE (httpSubscriptionLink)
    *
-   * SECURITY: Protected subscription (OWASP API2)
+   * SECURITY: Protected + streaming rate limiting (5 streams/min)
    */
-  streamResponse: protectedProcedure
+  streamResponse: streamingProcedure
     .input(
       z.object({
         sessionId: z.string().nullish(), // Optional - will create if null

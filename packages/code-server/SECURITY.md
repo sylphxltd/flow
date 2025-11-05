@@ -202,8 +202,190 @@ bun test src/trpc/__tests__/authentication.test.ts
 
 **Status**: Implemented (sessionId validation in all endpoints)
 
+## API4: Unrestricted Resource Consumption ✅
+
+**Implementation**: Token bucket rate limiting with automatic cleanup
+
+### Architecture
+
+Rate limiting protects against:
+- Resource exhaustion attacks
+- Denial of Service (DoS)
+- API abuse
+- Cost overruns (AI API calls)
+
+**Dual-mode behavior**:
+1. **In-process mode** (TUI/CLI): No rate limiting (trusted local process)
+2. **HTTP mode** (Web GUI): Token bucket algorithm with sliding window
+
+### Rate Limit Tiers
+
+Different endpoints have different rate limits based on resource consumption:
+
+**Strict** (10 req/min):
+- `session.create` - Creates new sessions (database write + init)
+- `session.delete` - Deletes sessions (cascade delete, expensive)
+
+**Moderate** (30 req/min):
+- `session.updateTitle` - Updates session metadata
+- `session.updateModel` - Updates session model
+- `session.updateProvider` - Updates session provider
+- `message.add` - Adds messages (database write)
+- `message.updateParts` - Updates message content
+- `message.updateStatus` - Updates message status
+- `message.updateUsage` - Updates token usage
+- `todo.update` - Updates todo list
+- `config.updateDefaultProvider` - Updates default provider
+- `config.updateDefaultModel` - Updates default model
+- `config.updateProviderConfig` - Updates provider config
+- `config.removeProvider` - Removes provider
+- `config.save` - Saves config to file system
+
+**Lenient** (100 req/min):
+- Reserved for read-heavy queries (not yet applied)
+
+**Streaming** (5 streams/min):
+- `message.streamResponse` - AI streaming responses (most expensive)
+
+### HTTP Response Headers
+
+Rate limit info is included in HTTP response headers:
+
+```http
+X-RateLimit-Limit: 30
+X-RateLimit-Remaining: 25
+X-RateLimit-Reset: 1704067200
+```
+
+### Error Response
+
+When rate limit is exceeded:
+
+```typescript
+// Error response
+{
+  code: 'TOO_MANY_REQUESTS',
+  message: 'Rate limit exceeded for moderate endpoint. Try again in 30 seconds.'
+}
+```
+
+### Usage Example
+
+```typescript
+// HTTP client
+const client = createTRPCClient({
+  links: [
+    httpBatchLink({
+      url: 'http://localhost:3000/trpc',
+      headers: {
+        Authorization: 'Bearer your-api-key',
+      },
+    }),
+  ],
+});
+
+// First 10 requests succeed
+for (let i = 0; i < 10; i++) {
+  await client.session.create.mutate({
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-20241022',
+  });
+}
+
+// 11th request fails with TOO_MANY_REQUESTS
+try {
+  await client.session.create.mutate({
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-20241022',
+  });
+} catch (error) {
+  // TRPCError: Rate limit exceeded for strict endpoint. Try again in 60 seconds.
+}
+```
+
+### Implementation Details
+
+**Token Bucket Algorithm** (`packages/code-server/src/services/rate-limiter.service.ts`):
+- Each client has a bucket of tokens
+- Each request consumes 1 token
+- Tokens refill over time based on window
+- When bucket is empty, requests are denied
+
+**Rate Limit Middleware** (`packages/code-server/src/trpc/trpc.ts`):
+- Checks `ctx.auth.source` (skip if in-process)
+- Uses identifier (userId or IP address)
+- Returns 429 Too Many Requests when exceeded
+- Adds rate limit headers to response
+
+**Automatic Cleanup**:
+- Unused buckets are removed after 2x window time
+- Prevents memory leaks
+- Runs every 5 minutes
+
+### Configuration
+
+Pre-configured rate limiters:
+
+```typescript
+// Strict: 10 req/min
+export const strictRateLimiter = new RateLimiter({
+  maxRequests: 10,
+  windowMs: 60 * 1000,
+});
+
+// Moderate: 30 req/min
+export const moderateRateLimiter = new RateLimiter({
+  maxRequests: 30,
+  windowMs: 60 * 1000,
+});
+
+// Lenient: 100 req/min
+export const lenientRateLimiter = new RateLimiter({
+  maxRequests: 100,
+  windowMs: 60 * 1000,
+});
+
+// Streaming: 5 streams/min
+export const streamingRateLimiter = new RateLimiter({
+  maxRequests: 5,
+  windowMs: 60 * 1000,
+});
+```
+
+Custom rate limiters can be created:
+
+```typescript
+const customLimiter = new RateLimiter({
+  maxRequests: 50,
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  keyGenerator: (id) => `custom:${id}`,
+});
+```
+
+### Security Benefits
+
+1. **DoS Protection**: Prevents single client from exhausting resources
+2. **Fair Usage**: Ensures all clients get fair access
+3. **Cost Control**: Limits expensive operations (AI API calls, database writes)
+4. **Graceful Degradation**: System remains responsive under load
+
+### Testing
+
+Run rate limit tests:
+```bash
+cd packages/code-server
+bun test src/services/__tests__/rate-limiter.test.ts
+```
+
+### Future Enhancements
+
+- Dynamic rate limits based on user tier
+- Burst allowance (allow short bursts above limit)
+- Distributed rate limiting (Redis-based)
+- Per-endpoint custom limits
+- Rate limit bypass for admin users
+
 ## Other OWASP API Security Items
 
-- API4: Unrestricted Resource Consumption - ⏳ Pending
 - API5: Broken Function Level Authorization - ⏳ Pending
 - API9: Improper Inventory Management - ⏳ Pending
