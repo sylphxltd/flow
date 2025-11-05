@@ -143,7 +143,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleAction = () => {
+  const handleAction = async () => {
     switch (selectedSection) {
       case 'agents':
         if (agents[selectedItemIndex]) {
@@ -154,7 +154,7 @@ export default function Dashboard() {
 
       case 'rules':
         if (rules[selectedItemIndex]) {
-          toggleRule(rules[selectedItemIndex].id);
+          await toggleRule(rules[selectedItemIndex].id);
         }
         break;
 

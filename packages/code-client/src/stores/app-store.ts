@@ -67,6 +67,7 @@ export interface AppState {
   updateSessionModel: (sessionId: string, model: string) => Promise<void>;
   updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => Promise<void>;
   updateSessionTitle: (sessionId: string, title: string) => Promise<void>;
+  updateSessionRules: (sessionId: string, enabledRuleIds: string[]) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
 
   // Message mutations
@@ -95,7 +96,7 @@ export interface AppState {
 
   // Rule State
   enabledRuleIds: string[];
-  setEnabledRuleIds: (ruleIds: string[]) => void;
+  setEnabledRuleIds: (ruleIds: string[]) => Promise<void>;
 
   // Debug Logs
   debugLogs: string[];
@@ -185,6 +186,10 @@ export const useAppStore = create<AppState>()(
         });
 
         if (!sessionId) {
+          // Clear enabled rules when no session
+          set((state) => {
+            state.enabledRuleIds = [];
+          });
           return;
         }
 
@@ -194,6 +199,8 @@ export const useAppStore = create<AppState>()(
 
         set((state) => {
           state.currentSession = session;
+          // Load session's enabled rules into client state
+          state.enabledRuleIds = session.enabledRuleIds || [];
         });
       },
 
@@ -287,6 +294,26 @@ export const useAppStore = create<AppState>()(
       },
 
       /**
+       * Update session enabled rules
+       */
+      updateSessionRules: async (sessionId, enabledRuleIds) => {
+        // Optimistic update if it's the current session
+        if (get().currentSessionId === sessionId && get().currentSession) {
+          set((state) => {
+            if (state.currentSession) {
+              state.currentSession.enabledRuleIds = enabledRuleIds;
+            }
+            // Also update client-side cache for UI
+            state.enabledRuleIds = enabledRuleIds;
+          });
+        }
+
+        // Sync to database via tRPC
+        const client = getTRPCClient();
+        await client.session.updateRules.mutate({ sessionId, enabledRuleIds });
+      },
+
+      /**
        * Delete session
        */
       deleteSession: async (sessionId) => {
@@ -377,10 +404,18 @@ export const useAppStore = create<AppState>()(
 
       // Rule State
       enabledRuleIds: [],
-      setEnabledRuleIds: (ruleIds) =>
+      setEnabledRuleIds: async (ruleIds) => {
+        // Update client state immediately (optimistic)
         set((state) => {
           state.enabledRuleIds = ruleIds;
-        }),
+        });
+
+        // Persist to session if we have a current session
+        const { currentSessionId } = get();
+        if (currentSessionId) {
+          await get().updateSessionRules(currentSessionId, ruleIds);
+        }
+      },
 
       // Debug Logs
       debugLogs: [],

@@ -97,19 +97,19 @@ export function getEnabledRuleIds(): string[] {
 }
 
 /**
- * Set enabled rules in Zustand store
+ * Set enabled rules in Zustand store and persist to session
  */
-export function setEnabledRules(ruleIds: string[]): boolean {
+export async function setEnabledRules(ruleIds: string[]): Promise<boolean> {
   const { useAppStore } = require('@sylphx/code-client');
-  useAppStore.getState().setEnabledRuleIds(ruleIds);
+  await useAppStore.getState().setEnabledRuleIds(ruleIds);
   return true;
 }
 
 /**
  * Toggle a rule on/off
- * Updates Zustand store directly
+ * Updates Zustand store and persists to session
  */
-export function toggleRule(ruleId: string): boolean {
+export async function toggleRule(ruleId: string): Promise<boolean> {
   const rule = getRuleById(ruleId);
   if (!rule) {
     return false;
@@ -120,10 +120,10 @@ export function toggleRule(ruleId: string): boolean {
 
   if (currentEnabled.includes(ruleId)) {
     // Disable: remove from list
-    useAppStore.getState().setEnabledRuleIds(currentEnabled.filter(id => id !== ruleId));
+    await useAppStore.getState().setEnabledRuleIds(currentEnabled.filter(id => id !== ruleId));
   } else {
     // Enable: add to list
-    useAppStore.getState().setEnabledRuleIds([...currentEnabled, ruleId]);
+    await useAppStore.getState().setEnabledRuleIds([...currentEnabled, ruleId]);
   }
 
   return true;
