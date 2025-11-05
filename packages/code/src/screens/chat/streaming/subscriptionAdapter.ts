@@ -95,11 +95,24 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
   return async (userMessage: string, attachments?: FileAttachment[]) => {
     // Block if no provider configured
-    // NOTE: Input already cleared by messageHandler before this is called
-    // For now, just log and return - welcome message already shows config instructions
+    // Show helpful error message to user
     if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
-      addLog('[subscriptionAdapter] No AI provider configured');
-      // TODO: Better UX - show error toast or prevent submit in messageHandler
+      addLog('[subscriptionAdapter] No AI provider configured. Use /provider to configure.');
+
+      // Add error message to UI (optimistically)
+      if (currentSessionId) {
+        addMessage(
+          currentSessionId,
+          'assistant',
+          [
+            {
+              type: 'error',
+              error: 'No AI provider configured. Please configure a provider using the /provider command.',
+              status: 'completed',
+            } as MessagePart,
+          ]
+        );
+      }
       return;
     }
 

@@ -587,7 +587,11 @@ export default function Chat(_props: ChatProps) {
               model={aiConfig.defaultModel}
               usedTokens={0}
             />
-          ) : null}
+          ) : (
+            <Box flexGrow={1}>
+              <Text dimColor>No AI provider configured - use /provider to configure</Text>
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>
