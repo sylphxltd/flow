@@ -17,7 +17,7 @@ export class OpenRouterProvider implements AIProvider {
   getConfigSchema(): ConfigField[] {
     return [
       {
-        key: 'api-key',
+        key: 'apiKey',
         label: 'API Key',
         type: 'string',
         required: true,
@@ -33,7 +33,7 @@ export class OpenRouterProvider implements AIProvider {
   }
 
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {
-    const apiKey = config['api-key'] as string | undefined;
+    const apiKey = config.apiKey as string | undefined;
 
     // Retry logic for transient network issues
     const maxRetries = 2;
@@ -133,7 +133,7 @@ export class OpenRouterProvider implements AIProvider {
   }
 
   createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
-    const apiKey = config['api-key'] as string;
+    const apiKey = config.apiKey as string;
     const openrouter = createOpenRouter({ apiKey });
     return openrouter(modelId);
   }

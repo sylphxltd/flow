@@ -39,7 +39,7 @@ export class GoogleProvider implements AIProvider {
   getConfigSchema(): ConfigField[] {
     return [
       {
-        key: 'api-key',
+        key: 'apiKey',
         label: 'API Key (AI Studio)',
         type: 'string',
         required: false,
@@ -48,7 +48,7 @@ export class GoogleProvider implements AIProvider {
         placeholder: 'AIza...',
       },
       {
-        key: 'project-id',
+        key: 'projectId',
         label: 'Project ID (Vertex AI)',
         type: 'string',
         required: false,
@@ -67,10 +67,9 @@ export class GoogleProvider implements AIProvider {
   }
 
   isConfigured(config: ProviderConfig): boolean {
-    // Either AI Studio (api-key) OR Vertex AI (project-id + location)
-    // Support both kebab-case and camelCase
-    const hasAIStudio = !!(config['api-key'] || config['apiKey']);
-    const hasVertexAI = !!(config['project-id'] || config['projectId']) && !!config.location;
+    // Either AI Studio (apiKey) OR Vertex AI (projectId + location)
+    const hasAIStudio = !!config.apiKey;
+    const hasVertexAI = !!config.projectId && !!config.location;
     return hasAIStudio || hasVertexAI;
   }
 
@@ -99,8 +98,8 @@ export class GoogleProvider implements AIProvider {
   }
 
   createClient(config: ProviderConfig, modelId: string): LanguageModelV1 {
-    const apiKey = config['api-key'] as string | undefined;
-    const projectId = config['project-id'] as string | undefined;
+    const apiKey = config.apiKey as string | undefined;
+    const projectId = config.projectId as string | undefined;
     const location = (config.location as string | undefined) || 'us-central1';
 
     if (apiKey) {
@@ -112,7 +111,7 @@ export class GoogleProvider implements AIProvider {
         vertexai: { projectId, location }
       });
     } else {
-      throw new Error('Google provider requires either api-key or project-id');
+      throw new Error('Google provider requires either apiKey or projectId');
     }
   }
 }

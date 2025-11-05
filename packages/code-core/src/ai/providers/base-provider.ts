@@ -78,20 +78,14 @@ export interface AIProvider {
 
 /**
  * Helper: Check if all required fields from schema are present in config
- * Handles both kebab-case (api-key) and camelCase (apiKey) formats
+ * Uses camelCase format only
  */
 export function hasRequiredFields(schema: ConfigField[], config: ProviderConfig): boolean {
   const requiredFields = schema.filter(f => f.required);
 
   for (const field of requiredFields) {
-    const kebabKey = field.key; // e.g., 'api-key'
-    const camelKey = kebabKey.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); // e.g., 'apiKey'
-
-    // Check both formats
-    const hasKebab = config[kebabKey] !== undefined && config[kebabKey] !== '';
-    const hasCamel = config[camelKey] !== undefined && config[camelKey] !== '';
-
-    if (!hasKebab && !hasCamel) {
+    const value = config[field.key];
+    if (value === undefined || value === '') {
       return false;
     }
   }
