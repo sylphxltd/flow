@@ -3,7 +3,7 @@
  * Configure and switch AI providers using component-based UI
  */
 
-import { ProviderManagement } from '../../screens/chat/components/ProviderManagement.js';
+import { ProviderManagement } from '../../screens/chat/components/ProviderManagementV2.js';
 import type { Command } from '../types.js';
 
 export const providerCommand: Command = {
