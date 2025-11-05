@@ -47,16 +47,16 @@ export function ProviderManagement({
   const [tempStringValue, setTempStringValue] = useState('');
 
   // Fetch provider metadata from server
-  const [providerMetadata, setProviderMetadata] = useState<Record<string, { name: string; description: string }>>({});
+  const [providerMetadata, setProviderMetadata] = useState<Record<string, { name: string; description: string; isConfigured: boolean }>>({});
 
   useEffect(() => {
     async function loadProviderMetadata() {
       try {
-        const result = await trpc.config.getProviders.query();
-        // Transform {anthropic: {id, name, description}, ...} to {anthropic: {name, description}, ...}
-        const metadata: Record<string, { name: string; description: string }> = {};
+        const result = await trpc.config.getProviders.query({ cwd: process.cwd() });
+        // Store full provider info including isConfigured status
+        const metadata: Record<string, { name: string; description: string; isConfigured: boolean }> = {};
         for (const [id, info] of Object.entries(result)) {
-          metadata[id] = { name: info.name, description: info.description };
+          metadata[id] = { name: info.name, description: info.description, isConfigured: info.isConfigured };
         }
         setProviderMetadata(metadata);
       } catch (error) {
@@ -69,10 +69,10 @@ export function ProviderManagement({
   // Get provider options from aiConfig
   const providers = aiConfig?.providers || {};
   const providerOptions: SelectionOption[] = Object.entries(providers).map(([id, config]: [string, any]) => {
-    const isConfigured = config && (config['api-key'] || config.apiKey || config.configured);
     const metadata = providerMetadata[id];
     const name = metadata?.name || config.name || id.charAt(0).toUpperCase() + id.slice(1);
     const description = metadata?.description || 'AI provider';
+    const isConfigured = metadata?.isConfigured || false;
 
     return {
       label: name,

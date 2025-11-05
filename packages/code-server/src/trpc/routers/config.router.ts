@@ -310,12 +310,37 @@ export const configRouter = router({
 
   /**
    * Get all available providers
-   * Returns provider metadata (id, name)
+   * Returns provider metadata (id, name, description, isConfigured)
    * SECURITY: No sensitive data exposed
    */
-  getProviders: publicProcedure.query(() => {
-    return AI_PROVIDERS;
-  }),
+  getProviders: publicProcedure
+    .input(z.object({ cwd: z.string().default(process.cwd()) }).optional())
+    .query(async ({ input }) => {
+      const cwd = input?.cwd || process.cwd();
+      const config = await loadAIConfig(cwd);
+
+      const providersWithStatus: Record<string, {
+        id: string;
+        name: string;
+        description: string;
+        isConfigured: boolean;
+      }> = {};
+
+      for (const [id, providerInfo] of Object.entries(AI_PROVIDERS)) {
+        const provider = getProvider(id as ProviderId);
+        const providerConfig = config.providers?.[id] || {};
+        const isConfigured = provider.isConfigured(providerConfig);
+
+        providersWithStatus[id] = {
+          id,
+          name: providerInfo.name,
+          description: providerInfo.description,
+          isConfigured,
+        };
+      }
+
+      return providersWithStatus;
+    }),
 
   /**
    * Get provider config schema

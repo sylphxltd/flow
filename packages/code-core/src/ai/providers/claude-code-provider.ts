@@ -20,9 +20,15 @@ export class ClaudeCodeProvider implements AIProvider {
   }
 
   isConfigured(_config: ProviderConfig): boolean {
-    // Claude Code uses CLI OAuth - no configuration required
-    // Authentication is handled by the Claude CLI
-    return true;
+    // Claude Code uses CLI OAuth - check if 'claude' command exists
+    try {
+      // Check if claude CLI is available
+      const { execSync } = require('child_process');
+      execSync('which claude', { stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {
