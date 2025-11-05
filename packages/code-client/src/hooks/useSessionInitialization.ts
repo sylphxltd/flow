@@ -32,16 +32,11 @@ export function useSessionInitialization({
     async function initializeSession() {
       if (!aiConfig?.defaultProvider) return;
 
-      // Determine model: prioritize top-level defaultModel, fall back to provider-specific default-model
-      let model = aiConfig.defaultModel;
+      // Get provider's default model (last used)
+      const providerConfig = aiConfig.providers?.[aiConfig.defaultProvider];
+      let model = providerConfig?.defaultModel as string | undefined;
 
-      if (!model) {
-        // Check provider-specific config for default-model
-        const providerConfig = aiConfig.providers?.[aiConfig.defaultProvider];
-        model = providerConfig?.['default-model'] as string | undefined;
-      }
-
-      // If still no model, fetch first available model from server
+      // If no default model, fetch first available from server
       if (!model) {
         try {
           const result = await trpc.config.fetchModels.query({

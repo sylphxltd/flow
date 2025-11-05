@@ -63,30 +63,31 @@ export default function ModelSelection() {
   const loadModelsAndSelectDefault = async () => {
     if (!selectedProvider || models.length === 0) return;
 
-    // Auto-select default model
+    // Auto-select: last used (provider's defaultModel) or first in list
     const providerConfig = aiConfig?.providers?.[selectedProvider] || {};
-    const defaultModel = providerConfig['default-model'] as string | undefined;
+    const defaultModel = providerConfig.defaultModel as string | undefined;
     const modelToSelect = defaultModel || models[0]?.id;
 
     if (modelToSelect) {
       // Automatically select and save the model
       setSelectedModel(modelToSelect);
-      updateProvider(selectedProvider, { defaultModel: modelToSelect });
 
       // Update config
       const newConfig = {
         ...aiConfig!,
         defaultProvider: selectedProvider,
-        defaultModel: modelToSelect,
+        // ❌ No top-level defaultModel
         providers: {
           ...aiConfig!.providers,
           [selectedProvider]: {
             ...aiConfig!.providers?.[selectedProvider],
-            defaultModel: modelToSelect,
+            defaultModel: modelToSelect,  // ✅ Save as provider's default
           },
         },
       };
 
+      // Update store
+      updateProvider(selectedProvider, { defaultModel: modelToSelect });
       await saveConfig(newConfig);
 
       // Reset and go back to chat
@@ -183,22 +184,23 @@ export default function ModelSelection() {
       if (!selectedProvider) return;
 
       setSelectedModel(item.value);
-      updateProvider(selectedProvider, { defaultModel: item.value });
 
-      // Update config
+      // Update config: save selected model as provider's default-model
       const newConfig = {
         ...aiConfig!,
         defaultProvider: selectedProvider,
-        defaultModel: item.value,
+        // ❌ No top-level defaultModel
         providers: {
           ...aiConfig!.providers,
           [selectedProvider]: {
             ...aiConfig!.providers?.[selectedProvider],
-            defaultModel: item.value,
+            defaultModel: item.value,  // ✅ Save as provider's default
           },
         },
       };
 
+      // Update store
+      updateProvider(selectedProvider, { defaultModel: item.value });
       await saveConfig(newConfig);
 
       // Reset and go back

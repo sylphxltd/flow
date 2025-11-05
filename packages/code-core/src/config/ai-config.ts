@@ -37,14 +37,19 @@ export type ProviderConfigValue = ProviderConfigValueType;
 /**
  * AI configuration schema
  * Uses generic Record for provider configs - validation happens at provider level
+ *
+ * DESIGN: No top-level defaultModel
+ * - Each provider has its own defaultModel in its config
+ * - Default model = last used or first in list
+ * - Use camelCase for consistency
  */
 const aiConfigSchema = z.object({
   defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']).optional(),
-  defaultModel: z.string().optional(),
+  // ❌ Removed: defaultModel - use provider's defaultModel instead
   providers: z.record(
     z.string(),
     z.object({
-      defaultModel: z.string().optional(),
+      defaultModel: z.string().optional(),  // ✅ camelCase
     }).passthrough() // Allow additional fields defined by provider
   ).optional(),
 });
@@ -114,9 +119,20 @@ const mergeConfigs = (a: AIConfig, b: AIConfig): AIConfig => {
 
   return {
     defaultProvider: b.defaultProvider ?? a.defaultProvider,
-    defaultModel: b.defaultModel ?? a.defaultModel,
+    // ❌ Removed: defaultModel merging
     providers: mergedProviders,
   };
+};
+
+/**
+ * Get default model for a provider
+ * Returns provider's defaultModel, or undefined if not set
+ *
+ * DESIGN: Default model = last used (stored in provider config)
+ */
+export const getDefaultModel = (config: AIConfig, providerId: string): string | undefined => {
+  const providerConfig = config.providers?.[providerId];
+  return providerConfig?.defaultModel as string | undefined;
 };
 
 /**
