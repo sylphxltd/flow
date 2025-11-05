@@ -4,6 +4,7 @@
  */
 
 import { ProviderManagement } from '../../screens/chat/components/ProviderManagementV2.js';
+import { getActionCompletions, getProviderCompletions } from '../../completions/provider.js';
 import type { Command } from '../types.js';
 
 export const providerCommand: Command = {
@@ -16,32 +17,15 @@ export const providerCommand: Command = {
       description: 'Action to perform (use/configure)',
       required: false,
       loadOptions: async () => {
-        return [
-          { id: 'use', label: 'use', value: 'use' },
-          { id: 'configure', label: 'configure', value: 'configure' },
-        ];
+        return getActionCompletions();
       },
     },
     {
       name: 'provider-id',
       description: 'Provider to use or configure',
       required: false,
-      loadOptions: async (previousArgs, context) => {
-        try {
-          const aiConfig = context?.getConfig();
-          if (!aiConfig?.providers) {
-            return [];
-          }
-
-          const providers = Object.keys(aiConfig.providers);
-          return providers.map((id) => ({
-            id,
-            label: id,
-            value: id,
-          }));
-        } catch (error) {
-          return [];
-        }
+      loadOptions: async () => {
+        return getProviderCompletions();
       },
     },
   ],
