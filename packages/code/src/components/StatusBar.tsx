@@ -3,9 +3,8 @@
  * Display important session info at the bottom
  */
 
-import { useAppStore } from '@sylphx/code-client';
+import { useAppStore, useTRPCClient } from '@sylphx/code-client';
 import type { ProviderId } from '@sylphx/code-core';
-import { getProvider, getTokenizerInfo } from '@sylphx/code-core';
 import { getAgentById } from '../embedded-context.js';
 import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
@@ -19,12 +18,13 @@ interface StatusBarProps {
 /**
  * StatusBar Component
  *
- * SECURITY: Uses hardcoded metadata instead of calling provider API
- * - No API keys needed on client side
- * - Context length data from provider static metadata
+ * SECURITY: Uses tRPC server endpoints for all data
+ * - No API keys exposed on client side
+ * - All business logic on server
  * - Safe for Web GUI and remote mode
  */
 export default function StatusBar({ provider, model, usedTokens = 0 }: StatusBarProps) {
+  const trpc = useTRPCClient();
   const [contextLength, setContextLength] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [tokenizerInfo, setTokenizerInfo] = useState<{
@@ -52,14 +52,18 @@ export default function StatusBar({ provider, model, usedTokens = 0 }: StatusBar
     async function loadModelDetails() {
       setLoading(true);
       try {
-        const providerInstance = getProvider(provider!);
-        // SECURITY: Call getModelDetails WITHOUT config (uses hardcoded metadata only)
-        // This prevents exposing API keys to client
-        const details = await providerInstance.getModelDetails(model!);
-        setContextLength(details?.contextLength || null);
+        // Use tRPC to get model details from server
+        const detailsResult = await trpc.config.getModelDetails.query({
+          providerId: provider!,
+          modelId: model!,
+        });
 
-        // Get tokenizer info
-        const tokInfo = await getTokenizerInfo(model!);
+        if (detailsResult.success && detailsResult.details) {
+          setContextLength(detailsResult.details.contextLength || null);
+        }
+
+        // Get tokenizer info from server
+        const tokInfo = await trpc.config.getTokenizerInfo.query({ model: model! });
         setTokenizerInfo(tokInfo);
       } catch (error) {
         console.error('Failed to load model details:', error);
@@ -69,7 +73,7 @@ export default function StatusBar({ provider, model, usedTokens = 0 }: StatusBar
     }
 
     loadModelDetails();
-  }, [provider, model]);
+  }, [provider, model, trpc]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {

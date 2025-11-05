@@ -8,7 +8,15 @@
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
 import { router, publicProcedure, moderateProcedure } from '../trpc.js';
-import { loadAIConfig, saveAIConfig, getAIConfigPaths, getProvider } from '@sylphx/code-core';
+import {
+  loadAIConfig,
+  saveAIConfig,
+  getAIConfigPaths,
+  getProvider,
+  AI_PROVIDERS,
+  fetchModels,
+  getTokenizerInfo,
+} from '@sylphx/code-core';
 import type { AIConfig, ProviderId } from '@sylphx/code-core';
 import { eventBus } from '../../services/event-bus.service.js';
 
@@ -299,6 +307,82 @@ export const configRouter = router({
     .input(z.object({ cwd: z.string().default(process.cwd()) }))
     .query(async ({ input }) => {
       return getAIConfigPaths(input.cwd);
+    }),
+
+  /**
+   * Get all available providers
+   * Returns provider metadata (id, name)
+   * SECURITY: No sensitive data exposed
+   */
+  getProviders: publicProcedure.query(() => {
+    return AI_PROVIDERS;
+  }),
+
+  /**
+   * Fetch available models for a provider
+   * SECURITY: Requires provider config (API keys if needed)
+   */
+  fetchModels: publicProcedure
+    .input(
+      z.object({
+        providerId: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']),
+        cwd: z.string().default(process.cwd()),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        // Load config to get provider credentials
+        const configResult = await loadAIConfig(input.cwd);
+        const providerConfig =
+          configResult._tag === 'Success' ? configResult.value.providers?.[input.providerId] || {} : {};
+
+        // Fetch models using provider API
+        const models = await fetchModels(input.providerId, providerConfig);
+        return { success: true as const, models };
+      } catch (error) {
+        return {
+          success: false as const,
+          error: error instanceof Error ? error.message : 'Failed to fetch models',
+        };
+      }
+    }),
+
+  /**
+   * Get tokenizer info for a model
+   * Returns tokenizer name and status
+   */
+  getTokenizerInfo: publicProcedure
+    .input(
+      z.object({
+        model: z.string(),
+      })
+    )
+    .query(({ input }) => {
+      return getTokenizerInfo(input.model);
+    }),
+
+  /**
+   * Get model details (context length, pricing, etc.)
+   * SECURITY: No API keys needed - uses hardcoded metadata
+   */
+  getModelDetails: publicProcedure
+    .input(
+      z.object({
+        providerId: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']),
+        modelId: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const provider = getProvider(input.providerId);
+        const details = await provider.getModelDetails(input.modelId);
+        return { success: true as const, details };
+      } catch (error) {
+        return {
+          success: false as const,
+          error: error instanceof Error ? error.message : 'Failed to get model details',
+        };
+      }
     }),
 
   /**

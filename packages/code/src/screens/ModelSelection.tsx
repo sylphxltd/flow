@@ -3,14 +3,8 @@
  * Select provider and model with dynamic loading
  */
 
-import { useAIConfig, useAppStore, useKeyboard } from '@sylphx/code-client';
-import {
-  AI_PROVIDERS,
-  fetchModels,
-  getConfiguredProviders,
-  type ModelInfo,
-  type ProviderId,
-} from '@sylphx/code-core';
+import { useAIConfig, useAppStore, useKeyboard, useTRPCClient } from '@sylphx/code-client';
+import type { ModelInfo, ProviderId } from '@sylphx/code-core';
 import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
@@ -24,10 +18,12 @@ interface MenuItem {
 }
 
 export default function ModelSelection() {
+  const trpc = useTRPCClient();
   const [mode, setMode] = useState<Mode>('provider');
   const [searchQuery, setSearchQuery] = useState('');
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [aiProviders, setAIProviders] = useState<Record<string, { id: string; name: string }>>({});
 
   const navigateTo = useAppStore((state) => state.navigateTo);
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -39,6 +35,13 @@ export default function ModelSelection() {
   const { saveConfig } = useAIConfig();
 
   const configuredProviders = Object.keys(aiConfig?.providers || {}) as ProviderId[];
+
+  // Load AI providers from server on mount
+  useEffect(() => {
+    trpc.config.getProviders.query().then((providers) => {
+      setAIProviders(providers);
+    });
+  }, [trpc]);
 
   // Load models when provider is selected
   useEffect(() => {
@@ -52,11 +55,21 @@ export default function ModelSelection() {
 
     setIsLoadingModels(true);
     try {
-      const providerConfig = aiConfig?.providers?.[selectedProvider] || {};
-      const modelList = await fetchModels(selectedProvider, providerConfig);
+      // Use tRPC to fetch models from server
+      const result = await trpc.config.fetchModels.query({
+        providerId: selectedProvider,
+      });
+
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      const modelList = result.models;
       setModels(modelList);
 
       // Auto-select default model
+      const providerConfig = aiConfig?.providers?.[selectedProvider] || {};
       const defaultModel = providerConfig['default-model'] as string | undefined;
       const modelToSelect = defaultModel || modelList[0]?.id;
 
@@ -99,9 +112,17 @@ export default function ModelSelection() {
 
     setIsLoadingModels(true);
     try {
-      const providerConfig = aiConfig?.providers?.[selectedProvider] || {};
-      const modelList = await fetchModels(selectedProvider, providerConfig);
-      setModels(modelList);
+      // Use tRPC to fetch models from server
+      const result = await trpc.config.fetchModels.query({
+        providerId: selectedProvider,
+      });
+
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      setModels(result.models);
     } catch (err) {
       setError('Failed to load models');
     } finally {
@@ -137,7 +158,7 @@ export default function ModelSelection() {
 
     const items: MenuItem[] = [
       ...configuredProviders.map((id) => ({
-        label: `${AI_PROVIDERS[id].name}${aiConfig?.defaultProvider === id ? ' (Default)' : ''}`,
+        label: `${aiProviders[id]?.name || id}${aiConfig?.defaultProvider === id ? ' (Default)' : ''}`,
         value: id,
       })),
       { label: 'Back to Chat', value: 'back' },
@@ -224,7 +245,7 @@ export default function ModelSelection() {
       <Box flexDirection="column" flexGrow={1}>
         <Box flexShrink={0} paddingBottom={1}>
           <Text color="#00D9FF">▌ SELECT MODEL</Text>
-          <Text dimColor> · {selectedProvider && AI_PROVIDERS[selectedProvider].name}</Text>
+          <Text dimColor> · {selectedProvider && (aiProviders[selectedProvider]?.name || selectedProvider)}</Text>
         </Box>
 
         {/* Search input */}
