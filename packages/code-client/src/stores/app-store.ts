@@ -183,8 +183,8 @@ export const useAppStore = create<AppState>()(
         }
 
         // Fetch session from tRPC
-        const client = await getTRPCClient();
-        const session = await client.session.getById({ sessionId });
+        const client = getTRPCClient();
+        const session = await client.session.getById.query({ sessionId });
 
         set((state) => {
           state.currentSession = session;
@@ -200,8 +200,8 @@ export const useAppStore = create<AppState>()(
           return;
         }
 
-        const client = await getTRPCClient();
-        const session = await client.session.getById({ sessionId: currentSessionId });
+        const client = getTRPCClient();
+        const session = await client.session.getById.query({ sessionId: currentSessionId });
 
         set((state) => {
           state.currentSession = session;
@@ -212,9 +212,9 @@ export const useAppStore = create<AppState>()(
        * Create new session
        */
       createSession: async (provider, model) => {
-        const client = await getTRPCClient();
+        const client = getTRPCClient();
         const { selectedAgentId } = get();
-        const session = await client.session.create({ provider, model, agentId: selectedAgentId });
+        const session = await client.session.create.mutate({ provider, model, agentId: selectedAgentId });
 
         // Set as current session
         set((state) => {
@@ -239,8 +239,8 @@ export const useAppStore = create<AppState>()(
         }
 
         // Sync to database via tRPC
-        const client = await getTRPCClient();
-        await client.session.updateModel({ sessionId, model });
+        const client = getTRPCClient();
+        await client.session.updateModel.mutate({ sessionId, model });
       },
 
       /**
@@ -258,8 +258,8 @@ export const useAppStore = create<AppState>()(
         }
 
         // Sync to database via tRPC
-        const client = await getTRPCClient();
-        await client.session.updateProvider({ sessionId, provider, model });
+        const client = getTRPCClient();
+        await client.session.updateProvider.mutate({ sessionId, provider, model });
       },
 
       /**
@@ -276,8 +276,8 @@ export const useAppStore = create<AppState>()(
         }
 
         // Sync to database via tRPC
-        const client = await getTRPCClient();
-        await client.session.updateTitle({ sessionId, title });
+        const client = getTRPCClient();
+        await client.session.updateTitle.mutate({ sessionId, title });
       },
 
       /**
@@ -293,8 +293,8 @@ export const useAppStore = create<AppState>()(
         }
 
         // Delete from database via tRPC
-        const client = await getTRPCClient();
-        await client.session.delete({ sessionId });
+        const client = getTRPCClient();
+        await client.session.delete.mutate({ sessionId });
       },
 
       /**
@@ -325,8 +325,8 @@ export const useAppStore = create<AppState>()(
         }
 
         // Persist via tRPC
-        const client = await getTRPCClient();
-        await client.message.add({
+        const client = getTRPCClient();
+        await client.message.add.mutate({
           sessionId,
           role,
           content: normalizedContent,
@@ -486,8 +486,8 @@ export const useAppStore = create<AppState>()(
         // Need to get fresh copy after optimistic update
         const updatedSession = get().currentSession;
         if (updatedSession && updatedSession.id === sessionId) {
-          const client = await getTRPCClient();
-          await client.todo.update({
+          const client = getTRPCClient();
+          await client.todo.update.mutate({
             sessionId,
             todos: updatedSession.todos,
             nextTodoId: updatedSession.nextTodoId,
