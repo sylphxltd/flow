@@ -179,36 +179,10 @@ export function createCommandContext(args: string[], params: CommandContextParam
       return new Promise((resolve) => {
         addLog(`[waitForInput] Waiting for ${options.type} input`);
 
-        if (options.type === 'text') {
-          // For text input, still use pendingInput for now
-          // TODO: Create TextInput component
-          inputResolver.current = resolve;
-          setPendingInput(options);
-        } else if (options.type === 'selection') {
-          // Use SelectionInput component
-          const { createElement } = require('react');
-          const { SelectionInput } = require('../components/SelectionInput.js');
-
-          // Use first question as title
-          const title = options.questions[0]?.question || 'Selection';
-
-          setInputComponent(
-            createElement(SelectionInput, {
-              questions: options.questions,
-              onComplete: (answers) => {
-                resolve(answers);
-                setInputComponent(null);
-                addLog('[waitForInput] Selection complete');
-              },
-              onCancel: () => {
-                resolve({});
-                setInputComponent(null);
-                addLog('[waitForInput] Selection cancelled');
-              },
-            }),
-            title
-          );
-        }
+        // Both text and selection use pendingInput for now
+        // The Chat component handles rendering based on input type
+        inputResolver.current = resolve;
+        setPendingInput(options);
       });
     },
 
