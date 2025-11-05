@@ -38,14 +38,34 @@ export const providerCommand: Command = {
           context.setInputComponent(null);
           context.addLog('[provider] Provider management closed');
         }}
-        onSelectProvider={(providerId) => {
+        onSelectProvider={async (providerId) => {
+          // Update store state
           context.updateProvider(providerId as any, {});
-          context.setAIConfig({ ...aiConfig, defaultProvider: providerId } as any);
-          context.addLog(`[provider] Switched to provider: ${providerId}`);
+          const updatedConfig = { ...aiConfig, defaultProvider: providerId } as any;
+          context.setAIConfig(updatedConfig);
+
+          // CRITICAL: Save to server!
+          await context.saveConfig(updatedConfig);
+          context.addLog(`[provider] Switched to provider: ${providerId} and saved config`);
         }}
-        onConfigureProvider={(providerId, config) => {
+        onConfigureProvider={async (providerId, config) => {
+          // Update store state
           context.updateProvider(providerId as any, config);
-          context.addLog(`[provider] Configured provider: ${providerId}`);
+
+          // Build updated config
+          const currentConfig = context.getConfig();
+          const updatedConfig = {
+            ...currentConfig!,
+            providers: {
+              ...currentConfig!.providers,
+              [providerId]: config,
+            },
+          } as any;
+          context.setAIConfig(updatedConfig);
+
+          // CRITICAL: Save to server!
+          await context.saveConfig(updatedConfig);
+          context.addLog(`[provider] Configured provider: ${providerId} and saved config`);
         }}
       />,
       'Provider Management'

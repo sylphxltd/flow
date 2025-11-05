@@ -18,8 +18,8 @@ interface ProviderManagementProps {
   aiConfig: any;
   // Callbacks
   onComplete: () => void;
-  onSelectProvider: (providerId: string) => void;
-  onConfigureProvider: (providerId: string, config: any) => void;
+  onSelectProvider: (providerId: string) => void | Promise<void>;
+  onConfigureProvider: (providerId: string, config: any) => void | Promise<void>;
 }
 
 type Step = 'select-action' | 'select-provider' | 'configure-provider';
@@ -145,8 +145,10 @@ export function ProviderManagement({
         const provider = providerOptions[selectedIndex];
         if (provider) {
           if (action === 'use') {
-            onSelectProvider(provider.id);
-            onComplete();
+            // Wait for save to complete before closing
+            Promise.resolve(onSelectProvider(provider.id)).then(() => {
+              onComplete();
+            });
           } else {
             setSelectedProvider(provider.id);
             setStep('configure-provider');
@@ -172,9 +174,10 @@ export function ProviderManagement({
       if (key.return) {
         // Last item is "Save" button
         if (currentFieldIndex === configSchema.length) {
-          // Save configuration
-          onConfigureProvider(selectedProvider!, formValues);
-          onComplete();
+          // Save configuration - wait for save to complete before closing
+          Promise.resolve(onConfigureProvider(selectedProvider!, formValues)).then(() => {
+            onComplete();
+          });
         } else {
           const field = configSchema[currentFieldIndex];
 
