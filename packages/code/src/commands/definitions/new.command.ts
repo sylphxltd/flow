@@ -17,8 +17,8 @@ export const newCommand: Command = {
     }
 
     // Create new session with current provider and model
-    const newSessionId = context.createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
-    context.setCurrentSession(newSessionId);
+    const newSessionId = await context.createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
+    await context.setCurrentSession(newSessionId);
 
     return `Created new chat session with ${aiConfig.defaultProvider} (${aiConfig.defaultModel})`;
   },

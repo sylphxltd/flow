@@ -11,8 +11,8 @@ import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 interface StatusBarProps {
-  provider: ProviderId;
-  model: string;
+  provider: ProviderId | null;
+  model: string | null;
   usedTokens?: number;
 }
 
@@ -43,17 +43,23 @@ export default function StatusBar({ provider, model, usedTokens = 0 }: StatusBar
   const enabledRulesCount = useAppStore((state) => state.enabledRuleIds.length);
 
   useEffect(() => {
+    // If no provider/model configured, skip loading
+    if (!provider || !model) {
+      setLoading(false);
+      return;
+    }
+
     async function loadModelDetails() {
       setLoading(true);
       try {
-        const providerInstance = getProvider(provider);
+        const providerInstance = getProvider(provider!);
         // SECURITY: Call getModelDetails WITHOUT config (uses hardcoded metadata only)
         // This prevents exposing API keys to client
-        const details = await providerInstance.getModelDetails(model);
+        const details = await providerInstance.getModelDetails(model!);
         setContextLength(details?.contextLength || null);
 
         // Get tokenizer info
-        const tokInfo = await getTokenizerInfo(model);
+        const tokInfo = await getTokenizerInfo(model!);
         setTokenizerInfo(tokInfo);
       } catch (error) {
         console.error('Failed to load model details:', error);
@@ -78,6 +84,23 @@ export default function StatusBar({ provider, model, usedTokens = 0 }: StatusBar
   // Calculate usage percentage
   const usagePercent =
     contextLength && usedTokens > 0 ? Math.round((usedTokens / contextLength) * 100) : 0;
+
+  // Handle unconfigured state
+  if (!provider || !model) {
+    return (
+      <Box flexGrow={1} justifyContent="space-between" marginBottom={1}>
+        <Box>
+          <Text dimColor>
+            {agentName && `${agentName} · `}
+            {enabledRulesCount} {enabledRulesCount === 1 ? 'rule' : 'rules'}
+          </Text>
+        </Box>
+        <Box>
+          <Text color="yellow">⚠ No AI provider configured - use /provider to configure</Text>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box flexGrow={1} justifyContent="space-between" marginBottom={1}>

@@ -4,22 +4,25 @@
  */
 
 import type { AIConfig } from '@sylphx/code-core';
+import { useCallback } from 'react';
 import { useAppStore } from '../stores/app-store.js';
-import { getTRPCClient } from '../trpc-provider.js';
+import { useTRPCClient } from '../trpc-provider.js';
 
 export function useAIConfig() {
+  const client = useTRPCClient(); // Use React Context (must be at component top level)
   const setAIConfig = useAppStore((state) => state.setAIConfig);
   const setError = useAppStore((state) => state.setError);
   const setLoading = useAppStore((state) => state.setLoading);
 
-  const loadConfig = async (cwd: string = process.cwd()) => {
+  const loadConfig = useCallback(async (cwd: string = process.cwd()) => {
     setLoading(true);
     try {
-      const client = await getTRPCClient();
-      const result = await client.config.load({ cwd });
+      const result = await client.config.load.query({ cwd });
 
       if (result.success) {
-        setAIConfig(result.config);
+        // WORKAROUND: Directly use setState to bypass immer middleware issue
+        const { useAppStore } = await import('../stores/app-store.js');
+        useAppStore.setState({ aiConfig: result.config });
       } else {
         // No config yet, start with empty
         setAIConfig({ providers: {} });
@@ -29,13 +32,12 @@ export function useAIConfig() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [client, setAIConfig, setError, setLoading]);
 
-  const saveConfig = async (config: AIConfig, cwd: string = process.cwd()) => {
+  const saveConfig = useCallback(async (config: AIConfig, cwd: string = process.cwd()) => {
     setLoading(true);
     try {
-      const client = await getTRPCClient();
-      const result = await client.config.save({ config, cwd });
+      const result = await client.config.save.mutate({ config, cwd });
 
       if (result.success) {
         setAIConfig(config);
@@ -49,7 +51,7 @@ export function useAIConfig() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [client, setAIConfig, setError, setLoading]);
 
   return { loadConfig, saveConfig };
 }

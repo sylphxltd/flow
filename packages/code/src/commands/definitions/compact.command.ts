@@ -111,10 +111,10 @@ Please provide a detailed, structured summary now:`;
       }
 
       // Create new session with same provider/model
-      const newSessionId = context.createSession(currentSession.provider, currentSession.model);
+      const newSessionId = await context.createSession(currentSession.provider, currentSession.model);
 
       // Switch to new session
-      context.setCurrentSession(newSessionId);
+      await context.setCurrentSession(newSessionId);
 
       const messageCount = currentSession.messages.length;
       const sessionTitle = currentSession.title || 'Untitled session';

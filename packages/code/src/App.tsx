@@ -39,7 +39,7 @@ function AppContent() {
     loadConfig().catch((err) => {
       console.error('Failed to load config:', err);
     });
-  }, []);
+  }, [loadConfig]);
 
   // Clear error after 5 seconds
   useEffect(() => {

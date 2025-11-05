@@ -155,10 +155,10 @@ export const modelCommand: Command = {
     // Update current session's model (preserve history)
     const currentSessionId = context.getCurrentSessionId();
     if (currentSessionId) {
-      context.updateSessionModel(currentSessionId, modelId);
+      await context.updateSessionModel(currentSessionId, modelId);
     } else {
       // Fallback: create new session if no active session
-      context.createSession(provider, modelId);
+      await context.createSession(provider, modelId);
     }
 
     return `Switched to model: ${modelId}`;

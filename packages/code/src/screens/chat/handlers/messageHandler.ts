@@ -14,13 +14,13 @@ export interface MessageHandlerParams {
   isStreaming: boolean;
 
   // Store methods
-  createSession: (provider: ProviderId, model: string) => string;
+  createSession: (provider: ProviderId, model: string) => Promise<string>;
   addMessage: (
     sessionId: string,
     role: 'user' | 'assistant',
     content: string,
     attachments?: any[]
-  ) => void;
+  ) => Promise<void>;
 
   // UI state
   pendingInput: WaitForInputOptions | null;
@@ -112,9 +112,9 @@ export function createHandleSubmit(params: MessageHandlerParams) {
       // Add user's text input to chat history
       if (!commandSessionRef.current) {
         commandSessionRef.current =
-          currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+          currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
       }
-      addMessage(commandSessionRef.current, 'user', value.trim());
+      await addMessage(commandSessionRef.current, 'user', value.trim());
 
       inputResolver.current(value.trim());
       inputResolver.current = null;
@@ -157,10 +157,10 @@ export function createHandleSubmit(params: MessageHandlerParams) {
         setInput('');
         if (!commandSessionRef.current) {
           commandSessionRef.current =
-            currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+            currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
         }
-        addMessage(commandSessionRef.current, 'user', userMessage);
-        addMessage(
+        await addMessage(commandSessionRef.current, 'user', userMessage);
+        await addMessage(
           commandSessionRef.current,
           'assistant',
           `Unknown command: ${commandName}. Type /help for available commands.`
@@ -174,9 +174,9 @@ export function createHandleSubmit(params: MessageHandlerParams) {
       // Add user command to conversation
       if (!commandSessionRef.current) {
         commandSessionRef.current =
-          currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+          currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
       }
-      addMessage(commandSessionRef.current, 'user', userMessage);
+      await addMessage(commandSessionRef.current, 'user', userMessage);
 
       // Execute command - let command handle interaction via CommandContext
       try {

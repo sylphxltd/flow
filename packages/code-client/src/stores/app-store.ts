@@ -125,10 +125,15 @@ export const useAppStore = create<AppState>()(
 
       // AI Configuration
       aiConfig: null,
-      setAIConfig: (config) =>
-        set((state) => {
-          state.aiConfig = config;
-        }),
+      setAIConfig: (config) => {
+        set(
+          (draft) => {
+            draft.aiConfig = config;
+          },
+          false,
+          { type: 'setAIConfig', config }
+        );
+      },
       updateProvider: (provider, data) =>
         set((state) => {
           if (!state.aiConfig) {

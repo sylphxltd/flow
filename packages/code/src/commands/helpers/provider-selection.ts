@@ -180,10 +180,10 @@ export async function switchToProvider(
   // Update current session's provider (preserve history)
   const currentSessionId = context.getCurrentSessionId();
   if (currentSessionId) {
-    context.updateSessionProvider(currentSessionId, providerId, defaultModel);
+    await context.updateSessionProvider(currentSessionId, providerId, defaultModel);
   } else {
     // Fallback: create new session if no active session
-    context.createSession(providerId, defaultModel);
+    await context.createSession(providerId, defaultModel);
   }
 
   return `Now using ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} with model: ${defaultModel}`;

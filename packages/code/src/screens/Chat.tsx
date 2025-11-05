@@ -575,23 +575,11 @@ export default function Chat(_props: ChatProps) {
 
         {/* Status Bar */}
         <Box flexShrink={0} paddingTop={1} flexDirection="row">
-          {currentSession ? (
-            <StatusBar
-              provider={currentSession.provider}
-              model={currentSession.model}
-              usedTokens={usedTokens}
-            />
-          ) : aiConfig?.defaultProvider && aiConfig?.defaultModel ? (
-            <StatusBar
-              provider={aiConfig.defaultProvider}
-              model={aiConfig.defaultModel}
-              usedTokens={0}
-            />
-          ) : (
-            <Box flexGrow={1}>
-              <Text dimColor>No AI provider configured - use /provider to configure</Text>
-            </Box>
-          )}
+          <StatusBar
+            provider={currentSession?.provider || aiConfig?.defaultProvider || null}
+            model={currentSession?.model || aiConfig?.defaultModel || null}
+            usedTokens={currentSession ? usedTokens : 0}
+          />
         </Box>
       </Box>
     </Box>
