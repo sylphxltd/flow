@@ -25,10 +25,10 @@ export function ChatMessages({ hasSession, messages = [], attachmentTokens }: Ch
           </Text>
         </Box>
         <Box paddingBottom={1}>
-          <Text dimColor>No AI provider configured yet.</Text>
+          <Text dimColor>Start chatting by typing a message below.</Text>
         </Box>
         <Box paddingBottom={1}>
-          <Text dimColor>Configure a provider to start chatting:</Text>
+          <Text dimColor>Useful commands:</Text>
         </Box>
         <Box paddingLeft={2} paddingBottom={1}>
           <Text color="#00D9FF">/provider</Text>
