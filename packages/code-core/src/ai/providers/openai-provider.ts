@@ -5,6 +5,7 @@
 import { openai } from '@ai-sdk/openai';
 import type { LanguageModelV1 } from 'ai';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+import { hasRequiredFields } from './base-provider.js';
 
 import { getModelMetadata } from '../../utils/models-dev.js';
 
@@ -67,7 +68,7 @@ export class OpenAIProvider implements AIProvider {
   }
 
   isConfigured(config: ProviderConfig): boolean {
-    return !!config['api-key'];
+    return hasRequiredFields(this.getConfigSchema(), config);
   }
 
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {

@@ -317,7 +317,14 @@ export const configRouter = router({
     .input(z.object({ cwd: z.string().default(process.cwd()) }).optional())
     .query(async ({ input }) => {
       const cwd = input?.cwd || process.cwd();
-      const config = await loadAIConfig(cwd);
+      const configResult = await loadAIConfig(cwd);
+
+      // Handle Result type
+      if (configResult._tag === 'Failure') {
+        throw new Error('Failed to load AI config');
+      }
+
+      const config = configResult.value;
 
       const providersWithStatus: Record<string, {
         id: string;

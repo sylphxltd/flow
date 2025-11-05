@@ -5,6 +5,7 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import type { LanguageModelV1 } from 'ai';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+import { hasRequiredFields } from './base-provider.js';
 
 import { getModelMetadata } from '../../utils/models-dev.js';
 
@@ -59,7 +60,7 @@ export class AnthropicProvider implements AIProvider {
   }
 
   isConfigured(config: ProviderConfig): boolean {
-    return !!config['api-key'];
+    return hasRequiredFields(this.getConfigSchema(), config);
   }
 
   async fetchModels(_config: ProviderConfig): Promise<ModelInfo[]> {

@@ -6,6 +6,7 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type { LanguageModelV1 } from 'ai';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+import { hasRequiredFields } from './base-provider.js';
 
 
 export class ZaiProvider implements AIProvider {
@@ -35,7 +36,7 @@ export class ZaiProvider implements AIProvider {
   }
 
   isConfigured(config: ProviderConfig): boolean {
-    return !!config['api-key'];
+    return hasRequiredFields(this.getConfigSchema(), config);
   }
 
   async fetchModels(config: ProviderConfig): Promise<ModelInfo[]> {

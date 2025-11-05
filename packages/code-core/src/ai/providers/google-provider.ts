@@ -6,6 +6,7 @@
 import { google } from '@ai-sdk/google';
 import type { LanguageModelV1 } from 'ai';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+import { hasRequiredFields } from './base-provider.js';
 
 import { getModelMetadata } from '../../utils/models-dev.js';
 
@@ -67,8 +68,9 @@ export class GoogleProvider implements AIProvider {
 
   isConfigured(config: ProviderConfig): boolean {
     // Either AI Studio (api-key) OR Vertex AI (project-id + location)
-    const hasAIStudio = !!config['api-key'];
-    const hasVertexAI = !!config['project-id'] && !!config.location;
+    // Support both kebab-case and camelCase
+    const hasAIStudio = !!(config['api-key'] || config['apiKey']);
+    const hasVertexAI = !!(config['project-id'] || config['projectId']) && !!config.location;
     return hasAIStudio || hasVertexAI;
   }
 
