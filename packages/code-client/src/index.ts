@@ -10,12 +10,25 @@
  */
 
 // ============================================================================
-// tRPC Provider
+// tRPC Provider (React Context API)
 // ============================================================================
-export { setTRPCClient, getTRPCClient, resetTRPCClient } from './trpc-provider.js'
+export {
+  // React Context API
+  TRPCProvider,
+  useTRPCClient,
+  type TRPCProviderProps,
+
+  // Client factories
+  createInProcessClient,
+  createHTTPClient,
+  type TypedTRPCClient,
+
+  // Internal API for Zustand stores (DO NOT USE in React components)
+  getTRPCClient,
+} from './trpc-provider.js'
 
 // ============================================================================
-// tRPC Links
+// tRPC Links (Low-level, use createInProcessClient instead)
 // ============================================================================
 export { inProcessLink, type InProcessLinkOptions } from './trpc-links/index.js'
 

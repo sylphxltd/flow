@@ -22,9 +22,13 @@ import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { CodeServer } from '@sylphx/code-server';
-import { createTRPCProxyClient } from '@trpc/client';
-import { setTRPCClient, inProcessLink, type AppRouter } from '@sylphx/code-client';
-import { checkServer, createHTTPClient } from './trpc-client.js';
+import {
+  TRPCProvider,
+  createInProcessClient,
+  createHTTPClient as createHTTPClientFromLib,
+  type TypedTRPCClient,
+} from '@sylphx/code-client';
+import { checkServer } from './trpc-client.js';
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
@@ -96,7 +100,7 @@ async function main() {
       }
 
       // Setup tRPC client
-      let client: any;
+      let client: TypedTRPCClient;
 
       if (options.serverUrl) {
         // Remote mode: Connect to existing HTTP server
@@ -114,19 +118,15 @@ async function main() {
           process.exit(1);
         }
 
-        client = createHTTPClient(options.serverUrl);
+        client = createHTTPClientFromLib(options.serverUrl);
       } else {
         // In-process mode (default): Embed server
         const server = await initEmbeddedServer({ quiet: options.quiet });
 
         // Create in-process tRPC client (zero overhead)
-        client = createTRPCProxyClient<AppRouter>({
-          links: [
-            inProcessLink({
-              router: server.getRouter(),
-              createContext: server.getContext(),
-            }),
-          ],
+        client = createInProcessClient({
+          router: server.getRouter(),
+          createContext: server.getContext(),
         });
 
         // If --web flag, start HTTP server
@@ -141,9 +141,6 @@ async function main() {
           await launchWeb();
         }
       }
-
-      // Set global tRPC client
-      setTRPCClient(client);
 
       // Headless mode: if prompt provided OR --print flag
       if (prompt || options.print) {
@@ -164,7 +161,14 @@ async function main() {
       const { render } = await import('ink');
       const { default: App } = await import('./App.js');
 
-      render(React.createElement(App));
+      // Wrap App with TRPCProvider
+      render(
+        React.createElement(
+          TRPCProvider,
+          { client },
+          React.createElement(App)
+        )
+      );
     });
 
   try {
