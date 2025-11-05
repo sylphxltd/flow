@@ -23,9 +23,27 @@ import { EventSource } from 'eventsource';
  * - Subscriptions: SSE (Server-Sent Events)
  *
  * Used when connecting to remote server with --server-url flag
+ *
+ * SECURITY: Supports API key authentication for HTTP connections
+ * Set SYLPHX_API_KEY environment variable to authenticate
  */
-export function createHTTPClient(serverUrl?: string) {
+export function createHTTPClient(serverUrl?: string, apiKey?: string) {
   const url = serverUrl || process.env.CODE_SERVER_URL || 'http://localhost:3000';
+  const key = apiKey || process.env.SYLPHX_API_KEY;
+
+  // Prepare headers with optional API key
+  const headers = () => {
+    const baseHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add Authorization header if API key is provided
+    if (key) {
+      baseHeaders['Authorization'] = `Bearer ${key}`;
+    }
+
+    return baseHeaders;
+  };
 
   return createTRPCProxyClient<AppRouter>({
     links: [
@@ -35,13 +53,15 @@ export function createHTTPClient(serverUrl?: string) {
         true: httpSubscriptionLink({
           url: `${url}/trpc`,
           EventSource: EventSource as any, // Provide EventSource polyfill for non-browser environments
+          connectionParams: () => {
+            // Add API key to SSE connection if provided
+            return key ? { apiKey: key } : {};
+          },
         }),
         // Queries/Mutations: Use batched HTTP
         false: httpBatchLink({
           url: `${url}/trpc`,
-          headers: () => ({
-            'Content-Type': 'application/json',
-          }),
+          headers,
         }),
       }),
     ],
