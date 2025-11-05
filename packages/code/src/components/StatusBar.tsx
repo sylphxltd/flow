@@ -4,7 +4,7 @@
  */
 
 import { useAppStore } from '@sylphx/code-client';
-import type { ProviderId, ProviderConfig } from '@sylphx/code-core';
+import type { ProviderId } from '@sylphx/code-core';
 import { getProvider, getTokenizerInfo } from '@sylphx/code-core';
 import { getAgentById } from '../embedded-context.js';
 import { Box, Text } from 'ink';
@@ -13,11 +13,18 @@ import React, { useEffect, useState } from 'react';
 interface StatusBarProps {
   provider: ProviderId;
   model: string;
-  providerConfig?: ProviderConfig;
   usedTokens?: number;
 }
 
-export default function StatusBar({ provider, model, providerConfig, usedTokens = 0 }: StatusBarProps) {
+/**
+ * StatusBar Component
+ *
+ * SECURITY: Uses hardcoded metadata instead of calling provider API
+ * - No API keys needed on client side
+ * - Context length data from provider static metadata
+ * - Safe for Web GUI and remote mode
+ */
+export default function StatusBar({ provider, model, usedTokens = 0 }: StatusBarProps) {
   const [contextLength, setContextLength] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [tokenizerInfo, setTokenizerInfo] = useState<{
@@ -40,7 +47,9 @@ export default function StatusBar({ provider, model, providerConfig, usedTokens 
       setLoading(true);
       try {
         const providerInstance = getProvider(provider);
-        const details = await providerInstance.getModelDetails(model, providerConfig);
+        // SECURITY: Call getModelDetails WITHOUT config (uses hardcoded metadata only)
+        // This prevents exposing API keys to client
+        const details = await providerInstance.getModelDetails(model);
         setContextLength(details?.contextLength || null);
 
         // Get tokenizer info
@@ -54,7 +63,7 @@ export default function StatusBar({ provider, model, providerConfig, usedTokens 
     }
 
     loadModelDetails();
-  }, [provider, model, providerConfig]);
+  }, [provider, model]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {

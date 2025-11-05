@@ -7,7 +7,8 @@
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
 import { router, publicProcedure } from '../trpc.js';
-import { loadAIConfig, saveAIConfig, getAIConfigPaths } from '@sylphx/code-core';
+import { loadAIConfig, saveAIConfig, getAIConfigPaths, getProvider } from '@sylphx/code-core';
+import type { AIConfig, ProviderId } from '@sylphx/code-core';
 import { eventBus } from '../../services/event-bus.service.js';
 
 const AIConfigSchema = z.object({
@@ -21,17 +22,90 @@ const AIConfigSchema = z.object({
   ).optional(),
 });
 
+/**
+ * Mask a sensitive value (show first 7 chars, rest as ***)
+ * Examples:
+ * - "sk-ant-1234567890" → "sk-ant-***"
+ * - "AIzaSyABC123" → "AIzaSyA***"
+ */
+function maskSensitiveValue(value: string): string {
+  if (typeof value !== 'string' || value.length === 0) return '***';
+
+  const showChars = Math.min(7, Math.floor(value.length / 2));
+  return value.substring(0, showChars) + '***';
+}
+
+/**
+ * Sanitize AI config by masking sensitive fields
+ * SECURITY: Uses provider ConfigField schema to determine which fields are secret
+ *
+ * @param config - Raw config from file system
+ * @returns Sanitized config with masked sensitive fields
+ */
+function sanitizeAIConfig(config: AIConfig): AIConfig {
+  if (!config.providers) {
+    return config;
+  }
+
+  const sanitizedProviders: Record<string, any> = {};
+
+  for (const [providerId, providerConfig] of Object.entries(config.providers)) {
+    const sanitizedProvider: Record<string, any> = {};
+
+    // Get provider schema to know which fields are secret
+    let secretFields: Set<string>;
+    try {
+      const provider = getProvider(providerId as ProviderId);
+      const configSchema = provider.getConfigSchema();
+      // Extract field keys marked as secret
+      secretFields = new Set(
+        configSchema
+          .filter(field => field.secret === true)
+          .map(field => field.key)
+      );
+    } catch (error) {
+      // Fallback: if provider not found, mask nothing (better than breaking)
+      console.warn(`Provider ${providerId} not found for config sanitization`);
+      secretFields = new Set();
+    }
+
+    for (const [fieldName, fieldValue] of Object.entries(providerConfig)) {
+      if (secretFields.has(fieldName) && typeof fieldValue === 'string') {
+        // Mask secret field
+        sanitizedProvider[fieldName] = maskSensitiveValue(fieldValue);
+      } else {
+        // Keep non-secret field as-is
+        sanitizedProvider[fieldName] = fieldValue;
+      }
+    }
+
+    sanitizedProviders[providerId] = sanitizedProvider;
+  }
+
+  return {
+    ...config,
+    providers: sanitizedProviders,
+  };
+}
+
 export const configRouter = router({
   /**
    * Load AI config from file system
    * Backend reads files, UI stays clean
+   *
+   * SECURITY: Sanitizes sensitive fields (API keys) before returning to client
+   * - API keys are masked: "sk-ant-..." → "sk-ant-***" (shows first 7 chars)
+   * - Other sensitive fields (passwords, tokens) also masked
+   * - Non-sensitive fields (provider, model) returned as-is
    */
   load: publicProcedure
     .input(z.object({ cwd: z.string().default(process.cwd()) }))
     .query(async ({ input }) => {
       const result = await loadAIConfig(input.cwd);
       if (result._tag === 'Success') {
-        return { success: true as const, config: result.value };
+        // Sanitize config: mask sensitive fields
+        const sanitizedConfig = sanitizeAIConfig(result.value);
+        return { success: true as const, config: sanitizedConfig };
       }
       // No config yet - return empty
       return { success: true as const, config: { providers: {} } };

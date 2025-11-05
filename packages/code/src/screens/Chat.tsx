@@ -579,14 +579,12 @@ export default function Chat(_props: ChatProps) {
             <StatusBar
               provider={currentSession.provider}
               model={currentSession.model}
-              providerConfig={aiConfig?.providers?.[currentSession.provider]}
               usedTokens={usedTokens}
             />
           ) : aiConfig?.defaultProvider && aiConfig?.defaultModel ? (
             <StatusBar
               provider={aiConfig.defaultProvider}
               model={aiConfig.defaultModel}
-              providerConfig={aiConfig.providers?.[aiConfig.defaultProvider]}
               usedTokens={0}
             />
           ) : null}
