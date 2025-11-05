@@ -41,7 +41,7 @@ export function SelectionOptionsList({
           : isSelected ? '>' : ' ';
 
         return (
-          <Box key={option.value || option.label} flexDirection="column" marginBottom={idx < options.length - 1 ? 1 : 0}>
+          <Box key={`${option.value || option.label}-${idx}`} flexDirection="column" marginBottom={idx < options.length - 1 ? 1 : 0}>
             <Box>
               <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
                 {symbol} {option.label}
