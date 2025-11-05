@@ -1,24 +1,24 @@
 /**
  * tRPC Context
- * Provides database repositories and config to all tRPC procedures
+ * Provides services via AppContext (functional provider pattern)
  */
 
-import { getSessionRepository } from '@sylphx/code-core';
-import { loadAIConfig } from '@sylphx/code-core';
+import { loadAIConfig, type AppContext } from '@sylphx/code-core';
 import type { SessionRepository } from '@sylphx/code-core';
 import type { AIConfig } from '@sylphx/code-core';
 
 export interface Context {
   sessionRepository: SessionRepository;
   aiConfig: AIConfig;
+  appContext: AppContext;
 }
 
 /**
  * Create context for each request
- * In-process calls reuse same database connection
+ * Receives AppContext from CodeServer (dependency injection)
  */
-export async function createContext(): Promise<Context> {
-  const sessionRepository = await getSessionRepository();
+export async function createContext(appContext: AppContext): Promise<Context> {
+  const sessionRepository = appContext.database.getRepository();
 
   // Load AI config
   let aiConfig: AIConfig = { providers: {} };
@@ -34,5 +34,6 @@ export async function createContext(): Promise<Context> {
   return {
     sessionRepository,
     aiConfig,
+    appContext,
   };
 }

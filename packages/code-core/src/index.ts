@@ -12,6 +12,21 @@
  */
 
 // ============================================================================
+// App Context (NEW: Functional Provider Pattern)
+// ============================================================================
+export {
+  createAppContext,
+  initializeAppContext,
+  closeAppContext,
+  type AppContext,
+  type AppConfig,
+  type DatabaseConfig,
+  type DatabaseService,
+  type AgentManagerService,
+  type RuleManagerService,
+} from './context.js'
+
+// ============================================================================
 // AI & Streaming
 // ============================================================================
 export { createAIStream, getSystemStatus, buildSystemStatusFromMetadata, injectSystemStatusToOutput, getSystemPrompt } from './ai/ai-sdk.js'

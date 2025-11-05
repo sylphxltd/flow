@@ -6,6 +6,7 @@
  * - Default: In-process (zero overhead, direct function calls)
  * - Optional: HTTP server (Web GUI, remote connections)
  * - Inspired by graphql-yoga, @trpc/server
+ * - Uses functional provider pattern via AppContext
  */
 
 import express, { type Express } from 'express';
@@ -13,9 +14,10 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { appRouter, type AppRouter } from './trpc/routers/index.js';
 import { createContext, type Context } from './trpc/context.js';
 import {
-  initializeAgentManager,
-  initializeRuleManager,
-  getDatabase,
+  createAppContext,
+  initializeAppContext,
+  closeAppContext,
+  type AppContext,
 } from '@sylphx/code-core';
 import type { Server } from 'node:http';
 
@@ -59,6 +61,7 @@ export class CodeServer {
   private httpServer?: Server;
   private expressApp?: Express;
   private initialized = false;
+  private appContext?: AppContext;
 
   constructor(config: ServerConfig = {}) {
     this.config = {
@@ -72,18 +75,20 @@ export class CodeServer {
   /**
    * Initialize server resources (database, agent/rule managers)
    * Must be called before getRouter() or startHTTP()
+   * Uses functional provider pattern via AppContext
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
       return;
     }
 
-    // Initialize database
-    await getDatabase();
+    // Create and initialize AppContext (functional provider pattern)
+    this.appContext = createAppContext({
+      cwd: this.config.cwd,
+      database: this.config.dbPath ? { url: this.config.dbPath } : undefined,
+    });
 
-    // Initialize agent and rule managers (server-side singletons)
-    await initializeAgentManager(this.config.cwd);
-    await initializeRuleManager(this.config.cwd);
+    await initializeAppContext(this.appContext);
 
     this.initialized = true;
   }
@@ -101,12 +106,16 @@ export class CodeServer {
 
   /**
    * Get context factory for in-process use
+   * Binds AppContext to context creation
    */
-  getContext(): typeof createContext {
-    if (!this.initialized) {
+  getContext(): () => Promise<Context> {
+    if (!this.initialized || !this.appContext) {
       throw new Error('Server not initialized. Call initialize() first.');
     }
-    return createContext;
+
+    // Bind appContext to createContext via closure
+    const appContext = this.appContext;
+    return () => createContext(appContext);
   }
 
   /**
@@ -125,11 +134,13 @@ export class CodeServer {
       this.expressApp = express();
 
       // tRPC middleware with SSE support
+      // Bind appContext to createContext via closure
+      const appContext = this.appContext;
       this.expressApp.use(
         '/trpc',
         createExpressMiddleware({
           router: appRouter,
-          createContext,
+          createContext: () => createContext(appContext!),
         })
       );
 
@@ -209,12 +220,17 @@ export class CodeServer {
    */
   async close(): Promise<void> {
     if (this.httpServer) {
-      return new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         this.httpServer!.close((err) => {
           if (err) reject(err);
           else resolve();
         });
       });
+    }
+
+    // Cleanup AppContext
+    if (this.appContext) {
+      await closeAppContext(this.appContext);
     }
   }
 
