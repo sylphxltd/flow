@@ -9,6 +9,14 @@ import type { SessionRepository, AIConfig } from '@sylphx/code-core';
 import type { AppContext } from '../context.js';
 import type { Request, Response } from 'express';
 
+/**
+ * User roles for authorization (OWASP API5)
+ * - admin: Full access (in-process CLI, local user)
+ * - user: Standard access (HTTP with API key)
+ * - guest: Read-only access (HTTP without API key, public endpoints)
+ */
+export type UserRole = 'admin' | 'user' | 'guest';
+
 export interface Context {
   sessionRepository: SessionRepository;
   aiConfig: AIConfig;
@@ -18,6 +26,8 @@ export interface Context {
     isAuthenticated: boolean;
     userId?: string;
     source: 'in-process' | 'http';
+    // SECURITY: User role for authorization (API5: Function Level Authorization)
+    role: UserRole;
   };
   // HTTP request/response for HTTP mode (undefined for in-process)
   req?: Request;
@@ -53,15 +63,17 @@ export async function createContext(options: ContextOptions): Promise<Context> {
     console.error('Failed to load AI config:', error);
   }
 
-  // SECURITY: Determine authentication status
+  // SECURITY: Determine authentication status and role
   let auth: Context['auth'];
 
   if (!req) {
     // In-process call: Trusted (from same process/CLI)
+    // ROLE: admin (full access to all operations including system management)
     auth = {
       isAuthenticated: true,
       userId: 'local',
       source: 'in-process',
+      role: 'admin',
     };
   } else {
     // HTTP call: Validate API key
@@ -69,17 +81,21 @@ export async function createContext(options: ContextOptions): Promise<Context> {
     const validApiKey = process.env.SYLPHX_API_KEY;
 
     if (validApiKey && apiKey === validApiKey) {
+      // Authenticated HTTP client
+      // ROLE: user (standard access, can read/write own data)
       auth = {
         isAuthenticated: true,
         userId: 'http-client',
         source: 'http',
+        role: 'user',
       };
     } else {
-      // Allow unauthenticated for now (public endpoints)
-      // Protected endpoints will check via middleware
+      // Unauthenticated HTTP client
+      // ROLE: guest (read-only public endpoints)
       auth = {
         isAuthenticated: false,
         source: 'http',
+        role: 'guest',
       };
     }
   }

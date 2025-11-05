@@ -8,6 +8,7 @@ import { sessionRouter } from './session.router.js';
 import { messageRouter } from './message.router.js';
 import { todoRouter } from './todo.router.js';
 import { configRouter } from './config.router.js';
+import { adminRouter } from './admin.router.js';
 
 /**
  * Main application router
@@ -18,6 +19,7 @@ export const appRouter = router({
   message: messageRouter,
   todo: todoRouter,
   config: configRouter,
+  admin: adminRouter,
 });
 
 /**

@@ -385,7 +385,246 @@ bun test src/services/__tests__/rate-limiter.test.ts
 - Per-endpoint custom limits
 - Rate limit bypass for admin users
 
+## API5: Broken Function Level Authorization ✅
+
+**Implementation**: Role-based access control with hierarchical permissions
+
+### Architecture
+
+Function level authorization protects against:
+- Unauthorized access to admin functions
+- Privilege escalation attacks
+- Unauthorized system management operations
+- Data exposure through admin endpoints
+
+**Role hierarchy**:
+1. **admin**: Full access (in-process CLI, local user)
+2. **user**: Standard access (HTTP with API key)
+3. **guest**: Read-only public access (HTTP without API key)
+
+### Role Definitions
+
+**Admin Role**:
+- Source: In-process (CLI/TUI)
+- Permissions: Full system access
+- Can access: All endpoints including admin operations
+- Use cases: Local development, system management
+
+**User Role**:
+- Source: HTTP with valid API key
+- Permissions: Standard read/write operations
+- Can access: CRUD operations on own data
+- Cannot access: Admin endpoints, system management
+- Use cases: Web GUI, remote access
+
+**Guest Role**:
+- Source: HTTP without API key
+- Permissions: Read-only public endpoints
+- Can access: Health check, public queries
+- Cannot access: Mutations, admin endpoints
+- Use cases: Monitoring, health checks
+
+### Protected Endpoints
+
+**Admin-only** (requires admin role):
+- `admin.deleteAllSessions` - Delete all data (dangerous)
+- `admin.getSystemStats` - System statistics and metrics
+- `admin.forceGC` - Garbage collection
+
+**User level** (requires user or admin):
+- `session.create` - Create sessions
+- `session.updateTitle` - Update session metadata
+- `session.delete` - Delete sessions
+- `message.add` - Add messages
+- `message.streamResponse` - AI streaming
+- `config.updateDefaultProvider` - Config changes
+- All other mutations
+
+**Public** (no authentication):
+- `admin.getHealth` - Health check
+- `session.getRecent` - List sessions
+- `session.getById` - Get session details
+- `message.getBySession` - Get messages
+- All read-only queries
+
+### Usage Example
+
+```typescript
+// In-process client (admin role)
+import { CodeServer } from '@sylphx/code-server';
+import { inProcessLink } from '@sylphx/code-client';
+
+const server = new CodeServer();
+await server.initialize();
+
+const client = createTRPCClient({
+  links: [inProcessLink({
+    router: server.getRouter(),
+    createContext: server.getContext(),
+  })],
+});
+
+// ✅ Admin can delete all sessions
+await client.admin.deleteAllSessions.mutate({ confirm: true });
+
+// ✅ Admin can get system stats
+const stats = await client.admin.getSystemStats.query();
+```
+
+```typescript
+// HTTP client with API key (user role)
+const client = createTRPCClient({
+  links: [httpBatchLink({
+    url: 'http://localhost:3000/trpc',
+    headers: {
+      Authorization: 'Bearer your-api-key',
+    },
+  })],
+});
+
+// ✅ User can create sessions
+await client.session.create.mutate({
+  provider: 'anthropic',
+  model: 'claude-3-5-sonnet-20241022',
+});
+
+// ❌ User cannot access admin endpoints
+try {
+  await client.admin.deleteAllSessions.mutate({ confirm: true });
+} catch (error) {
+  // TRPCError: FORBIDDEN
+  // Access denied. Required role: admin. Your role: user
+}
+```
+
+```typescript
+// HTTP client without API key (guest role)
+const client = createTRPCClient({
+  links: [httpBatchLink({
+    url: 'http://localhost:3000/trpc',
+  })],
+});
+
+// ✅ Guest can access public endpoints
+const health = await client.admin.getHealth.query();
+
+// ❌ Guest cannot create sessions
+try {
+  await client.session.create.mutate({
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-20241022',
+  });
+} catch (error) {
+  // TRPCError: UNAUTHORIZED
+  // Authentication required. Provide API key via Authorization header
+}
+```
+
+### Error Responses
+
+**Forbidden (wrong role)**:
+```typescript
+{
+  code: 'FORBIDDEN',
+  message: 'Access denied. Required role: admin. Your role: user'
+}
+```
+
+**Unauthorized (no auth)**:
+```typescript
+{
+  code: 'UNAUTHORIZED',
+  message: 'Authentication required. Provide API key via Authorization header (Bearer <key>)'
+}
+```
+
+### Implementation Details
+
+**Context Role Assignment** (`packages/code-server/src/trpc/context.ts`):
+```typescript
+// In-process → admin
+auth = {
+  isAuthenticated: true,
+  userId: 'local',
+  source: 'in-process',
+  role: 'admin',
+};
+
+// HTTP with API key → user
+auth = {
+  isAuthenticated: true,
+  userId: 'http-client',
+  source: 'http',
+  role: 'user',
+};
+
+// HTTP without API key → guest
+auth = {
+  isAuthenticated: false,
+  source: 'http',
+  role: 'guest',
+};
+```
+
+**Authorization Middleware** (`packages/code-server/src/trpc/trpc.ts`):
+```typescript
+function requireRole(...allowedRoles: UserRole[]) {
+  return t.middleware(async ({ ctx, next }) => {
+    if (!allowedRoles.includes(ctx.auth.role)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `Access denied. Required role: ${allowedRoles.join(' or ')}`,
+      });
+    }
+    return next();
+  });
+}
+
+// Admin-only procedure
+export const adminProcedure = protectedProcedure.use(requireRole('admin'));
+
+// User procedure (admin or user)
+export const userProcedure = protectedProcedure.use(requireRole('admin', 'user'));
+```
+
+### Procedure Types
+
+**Available procedures**:
+- `publicProcedure` - No auth required
+- `protectedProcedure` - Authentication required
+- `adminProcedure` - Admin role required
+- `userProcedure` - User or admin role required
+- `strictProcedure` - Protected + strict rate limit
+- `moderateProcedure` - Protected + moderate rate limit
+- `adminStrictProcedure` - Admin + strict rate limit
+- `adminModerateProcedure` - Admin + moderate rate limit
+- `userStrictProcedure` - User + strict rate limit
+- `userModerateProcedure` - User + moderate rate limit
+- `userStreamingProcedure` - User + streaming rate limit
+
+### Security Benefits
+
+1. **Privilege Separation**: Admin operations isolated to local CLI
+2. **Least Privilege**: HTTP clients limited to necessary operations
+3. **Defense in Depth**: Multiple security layers (auth + authz + rate limiting)
+4. **Audit Trail**: Role recorded in context for logging
+
+### Testing
+
+Run authorization tests:
+```bash
+cd packages/code-server
+bun test src/trpc/__tests__/authorization.test.ts
+```
+
+### Future Enhancements
+
+- Custom roles per API key
+- Fine-grained permissions (not just roles)
+- Role-based rate limits
+- Dynamic role assignment
+- Multi-tenant support with organization-level roles
+
 ## Other OWASP API Security Items
 
-- API5: Broken Function Level Authorization - ⏳ Pending
 - API9: Improper Inventory Management - ⏳ Pending

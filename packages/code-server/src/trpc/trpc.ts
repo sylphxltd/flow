@@ -1,11 +1,11 @@
 /**
  * tRPC Initialization
  * Base procedures and router factory
- * SECURITY: Implements OWASP API2 (Broken Authentication) and API4 (Rate Limiting)
+ * SECURITY: Implements OWASP API2 (Broken Authentication), API4 (Rate Limiting), and API5 (Function Level Authorization)
  */
 
 import { initTRPC, TRPCError } from '@trpc/server';
-import type { Context } from './context.js';
+import type { Context, UserRole } from './context.js';
 import {
   strictRateLimiter,
   moderateRateLimiter,
@@ -50,10 +50,34 @@ const isAuthenticated = t.middleware(async ({ ctx, next }) => {
         ...ctx.auth,
         isAuthenticated: true as const,
         userId: ctx.auth.userId!,
+        role: ctx.auth.role,
       },
     },
   });
 });
+
+/**
+ * SECURITY: Authorization middleware factory (OWASP API5)
+ * Checks if user has required role to access function
+ *
+ * Role hierarchy:
+ * - admin: Can access all functions (local CLI)
+ * - user: Can access standard functions (HTTP with API key)
+ * - guest: Can only access public functions (HTTP without API key)
+ */
+function requireRole(...allowedRoles: UserRole[]) {
+  return t.middleware(async ({ ctx, next }) => {
+    // Check if user's role is in allowed roles
+    if (!allowedRoles.includes(ctx.auth.role)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `Access denied. Required role: ${allowedRoles.join(' or ')}. Your role: ${ctx.auth.role}`,
+      });
+    }
+
+    return next();
+  });
+}
 
 /**
  * Protected procedure (authentication required)
@@ -63,6 +87,20 @@ const isAuthenticated = t.middleware(async ({ ctx, next }) => {
  * ALTERNATIVE: JWT with user roles for multi-tenant scenarios
  */
 export const protectedProcedure = t.procedure.use(isAuthenticated);
+
+/**
+ * SECURITY: Admin-only procedure (OWASP API5)
+ * Requires admin role (in-process CLI only)
+ * Use for system management operations
+ */
+export const adminProcedure = protectedProcedure.use(requireRole('admin'));
+
+/**
+ * SECURITY: User procedure (OWASP API5)
+ * Requires user or admin role (authenticated access)
+ * Use for standard read/write operations
+ */
+export const userProcedure = protectedProcedure.use(requireRole('admin', 'user'));
 
 /**
  * SECURITY: Rate limiting middleware factory (OWASP API4)
@@ -126,6 +164,33 @@ export const lenientProcedure = protectedProcedure.use(
 // Streaming rate limiting: 5 streams/min (subscriptions)
 export const streamingProcedure = protectedProcedure.use(
   createRateLimitMiddleware(streamingRateLimiter, 'streaming endpoint')
+);
+
+/**
+ * Role-based + rate-limited procedures
+ * Combine authorization and rate limiting for comprehensive security
+ */
+
+// Admin procedures with rate limiting
+export const adminStrictProcedure = adminProcedure.use(
+  createRateLimitMiddleware(strictRateLimiter, 'admin strict endpoint')
+);
+
+export const adminModerateProcedure = adminProcedure.use(
+  createRateLimitMiddleware(moderateRateLimiter, 'admin moderate endpoint')
+);
+
+// User procedures with rate limiting (most common)
+export const userStrictProcedure = userProcedure.use(
+  createRateLimitMiddleware(strictRateLimiter, 'user strict endpoint')
+);
+
+export const userModerateProcedure = userProcedure.use(
+  createRateLimitMiddleware(moderateRateLimiter, 'user moderate endpoint')
+);
+
+export const userStreamingProcedure = userProcedure.use(
+  createRateLimitMiddleware(streamingRateLimiter, 'user streaming endpoint')
 );
 
 /**
