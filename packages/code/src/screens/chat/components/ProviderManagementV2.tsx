@@ -75,7 +75,7 @@ export function ProviderManagement({
     const description = metadata?.description || 'AI provider';
 
     return {
-      label: `${name} ${isConfigured ? '✓' : '○'}`,
+      label: isConfigured ? `${name} ✓` : name,
       value: id,
       description,
     };
