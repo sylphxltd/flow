@@ -30,7 +30,8 @@ export interface CommandState {
   setLoadError: (error: string | null) => void;
   commandSessionRef: React.MutableRefObject<string | null>;
   inputComponent: ReactNode | null;
-  setInputComponent: (component: ReactNode | null) => void;
+  setInputComponent: (component: ReactNode | null, title?: string) => void;
+  inputComponentTitle: string | null;
 }
 
 export function useCommandState(): CommandState {
@@ -52,6 +53,12 @@ export function useCommandState(): CommandState {
   const [loadError, setLoadError] = useState<string | null>(null);
   const commandSessionRef = useRef<string | null>(null);
   const [inputComponent, setInputComponent] = useState<ReactNode | null>(null);
+  const [inputComponentTitle, setInputComponentTitle] = useState<string | null>(null);
+
+  const handleSetInputComponent = (component: ReactNode | null, title?: string) => {
+    setInputComponent(component);
+    setInputComponentTitle(title || null);
+  };
 
   return {
     ctrlPressed,
@@ -76,6 +83,7 @@ export function useCommandState(): CommandState {
     setLoadError,
     commandSessionRef,
     inputComponent,
-    setInputComponent,
+    setInputComponent: handleSetInputComponent,
+    inputComponentTitle,
   };
 }

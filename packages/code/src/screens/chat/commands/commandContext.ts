@@ -73,7 +73,7 @@ export interface CommandContextParams {
   setSelectedCommandIndex: (index: number) => void;
   setSelectionFilter: (filter: string) => void;
   setIsFilterMode: (isFilterMode: boolean) => void;
-  setInputComponent: (component: ReactNode | null) => void;
+  setInputComponent: (component: ReactNode | null, title?: string) => void;
 
   // Refs
   inputResolver: React.MutableRefObject<
@@ -189,6 +189,9 @@ export function createCommandContext(args: string[], params: CommandContextParam
           const { createElement } = require('react');
           const { SelectionInput } = require('../components/SelectionInput.js');
 
+          // Use first question as title
+          const title = options.questions[0]?.question || 'Selection';
+
           setInputComponent(
             createElement(SelectionInput, {
               questions: options.questions,
@@ -202,7 +205,8 @@ export function createCommandContext(args: string[], params: CommandContextParam
                 setInputComponent(null);
                 addLog('[waitForInput] Selection cancelled');
               },
-            })
+            }),
+            title
           );
         }
       });
@@ -228,6 +232,6 @@ export function createCommandContext(args: string[], params: CommandContextParam
     updateNotificationSettings: (settings) => updateNotificationSettings(settings),
     updateOutput: (content) => addLog(content),
     getCommands: () => getCommands(),
-    setInputComponent: (component) => setInputComponent(component),
+    setInputComponent: (component, title) => setInputComponent(component, title),
   };
 }

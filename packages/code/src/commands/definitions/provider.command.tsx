@@ -47,7 +47,8 @@ export const providerCommand: Command = {
           context.updateProvider(providerId as any, config);
           context.addLog(`[provider] Configured provider: ${providerId}`);
         }}
-      />
+      />,
+      'Provider Management'
     );
 
     context.addLog(`[provider] Provider management opened with action: ${action || 'select'}`);

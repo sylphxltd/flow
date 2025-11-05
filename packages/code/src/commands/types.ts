@@ -150,8 +150,9 @@ export interface CommandContext {
   updateOutput: (content: string) => void;
 
   // Replace input area with custom component (universal method)
-  // Commands can use JSX in .tsx files: context.setInputComponent(<YourComponent />)
-  setInputComponent: (component: ReactNode | null) => void;
+  // Commands can use JSX in .tsx files: context.setInputComponent(<YourComponent />, 'Title')
+  // Title replaces 'YOU' header in InputSection
+  setInputComponent: (component: ReactNode | null, title?: string) => void;
 }
 
 /**

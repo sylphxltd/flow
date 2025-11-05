@@ -194,18 +194,6 @@ export function SelectionInput({ questions, onComplete, onCancel }: SelectionInp
   // Render
   return (
     <Box flexDirection="column" paddingY={1}>
-      {/* Question header */}
-      <Box marginBottom={1}>
-        <Text bold color="cyan">
-          {currentQuestion.question}
-        </Text>
-        {questions.length > 1 && (
-          <Text dimColor>
-            {' '}
-            ({currentPage + 1}/{questions.length})
-          </Text>
-        )}
-      </Box>
 
       {/* Filter mode */}
       {isFilterMode && (

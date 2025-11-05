@@ -215,12 +215,6 @@ export function ProviderManagement({
 
     return (
       <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Provider Management
-          </Text>
-        </Box>
-
         {actions.map((action, idx) => {
           const isSelected = idx === selectedIndex;
 
@@ -245,12 +239,6 @@ export function ProviderManagement({
   if (step === 'select-provider') {
     return (
       <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            {action === 'use' ? 'Select Provider' : 'Configure Provider'}
-          </Text>
-        </Box>
-
         {providerOptions.map((provider, idx) => {
           const isSelected = idx === selectedIndex;
 
@@ -274,16 +262,8 @@ export function ProviderManagement({
 
   // Render: Step 3 - Configure provider
   if (step === 'configure-provider' && selectedProvider) {
-    const providerName =
-      providerOptions.find((p) => p.id === selectedProvider)?.name || selectedProvider;
-
     return (
       <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            Configure {providerName}
-          </Text>
-        </Box>
 
         {configSchema.map((field, idx) => {
           const isSelected = idx === currentFieldIndex && !editingField;

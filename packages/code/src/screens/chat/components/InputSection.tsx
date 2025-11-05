@@ -77,6 +77,7 @@ interface InputSectionProps {
 
   // Custom input component (replaces input area)
   inputComponent: React.ReactNode | null;
+  inputComponentTitle: string | null;
 }
 
 export function InputSection({
@@ -115,22 +116,40 @@ export function InputSection({
   validTags,
   showEscHint,
   inputComponent,
+  inputComponentTitle,
 }: InputSectionProps) {
+  // Determine header title based on context
+  const getHeaderTitle = (): string => {
+    // Custom component with title
+    if (inputComponent && inputComponentTitle) {
+      return inputComponentTitle;
+    }
+    // Selection mode - use current question as title
+    if (pendingInput?.type === 'selection' && pendingInput.questions[multiSelectionPage]) {
+      return pendingInput.questions[multiSelectionPage].question;
+    }
+    // Text input mode with prompt - use prompt as title
+    if (pendingInput?.type === 'text' && pendingInput.prompt) {
+      return pendingInput.prompt;
+    }
+    // Default
+    return 'YOU';
+  };
+
+  const headerTitle = getHeaderTitle();
+
   return (
     <Box flexDirection="column" flexShrink={0}>
-      {/* Custom Input Component - replaces entire input area including YOU header */}
+      {/* Dynamic Header */}
+      <Box>
+        <Text color="#00D9FF">▌ {headerTitle}</Text>
+      </Box>
+
+      {/* Custom Input Component */}
       {inputComponent ? (
-        <Box flexDirection="column">
-          <Box>
-            <Text color="#00D9FF">▌ YOU</Text>
-          </Box>
-          {inputComponent}
-        </Box>
+        inputComponent
       ) : (
         <>
-          <Box>
-            <Text color="#00D9FF">▌ YOU</Text>
-          </Box>
 
           {/* PendingInput Mode - when command calls waitForInput */}
           {pendingInput && pendingInput.type === 'selection' ? (

@@ -152,6 +152,7 @@ export default function Chat(_props: ChatProps) {
     loadError,
     commandSessionRef,
     inputComponent,
+    inputComponentTitle,
     setPendingCommand,
     setCachedOptions,
     setCurrentlyLoading,
@@ -585,6 +586,7 @@ export default function Chat(_props: ChatProps) {
             getAIConfig={getAIConfig}
             setPendingCommand={setPendingCommand}
             inputComponent={inputComponent}
+            inputComponentTitle={inputComponentTitle}
           />
         </Box>
 
