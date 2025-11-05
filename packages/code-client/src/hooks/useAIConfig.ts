@@ -20,9 +20,8 @@ export function useAIConfig() {
       const result = await client.config.load.query({ cwd });
 
       if (result.success) {
-        // WORKAROUND: Directly use setState to bypass immer middleware issue
-        const { useAppStore } = await import('../stores/app-store.js');
-        useAppStore.setState({ aiConfig: result.config });
+        // Use setAIConfig to trigger logic for loading defaultEnabledRuleIds and defaultAgentId
+        setAIConfig(result.config);
       } else {
         // No config yet, start with empty
         setAIConfig({ providers: {} });
