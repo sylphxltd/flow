@@ -29,8 +29,8 @@ interface StatusBarProps {
  */
 export default function StatusBar({ provider, model, usedTokens = 0 }: StatusBarProps) {
   // Subscribe to current agent from store (event-driven, no polling!)
-  const currentAgentId = useAppStore((state) => state.currentAgentId);
-  const currentAgent = getAgentById(currentAgentId);
+  const selectedAgentId = useAppStore((state) => state.selectedAgentId);
+  const currentAgent = getAgentById(selectedAgentId);
   const agentName = currentAgent?.metadata.name || '';
 
   // Subscribe to enabled rules count

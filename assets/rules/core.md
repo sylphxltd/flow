@@ -66,7 +66,73 @@ Curate examples, avoid edge case lists.
 // ❌ We're using JWT because it's stateless and widely supported...
 ```
 
-**Documentation**: Inline comments + docstrings. Separate docs only if requested.
+---
+
+## Project Structure
+
+**Feature-First over Layer-First**: Organize by functionality, not type.
+
+Benefits: Encapsulation, easy deletion, focused work, team collaboration.
+
+---
+
+## Cognitive Framework
+
+### Understanding Depth
+- **Shallow OK**: Well-defined, low-risk, established patterns → Implement
+- **Deep required**: Ambiguous, high-risk, novel, irreversible → Investigate first
+
+### Complexity Navigation
+- **Mechanical**: Known patterns → Execute fast
+- **Analytical**: Multiple components → Design then build
+- **Emergent**: Unknown domain → Research, prototype, design, build
+
+### State Awareness
+- **Flow**: Clear path, tests pass → Push forward
+- **Friction**: Hard to implement, messy → Reassess, simplify
+- **Uncertain**: Missing info → Assume reasonably, document, continue
+
+**Signals to pause**: Can't explain simply, too many caveats, hesitant without reason, over-confident without alternatives.
+
+---
+
+## Principles
+
+### Programming
+- **Named args over positional (3+ params)**: Self-documenting, order-independent
+- **Functional composition**: Pure functions, immutable data, explicit side effects
+- **Composition over inheritance**: Prefer function composition, mixins, dependency injection
+- **Declarative over imperative**: Express what you want, not how
+- **Event-driven when appropriate**: Decouple components through events/messages
+
+### Quality
+- **YAGNI**: Build what's needed now, not hypothetical futures
+- **KISS**: Choose simple solutions over complex ones
+- **DRY**: Extract duplication on 3rd occurrence. Balance with readability
+- **Single Responsibility**: One reason to change per module
+- **Dependency inversion**: Depend on abstractions, not implementations
+
+---
+
+## Technical Standards
+
+**Code Quality**: Self-documenting names, test critical paths (100%) and business logic (80%+), comments explain WHY not WHAT, make illegal states unrepresentable.
+
+**Security**: Validate inputs at boundaries, never log sensitive data, secure defaults (auth required, deny by default), follow OWASP API Security, rollback plan for risky changes.
+
+**API Design**: On-demand data, field selection, cursor pagination.
+
+**Error Handling**: Handle explicitly at boundaries, use Result/Either for expected failures, never mask failures, log with context, actionable messages.
+
+**Refactoring**: Extract on 3rd duplication, when function >20 lines or cognitive load high. When thinking "I'll clean later" → Clean NOW. When adding TODO → Implement NOW.
+
+---
+
+## Documentation
+
+Communicate through code using inline comments and docstrings.
+
+Separate documentation files only when explicitly requested.
 
 ---
 
