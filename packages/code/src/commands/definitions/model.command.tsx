@@ -4,6 +4,7 @@
  */
 
 import { ModelSelection } from '../../screens/chat/components/ModelSelection.js';
+import { getModelCompletions } from '../../completions/model.js';
 import type { Command } from '../types.js';
 
 export const modelCommand: Command = {
@@ -15,52 +16,8 @@ export const modelCommand: Command = {
       name: 'model-name',
       description: 'Model to switch to',
       required: false,
-      loadOptions: async (previousArgs, context) => {
-        try {
-          // Get AI config from context
-          const aiConfig = context?.getConfig();
-          if (!aiConfig?.providers) {
-            return [];
-          }
-
-          // Get current session's provider
-          const currentSession = context?.getCurrentSession();
-          const currentProviderId = currentSession?.provider || aiConfig.defaultProvider;
-
-          if (!currentProviderId) {
-            return [];
-          }
-
-          // Fetch models from current provider only
-          const config = aiConfig.providers[currentProviderId];
-          if (!config) {
-            return [];
-          }
-
-          try {
-            const { fetchModels } = await import('@sylphx/code-core');
-            const models = await fetchModels(currentProviderId as any, config);
-            return models.map((m) => ({
-              id: m.id,
-              label: m.name,
-              value: m.id,
-            }));
-          } catch (error) {
-            if (context) {
-              context.addLog(
-                `Failed to fetch models for ${currentProviderId}: ${error instanceof Error ? error.message : String(error)}`
-              );
-            }
-            return [];
-          }
-        } catch (error) {
-          if (context) {
-            context.addLog(
-              `Error loading models: ${error instanceof Error ? error.message : String(error)}`
-            );
-          }
-          return [];
-        }
+      loadOptions: async () => {
+        return getModelCompletions();
       },
     },
   ],

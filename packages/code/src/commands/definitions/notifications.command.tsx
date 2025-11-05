@@ -4,6 +4,7 @@
  */
 
 import { NotificationsManagement } from '../../screens/chat/components/NotificationsManagement.js';
+import { getActionCompletions, getTypeCompletions } from '../../completions/notifications.js';
 import type { Command } from '../types.js';
 
 export const notificationsCommand: Command = {
@@ -16,11 +17,7 @@ export const notificationsCommand: Command = {
       description: 'Action to perform (show, enable, disable)',
       required: false,
       loadOptions: async () => {
-        return [
-          { id: 'show', label: 'show', value: 'show' },
-          { id: 'enable', label: 'enable', value: 'enable' },
-          { id: 'disable', label: 'disable', value: 'disable' },
-        ];
+        return getActionCompletions();
       },
     },
     {
@@ -28,12 +25,7 @@ export const notificationsCommand: Command = {
       description: 'Notification type to configure (os, terminal, sound, all)',
       required: false,
       loadOptions: async () => {
-        return [
-          { id: 'os', label: 'os', value: 'os' },
-          { id: 'terminal', label: 'terminal', value: 'terminal' },
-          { id: 'sound', label: 'sound', value: 'sound' },
-          { id: 'all', label: 'all', value: 'all' },
-        ];
+        return getTypeCompletions();
       },
     },
   ],

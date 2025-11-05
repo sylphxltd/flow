@@ -4,6 +4,7 @@
  */
 
 import { AgentSelection } from '../../screens/chat/components/AgentSelection.js';
+import { getAgentCompletions } from '../../completions/agent.js';
 import type { Command } from '../types.js';
 
 export const agentCommand: Command = {
@@ -15,14 +16,8 @@ export const agentCommand: Command = {
       name: 'agent-name',
       description: 'Agent to switch to (coder, planner, etc.)',
       required: false,
-      loadOptions: async (previousArgs) => {
-        const { getAllAgents } = await import('../../embedded-context.js');
-        const agents = getAllAgents();
-        return agents.map((agent) => ({
-          id: agent.id,
-          label: `${agent.metadata.name} - ${agent.metadata.description}`,
-          value: agent.id,
-        }));
+      loadOptions: async () => {
+        return getAgentCompletions();
       },
     },
   ],
