@@ -178,36 +178,32 @@ export function createCommandContext(args: string[], params: CommandContextParam
     waitForInput: (options) => {
       return new Promise((resolve) => {
         addLog(`[waitForInput] Waiting for ${options.type} input`);
-        inputResolver.current = resolve;
-        setPendingInput(options);
 
-        // If it's selection, reset state
-        if (options.type === 'selection') {
-          setMultiSelectionPage(0);
-          setMultiSelectionAnswers({});
-          // Initialize pre-selected choices for first question if multi-select
-          const firstQuestion = options.questions[0];
-          if (firstQuestion?.multiSelect) {
-            // Priority 1: option.checked (per-option default)
-            const checkedOptions = firstQuestion.options
-              .filter((opt) => opt.checked)
-              .map((opt) => opt.value || opt.label);
+        if (options.type === 'text') {
+          // For text input, still use pendingInput for now
+          // TODO: Create TextInput component
+          inputResolver.current = resolve;
+          setPendingInput(options);
+        } else if (options.type === 'selection') {
+          // Use SelectionInput component
+          const { createElement } = require('react');
+          const { SelectionInput } = require('../components/SelectionInput.js');
 
-            if (checkedOptions.length > 0) {
-              setMultiSelectChoices(new Set(checkedOptions));
-            }
-            // Priority 2: question.preSelected (question-level default)
-            else if (firstQuestion.preSelected) {
-              setMultiSelectChoices(new Set(firstQuestion.preSelected));
-            } else {
-              setMultiSelectChoices(new Set());
-            }
-          } else {
-            setMultiSelectChoices(new Set());
-          }
-          setSelectedCommandIndex(0);
-          setSelectionFilter('');
-          setIsFilterMode(false);
+          setInputComponent(
+            createElement(SelectionInput, {
+              questions: options.questions,
+              onComplete: (answers) => {
+                resolve(answers);
+                setInputComponent(null);
+                addLog('[waitForInput] Selection complete');
+              },
+              onCancel: () => {
+                resolve({});
+                setInputComponent(null);
+                addLog('[waitForInput] Selection cancelled');
+              },
+            })
+          );
         }
       });
     },
