@@ -8,6 +8,7 @@ import { Box, Text, useInput } from 'ink';
 import { useEffect, useState } from 'react';
 import TextInputWithHint from '../../../components/TextInputWithHint.js';
 import type { Question, SelectOption } from '../../../commands/types.js';
+import { InputContentLayout } from './InputContentLayout.js';
 
 interface SelectionInputProps {
   // Questions to ask
@@ -191,10 +192,28 @@ export function SelectionInput({ questions, onComplete, onCancel }: SelectionInp
     }
   });
 
+  // Determine help text based on mode
+  const getHelpText = (): string => {
+    if (isFilterMode || isFreeTextMode) {
+      return 'Enter: Confirm  |  Esc: Cancel';
+    }
+    if (currentQuestion.multiSelect) {
+      return '↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm  |  /: Filter  |  Esc: Cancel';
+    }
+    return '↑↓: Navigate  |  Enter: Select  |  /: Filter  |  Esc: Cancel';
+  };
+
+  // Determine subtitle based on questions
+  const getSubtitle = (): string | undefined => {
+    if (questions.length > 1) {
+      return `Question ${currentPage + 1} of ${questions.length}`;
+    }
+    return undefined;
+  };
+
   // Render
   return (
-    <Box flexDirection="column" paddingY={1}>
-
+    <InputContentLayout subtitle={getSubtitle()} helpText={getHelpText()}>
       {/* Filter mode */}
       {isFilterMode && (
         <Box marginBottom={1}>
@@ -240,7 +259,7 @@ export function SelectionInput({ questions, onComplete, onCancel }: SelectionInp
               : ' ';
 
             return (
-              <Box key={option.label}>
+              <Box key={option.label} marginBottom={idx < filteredOptions.length - 1 ? 1 : 0}>
                 <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
                   {symbol} {option.label}
                 </Text>
@@ -249,15 +268,6 @@ export function SelectionInput({ questions, onComplete, onCancel }: SelectionInp
           })}
         </>
       )}
-
-      {/* Help text */}
-      <Box marginTop={1}>
-        <Text dimColor>
-          {currentQuestion.multiSelect
-            ? '↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm  |  /: Filter  |  Esc: Cancel'
-            : '↑↓: Navigate  |  Enter: Select  |  /: Filter  |  Esc: Cancel'}
-        </Text>
-      </Box>
-    </Box>
+    </InputContentLayout>
   );
 }

@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { getProvider } from '@sylphx/code-core';
 import type { ConfigField, ProviderConfig } from '@sylphx/code-core';
 import TextInputWithHint from '../../../components/TextInputWithHint.js';
+import { InputContentLayout } from './InputContentLayout.js';
 
 interface ProviderManagementProps {
   // Initial action (optional)
@@ -222,13 +223,10 @@ export function ProviderManagement({
     ];
 
     return (
-      <Box flexDirection="column">
-        {/* Subtitle */}
-        <Box marginBottom={1}>
-          <Text dimColor>Manage your AI provider settings</Text>
-        </Box>
-
-        {/* Options */}
+      <InputContentLayout
+        subtitle="Manage your AI provider settings"
+        helpText="↑↓: Navigate  |  Enter: Select  |  Esc: Cancel"
+      >
         {actions.map((action, idx) => {
           const isSelected = idx === selectedIndex;
 
@@ -248,29 +246,21 @@ export function ProviderManagement({
             </Box>
           );
         })}
-
-        {/* Help */}
-        <Box marginTop={1}>
-          <Text dimColor>↑↓: Navigate  |  Enter: Select  |  Esc: Cancel</Text>
-        </Box>
-      </Box>
+      </InputContentLayout>
     );
   }
 
   // Render: Step 2 - Select provider
   if (step === 'select-provider') {
     return (
-      <Box flexDirection="column">
-        {/* Subtitle */}
-        <Box marginBottom={1}>
-          <Text dimColor>
-            {action === 'use'
-              ? 'Choose which provider to use for new conversations'
-              : 'Select a provider to configure'}
-          </Text>
-        </Box>
-
-        {/* Providers */}
+      <InputContentLayout
+        subtitle={
+          action === 'use'
+            ? 'Choose which provider to use for new conversations'
+            : 'Select a provider to configure'
+        }
+        helpText="↑↓: Navigate  |  Enter: Select  |  Esc: Cancel"
+      >
         {providerOptions.map((provider, idx) => {
           const isSelected = idx === selectedIndex;
 
@@ -284,12 +274,7 @@ export function ProviderManagement({
             </Box>
           );
         })}
-
-        {/* Help */}
-        <Box marginTop={1}>
-          <Text dimColor>↑↓: Navigate  |  Enter: Select  |  Esc: Cancel</Text>
-        </Box>
-      </Box>
+      </InputContentLayout>
     );
   }
 
@@ -298,12 +283,14 @@ export function ProviderManagement({
     const providerName = providerOptions.find((p) => p.id === selectedProvider)?.name || selectedProvider;
 
     return (
-      <Box flexDirection="column">
-        {/* Subtitle */}
-        <Box marginBottom={1}>
-          <Text dimColor>Enter your {providerName} credentials</Text>
-        </Box>
-
+      <InputContentLayout
+        subtitle={`Enter your ${providerName} credentials`}
+        helpText={
+          editingField
+            ? 'Enter: Save  |  Esc: Cancel'
+            : '↑↓: Navigate  |  Enter: Edit/Save  |  Space: Toggle  |  Esc: Back'
+        }
+      >
         {/* Fields */}
         <Box flexDirection="column" marginBottom={1}>
           {configSchema.map((field, idx) => {
@@ -366,16 +353,7 @@ export function ProviderManagement({
             Save Configuration
           </Text>
         </Box>
-
-        {/* Help */}
-        <Box marginTop={1}>
-          <Text dimColor>
-            {editingField
-              ? 'Enter: Save  |  Esc: Cancel'
-              : '↑↓: Navigate  |  Enter: Edit/Save  |  Space: Toggle  |  Esc: Back'}
-          </Text>
-        </Box>
-      </Box>
+      </InputContentLayout>
     );
   }
 
