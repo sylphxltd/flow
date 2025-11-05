@@ -52,6 +52,12 @@ export async function fetchModelsMetadata(): Promise<Map<string, ModelMetadata>>
 
     const data = (await response.json()) as ModelsDevResponse;
 
+    if (!data || !data.models || !Array.isArray(data.models)) {
+      console.error('Invalid models.dev response:', data);
+      modelsMetadata.set('failed', new Map());
+      return new Map();
+    }
+
     const models = new Map<string, ModelMetadata>();
 
     for (const model of data.models) {

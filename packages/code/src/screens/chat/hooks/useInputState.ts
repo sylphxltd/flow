@@ -32,9 +32,11 @@ export function useInputState(): InputState {
     const loadHistory = async () => {
       try {
         const client = getTRPCClient();
-        const history = await client.message.getRecentUserMessages.query({ limit: 100 });
+        const result = await client.message.getRecentUserMessages.query({ limit: 100 });
+        // Extract messages array from paginated result
+        const messages = Array.isArray(result) ? result : (result?.messages || []);
         // Reverse to get oldest-first order (for bash-like navigation)
-        setMessageHistory(history.reverse());
+        setMessageHistory(messages.reverse());
       } catch (error) {
         console.error('Failed to load message history:', error);
       }
