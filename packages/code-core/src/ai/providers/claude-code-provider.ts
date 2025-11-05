@@ -20,11 +20,11 @@ export class ClaudeCodeProvider implements AIProvider {
   }
 
   isConfigured(_config: ProviderConfig): boolean {
-    // Claude Code uses CLI OAuth - check if 'claude' command exists
+    // Claude Code uses CLI OAuth - check if 'claude' command works
     try {
-      // Check if claude CLI is available
+      // Check if claude CLI is available and executable
       const { execSync } = require('child_process');
-      execSync('which claude', { stdio: 'ignore' });
+      execSync('claude --version', { stdio: 'ignore', timeout: 5000 });
       return true;
     } catch {
       return false;
