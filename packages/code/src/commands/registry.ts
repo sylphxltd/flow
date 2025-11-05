@@ -14,7 +14,7 @@ import modelCommand from './definitions/model.command.js';
 import newCommand from './definitions/new.command.js';
 import notificationsCommand from './definitions/notifications.command.js';
 // Import all command definitions
-import providerCommand from './definitions/provider.command.js';
+import providerCommand from './definitions/provider.command.js'; // .tsx compiles to .js
 import rulesCommand from './definitions/rules.command.js';
 import sessionsCommand from './definitions/sessions.command.js';
 import surveyCommand from './definitions/survey.command.js';

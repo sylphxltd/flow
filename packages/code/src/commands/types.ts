@@ -149,7 +149,8 @@ export interface CommandContext {
   // Update output for commands that display information
   updateOutput: (content: string) => void;
 
-  // Replace input area with custom component (like switching screen)
+  // Replace input area with custom component (universal method)
+  // Commands can use JSX in .tsx files: context.setInputComponent(<YourComponent />)
   setInputComponent: (component: ReactNode | null) => void;
 }
 
