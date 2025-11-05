@@ -13,6 +13,8 @@ import { PendingCommandSelection } from '../../../components/PendingCommandSelec
 import { SelectionUI } from '../../../components/SelectionUI.js';
 import TextInputWithHint from '../../../components/TextInputWithHint.js';
 import type { FilteredCommand, FilteredFileInfo } from '../autocomplete/types.js';
+import type { SettingsMode } from '../types/settings-mode.js';
+import { ProviderSettings } from './ProviderSettings.js';
 
 interface InputSectionProps {
   // Input state
@@ -72,6 +74,13 @@ interface InputSectionProps {
 
   // ESC hint
   showEscHint: boolean;
+
+  // Settings mode
+  settingsMode: SettingsMode;
+  aiConfig: any;
+  onProviderSelect: (providerId: string) => void;
+  onProviderConfigure: (providerId: string, config: any) => void;
+  onSettingsCancel: () => void;
 }
 
 export function InputSection({
@@ -109,6 +118,11 @@ export function InputSection({
   hintText,
   validTags,
   showEscHint,
+  settingsMode,
+  aiConfig,
+  onProviderSelect,
+  onProviderConfigure,
+  onSettingsCancel,
 }: InputSectionProps) {
   return (
     <Box flexDirection="column" flexShrink={0}>
@@ -116,8 +130,18 @@ export function InputSection({
         <Text color="#00D9FF">▌ YOU</Text>
       </Box>
 
-      {/* PendingInput Mode - when command calls waitForInput */}
-      {pendingInput && pendingInput.type === 'selection' ? (
+      {/* Settings Mode - interactive settings UI */}
+      {settingsMode && settingsMode.type === 'provider-selection' ? (
+        <ProviderSettings
+          mode={settingsMode}
+          aiConfig={aiConfig}
+          onSelectProvider={onProviderSelect}
+          onConfigureProvider={onProviderConfigure}
+          onCancel={onSettingsCancel}
+          selectedIndex={selectedCommandIndex}
+        />
+      ) : /* PendingInput Mode - when command calls waitForInput */
+      pendingInput && pendingInput.type === 'selection' ? (
         <SelectionUI
           pendingInput={pendingInput}
           multiSelectionPage={multiSelectionPage}

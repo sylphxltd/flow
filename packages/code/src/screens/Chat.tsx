@@ -151,10 +151,12 @@ export default function Chat(_props: ChatProps) {
     currentlyLoading,
     loadError,
     commandSessionRef,
+    settingsMode,
     setPendingCommand,
     setCachedOptions,
     setCurrentlyLoading,
     setLoadError,
+    setSettingsMode,
   } = commandState;
 
   // Local state not in hooks
@@ -164,6 +166,32 @@ export default function Chat(_props: ChatProps) {
 
   // Helper function to get AI config
   const getAIConfig = () => useAppStore.getState().aiConfig;
+
+  // Settings mode callbacks
+  const handleProviderSelect = useCallback(
+    (providerId: string) => {
+      // Direct store update, no session creation
+      updateProvider(providerId as any, {});
+      setAIConfig({ ...aiConfig, defaultProvider: providerId });
+      setSettingsMode(null);
+      addLog(`[settings] Provider switched to: ${providerId}`);
+    },
+    [updateProvider, setAIConfig, aiConfig, setSettingsMode, addLog]
+  );
+
+  const handleProviderConfigure = useCallback(
+    (providerId: string, config: any) => {
+      updateProvider(providerId as any, config);
+      setSettingsMode(null);
+      addLog(`[settings] Provider configured: ${providerId}`);
+    },
+    [updateProvider, setSettingsMode, addLog]
+  );
+
+  const handleSettingsCancel = useCallback(() => {
+    setSettingsMode(null);
+    addLog('[settings] Settings cancelled');
+  }, [setSettingsMode, addLog]);
 
   // File attachment hook
   const {
@@ -446,6 +474,41 @@ export default function Chat(_props: ChatProps) {
   // Message history navigation (like bash)
   useInput(
     (char, key) => {
+      // Settings mode has highest priority
+      if (settingsMode) {
+        if (key.escape) {
+          handleSettingsCancel();
+          return;
+        }
+
+        // Navigation for provider selection
+        if (settingsMode.type === 'provider-selection') {
+          // Get provider count from aiConfig
+          const providers = useAppStore.getState().aiConfig?.providers || {};
+          const providerIds = Object.keys(providers);
+          const providerCount = providerIds.length;
+
+          if (key.upArrow) {
+            setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : providerCount - 1));
+            return;
+          }
+
+          if (key.downArrow) {
+            setSelectedCommandIndex((prev) => (prev < providerCount - 1 ? prev + 1 : 0));
+            return;
+          }
+
+          if (key.return) {
+            const selectedProvider = providerIds[selectedCommandIndex];
+            if (selectedProvider) {
+              handleProviderSelect(selectedProvider);
+            }
+            return;
+          }
+        }
+        return;
+      }
+
       const isNormalMode = !pendingInput && !pendingCommand;
       if (!isNormalMode) return;
 
@@ -574,6 +637,11 @@ export default function Chat(_props: ChatProps) {
             createCommandContext={createCommandContextForArgs}
             getAIConfig={getAIConfig}
             setPendingCommand={setPendingCommand}
+            settingsMode={settingsMode}
+            aiConfig={aiConfig}
+            onProviderSelect={handleProviderSelect}
+            onProviderConfigure={handleProviderConfigure}
+            onSettingsCancel={handleSettingsCancel}
           />
         </Box>
 

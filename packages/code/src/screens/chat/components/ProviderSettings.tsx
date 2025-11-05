@@ -3,7 +3,6 @@
  * Interactive UI for configuring AI providers
  */
 
-import { AI_PROVIDERS, getProvider } from '@sylphx/code-core';
 import { Box, Text } from 'ink';
 import { useState } from 'react';
 import type { SettingsMode } from '../types/settings-mode.js';
@@ -27,20 +26,16 @@ export function ProviderSettings({
 }: ProviderSettingsProps) {
   const [configStep, setConfigStep] = useState<'main' | 'configure'>('main');
 
-  // Get provider options with configured status
-  const providerOptions = Object.values(AI_PROVIDERS).map((p) => {
-    let isConfigured = false;
-    try {
-      const provider = getProvider(p.id as any);
-      const providerConfig = aiConfig?.providers?.[p.id as keyof typeof aiConfig.providers];
-      isConfigured = providerConfig ? provider.isConfigured(providerConfig) : false;
-    } catch {
-      // Provider not found
-    }
+  // Get provider options from aiConfig (populated by server)
+  const providers = aiConfig?.providers || {};
+  const providerOptions = Object.entries(providers).map(([id, config]: [string, any]) => {
+    // Simple check: if provider has apiKey or other config, consider it configured
+    const isConfigured = config && (config.apiKey || config.configured);
+
     return {
-      id: p.id,
-      name: p.name,
-      configured: isConfigured,
+      id,
+      name: config.name || id.charAt(0).toUpperCase() + id.slice(1),
+      configured: Boolean(isConfigured),
     };
   });
 
@@ -78,30 +73,28 @@ export function ProviderSettings({
   }
 
   if (mode.step === 'configure-provider' && mode.selectedProvider) {
-    const provider = getProvider(mode.selectedProvider as any);
-    const schema = provider.getConfigSchema();
+    const providerName = providerOptions.find((p) => p.id === mode.selectedProvider)?.name || mode.selectedProvider;
 
     return (
       <Box flexDirection="column" paddingY={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
-            ⚙️  Configure {AI_PROVIDERS[mode.selectedProvider as keyof typeof AI_PROVIDERS]?.name}
+            ⚙️  Configure {providerName}
           </Text>
         </Box>
 
-        {schema.map((field) => (
-          <Box key={field.key} flexDirection="column" marginBottom={1}>
-            <Text>{field.label}:</Text>
-            <Text dimColor>  {field.description}</Text>
-            {field.type === 'string' && field.key.toLowerCase().includes('key') && (
-              <Text color="yellow">  (Enter your API key)</Text>
-            )}
-          </Box>
-        ))}
+        <Box marginBottom={1}>
+          <Text dimColor>
+            Provider configuration UI will be implemented.
+          </Text>
+          <Text dimColor>
+            (This requires tRPC endpoint to get config schema)
+          </Text>
+        </Box>
 
         <Box marginTop={1}>
           <Text dimColor>
-            This will be implemented with input fields
+            Esc: Cancel
           </Text>
         </Box>
       </Box>
