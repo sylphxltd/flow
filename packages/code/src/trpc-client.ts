@@ -1,6 +1,9 @@
 /**
  * tRPC Client for code CLI
  * Connects to code-server via HTTP/SSE
+ *
+ * NOTE: This file is only used for remote connections (--server-url flag)
+ * Default mode uses in-process tRPC link (zero overhead)
  */
 
 import type { AppRouter } from '@sylphx/code-client';
@@ -12,30 +15,30 @@ import {
 } from '@trpc/client';
 import { EventSource } from 'eventsource';
 
-const SERVER_URL = process.env.CODE_SERVER_URL || 'http://localhost:3000';
-
 /**
- * Create tRPC client that connects to code-server
+ * Create HTTP tRPC client for remote connections
  *
  * Architecture:
  * - Queries/Mutations: HTTP batch requests
  * - Subscriptions: SSE (Server-Sent Events)
  *
- * This allows code TUI to share data with code-web in real-time
+ * Used when connecting to remote server with --server-url flag
  */
-export function createClient() {
+export function createHTTPClient(serverUrl?: string) {
+  const url = serverUrl || process.env.CODE_SERVER_URL || 'http://localhost:3000';
+
   return createTRPCProxyClient<AppRouter>({
     links: [
       splitLink({
         condition: (op) => op.type === 'subscription',
         // Subscriptions: Use SSE with EventSource polyfill for Node.js/Bun
         true: httpSubscriptionLink({
-          url: `${SERVER_URL}/trpc`,
+          url: `${url}/trpc`,
           EventSource: EventSource as any, // Provide EventSource polyfill for non-browser environments
         }),
         // Queries/Mutations: Use batched HTTP
         false: httpBatchLink({
-          url: `${SERVER_URL}/trpc`,
+          url: `${url}/trpc`,
           headers: () => ({
             'Content-Type': 'application/json',
           }),
@@ -46,11 +49,13 @@ export function createClient() {
 }
 
 /**
- * Check if code-server is running
+ * Check if HTTP server is running at given URL
  */
-export async function checkServer(): Promise<boolean> {
+export async function checkServer(serverUrl?: string): Promise<boolean> {
+  const url = serverUrl || process.env.CODE_SERVER_URL || 'http://localhost:3000';
+
   try {
-    const response = await fetch(SERVER_URL, { method: 'HEAD' });
+    const response = await fetch(url, { method: 'HEAD' });
     return response.ok;
   } catch (error) {
     return false;
@@ -58,13 +63,16 @@ export async function checkServer(): Promise<boolean> {
 }
 
 /**
- * Wait for server to be ready
+ * Wait for HTTP server to be ready
  */
-export async function waitForServer(timeoutMs: number = 5000): Promise<boolean> {
+export async function waitForServer(
+  serverUrl?: string,
+  timeoutMs: number = 5000
+): Promise<boolean> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeoutMs) {
-    if (await checkServer()) {
+    if (await checkServer(serverUrl)) {
       return true;
     }
     await new Promise((resolve) => setTimeout(resolve, 100));

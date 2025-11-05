@@ -15,6 +15,11 @@
 export { setTRPCClient, getTRPCClient, resetTRPCClient } from './trpc-provider.js'
 
 // ============================================================================
+// tRPC Links
+// ============================================================================
+export { inProcessLink, type InProcessLinkOptions } from './trpc-links/index.js'
+
+// ============================================================================
 // State Management
 // ============================================================================
 export { useAppStore, type AppState, type Screen } from './stores/app-store.js'

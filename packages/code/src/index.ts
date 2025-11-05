@@ -4,25 +4,27 @@
  * Sylphx Code - Unified CLI Tool
  *
  * Architecture:
- * - Auto-manages code-server daemon
- * - Connects via HTTP/SSE tRPC
- * - Shares data with code-web in real-time
+ * - Embedded CodeServer (in-process tRPC by default)
+ * - Optional HTTP server for Web GUI (--web flag)
+ * - Optional remote connection (--server-url flag)
  *
  * Modes:
- * - TUI: code
- * - headless: code "prompt"
- * - Web: code --web
- * - Server: code --server
+ * - TUI (default): code
+ * - Headless: code "prompt"
+ * - TUI + Web: code --web
+ * - Standalone server: code --server
+ * - Remote TUI: code --server-url http://host:port
  */
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
-import { spawn } from 'child_process';
 import { Command } from 'commander';
-import { ensureServer, getServerStatus } from './server-manager.js';
-import { launchWeb } from './web-launcher.js';
+import { CodeServer } from '@sylphx/code-server';
+import { createTRPCProxyClient } from '@trpc/client';
+import { setTRPCClient, inProcessLink, type AppRouter } from '@sylphx/code-client';
+import { checkServer, createHTTPClient } from './trpc-client.js';
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
@@ -30,6 +32,34 @@ const __dirname = dirname(__filename);
 const packageJsonPath = join(__dirname, '..', 'package.json');
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 const VERSION = packageJson.version;
+
+/**
+ * Global embedded server instance
+ * Used for in-process mode
+ */
+let embeddedServer: CodeServer | null = null;
+
+/**
+ * Initialize embedded server for in-process use
+ */
+async function initEmbeddedServer(options: { quiet?: boolean } = {}): Promise<CodeServer> {
+  if (embeddedServer) {
+    return embeddedServer;
+  }
+
+  if (!options.quiet) {
+    console.error(chalk.dim('Initializing embedded server...'));
+  }
+
+  embeddedServer = new CodeServer();
+  await embeddedServer.initialize();
+
+  if (!options.quiet) {
+    console.error(chalk.green('✓ Server ready'));
+  }
+
+  return embeddedServer;
+}
 
 /**
  * Main CLI entry point
@@ -45,65 +75,74 @@ async function main() {
     .argument('[prompt]', 'Prompt to send to AI (headless mode)')
     .option('-p, --print', 'Print mode (headless)')
     .option('-c, --continue', 'Continue last session')
-    .option('--web', 'Launch Web GUI in browser')
-    .option('--server', 'Start server only (daemon mode)')
-    .option('--no-auto-server', "Don't auto-start server")
-    .option('--status', 'Check server status')
+    .option('--web', 'Launch Web GUI (starts HTTP server)')
+    .option('--server', 'Start standalone HTTP server only')
+    .option('--server-url <url>', 'Connect to remote server (HTTP tRPC)')
     .option('-q, --quiet', 'Quiet mode')
     .option('-v, --verbose', 'Verbose mode')
     .action(async (prompt, options) => {
-      // Status check
-      if (options.status) {
-        const status = await getServerStatus();
-        console.log('Server status:');
-        console.log(`  Running: ${status.running ? chalk.green('✓') : chalk.red('✗')}`);
-        console.log(`  Available: ${status.available ? chalk.green('✓') : chalk.red('✗')}`);
-        process.exit(status.running ? 0 : 1);
-      }
-
-      // Server-only mode
+      // Standalone server mode
       if (options.server) {
-        console.log(chalk.cyan('Starting code-server daemon...'));
+        console.log(chalk.cyan('Starting standalone HTTP server...'));
         console.log(chalk.dim('Use Ctrl+C to stop'));
 
-        // Execute server binary and wait
-        const serverProcess = spawn('sylphx-code-server', [], {
-          stdio: 'inherit',
-        });
+        const server = new CodeServer({ port: 3000 });
+        await server.initialize();
+        await server.startHTTP();
 
-        await new Promise((resolve) => {
-          serverProcess.on('exit', resolve);
-        });
+        // Keep process alive
+        await new Promise(() => {});
         return;
       }
 
-      // Web mode
-      if (options.web) {
-        await launchWeb();
-        return;
+      // Setup tRPC client
+      let client: any;
+
+      if (options.serverUrl) {
+        // Remote mode: Connect to existing HTTP server
+        if (!options.quiet) {
+          console.error(chalk.dim(`Connecting to remote server: ${options.serverUrl}`));
+        }
+
+        // Check if server is available
+        const available = await checkServer(options.serverUrl);
+        if (!available) {
+          console.error(chalk.red(`✗ Server not available at ${options.serverUrl}`));
+          console.error(chalk.yellow('\nOptions:'));
+          console.error(chalk.dim('  1. Check server URL'));
+          console.error(chalk.dim('  2. Start server: code --server'));
+          process.exit(1);
+        }
+
+        client = createHTTPClient(options.serverUrl);
+      } else {
+        // In-process mode (default): Embed server
+        const server = await initEmbeddedServer({ quiet: options.quiet });
+
+        // Create in-process tRPC client (zero overhead)
+        client = createTRPCProxyClient<AppRouter>({
+          links: [
+            inProcessLink({
+              router: server.getRouter(),
+              createContext: server.getContext(),
+            }),
+          ],
+        });
+
+        // If --web flag, start HTTP server
+        if (options.web) {
+          if (!options.quiet) {
+            console.error(chalk.dim('Starting HTTP server for Web GUI...'));
+          }
+          await server.startHTTP(3000);
+
+          // Open browser
+          const { launchWeb } = await import('./web-launcher.js');
+          await launchWeb();
+        }
       }
 
-      // CLI mode (TUI or headless)
-      // Ensure server is running (unless --no-auto-server)
-      const ready = await ensureServer({
-        autoStart: options.autoServer !== false,
-        quiet: options.quiet,
-      });
-
-      if (!ready) {
-        console.error(chalk.red('\n✗ Server not available'));
-        console.error(chalk.yellow('\nOptions:'));
-        console.error(chalk.dim('  1. Install server: bun add -g @sylphx/code-server'));
-        console.error(chalk.dim('  2. Start manually: sylphx-code-server'));
-        console.error(chalk.dim('  3. Check status: code --status'));
-        process.exit(1);
-      }
-
-      // Setup HTTP tRPC client
-      const { createClient } = await import('./trpc-client.js');
-      const { setTRPCClient } = await import('@sylphx/code-client');
-
-      const client = createClient();
+      // Set global tRPC client
       setTRPCClient(client);
 
       // Headless mode: if prompt provided OR --print flag

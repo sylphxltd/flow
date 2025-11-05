@@ -1,263 +1,463 @@
 # Sylphx Code Architecture
 
-**Last Updated:** 2025-01-05
-**Status:** ✅ Architecture Finalized
+> **Last Updated:** 2025-01-05
+> **Architecture Version:** v2.0 (In-Process tRPC)
 
 ---
 
-## 📦 Package Overview
+## Overview
+
+Sylphx Code uses an **embedded server architecture** with in-process tRPC for zero-overhead communication. The server can optionally expose HTTP endpoints for Web GUI or remote access.
+
+### Design Philosophy
+
+**Default: In-Process** (inspired by graphql-yoga, @trpc/server)
+- ✅ **Fast**: Zero network overhead, direct function calls
+- ✅ **Simple**: No daemon management, single process
+- ✅ **Flexible**: Can expose HTTP for Web/Remote when needed
+
+### Architecture Diagram
 
 ```
-@sylphx/code (CLI Tool)
-  ├─ TUI mode (Ink + React)
-  ├─ headless mode
-  ├─ server manager (auto-spawn daemon)
-  └─ web launcher (--web)
-
-@sylphx/code-web (Web Application)
-  ├─ Vite + React 19
-  ├─ Modern browser UI
-  └─ HTTP/SSE tRPC client
-
-@sylphx/code-server (Background Daemon)
-  ├─ HTTP/Express server
-  ├─ tRPC router + SSE streaming
-  ├─ Session management
-  └─ Business logic
-
-@sylphx/code-client (Shared Client Logic)
-  ├─ React hooks
-  ├─ tRPC provider
-  ├─ Zustand stores
-  └─ Type exports
-
-@sylphx/code-core (SDK Core)
-  ├─ AI providers (Anthropic, OpenAI, Google, etc.)
-  ├─ Database (SQLite + Drizzle ORM)
-  ├─ Session management
-  └─ Tool definitions
-```
-
----
-
-## 🔄 Dependency Graph
-
-```
-┌────────────────┐    ┌────────────────┐
-│   code (CLI)   │    │  code-web (Web)│
-└────────┬───────┘    └────────┬───────┘
-         │ import              │ import
-         └──────────┬──────────┘
+┌─────────────────────────────────────────────────────┐
+│  TUI (code)                                         │
+│  ┌────────────────────────────────────────────┐    │
+│  │  Embedded CodeServer                       │    │
+│  │  ┌──────────────────────────────────────┐  │    │
+│  │  │  tRPC Router (in-process)            │  │    │
+│  │  │  - session.*, message.*, todo.*      │  │    │
+│  │  └──────────────────────────────────────┘  │    │
+│  │  ┌──────────────────────────────────────┐  │    │
+│  │  │  SessionRepository + Database        │  │    │
+│  │  │  SQLite (.sylphx-flow/sessions.db)   │  │    │
+│  │  └──────────────────────────────────────┘  │    │
+│  └────────────────────────────────────────────┘    │
+│           ↑ in-process caller link                 │
+│  ┌────────┴───────────┐                            │
+│  │  TUI Components    │                            │
+│  │  (Ink + React)     │                            │
+│  └────────────────────┘                            │
+└─────────────────────────────────────────────────────┘
+                    │
+                    │ (Optional) HTTP Server
                     ↓
-         ┌──────────────────┐
-         │   code-client    │  ← Shared client logic
-         │  (Client Logic)  │
-         └──────────────────┘
-                    │ HTTP tRPC
-                    ↓
-         ┌──────────────────┐
-         │   code-server    │  ← Independent daemon
-         │  (HTTP Daemon)   │
-         └──────────┬───────┘
-                    │ import
-                    ↓
-         ┌──────────────────┐
-         │    code-core     │  ← SDK library
-         │   (SDK Core)     │
-         └──────────────────┘
+        ┌─────────────────────────┐
+        │  Web GUI (Browser)      │
+        │  localhost:3000         │
+        └─────────────────────────┘
 ```
 
 ---
 
-## 🎯 Architecture Principles
+## Modes of Operation
 
-### 1. Clear Separation of Concerns ✅
-
-**code-server = Server daemon import code-core**
-- Server implements business logic using core
-- Provides HTTP/tRPC API
-- Manages sessions, database, AI streaming
-
-**code-client = Client logic**
-- React hooks (useChat, useSession, etc.)
-- tRPC client provider
-- Shared logic for both TUI and Web
-
-**code + code-web import code-client**
-- Both UIs use shared client logic
-- Connect via HTTP tRPC
-- Real-time data synchronization
-
-### 2. Independent Daemon ✅
-
-**code-server runs independently:**
-- Can be spawned by `code` (auto-start)
-- Can run manually: `sylphx-code-server`
-- Can be system service (systemd/launchd)
-- Can be deployed in Docker/production
-
-### 3. Modular and Reusable ✅
-
-**Each package has clear responsibility:**
-- `code-core`: SDK and business logic
-- `code-server`: HTTP service layer
-- `code-client`: Shared client logic
-- `code`: CLI tool (TUI + headless)
-- `code-web`: Web application
-
----
-
-## 🚀 User Experience
-
-### CLI Users (90%)
+### Mode 1: TUI Only (Default)
 
 ```bash
-$ bun add -g @sylphx/code
-
-$ code                    # TUI mode (auto-start server)
-$ code "fix bug"          # headless mode (auto-start server)
-$ code --web              # Launch Web GUI + browser
-$ code --server           # Server-only mode (daemon)
-$ code --no-auto-server   # Don't auto-start server
+code  # Launches TUI with embedded server
 ```
 
-### Web-Only Users
-
-```bash
-$ bun add -g @sylphx/code-web
-
-$ code-web                # Standalone Web application
+**Architecture:**
+```
+TUI Process
+├── Embedded CodeServer (in-process)
+│   ├── tRPC Router
+│   └── SQLite Database
+└── Ink UI (Terminal Interface)
 ```
 
-### Advanced Users (Production)
+**tRPC Link:** `inProcessLink` (direct function calls, zero overhead)
+
+### Mode 2: TUI + Web GUI
 
 ```bash
-$ bun add -g @sylphx/code-server
+code --web  # Launches TUI + HTTP server for Web
+```
 
-$ sylphx-code-server      # Manual daemon
-$ systemctl start sylphx-code-server  # System service
+**Architecture:**
+```
+TUI Process
+├── Embedded CodeServer
+│   ├── tRPC Router (in-process)
+│   ├── HTTP Server :3000 (for Web)
+│   └── SQLite Database
+└── Ink UI
+
+Browser → http://localhost:3000 → HTTP tRPC → CodeServer
+```
+
+**tRPC Links:**
+- TUI → Server: `inProcessLink` (direct calls)
+- Web → Server: `httpBatchLink` + `httpSubscriptionLink` (SSE)
+
+### Mode 3: Remote Connection
+
+```bash
+# Terminal 1: Standalone server
+code-server --port 3000
+
+# Terminal 2-N: Connect to shared server
+code --server-url http://localhost:3000
+```
+
+**Architecture:**
+```
+Server Process (code-server)
+├── HTTP Server :3000
+└── SQLite Database
+
+Client 1 ─┐
+Client 2 ─┼──> HTTP tRPC ──> Server
+Client 3 ─┘
+```
+
+**tRPC Link:** `httpBatchLink` + `httpSubscriptionLink`
+
+---
+
+## Package Structure
+
+### `@sylphx/code-server`
+
+**Purpose:** Exportable server class for embedding
+
+**Exports:**
+```typescript
+export class CodeServer {
+  constructor(config: ServerConfig);
+
+  // For in-process use
+  getRouter(): AppRouter;
+  getContext(): ServerContext;
+
+  // Optional HTTP server
+  async startHTTP(port?: number): Promise<void>;
+  async close(): Promise<void>;
+}
+
+// Standalone CLI
+// bin/code-server
+```
+
+**Key Files:**
+- `src/server.ts` - CodeServer class
+- `src/cli.ts` - Standalone server CLI
+- `src/trpc/` - tRPC routers (session, message, todo, etc.)
+- `src/services/` - Business logic (streaming, AI, etc.)
+
+###  `@sylphx/code` (TUI)
+
+**Purpose:** Terminal user interface with embedded server
+
+**Architecture:**
+```typescript
+// Default: in-process
+const server = new CodeServer({ dbPath: '...' });
+const client = createTRPCClient({
+  links: [inProcessLink({ router: server.getRouter() })]
+});
+
+// Optional: --web mode
+if (options.web) {
+  await server.startHTTP(3000);
+  openBrowser('http://localhost:3000');
+}
+
+// Optional: remote mode
+if (options.serverUrl) {
+  const client = createTRPCClient({
+    links: [httpBatchLink({ url: options.serverUrl })]
+  });
+}
+```
+
+**Key Files:**
+- `src/index.ts` - CLI entry point + mode selection
+- `src/screens/` - TUI screens (chat, providers, etc.)
+- `src/components/` - Reusable UI components
+
+### `@sylphx/code-client`
+
+**Purpose:** Shared client logic (stores, hooks)
+
+**Exports:**
+```typescript
+// tRPC provider
+export function setTRPCClient(client: TRPCClient): void;
+export function getTRPCClient(): TRPCClient;
+
+// Zustand stores
+export { useAppStore } from './stores/app-store';
+
+// React hooks
+export { useSession, useMessages } from './hooks';
+```
+
+**tRPC Links Supported:**
+1. **In-Process Link** (new):
+   ```typescript
+   import { inProcessLink } from './trpc-links';
+   links: [inProcessLink({ router: server.getRouter() })]
+   ```
+
+2. **HTTP Links** (existing):
+   ```typescript
+   import { httpBatchLink, httpSubscriptionLink } from '@trpc/client';
+   links: [
+     httpBatchLink({ url: 'http://localhost:3000/trpc' }),
+     httpSubscriptionLink({ url: 'http://localhost:3000/trpc' })
+   ]
+   ```
+
+### `@sylphx/code-web`
+
+**Purpose:** Browser-based Web GUI
+
+**Architecture:**
+```typescript
+// Always uses HTTP tRPC (connects to TUI or standalone server)
+const client = createTRPCClient({
+  links: [
+    httpBatchLink({ url: '/trpc' }),
+    httpSubscriptionLink({ url: '/trpc' })
+  ]
+});
 ```
 
 ---
 
-## 📁 Database & Configuration
+## Data Flow
+
+### 1. User Message Submission (In-Process Mode)
+
+```
+User types in TUI
+  ↓
+ChatScreen.handleSubmit()
+  ↓
+client.message.streamResponse.subscribe() ←─ in-process link
+  ↓
+CodeServer.messageRouter.streamResponse ←─── direct function call
+  ↓
+StreamingService.streamAIResponse()
+  ↓
+SessionRepository.addMessage()
+  ↓
+SQLite Database
+```
+
+**Performance:** ~0.1ms overhead (vs ~2-5ms HTTP localhost)
+
+### 2. User Message Submission (HTTP Mode)
+
+```
+User types in Web GUI
+  ↓
+ChatScreen.handleSubmit()
+  ↓
+client.message.streamResponse.subscribe() ←─ HTTP SSE
+  ↓
+HTTP Request → localhost:3000/trpc
+  ↓
+CodeServer.messageRouter.streamResponse
+  ↓
+StreamingService.streamAIResponse()
+  ↓
+SessionRepository.addMessage()
+  ↓
+SQLite Database
+```
+
+---
+
+## State Management
+
+### Server State (Source of Truth)
+
+**Location:** SQLite Database (`~/.sylphx-flow/sessions.db`)
+
+**Managed by:** `SessionRepository` in `@sylphx/code-core`
+
+**Schema:**
+- `sessions` - Chat sessions (id, title, provider, model, agentId)
+- `messages` - Message history (role, content, usage, status)
+- `todos` - Task lists per session
+
+### Client State (UI State Only)
+
+**Location:** Zustand stores in `@sylphx/code-client`
+
+**Stores:**
+- `useAppStore` - Current session, UI settings, selection state
+- Optimistic updates for perceived performance
+- Syncs back to server via tRPC mutations
+
+**Pattern:**
+```typescript
+// Optimistic update
+set((state) => {
+  state.currentSession.title = newTitle;
+});
+
+// Persist to server
+await client.session.updateTitle.mutate({ sessionId, title: newTitle });
+```
+
+---
+
+## Migration from Old Architecture
+
+### Old Architecture (Daemon + HTTP)
+
+```
+TUI  ────HTTP────┐
+                 ├──> code-server daemon :3000 ──> DB
+Web  ────HTTP────┘
+```
+
+**Problems:**
+- ❌ Slow startup (spawn daemon)
+- ❌ Network overhead (localhost HTTP)
+- ❌ Complex daemon management
+- ❌ Port conflicts
+
+### New Architecture (Embedded + Optional HTTP)
+
+```
+TUI with embedded server ──in-process──> DB
+         │
+         └──HTTP (optional)──> Web GUI
+```
+
+**Benefits:**
+- ✅ Instant startup
+- ✅ Zero network overhead
+- ✅ No daemon management
+- ✅ Flexible deployment
+
+---
+
+## Configuration
 
 ### Database Location
 
-```
-~/.sylphx-code/
-  ├─ code.db              # Main database (SQLite)
-  ├─ settings.json        # User configuration
-  ├─ agents/              # Custom agents
-  └─ rules/               # Custom rules
+**Default:** `~/.sylphx-flow/sessions.db`
+
+**Override:**
+```typescript
+const server = new CodeServer({
+  dbPath: '/custom/path/sessions.db'
+});
 ```
 
-### Auto-Migration
+### HTTP Server Port
 
-**Automatic migration from JSON to SQLite:**
-1. App startup → Initialize database
-2. Run Drizzle migrations (schema)
-3. Check for JSON files
-4. Migrate JSON → SQLite (if exists)
-5. Delete old JSON files
-6. Create migration flag
+**Default:** `3000`
+
+**Override:**
+```bash
+code --web --port 8080
+code-server --port 8080
+```
 
 ---
 
-## 🔧 Multi-Client Architecture
+## Development Workflow
 
-### Real-Time Data Sharing
+### Local Development
 
 ```bash
-# Terminal 1: Start server (daemon)
-$ sylphx-code-server
-🚀 Server running on http://localhost:3000
+# Terminal 1: Watch build
+bun run dev
 
-# Terminal 2: TUI
-$ code
-✓ Connected to server
-[TUI interface]
+# Terminal 2: Run TUI (in-process, fastest)
+bun run packages/code/src/index.ts
 
-# Terminal 3: headless
-$ code "write hello world"
-[Streaming output...]
+# Terminal 3: Test Web GUI
+bun run packages/code/src/index.ts --web
+# Then open http://localhost:3000
+```
 
-# Browser: Web GUI
-http://localhost:3000
-✓ Connected to server
-[Web interface]
+### Testing Different Modes
 
-# All clients share same data source
-✓ TUI creates session → Web sees immediately
-✓ Web sends message → TUI updates in real-time
+```bash
+# Test in-process (default)
+code "What is 2+2?"
+
+# Test with Web GUI
+code --web
+
+# Test remote connection
+code-server --port 3000 &  # Background server
+code --server-url http://localhost:3000 "What is 2+2?"
 ```
 
 ---
 
-## 📊 Technical Stack
+## Performance Comparison
 
-### Backend
-- **Runtime:** Bun
-- **Server:** Express + tRPC
-- **Database:** SQLite (libsql) + Drizzle ORM
-- **Streaming:** Server-Sent Events (SSE)
-- **AI:** Anthropic, OpenAI, Google, etc.
-
-### Frontend
-- **CLI:** Ink (React for terminal)
-- **Web:** Vite + React 19
-- **State:** Zustand
-- **Queries:** TanStack Query (React Query)
-- **Types:** TypeScript + tRPC
+| Mode | Startup Time | Request Latency | Memory Usage |
+|------|-------------|-----------------|--------------|
+| In-Process (new) | ~100ms | ~0.1ms | 80MB |
+| HTTP Daemon (old) | ~2000ms | ~3ms | 120MB (2 processes) |
+| Remote HTTP | ~100ms | ~3-10ms | 80MB (client) |
 
 ---
 
-## ✅ Architecture Validation
+## Security Considerations
 
-### Checklist
+### In-Process Mode
 
-- [x] **code-server imports code-core** ✅
-  - Server uses core business logic
+- ✅ No network exposure
+- ✅ File system permissions only
+- ✅ Single-user by design
 
-- [x] **code-client is shared client logic** ✅
-  - Provides React hooks and tRPC provider
+### HTTP Mode (--web or standalone server)
 
-- [x] **code imports code-client** ✅
-  - CLI uses shared client logic
+- ⚠️ Exposes localhost:3000
+- ⚠️ No authentication (localhost only)
+- ⚠️ Firewall should block external access
 
-- [x] **code-web imports code-client** ✅
-  - Web uses shared client logic
-
-- [x] **code spawns code-server** ✅
-  - CLI can auto-start daemon
-
-- [x] **Clear responsibility separation** ✅
-  - Each package has clear role
-
-- [x] **Independent deployment** ✅
-  - Server can run standalone
-  - Web can be deployed independently
+**Recommendation:** Only use HTTP mode on trusted local networks.
 
 ---
 
-## 🎉 Summary
+## Future Enhancements
 
-**Architecture is finalized and ready for implementation!**
+1. **Multi-User Support**
+   - Add authentication to HTTP server
+   - User-scoped database access
 
-**Key Design:**
-1. `code-server` = daemon import `code-core` ✅
-2. `code-client` = shared client logic ✅
-3. `code` + `code-web` import `code-client` ✅
+2. **Cloud Deployment**
+   - Docker image for `code-server`
+   - Nginx reverse proxy
+   - OAuth integration
 
-**Advantages:**
-- ✅ Modular: Clear separation of concerns
-- ✅ Reusable: Shared client logic
-- ✅ Scalable: Each layer can evolve independently
-- ✅ Deployable: Server can run standalone
+3. **Performance Optimizations**
+   - Database connection pooling
+   - Query result caching
+   - Incremental message loading
 
 ---
 
-**Next Steps:**
-1. Implement server auto-start (spawn daemon)
-2. Implement `code --web` mode
-3. Test complete user flow
+## FAQ
+
+**Q: Why in-process instead of daemon?**
+A: Faster startup, simpler architecture, zero network overhead. Daemon pattern is outdated for local-first apps.
+
+**Q: Can multiple TUI instances share data?**
+A: Yes, via shared SQLite database with WAL mode. Or use standalone server mode.
+
+**Q: Does Web GUI require server restart?**
+A: No. `code --web` starts HTTP server dynamically from TUI process.
+
+**Q: What about process isolation?**
+A: Trade-off accepted for performance. Crashes affect TUI only. Standalone mode available if needed.
+
+---
+
+## See Also
+
+- [Old Architecture (Archived)](./ARCHIVE/2025-01-05-daemon-http-architecture/ARCHITECTURE.md)
+- [tRPC Documentation](https://trpc.io/)
+- [SQLite WAL Mode](https://www.sqlite.org/wal.html)

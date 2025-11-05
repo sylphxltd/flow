@@ -1,21 +1,25 @@
 /**
  * @sylphx/code-server
- * tRPC server for multi-session AI streaming
+ * Embeddable tRPC server for multi-session AI streaming
  */
 
 // ============================================================================
-// tRPC Router & Context
+// CodeServer Class (for embedding)
 // ============================================================================
-export { appRouter } from './trpc/routers/index.js'
-export { createContext, type Context } from './trpc/context.js'
-// NOTE: No in-process client - all clients should use HTTP tRPC
+export { CodeServer, type ServerConfig } from './server.js';
+
+// ============================================================================
+// tRPC Router & Context (for in-process use)
+// ============================================================================
+export { appRouter, type AppRouter } from './trpc/routers/index.js';
+export { createContext, type Context } from './trpc/context.js';
 
 // ============================================================================
 // Streaming Service
 // ============================================================================
-export { type StreamEvent } from './services/streaming.service.js'
+export { type StreamEvent } from './services/streaming.service.js';
 
 // ============================================================================
 // Version
 // ============================================================================
-export const version = '0.1.0'
+export const version = '0.1.0';
