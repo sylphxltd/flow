@@ -42,10 +42,16 @@ export type ProviderConfigValue = ProviderConfigValueType;
  * - Each provider has its own defaultModel in its config
  * - Default model = last used or first in list
  * - Use camelCase for consistency
+ *
+ * DESIGN: Global default enabled rules
+ * - defaultEnabledRuleIds: Rules enabled by default for new sessions
+ * - Each session can override this list independently
+ * - Stored in global config, applied when creating new sessions
  */
 const aiConfigSchema = z.object({
   defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']).optional(),
   // ❌ Removed: defaultModel - use provider's defaultModel instead
+  defaultEnabledRuleIds: z.array(z.string()).optional(), // Global default rules for new sessions
   providers: z.record(
     z.string(),
     z.object({
@@ -119,6 +125,7 @@ const mergeConfigs = (a: AIConfig, b: AIConfig): AIConfig => {
 
   return {
     defaultProvider: b.defaultProvider ?? a.defaultProvider,
+    defaultEnabledRuleIds: b.defaultEnabledRuleIds ?? a.defaultEnabledRuleIds,
     // ❌ Removed: defaultModel merging
     providers: mergedProviders,
   };

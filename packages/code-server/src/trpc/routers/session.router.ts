@@ -88,13 +88,15 @@ export const sessionRouter = router({
         provider: z.string() as z.ZodType<ProviderId>,
         model: z.string(),
         agentId: z.string().optional(),
+        enabledRuleIds: z.array(z.string()).optional(), // Optional: global default rules
       })
     )
     .mutation(async ({ ctx, input }) => {
       const session = await ctx.sessionRepository.createSession(
         input.provider,
         input.model,
-        input.agentId || 'coder'
+        input.agentId || 'coder',
+        input.enabledRuleIds || [] // Initialize with provided rules or empty
       );
 
       // Emit event for reactive clients

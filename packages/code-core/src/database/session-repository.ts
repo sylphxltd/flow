@@ -77,7 +77,12 @@ export class SessionRepository {
   /**
    * Create a new session
    */
-  async createSession(provider: ProviderId, model: string, agentId: string = 'coder'): Promise<SessionType> {
+  async createSession(
+    provider: ProviderId,
+    model: string,
+    agentId: string = 'coder',
+    enabledRuleIds: string[] = []
+  ): Promise<SessionType> {
     const now = Date.now();
     const sessionId = `session-${now}`;
 
@@ -86,6 +91,7 @@ export class SessionRepository {
       provider,
       model,
       agentId,
+      enabledRuleIds,
       nextTodoId: 1,
       created: now,
       updated: now,
@@ -98,7 +104,7 @@ export class SessionRepository {
       provider,
       model,
       agentId,
-      enabledRuleIds: [],
+      enabledRuleIds,
       messages: [],
       todos: [],
       nextTodoId: 1,

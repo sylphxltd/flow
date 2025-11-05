@@ -226,13 +226,24 @@ export const useAppStore = create<AppState>()(
        */
       createSession: async (provider, model) => {
         const client = getTRPCClient();
-        const { selectedAgentId } = get();
-        const session = await client.session.create.mutate({ provider, model, agentId: selectedAgentId });
+        const { selectedAgentId, aiConfig } = get();
+
+        // Use global default enabled rules from config
+        const defaultRules = aiConfig?.defaultEnabledRuleIds || [];
+
+        const session = await client.session.create.mutate({
+          provider,
+          model,
+          agentId: selectedAgentId,
+          enabledRuleIds: defaultRules, // Initialize with global defaults
+        });
 
         // Set as current session
         set((state) => {
           state.currentSessionId = session.id;
           state.currentSession = session;
+          // Load default rules into client state
+          state.enabledRuleIds = session.enabledRuleIds || [];
         });
 
         return session.id;
