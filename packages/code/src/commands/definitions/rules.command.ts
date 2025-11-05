@@ -10,7 +10,7 @@ export const rulesCommand: Command = {
   label: '/rules',
   description: 'Select enabled shared system prompt rules',
   execute: async (context) => {
-    const { getAllRules, getEnabledRuleIds, setEnabledRules } = await import('@sylphx/code-core');
+    const { getAllRules, getEnabledRuleIds, setEnabledRules } = await import('../../embedded-context.js');
 
     const allRules = getAllRules();
     const enabledIds = getEnabledRuleIds();

@@ -45,10 +45,10 @@ export function getAgentById(id: string): Agent | null {
  */
 export function getCurrentAgent(): Agent {
   const { useAppStore } = require('@sylphx/code-client');
-  const currentAgentId = useAppStore.getState().currentAgentId;
-  const agent = getAgentById(currentAgentId);
+  const selectedAgentId = useAppStore.getState().selectedAgentId;
+  const agent = getAgentById(selectedAgentId);
   if (!agent) {
-    throw new Error(`Current agent not found: ${currentAgentId}`);
+    throw new Error(`Current agent not found: ${selectedAgentId}`);
   }
   return agent;
 }
@@ -64,7 +64,7 @@ export function switchAgent(agentId: string): boolean {
   }
 
   const { useAppStore } = require('@sylphx/code-client');
-  useAppStore.getState().setCurrentAgent(agentId);
+  useAppStore.getState().setSelectedAgent(agentId);
   return true;
 }
 
@@ -86,6 +86,23 @@ export function getRuleById(id: string): Rule | null {
     throw new Error('Embedded server not initialized');
   }
   return embeddedServerInstance.getAppContext().ruleManager.getById(id);
+}
+
+/**
+ * Get enabled rule IDs from Zustand store
+ */
+export function getEnabledRuleIds(): string[] {
+  const { useAppStore } = require('@sylphx/code-client');
+  return useAppStore.getState().enabledRuleIds;
+}
+
+/**
+ * Set enabled rules in Zustand store
+ */
+export function setEnabledRules(ruleIds: string[]): boolean {
+  const { useAppStore } = require('@sylphx/code-client');
+  useAppStore.getState().setEnabledRuleIds(ruleIds);
+  return true;
 }
 
 /**
