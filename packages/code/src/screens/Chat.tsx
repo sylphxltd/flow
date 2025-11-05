@@ -168,6 +168,20 @@ export default function Chat(_props: ChatProps) {
   const getAIConfig = () => useAppStore.getState().aiConfig;
 
   // Settings mode callbacks
+  const handleSelectAction = useCallback(
+    (action: 'use' | 'configure') => {
+      // Move from select-action to select-provider step
+      setSettingsMode({
+        type: 'provider-selection',
+        action,
+        step: 'select-provider',
+      });
+      setSelectedCommandIndex(0); // Reset selection for provider list
+      addLog(`[settings] Action selected: ${action}`);
+    },
+    [setSettingsMode, setSelectedCommandIndex, addLog]
+  );
+
   const handleProviderSelect = useCallback(
     (providerId: string) => {
       // Direct store update, no session creation
@@ -485,27 +499,69 @@ export default function Chat(_props: ChatProps) {
 
         // Navigation for provider selection
         if (settingsMode.type === 'provider-selection') {
-          // Get provider count from aiConfig
-          const providers = useAppStore.getState().aiConfig?.providers || {};
-          const providerIds = Object.keys(providers);
-          const providerCount = providerIds.length;
+          // Step 1: Select action (use / configure)
+          if (settingsMode.step === 'select-action') {
+            const actionCount = 2; // use, configure
 
-          if (key.upArrow) {
-            setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : providerCount - 1));
-            return;
-          }
-
-          if (key.downArrow) {
-            setSelectedCommandIndex((prev) => (prev < providerCount - 1 ? prev + 1 : 0));
-            return;
-          }
-
-          if (key.return) {
-            const selectedProvider = providerIds[selectedCommandIndex];
-            if (selectedProvider) {
-              handleProviderSelect(selectedProvider);
+            if (key.upArrow) {
+              setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : actionCount - 1));
+              return;
             }
-            return;
+
+            if (key.downArrow) {
+              setSelectedCommandIndex((prev) => (prev < actionCount - 1 ? prev + 1 : 0));
+              return;
+            }
+
+            if (key.return) {
+              const actions = ['use', 'configure'] as const;
+              const selectedAction = actions[selectedCommandIndex];
+              if (selectedAction) {
+                handleSelectAction(selectedAction);
+              }
+              return;
+            }
+          }
+
+          // Step 2: Select provider
+          if (settingsMode.step === 'select-provider') {
+            const providers = useAppStore.getState().aiConfig?.providers || {};
+            const providerIds = Object.keys(providers);
+            const providerCount = providerIds.length;
+
+            if (key.upArrow) {
+              setSelectedCommandIndex((prev) => (prev > 0 ? prev - 1 : providerCount - 1));
+              return;
+            }
+
+            if (key.downArrow) {
+              setSelectedCommandIndex((prev) => (prev < providerCount - 1 ? prev + 1 : 0));
+              return;
+            }
+
+            if (key.return) {
+              const selectedProvider = providerIds[selectedCommandIndex];
+              if (selectedProvider) {
+                if (settingsMode.action === 'use') {
+                  handleProviderSelect(selectedProvider);
+                } else {
+                  // Move to configure step
+                  setSettingsMode({
+                    type: 'provider-selection',
+                    action: 'configure',
+                    step: 'configure-provider',
+                    selectedProvider,
+                  });
+                }
+              }
+              return;
+            }
+          }
+
+          // Step 3: Configure provider
+          if (settingsMode.step === 'configure-provider') {
+            // TODO: Implement configuration UI navigation
+            // For now, just allow ESC to cancel
           }
         }
         return;
@@ -641,6 +697,7 @@ export default function Chat(_props: ChatProps) {
             setPendingCommand={setPendingCommand}
             settingsMode={settingsMode}
             aiConfig={aiConfig}
+            onSelectAction={handleSelectAction}
             onProviderSelect={handleProviderSelect}
             onProviderConfigure={handleProviderConfigure}
             onSettingsCancel={handleSettingsCancel}

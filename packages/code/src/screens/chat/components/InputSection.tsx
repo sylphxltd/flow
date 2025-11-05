@@ -78,6 +78,7 @@ interface InputSectionProps {
   // Settings mode
   settingsMode: SettingsMode;
   aiConfig: any;
+  onSelectAction: (action: 'use' | 'configure') => void;
   onProviderSelect: (providerId: string) => void;
   onProviderConfigure: (providerId: string, config: any) => void;
   onSettingsCancel: () => void;
@@ -120,6 +121,7 @@ export function InputSection({
   showEscHint,
   settingsMode,
   aiConfig,
+  onSelectAction,
   onProviderSelect,
   onProviderConfigure,
   onSettingsCancel,
@@ -135,6 +137,7 @@ export function InputSection({
         <ProviderSettings
           mode={settingsMode}
           aiConfig={aiConfig}
+          onSelectAction={onSelectAction}
           onSelectProvider={onProviderSelect}
           onConfigureProvider={onProviderConfigure}
           onCancel={onSettingsCancel}

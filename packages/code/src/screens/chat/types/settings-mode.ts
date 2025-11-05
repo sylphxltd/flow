@@ -7,7 +7,7 @@ export type SettingsMode =
   | {
       type: 'provider-selection';
       action: 'use' | 'configure';
-      step: 'select-provider' | 'configure-provider';
+      step: 'select-action' | 'select-provider' | 'configure-provider';
       selectedProvider?: string;
     }
   | {

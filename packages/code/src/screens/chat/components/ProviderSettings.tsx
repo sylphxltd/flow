@@ -12,6 +12,7 @@ interface ProviderSettingsProps {
   aiConfig: any;
   onSelectProvider: (providerId: string) => void;
   onConfigureProvider: (providerId: string, config: any) => void;
+  onSelectAction: (action: 'use' | 'configure') => void;
   onCancel: () => void;
   selectedIndex: number;
 }
@@ -21,6 +22,7 @@ export function ProviderSettings({
   aiConfig,
   onSelectProvider,
   onConfigureProvider,
+  onSelectAction,
   onCancel,
   selectedIndex,
 }: ProviderSettingsProps) {
@@ -39,6 +41,44 @@ export function ProviderSettings({
     };
   });
 
+  // Step 1: Select action (use / configure)
+  if (mode.step === 'select-action') {
+    const actions = [
+      { id: 'use', name: 'Use a provider', icon: '📡' },
+      { id: 'configure', name: 'Configure a provider', icon: '⚙️' },
+    ];
+
+    return (
+      <Box flexDirection="column" paddingY={1}>
+        <Box marginBottom={1}>
+          <Text bold color="cyan">
+            🔧 Provider Management
+          </Text>
+        </Box>
+
+        {actions.map((action, idx) => {
+          const isSelected = idx === selectedIndex;
+          const symbol = isSelected ? '❯' : ' ';
+
+          return (
+            <Box key={action.id}>
+              <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
+                {symbol} {action.icon} {action.name}
+              </Text>
+            </Box>
+          );
+        })}
+
+        <Box marginTop={1}>
+          <Text dimColor>
+            ↑↓: Navigate  │  Enter: Select  │  Esc: Cancel
+          </Text>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Step 2: Select provider
   if (mode.step === 'select-provider') {
     return (
       <Box flexDirection="column" paddingY={1}>
