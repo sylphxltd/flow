@@ -62,7 +62,7 @@ export interface KeyboardNavigationProps {
   // Config
   currentSessionId: string | null;
   currentSession: any;
-  createSession: (provider: string, model: string) => Promise<string>;
+  createSession: (provider: string, model: string) => string;
 }
 
 export function useKeyboardNavigation(props: KeyboardNavigationProps) {
@@ -215,7 +215,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
 
               // Add user's answer to chat history
               if (!commandSessionRef.current) {
-                commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+                commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
               }
               addMessage(commandSessionRef.current, 'user', customValue);
 
@@ -452,7 +452,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
 
               // Add user's answer to chat history
               if (!commandSessionRef.current) {
-                commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+                commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
               }
               addMessage(commandSessionRef.current, 'user', choicesArray.join(', '));
 
@@ -510,7 +510,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
 
                 // Add user's answer to chat history immediately (like shell)
                 if (!commandSessionRef.current) {
-                  commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+                  commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
                 }
                 addMessage(commandSessionRef.current, 'user', selectedOption.label);
 
@@ -721,7 +721,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
 
             // Add user message to conversation
             if (!commandSessionRef.current) {
-              commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+              commandSessionRef.current = currentSessionId || createSession('openrouter', 'anthropic/claude-3.5-sonnet');
             }
             addMessage(commandSessionRef.current, 'user', selected.label);
 

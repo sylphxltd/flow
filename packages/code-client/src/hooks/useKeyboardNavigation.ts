@@ -54,15 +54,26 @@ export interface KeyboardNavigationProps {
 
   // Functions
   addLog: (message: string) => void;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string) => void;
+  addMessage: (
+    sessionId: string | null,
+    role: 'user' | 'assistant',
+    content: string,
+    attachments?: any[],
+    usage?: any,
+    finishReason?: string,
+    metadata?: any,
+    todoSnapshot?: any[],
+    provider?: string,
+    model?: string
+  ) => Promise<string>;
   addAttachment: (attachment: { path: string; relativePath: string; size?: number }) => void;
   setAttachmentTokenCount: (path: string, count: number) => void;
   createCommandContext: (args: string[]) => CommandContext;
+  getAIConfig: () => { defaultProvider?: string; defaultModel?: string } | null;
 
   // Config
   currentSessionId: string | null;
   currentSession: any;
-  createSession: (provider: string, model: string) => Promise<string>;
 }
 
 export function useKeyboardNavigation(props: KeyboardNavigationProps) {
@@ -108,9 +119,9 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
     addAttachment,
     setAttachmentTokenCount,
     createCommandContext,
+    getAIConfig,
     currentSessionId,
     currentSession,
-    createSession,
   } = props;
 
   useInput(
@@ -213,11 +224,24 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
               const customValue = freeTextInput.trim();
               addLog(`[freetext] Submitted: ${customValue}`);
 
-              // Add user's answer to chat history
+              // Add user's answer to chat history (lazy create session if needed)
+              const aiConfig = getAIConfig();
+              const provider = aiConfig?.defaultProvider || 'openrouter';
+              const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+              const sessionIdToUse = commandSessionRef.current || currentSessionId;
+              const resultSessionId = await addMessage(
+                sessionIdToUse,
+                'user',
+                customValue,
+                undefined, undefined, undefined, undefined, undefined,
+                provider,
+                model
+              );
+
               if (!commandSessionRef.current) {
-                commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+                commandSessionRef.current = resultSessionId;
               }
-              addMessage(commandSessionRef.current, 'user', customValue);
 
               if (isSingleQuestion) {
                 // Single question: submit immediately
@@ -450,11 +474,24 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
               const choicesArray = Array.from(multiSelectChoices);
               addLog(`[multi-select] Q${multiSelectionPage + 1}: ${choicesArray.join(', ')}`);
 
-              // Add user's answer to chat history
+              // Add user's answer to chat history (lazy create session if needed)
+              const aiConfig = getAIConfig();
+              const provider = aiConfig?.defaultProvider || 'openrouter';
+              const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+              const sessionIdToUse = commandSessionRef.current || currentSessionId;
+              const resultSessionId = await addMessage(
+                sessionIdToUse,
+                'user',
+                choicesArray.join(', '),
+                undefined, undefined, undefined, undefined, undefined,
+                provider,
+                model
+              );
+
               if (!commandSessionRef.current) {
-                commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+                commandSessionRef.current = resultSessionId;
               }
-              addMessage(commandSessionRef.current, 'user', choicesArray.join(', '));
 
               if (isSingleQuestion) {
                 // Single question: submit immediately
@@ -508,11 +545,24 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
                 const selectedValue = selectedOption.value || selectedOption.label;
                 addLog(`[selection] Q${multiSelectionPage + 1}: ${selectedValue}`);
 
-                // Add user's answer to chat history immediately (like shell)
+                // Add user's answer to chat history (lazy create session if needed)
+                const aiConfig = getAIConfig();
+                const provider = aiConfig?.defaultProvider || 'openrouter';
+                const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+                const sessionIdToUse = commandSessionRef.current || currentSessionId;
+                const resultSessionId = await addMessage(
+                  sessionIdToUse,
+                  'user',
+                  selectedOption.label,
+                  undefined, undefined, undefined, undefined, undefined,
+                  provider,
+                  model
+                );
+
                 if (!commandSessionRef.current) {
-                  commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+                  commandSessionRef.current = resultSessionId;
                 }
-                addMessage(commandSessionRef.current, 'user', selectedOption.label);
 
                 if (isSingleQuestion) {
                   // Single question: submit immediately
@@ -717,18 +767,38 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             // Execute command directly - let command handle interaction via CommandContext
             addLog(`[useInput] Enter autocomplete execute: ${selected.label}`);
 
-            // Add user message to conversation
+            // Add user message to conversation (lazy create session if needed)
+            const aiConfig = getAIConfig();
+            const provider = aiConfig?.defaultProvider || 'openrouter';
+            const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+            const sessionIdToUse = commandSessionRef.current || currentSessionId;
+            const resultSessionId = await addMessage(
+              sessionIdToUse,
+              'user',
+              selected.label,
+              undefined, undefined, undefined, undefined, undefined,
+              provider,
+              model
+            );
+
             if (!commandSessionRef.current) {
-              commandSessionRef.current = currentSessionId || await createSession('openrouter', 'anthropic/claude-3.5-sonnet');
+              commandSessionRef.current = resultSessionId;
             }
-            addMessage(commandSessionRef.current, 'user', selected.label);
 
             // Execute command - it will use waitForInput if needed
             const response = await selected.execute(createCommandContext([]));
 
             // Add final response if any
             if (response) {
-              addMessage(commandSessionRef.current, 'assistant', response);
+              await addMessage(
+                commandSessionRef.current,
+                'assistant',
+                response,
+                undefined, undefined, undefined, undefined, undefined,
+                provider,
+                model
+              );
             }
           }
           return;

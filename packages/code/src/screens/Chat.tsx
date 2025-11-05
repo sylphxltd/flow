@@ -350,8 +350,8 @@ export default function Chat(_props: ChatProps) {
     () =>
       createHandleSubmit({
         isStreaming,
-        createSession,
         addMessage,
+        getAIConfig,
         pendingInput,
         filteredCommands,
         pendingAttachments,
@@ -373,8 +373,8 @@ export default function Chat(_props: ChatProps) {
       }),
     [
       isStreaming,
-      createSession,
       addMessage,
+      getAIConfig,
       pendingInput,
       filteredCommands,
       pendingAttachments,
@@ -438,9 +438,9 @@ export default function Chat(_props: ChatProps) {
     addAttachment,
     setAttachmentTokenCount,
     createCommandContext: createCommandContextForArgs,
+    getAIConfig,
     currentSessionId,
     currentSession,
-    createSession,
   });
 
   // Message history navigation (like bash)

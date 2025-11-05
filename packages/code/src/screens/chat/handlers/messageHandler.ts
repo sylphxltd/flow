@@ -14,7 +14,6 @@ export interface MessageHandlerParams {
   isStreaming: boolean;
 
   // Store methods
-  createSession: (provider: ProviderId, model: string) => Promise<string>;
   addMessage: (
     sessionId: string | null,
     role: 'user' | 'assistant',
@@ -77,7 +76,6 @@ import type { Command, WaitForInputOptions } from '../../../commands/types.js';
 export function createHandleSubmit(params: MessageHandlerParams) {
   const {
     isStreaming,
-    createSession,
     addMessage,
     getAIConfig,
     pendingInput,
