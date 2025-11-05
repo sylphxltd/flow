@@ -247,4 +247,15 @@ export class CodeServer {
   isHTTPRunning(): boolean {
     return this.httpServer !== undefined && this.httpServer.listening;
   }
+
+  /**
+   * Get AppContext (for embedded mode only)
+   * Allows direct access to services when running in-process
+   */
+  getAppContext(): AppContext {
+    if (!this.initialized || !this.appContext) {
+      throw new Error('Server not initialized. Call initialize() first.');
+    }
+    return this.appContext;
+  }
 }

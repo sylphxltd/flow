@@ -1,0 +1,113 @@
+/**
+ * Embedded Context Helpers
+ * Temporary bridge to access embedded server's AppContext
+ *
+ * TEMPORARY: These functions are a compatibility layer for the TUI.
+ * They will be replaced with proper tRPC calls in the future.
+ */
+
+import type { CodeServer } from '@sylphx/code-server';
+import type { Agent, Rule } from '@sylphx/code-core';
+
+let embeddedServerInstance: CodeServer | null = null;
+
+/**
+ * Set the embedded server instance
+ * Called once during TUI initialization
+ */
+export function setEmbeddedServer(server: CodeServer): void {
+  embeddedServerInstance = server;
+}
+
+/**
+ * Get all available agents
+ */
+export function getAllAgents(): Agent[] {
+  if (!embeddedServerInstance) {
+    throw new Error('Embedded server not initialized');
+  }
+  return embeddedServerInstance.getAppContext().agentManager.getAll();
+}
+
+/**
+ * Get agent by ID
+ */
+export function getAgentById(id: string): Agent | null {
+  if (!embeddedServerInstance) {
+    throw new Error('Embedded server not initialized');
+  }
+  return embeddedServerInstance.getAppContext().agentManager.getById(id);
+}
+
+/**
+ * Get current agent (from Zustand store)
+ * DEPRECATED: Use useAppStore directly
+ */
+export function getCurrentAgent(): Agent {
+  const { useAppStore } = require('@sylphx/code-client');
+  const currentAgentId = useAppStore.getState().currentAgentId;
+  const agent = getAgentById(currentAgentId);
+  if (!agent) {
+    throw new Error(`Current agent not found: ${currentAgentId}`);
+  }
+  return agent;
+}
+
+/**
+ * Switch to a different agent
+ * DEPRECATED: Use useAppStore directly
+ */
+export function switchAgent(agentId: string): boolean {
+  const agent = getAgentById(agentId);
+  if (!agent) {
+    return false;
+  }
+
+  const { useAppStore } = require('@sylphx/code-client');
+  useAppStore.getState().setCurrentAgent(agentId);
+  return true;
+}
+
+/**
+ * Get all available rules
+ */
+export function getAllRules(): Rule[] {
+  if (!embeddedServerInstance) {
+    throw new Error('Embedded server not initialized');
+  }
+  return embeddedServerInstance.getAppContext().ruleManager.getAll();
+}
+
+/**
+ * Get rule by ID
+ */
+export function getRuleById(id: string): Rule | null {
+  if (!embeddedServerInstance) {
+    throw new Error('Embedded server not initialized');
+  }
+  return embeddedServerInstance.getAppContext().ruleManager.getById(id);
+}
+
+/**
+ * Toggle a rule on/off
+ * Updates Zustand store directly
+ */
+export function toggleRule(ruleId: string): boolean {
+  const rule = getRuleById(ruleId);
+  if (!rule) {
+    return false;
+  }
+
+  const { useAppStore } = require('@sylphx/code-client');
+  const currentEnabled = useAppStore.getState().enabledRuleIds;
+
+  if (currentEnabled.includes(ruleId)) {
+    // Disable: remove from list
+    useAppStore.getState().setEnabledRuleIds(currentEnabled.filter(id => id !== ruleId));
+  } else {
+    // Enable: add to list
+    useAppStore.getState().setEnabledRuleIds([...currentEnabled, ruleId]);
+  }
+
+  return true;
+}

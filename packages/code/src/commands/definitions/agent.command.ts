@@ -15,7 +15,7 @@ export const agentCommand: Command = {
       description: 'Agent to switch to (coder, planner, etc.)',
       required: false,
       loadOptions: async (previousArgs) => {
-        const { getAllAgents } = await import('@sylphx/code-core');
+        const { getAllAgents } = await import('../../embedded-context.js');
         const agents = getAllAgents();
         return agents.map((agent) => ({
           id: agent.id,
@@ -26,7 +26,7 @@ export const agentCommand: Command = {
     },
   ],
   execute: async (context) => {
-    const { getAllAgents, getCurrentAgent, switchAgent } = await import('@sylphx/code-core');
+    const { getAllAgents, getCurrentAgent, switchAgent } = await import('../../embedded-context.js');
 
     let agentId: string;
 
@@ -80,7 +80,7 @@ export const agentCommand: Command = {
       return `Agent not found: ${agentId}. Use /agent to see available agents.`;
     }
 
-    const { getAgentById } = await import('@sylphx/code-core');
+    const { getAgentById } = await import('../../embedded-context.js');
     const selectedAgent = getAgentById(agentId);
 
     if (!selectedAgent) {

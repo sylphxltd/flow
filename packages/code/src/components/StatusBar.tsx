@@ -5,7 +5,8 @@
 
 import { useAppStore } from '@sylphx/code-client';
 import type { ProviderId } from '@sylphx/code-core';
-import { getAgentById, getProvider, getTokenizerInfo } from '@sylphx/code-core';
+import { getProvider, getTokenizerInfo } from '@sylphx/code-core';
+import { getAgentById } from '../embedded-context.js';
 import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 

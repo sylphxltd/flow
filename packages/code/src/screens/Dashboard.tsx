@@ -5,7 +5,7 @@
 
 import type { Session } from '@sylphx/code-client';
 import { getTRPCClient, useAppStore } from '@sylphx/code-client';
-import { getAllAgents, getAllRules, toggleRule } from '@sylphx/code-core';
+import { getAllAgents, getAllRules, toggleRule } from '../embedded-context.js';
 import { Box, Text, useInput } from 'ink';
 import React, { useEffect, useState } from 'react';
 import { FullScreen } from '../components/FullScreen.js';

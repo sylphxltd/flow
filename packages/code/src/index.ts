@@ -58,6 +58,10 @@ async function initEmbeddedServer(options: { quiet?: boolean } = {}): Promise<Co
   embeddedServer = new CodeServer();
   await embeddedServer.initialize();
 
+  // Register embedded server for context access (TUI only)
+  const { setEmbeddedServer } = await import('./embedded-context.js');
+  setEmbeddedServer(embeddedServer);
+
   if (!options.quiet) {
     console.error(chalk.green('✓ Server ready'));
   }
