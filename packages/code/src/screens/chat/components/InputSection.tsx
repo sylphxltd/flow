@@ -75,13 +75,8 @@ interface InputSectionProps {
   // ESC hint
   showEscHint: boolean;
 
-  // Settings mode
-  settingsMode: SettingsMode;
-  aiConfig: any;
-  onSelectAction: (action: 'use' | 'configure') => void;
-  onProviderSelect: (providerId: string) => void;
-  onProviderConfigure: (providerId: string, config: any) => void;
-  onSettingsCancel: () => void;
+  // Custom input component (replaces input area)
+  inputComponent: React.ReactNode | null;
 }
 
 export function InputSection({
@@ -119,12 +114,7 @@ export function InputSection({
   hintText,
   validTags,
   showEscHint,
-  settingsMode,
-  aiConfig,
-  onSelectAction,
-  onProviderSelect,
-  onProviderConfigure,
-  onSettingsCancel,
+  inputComponent,
 }: InputSectionProps) {
   return (
     <Box flexDirection="column" flexShrink={0}>
@@ -132,17 +122,9 @@ export function InputSection({
         <Text color="#00D9FF">▌ YOU</Text>
       </Box>
 
-      {/* Settings Mode - interactive settings UI */}
-      {settingsMode && settingsMode.type === 'provider-selection' ? (
-        <ProviderSettings
-          mode={settingsMode}
-          aiConfig={aiConfig}
-          onSelectAction={onSelectAction}
-          onSelectProvider={onProviderSelect}
-          onConfigureProvider={onProviderConfigure}
-          onCancel={onSettingsCancel}
-          selectedIndex={selectedCommandIndex}
-        />
+      {/* Custom Input Component - replaces input area (e.g. ProviderManagement) */}
+      {inputComponent ? (
+        <>{inputComponent}</>
       ) : /* PendingInput Mode - when command calls waitForInput */
       pendingInput && pendingInput.type === 'selection' ? (
         <SelectionUI

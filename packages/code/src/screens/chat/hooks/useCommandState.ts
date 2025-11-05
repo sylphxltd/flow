@@ -1,11 +1,11 @@
 /**
  * Command State Hook
- * Manages command menu, pending commands, selection state, and settings mode
+ * Manages command menu, pending commands, selection state, and custom input components
  */
 
+import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import type { Command } from '../../../commands/types.js';
-import type { SettingsMode } from '../types/settings-mode.js';
 
 export interface CommandState {
   ctrlPressed: boolean;
@@ -29,8 +29,8 @@ export interface CommandState {
   loadError: string | null;
   setLoadError: (error: string | null) => void;
   commandSessionRef: React.MutableRefObject<string | null>;
-  settingsMode: SettingsMode;
-  setSettingsMode: (mode: SettingsMode) => void;
+  inputComponent: ReactNode | null;
+  setInputComponent: (component: ReactNode | null) => void;
 }
 
 export function useCommandState(): CommandState {
@@ -51,7 +51,7 @@ export function useCommandState(): CommandState {
   const [currentlyLoading, setCurrentlyLoading] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const commandSessionRef = useRef<string | null>(null);
-  const [settingsMode, setSettingsMode] = useState<SettingsMode>(null);
+  const [inputComponent, setInputComponent] = useState<ReactNode | null>(null);
 
   return {
     ctrlPressed,
@@ -75,7 +75,7 @@ export function useCommandState(): CommandState {
     loadError,
     setLoadError,
     commandSessionRef,
-    settingsMode,
-    setSettingsMode,
+    inputComponent,
+    setInputComponent,
   };
 }

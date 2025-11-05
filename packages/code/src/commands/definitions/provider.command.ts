@@ -1,8 +1,10 @@
 /**
  * Provider Command
- * Configure and switch AI providers using interactive settings mode
+ * Configure and switch AI providers using component-based UI
  */
 
+import { createElement } from 'react';
+import { ProviderManagement } from '../../screens/chat/components/ProviderManagement.js';
 import type { Command } from '../types.js';
 
 export const providerCommand: Command = {
@@ -12,49 +14,46 @@ export const providerCommand: Command = {
   args: [],
 
   execute: async (context) => {
-    const action = context.args[0];
+    const action = context.args[0] as 'use' | 'configure' | undefined;
 
-    // Case 1: /provider - show action selection (use / configure)
-    if (!action) {
-      context.setSettingsMode({
-        type: 'provider-selection',
-        action: 'use', // Default to 'use', but will show both options
-        step: 'select-action',
-      });
-      context.addLog('[provider] Settings mode: select action');
+    // Validate action
+    if (action && action !== 'use' && action !== 'configure') {
+      await context.sendMessage(
+        `Unknown action: ${action}\n\n` +
+          'Usage:\n' +
+          '  /provider - Select action (use/configure)\n' +
+          '  /provider use - Select provider to use\n' +
+          '  /provider configure - Configure a provider'
+      );
       return;
     }
 
-    // Case 2: /provider use - show provider selection for use
-    if (action === 'use') {
-      context.setSettingsMode({
-        type: 'provider-selection',
-        action: 'use',
-        step: 'select-provider',
-      });
-      context.addLog('[provider] Settings mode: select provider to use');
-      return;
-    }
+    // Get AI config
+    const aiConfig = context.getConfig();
 
-    // Case 3: /provider configure - show provider selection for configuration
-    if (action === 'configure') {
-      context.setSettingsMode({
-        type: 'provider-selection',
-        action: 'configure',
-        step: 'select-provider',
-      });
-      context.addLog('[provider] Settings mode: select provider to configure');
-      return;
-    }
-
-    // Invalid action
-    context.sendMessage(
-      `Unknown action: ${action}\n\n` +
-        'Usage:\n' +
-        '  /provider - Select action (use/configure)\n' +
-        '  /provider use - Select provider to use\n' +
-        '  /provider configure - Configure a provider'
+    // Set input component with callbacks
+    context.setInputComponent(
+      createElement(ProviderManagement, {
+        initialAction: action,
+        aiConfig,
+        onComplete: () => {
+          context.setInputComponent(null);
+          context.addLog('[provider] Provider management closed');
+        },
+        onSelectProvider: (providerId) => {
+          // Update provider in store
+          context.updateProvider(providerId as any, {});
+          context.setAIConfig({ ...aiConfig, defaultProvider: providerId } as any);
+          context.addLog(`[provider] Switched to provider: ${providerId}`);
+        },
+        onConfigureProvider: (providerId, config) => {
+          context.updateProvider(providerId as any, config);
+          context.addLog(`[provider] Configured provider: ${providerId}`);
+        },
+      })
     );
+
+    context.addLog(`[provider] Provider management opened with action: ${action || 'select'}`);
   },
 };
 
