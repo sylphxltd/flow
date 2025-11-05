@@ -245,10 +245,10 @@ export function SelectionInput({ questions, onComplete, onCancel }: SelectionInp
             const isChecked = multiSelectChoices.has(option.value || option.label);
             const symbol = currentQuestion.multiSelect
               ? isChecked
-                ? '[✓]'
+                ? '[X]'
                 : '[ ]'
               : isSelected
-              ? '❯'
+              ? '>'
               : ' ';
 
             return (
@@ -266,8 +266,8 @@ export function SelectionInput({ questions, onComplete, onCancel }: SelectionInp
       <Box marginTop={1}>
         <Text dimColor>
           {currentQuestion.multiSelect
-            ? '↑↓: Navigate  │  Space: Toggle  │  Enter: Confirm  │  /: Filter  │  Esc: Cancel'
-            : '↑↓: Navigate  │  Enter: Select  │  /: Filter  │  Esc: Cancel'}
+            ? '↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm  |  /: Filter  |  Esc: Cancel'
+            : '↑↓: Navigate  |  Enter: Select  |  /: Filter  |  Esc: Cancel'}
         </Text>
       </Box>
     </Box>

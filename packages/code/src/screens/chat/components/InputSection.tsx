@@ -118,15 +118,22 @@ export function InputSection({
 }: InputSectionProps) {
   return (
     <Box flexDirection="column" flexShrink={0}>
-      <Box>
-        <Text color="#00D9FF">▌ YOU</Text>
-      </Box>
-
-      {/* Custom Input Component - replaces input area (e.g. ProviderManagement) */}
+      {/* Custom Input Component - replaces entire input area including YOU header */}
       {inputComponent ? (
-        <>{inputComponent}</>
-      ) : /* PendingInput Mode - when command calls waitForInput */
-      pendingInput && pendingInput.type === 'selection' ? (
+        <Box flexDirection="column">
+          <Box>
+            <Text color="#00D9FF">▌ YOU</Text>
+          </Box>
+          {inputComponent}
+        </Box>
+      ) : (
+        <>
+          <Box>
+            <Text color="#00D9FF">▌ YOU</Text>
+          </Box>
+
+          {/* PendingInput Mode - when command calls waitForInput */}
+          {pendingInput && pendingInput.type === 'selection' ? (
         <SelectionUI
           pendingInput={pendingInput}
           multiSelectionPage={multiSelectionPage}
