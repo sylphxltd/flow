@@ -3,9 +3,9 @@
  * Manage notification settings
  */
 
-import type { Command, CommandContext } from '../types.js';
+import type { Command } from '../types.js';
 
-export default {
+export const notificationsCommand: Command = {
   id: 'notifications',
   label: '/notifications',
   description: 'Manage notification settings for AI responses',
@@ -13,60 +13,99 @@ export default {
     {
       name: 'action',
       description: 'Action to perform (show, enable, disable)',
-      required: true,
-      suggestions: ['show', 'enable', 'disable'],
+      required: false,
+      loadOptions: async () => {
+        return [
+          { id: 'show', label: 'show', value: 'show' },
+          { id: 'enable', label: 'enable', value: 'enable' },
+          { id: 'disable', label: 'disable', value: 'disable' },
+        ];
+      },
     },
     {
       name: 'type',
       description: 'Notification type to configure (os, terminal, sound, all)',
       required: false,
-      suggestions: ['os', 'terminal', 'sound', 'all'],
+      loadOptions: async () => {
+        return [
+          { id: 'os', label: 'os', value: 'os' },
+          { id: 'terminal', label: 'terminal', value: 'terminal' },
+          { id: 'sound', label: 'sound', value: 'sound' },
+          { id: 'all', label: 'all', value: 'all' },
+        ];
+      },
     },
   ],
 
-  async execute(args: string[], context: CommandContext): Promise<void> {
+  execute: async (context) => {
     const { updateNotificationSettings, notificationSettings } = context;
 
-    if (args.length === 0) {
-      context.updateOutput('\n❌ Please specify an action: show, enable, or disable\n');
-      return;
-    }
+    // If no args, ask what action to perform
+    if (context.args.length === 0) {
+      await context.sendMessage('What do you want to do?');
+      const actionAnswers = await context.waitForInput({
+        type: 'selection',
+        questions: [
+          {
+            id: 'action',
+            question: 'Select action:',
+            options: [
+              { label: 'Show settings', value: 'show' },
+              { label: 'Enable notifications', value: 'enable' },
+              { label: 'Disable notifications', value: 'disable' },
+            ],
+          },
+        ],
+      });
 
-    const action = args[0].toLowerCase();
+      const action =
+        typeof actionAnswers === 'object' && !Array.isArray(actionAnswers)
+          ? actionAnswers['action']
+          : '';
 
-    switch (action) {
-      case 'show':
-        context.updateOutput('\n🔔 Notification Settings:\n');
-        context.updateOutput(
-          `  OS Notifications: ${notificationSettings.osNotifications ? '✅ Enabled' : '❌ Disabled'}\n`
-        );
-        context.updateOutput(
-          `  Terminal Notifications: ${notificationSettings.terminalNotifications ? '✅ Enabled' : '❌ Disabled'}\n`
-        );
-        context.updateOutput(
-          `  Sound Effects: ${notificationSettings.sound ? '✅ Enabled' : '❌ Disabled'}\n`
-        );
-        context.updateOutput('\nUse /notifications enable/disable [type] to change settings.\n');
-        break;
+      if (!action) {
+        return 'Action cancelled.';
+      }
 
-      case 'enable':
-      case 'disable': {
+      // If enable/disable, ask which type
+      if (action === 'enable' || action === 'disable') {
+        await context.sendMessage('Which notification type?');
+        const typeAnswers = await context.waitForInput({
+          type: 'selection',
+          questions: [
+            {
+              id: 'type',
+              question: 'Select notification type:',
+              options: [
+                { label: 'OS Notifications', value: 'os' },
+                { label: 'Terminal Notifications', value: 'terminal' },
+                { label: 'Sound Effects', value: 'sound' },
+                { label: 'All', value: 'all' },
+              ],
+            },
+          ],
+        });
+
+        const type =
+          typeof typeAnswers === 'object' && !Array.isArray(typeAnswers)
+            ? typeAnswers['type']
+            : '';
+
+        if (!type) {
+          return 'Type selection cancelled.';
+        }
+
         const isEnabled = action === 'enable';
 
-        if (args.length === 1 || args[1] === 'all') {
-          // Enable/disable all notifications
+        if (type === 'all') {
           updateNotificationSettings({
             osNotifications: isEnabled,
             terminalNotifications: isEnabled,
             sound: isEnabled,
           });
-          context.updateOutput(
-            `\n${isEnabled ? '✅' : '❌'} All notifications ${isEnabled ? 'enabled' : 'disabled'}\n`
-          );
+          return `${isEnabled ? '✅' : '❌'} All notifications ${isEnabled ? 'enabled' : 'disabled'}`;
         } else {
-          const type = args[1].toLowerCase();
           const updates: any = {};
-
           switch (type) {
             case 'os':
               updates.osNotifications = isEnabled;
@@ -77,23 +116,123 @@ export default {
             case 'sound':
               updates.sound = isEnabled;
               break;
-            default:
-              context.updateOutput(`\n❌ Unknown notification type: ${type}\n`);
-              context.updateOutput('Valid types: os, terminal, sound, all\n');
-              return;
+          }
+          updateNotificationSettings(updates);
+          return `${isEnabled ? '✅' : '❌'} ${type} notifications ${isEnabled ? 'enabled' : 'disabled'}`;
+        }
+      }
+
+      // Show settings
+      return `🔔 Notification Settings:
+  OS Notifications: ${notificationSettings.osNotifications ? '✅ Enabled' : '❌ Disabled'}
+  Terminal Notifications: ${notificationSettings.terminalNotifications ? '✅ Enabled' : '❌ Disabled'}
+  Sound Effects: ${notificationSettings.sound ? '✅ Enabled' : '❌ Disabled'}
+
+Use /notifications to change settings.`;
+    }
+
+    const action = context.args[0].toLowerCase();
+
+    switch (action) {
+      case 'show':
+        return `🔔 Notification Settings:
+  OS Notifications: ${notificationSettings.osNotifications ? '✅ Enabled' : '❌ Disabled'}
+  Terminal Notifications: ${notificationSettings.terminalNotifications ? '✅ Enabled' : '❌ Disabled'}
+  Sound Effects: ${notificationSettings.sound ? '✅ Enabled' : '❌ Disabled'}
+
+Use /notifications to change settings.`;
+
+      case 'enable':
+      case 'disable': {
+        const isEnabled = action === 'enable';
+
+        if (context.args.length === 1) {
+          // No type specified, ask
+          await context.sendMessage('Which notification type?');
+          const typeAnswers = await context.waitForInput({
+            type: 'selection',
+            questions: [
+              {
+                id: 'type',
+                question: 'Select notification type:',
+                options: [
+                  { label: 'OS Notifications', value: 'os' },
+                  { label: 'Terminal Notifications', value: 'terminal' },
+                  { label: 'Sound Effects', value: 'sound' },
+                  { label: 'All', value: 'all' },
+                ],
+              },
+            ],
+          });
+
+          const type =
+            typeof typeAnswers === 'object' && !Array.isArray(typeAnswers)
+              ? typeAnswers['type']
+              : '';
+
+          if (!type) {
+            return 'Type selection cancelled.';
           }
 
-          updateNotificationSettings(updates);
-          context.updateOutput(
-            `\n${isEnabled ? '✅' : '❌'} ${type} notifications ${isEnabled ? 'enabled' : 'disabled'}\n`
-          );
+          if (type === 'all') {
+            updateNotificationSettings({
+              osNotifications: isEnabled,
+              terminalNotifications: isEnabled,
+              sound: isEnabled,
+            });
+            return `${isEnabled ? '✅' : '❌'} All notifications ${isEnabled ? 'enabled' : 'disabled'}`;
+          } else {
+            const updates: any = {};
+            switch (type) {
+              case 'os':
+                updates.osNotifications = isEnabled;
+                break;
+              case 'terminal':
+                updates.terminalNotifications = isEnabled;
+                break;
+              case 'sound':
+                updates.sound = isEnabled;
+                break;
+            }
+            updateNotificationSettings(updates);
+            return `${isEnabled ? '✅' : '❌'} ${type} notifications ${isEnabled ? 'enabled' : 'disabled'}`;
+          }
         }
-        break;
+
+        const type = context.args[1].toLowerCase();
+
+        if (type === 'all') {
+          updateNotificationSettings({
+            osNotifications: isEnabled,
+            terminalNotifications: isEnabled,
+            sound: isEnabled,
+          });
+          return `${isEnabled ? '✅' : '❌'} All notifications ${isEnabled ? 'enabled' : 'disabled'}`;
+        }
+
+        const updates: any = {};
+        switch (type) {
+          case 'os':
+            updates.osNotifications = isEnabled;
+            break;
+          case 'terminal':
+            updates.terminalNotifications = isEnabled;
+            break;
+          case 'sound':
+            updates.sound = isEnabled;
+            break;
+          default:
+            return `❌ Unknown notification type: ${type}\nValid types: os, terminal, sound, all`;
+        }
+
+        updateNotificationSettings(updates);
+        return `${isEnabled ? '✅' : '❌'} ${type} notifications ${isEnabled ? 'enabled' : 'disabled'}`;
       }
 
       default:
-        context.updateOutput(`\n❌ Unknown action: ${action}\n`);
-        context.updateOutput('Valid actions: show, enable, disable\n');
+        return `❌ Unknown action: ${action}\nValid actions: show, enable, disable`;
     }
   },
-} as Command;
+};
+
+export default notificationsCommand;
