@@ -15,6 +15,7 @@ import newCommand from './definitions/new.command.js';
 import notificationsCommand from './definitions/notifications.command.js';
 // Import all command definitions
 import providerCommand from './definitions/provider.command.js';
+import providerProtoCommand from './definitions/provider-proto.command.js';
 import rulesCommand from './definitions/rules.command.js';
 import sessionsCommand from './definitions/sessions.command.js';
 import surveyCommand from './definitions/survey.command.js';
@@ -26,6 +27,7 @@ import type { Command } from './types.js';
 export const commands: Command[] = [
   dashboardCommand,
   providerCommand,
+  providerProtoCommand, // Prototype for new settings mode
   modelCommand,
   agentCommand,
   rulesCommand,

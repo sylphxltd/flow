@@ -5,6 +5,7 @@
 
 import type { FileAttachment } from '../../../../types/session.types.js';
 import type { CommandContext } from '../../../commands/types.js';
+import type { SettingsMode } from '../types/settings-mode.js';
 
 /**
  * Parameters needed to create handleSubmit
@@ -41,6 +42,7 @@ export interface MessageHandlerParams {
   setPendingCommand: (command: { command: Command; currentInput: string } | null) => void;
   setMessageHistory: (updater: (prev: string[]) => string[]) => void;
   clearAttachments: () => void;
+  setSettingsMode: (mode: SettingsMode) => void;
 
   // Refs
   inputResolver: React.MutableRefObject<
@@ -88,6 +90,7 @@ export function createHandleSubmit(params: MessageHandlerParams) {
     setPendingCommand,
     setMessageHistory,
     clearAttachments,
+    setSettingsMode,
     inputResolver,
     commandSessionRef,
     skipNextSubmit,
@@ -232,7 +235,45 @@ export function createHandleSubmit(params: MessageHandlerParams) {
 
       // Execute command - let command handle interaction via CommandContext
       try {
-        await command.execute(createCommandContext(args));
+        const response = await command.execute(createCommandContext(args));
+
+        // Check for settings mode marker
+        if (typeof response === 'string' && response.startsWith('__SETTINGS_MODE__:')) {
+          const parts = response.split(':');
+          const type = parts[1];
+          const action = parts[2];
+
+          // Trigger settings mode based on type
+          if (type === 'provider-selection') {
+            setSettingsMode({
+              type: 'provider-selection',
+              action: (action as 'use' | 'configure') || 'use',
+              step: 'select-provider',
+            });
+            addLog(`[settings] Entering provider settings mode: ${action}`);
+          } else if (type === 'model-selection') {
+            setSettingsMode({
+              type: 'model-selection',
+              step: 'select-model',
+            });
+            addLog(`[settings] Entering model settings mode`);
+          }
+          // Don't add the marker as a message
+          setPendingCommand(null);
+          return;
+        }
+
+        // Normal response - add to conversation if present
+        if (response && commandSessionRef.current) {
+          await addMessage(
+            commandSessionRef.current,
+            'assistant',
+            response,
+            undefined, undefined, undefined, undefined, undefined,
+            provider,
+            model
+          );
+        }
       } catch (error) {
         if (commandSessionRef.current) {
           await addMessage(
