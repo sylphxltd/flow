@@ -42,6 +42,7 @@ const MODEL_DETAILS: Record<string, ProviderModelDetails> = {
 export class AnthropicProvider implements AIProvider {
   readonly id = 'anthropic' as const;
   readonly name = 'Anthropic';
+  readonly description = 'Claude models by Anthropic';
 
   getConfigSchema(): ConfigField[] {
     return [

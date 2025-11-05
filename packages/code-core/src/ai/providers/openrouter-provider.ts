@@ -11,6 +11,7 @@ import { getModelMetadata } from '../../utils/models-dev.js';
 export class OpenRouterProvider implements AIProvider {
   readonly id = 'openrouter' as const;
   readonly name = 'OpenRouter';
+  readonly description = 'Access multiple AI providers';
 
   getConfigSchema(): ConfigField[] {
     return [

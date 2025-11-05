@@ -11,6 +11,7 @@ import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, Mod
 export class ZaiProvider implements AIProvider {
   readonly id = 'zai' as const;
   readonly name = 'Z.ai';
+  readonly description = 'ZAI AI platform';
 
   getConfigSchema(): ConfigField[] {
     return [

@@ -44,6 +44,7 @@ export type ProviderConfig = Record<string, string | number | boolean | undefine
 export interface AIProvider {
   readonly id: ProviderId;
   readonly name: string;
+  readonly description: string;
 
   /**
    * Get configuration schema for this provider

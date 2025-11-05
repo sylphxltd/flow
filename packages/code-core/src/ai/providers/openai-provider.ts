@@ -42,6 +42,7 @@ const MODEL_DETAILS: Record<string, ProviderModelDetails> = {
 export class OpenAIProvider implements AIProvider {
   readonly id = 'openai' as const;
   readonly name = 'OpenAI';
+  readonly description = 'GPT models by OpenAI';
 
   getConfigSchema(): ConfigField[] {
     return [

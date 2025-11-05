@@ -12,6 +12,7 @@ import { ClaudeCodeLanguageModel } from './claude-code-language-model.js';
 export class ClaudeCodeProvider implements AIProvider {
   readonly id = 'claude-code' as const;
   readonly name = 'Claude Code';
+  readonly description = 'Claude Code local models';
 
   getConfigSchema(): ConfigField[] {
     // No configuration needed - uses Claude CLI OAuth

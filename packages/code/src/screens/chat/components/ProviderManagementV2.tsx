@@ -46,22 +46,33 @@ export function ProviderManagement({
   const [editingField, setEditingField] = useState(false);
   const [tempStringValue, setTempStringValue] = useState('');
 
-  // Provider descriptions
-  const providerDescriptions: Record<string, string> = {
-    anthropic: 'Claude models by Anthropic',
-    openai: 'GPT models by OpenAI',
-    google: 'Gemini models by Google',
-    openrouter: 'Access multiple AI providers',
-    'claude-code': 'Claude Code local models',
-    zai: 'ZAI AI platform',
-  };
+  // Fetch provider metadata from server
+  const [providerMetadata, setProviderMetadata] = useState<Record<string, { name: string; description: string }>>({});
+
+  useEffect(() => {
+    async function loadProviderMetadata() {
+      try {
+        const result = await trpc.config.getProviders.query();
+        // Transform {anthropic: {id, name, description}, ...} to {anthropic: {name, description}, ...}
+        const metadata: Record<string, { name: string; description: string }> = {};
+        for (const [id, info] of Object.entries(result)) {
+          metadata[id] = { name: info.name, description: info.description };
+        }
+        setProviderMetadata(metadata);
+      } catch (error) {
+        console.error('Failed to load provider metadata:', error);
+      }
+    }
+    loadProviderMetadata();
+  }, [trpc]);
 
   // Get provider options from aiConfig
   const providers = aiConfig?.providers || {};
   const providerOptions: SelectionOption[] = Object.entries(providers).map(([id, config]: [string, any]) => {
     const isConfigured = config && (config['api-key'] || config.apiKey || config.configured);
-    const name = config.name || id.charAt(0).toUpperCase() + id.slice(1);
-    const description = providerDescriptions[id] || 'AI provider';
+    const metadata = providerMetadata[id];
+    const name = metadata?.name || config.name || id.charAt(0).toUpperCase() + id.slice(1);
+    const description = metadata?.description || 'AI provider';
 
     return {
       label: `${isConfigured ? '✓' : '○'} ${name}`,

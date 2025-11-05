@@ -43,18 +43,19 @@ export function getAllProviderIds(): ProviderId[] {
 }
 
 /**
- * Get provider metadata (id, name) for all providers
+ * Get provider metadata (id, name, description) for all providers
  * Used by UI components
  */
-export function getAllProviders(): Record<ProviderId, { id: ProviderId; name: string }> {
-  const result: Record<string, { id: ProviderId; name: string }> = {};
+export function getAllProviders(): Record<ProviderId, { id: ProviderId; name: string; description: string }> {
+  const result: Record<string, { id: ProviderId; name: string; description: string }> = {};
   for (const [id, provider] of Object.entries(PROVIDER_REGISTRY)) {
     result[id] = {
       id: id as ProviderId,
       name: provider.name,
+      description: provider.description,
     };
   }
-  return result as Record<ProviderId, { id: ProviderId; name: string }>;
+  return result as Record<ProviderId, { id: ProviderId; name: string; description: string }>;
 }
 
 // Re-export types

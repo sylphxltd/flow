@@ -33,6 +33,7 @@ const MODEL_DETAILS: Record<string, ProviderModelDetails> = {
 export class GoogleProvider implements AIProvider {
   readonly id = 'google' as const;
   readonly name = 'Google';
+  readonly description = 'Gemini models by Google';
 
   getConfigSchema(): ConfigField[] {
     return [
