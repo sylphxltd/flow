@@ -39,7 +39,7 @@ export interface InProcessLinkOptions<TRouter extends AnyRouter> {
 
 /**
  * Create in-process tRPC link for zero-overhead communication
- * Calls tRPC procedures directly without network stack
+ * Uses tRPC server-side caller API for proper procedure invocation
  */
 export function inProcessLink<TRouter extends AnyRouter>(
   options: InProcessLinkOptions<TRouter>
@@ -49,28 +49,31 @@ export function inProcessLink<TRouter extends AnyRouter>(
       return observable((observer) => {
         const { type, path, input } = op;
 
-        // Execute procedure directly
+        // Execute procedure via server-side caller
         (async () => {
           try {
             // Create context for this request
             const ctx = await options.createContext();
 
-            // Get procedure from router
-            const procedure = getProcedure(options.router, path);
+            // Create server-side caller with context
+            const caller = options.router.createCaller(ctx);
 
-            if (!procedure) {
+            // Navigate to the procedure using path (e.g., 'session.getLast')
+            const procedureFn = getProcedureFunction(caller, path);
+
+            if (!procedureFn) {
               throw new Error(`Procedure not found: ${path}`);
             }
 
             // Execute procedure based on type
             if (type === 'query' || type === 'mutation') {
               // Regular query/mutation
-              const result = await procedure({ ctx, input, path, type });
+              const result = await procedureFn(input);
               observer.next({ result: { type: 'data', data: result } });
               observer.complete();
             } else if (type === 'subscription') {
               // Subscription - stream results
-              const subscription = await procedure({ ctx, input, path, type });
+              const subscription = await procedureFn(input);
 
               if (Symbol.asyncIterator in subscription) {
                 // Async iterable subscription
@@ -108,12 +111,22 @@ export function inProcessLink<TRouter extends AnyRouter>(
 }
 
 /**
- * Get procedure from router by path
+ * Get procedure function from caller by path
  *
- * In tRPC v11 merged routers, procedures are flattened with dot notation:
- * router._def.procedures['session.getLast']
- * router._def.procedures['message.streamResponse']
+ * Navigates the caller object using dot notation path:
+ * 'session.getLast' -> caller.session.getLast
+ * 'message.streamResponse' -> caller.message.streamResponse
  */
-function getProcedure(router: any, path: string): any {
-  return router._def.procedures[path] || null;
+function getProcedureFunction(caller: any, path: string): any {
+  const parts = path.split('.');
+  let current = caller;
+
+  for (const part of parts) {
+    if (!current[part]) {
+      return null;
+    }
+    current = current[part];
+  }
+
+  return current;
 }
