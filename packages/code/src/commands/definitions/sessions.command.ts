@@ -61,7 +61,7 @@ export const sessionsCommand: Command = {
     }
 
     // Switch to selected session
-    context.setCurrentSession(selectedSessionId);
+    await context.setCurrentSession(selectedSessionId);
 
     const selectedSession = sortedSessions.find((s) => s.id === selectedSessionId);
     const displayName = selectedSession

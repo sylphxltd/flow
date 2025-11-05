@@ -97,10 +97,10 @@ export interface CommandContext {
   setAIConfig: (config: AIConfig) => void;
 
   // Update session model (preserve history)
-  updateSessionModel: (sessionId: string, model: string) => void;
+  updateSessionModel: (sessionId: string, model: string) => Promise<void>;
 
   // Update session provider and model (preserve history)
-  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
+  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => Promise<void>;
 
   // Set UI selected provider and model (for UI state synchronization)
   setUISelectedProvider: (provider: ProviderId | null) => void;
@@ -110,7 +110,7 @@ export interface CommandContext {
   getCommands: () => Command[];
 
   // Create new session
-  createSession: (provider: ProviderId, model: string) => string;
+  createSession: (provider: ProviderId, model: string) => Promise<string>;
 
   // Get all sessions (tRPC: fetches from database)
   getSessions: () => Promise<Session[]>;
@@ -119,7 +119,7 @@ export interface CommandContext {
   getCurrentSessionId: () => string | null;
 
   // Set current session
-  setCurrentSession: (sessionId: string | null) => void;
+  setCurrentSession: (sessionId: string | null) => Promise<void>;
 
   // Navigate to different screen
   navigateTo: (

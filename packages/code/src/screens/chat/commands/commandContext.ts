@@ -11,12 +11,12 @@ import type { Command, CommandContext, WaitForInputOptions } from '../../../comm
  * Parameters needed to create command context
  */
 export interface CommandContextParams {
-  // Zustand store methods
-  createSession: (provider: ProviderId, model: string) => string;
+  // Zustand store methods (async ones return Promises)
+  createSession: (provider: ProviderId, model: string) => Promise<string>;
   updateProvider: (provider: ProviderId, data: { apiKey?: string; defaultModel?: string }) => void;
   setAIConfig: (config: AIConfig) => void;
-  updateSessionModel: (sessionId: string, model: string) => void;
-  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => void;
+  updateSessionModel: (sessionId: string, model: string) => Promise<void>;
+  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => Promise<void>;
   setSelectedProvider: (provider: ProviderId | null) => void;
   setSelectedModel: (model: string | null) => void;
   navigateTo: (
@@ -33,16 +33,16 @@ export interface CommandContextParams {
     role: 'user' | 'assistant',
     content: string,
     attachments?: any[]
-  ) => void;
+  ) => Promise<void>;
   updateNotificationSettings: (
     settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>
   ) => void;
 
   // Store getters (use getState() to avoid reactivity)
   getAIConfig: () => AIConfig | null;
-  getSessions: () => Session[];
+  getSessions: () => Promise<Session[]>;
   getCurrentSessionId: () => string | null;
-  setCurrentSession: (sessionId: string | null) => void;
+  setCurrentSession: (sessionId: string | null) => Promise<void>;
   getNotificationSettings: () => {
     osNotifications: boolean;
     terminalNotifications: boolean;
