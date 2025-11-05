@@ -53,8 +53,9 @@ export function ProviderManagement({
     const name = config.name || id.charAt(0).toUpperCase() + id.slice(1);
 
     return {
-      label: `${name}${isConfigured ? ' (configured)' : ''}`,
+      label: isConfigured ? `✓ ${name}` : `  ${name}`,
       value: id,
+      description: isConfigured ? 'Ready to use' : 'Not configured',
     };
   });
 
