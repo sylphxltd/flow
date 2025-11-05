@@ -14,29 +14,12 @@ import { getTRPCClient } from '../trpc-provider.js';
 
 export function useSessionPersistence() {
   useEffect(() => {
-    const loadLastSession = async () => {
-      try {
-        // Get tRPC client (synchronous)
-        const client = getTRPCClient();
+    // NO AUTO-RESUME: TUI starts with fresh session screen
+    // User can manually resume sessions via /sessions command or history
+    // This aligns with lazy session creation - no session until user sends first message
 
-        // Load last session (most recently updated)
-        // MASSIVE performance improvement: Only load 1 session instead of all!
-        const lastSession = await client.session.getLast.query();
-
-        if (lastSession) {
-          // Set as current session (cached in store)
-          const { setCurrentSession } = useAppStore.getState();
-          await setCurrentSession(lastSession.id);
-        }
-
-        // Don't auto-set if no session - let user start fresh
-      } catch (error) {
-        console.error('Failed to load last session:', error);
-      }
-    };
-
-    // Load last session on mount
-    loadLastSession();
+    // NOTE: Migration logic can be added here if needed for future migrations
+    // Currently, session data is managed by tRPC server and database
 
     // No subscription needed - currentSession updates handled by tRPC
   }, []);
