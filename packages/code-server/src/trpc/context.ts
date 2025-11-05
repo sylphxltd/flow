@@ -3,9 +3,9 @@
  * Provides services via AppContext (functional provider pattern)
  */
 
-import { loadAIConfig, type AppContext } from '@sylphx/code-core';
-import type { SessionRepository } from '@sylphx/code-core';
-import type { AIConfig } from '@sylphx/code-core';
+import { loadAIConfig } from '@sylphx/code-core';
+import type { SessionRepository, AIConfig } from '@sylphx/code-core';
+import type { AppContext } from '../context.js';
 
 export interface Context {
   sessionRepository: SessionRepository;

@@ -18,7 +18,7 @@ import {
   initializeAppContext,
   closeAppContext,
   type AppContext,
-} from '@sylphx/code-core';
+} from './context.js';
 import type { Server } from 'node:http';
 
 export interface ServerConfig {

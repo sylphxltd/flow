@@ -6,25 +6,13 @@
  * - AI streaming and providers
  * - Session management
  * - Message handling
- * - Database layer
+ * - Database layer (pure functions)
  * - Tools execution
  * - Configuration
+ *
+ * NOTE: This is SDK/Library layer - NO application context management
+ * Application composition happens in code-server package
  */
-
-// ============================================================================
-// App Context (NEW: Functional Provider Pattern)
-// ============================================================================
-export {
-  createAppContext,
-  initializeAppContext,
-  closeAppContext,
-  type AppContext,
-  type AppConfig,
-  type DatabaseConfig,
-  type DatabaseService,
-  type AgentManagerService,
-  type RuleManagerService,
-} from './context.js'
 
 // ============================================================================
 // AI & Streaming
@@ -33,7 +21,7 @@ export { createAIStream, getSystemStatus, buildSystemStatusFromMetadata, injectS
 export { processStream, type StreamCallbacks } from './ai/stream-handler.js'
 
 // ============================================================================
-// Agent Manager
+// Agent Manager (Pure Functions)
 // ============================================================================
 export {
   initializeAgentManager,
@@ -43,6 +31,7 @@ export {
 } from './ai/agent-manager.js'
 
 export { DEFAULT_AGENT_ID } from './ai/builtin-agents.js'
+export { loadAllAgents } from './ai/agent-loader.js'
 
 // ============================================================================
 // System Prompt Builder
@@ -50,7 +39,7 @@ export { DEFAULT_AGENT_ID } from './ai/builtin-agents.js'
 export { buildSystemPrompt } from './ai/system-prompt-builder.js'
 
 // ============================================================================
-// Rule Manager
+// Rule Manager (Pure Functions)
 // ============================================================================
 export {
   initializeRuleManager,
@@ -66,6 +55,8 @@ export {
   getEnabledRulesContent
 } from './ai/rule-manager.js'
 
+export { loadAllRules } from './ai/rule-loader.js'
+
 // ============================================================================
 // Providers
 // ============================================================================
@@ -78,9 +69,10 @@ export { ClaudeCodeProvider } from './ai/providers/claude-code-provider.js'
 export { ZaiProvider } from './ai/providers/zai-provider.js'
 
 // ============================================================================
-// Database & Repositories
+// Database & Repositories (Pure Functions)
 // ============================================================================
 export { SessionRepository } from './database/session-repository.js'
+export { initializeDatabase } from './database/auto-migrate.js'
 export { getDatabase, getSessionRepository } from './database/database.js'
 
 // ============================================================================

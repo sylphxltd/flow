@@ -3,19 +3,15 @@
  * Functional composition for dependency injection
  *
  * Architecture:
+ * - code-server: Application layer (this file)
  * - Services live in Context (database, managers)
  * - UI state lives in Zustand (navigation, loading)
  * - No global mutable state
  * - Type-safe composition
  */
 
-import type { Agent } from './types/agent.types.js';
-import type { Rule } from './types/rule.types.js';
-import { SessionRepository } from './database/session-repository.js';
-import { initializeDatabase } from './database/auto-migrate.js';
-import { loadAllAgents } from './ai/agent-loader.js';
-import { loadAllRules } from './ai/rule-loader.js';
-import { DEFAULT_AGENT_ID } from './ai/builtin-agents.js';
+import type { Agent, Rule } from '@sylphx/code-core';
+import { SessionRepository, initializeDatabase, loadAllAgents, loadAllRules, DEFAULT_AGENT_ID } from '@sylphx/code-core';
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 
 // ============================================================================
