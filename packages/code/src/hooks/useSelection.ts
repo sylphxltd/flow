@@ -13,6 +13,10 @@ export interface SelectionOption {
   value?: string;
   description?: string;
   disabled?: boolean;
+  badge?: {
+    text: string;
+    color: string;
+  };
 }
 
 export interface UseSelectionOptions {

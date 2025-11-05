@@ -46,6 +46,9 @@ export function SelectionOptionsList({
               <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
                 {symbol} {option.label}
               </Text>
+              {option.badge && (
+                <Text color={option.badge.color}> {option.badge.text}</Text>
+              )}
             </Box>
             {option.description && (
               <Box marginLeft={2}>
