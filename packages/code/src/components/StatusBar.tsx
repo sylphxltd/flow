@@ -4,7 +4,7 @@
  */
 
 import { useAppStore } from '@sylphx/code-client';
-import type { ProviderId } from '@sylphx/code-core';
+import type { ProviderId, ProviderConfig } from '@sylphx/code-core';
 import { getProvider, getTokenizerInfo } from '@sylphx/code-core';
 import { getAgentById } from '../embedded-context.js';
 import { Box, Text } from 'ink';
@@ -13,11 +13,11 @@ import React, { useEffect, useState } from 'react';
 interface StatusBarProps {
   provider: ProviderId;
   model: string;
-  apiKey?: string;
+  providerConfig?: ProviderConfig;
   usedTokens?: number;
 }
 
-export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: StatusBarProps) {
+export default function StatusBar({ provider, model, providerConfig, usedTokens = 0 }: StatusBarProps) {
   const [contextLength, setContextLength] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [tokenizerInfo, setTokenizerInfo] = useState<{
@@ -40,7 +40,7 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
       setLoading(true);
       try {
         const providerInstance = getProvider(provider);
-        const details = await providerInstance.getModelDetails(model, apiKey);
+        const details = await providerInstance.getModelDetails(model, providerConfig);
         setContextLength(details?.contextLength || null);
 
         // Get tokenizer info
@@ -54,7 +54,7 @@ export default function StatusBar({ provider, model, apiKey, usedTokens = 0 }: S
     }
 
     loadModelDetails();
-  }, [provider, model, apiKey]);
+  }, [provider, model, providerConfig]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
