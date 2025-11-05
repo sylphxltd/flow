@@ -71,15 +71,17 @@ export interface AppState {
 
   // Message mutations
   addMessage: (
-    sessionId: string,
+    sessionId: string | null, // null = create new session
     role: 'user' | 'assistant',
     content: string | MessagePart[],
     attachments?: FileAttachment[],
     usage?: TokenUsage,
     finishReason?: string,
     metadata?: MessageMetadata,
-    todoSnapshot?: Todo[]
-  ) => Promise<void>;
+    todoSnapshot?: Todo[],
+    provider?: ProviderId, // Required if sessionId is null
+    model?: string         // Required if sessionId is null
+  ) => Promise<string>; // Returns sessionId (either existing or newly created)
 
   // UI State
   isLoading: boolean;
@@ -305,7 +307,7 @@ export const useAppStore = create<AppState>()(
       /**
        * Add message to session
        */
-      addMessage: async (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) => {
+      addMessage: async (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot, provider, model) => {
         // Normalize content for tRPC wire format (no status on parts)
         const wireContent =
           typeof content === 'string' ? [{ type: 'text', content } as const] : content;
@@ -316,8 +318,9 @@ export const useAppStore = create<AppState>()(
             ? [{ type: 'text', content, status: 'completed' }]
             : content;
 
-        // Optimistic update if it's the current session
-        if (get().currentSessionId === sessionId && get().currentSession) {
+        // Optimistic update ONLY if sessionId exists and it's the current session
+        // (skip if creating new session since we don't know sessionId yet)
+        if (sessionId && get().currentSessionId === sessionId && get().currentSession) {
           set((state) => {
             if (state.currentSession) {
               state.currentSession.messages.push({
@@ -337,8 +340,10 @@ export const useAppStore = create<AppState>()(
 
         // Persist via tRPC
         const client = getTRPCClient();
-        await client.message.add.mutate({
-          sessionId,
+        const result = await client.message.add.mutate({
+          sessionId: sessionId || undefined,
+          provider,
+          model,
           role,
           content: wireContent,
           attachments,
@@ -347,6 +352,9 @@ export const useAppStore = create<AppState>()(
           metadata,
           todoSnapshot,
         });
+
+        // Return the sessionId (either existing or newly created)
+        return result.sessionId;
       },
 
       // UI State

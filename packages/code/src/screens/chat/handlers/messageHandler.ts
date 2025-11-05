@@ -16,11 +16,18 @@ export interface MessageHandlerParams {
   // Store methods
   createSession: (provider: ProviderId, model: string) => Promise<string>;
   addMessage: (
-    sessionId: string,
+    sessionId: string | null,
     role: 'user' | 'assistant',
     content: string,
-    attachments?: any[]
-  ) => Promise<void>;
+    attachments?: any[],
+    usage?: any,
+    finishReason?: string,
+    metadata?: any,
+    todoSnapshot?: any[],
+    provider?: ProviderId,
+    model?: string
+  ) => Promise<string>;
+  getAIConfig: () => { defaultProvider?: string; defaultModel?: string } | null;
 
   // UI state
   pendingInput: WaitForInputOptions | null;
@@ -72,6 +79,7 @@ export function createHandleSubmit(params: MessageHandlerParams) {
     isStreaming,
     createSession,
     addMessage,
+    getAIConfig,
     pendingInput,
     filteredCommands,
     pendingAttachments,
@@ -110,11 +118,28 @@ export function createHandleSubmit(params: MessageHandlerParams) {
       addLog(`[handleSubmit] Resolving text input: ${value}`);
 
       // Add user's text input to chat history
+      const aiConfig = getAIConfig();
+      const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
+      const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+      const sessionIdToUse = commandSessionRef.current || currentSessionId;
+      const resultSessionId = await addMessage(
+        sessionIdToUse,
+        'user',
+        value.trim(),
+        undefined, // attachments
+        undefined, // usage
+        undefined, // finishReason
+        undefined, // metadata
+        undefined, // todoSnapshot
+        provider,
+        model
+      );
+
+      // Store session ID if created
       if (!commandSessionRef.current) {
-        commandSessionRef.current =
-          currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
+        commandSessionRef.current = resultSessionId;
       }
-      await addMessage(commandSessionRef.current, 'user', value.trim());
 
       inputResolver.current(value.trim());
       inputResolver.current = null;
@@ -155,15 +180,32 @@ export function createHandleSubmit(params: MessageHandlerParams) {
       if (!command) {
         // Unknown command - add to conversation
         setInput('');
+
+        const aiConfig = getAIConfig();
+        const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
+        const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+        const sessionIdToUse = commandSessionRef.current || currentSessionId;
+        const resultSessionId = await addMessage(
+          sessionIdToUse,
+          'user',
+          userMessage,
+          undefined, undefined, undefined, undefined, undefined,
+          provider,
+          model
+        );
+
         if (!commandSessionRef.current) {
-          commandSessionRef.current =
-            currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
+          commandSessionRef.current = resultSessionId;
         }
-        await addMessage(commandSessionRef.current, 'user', userMessage);
+
         await addMessage(
           commandSessionRef.current,
           'assistant',
-          `Unknown command: ${commandName}. Type /help for available commands.`
+          `Unknown command: ${commandName}. Type /help for available commands.`,
+          undefined, undefined, undefined, undefined, undefined,
+          provider,
+          model
         );
         return;
       }
@@ -172,11 +214,23 @@ export function createHandleSubmit(params: MessageHandlerParams) {
       setInput('');
 
       // Add user command to conversation
+      const aiConfig = getAIConfig();
+      const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
+      const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+      const sessionIdToUse = commandSessionRef.current || currentSessionId;
+      const resultSessionId = await addMessage(
+        sessionIdToUse,
+        'user',
+        userMessage,
+        undefined, undefined, undefined, undefined, undefined,
+        provider,
+        model
+      );
+
       if (!commandSessionRef.current) {
-        commandSessionRef.current =
-          currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
+        commandSessionRef.current = resultSessionId;
       }
-      await addMessage(commandSessionRef.current, 'user', userMessage);
 
       // Execute command - let command handle interaction via CommandContext
       try {

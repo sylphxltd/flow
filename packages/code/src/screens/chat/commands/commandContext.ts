@@ -29,11 +29,17 @@ export interface CommandContextParams {
       | 'logs'
   ) => void;
   addMessage: (
-    sessionId: string,
+    sessionId: string | null,
     role: 'user' | 'assistant',
     content: string,
-    attachments?: any[]
-  ) => Promise<void>;
+    attachments?: any[],
+    usage?: any,
+    finishReason?: string,
+    metadata?: any,
+    todoSnapshot?: any[],
+    provider?: ProviderId,
+    model?: string
+  ) => Promise<string>;
   updateNotificationSettings: (
     settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>
   ) => void;
@@ -128,12 +134,32 @@ export function createCommandContext(args: string[], params: CommandContextParam
     args,
 
     sendMessage: async (content: string) => {
-      // Reuse existing command session or create one
+      // Get AI config to determine provider/model
+      const aiConfig = getAIConfig();
+      const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
+      const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+
+      // Reuse existing command session or pass null (will create new session)
+      const sessionIdToUse = commandSessionRef.current || currentSessionId;
+
+      // addMessage returns the sessionId (either existing or newly created)
+      const resultSessionId = await addMessage(
+        sessionIdToUse,
+        'assistant',
+        content,
+        undefined, // attachments
+        undefined, // usage
+        undefined, // finishReason
+        undefined, // metadata
+        undefined, // todoSnapshot
+        provider,
+        model
+      );
+
+      // Store the session ID for future messages
       if (!commandSessionRef.current) {
-        commandSessionRef.current =
-          currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
+        commandSessionRef.current = resultSessionId;
       }
-      await addMessage(commandSessionRef.current, 'assistant', content);
     },
 
     triggerAIResponse: async (

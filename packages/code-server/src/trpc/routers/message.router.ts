@@ -157,13 +157,17 @@ export const messageRouter = router({
   /**
    * Add message to session
    * Used for both user messages and assistant messages
-   * REACTIVE: Emits message-added event
+   * AUTO-CREATE: If sessionId is null, creates new session with provider/model
+   * REACTIVE: Emits message-added event (and session-created if new)
    * SECURITY: Protected + moderate rate limiting (30 req/min)
    */
   add: moderateProcedure
     .input(
       z.object({
-        sessionId: z.string(),
+        sessionId: z.string().nullish(), // null = create new session
+        provider: z.string().optional(), // Required if sessionId is null
+        model: z.string().optional(),    // Required if sessionId is null
+        agentId: z.string().optional(),  // Optional - defaults to 'coder'
         role: z.enum(['user', 'assistant']),
         content: z.array(MessagePartSchema),
         attachments: z.array(FileAttachmentSchema).optional(),
@@ -175,8 +179,32 @@ export const messageRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      let sessionId = input.sessionId;
+
+      // Create session if null
+      if (!sessionId) {
+        if (!input.provider || !input.model) {
+          throw new Error('Provider and model required when sessionId is null');
+        }
+
+        const session = await ctx.sessionRepository.createSession(
+          input.provider as any,
+          input.model,
+          input.agentId || 'coder'
+        );
+        sessionId = session.id;
+
+        // Emit session-created event
+        eventBus.emitEvent({
+          type: 'session-created',
+          sessionId: sessionId,
+          provider: input.provider,
+          model: input.model,
+        });
+      }
+
       const messageId = await ctx.sessionRepository.addMessage(
-        input.sessionId,
+        sessionId,
         input.role,
         input.content,
         input.attachments,
@@ -190,12 +218,12 @@ export const messageRouter = router({
       // Emit event for reactive clients
       eventBus.emitEvent({
         type: 'message-added',
-        sessionId: input.sessionId,
+        sessionId: sessionId,
         messageId: messageId,
         role: input.role,
       });
 
-      return messageId;
+      return { messageId, sessionId };
     }),
 
   /**
