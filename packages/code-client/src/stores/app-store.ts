@@ -140,6 +140,15 @@ export const useAppStore = create<AppState>()(
               if (config.defaultAgentId) {
                 draft.selectedAgentId = config.defaultAgentId;
               }
+              // Load default provider and model
+              if (config.defaultProvider) {
+                draft.selectedProvider = config.defaultProvider;
+                // Auto-select the provider's default model
+                const providerConfig = config.providers?.[config.defaultProvider];
+                if (providerConfig?.defaultModel) {
+                  draft.selectedModel = providerConfig.defaultModel;
+                }
+              }
             }
           },
           false,
