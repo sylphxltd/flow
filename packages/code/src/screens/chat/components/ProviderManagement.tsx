@@ -282,6 +282,20 @@ export function ProviderManagement({
   if (step === 'configure-provider' && selectedProvider) {
     const providerName = providerOptions.find((p) => p.id === selectedProvider)?.name || selectedProvider;
 
+    // No configuration needed
+    if (configSchema.length === 0) {
+      return (
+        <InputContentLayout
+          subtitle={`${providerName} is ready to use`}
+          helpText="Esc: Back"
+        >
+          <Box>
+            <Text dimColor>No configuration required for this provider.</Text>
+          </Box>
+        </InputContentLayout>
+      );
+    }
+
     return (
       <InputContentLayout
         subtitle={`Enter your ${providerName} credentials`}

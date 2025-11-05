@@ -14,19 +14,13 @@ export class ClaudeCodeProvider implements AIProvider {
   readonly name = 'Claude Code';
 
   getConfigSchema(): ConfigField[] {
-    return [
-      {
-        key: 'authenticated',
-        label: 'Authenticated',
-        type: 'boolean',
-        required: false,
-        description: 'Authentication via Claude CLI OAuth (run `claude` to authenticate)',
-      },
-    ];
+    // No configuration needed - uses Claude CLI OAuth
+    return [];
   }
 
   isConfigured(_config: ProviderConfig): boolean {
-    // Claude Code uses CLI OAuth - authentication handled by CLI
+    // Claude Code uses CLI OAuth - no configuration required
+    // Authentication is handled by the Claude CLI
     return true;
   }
 
