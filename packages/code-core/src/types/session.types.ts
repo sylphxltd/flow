@@ -202,10 +202,11 @@ export interface Session {
   title?: string; // Auto-generated from first user message
   provider: ProviderId;
   model: string;
-  agentId: string;       // Agent configuration for this session
+  agentId: string;         // Agent configuration for this session
+  enabledRuleIds: string[]; // Enabled rules for this session (persisted to DB)
   messages: SessionMessage[];
-  todos: Todo[];         // Per-session todo list (not global!)
-  nextTodoId: number;    // Next todo ID for this session (starts at 1)
+  todos: Todo[];           // Per-session todo list (not global!)
+  nextTodoId: number;      // Next todo ID for this session (starts at 1)
 
   // Note: Streaming state derived from message.status, not stored here
   // To check if streaming: messages.some(m => m.status === 'active')

@@ -98,6 +98,7 @@ export class SessionRepository {
       provider,
       model,
       agentId,
+      enabledRuleIds: [],
       messages: [],
       todos: [],
       nextTodoId: 1,
@@ -115,6 +116,7 @@ export class SessionRepository {
     model: string;
     agentId?: string;
     title?: string;
+    enabledRuleIds?: string[];
     nextTodoId: number;
     created: number;
     updated: number;
@@ -126,6 +128,7 @@ export class SessionRepository {
         provider: sessionData.provider,
         model: sessionData.model,
         agentId: sessionData.agentId || 'coder',
+        enabledRuleIds: sessionData.enabledRuleIds || [],
         nextTodoId: sessionData.nextTodoId,
         created: sessionData.created,
         updated: sessionData.updated,
@@ -253,6 +256,7 @@ export class SessionRepository {
       provider: session.provider as ProviderId,
       model: session.model,
       agentId: session.agentId,
+      enabledRuleIds: session.enabledRuleIds || [],
       messages: sessionMessages,
       todos: sessionTodos,
       nextTodoId: session.nextTodoId,
@@ -713,6 +717,7 @@ export class SessionRepository {
     provider?: ProviderId;
     model?: string;
     agentId?: string;
+    enabledRuleIds?: string[];
   }): Promise<void> {
     await this.db
       .update(sessions)

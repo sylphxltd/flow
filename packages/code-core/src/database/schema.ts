@@ -115,6 +115,7 @@ export const sessions = sqliteTable(
     provider: text('provider').notNull(), // 'anthropic' | 'openai' | 'google' | 'openrouter'
     model: text('model').notNull(),
     agentId: text('agent_id').notNull().default('coder'), // Agent configuration per session
+    enabledRuleIds: text('enabled_rule_ids', { mode: 'json' }).notNull().default('[]').$type<string[]>(), // Enabled rules for this session
     nextTodoId: integer('next_todo_id').notNull().default(1),
 
     // Note: Streaming state moved to messages table (message-level, not session-level)

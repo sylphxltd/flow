@@ -183,6 +183,31 @@ export const sessionRouter = router({
     }),
 
   /**
+   * Update session enabled rules
+   * REACTIVE: Emits session-updated event
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
+   */
+  updateRules: moderateProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        enabledRuleIds: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.sessionRepository.updateSession(input.sessionId, {
+        enabledRuleIds: input.enabledRuleIds,
+      });
+
+      eventBus.emitEvent({
+        type: 'session-updated',
+        sessionId: input.sessionId,
+        field: 'enabledRuleIds',
+        value: JSON.stringify(input.enabledRuleIds),
+      });
+    }),
+
+  /**
    * Delete session
    * CASCADE: Automatically deletes all messages, todos, attachments
    * REACTIVE: Emits session-deleted event
@@ -214,7 +239,7 @@ export const sessionRouter = router({
       sessionId: string;
       provider?: string;
       model?: string;
-      field?: 'title' | 'model' | 'provider';
+      field?: 'title' | 'model' | 'provider' | 'enabledRuleIds';
       value?: string;
     }>((emit) => {
       // Subscribe to event bus
