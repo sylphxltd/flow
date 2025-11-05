@@ -67,11 +67,13 @@ const MarkdownText = React.memo(function MarkdownText({
     <Box flexDirection="column">
       {lines.map((line, idx) => {
         const isHR = isHorizontalRule(line);
+        // Use unique key combining index and content hash to avoid duplicate key warnings
+        const key = `${idx}-${line.substring(0, 20)}-${line.length}`;
 
         if (isHR) {
           // Custom HR: fixed width (48 chars), centered with dashes
           return (
-            <Box key={idx}>
+            <Box key={key}>
               {prefix && <Text color={prefixColor}>{prefix}</Text>}
               <Text dimColor>{'─'.repeat(48)}</Text>
             </Box>
@@ -81,7 +83,7 @@ const MarkdownText = React.memo(function MarkdownText({
         if (prefix) {
           // Regular line with prefix
           return (
-            <Box key={idx}>
+            <Box key={key}>
               <Text color={prefixColor}>{prefix}</Text>
               <Markdown>{line}</Markdown>
             </Box>
@@ -90,7 +92,7 @@ const MarkdownText = React.memo(function MarkdownText({
 
         // Regular line without prefix
         // Return each line individually to maintain proper spacing
-        return <Markdown key={idx}>{line}</Markdown>;
+        return <Markdown key={key}>{line}</Markdown>;
       })}
     </Box>
   );
