@@ -56,9 +56,11 @@ export function InlineSelection({
       return 'Type to filter  |  Enter: Confirm  |  Esc: Clear filter';
     }
     if (multiSelect) {
-      return '↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm  |  /: Filter  |  Esc: Cancel';
+      const filterHint = filter ? '  |  /: Filter' : '';
+      return `↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm${filterHint}  |  Esc: Cancel`;
     }
-    return '↑↓: Navigate  |  Enter: Select  |  /: Filter  |  Esc: Cancel';
+    const filterHint = filter ? '  |  /: Filter' : '';
+    return `↑↓: Navigate  |  Enter: Select${filterHint}  |  Esc: Cancel`;
   };
 
   return (
