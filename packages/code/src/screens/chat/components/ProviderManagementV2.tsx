@@ -46,16 +46,27 @@ export function ProviderManagement({
   const [editingField, setEditingField] = useState(false);
   const [tempStringValue, setTempStringValue] = useState('');
 
+  // Provider descriptions
+  const providerDescriptions: Record<string, string> = {
+    anthropic: 'Claude models by Anthropic',
+    openai: 'GPT models by OpenAI',
+    google: 'Gemini models by Google',
+    openrouter: 'Access multiple AI providers',
+    'claude-code': 'Claude Code local models',
+    zai: 'ZAI AI platform',
+  };
+
   // Get provider options from aiConfig
   const providers = aiConfig?.providers || {};
   const providerOptions: SelectionOption[] = Object.entries(providers).map(([id, config]: [string, any]) => {
     const isConfigured = config && (config['api-key'] || config.apiKey || config.configured);
     const name = config.name || id.charAt(0).toUpperCase() + id.slice(1);
+    const description = providerDescriptions[id] || 'AI provider';
 
     return {
-      label: isConfigured ? `✓ ${name}` : `  ${name}`,
+      label: `${isConfigured ? '✓' : '○'} ${name}`,
       value: id,
-      description: isConfigured ? 'Ready to use' : 'Not configured',
+      description,
     };
   });
 
