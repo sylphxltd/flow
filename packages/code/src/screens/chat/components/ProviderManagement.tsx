@@ -12,6 +12,7 @@ import { Box, Text, useInput } from 'ink';
 import { useState, useEffect } from 'react';
 import { useTRPCClient } from '@sylphx/code-client';
 import type { ConfigField, ProviderConfig } from '@sylphx/code-core';
+import TextInput from 'ink-text-input';
 import TextInputWithHint from '../../../components/TextInputWithHint.js';
 import { InputContentLayout } from './InputContentLayout.js';
 
@@ -41,6 +42,10 @@ export function ProviderManagement({
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // Filter state for provider selection
+  const [filterQuery, setFilterQuery] = useState('');
+  const [isFilterMode, setIsFilterMode] = useState(false);
+
   // Config form state
   const [configSchema, setConfigSchema] = useState<ConfigField[]>([]);
   const [formValues, setFormValues] = useState<Record<string, string | number | boolean>>({});
@@ -58,6 +63,14 @@ export function ProviderManagement({
       configured: Boolean(isConfigured),
     };
   });
+
+  // Filter provider options based on filter query
+  const filteredProviderOptions = filterQuery
+    ? providerOptions.filter((p) =>
+        p.name.toLowerCase().includes(filterQuery.toLowerCase()) ||
+        p.id.toLowerCase().includes(filterQuery.toLowerCase())
+      )
+    : providerOptions;
 
   // Load config schema when entering configure step
   useEffect(() => {
@@ -105,6 +118,13 @@ export function ProviderManagement({
     }
   }, [step, selectedProvider, providers, trpc]);
 
+  // Reset selected index when filter changes
+  useEffect(() => {
+    if (step === 'select-provider' && filterQuery) {
+      setSelectedIndex(0);
+    }
+  }, [filterQuery, step]);
+
   // Keyboard navigation
   useInput((char, key) => {
     if (key.escape) {
@@ -112,6 +132,10 @@ export function ProviderManagement({
         // Cancel editing
         setEditingField(false);
         setTempStringValue('');
+      } else if (isFilterMode) {
+        // Exit filter mode
+        setIsFilterMode(false);
+        setFilterQuery('');
       } else if (step === 'configure-provider') {
         // Go back to provider selection
         setStep('select-provider');
@@ -148,19 +172,25 @@ export function ProviderManagement({
     }
 
     // Step 2: Select provider
-    if (step === 'select-provider') {
+    if (step === 'select-provider' && !isFilterMode) {
+      // Enter filter mode with '/'
+      if (char === '/') {
+        setIsFilterMode(true);
+        return;
+      }
+
       if (key.upArrow) {
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : providerOptions.length - 1));
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : filteredProviderOptions.length - 1));
         return;
       }
 
       if (key.downArrow) {
-        setSelectedIndex((prev) => (prev < providerOptions.length - 1 ? prev + 1 : 0));
+        setSelectedIndex((prev) => (prev < filteredProviderOptions.length - 1 ? prev + 1 : 0));
         return;
       }
 
       if (key.return) {
-        const provider = providerOptions[selectedIndex];
+        const provider = filteredProviderOptions[selectedIndex];
         if (provider) {
           if (action === 'use') {
             // Wait for save to complete before closing
@@ -226,7 +256,7 @@ export function ProviderManagement({
         return;
       }
     }
-  }, { isActive: !editingField });
+  }, { isActive: !editingField && !isFilterMode });
 
   // Render: Step 1 - Select action
   if (step === 'select-action') {
@@ -280,21 +310,45 @@ export function ProviderManagement({
             ? 'Choose which provider to use for new conversations'
             : 'Select a provider to configure'
         }
-        helpText="↑↓: Navigate  |  Enter: Select  |  Esc: Cancel"
+        helpText={
+          isFilterMode
+            ? 'Type to filter  |  Enter: Confirm  |  Esc: Clear filter'
+            : '↑↓: Navigate  |  /: Filter  |  Enter: Select  |  Esc: Cancel'
+        }
       >
-        {providerOptions.map((provider, idx) => {
-          const isSelected = idx === selectedIndex;
+        {/* Search input when in filter mode */}
+        {isFilterMode && (
+          <Box marginBottom={1}>
+            <Text dimColor>Filter: </Text>
+            <TextInput
+              value={filterQuery}
+              onChange={setFilterQuery}
+              placeholder="Type to filter..."
+              showCursor
+            />
+          </Box>
+        )}
 
-          return (
-            <Box key={provider.id} marginBottom={idx < providerOptions.length - 1 ? 1 : 0}>
-              <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
-                {isSelected ? '> ' : '  '}
-                {provider.name}
-                {provider.configured && <Text dimColor> (configured)</Text>}
-              </Text>
-            </Box>
-          );
-        })}
+        {/* Provider list */}
+        {filteredProviderOptions.length === 0 ? (
+          <Box>
+            <Text dimColor>No providers found matching "{filterQuery}"</Text>
+          </Box>
+        ) : (
+          filteredProviderOptions.map((provider, idx) => {
+            const isSelected = idx === selectedIndex;
+
+            return (
+              <Box key={provider.id} marginBottom={idx < filteredProviderOptions.length - 1 ? 1 : 0}>
+                <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
+                  {isSelected ? '> ' : '  '}
+                  {provider.name}
+                  {provider.configured && <Text dimColor> (configured)</Text>}
+                </Text>
+              </Box>
+            );
+          })
+        )}
       </InputContentLayout>
     );
   }
