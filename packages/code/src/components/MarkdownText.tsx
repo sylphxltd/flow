@@ -46,6 +46,11 @@ const MarkdownText = React.memo(function MarkdownText({
   prefix,
   prefixColor,
 }: MarkdownTextProps) {
+  // Guard against undefined children
+  if (!children || typeof children !== 'string') {
+    return null;
+  }
+
   // Split content into lines for HR detection
   const lines = children.split('\n');
 

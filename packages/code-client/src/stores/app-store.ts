@@ -301,9 +301,15 @@ export const useAppStore = create<AppState>()(
        * Add message to session
        */
       addMessage: async (sessionId, role, content, attachments, usage, finishReason, metadata, todoSnapshot) => {
-        // Normalize content
-        const normalizedContent: MessagePart[] =
-          typeof content === 'string' ? [{ type: 'text', text: content }] : content; // FIX: Use 'text' field
+        // Normalize content for tRPC wire format (no status on parts)
+        const wireContent =
+          typeof content === 'string' ? [{ type: 'text', content } as const] : content;
+
+        // Normalize content for internal format (with status on parts)
+        const internalContent: MessagePart[] =
+          typeof content === 'string'
+            ? [{ type: 'text', content, status: 'completed' }]
+            : content;
 
         // Optimistic update if it's the current session
         if (get().currentSessionId === sessionId && get().currentSession) {
@@ -311,7 +317,7 @@ export const useAppStore = create<AppState>()(
             if (state.currentSession) {
               state.currentSession.messages.push({
                 role,
-                content: normalizedContent,
+                content: internalContent,
                 timestamp: Date.now(),
                 status: 'completed',
                 ...(attachments !== undefined && attachments.length > 0 && { attachments }),
@@ -329,7 +335,7 @@ export const useAppStore = create<AppState>()(
         await client.message.add.mutate({
           sessionId,
           role,
-          content: normalizedContent,
+          content: wireContent,
           attachments,
           usage,
           finishReason,
