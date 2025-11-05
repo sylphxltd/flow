@@ -136,8 +136,77 @@ export class SessionRepository {
   }
 
   /**
-   * Get recent sessions with pagination
-   * HUGE performance improvement: Only load 20 recent sessions instead of all
+   * Get recent sessions metadata ONLY (cursor-based pagination)
+   * DATA ON DEMAND: Returns only id, title, provider, model, created, updated
+   * NO messages, NO todos - client fetches those separately when needed
+   *
+   * CURSOR-BASED PAGINATION: More efficient than offset for large datasets
+   * - Cursor = updated timestamp of last item
+   * - Works even with concurrent updates
+   */
+  async getRecentSessionsMetadata(limit = 20, cursor?: number): Promise<{
+    sessions: Array<{
+      id: string;
+      title?: string;
+      provider: ProviderId;
+      model: string;
+      agentId: string;
+      created: number;
+      updated: number;
+      messageCount: number;
+    }>;
+    nextCursor: number | null;
+  }> {
+    // Build query with cursor
+    const query = this.db
+      .select()
+      .from(sessions)
+      .orderBy(desc(sessions.updated))
+      .limit(limit + 1); // Fetch one extra to determine if there's a next page
+
+    if (cursor) {
+      query.where(sql`${sessions.updated} < ${cursor}`);
+    }
+
+    const sessionRecords = await query;
+
+    // Check if there are more results
+    const hasMore = sessionRecords.length > limit;
+    const sessionsToReturn = hasMore ? sessionRecords.slice(0, limit) : sessionRecords;
+    const nextCursor = hasMore ? sessionsToReturn[sessionsToReturn.length - 1].updated : null;
+
+    // Get message counts for all sessions in one query (OPTIMIZED!)
+    const sessionIds = sessionsToReturn.map(s => s.id);
+    const messageCounts = await this.db
+      .select({
+        sessionId: messages.sessionId,
+        count: sql<number>`count(*)`,
+      })
+      .from(messages)
+      .where(inArray(messages.sessionId, sessionIds))
+      .groupBy(messages.sessionId);
+
+    // Create lookup map
+    const countMap = new Map(messageCounts.map(m => [m.sessionId, m.count]));
+
+    return {
+      sessions: sessionsToReturn.map(s => ({
+        id: s.id,
+        title: s.title || undefined,
+        provider: s.provider as ProviderId,
+        model: s.model,
+        agentId: s.agentId,
+        created: s.created,
+        updated: s.updated,
+        messageCount: countMap.get(s.id) || 0,
+      })),
+      nextCursor,
+    };
+  }
+
+  /**
+   * Get recent sessions with full data (for backward compatibility)
+   * DEPRECATED: Use getRecentSessionsMetadata + getSessionById instead
    */
   async getRecentSessions(limit = 20, offset = 0): Promise<SessionType[]> {
     // Get session metadata only (no messages yet - lazy loading!)
@@ -195,7 +264,156 @@ export class SessionRepository {
   }
 
   /**
-   * Get messages for a session
+   * Get messages for a session with cursor-based pagination
+   * DATA ON DEMAND: Fetch only needed messages, not entire history
+   * CURSOR-BASED PAGINATION: Use message timestamp as cursor
+   */
+  async getMessagesBySession(sessionId: string, limit = 50, cursor?: number): Promise<{
+    messages: SessionMessage[];
+    nextCursor: number | null;
+  }> {
+    // Get messages with pagination
+    const queryBuilder = this.db
+      .select()
+      .from(messages)
+      .where(eq(messages.sessionId, sessionId))
+      .orderBy(messages.ordering)
+      .limit(limit + 1);
+
+    if (cursor) {
+      queryBuilder.where(
+        and(
+          eq(messages.sessionId, sessionId),
+          sql`${messages.timestamp} > ${cursor}`
+        )
+      );
+    }
+
+    const messageRecords = await queryBuilder;
+
+    const hasMore = messageRecords.length > limit;
+    const messagesToReturn = hasMore ? messageRecords.slice(0, limit) : messageRecords;
+    const nextCursor = hasMore ? messagesToReturn[messagesToReturn.length - 1].timestamp : null;
+
+    if (messagesToReturn.length === 0) {
+      return { messages: [], nextCursor: null };
+    }
+
+    // Batch fetch all related data
+    const messageIds = messagesToReturn.map((m) => m.id);
+    const [allParts, allAttachments, allUsage, allSnapshots] = await Promise.all([
+      this.db
+        .select()
+        .from(messageParts)
+        .where(inArray(messageParts.messageId, messageIds))
+        .orderBy(messageParts.ordering),
+      this.db
+        .select()
+        .from(messageAttachments)
+        .where(inArray(messageAttachments.messageId, messageIds)),
+      this.db
+        .select()
+        .from(messageUsage)
+        .where(inArray(messageUsage.messageId, messageIds)),
+      this.db
+        .select()
+        .from(messageTodoSnapshots)
+        .where(inArray(messageTodoSnapshots.messageId, messageIds))
+        .orderBy(messageTodoSnapshots.ordering),
+    ]);
+
+    // Group by message ID
+    const partsByMessage = new Map<string, typeof allParts>();
+    const attachmentsByMessage = new Map<string, typeof allAttachments>();
+    const usageByMessage = new Map<string, (typeof allUsage)[0]>();
+    const snapshotsByMessage = new Map<string, typeof allSnapshots>();
+
+    for (const part of allParts) {
+      if (!partsByMessage.has(part.messageId)) {
+        partsByMessage.set(part.messageId, []);
+      }
+      partsByMessage.get(part.messageId)!.push(part);
+    }
+
+    for (const attachment of allAttachments) {
+      if (!attachmentsByMessage.has(attachment.messageId)) {
+        attachmentsByMessage.set(attachment.messageId, []);
+      }
+      attachmentsByMessage.get(attachment.messageId)!.push(attachment);
+    }
+
+    for (const usage of allUsage) {
+      usageByMessage.set(usage.messageId, usage);
+    }
+
+    for (const snapshot of allSnapshots) {
+      if (!snapshotsByMessage.has(snapshot.messageId)) {
+        snapshotsByMessage.set(snapshot.messageId, []);
+      }
+      snapshotsByMessage.get(snapshot.messageId)!.push(snapshot);
+    }
+
+    // Assemble messages
+    const fullMessages = messagesToReturn.map((msg) => {
+      const parts = partsByMessage.get(msg.id) || [];
+      const attachments = attachmentsByMessage.get(msg.id) || [];
+      const usage = usageByMessage.get(msg.id);
+      const todoSnap = snapshotsByMessage.get(msg.id) || [];
+
+      const sessionMessage: SessionMessage = {
+        role: msg.role as 'user' | 'assistant',
+        content: parts.map((p) => JSON.parse(p.content) as MessagePart),
+        timestamp: msg.timestamp,
+        status: (msg.status as 'active' | 'completed' | 'error' | 'abort') || 'completed',
+      };
+
+      if (msg.metadata) {
+        sessionMessage.metadata = JSON.parse(msg.metadata) as MessageMetadata;
+      }
+
+      if (attachments.length > 0) {
+        const validAttachments = attachments.filter((a) =>
+          a && typeof a === 'object' && a.path && a.relativePath
+        );
+        if (validAttachments.length > 0) {
+          sessionMessage.attachments = validAttachments.map((a) => ({
+            path: a.path,
+            relativePath: a.relativePath,
+            size: a.size || undefined,
+          }));
+        }
+      }
+
+      if (usage) {
+        sessionMessage.usage = {
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+        };
+      }
+
+      if (msg.finishReason) {
+        sessionMessage.finishReason = msg.finishReason;
+      }
+
+      if (todoSnap.length > 0) {
+        sessionMessage.todoSnapshot = todoSnap.map((t) => ({
+          id: t.todoId,
+          content: t.content,
+          activeForm: t.activeForm,
+          status: t.status as 'pending' | 'in_progress' | 'completed',
+          ordering: t.ordering,
+        }));
+      }
+
+      return sessionMessage;
+    });
+
+    return { messages: fullMessages, nextCursor };
+  }
+
+  /**
+   * Get messages for a session (all messages)
    * Assembles message parts, attachments, usage into SessionMessage format
    * OPTIMIZED: Batch queries instead of N+1 queries
    */
@@ -595,8 +813,76 @@ export class SessionRepository {
   }
 
   /**
-   * Search sessions by title
-   * HUGE performance improvement: Uses index, no need to load all sessions
+   * Search sessions by title (metadata only, cursor-based)
+   * DATA ON DEMAND: Returns only metadata, no messages
+   * CURSOR-BASED PAGINATION: Efficient for large result sets
+   */
+  async searchSessionsMetadata(query: string, limit = 20, cursor?: number): Promise<{
+    sessions: Array<{
+      id: string;
+      title?: string;
+      provider: ProviderId;
+      model: string;
+      agentId: string;
+      created: number;
+      updated: number;
+      messageCount: number;
+    }>;
+    nextCursor: number | null;
+  }> {
+    const queryBuilder = this.db
+      .select()
+      .from(sessions)
+      .where(like(sessions.title, `%${query}%`))
+      .orderBy(desc(sessions.updated))
+      .limit(limit + 1);
+
+    if (cursor) {
+      queryBuilder.where(
+        and(
+          like(sessions.title, `%${query}%`),
+          sql`${sessions.updated} < ${cursor}`
+        )
+      );
+    }
+
+    const sessionRecords = await queryBuilder;
+
+    const hasMore = sessionRecords.length > limit;
+    const sessionsToReturn = hasMore ? sessionRecords.slice(0, limit) : sessionRecords;
+    const nextCursor = hasMore ? sessionsToReturn[sessionsToReturn.length - 1].updated : null;
+
+    // Get message counts
+    const sessionIds = sessionsToReturn.map(s => s.id);
+    const messageCounts = sessionIds.length > 0 ? await this.db
+      .select({
+        sessionId: messages.sessionId,
+        count: sql<number>`count(*)`,
+      })
+      .from(messages)
+      .where(inArray(messages.sessionId, sessionIds))
+      .groupBy(messages.sessionId) : [];
+
+    const countMap = new Map(messageCounts.map(m => [m.sessionId, m.count]));
+
+    return {
+      sessions: sessionsToReturn.map(s => ({
+        id: s.id,
+        title: s.title || undefined,
+        provider: s.provider as ProviderId,
+        model: s.model,
+        agentId: s.agentId,
+        created: s.created,
+        updated: s.updated,
+        messageCount: countMap.get(s.id) || 0,
+      })),
+      nextCursor,
+    };
+  }
+
+  /**
+   * Search sessions by title (full data)
+   * DEPRECATED: Use searchSessionsMetadata + getSessionById instead
    */
   async searchSessionsByTitle(query: string, limit = 20): Promise<SessionType[]> {
     const sessionRecords = await this.db
@@ -689,13 +975,17 @@ export class SessionRepository {
   }
 
   /**
-   * Get recent user messages for command history
-   * Returns last N user messages across all sessions (most recent first)
+   * Get recent user messages for command history (cursor-based pagination)
+   * DATA ON DEMAND: Returns only needed messages with pagination
+   * CURSOR-BASED PAGINATION: Efficient for large datasets
    */
-  async getRecentUserMessages(limit = 100): Promise<string[]> {
+  async getRecentUserMessages(limit = 100, cursor?: number): Promise<{
+    messages: string[];
+    nextCursor: number | null;
+  }> {
     return retryOnBusy(async () => {
-      // Query user messages ordered by timestamp DESC
-      const userMessages = await this.db
+      // Query user messages with cursor
+      const queryBuilder = this.db
         .select({
           messageId: messages.id,
           timestamp: messages.timestamp,
@@ -703,14 +993,29 @@ export class SessionRepository {
         .from(messages)
         .where(eq(messages.role, 'user'))
         .orderBy(desc(messages.timestamp))
-        .limit(limit);
+        .limit(limit + 1);
 
-      if (userMessages.length === 0) {
-        return [];
+      if (cursor) {
+        queryBuilder.where(
+          and(
+            eq(messages.role, 'user'),
+            sql`${messages.timestamp} < ${cursor}`
+          )
+        );
+      }
+
+      const userMessages = await queryBuilder;
+
+      const hasMore = userMessages.length > limit;
+      const messagesToReturn = hasMore ? userMessages.slice(0, limit) : userMessages;
+      const nextCursor = hasMore ? messagesToReturn[messagesToReturn.length - 1].timestamp : null;
+
+      if (messagesToReturn.length === 0) {
+        return { messages: [], nextCursor: null };
       }
 
       // Get text parts for these messages
-      const messageIds = userMessages.map(m => m.messageId);
+      const messageIds = messagesToReturn.map(m => m.messageId);
       const parts = await this.db
         .select()
         .from(messageParts)
@@ -737,7 +1042,7 @@ export class SessionRepository {
 
       // Build result in timestamp order (most recent first)
       const result: string[] = [];
-      for (const msg of userMessages) {
+      for (const msg of messagesToReturn) {
         const texts = messageTexts.get(msg.messageId);
         if (texts && texts.length > 0) {
           const fullText = texts.join(' ').trim();
@@ -747,7 +1052,7 @@ export class SessionRepository {
         }
       }
 
-      return result;
+      return { messages: result, nextCursor };
     });
   }
 }

@@ -12,18 +12,20 @@ import { eventBus } from '../../services/event-bus.service.js';
 
 export const sessionRouter = router({
   /**
-   * Get recent sessions (paginated)
-   * PERFORMANCE: Only load metadata, not full message history
+   * Get recent sessions metadata (cursor-based pagination)
+   * DATA ON DEMAND: Returns ONLY metadata (id, title, provider, model, timestamps, messageCount)
+   * NO messages, NO todos - client fetches full session via getById when needed
+   * CURSOR-BASED PAGINATION: Efficient for large datasets, works with concurrent updates
    */
   getRecent: publicProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
+        cursor: z.number().optional(), // Timestamp of last session from previous page
       })
     )
     .query(async ({ ctx, input }) => {
-      return await ctx.sessionRepository.getRecentSessions(input.limit, input.offset);
+      return await ctx.sessionRepository.getRecentSessionsMetadata(input.limit, input.cursor);
     }),
 
   /**
@@ -52,7 +54,9 @@ export const sessionRouter = router({
   }),
 
   /**
-   * Search sessions by title
+   * Search sessions by title (metadata only, cursor-based pagination)
+   * DATA ON DEMAND: Returns ONLY metadata, no messages
+   * CURSOR-BASED PAGINATION: Efficient for large result sets
    * INDEXED: Uses database index for fast search
    */
   search: publicProcedure
@@ -60,10 +64,11 @@ export const sessionRouter = router({
       z.object({
         query: z.string(),
         limit: z.number().min(1).max(100).default(20),
+        cursor: z.number().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      return await ctx.sessionRepository.searchSessionsByTitle(input.query, input.limit);
+      return await ctx.sessionRepository.searchSessionsMetadata(input.query, input.limit, input.cursor);
     }),
 
   /**

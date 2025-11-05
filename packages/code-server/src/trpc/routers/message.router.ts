@@ -116,6 +116,29 @@ export type StreamEvent = z.infer<typeof StreamEventSchema>;
 
 export const messageRouter = router({
   /**
+   * Get messages for session (cursor-based pagination)
+   * DATA ON DEMAND: Fetch only needed messages, not entire history
+   * CURSOR-BASED PAGINATION: Use timestamp as cursor for efficient pagination
+   *
+   * Usage: For infinite scroll, lazy loading, chat history
+   */
+  getBySession: publicProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.number().optional(), // Timestamp of last message
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return await ctx.sessionRepository.getMessagesBySession(
+        input.sessionId,
+        input.limit,
+        input.cursor
+      );
+    }),
+
+  /**
    * Get message count for session
    * EFFICIENT: Count only, no data loading
    */
@@ -240,17 +263,20 @@ export const messageRouter = router({
     }),
 
   /**
-   * Get recent user messages for command history
+   * Get recent user messages for command history (cursor-based pagination)
+   * DATA ON DEMAND: Returns paginated results, not all messages at once
+   * CURSOR-BASED PAGINATION: Efficient for large message history
    * INDEXED: Uses efficient database query with role index
    */
   getRecentUserMessages: publicProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(500).default(100),
+        cursor: z.number().optional(), // Timestamp of last message
       })
     )
     .query(async ({ ctx, input }) => {
-      return await ctx.sessionRepository.getRecentUserMessages(input.limit);
+      return await ctx.sessionRepository.getRecentUserMessages(input.limit, input.cursor);
     }),
 
   /**
