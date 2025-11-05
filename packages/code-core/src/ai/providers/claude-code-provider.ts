@@ -6,6 +6,7 @@
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type { AIProvider, ProviderModelDetails, ConfigField, ProviderConfig, ModelInfo } from './base-provider.js';
+import which from 'which';
 
 import { ClaudeCodeLanguageModel } from './claude-code-language-model.js';
 
@@ -20,11 +21,10 @@ export class ClaudeCodeProvider implements AIProvider {
   }
 
   isConfigured(_config: ProviderConfig): boolean {
-    // Claude Code uses CLI OAuth - check if 'claude' command works
+    // Claude Code uses CLI OAuth - check if 'claude' command exists
+    // Using 'which' package: fast, cross-platform, industry standard
     try {
-      // Check if claude CLI is available and executable
-      const { execSync } = require('child_process');
-      execSync('claude --version', { stdio: 'ignore', timeout: 5000 });
+      which.sync('claude');
       return true;
     } catch {
       return false;
