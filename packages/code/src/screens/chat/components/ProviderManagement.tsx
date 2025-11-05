@@ -239,7 +239,7 @@ export function ProviderManagement({
                 </Text>
               </Box>
               {action.description && (
-                <Box marginLeft={3}>
+                <Box marginLeft={2}>
                   <Text dimColor>{action.description}</Text>
                 </Box>
               )}
@@ -309,12 +309,12 @@ export function ProviderManagement({
                 </Box>
 
                 {field.description && (
-                  <Box marginLeft={3}>
+                  <Box marginLeft={2}>
                     <Text dimColor>{field.description}</Text>
                   </Box>
                 )}
 
-                <Box marginLeft={3}>
+                <Box marginLeft={2}>
                   {field.type === 'boolean' ? (
                     <Text color={isSelected ? 'cyan' : 'gray'}>
                       [{value ? 'X' : ' '}] {value ? 'Enabled' : 'Disabled'}

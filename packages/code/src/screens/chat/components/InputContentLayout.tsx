@@ -40,7 +40,7 @@ export function InputContentLayout({
   children,
 }: InputContentLayoutProps) {
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingLeft={2}>
       {/* Subtitle */}
       {subtitle && (
         <Box marginBottom={1}>
