@@ -8,9 +8,7 @@ import { getProvider } from '@sylphx/code-core';
 import {
   createAIStream,
   getSystemStatus,
-  buildSystemStatusFromMetadata,
   injectSystemStatusToOutput,
-  buildTodoContext,
   type SystemStatus,
 } from '@sylphx/code-core';
 import { processStream } from '@sylphx/code-core';
@@ -19,102 +17,13 @@ import {
   clearUserInputHandler,
   type UserInputRequest
 } from '@sylphx/code-core';
-import type { ModelMessage, UserContent, AssistantContent, ToolCallPart, ToolResultPart } from 'ai';
+import type { ModelMessage } from 'ai';
 import { sendNotification } from '@sylphx/code-core';
 import { generateSessionTitle, generateSessionTitleWithStreaming } from '@sylphx/code-core';
+import { MessageTransformerService } from '@sylphx/code-core';
 
-// Optimized LRU cache for file attachments with mtime validation
-// Prevents re-reading same files from disk multiple times
-// Validates cache entries against file modification time to prevent stale data
-// Uses proper LRU with O(1) eviction instead of O(n log n) sorting
-class FileContentCache {
-  private cache = new Map<string, { content: string; size: number; mtime: number }>();
-  private accessOrder = new Set<string>(); // Track LRU order
-  private maxSize = 50 * 1024 * 1024; // 50MB total cache size
-  private currentSize = 0;
-
-  async get(path: string): Promise<string | null> {
-    const entry = this.cache.get(path);
-    if (!entry) {
-      return null;
-    }
-
-    // Validate cache: check if file was modified since cached
-    try {
-      const { stat } = await import('node:fs/promises');
-      const stats = await stat(path);
-      const currentMtime = stats.mtimeMs;
-
-      if (currentMtime !== entry.mtime) {
-        // File was modified, invalidate cache entry
-        this.cache.delete(path);
-        this.accessOrder.delete(path);
-        this.currentSize -= entry.size;
-        return null;
-      }
-
-      // Cache valid, update access order for LRU (O(1) operation)
-      this.accessOrder.delete(path); // Remove from current position
-      this.accessOrder.add(path); // Add to end (most recently used)
-      return entry.content;
-    } catch {
-      // File doesn't exist or can't be read, invalidate cache
-      this.cache.delete(path);
-      this.accessOrder.delete(path);
-      this.currentSize -= entry.size;
-      return null;
-    }
-  }
-
-  async set(path: string, content: string): Promise<void> {
-    const size = content.length;
-
-    // Don't cache files larger than 10MB
-    if (size > 10 * 1024 * 1024) {
-      return;
-    }
-
-    // Get file mtime for validation
-    let mtime: number;
-    try {
-      const { stat } = await import('node:fs/promises');
-      const stats = await stat(path);
-      mtime = stats.mtimeMs;
-    } catch {
-      // Can't get mtime, don't cache
-      return;
-    }
-
-    // Evict oldest entries if cache is full (O(1) operation)
-    while (this.currentSize + size > this.maxSize && this.cache.size > 0) {
-      // Get first item from accessOrder (least recently used)
-      const oldestKey = this.accessOrder.values().next().value;
-      
-      if (oldestKey) {
-        const removed = this.cache.get(oldestKey);
-        if (removed) {
-          this.currentSize -= removed.size;
-        }
-        this.cache.delete(oldestKey);
-        this.accessOrder.delete(oldestKey);
-      } else {
-        break;
-      }
-    }
-
-    this.cache.set(path, { content, size, mtime });
-    this.accessOrder.add(path); // Add to end (most recently used)
-    this.currentSize += size;
-  }
-
-  clear(): void {
-    this.cache.clear();
-    this.accessOrder.clear();
-    this.currentSize = 0;
-  }
-}
-
-const fileContentCache = new FileContentCache();
+// Create singleton MessageTransformer instance with file caching
+const messageTransformer = new MessageTransformerService();
 
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
@@ -293,172 +202,14 @@ export function useChat() {
         }
       }
 
-      // Build ModelMessage[] from SessionMessage[] for LLM
-      //
-      // ⚠️ CRITICAL: This is where SessionMessage (UI) transforms to ModelMessage (LLM)
-      //
-      // Key transformation:
-      // 1. System status: Built from STORED metadata, NOT current values (prompt cache!)
-      // 2. File attachments: Read fresh from disk (files can change between requests)
-      // 3. Content: Extract text from MessagePart[] format
-      //
-      // Why use stored metadata?
-      // - Historical messages must be IMMUTABLE for prompt cache
-      // - buildSystemStatusFromMetadata uses msg.metadata (captured at creation)
-      // - NEVER use getSystemStatus() here (would use current values → cache miss)
-      //
-      const messages: ModelMessage[] = await Promise.all(
-        updatedSession.messages.map(async (msg) => {
-          // User messages: inject system status from metadata + extract text + add file attachments
-          if (msg.role === 'user') {
-            const contentParts: UserContent = [];
-
-            // 1. Inject context from STORED data (not current values!)
-            //    ⚠️ Using stored data preserves prompt cache - messages stay immutable
-
-            // System status from metadata
-            if (msg.metadata) {
-              const systemStatusString = buildSystemStatusFromMetadata({
-                timestamp: new Date(msg.timestamp).toISOString(),
-                cpu: msg.metadata.cpu || 'N/A',
-                memory: msg.metadata.memory || 'N/A',
-              });
-              contentParts.push({
-                type: 'text',
-                text: systemStatusString,
-              });
-            }
-
-            // Todo context from todoSnapshot (full structured state)
-            // Build context string from snapshot, not current todos
-            if (msg.todoSnapshot && msg.todoSnapshot.length > 0) {
-              const todoContext = buildTodoContext(msg.todoSnapshot);
-              contentParts.push({
-                type: 'text',
-                text: todoContext,
-              });
-            }
-
-            // 2. Extract text parts from content (user message)
-            const textParts = msg.content.filter((part) => part.type === 'text');
-            for (const part of textParts) {
-              contentParts.push({
-                type: 'text',
-                text: part.content,
-              });
-            }
-
-            // 3. Add file attachments as file parts (use cache with mtime validation)
-            if (msg.attachments && msg.attachments.length > 0) {
-              try {
-                const attachmentStartTime = Date.now();
-                const { readFile } = await import('node:fs/promises');
-                const fileContents = await Promise.all(
-                  msg.attachments.map(async (att) => {
-                    try {
-                      // Check cache first (validates mtime)
-                      let content = await fileContentCache.get(att.path);
-                      if (content === null) {
-                        // Not in cache or stale, read from disk
-                        content = await readFile(att.path, 'utf8');
-                        // Add to cache for future use
-                        await fileContentCache.set(att.path, content);
-                      }
-                      return {
-                        type: 'text' as const,
-                        text: `\n\n<file path="${att.relativePath}">\n${content}\n</file>`,
-                      };
-                    } catch {
-                      return {
-                        type: 'text' as const,
-                        text: `\n\n<file path="${att.relativePath}">\n[Error reading file]\n</file>`,
-                      };
-                    }
-                  })
-                );
-                const attachmentDuration = Date.now() - attachmentStartTime;
-                addDebugLog(`[useChat] attachments processed: ${msg.attachments.length} files, ${attachmentDuration}ms`);
-                contentParts.push(...fileContents);
-              } catch (error) {
-                console.error('Failed to read attachments:', error);
-              }
-            }
-
-            return {
-              role: 'user' as const,
-              content: contentParts,
-            };
-          }
-
-          // Assistant messages: convert parts to AI SDK format
-          const contentParts: AssistantContent = msg.content.flatMap(part => {
-            switch (part.type) {
-              case 'text':
-                return [{
-                  type: 'text' as const,
-                  text: part.content,
-                }];
-
-              case 'reasoning':
-                return [{
-                  type: 'reasoning' as const,
-                  text: part.content,
-                }];
-
-              case 'tool': {
-                // Tool call + optional tool result
-                const parts: AssistantContent = [{
-                  type: 'tool-call' as const,
-                  toolCallId: part.toolId,
-                  toolName: part.name,
-                  input: part.args,
-                } as ToolCallPart];
-
-                // Add tool result if available
-                if (part.result !== undefined) {
-                  parts.push({
-                    type: 'tool-result' as const,
-                    toolCallId: part.toolId,
-                    toolName: part.name,
-                    output: part.result,
-                  } as ToolResultPart);
-                }
-
-                return parts;
-              }
-
-              case 'error':
-                // Convert error to text so LLM knows what happened
-                return [{
-                  type: 'text' as const,
-                  text: `[Error: ${part.error}]`,
-                }];
-
-              default:
-                // Exhaustive check - TypeScript will error if we miss a type
-                return [];
-            }
-          });
-
-          // Add status annotation if message was aborted or errored
-          if (msg.status === 'abort') {
-            contentParts.push({
-              type: 'text',
-              text: '[This response was aborted by the user]',
-            });
-          } else if (msg.status === 'error') {
-            contentParts.push({
-              type: 'text',
-              text: '[This response ended with an error]',
-            });
-          }
-
-          return {
-            role: msg.role as 'assistant',
-            content: contentParts,
-          };
-        })
-      );
+      // Transform SessionMessage[] to ModelMessage[] using core service
+      // This handles:
+      // 1. System status injection from STORED metadata (preserves prompt cache)
+      // 2. Todo context injection from snapshots
+      // 3. File attachment reading with intelligent caching
+      // 4. Content format conversion
+      // 5. Status annotations
+      const messages: ModelMessage[] = await messageTransformer.transformMessages(updatedSession.messages);
 
       // Get model using provider registry with full config
       const model = providerInstance.createClient(providerConfig, modelName);

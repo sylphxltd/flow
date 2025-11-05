@@ -13,6 +13,7 @@
 import type { Agent, Rule } from '@sylphx/code-core';
 import { SessionRepository, initializeDatabase, loadAllAgents, loadAllRules, DEFAULT_AGENT_ID } from '@sylphx/code-core';
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
+import { InteractionService } from './services/interaction.service.js';
 
 // ============================================================================
 // Types
@@ -188,6 +189,7 @@ export interface AppContext {
   database: DatabaseService;
   agentManager: AgentManagerService;
   ruleManager: RuleManagerService;
+  interactionService: InteractionService;
   config: AppConfig;
 }
 
@@ -199,11 +201,13 @@ export function createAppContext(config: AppConfig): AppContext {
   const database = createDatabaseService(config.database || {});
   const agentManager = createAgentManagerService(config.cwd);
   const ruleManager = createRuleManagerService(config.cwd);
+  const interactionService = new InteractionService();
 
   return {
     database,
     agentManager,
     ruleManager,
+    interactionService,
     config,
   } as any;
 }
