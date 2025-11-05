@@ -28,11 +28,17 @@ export interface SubscriptionAdapterParams {
 
   // Functions from hooks/store
   addMessage: (
-    sessionId: string,
+    sessionId: string | null,
     role: 'user' | 'assistant',
     content: string,
-    attachments?: FileAttachment[]
-  ) => void;
+    attachments?: FileAttachment[],
+    usage?: TokenUsage,
+    finishReason?: string,
+    metadata?: any,
+    todoSnapshot?: any[],
+    provider?: string,
+    model?: string
+  ) => Promise<string>;
   addLog: (message: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
   notificationSettings: { notifyOnCompletion: boolean; notifyOnError: boolean };
@@ -110,7 +116,14 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
               error: 'No AI provider configured. Please configure a provider using the /provider command.',
               status: 'completed',
             } as MessagePart,
-          ]
+          ],
+          undefined, // attachments
+          undefined, // usage
+          undefined, // finishReason
+          undefined, // metadata
+          undefined, // todoSnapshot
+          aiConfig?.defaultProvider,
+          aiConfig?.defaultModel
         );
       }
       return;
@@ -139,7 +152,9 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
           cpu: systemStatus.cpu,
           memory: systemStatus.memory,
         },
-        todoSnapshot
+        todoSnapshot,
+        aiConfig?.defaultProvider,
+        aiConfig?.defaultModel
       );
     }
 

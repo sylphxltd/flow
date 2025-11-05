@@ -43,8 +43,20 @@ interface InputSectionProps {
   loadError: string | null;
   cachedOptions: Map<string, Array<{ id: string; name: string; label: string; value?: string }>>;
   currentSessionId: string | null;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string) => void;
+  addMessage: (
+    sessionId: string | null,
+    role: 'user' | 'assistant',
+    content: string,
+    attachments?: any[],
+    usage?: any,
+    finishReason?: string,
+    metadata?: any,
+    todoSnapshot?: any[],
+    provider?: any,
+    model?: string
+  ) => Promise<string>;
   createCommandContext: (args: string[]) => any;
+  getAIConfig: () => { defaultProvider?: string; defaultModel?: string } | null;
 
   // Attachments
   pendingAttachments: FileAttachment[];
@@ -87,6 +99,7 @@ export function InputSection({
   currentSessionId,
   addMessage,
   createCommandContext,
+  getAIConfig,
   pendingAttachments,
   attachmentTokens,
   filteredFileInfo,
@@ -130,7 +143,19 @@ export function InputSection({
               createCommandContext([option.value || option.label])
             );
             if (currentSessionId && response) {
-              await addMessage(currentSessionId, 'assistant', response);
+              const aiConfig = getAIConfig();
+              await addMessage(
+                currentSessionId,
+                'assistant',
+                response,
+                undefined, // attachments
+                undefined, // usage
+                undefined, // finishReason
+                undefined, // metadata
+                undefined, // todoSnapshot
+                aiConfig?.defaultProvider,
+                aiConfig?.defaultModel
+              );
             }
             setPendingCommand(null);
             setSelectedCommandIndex(0);

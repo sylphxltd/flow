@@ -569,6 +569,7 @@ export default function Chat(_props: ChatProps) {
             onSubmit={handleSubmit}
             addMessage={addMessage}
             createCommandContext={createCommandContextForArgs}
+            getAIConfig={getAIConfig}
             setPendingCommand={setPendingCommand}
           />
         </Box>
