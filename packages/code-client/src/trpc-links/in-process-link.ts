@@ -110,8 +110,17 @@ export function inProcessLink<TRouter extends AnyRouter>(
 /**
  * Get procedure from router by path
  * Supports nested paths like 'session.getLast' or 'message.streamResponse'
+ *
+ * In tRPC v11, merged routers flatten procedures with dot notation keys
+ * Example: router._def.procedures['session.getLast']
  */
 function getProcedure(router: any, path: string): any {
+  // First try direct lookup with full path (for merged routers)
+  if (router._def.procedures[path]) {
+    return router._def.procedures[path];
+  }
+
+  // Fallback: Try nested navigation for non-merged routers
   const parts = path.split('.');
   let current = router._def.procedures;
 
