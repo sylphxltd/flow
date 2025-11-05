@@ -1,9 +1,15 @@
 /**
  * tRPC Links
- * Custom tRPC link implementations for different communication patterns
+ *
+ * NOTE: inProcessLink has been moved to @sylphx/code-server
+ * Import it from there instead:
+ *
+ * ```typescript
+ * import { inProcessLink } from '@sylphx/code-server';
+ * ```
+ *
+ * For HTTP links, use @trpc/client directly:
+ * ```typescript
+ * import { httpBatchLink, httpSubscriptionLink } from '@trpc/client';
+ * ```
  */
-
-export { inProcessLink, type InProcessLinkOptions } from './in-process-link.js';
-
-// For HTTP links, use @trpc/client directly:
-// import { httpBatchLink, httpSubscriptionLink } from '@trpc/client';

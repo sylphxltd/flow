@@ -20,6 +20,11 @@ export { createContext, type Context } from './trpc/context.js';
 export { type StreamEvent } from './services/streaming.service.js';
 
 // ============================================================================
+// tRPC Links (for in-process communication)
+// ============================================================================
+export { inProcessLink, type InProcessLinkOptions } from './links/in-process-link.js';
+
+// ============================================================================
 // Version
 // ============================================================================
 export const version = '0.1.0';

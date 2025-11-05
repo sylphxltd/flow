@@ -7,9 +7,9 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from './Spinner.js';
-import { useElapsedTime } from '@sylphx/code-client';
+import { useElapsedTime } from '../hooks/useElapsedTime.js';
 import type { ArgsFormatter, ResultFormatter } from '@sylphx/code-core';
-import type { ToolDisplayProps } from '@sylphx/code-client';
+import type { ToolDisplayProps } from '../types/tool.types.js';
 
 interface StatusIndicatorProps {
   status: 'running' | 'completed' | 'failed';

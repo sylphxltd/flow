@@ -7,7 +7,7 @@ import { describe, test, expect, beforeAll } from 'bun:test';
 import { CodeServer } from '../../server.js';
 import type { AppRouter } from '../routers/index.js';
 import { createTRPCClient, TRPCClientError } from '@trpc/client';
-import { inProcessLink } from '@sylphx/code-client';
+import { inProcessLink } from '../../links/in-process-link.js';
 
 describe('Function Level Authorization (OWASP API5)', () => {
   let server: CodeServer;

@@ -25,7 +25,7 @@ CodeServer supports three client types:
 ```typescript
 import { CodeServer } from '@sylphx/code-server';
 import { createTRPCClient } from '@trpc/client';
-import { inProcessLink } from '@sylphx/code-client';
+import { inProcessLink } from '@sylphx/code-server';
 
 // Initialize server
 const server = new CodeServer();
@@ -379,7 +379,7 @@ if (!ready) {
 
 ```typescript
 // Full TypeScript support
-import type { AppRouter } from '@sylphx/code-client';
+import type { AppRouter } from '@sylphx/code-server';
 import type { inferRouterOutputs } from '@trpc/server';
 
 // Infer types from router
@@ -408,7 +408,7 @@ curl http://localhost:3000/trpc/admin.getHealth
 
 ```typescript
 import { CodeServer } from '@sylphx/code-server';
-import { inProcessLink } from '@sylphx/code-client';
+import { inProcessLink } from '@sylphx/code-server';
 
 async function main() {
   const server = new CodeServer();

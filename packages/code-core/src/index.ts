@@ -88,6 +88,12 @@ export { createHeadlessDisplay } from './ai/headless-display.js'
 export { addMessage } from './utils/session-manager.js'
 
 // ============================================================================
+// Services (Business Logic)
+// ============================================================================
+export { FileAttachmentService, defaultFileAttachmentService } from './services/file-attachment.service.js'
+export { MessageTransformerService, defaultMessageTransformer, buildSystemStatusFromMetadata } from './services/message-transformer.service.js'
+
+// ============================================================================
 // Utils
 // ============================================================================
 export { buildTodoContext } from './utils/todo-context.js'

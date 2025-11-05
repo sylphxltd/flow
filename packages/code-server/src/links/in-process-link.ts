@@ -8,7 +8,7 @@
  * Usage:
  * ```typescript
  * import { CodeServer } from '@sylphx/code-server';
- * import { inProcessLink } from '@sylphx/code-client';
+ * import { inProcessLink } from '@sylphx/code-server';
  *
  * const server = new CodeServer();
  * await server.initialize();

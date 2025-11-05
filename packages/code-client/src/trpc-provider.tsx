@@ -26,8 +26,8 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { createTRPCProxyClient, type TRPCClient } from '@trpc/client';
-import type { AppRouter } from '@sylphx/code-server';
-import { inProcessLink, type InProcessLinkOptions } from './trpc-links/index.js';
+import type { AppRouter, InProcessLinkOptions } from '@sylphx/code-server';
+import { inProcessLink } from '@sylphx/code-server';
 
 /**
  * tRPC Client type with full AppRouter typing
