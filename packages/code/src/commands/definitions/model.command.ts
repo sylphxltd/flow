@@ -156,10 +156,8 @@ export const modelCommand: Command = {
     const currentSessionId = context.getCurrentSessionId();
     if (currentSessionId) {
       await context.updateSessionModel(currentSessionId, modelId);
-    } else {
-      // Fallback: create new session if no active session
-      await context.createSession(provider, modelId);
     }
+    // No fallback: Config is updated, next message will create session automatically
 
     return `Switched to model: ${modelId}`;
   },

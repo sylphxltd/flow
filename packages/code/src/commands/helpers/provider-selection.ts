@@ -181,10 +181,8 @@ export async function switchToProvider(
   const currentSessionId = context.getCurrentSessionId();
   if (currentSessionId) {
     await context.updateSessionProvider(currentSessionId, providerId, defaultModel);
-  } else {
-    // Fallback: create new session if no active session
-    await context.createSession(providerId, defaultModel);
   }
+  // No fallback: Config is updated, next message will create session automatically
 
   return `Now using ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} with model: ${defaultModel}`;
 }
