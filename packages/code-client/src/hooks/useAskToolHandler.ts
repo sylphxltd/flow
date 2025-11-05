@@ -5,7 +5,7 @@
 
 import { useEffect } from 'react';
 import { setUserInputHandler, clearUserInputHandler, setQueueUpdateCallback } from '@sylphx/code-core';
-import type { WaitForInputOptions } from '../commands/types.js';
+import type { WaitForInputOptions } from '../types/command-types.js';
 
 interface UseAskToolHandlerProps {
   setPendingInput: (input: WaitForInputOptions | null) => void;

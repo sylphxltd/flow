@@ -4,7 +4,7 @@
  */
 
 import { useInput } from 'ink';
-import type { Command, CommandContext, WaitForInputOptions } from '../commands/types.js';
+import type { Command, CommandContext, WaitForInputOptions } from '../types/command-types.js';
 
 export interface KeyboardNavigationProps {
   // State
@@ -693,10 +693,8 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
         if (key.tab) {
           const selected = filteredCommands[selectedCommandIndex];
           if (selected) {
-            const commands = await import('../commands/registry.js').then(m => m.commands);
-            const isCommand = commands.some(cmd => cmd.label === selected.label);
             const hasArgs = selected.args && selected.args.length > 0;
-            const completedText = (isCommand && hasArgs) ? `${selected.label} ` : selected.label;
+            const completedText = hasArgs ? `${selected.label} ` : selected.label;
 
             addLog(`[useInput] Tab autocomplete fill: ${completedText}`);
             setInput(completedText);

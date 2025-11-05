@@ -44,6 +44,18 @@ export type { Session, MessagePart } from '@sylphx/code-core'
 export type { AppRouter } from '@sylphx/code-server'
 
 // ============================================================================
+// Command Types
+// ============================================================================
+export type {
+  Command,
+  CommandArg,
+  CommandContext,
+  SelectOption,
+  Question,
+  WaitForInputOptions,
+} from './types/command-types.js'
+
+// ============================================================================
 // React Hooks
 // ============================================================================
 export { useAIConfig } from './hooks/useAIConfig.js'
