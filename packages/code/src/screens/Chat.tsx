@@ -460,8 +460,15 @@ export default function Chat(_props: ChatProps) {
       const isNormalMode = !pendingInput && !pendingCommand;
       if (!isNormalMode) return;
 
+      // Don't handle arrow keys when autocomplete is active
+      // Let CommandAutocomplete or PendingCommandSelection handle navigation
+      const hasAutocomplete = filteredCommands.length > 0 || (filteredFileInfo && filteredFileInfo.files.length > 0);
+
       // Up arrow - navigate to previous message in history
       if (key.upArrow) {
+        // Skip if autocomplete is showing - let autocomplete handle navigation
+        if (hasAutocomplete) return;
+
         if (messageHistory.length === 0) return;
 
         if (historyIndex === -1) {
@@ -481,6 +488,9 @@ export default function Chat(_props: ChatProps) {
 
       // Down arrow - navigate to next message in history
       if (key.downArrow) {
+        // Skip if autocomplete is showing - let autocomplete handle navigation
+        if (hasAutocomplete) return;
+
         if (historyIndex === -1) return;
 
         if (historyIndex === messageHistory.length - 1) {
