@@ -1,11 +1,12 @@
 /**
  * Admin Router
  * System management operations (admin-only)
- * SECURITY: Function level authorization (OWASP API5)
+ * SECURITY: Function level authorization (OWASP API5) + API Inventory (OWASP API9)
  */
 
 import { z } from 'zod';
 import { router, publicProcedure, adminStrictProcedure, adminModerateProcedure } from '../trpc.js';
+import { getAPIInventory, generateMarkdownDocs } from '../../utils/api-inventory.js';
 
 export const adminRouter = router({
   /**
@@ -95,4 +96,27 @@ export const adminRouter = router({
       return { success: false, message: 'GC not exposed. Run with --expose-gc flag' };
     }
   }),
+
+  /**
+   * Get API inventory (public - for documentation)
+   * SECURITY: OWASP API9 compliance
+   * Shows all available endpoints, their types, and requirements
+   */
+  getAPIInventory: publicProcedure.query(() => {
+    return getAPIInventory();
+  }),
+
+  /**
+   * Get API documentation (public - for developers)
+   * SECURITY: OWASP API9 compliance
+   * Returns Markdown-formatted API reference
+   */
+  getAPIDocs: publicProcedure
+    .input(z.object({ format: z.enum(['json', 'markdown']).default('json') }))
+    .query(({ input }) => {
+      if (input.format === 'markdown') {
+        return generateMarkdownDocs();
+      }
+      return getAPIInventory();
+    }),
 });
