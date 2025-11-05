@@ -232,7 +232,16 @@ export function createHandleSubmit(params: MessageHandlerParams) {
 
       // Execute command - command has full control via CommandContext
       try {
-        await command.execute(createCommandContext(args));
+        const result = await command.execute(createCommandContext(args));
+
+        // If command returns a result string, add it to conversation
+        if (result && typeof result === 'string' && commandSessionRef.current) {
+          await addMessage(
+            commandSessionRef.current,
+            'assistant',
+            result
+          );
+        }
       } catch (error) {
         if (commandSessionRef.current) {
           await addMessage(
