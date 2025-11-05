@@ -39,14 +39,23 @@ export const providerCommand: Command = {
           context.addLog('[provider] Provider management closed');
         }}
         onSelectProvider={async (providerId) => {
+          // Get provider's default model
+          const providerConfig = aiConfig?.providers?.[providerId] || {};
+          const providerDefaultModel = providerConfig['default-model'] as string | undefined;
+
           // Update store state
           context.updateProvider(providerId as any, {});
-          const updatedConfig = { ...aiConfig, defaultProvider: providerId } as any;
+          const updatedConfig = {
+            ...aiConfig,
+            defaultProvider: providerId,
+            // Update defaultModel to match provider's default
+            defaultModel: providerDefaultModel,
+          } as any;
           context.setAIConfig(updatedConfig);
 
           // CRITICAL: Save to server!
           await context.saveConfig(updatedConfig);
-          context.addLog(`[provider] Switched to provider: ${providerId} and saved config`);
+          context.addLog(`[provider] Switched to provider: ${providerId} (model: ${providerDefaultModel || 'default'}) and saved config`);
         }}
         onConfigureProvider={async (providerId, config) => {
           // Update store state
