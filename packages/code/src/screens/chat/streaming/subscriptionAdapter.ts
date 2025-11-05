@@ -107,31 +107,32 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       return;
     }
 
-    if (!currentSessionId) {
-      addLog('[subscriptionAdapter] No current session');
-      return;
+    // LAZY SESSIONS: Server will create session if currentSessionId is null
+    // Client just passes null, server handles creation
+    const sessionId = currentSessionId;
+
+    // Optimistic update: Add user message to store ONLY if session exists
+    // For lazy sessions (sessionId = null), server will create session + add message
+    if (sessionId) {
+      const { getSystemStatus } = await import('@sylphx/code-core');
+      const systemStatus = getSystemStatus();
+      const currentSession = useAppStore.getState().currentSession;
+      const todoSnapshot = currentSession?.todos ? [...currentSession.todos] : [];
+
+      addMessage(
+        sessionId,
+        'user',
+        userMessage,
+        attachments,
+        undefined, // usage (only for assistant messages)
+        undefined, // finishReason (only for assistant messages)
+        {
+          cpu: systemStatus.cpu,
+          memory: systemStatus.memory,
+        },
+        todoSnapshot
+      );
     }
-
-    // Add user message to Zustand store immediately (optimistic update)
-    // Backend will persist it to database with system status and todo snapshot
-    const { getSystemStatus } = await import('@sylphx/code-core');
-    const systemStatus = getSystemStatus();
-    const currentSession = useAppStore.getState().currentSession;
-    const todoSnapshot = currentSession?.todos ? [...currentSession.todos] : [];
-
-    addMessage(
-      currentSessionId,
-      'user',
-      userMessage,
-      attachments,
-      undefined, // usage (only for assistant messages)
-      undefined, // finishReason (only for assistant messages)
-      {
-        cpu: systemStatus.cpu,
-        memory: systemStatus.memory,
-      },
-      todoSnapshot
-    );
 
     setIsStreaming(true);
 
@@ -150,8 +151,11 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       const caller = await getTRPCClient();
 
       // Call subscription procedure (returns Observable)
+      // If sessionId is null, pass provider/model for lazy session creation
       const observable = await caller.message.streamResponse({
-        sessionId: currentSessionId,
+        sessionId: sessionId,
+        provider: sessionId ? undefined : aiConfig.defaultProvider,
+        model: sessionId ? undefined : aiConfig.defaultModel,
         userMessage,
         attachments,
       });
@@ -160,7 +164,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       const subscription = observable.subscribe({
         next: (event: StreamEvent) => {
           handleStreamEvent(event, {
-            currentSessionId,
+            currentSessionId: sessionId,
             updateSessionTitle,
             setIsTitleStreaming,
             setStreamingTitle,
@@ -179,7 +183,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
           lastErrorRef.current = error.message || String(error);
 
           // Add error message part to UI
-          updateActiveMessageContent(currentSessionId, (prev) => [
+          updateActiveMessageContent(sessionId, (prev) => [
             ...prev,
             {
               type: 'error',
@@ -190,7 +194,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
           // Cleanup
           cleanupAfterStream({
-            currentSessionId,
+            currentSessionId: sessionId,
             wasAbortedRef,
             lastErrorRef,
             usageRef,
@@ -205,7 +209,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
           // Cleanup
           cleanupAfterStream({
-            currentSessionId,
+            currentSessionId: sessionId,
             wasAbortedRef,
             lastErrorRef,
             usageRef,
@@ -224,7 +228,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         subscription.unsubscribe();
 
         // Mark active parts as aborted
-        updateActiveMessageContent(currentSessionId, (prev) =>
+        updateActiveMessageContent(sessionId, (prev) =>
           prev.map((part) =>
             part.status === 'active' ? { ...part, status: 'abort' as const } : part
           )
@@ -232,7 +236,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
         // Cleanup
         cleanupAfterStream({
-          currentSessionId,
+          currentSessionId: sessionId,
           wasAbortedRef,
           lastErrorRef,
           usageRef,
@@ -276,9 +280,21 @@ function handleStreamEvent(
 
   switch (event.type) {
     case 'session-created':
-      // New session was created - this is handled in the component, not here
-      // The component should update currentSessionId
+      // LAZY SESSION: Server created new session, update client state
       context.addLog(`[Session] Created: ${event.sessionId}`);
+
+      // Update currentSessionId in store
+      useAppStore.setState((state) => {
+        state.currentSessionId = event.sessionId;
+      });
+
+      // Load the new session from server
+      getTRPCClient().then(async (client) => {
+        const session = await client.session.getById({ sessionId: event.sessionId });
+        useAppStore.setState((state) => {
+          state.currentSession = session;
+        });
+      });
       break;
 
     case 'session-title-start':

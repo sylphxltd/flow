@@ -83,12 +83,8 @@ export default function Chat(_props: ChatProps) {
   const { saveConfig } = useAIConfig();
   const usedTokens = useTokenCalculation(currentSession || null);
 
-  // Initialize session
-  useSessionInitialization({
-    currentSessionId,
-    aiConfig,
-    createSession,
-  });
+  // LAZY SESSIONS: No auto-session creation on startup
+  // Server will create session on-demand when user sends first message
 
   // State hooks
   const inputState = useInputState();
