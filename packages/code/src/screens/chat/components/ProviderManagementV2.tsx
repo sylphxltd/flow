@@ -19,6 +19,7 @@ import { InputContentLayout } from './InputContentLayout.js';
 
 interface ProviderManagementProps {
   initialAction?: 'use' | 'configure';
+  initialProviderId?: string;
   aiConfig: any;
   onComplete: () => void;
   onSelectProvider: (providerId: string) => void | Promise<void>;
@@ -29,15 +30,22 @@ type Step = 'select-action' | 'select-provider' | 'configure-provider';
 
 export function ProviderManagement({
   initialAction,
+  initialProviderId,
   aiConfig,
   onComplete,
   onSelectProvider,
   onConfigureProvider,
 }: ProviderManagementProps) {
   const trpc = useTRPCClient();
-  const [step, setStep] = useState<Step>(initialAction ? 'select-provider' : 'select-action');
+
+  // If initialProviderId is provided, skip to the appropriate step
+  const initialStep: Step = initialProviderId
+    ? (initialAction === 'configure' ? 'configure-provider' : 'select-action')
+    : (initialAction ? 'select-provider' : 'select-action');
+
+  const [step, setStep] = useState<Step>(initialStep);
   const [action, setAction] = useState<'use' | 'configure'>(initialAction || 'use');
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(initialProviderId || null);
 
   // Config form state
   const [configSchema, setConfigSchema] = useState<ConfigField[]>([]);

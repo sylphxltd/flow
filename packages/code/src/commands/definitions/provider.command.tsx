@@ -10,10 +10,45 @@ export const providerCommand: Command = {
   id: 'provider',
   label: '/provider',
   description: 'Manage AI providers',
-  args: [],
+  args: [
+    {
+      name: 'action',
+      description: 'Action to perform (use/configure)',
+      required: false,
+      loadOptions: async () => {
+        return [
+          { id: 'use', label: 'use', value: 'use' },
+          { id: 'configure', label: 'configure', value: 'configure' },
+        ];
+      },
+    },
+    {
+      name: 'provider-id',
+      description: 'Provider to use or configure',
+      required: false,
+      loadOptions: async (previousArgs, context) => {
+        try {
+          const aiConfig = context?.getConfig();
+          if (!aiConfig?.providers) {
+            return [];
+          }
+
+          const providers = Object.keys(aiConfig.providers);
+          return providers.map((id) => ({
+            id,
+            label: id,
+            value: id,
+          }));
+        } catch (error) {
+          return [];
+        }
+      },
+    },
+  ],
 
   execute: async (context) => {
     const action = context.args[0] as 'use' | 'configure' | undefined;
+    const providerId = context.args[1];
 
     // Validate action
     if (action && action !== 'use' && action !== 'configure') {
@@ -29,10 +64,35 @@ export const providerCommand: Command = {
 
     const aiConfig = context.getConfig();
 
-    // Direct JSX - universal approach, no helper needed!
+    // If both action and providerId are provided, handle directly
+    if (action && providerId) {
+      if (action === 'use') {
+        // Direct provider switch
+        context.updateProvider(providerId as any, {});
+        const updatedConfig = {
+          ...aiConfig,
+          defaultProvider: providerId,
+        } as any;
+        context.setAIConfig(updatedConfig);
+
+        // Save to server
+        await context.saveConfig(updatedConfig);
+
+        const providerConfig = aiConfig?.providers?.[providerId] || {};
+        const providerDefaultModel = providerConfig.defaultModel as string;
+        context.addLog(`[provider] Switched to provider: ${providerId} (model: ${providerDefaultModel || 'default'}) and saved config`);
+        return `Switched to provider: ${providerId}`;
+      } else if (action === 'configure') {
+        // For configure with direct provider, still show UI to enter credentials
+        // Fall through to UI below
+      }
+    }
+
+    // Show UI for interactive selection
     context.setInputComponent(
       <ProviderManagement
         initialAction={action}
+        initialProviderId={providerId}
         aiConfig={aiConfig}
         onComplete={() => {
           context.setInputComponent(null);
