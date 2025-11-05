@@ -31,7 +31,9 @@ export function MessageList({ messages, attachmentTokens }: MessageListProps) {
 
           {/* Message Content */}
           {msg.content && Array.isArray(msg.content) ? (
-            msg.content.map((part, idx) => <MessagePart key={`part-${idx}`} part={part} />)
+            msg.content.map((part, idx) => (
+              <MessagePart key={`${msg.timestamp}-part-${idx}`} part={part} />
+            ))
           ) : msg.content ? (
             <Box marginLeft={2}>
               <Text>{String(msg.content)}</Text>
