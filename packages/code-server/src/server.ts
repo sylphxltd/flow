@@ -115,7 +115,7 @@ export class CodeServer {
 
     // Bind appContext to createContext via closure
     const appContext = this.appContext;
-    return () => createContext(appContext);
+    return () => createContext({ appContext });
   }
 
   /**
@@ -140,7 +140,7 @@ export class CodeServer {
         '/trpc',
         createExpressMiddleware({
           router: appRouter,
-          createContext: () => createContext(appContext!),
+          createContext: ({ req, res }) => createContext({ appContext: appContext!, req, res }),
         })
       );
 

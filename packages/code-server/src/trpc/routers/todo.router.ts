@@ -2,11 +2,12 @@
  * Todo Router
  * Efficient todo management per session
  * REACTIVE: Emits events for all state changes
+ * SECURITY: Protected mutations (OWASP API2)
  */
 
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
-import { router, publicProcedure } from '../trpc.js';
+import { router, publicProcedure, protectedProcedure } from '../trpc.js';
 import { eventBus } from '../../services/event-bus.service.js';
 
 const TodoSchema = z.object({
@@ -22,8 +23,9 @@ export const todoRouter = router({
    * Update todos for session
    * Atomically replaces all todos
    * REACTIVE: Emits todos-updated event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         sessionId: z.string(),

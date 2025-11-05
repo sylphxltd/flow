@@ -2,11 +2,12 @@
  * Message Router
  * Efficient message operations with lazy loading and streaming support
  * REACTIVE: Emits events for all state changes
+ * SECURITY: Protected mutations (OWASP API2)
  */
 
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
-import { router, publicProcedure } from '../trpc.js';
+import { router, publicProcedure, protectedProcedure } from '../trpc.js';
 import { eventBus } from '../../services/event-bus.service.js';
 
 // Zod schemas for type safety
@@ -152,8 +153,9 @@ export const messageRouter = router({
    * Add message to session
    * Used for both user messages and assistant messages
    * REACTIVE: Emits message-added event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  add: publicProcedure
+  add: protectedProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -168,7 +170,7 @@ export const messageRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const message = await ctx.sessionRepository.addMessage(
+      const messageId = await ctx.sessionRepository.addMessage(
         input.sessionId,
         input.role,
         input.content,
@@ -184,19 +186,20 @@ export const messageRouter = router({
       eventBus.emitEvent({
         type: 'message-added',
         sessionId: input.sessionId,
-        messageId: message.id,
+        messageId: messageId,
         role: input.role,
       });
 
-      return message;
+      return messageId;
     }),
 
   /**
    * Update message parts (during streaming)
    * Replaces all parts atomically
    * REACTIVE: Emits message-updated event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  updateParts: publicProcedure
+  updateParts: protectedProcedure
     .input(
       z.object({
         messageId: z.string(),
@@ -217,8 +220,9 @@ export const messageRouter = router({
    * Update message status
    * Used when streaming completes/aborts
    * REACTIVE: Emits message-updated event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  updateStatus: publicProcedure
+  updateStatus: protectedProcedure
     .input(
       z.object({
         messageId: z.string(),
@@ -244,8 +248,9 @@ export const messageRouter = router({
    * Update message usage
    * Used when streaming completes with token counts
    * REACTIVE: Emits message-updated event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  updateUsage: publicProcedure
+  updateUsage: protectedProcedure
     .input(
       z.object({
         messageId: z.string(),
@@ -303,8 +308,10 @@ export const messageRouter = router({
    * Transport:
    * - TUI: In-process observable (zero overhead)
    * - Web: SSE (httpSubscriptionLink)
+   *
+   * SECURITY: Protected subscription (OWASP API2)
    */
-  streamResponse: publicProcedure
+  streamResponse: protectedProcedure
     .input(
       z.object({
         sessionId: z.string().nullish(), // Optional - will create if null

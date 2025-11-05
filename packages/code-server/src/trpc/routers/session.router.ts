@@ -2,11 +2,12 @@
  * Session Router
  * Enterprise-grade session management with pagination and lazy loading
  * REACTIVE: Emits events for all state changes
+ * SECURITY: Protected mutations (OWASP API2)
  */
 
 import { z } from 'zod';
 import { observable } from '@trpc/server/observable';
-import { router, publicProcedure } from '../trpc.js';
+import { router, publicProcedure, protectedProcedure } from '../trpc.js';
 import type { ProviderId } from '@sylphx/code-core';
 import { eventBus } from '../../services/event-bus.service.js';
 
@@ -74,8 +75,9 @@ export const sessionRouter = router({
   /**
    * Create new session
    * REACTIVE: Emits session-created event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         provider: z.string() as z.ZodType<ProviderId>,
@@ -104,8 +106,9 @@ export const sessionRouter = router({
   /**
    * Update session title
    * REACTIVE: Emits session-updated event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  updateTitle: publicProcedure
+  updateTitle: protectedProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -126,8 +129,9 @@ export const sessionRouter = router({
   /**
    * Update session model
    * REACTIVE: Emits session-updated event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  updateModel: publicProcedure
+  updateModel: protectedProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -148,8 +152,9 @@ export const sessionRouter = router({
   /**
    * Update session provider and model
    * REACTIVE: Emits session-updated event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  updateProvider: publicProcedure
+  updateProvider: protectedProcedure
     .input(
       z.object({
         sessionId: z.string(),
@@ -176,8 +181,9 @@ export const sessionRouter = router({
    * Delete session
    * CASCADE: Automatically deletes all messages, todos, attachments
    * REACTIVE: Emits session-deleted event
+   * SECURITY: Protected mutation (OWASP API2)
    */
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.sessionRepository.deleteSession(input.sessionId);
