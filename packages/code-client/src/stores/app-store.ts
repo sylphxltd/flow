@@ -156,7 +156,6 @@ export const useAppStore = create<AppState>()(
           }
           if (state.aiConfig?.defaultProvider === provider) {
             state.aiConfig.defaultProvider = undefined;
-            state.aiConfig.defaultModel = undefined;
           }
         }),
 

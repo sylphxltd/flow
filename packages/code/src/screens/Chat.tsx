@@ -594,7 +594,7 @@ export default function Chat(_props: ChatProps) {
         <Box flexShrink={0} paddingTop={1} flexDirection="row">
           <StatusBar
             provider={currentSession?.provider || aiConfig?.defaultProvider || null}
-            model={currentSession?.model || aiConfig?.defaultModel || null}
+            model={currentSession?.model || (aiConfig?.defaultProvider ? aiConfig.providers?.[aiConfig.defaultProvider]?.defaultModel : null) || null}
             usedTokens={currentSession ? usedTokens : 0}
           />
         </Box>
