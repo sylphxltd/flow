@@ -5,7 +5,10 @@
  */
 
 import { Box, Text, useInput } from 'ink';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getProvider } from '@sylphx/code-core';
+import type { ConfigField, ProviderConfig } from '@sylphx/code-core';
+import TextInputWithHint from '../../../components/TextInputWithHint.js';
 
 interface ProviderManagementProps {
   // Initial action (optional)
@@ -32,10 +35,17 @@ export function ProviderManagement({
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // Config form state
+  const [configSchema, setConfigSchema] = useState<ConfigField[]>([]);
+  const [formValues, setFormValues] = useState<Record<string, string | number | boolean>>({});
+  const [currentFieldIndex, setCurrentFieldIndex] = useState(0);
+  const [editingField, setEditingField] = useState(false);
+  const [tempStringValue, setTempStringValue] = useState('');
+
   // Get provider options from aiConfig
   const providers = aiConfig?.providers || {};
   const providerOptions = Object.entries(providers).map(([id, config]: [string, any]) => {
-    const isConfigured = config && (config.apiKey || config.configured);
+    const isConfigured = config && (config['api-key'] || config.apiKey || config.configured);
     return {
       id,
       name: config.name || id.charAt(0).toUpperCase() + id.slice(1),
@@ -43,10 +53,55 @@ export function ProviderManagement({
     };
   });
 
+  // Load config schema when entering configure step
+  useEffect(() => {
+    if (step === 'configure-provider' && selectedProvider) {
+      try {
+        const provider = getProvider(selectedProvider as any);
+        const schema = provider.getConfigSchema();
+        setConfigSchema(schema);
+
+        // Initialize form values with existing config
+        const existingConfig = providers[selectedProvider] || {};
+        const initialValues: Record<string, string | number | boolean> = {};
+
+        schema.forEach((field) => {
+          // Use existing value or default based on type
+          if (existingConfig[field.key] !== undefined) {
+            initialValues[field.key] = existingConfig[field.key];
+          } else if (field.type === 'boolean') {
+            initialValues[field.key] = false;
+          } else if (field.type === 'number') {
+            initialValues[field.key] = 0;
+          } else {
+            initialValues[field.key] = '';
+          }
+        });
+
+        setFormValues(initialValues);
+        setCurrentFieldIndex(0);
+      } catch (error) {
+        console.error('Failed to load provider schema:', error);
+      }
+    }
+  }, [step, selectedProvider, providers]);
+
   // Keyboard navigation
   useInput((char, key) => {
     if (key.escape) {
-      onComplete();
+      if (editingField) {
+        // Cancel editing
+        setEditingField(false);
+        setTempStringValue('');
+      } else if (step === 'configure-provider') {
+        // Go back to provider selection
+        setStep('select-provider');
+        setSelectedProvider(null);
+        setSelectedIndex(0);
+      } else {
+        // Close component
+        onComplete();
+      }
       return;
     }
 
@@ -68,7 +123,7 @@ export function ProviderManagement({
         const selectedAction = actions[selectedIndex] as 'use' | 'configure';
         setAction(selectedAction);
         setStep('select-provider');
-        setSelectedIndex(0); // Reset for next step
+        setSelectedIndex(0);
         return;
       }
     }
@@ -101,12 +156,55 @@ export function ProviderManagement({
       }
     }
 
-    // Step 3: Configure provider
-    if (step === 'configure-provider') {
-      // TODO: Implement configuration UI
-      // For now, just ESC to go back
+    // Step 3: Configure provider - don't handle input if editing
+    if (step === 'configure-provider' && !editingField) {
+      if (key.upArrow) {
+        setCurrentFieldIndex((prev) => Math.max(0, prev - 1));
+        return;
+      }
+
+      if (key.downArrow) {
+        setCurrentFieldIndex((prev) => Math.min(configSchema.length, prev + 1));
+        return;
+      }
+
+      if (key.return) {
+        // Last item is "Save" button
+        if (currentFieldIndex === configSchema.length) {
+          // Save configuration
+          onConfigureProvider(selectedProvider!, formValues);
+          onComplete();
+        } else {
+          const field = configSchema[currentFieldIndex];
+
+          if (field.type === 'boolean') {
+            // Toggle boolean
+            setFormValues((prev) => ({
+              ...prev,
+              [field.key]: !prev[field.key],
+            }));
+          } else {
+            // Enter editing mode for string/number
+            setEditingField(true);
+            setTempStringValue(String(formValues[field.key] || ''));
+          }
+        }
+        return;
+      }
+
+      // Space to toggle boolean
+      if (char === ' ') {
+        const field = configSchema[currentFieldIndex];
+        if (field?.type === 'boolean') {
+          setFormValues((prev) => ({
+            ...prev,
+            [field.key]: !prev[field.key],
+          }));
+        }
+        return;
+      }
     }
-  });
+  }, { isActive: !editingField });
 
   // Render: Step 1 - Select action
   if (step === 'select-action') {
@@ -182,19 +280,92 @@ export function ProviderManagement({
 
     return (
       <Box flexDirection="column" paddingY={1}>
-        <Box marginBottom={1}>
-          <Text bold color="cyan">
-            ⚙️  Configure {providerName}
+        {/* Header */}
+        <Box borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1} marginBottom={1}>
+          <Box flexDirection="column">
+            <Text bold color="cyan">
+              ⚙️  Configure {providerName}
+            </Text>
+            <Text dimColor>Fill in the required configuration fields</Text>
+          </Box>
+        </Box>
+
+        {/* Form Fields */}
+        <Box flexDirection="column" marginBottom={1}>
+          {configSchema.map((field, idx) => {
+            const isSelected = idx === currentFieldIndex && !editingField;
+            const value = formValues[field.key];
+            const isEmpty = field.type === 'string' && !value;
+
+            return (
+              <Box key={field.key} flexDirection="column" marginBottom={1}>
+                {/* Field Label */}
+                <Box>
+                  <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
+                    {isSelected ? '❯ ' : '  '}
+                    {field.label}
+                    {field.required && <Text color="red"> *</Text>}
+                  </Text>
+                </Box>
+
+                {/* Field Description */}
+                {field.description && (
+                  <Box marginLeft={3}>
+                    <Text dimColor>{field.description}</Text>
+                  </Box>
+                )}
+
+                {/* Field Input */}
+                <Box marginLeft={3} marginTop={0}>
+                  {field.type === 'boolean' ? (
+                    <Text color={isSelected ? 'cyan' : 'gray'}>
+                      [{value ? '✓' : ' '}] {value ? 'Enabled' : 'Disabled'}
+                    </Text>
+                  ) : editingField && idx === currentFieldIndex ? (
+                    <Box>
+                      <Text color="cyan">→ </Text>
+                      <TextInputWithHint
+                        value={tempStringValue}
+                        onChange={setTempStringValue}
+                        onSubmit={(val) => {
+                          const finalValue = field.type === 'number' ? Number(val) : val;
+                          setFormValues((prev) => ({
+                            ...prev,
+                            [field.key]: finalValue,
+                          }));
+                          setEditingField(false);
+                          setTempStringValue('');
+                        }}
+                        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
+                        showCursor
+                      />
+                    </Box>
+                  ) : (
+                    <Text color={isEmpty ? 'gray' : isSelected ? 'cyan' : 'white'}>
+                      {field.secret && value ? '•'.repeat(String(value).length) : value || '(empty)'}
+                    </Text>
+                  )}
+                </Box>
+              </Box>
+            );
+          })}
+
+          {/* Save Button */}
+          <Box marginTop={1}>
+            <Text bold color={currentFieldIndex === configSchema.length ? 'green' : 'white'}>
+              {currentFieldIndex === configSchema.length ? '❯ ' : '  '}
+              💾 Save Configuration
+            </Text>
+          </Box>
+        </Box>
+
+        {/* Footer Help */}
+        <Box borderStyle="round" borderColor="gray" paddingX={2}>
+          <Text dimColor>
+            {editingField
+              ? 'Enter: Save  │  Esc: Cancel'
+              : '↑↓: Navigate  │  Enter: Edit/Save  │  Space: Toggle  │  Esc: Back'}
           </Text>
-        </Box>
-
-        <Box marginBottom={1}>
-          <Text dimColor>Provider configuration UI will be implemented.</Text>
-          <Text dimColor>(This requires tRPC endpoint to get config schema)</Text>
-        </Box>
-
-        <Box marginTop={1}>
-          <Text dimColor>Esc: Cancel</Text>
         </Box>
       </Box>
     );
