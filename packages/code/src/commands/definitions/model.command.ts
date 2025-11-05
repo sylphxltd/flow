@@ -143,7 +143,7 @@ export const modelCommand: Command = {
         ...aiConfig!.providers,
         [provider]: {
           ...aiConfig!.providers?.[provider],
-          'default-model': modelId,
+          defaultModel: modelId,
         },
       },
     };

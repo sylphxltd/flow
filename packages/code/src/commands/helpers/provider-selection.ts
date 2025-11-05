@@ -166,7 +166,7 @@ export async function switchToProvider(
     ...newConfig.providers,
     [providerId]: {
       ...providerConfig,
-      'default-model': defaultModel,
+      defaultModel: defaultModel,
     },
   };
 

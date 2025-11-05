@@ -16,11 +16,11 @@ import type { SessionRepository } from '../database/session-repository.js';
 
 /**
  * Get default model for a provider
- * Priority: config default-model > first available model
+ * Priority: config defaultModel > first available model
  */
 export async function getDefaultModel(providerId: ProviderId, providerConfig: ProviderConfig): Promise<string | null> {
   // Try config first
-  const configModel = providerConfig['default-model'] as string | undefined;
+  const configModel = providerConfig.defaultModel as string | undefined;
   if (configModel) {
     return configModel;
   }
