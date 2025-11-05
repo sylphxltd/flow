@@ -132,6 +132,10 @@ export const useAppStore = create<AppState>()(
         set(
           (draft) => {
             draft.aiConfig = config;
+            // Load global default rules into client state (only if no session loaded)
+            if (!draft.currentSessionId && config.defaultEnabledRuleIds) {
+              draft.enabledRuleIds = config.defaultEnabledRuleIds;
+            }
           },
           false,
           { type: 'setAIConfig', config }
@@ -226,16 +230,17 @@ export const useAppStore = create<AppState>()(
        */
       createSession: async (provider, model) => {
         const client = getTRPCClient();
-        const { selectedAgentId, aiConfig } = get();
+        const { selectedAgentId, enabledRuleIds } = get();
 
-        // Use global default enabled rules from config
-        const defaultRules = aiConfig?.defaultEnabledRuleIds || [];
-
+        // Use current enabledRuleIds from client state
+        // This contains either:
+        // 1. Global defaults (loaded on app start via setAIConfig)
+        // 2. User-modified rules (toggled before sending first message)
         const session = await client.session.create.mutate({
           provider,
           model,
           agentId: selectedAgentId,
-          enabledRuleIds: defaultRules, // Initialize with global defaults
+          enabledRuleIds, // Use current client state
         });
 
         // Set as current session
@@ -421,10 +426,28 @@ export const useAppStore = create<AppState>()(
           state.enabledRuleIds = ruleIds;
         });
 
-        // Persist to session if we have a current session
-        const { currentSessionId } = get();
+        const { currentSessionId, aiConfig } = get();
+
         if (currentSessionId) {
+          // Has session: persist to session database
           await get().updateSessionRules(currentSessionId, ruleIds);
+        } else {
+          // No session: persist to global config (user settings)
+          // This ensures rules are saved even before first message
+          const client = getTRPCClient();
+          await client.config.save.mutate({
+            config: {
+              ...aiConfig,
+              defaultEnabledRuleIds: ruleIds, // Update global defaults
+            },
+          });
+
+          // Update local cache
+          set((state) => {
+            if (state.aiConfig) {
+              state.aiConfig.defaultEnabledRuleIds = ruleIds;
+            }
+          });
         }
       },
 
