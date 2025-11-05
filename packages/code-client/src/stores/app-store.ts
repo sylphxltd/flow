@@ -92,7 +92,7 @@ export interface AppState {
 
   // Agent State (UI selection, not server state)
   selectedAgentId: string;
-  setSelectedAgent: (agentId: string) => void;
+  setSelectedAgent: (agentId: string) => Promise<void>;
 
   // Rule State
   enabledRuleIds: string[];
@@ -132,9 +132,14 @@ export const useAppStore = create<AppState>()(
         set(
           (draft) => {
             draft.aiConfig = config;
-            // Load global default rules into client state (only if no session loaded)
-            if (!draft.currentSessionId && config.defaultEnabledRuleIds) {
-              draft.enabledRuleIds = config.defaultEnabledRuleIds;
+            // Load global defaults into client state (only if no session loaded)
+            if (!draft.currentSessionId) {
+              if (config.defaultEnabledRuleIds) {
+                draft.enabledRuleIds = config.defaultEnabledRuleIds;
+              }
+              if (config.defaultAgentId) {
+                draft.selectedAgentId = config.defaultAgentId;
+              }
             }
           },
           false,
@@ -413,10 +418,29 @@ export const useAppStore = create<AppState>()(
 
       // Agent State (UI selection, not server state)
       selectedAgentId: 'coder',
-      setSelectedAgent: (agentId) =>
+      setSelectedAgent: async (agentId) => {
+        // Update client state immediately (optimistic)
         set((state) => {
           state.selectedAgentId = agentId;
-        }),
+        });
+
+        // Persist to global config (remember last selected agent)
+        const { aiConfig } = get();
+        const client = getTRPCClient();
+        await client.config.save.mutate({
+          config: {
+            ...aiConfig,
+            defaultAgentId: agentId, // Save as default
+          },
+        });
+
+        // Update local cache
+        set((state) => {
+          if (state.aiConfig) {
+            state.aiConfig.defaultAgentId = agentId;
+          }
+        });
+      },
 
       // Rule State
       enabledRuleIds: [],

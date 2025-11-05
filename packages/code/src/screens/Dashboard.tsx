@@ -147,7 +147,7 @@ export default function Dashboard() {
     switch (selectedSection) {
       case 'agents':
         if (agents[selectedItemIndex]) {
-          setSelectedAgent(agents[selectedItemIndex].id);
+          await setSelectedAgent(agents[selectedItemIndex].id);
           setMode('browse');
         }
         break;

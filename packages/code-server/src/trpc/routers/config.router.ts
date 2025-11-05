@@ -22,6 +22,8 @@ import { eventBus } from '../../services/event-bus.service.js';
 
 const AIConfigSchema = z.object({
   defaultProvider: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']).optional(),
+  defaultEnabledRuleIds: z.array(z.string()).optional(), // Global default rules
+  defaultAgentId: z.string().optional(), // Remember last selected agent
   providers: z.record(
     z.string(),
     z.object({

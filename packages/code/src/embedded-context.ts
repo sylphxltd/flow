@@ -57,14 +57,14 @@ export function getCurrentAgent(): Agent {
  * Switch to a different agent
  * DEPRECATED: Use useAppStore directly
  */
-export function switchAgent(agentId: string): boolean {
+export async function switchAgent(agentId: string): Promise<boolean> {
   const agent = getAgentById(agentId);
   if (!agent) {
     return false;
   }
 
   const { useAppStore } = require('@sylphx/code-client');
-  useAppStore.getState().setSelectedAgent(agentId);
+  await useAppStore.getState().setSelectedAgent(agentId);
   return true;
 }
 
