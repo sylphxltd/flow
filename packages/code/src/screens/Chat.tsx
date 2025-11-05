@@ -162,6 +162,9 @@ export default function Chat(_props: ChatProps) {
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [showEscHint, setShowEscHint] = useState(false);
 
+  // Helper function to get AI config
+  const getAIConfig = () => useAppStore.getState().aiConfig;
+
   // File attachment hook
   const {
     pendingAttachments,
