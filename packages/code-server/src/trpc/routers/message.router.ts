@@ -299,6 +299,7 @@ export const messageRouter = router({
       // Stream AI response using service
       console.error('[DEBUG message.router] Calling streamAIResponse...');
       return streamAIResponse({
+        appContext: ctx.appContext,
         sessionRepository: ctx.sessionRepository,
         aiConfig: ctx.aiConfig,
         sessionId: input.sessionId || null,

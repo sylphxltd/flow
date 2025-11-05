@@ -20,14 +20,14 @@ import {
   buildSystemStatusFromMetadata,
   injectSystemStatusToOutput,
   buildSystemPrompt,
-  getAgentById,
 } from '@sylphx/code-core';
 import { processStream, type StreamCallbacks } from '@sylphx/code-core';
 import { getProvider } from '@sylphx/code-core';
 import { buildTodoContext } from '@sylphx/code-core';
 import { DEFAULT_AGENT_ID } from '@sylphx/code-core';
-import type { AIConfig } from '@sylphx/code-core';
+import type { AIConfig, Agent, Rule } from '@sylphx/code-core';
 import type { ModelMessage, UserContent, AssistantContent } from 'ai';
+import type { AppContext } from '../context.js';
 import type {
   MessagePart,
   FileAttachment,
@@ -56,6 +56,7 @@ export type StreamEvent =
   | { type: 'abort' };
 
 export interface StreamAIResponseOptions {
+  appContext: AppContext;
   sessionRepository: SessionRepository;
   aiConfig: AIConfig;
   sessionId: string | null;  // null = create new session
@@ -293,9 +294,12 @@ export function streamAIResponse(opts: StreamAIResponseOptions) {
         );
 
         // 6. Determine agentId and build system prompt
-        // STATELESS: Use explicit parameters, not global state
+        // STATELESS: Use explicit parameters from AppContext
         const agentId = inputAgentId || session.agentId || DEFAULT_AGENT_ID;
-        const systemPrompt = buildSystemPrompt(agentId);
+        const agents = opts.appContext.agentManager.getAll();
+        const enabledRuleIds = session.enabledRuleIds || [];
+        const enabledRules = opts.appContext.ruleManager.getEnabled(enabledRuleIds);
+        const systemPrompt = buildSystemPrompt(agentId, agents, enabledRules);
 
         // 7. Create AI model
         const model = providerInstance.createClient(providerConfig, modelName);

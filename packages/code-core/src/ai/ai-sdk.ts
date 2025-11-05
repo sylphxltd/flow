@@ -9,7 +9,6 @@ import type { LanguageModelV2, LanguageModelV2ToolResultOutput } from '@ai-sdk/p
 import * as os from 'node:os';
 import { getAISDKTools } from '../tools/index.js';
 import { hasUserInputHandler } from '../tools/interaction.js';
-import { getEnabledRulesContent } from './rule-manager.js';
 import { buildTodoContext } from '../utils/todo-context.js';
 
 // Legacy system prompt - kept for backwards compatibility and fallback

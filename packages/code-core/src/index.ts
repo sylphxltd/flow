@@ -21,17 +21,14 @@ export { createAIStream, getSystemStatus, buildSystemStatusFromMetadata, injectS
 export { processStream, type StreamCallbacks } from './ai/stream-handler.js'
 
 // ============================================================================
-// Agent Manager (Pure Functions)
+// Agent Manager (Pure Functions Only)
 // ============================================================================
-export {
-  initializeAgentManager,
-  getAllAgents,
-  getAgentById,
-  reloadAgents
-} from './ai/agent-manager.js'
-
 export { DEFAULT_AGENT_ID } from './ai/builtin-agents.js'
 export { loadAllAgents } from './ai/agent-loader.js'
+
+// NOTE: Global state functions removed (moved to code-server AppContext):
+// - initializeAgentManager, getAllAgents, getAgentById, reloadAgents
+// Use AgentManagerService from code-server/src/context.ts instead
 
 // ============================================================================
 // System Prompt Builder
@@ -39,23 +36,15 @@ export { loadAllAgents } from './ai/agent-loader.js'
 export { buildSystemPrompt } from './ai/system-prompt-builder.js'
 
 // ============================================================================
-// Rule Manager (Pure Functions)
+// Rule Manager (Pure Functions Only)
 // ============================================================================
-export {
-  initializeRuleManager,
-  setRuleAppStoreGetter,
-  getAllRules,
-  getRuleById,
-  getEnabledRuleIds,
-  getEnabledRules,
-  toggleRule,
-  enableRule,
-  disableRule,
-  setEnabledRules,
-  getEnabledRulesContent
-} from './ai/rule-manager.js'
-
 export { loadAllRules } from './ai/rule-loader.js'
+
+// NOTE: Global state functions removed (moved to code-server AppContext):
+// - initializeRuleManager, getAllRules, getRuleById, getEnabledRuleIds,
+//   getEnabledRules, toggleRule, enableRule, disableRule, setEnabledRules
+// - setRuleAppStoreGetter (horror anti-pattern removed)
+// Use RuleManagerService from code-server/src/context.ts instead
 
 // ============================================================================
 // Providers
@@ -73,7 +62,10 @@ export { ZaiProvider } from './ai/providers/zai-provider.js'
 // ============================================================================
 export { SessionRepository } from './database/session-repository.js'
 export { initializeDatabase } from './database/auto-migrate.js'
-export { getDatabase, getSessionRepository } from './database/database.js'
+
+// NOTE: Global state functions removed (moved to code-server AppContext):
+// - getDatabase, getSessionRepository
+// Use DatabaseService from code-server/src/context.ts instead
 
 // ============================================================================
 // Configuration

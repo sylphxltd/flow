@@ -1,7 +1,9 @@
 /**
  * Session Service
  * Centralized session management for headless mode
- * Uses database for persistence
+ *
+ * NOTE: This should be moved to code-server (application layer)
+ * Kept here temporarily for backwards compatibility
  */
 
 import chalk from 'chalk';
@@ -10,7 +12,7 @@ import type { ProviderId, ProviderConfig } from '../config/ai-config.js';
 import type { Session } from '../types/session.types.js';
 import { getProvider } from './providers/index.js';
 import { fetchModels } from '../utils/ai-model-fetcher.js';
-import { getSessionRepository } from '../database/database.js';
+import type { SessionRepository } from '../database/session-repository.js';
 
 /**
  * Get default model for a provider
@@ -34,8 +36,14 @@ export async function getDefaultModel(providerId: ProviderId, providerConfig: Pr
 
 /**
  * Get or create session for headless mode
+ *
+ * @param repository - Session repository instance (from AppContext)
+ * @param continueSession - Whether to continue last session or create new one
  */
-export async function getOrCreateSession(continueSession: boolean): Promise<Session | null> {
+export async function getOrCreateSession(
+  repository: SessionRepository,
+  continueSession: boolean
+): Promise<Session | null> {
   const cwd = process.cwd();
   const configResult = await loadAIConfig(cwd);
 
@@ -72,9 +80,6 @@ export async function getOrCreateSession(continueSession: boolean): Promise<Sess
     console.error(chalk.dim('Run: sylphx code (to configure AI)\n'));
     return null;
   }
-
-  // Get session repository
-  const repository = await getSessionRepository();
 
   // Try to continue last session
   if (continueSession) {
