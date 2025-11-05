@@ -2,11 +2,15 @@
  * Provider Management Component
  * Self-contained component for managing providers
  * Can be used by commands via context.setInputComponent()
+ *
+ * ARCHITECTURE: Uses tRPC to fetch provider schemas
+ * - No direct imports from code-core (except types)
+ * - Server is source of truth for provider config
  */
 
 import { Box, Text, useInput } from 'ink';
 import { useState, useEffect } from 'react';
-import { getProvider } from '@sylphx/code-core';
+import { useTRPCClient } from '@sylphx/code-client';
 import type { ConfigField, ProviderConfig } from '@sylphx/code-core';
 import TextInputWithHint from '../../../components/TextInputWithHint.js';
 import { InputContentLayout } from './InputContentLayout.js';
@@ -31,6 +35,7 @@ export function ProviderManagement({
   onSelectProvider,
   onConfigureProvider,
 }: ProviderManagementProps) {
+  const trpc = useTRPCClient();
   const [step, setStep] = useState<Step>(initialAction ? 'select-provider' : 'select-action');
   const [action, setAction] = useState<'use' | 'configure'>(initialAction || 'use');
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
@@ -57,35 +62,48 @@ export function ProviderManagement({
   // Load config schema when entering configure step
   useEffect(() => {
     if (step === 'configure-provider' && selectedProvider) {
-      try {
-        const provider = getProvider(selectedProvider as any);
-        const schema = provider.getConfigSchema();
-        setConfigSchema(schema);
+      async function loadSchema() {
+        try {
+          // Fetch schema from server via tRPC
+          const result = await trpc.config.getProviderSchema.query({
+            providerId: selectedProvider as any,
+          });
 
-        // Initialize form values with existing config
-        const existingConfig = providers[selectedProvider] || {};
-        const initialValues: Record<string, string | number | boolean> = {};
-
-        schema.forEach((field) => {
-          // Use existing value or default based on type
-          if (existingConfig[field.key] !== undefined) {
-            initialValues[field.key] = existingConfig[field.key];
-          } else if (field.type === 'boolean') {
-            initialValues[field.key] = false;
-          } else if (field.type === 'number') {
-            initialValues[field.key] = 0;
-          } else {
-            initialValues[field.key] = '';
+          if (!result.success) {
+            console.error('Failed to load provider schema:', result.error);
+            return;
           }
-        });
 
-        setFormValues(initialValues);
-        setCurrentFieldIndex(0);
-      } catch (error) {
-        console.error('Failed to load provider schema:', error);
+          const schema = result.schema;
+          setConfigSchema(schema);
+
+          // Initialize form values with existing config
+          const existingConfig = providers[selectedProvider] || {};
+          const initialValues: Record<string, string | number | boolean> = {};
+
+          schema.forEach((field) => {
+            // Use existing value or default based on type
+            if (existingConfig[field.key] !== undefined) {
+              initialValues[field.key] = existingConfig[field.key];
+            } else if (field.type === 'boolean') {
+              initialValues[field.key] = false;
+            } else if (field.type === 'number') {
+              initialValues[field.key] = 0;
+            } else {
+              initialValues[field.key] = '';
+            }
+          });
+
+          setFormValues(initialValues);
+          setCurrentFieldIndex(0);
+        } catch (error) {
+          console.error('Failed to load provider schema:', error);
+        }
       }
+
+      loadSchema();
     }
-  }, [step, selectedProvider, providers]);
+  }, [step, selectedProvider, providers, trpc]);
 
   // Keyboard navigation
   useInput((char, key) => {

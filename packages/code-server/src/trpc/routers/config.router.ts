@@ -319,6 +319,30 @@ export const configRouter = router({
   }),
 
   /**
+   * Get provider config schema
+   * Returns the configuration fields required for a provider
+   * SECURITY: No sensitive data - just schema definition
+   */
+  getProviderSchema: publicProcedure
+    .input(
+      z.object({
+        providerId: z.enum(['anthropic', 'openai', 'google', 'openrouter', 'claude-code', 'zai']),
+      })
+    )
+    .query(({ input }) => {
+      try {
+        const provider = getProvider(input.providerId);
+        const schema = provider.getConfigSchema();
+        return { success: true as const, schema };
+      } catch (error) {
+        return {
+          success: false as const,
+          error: error instanceof Error ? error.message : 'Failed to get provider schema',
+        };
+      }
+    }),
+
+  /**
    * Fetch available models for a provider
    * SECURITY: Requires provider config (API keys if needed)
    */
