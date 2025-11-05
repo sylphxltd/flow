@@ -104,7 +104,7 @@ export const providerCommand: Command = {
 
     // Case 1: /provider - ask use or set
     if (context.args.length === 0) {
-      context.sendMessage('What do you want to do?');
+      await context.sendMessage('What do you want to do?');
       const actionAnswers = await context.waitForInput({
         type: 'selection',
         questions: [
@@ -185,7 +185,7 @@ export const providerCommand: Command = {
         value: p.id,
       }));
 
-      context.sendMessage('Which provider do you want to configure?');
+      await context.sendMessage('Which provider do you want to configure?');
       const providerAnswers = await context.waitForInput({
         type: 'selection',
         questions: [

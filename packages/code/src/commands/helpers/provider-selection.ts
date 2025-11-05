@@ -43,7 +43,7 @@ export async function askSelectProvider(
 ): Promise<string | null> {
   const providerOptions = await getProviderOptions(context);
 
-  context.sendMessage(message);
+  await context.sendMessage(message);
   const answers = await context.waitForInput({
     type: 'selection',
     questions: [
@@ -90,7 +90,7 @@ export async function ensureProviderConfigured(
   }
 
   // Ask if user wants to configure now
-  context.sendMessage(
+  await context.sendMessage(
     `${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} is not configured yet.`
   );
   const configureAnswers = await context.waitForInput({
@@ -134,7 +134,7 @@ export async function ensureProviderConfigured(
     };
   }
 
-  context.sendMessage(configResult);
+  await context.sendMessage(configResult);
   return { success: true, config: updatedProviderConfig };
 }
 

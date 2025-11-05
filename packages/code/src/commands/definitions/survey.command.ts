@@ -10,7 +10,7 @@ export const surveyCommand: Command = {
   label: '/survey',
   description: 'Test multi-question selection (demo)',
   execute: async (context) => {
-    context.sendMessage('Let me ask you a few questions...');
+    await context.sendMessage('Let me ask you a few questions...');
 
     const answers = await context.waitForInput({
       type: 'selection',

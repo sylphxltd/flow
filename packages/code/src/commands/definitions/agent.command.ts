@@ -52,7 +52,7 @@ export const agentCommand: Command = {
         };
       });
 
-      context.sendMessage('Which agent do you want to use?');
+      await context.sendMessage('Which agent do you want to use?');
       const answers = await context.waitForInput({
         type: 'selection',
         questions: [

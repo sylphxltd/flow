@@ -106,7 +106,7 @@ export const modelCommand: Command = {
         }
 
         // Ask user to select
-        context.sendMessage('Which model do you want to use?');
+        await context.sendMessage('Which model do you want to use?');
         const answers = await context.waitForInput({
           type: 'selection',
           questions: [

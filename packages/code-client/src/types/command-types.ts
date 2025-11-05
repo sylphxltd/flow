@@ -57,7 +57,7 @@ export type WaitForInputOptions =
  */
 export interface CommandContext {
   args: string[];
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string) => Promise<void>;
   triggerAIResponse: (
     message: string,
     attachments?: Array<{ path: string; relativePath: string; size?: number }>

@@ -25,7 +25,7 @@ export const compactCommand: Command = {
       return 'No AI provider configured. Use /provider to configure a provider first.';
     }
 
-    context.sendMessage('Analyzing conversation and creating detailed summary...');
+    await context.sendMessage('Analyzing conversation and creating detailed summary...');
 
     try {
       // Import necessary modules

@@ -25,7 +25,7 @@ export const rulesCommand: Command = {
       value: rule.id,
     }));
 
-    context.sendMessage(`Select rules to enable (currently ${enabledIds.length} enabled):`);
+    await context.sendMessage(`Select rules to enable (currently ${enabledIds.length} enabled):`);
     const answers = await context.waitForInput({
       type: 'selection',
       questions: [

@@ -20,7 +20,7 @@ export async function askSelectProviderKey(
     value: field.key,
   }));
 
-  context.sendMessage(
+  await context.sendMessage(
     `Configure ${AI_PROVIDERS[providerId as keyof typeof AI_PROVIDERS].name} - Select setting:`
   );
   const keyAnswers = await context.waitForInput({
@@ -49,7 +49,7 @@ export async function askForValueByType(
   let value: string;
 
   if (field?.type === 'boolean') {
-    context.sendMessage(`Select value for ${key}:`);
+    await context.sendMessage(`Select value for ${key}:`);
     const boolAnswers = await context.waitForInput({
       type: 'selection',
       questions: [
@@ -66,7 +66,7 @@ export async function askForValueByType(
     value =
       typeof boolAnswers === 'object' && !Array.isArray(boolAnswers) ? boolAnswers['value'] : '';
   } else {
-    context.sendMessage(`Enter value for ${key}:`);
+    await context.sendMessage(`Enter value for ${key}:`);
     const valueAnswers = await context.waitForInput({
       type: 'text',
       placeholder: `Enter ${key}...`,

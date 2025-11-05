@@ -127,16 +127,13 @@ export function createCommandContext(args: string[], params: CommandContextParam
   return {
     args,
 
-    sendMessage: (content: string) => {
-      // Fire-and-forget async session creation and message addition
-      (async () => {
-        // Reuse existing command session or create one
-        if (!commandSessionRef.current) {
-          commandSessionRef.current =
-            currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
-        }
-        await addMessage(commandSessionRef.current, 'assistant', content);
-      })();
+    sendMessage: async (content: string) => {
+      // Reuse existing command session or create one
+      if (!commandSessionRef.current) {
+        commandSessionRef.current =
+          currentSessionId || (await createSession('openrouter', 'anthropic/claude-3.5-sonnet'));
+      }
+      await addMessage(commandSessionRef.current, 'assistant', content);
     },
 
     triggerAIResponse: async (

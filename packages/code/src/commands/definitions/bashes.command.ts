@@ -30,7 +30,7 @@ export const bashesCommand: Command = {
       };
     });
 
-    context.sendMessage(
+    await context.sendMessage(
       `Found ${processes.length} background bash process${processes.length !== 1 ? 'es' : ''}:`
     );
     const answers = await context.waitForInput({
@@ -55,7 +55,7 @@ export const bashesCommand: Command = {
     }
 
     // Select process
-    context.sendMessage('Select a process:');
+    await context.sendMessage('Select a process:');
     const processAnswers = await context.waitForInput({
       type: 'selection',
       questions: [

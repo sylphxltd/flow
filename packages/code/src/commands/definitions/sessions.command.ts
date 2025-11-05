@@ -41,7 +41,7 @@ export const sessionsCommand: Command = {
       };
     });
 
-    context.sendMessage('Select a session to switch to:');
+    await context.sendMessage('Select a session to switch to:');
     const answers = await context.waitForInput({
       type: 'selection',
       questions: [
