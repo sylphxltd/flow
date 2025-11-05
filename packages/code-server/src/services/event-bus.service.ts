@@ -22,7 +22,7 @@ const SessionEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('session-updated'),
     sessionId: z.string(),
-    field: z.enum(['title', 'model', 'provider']),
+    field: z.enum(['title', 'model', 'provider', 'enabledRuleIds']),
     value: z.string(),
   }),
   z.object({
