@@ -130,7 +130,7 @@ export function InputSection({
               createCommandContext([option.value || option.label])
             );
             if (currentSessionId && response) {
-              addMessage(currentSessionId, 'assistant', response);
+              await addMessage(currentSessionId, 'assistant', response);
             }
             setPendingCommand(null);
             setSelectedCommandIndex(0);

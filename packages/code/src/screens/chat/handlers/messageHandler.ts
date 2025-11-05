@@ -182,11 +182,13 @@ export function createHandleSubmit(params: MessageHandlerParams) {
       try {
         await command.execute(createCommandContext(args));
       } catch (error) {
-        addMessage(
-          commandSessionRef.current,
-          'assistant',
-          `Error: ${error instanceof Error ? error.message : 'Command failed'}`
-        );
+        if (commandSessionRef.current) {
+          await addMessage(
+            commandSessionRef.current,
+            'assistant',
+            `Error: ${error instanceof Error ? error.message : 'Command failed'}`
+          );
+        }
       }
 
       setPendingCommand(null);

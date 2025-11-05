@@ -101,7 +101,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
       // Add error message to UI (optimistically)
       if (currentSessionId) {
-        addMessage(
+        await addMessage(
           currentSessionId,
           'assistant',
           [
@@ -128,7 +128,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       const currentSession = useAppStore.getState().currentSession;
       const todoSnapshot = currentSession?.todos ? [...currentSession.todos] : [];
 
-      addMessage(
+      await addMessage(
         sessionId,
         'user',
         userMessage,
