@@ -248,9 +248,9 @@ export default function Chat(_props: ChatProps) {
         getSelectedProvider: () => useAppStore.getState().selectedProvider,
         getSelectedModel: () => useAppStore.getState().selectedModel,
         getSessions: async () => {
-          const { getTRPCClient } = await import('@sylphx/code-server');
-          const client = await getTRPCClient();
-          return await client.session.getRecent({ limit: 100 });
+          const { getTRPCClient } = await import('@sylphx/code-client');
+          const client = getTRPCClient();
+          return await client.session.getRecent.query({ limit: 100 });
         },
         getCurrentSessionId: () => currentSessionId,
         setCurrentSession,
