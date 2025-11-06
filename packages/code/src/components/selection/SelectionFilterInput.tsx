@@ -10,12 +10,16 @@ interface SelectionFilterInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  onSubmit?: () => void;
+  onEscape?: () => void;
 }
 
 export function SelectionFilterInput({
   value,
   onChange,
-  placeholder = 'Type to filter...'
+  placeholder = 'Type to filter...',
+  onSubmit,
+  onEscape
 }: SelectionFilterInputProps) {
   return (
     <Box marginBottom={1}>
@@ -25,6 +29,7 @@ export function SelectionFilterInput({
         onChange={onChange}
         placeholder={placeholder}
         showCursor
+        onSubmit={onSubmit}
       />
     </Box>
   );

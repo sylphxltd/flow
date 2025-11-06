@@ -43,6 +43,7 @@ export interface UseSelectionReturn {
   setFilterQuery: (query: string) => void;
   isFilterMode: boolean;
   setIsFilterMode: (mode: boolean) => void;
+  exitFilterMode: () => void;
 
   // Actions
   toggleSelection: (option: SelectionOption) => void;
@@ -129,9 +130,15 @@ export function useSelection({
     setSelectedIndex((prev) => (prev < filteredOptions.length - 1 ? prev + 1 : 0));
   };
 
+  // Exit filter mode handler
+  const exitFilterMode = () => {
+    setIsFilterMode(false);
+  };
+
   // Keyboard handling
   useInput(
     (char, key) => {
+      // ESC always handled
       if (key.escape) {
         if (isFilterMode) {
           setIsFilterMode(false);
@@ -142,8 +149,17 @@ export function useSelection({
         return;
       }
 
-      // Don't handle keys in filter mode (let TextInput handle it)
-      if (isFilterMode) return;
+      // In filter mode: only handle Enter to exit and select
+      if (isFilterMode) {
+        if (key.return) {
+          // Exit filter mode and select current item
+          setIsFilterMode(false);
+          if (filteredOptions.length > 0) {
+            confirmSelection();
+          }
+        }
+        return;
+      }
 
       // Enter filter mode
       if (filter && char === '/') {
@@ -180,8 +196,7 @@ export function useSelection({
         }
         return;
       }
-    },
-    { isActive: !isFilterMode }
+    }
   );
 
   return {
@@ -192,6 +207,7 @@ export function useSelection({
     setFilterQuery,
     isFilterMode,
     setIsFilterMode,
+    exitFilterMode,
     toggleSelection,
     confirmSelection,
     cancel,

@@ -71,6 +71,13 @@ export function InlineSelection({
           value={selection.filterQuery}
           onChange={selection.setFilterQuery}
           placeholder={filterPlaceholder}
+          onSubmit={() => {
+            // Exit filter mode and select first filtered item
+            selection.exitFilterMode();
+            if (selection.filteredOptions.length > 0) {
+              selection.confirmSelection();
+            }
+          }}
         />
       )}
 
