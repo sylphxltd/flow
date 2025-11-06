@@ -1,28 +1,55 @@
-# Debug Logging Guide
+# Debug Logging & Testing Guide
 
 ## Overview
 
 我哋用環境變數控制 debug logging，可以喺唔影響 production 嘅情況下啟用詳細嘅 logs。
+
+## 🎯 Quick Start
+
+### 1. Debug to stderr (睇 console)
+
+```bash
+DEBUG=* bun ./packages/code/src/index.ts
+```
+
+### 2. Debug to file (唔阻礙 TUI)
+
+```bash
+DEBUG=* DEBUG_FILE=debug.log bun ./packages/code/src/index.ts
+# Logs written to: ~/.sylphx-code/logs/debug.log
+```
+
+### 3. Non-interactive testing (最適合自動化測試)
+
+```bash
+DEBUG=* bun ./packages/code/src/test-harness.ts "test message"
+# Results: ~/.sylphx-code/logs/test-result-{timestamp}.json
+# Debug logs: ~/.sylphx-code/logs/test-debug-{timestamp}.log
+```
 
 ## Usage
 
 ### Enable All Debug Logs
 
 ```bash
+# To stderr (will interfere with TUI)
 DEBUG=* bun ./packages/code/src/index.ts
+
+# To file (TUI remains clean)
+DEBUG=* DEBUG_FILE=debug.log bun ./packages/code/src/index.ts
 ```
 
 ### Enable Specific Namespaces
 
 ```bash
 # 只顯示 subscription 相關嘅 logs
-DEBUG=subscription:* bun ./packages/code/src/index.ts
+DEBUG=subscription:* DEBUG_FILE=sub.log bun ./packages/code/src/index.ts
 
 # 只顯示 session 同 message logs
-DEBUG=subscription:session,subscription:message bun ./packages/code/src/index.ts
+DEBUG=subscription:session,subscription:message DEBUG_FILE=session.log bun ./packages/code/src/index.ts
 
 # 顯示 streaming 相關嘅 logs
-DEBUG=stream:* bun ./packages/code/src/index.ts
+DEBUG=stream:* DEBUG_FILE=stream.log bun ./packages/code/src/index.ts
 ```
 
 ### No Debug Logs (Production)
@@ -125,23 +152,72 @@ log('Error occurred:', error);
 3. **Production 時 disable** - 唔好 set DEBUG environment variable
 4. **測試時用 specific namespaces** - 唔好成日用 `DEBUG=*`
 
-## For LLMs / Automated Testing
+## 🤖 Non-Interactive Testing (For LLMs / CI/CD)
 
-你可以用呢個方式測試同 debug：
+### Test Harness
+
+專門為自動化測試而設計，完全 non-interactive：
 
 ```bash
-# 1. Enable debug logs
-export DEBUG=subscription:*,stream:*
+# Basic test
+bun ./packages/code/src/test-harness.ts "test message"
 
-# 2. Run headless mode with input
-echo "test message" | bun ./packages/code/src/headless.ts
+# With debug logging
+DEBUG=* bun ./packages/code/src/test-harness.ts "test message"
 
-# 3. Check the output logs
-# All debug info will be in stderr, actual output in stdout
+# Custom output location
+bun ./packages/code/src/test-harness.ts "test" --output my-test.json
+
+# Read input from file
+bun ./packages/code/src/test-harness.ts --input test-cases.txt
 ```
 
+### Test Result Format
+
+Result JSON:
+
+```json
+{
+  "timestamp": "2025-01-06T10:30:00.000Z",
+  "success": true,
+  "sessionId": "session-1234567890",
+  "events": ["session-created", "assistant-message-created", "reasoning-start", ...],
+  "errors": [],
+  "duration": 2500,
+  "output": "AI response text here..."
+}
+```
+
+### Where to Find Logs
+
+| Type | Location | Usage |
+|------|----------|-------|
+| Debug logs (file) | `~/.sylphx-code/logs/test-debug-{timestamp}.log` | Detailed execution trace |
+| Test results | `~/.sylphx-code/logs/test-result-{timestamp}.json` | Structured test output |
+| Debug logs (stderr) | Console stderr | Quick debugging |
+
+### Example: Complete Test Workflow
+
+```bash
+# 1. Run test with full debug logging
+DEBUG=* bun ./packages/code/src/test-harness.ts "implement fibonacci function"
+
+# 2. Check test result
+cat ~/.sylphx-code/logs/test-result-*.json | jq '.success'
+
+# 3. Read debug logs
+tail -f ~/.sylphx-code/logs/test-debug-*.log
+
+# 4. Grep for specific events
+grep "subscription:message" ~/.sylphx-code/logs/test-debug-*.log
+```
+
+### Benefits
+
 呢個方法俾你：
-- ✅ 睇到 internal state changes
-- ✅ Debug without UI
-- ✅ Automate testing
+- ✅ 睇到 internal state changes (in log file)
+- ✅ Debug without UI interference
+- ✅ Programmatic result checking (JSON output)
+- ✅ Automate testing in CI/CD
 - ✅ No production impact
+- ✅ LLMs can read structured output
