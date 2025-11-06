@@ -67,7 +67,9 @@ export const modelCommand: Command = {
 
     // Get current session's provider or selected provider from store
     const currentSession = context.getCurrentSession();
-    const currentProviderId = currentSession?.provider || context.getSelectedProvider();
+    const { useAppStore } = await import('@sylphx/code-client');
+    const { selectedProvider } = useAppStore.getState();
+    const currentProviderId = currentSession?.provider || selectedProvider;
 
     if (!currentProviderId) {
       return 'No provider selected. Use /provider to select a provider first.';

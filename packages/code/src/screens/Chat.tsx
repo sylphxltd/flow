@@ -11,7 +11,6 @@
  */
 
 import {
-  getRecentSessions,
   useAIConfig,
   useAppStore,
   useAskToolHandler,
@@ -246,9 +245,6 @@ export default function Chat(_props: ChatProps) {
         addMessage,
         updateNotificationSettings,
         getAIConfig: () => useAppStore.getState().aiConfig,
-        getSelectedProvider: () => useAppStore.getState().selectedProvider,
-        getSelectedModel: () => useAppStore.getState().selectedModel,
-        getSessions: () => getRecentSessions(100),
         getCurrentSessionId: () => currentSessionId,
         setCurrentSession,
         getNotificationSettings: () => notificationSettings,

@@ -47,9 +47,6 @@ export interface CommandContextParams {
 
   // Store getters (use getState() to avoid reactivity)
   getAIConfig: () => AIConfig | null;
-  getSelectedProvider: () => string | null;
-  getSelectedModel: () => string | null;
-  getSessions: () => Promise<Session[]>;
   getCurrentSessionId: () => string | null;
   setCurrentSession: (sessionId: string | null) => Promise<void>;
   getNotificationSettings: () => {
@@ -112,9 +109,6 @@ export function createCommandContext(args: string[], params: CommandContextParam
     addMessage,
     updateNotificationSettings,
     getAIConfig,
-    getSelectedProvider,
-    getSelectedModel,
-    getSessions,
     getCurrentSessionId,
     setCurrentSession,
     getNotificationSettings,
@@ -141,9 +135,11 @@ export function createCommandContext(args: string[], params: CommandContextParam
     args,
 
     sendMessage: async (content: string) => {
-      // Get selected provider/model from store (reactive state)
-      const provider = (getSelectedProvider() || 'openrouter') as ProviderId;
-      const model = getSelectedModel() || 'anthropic/claude-3.5-sonnet';
+      // Get selected provider/model from store directly
+      const { useAppStore } = await import('@sylphx/code-client');
+      const { selectedProvider, selectedModel } = useAppStore.getState();
+      const provider = (selectedProvider || 'openrouter') as ProviderId;
+      const model = selectedModel || 'anthropic/claude-3.5-sonnet';
 
       // Reuse existing command session or pass null (will create new session)
       const sessionIdToUse = commandSessionRef.current || currentSessionId;
@@ -190,8 +186,6 @@ export function createCommandContext(args: string[], params: CommandContextParam
     },
 
     getConfig: () => getAIConfig(),
-    getSelectedProvider: () => getSelectedProvider(),
-    getSelectedModel: () => getSelectedModel(),
     saveConfig: (config) => saveConfig(config),
     getCurrentSession: () => getCurrentSession(),
     updateProvider: (provider, data) => updateProvider(provider, data),
@@ -202,7 +196,6 @@ export function createCommandContext(args: string[], params: CommandContextParam
     setUISelectedProvider: (provider) => setSelectedProvider(provider),
     setUISelectedModel: (model) => setSelectedModel(model),
     createSession: (provider, model) => createSession(provider, model),
-    getSessions: () => getSessions(),
     getCurrentSessionId: () => getCurrentSessionId(),
     setCurrentSession: (sessionId) => setCurrentSession(sessionId),
     navigateTo: (screen) => navigateTo(screen),

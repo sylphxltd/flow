@@ -85,10 +85,6 @@ export interface CommandContext {
   // Get current AI config
   getConfig: () => AIConfig | null;
 
-  // Get selected provider and model from store (reactive state)
-  getSelectedProvider: () => string | null;
-  getSelectedModel: () => string | null;
-
   // Save AI config
   saveConfig: (config: AIConfig) => Promise<void>;
 
@@ -116,9 +112,6 @@ export interface CommandContext {
 
   // Create new session
   createSession: (provider: ProviderId, model: string) => Promise<string>;
-
-  // Get all sessions (tRPC: fetches from database)
-  getSessions: () => Promise<Session[]>;
 
   // Get current session ID
   getCurrentSessionId: () => string | null;
