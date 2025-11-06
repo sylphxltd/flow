@@ -3,7 +3,7 @@
  * Handles automatic title generation for new chat sessions
  */
 
-import type { AIConfig } from '../../../../config/ai-config.js';
+import type { AIConfig } from '@sylphx/code-core';
 
 /**
  * Generate a streaming title for the first message in a session

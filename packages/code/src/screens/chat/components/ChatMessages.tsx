@@ -4,7 +4,7 @@
  */
 
 import { Box, Text } from 'ink';
-import type { SessionMessage } from '../../../../types/session.types.js';
+import type { SessionMessage } from '@sylphx/code-core';
 import { MessageList } from '../../../components/MessageList.js';
 
 interface ChatMessagesProps {

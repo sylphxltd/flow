@@ -4,7 +4,7 @@
  */
 
 import { Box, Text } from 'ink';
-import type { MessagePart } from '../../../../types/session.types.js';
+import type { MessagePart } from '@sylphx/code-core';
 import Spinner from '../../../components/Spinner.js';
 
 interface StatusIndicatorProps {

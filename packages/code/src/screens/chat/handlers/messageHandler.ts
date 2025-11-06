@@ -4,7 +4,7 @@
  */
 
 import { resolveProviderAndModel } from '@sylphx/code-client';
-import type { FileAttachment } from '../../../../types/session.types.js';
+import type { FileAttachment } from '@sylphx/code-core';
 import type { CommandContext } from '../../../commands/types.js';
 
 /**
@@ -63,7 +63,7 @@ export interface MessageHandlerParams {
   getCommands: () => Command[];
 }
 
-import type { ProviderId } from '../../../../config/ai-config.js';
+import type { ProviderId } from '@sylphx/code-core';
 /**
  * Type imports needed for parameters
  */
