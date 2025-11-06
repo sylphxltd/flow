@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { getRecentSessions } from '../api/sessions.js';
-import type { Session } from '../types/session.js';
+import type { Session } from '@sylphx/code-core';
 
 export interface UseSessionListReturn {
   sessions: Session[];

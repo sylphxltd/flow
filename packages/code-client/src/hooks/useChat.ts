@@ -203,7 +203,7 @@ export function useChat() {
     // Handle configuration errors as assistant messages
     if (!providerConfig) {
       addMessage(currentSessionId, 'assistant', [
-        { type: 'text', text: '[ERROR] Provider not configured\n\nPlease configure your provider using the /provider command.' } // FIX: Use 'text' field
+        { type: 'text', content: '[ERROR] Provider not configured\n\nPlease configure your provider using the /provider command.', status: 'completed' }
       ]);
       onComplete?.();
       return;
@@ -213,7 +213,7 @@ export function useChat() {
     const providerInstance = getProvider(provider);
     if (!providerInstance.isConfigured(providerConfig)) {
       addMessage(currentSessionId, 'assistant', [
-        { type: 'text', text: `[ERROR] ${providerInstance.name} is not properly configured\n\nPlease check your settings with the /provider command.` } // FIX: Use 'text' field
+        { type: 'text', content: `[ERROR] ${providerInstance.name} is not properly configured\n\nPlease check your settings with the /provider command.`, status: 'completed' }
       ]);
       onComplete?.();
       return;
@@ -242,7 +242,7 @@ export function useChat() {
       addMessage(
         currentSessionId,
         'user',
-        [{ type: 'text', text: message }], // FIX: Use 'text' field
+        [{ type: 'text', content: message, status: 'completed' }],
         attachments,
         undefined, // usage (only for assistant messages)
         undefined, // finishReason (only for assistant messages)

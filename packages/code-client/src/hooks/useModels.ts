@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import type { AppRouter } from '@sylphx/code-server';
 import { useTRPCClient } from '../trpc-provider.js';
 
 interface ModelInfo {
@@ -22,7 +23,7 @@ interface ModelInfo {
  * - Client shouldn't need updates when new providers are added
  */
 export function useModels(providerId: string | null) {
-  const trpc = useTRPCClient();
+  const trpc = useTRPCClient<AppRouter>();
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +42,7 @@ export function useModels(providerId: string | null) {
       try {
         setLoading(true);
         setError(null);
-        const result = await trpc.config.fetchModels.query({ providerId: providerId as any });
+        const result = await trpc.config!.fetchModels.query({ providerId: providerId as any });
         if (mounted) {
           if (result.success) {
             setModels(result.models);

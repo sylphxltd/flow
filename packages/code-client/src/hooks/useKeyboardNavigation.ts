@@ -703,7 +703,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             (async () => {
               try {
                 const { readFile } = await import('node:fs/promises');
-                const { countTokens } = await import('../../utils/token-counter.js');
+                const { countTokens } = await import('@sylphx/code-core');
                 const content = await readFile(selected.path, 'utf8');
                 const tokenCount = await countTokens(content, currentSession?.model);
                 setAttachmentTokenCount(selected.path, tokenCount);

@@ -26,24 +26,30 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { createTRPCProxyClient, type TRPCClient } from '@trpc/client';
-import type { AppRouter } from '@sylphx/code-server';
 import { inProcessLink, type InProcessLinkOptions } from './trpc-links/index.js';
 
 /**
- * tRPC Client type with full AppRouter typing
+ * Generic tRPC Client type
+ * TRouter should be your AppRouter type from your server
+ *
+ * @example
+ * ```typescript
+ * import type { AppRouter } from '@sylphx/code-server';
+ * type MyClient = TypedTRPCClient<AppRouter>;
+ * ```
  */
-export type TypedTRPCClient = ReturnType<typeof createTRPCProxyClient<AppRouter>>;
+export type TypedTRPCClient<TRouter = any> = ReturnType<typeof createTRPCProxyClient<TRouter>>;
 
 /**
  * React Context for tRPC client
  */
-const TRPCContext = createContext<TypedTRPCClient | null>(null);
+const TRPCContext = createContext<TypedTRPCClient<any> | null>(null);
 
 /**
  * Provider props
  */
-export interface TRPCProviderProps {
-  client: TypedTRPCClient;
+export interface TRPCProviderProps<TRouter = any> {
+  client: TypedTRPCClient<TRouter>;
   children: ReactNode;
 }
 
@@ -53,7 +59,8 @@ export interface TRPCProviderProps {
  *
  * @example
  * ```typescript
- * const client = createInProcessClient({ router, createContext });
+ * import type { AppRouter } from '@sylphx/code-server';
+ * const client = createInProcessClient<AppRouter>({ router, createContext });
  *
  * render(
  *   <TRPCProvider client={client}>
@@ -62,7 +69,7 @@ export interface TRPCProviderProps {
  * );
  * ```
  */
-export function TRPCProvider({ client, children }: TRPCProviderProps) {
+export function TRPCProvider<TRouter = any>({ client, children }: TRPCProviderProps<TRouter>) {
   // Initialize global client for Zustand stores (cannot use React Context)
   _initGlobalClient(client);
 
@@ -81,7 +88,7 @@ export function TRPCProvider({ client, children }: TRPCProviderProps) {
  * }
  * ```
  */
-export function useTRPCClient(): TypedTRPCClient {
+export function useTRPCClient<TRouter = any>(): TypedTRPCClient<TRouter> {
   const client = useContext(TRPCContext);
 
   if (!client) {
@@ -100,19 +107,21 @@ export function useTRPCClient(): TypedTRPCClient {
  *
  * @example
  * ```typescript
+ * import type { AppRouter } from '@sylphx/code-server';
+ *
  * const server = new CodeServer();
  * await server.initialize();
  *
- * const client = createInProcessClient({
+ * const client = createInProcessClient<AppRouter>({
  *   router: server.getRouter(),
  *   createContext: server.getContext(),
  * });
  * ```
  */
-export function createInProcessClient(
-  options: InProcessLinkOptions<AppRouter>
-): TypedTRPCClient {
-  return createTRPCProxyClient<AppRouter>({
+export function createInProcessClient<TRouter>(
+  options: InProcessLinkOptions<TRouter>
+): TypedTRPCClient<TRouter> {
+  return createTRPCProxyClient<TRouter>({
     links: [inProcessLink(options)],
   });
 }
@@ -123,14 +132,15 @@ export function createInProcessClient(
  *
  * @example
  * ```typescript
- * const client = createHTTPClient('http://localhost:3000');
+ * import type { AppRouter } from '@sylphx/code-server';
+ * const client = createHTTPClient<AppRouter>('http://localhost:3000');
  * ```
  */
-export function createHTTPClient(serverUrl: string): TypedTRPCClient {
+export function createHTTPClient<TRouter>(serverUrl: string): TypedTRPCClient<TRouter> {
   const { httpBatchLink, httpSubscriptionLink, splitLink } = require('@trpc/client');
   const { EventSource } = require('eventsource');
 
-  return createTRPCProxyClient<AppRouter>({
+  return createTRPCProxyClient<TRouter>({
     links: [
       splitLink({
         condition: (op) => op.type === 'subscription',
@@ -159,14 +169,14 @@ export function createHTTPClient(serverUrl: string): TypedTRPCClient {
  * Global tRPC client instance for Zustand stores
  * @internal DO NOT USE in React components - use useTRPCClient() hook
  */
-let _globalClientForStores: TypedTRPCClient | null = null;
+let _globalClientForStores: TypedTRPCClient<any> | null = null;
 
 /**
  * Initialize global client for Zustand stores
  * Called automatically by TRPCProvider
  * @internal
  */
-export function _initGlobalClient(client: TypedTRPCClient) {
+export function _initGlobalClient<TRouter>(client: TypedTRPCClient<TRouter>) {
   _globalClientForStores = client;
 }
 
@@ -174,7 +184,7 @@ export function _initGlobalClient(client: TypedTRPCClient) {
  * Get tRPC client for Zustand stores
  * @internal DO NOT USE in React components - use useTRPCClient() hook
  */
-export function getTRPCClient(): TypedTRPCClient {
+export function getTRPCClient<TRouter = any>(): TypedTRPCClient<TRouter> {
   if (!_globalClientForStores) {
     throw new Error(
       'tRPC client not initialized. Ensure TRPCProvider wraps your app.'

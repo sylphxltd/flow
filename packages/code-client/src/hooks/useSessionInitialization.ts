@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import type { AIConfig } from '@sylphx/code-core';
+import type { AppRouter } from '@sylphx/code-server';
 import { useTRPCClient } from '../trpc-provider.js';
 
 interface UseSessionInitializationProps {
@@ -21,7 +22,7 @@ export function useSessionInitialization({
   aiConfig,
   createSession,
 }: UseSessionInitializationProps) {
-  const trpc = useTRPCClient();
+  const trpc = useTRPCClient<AppRouter>();
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export function useSessionInitialization({
       // If no default model, fetch first available from server
       if (!model) {
         try {
-          const result = await trpc.config.fetchModels.query({
+          const result = await trpc.config!.fetchModels.query({
             providerId: aiConfig.defaultProvider as any,
           });
           if (result.success && result.models.length > 0) {

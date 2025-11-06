@@ -16,6 +16,8 @@ import {
   AI_PROVIDERS,
   fetchModels,
   getTokenizerInfo,
+  countTokens,
+  scanProjectFiles,
 } from '@sylphx/code-core';
 import type { AIConfig, ProviderId } from '@sylphx/code-core';
 import { eventBus } from '../../services/event-bus.service.js';
@@ -416,6 +418,38 @@ export const configRouter = router({
     )
     .query(({ input }) => {
       return getTokenizerInfo(input.model);
+    }),
+
+  /**
+   * Count tokens for text
+   * Uses model-specific tokenizer
+   */
+  countTokens: publicProcedure
+    .input(
+      z.object({
+        text: z.string(),
+        model: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const count = await countTokens(input.text, input.model);
+      return { count };
+    }),
+
+  /**
+   * Scan project files
+   * Returns filtered file list
+   */
+  scanProjectFiles: publicProcedure
+    .input(
+      z.object({
+        cwd: z.string().default(process.cwd()),
+        query: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const files = await scanProjectFiles(input.cwd, input.query);
+      return { files };
     }),
 
   /**

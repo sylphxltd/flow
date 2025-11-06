@@ -4,12 +4,13 @@
  */
 
 import type { AIConfig } from '@sylphx/code-core';
+import type { AppRouter } from '@sylphx/code-server';
 import { useCallback } from 'react';
 import { useAppStore } from '../stores/app-store.js';
 import { useTRPCClient } from '../trpc-provider.js';
 
 export function useAIConfig() {
-  const client = useTRPCClient(); // Use React Context (must be at component top level)
+  const client = useTRPCClient<AppRouter>(); // Use React Context (must be at component top level)
   const setAIConfig = useAppStore((state) => state.setAIConfig);
   const setError = useAppStore((state) => state.setError);
   const setLoading = useAppStore((state) => state.setLoading);
@@ -17,7 +18,7 @@ export function useAIConfig() {
   const loadConfig = useCallback(async (cwd: string = process.cwd()) => {
     setLoading(true);
     try {
-      const result = await client.config.load.query({ cwd });
+      const result = await client.config!.load.query({ cwd });
 
       if (result.success) {
         // Use setAIConfig to trigger logic for loading defaultEnabledRuleIds and defaultAgentId
@@ -36,7 +37,7 @@ export function useAIConfig() {
   const saveConfig = useCallback(async (config: AIConfig, cwd: string = process.cwd()) => {
     setLoading(true);
     try {
-      const result = await client.config.save.mutate({ config, cwd });
+      const result = await client.config!.save.mutate({ config, cwd });
 
       if (result.success) {
         setAIConfig(config);

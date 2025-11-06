@@ -46,9 +46,7 @@ export function useTokenCalculation(currentSession: Session | null): number {
 
     const calculateTokens = async () => {
       try {
-        const { countTokens } = await import('../../utils/token-counter.js');
-        const { SYSTEM_PROMPT } = await import('../../core/ai-sdk.js');
-        const { getAISDKTools } = await import('../../tools/index.js');
+        const { countTokens, getSystemPrompt, getAISDKTools } = await import('@sylphx/code-core');
 
         let total = 0;
 
@@ -57,7 +55,8 @@ export function useTokenCalculation(currentSession: Session | null): number {
         if (systemPromptCache.has(systemPromptKey)) {
           total += systemPromptCache.get(systemPromptKey)!;
         } else {
-          const systemTokens = await countTokens(SYSTEM_PROMPT, currentSession.model);
+          const systemPrompt = getSystemPrompt();
+          const systemTokens = await countTokens(systemPrompt, currentSession.model);
           systemPromptCache.set(systemPromptKey, systemTokens);
           total += systemTokens;
         }
