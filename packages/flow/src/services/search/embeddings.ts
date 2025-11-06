@@ -6,7 +6,7 @@
 import { secretUtils } from '../../utils/secret-utils.js';
 import { envSecurity, securitySchemas } from '../../utils/security.js';
 import { generateMockEmbedding } from '../storage/vector-storage.js';
-import { createLogger } from '@sylphx/code-core';
+import { createLogger } from '../../utils/debug-logger.js';
 
 const log = createLogger('search:embeddings');
 

@@ -4,7 +4,7 @@
  */
 
 import type { SearchIndex } from './tfidf.js';
-import { createLogger } from '@sylphx/code-core';
+import { createLogger } from '../../utils/debug-logger.js';
 
 const log = createLogger('search:indexing');
 

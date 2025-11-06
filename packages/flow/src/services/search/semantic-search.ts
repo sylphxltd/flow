@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getKnowledgeDir } from './paths.js';
 import { buildSearchIndex, processQuery, type SearchIndex } from './tfidf.js';
-import { createLogger } from '@sylphx/code-core';
+import { createLogger } from '../../utils/debug-logger.js';
 
 const log = createLogger('search:query');
 

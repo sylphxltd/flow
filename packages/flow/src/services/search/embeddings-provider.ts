@@ -13,7 +13,7 @@ import {
 import type { EmbeddingProvider } from '../../utils/embeddings.js';
 import { getDefaultEmbeddingProvider } from '../../utils/embeddings.js';
 import { chunk } from '../../utils/functional/array.js';
-import { createLogger } from '@sylphx/code-core';
+import { createLogger } from '../../utils/debug-logger.js';
 
 const log = createLogger('search:embeddings');
 
