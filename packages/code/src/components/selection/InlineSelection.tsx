@@ -4,6 +4,7 @@
  * Uses composition pattern with primitives
  */
 
+import { Box, Text } from 'ink';
 import { useSelection, type SelectionOption } from '../../hooks/useSelection.js';
 import { InputContentLayout } from '../../screens/chat/components/InputContentLayout.js';
 import { SelectionFilterInput } from './SelectionFilterInput.js';
