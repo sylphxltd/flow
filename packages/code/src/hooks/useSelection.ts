@@ -141,11 +141,12 @@ export function useSelection({
       // ESC always handled
       if (key.escape) {
         if (isFilterMode) {
-          // Exit filter mode, keep filtered results
+          // Exit filter mode, KEEP filter value and results
           setIsFilterMode(false);
         } else if (filterQuery) {
           // Clear filter if not in filter mode but has filter
           setFilterQuery('');
+          setSelectedIndex(0); // Reset to first item
         } else {
           // Cancel selection
           cancel();
@@ -153,9 +154,9 @@ export function useSelection({
         return;
       }
 
-      // In filter mode: only handle Enter to exit and select
+      // In filter mode: only handle Enter to exit
       if (isFilterMode) {
-        // Enter: exit filter mode and select first filtered item
+        // Enter: exit filter mode, keep filter applied
         if (key.return) {
           setIsFilterMode(false);
           if (filteredOptions.length > 0) {
