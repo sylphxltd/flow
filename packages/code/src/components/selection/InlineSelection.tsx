@@ -53,17 +53,21 @@ export function InlineSelection({
   // Help text based on mode
   const getHelpText = (): string => {
     if (selection.isFilterMode) {
-      if (multiSelect) {
-        return 'Type to filter  |  ↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm  |  Esc: Clear';
-      }
-      return 'Type to filter  |  ↑↓: Navigate  |  Enter: Select  |  Esc: Clear';
+      return 'Type to filter  |  Enter: Apply filter  |  Esc: Cancel';
     }
+
+    // Show different hints based on whether filter is active
+    const hasFilter = selection.filterQuery.length > 0;
+
     if (multiSelect) {
-      const filterHint = filter ? '  |  /: Filter' : '';
-      return `↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm${filterHint}  |  Esc: Cancel`;
+      const filterHint = filter ? (hasFilter ? '  |  /: Edit filter' : '  |  /: Filter') : '';
+      const clearHint = hasFilter ? '  |  Esc: Clear filter' : '  |  Esc: Cancel';
+      return `↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm${filterHint}${clearHint}`;
     }
-    const filterHint = filter ? '  |  /: Filter' : '';
-    return `↑↓: Navigate  |  Enter: Select${filterHint}  |  Esc: Cancel`;
+
+    const filterHint = filter ? (hasFilter ? '  |  /: Edit filter' : '  |  /: Filter') : '';
+    const clearHint = hasFilter ? '  |  Esc: Clear filter' : '  |  Esc: Cancel';
+    return `↑↓: Navigate  |  Enter: Select${filterHint}${clearHint}`;
   };
 
   return (

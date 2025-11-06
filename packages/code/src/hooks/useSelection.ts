@@ -141,45 +141,31 @@ export function useSelection({
       // ESC always handled
       if (key.escape) {
         if (isFilterMode) {
+          // Exit filter mode, keep filtered results
           setIsFilterMode(false);
+        } else if (filterQuery) {
+          // Clear filter if not in filter mode but has filter
           setFilterQuery('');
         } else {
+          // Cancel selection
           cancel();
         }
         return;
       }
 
-      // In filter mode: handle navigation and selection
+      // In filter mode: only handle Enter to exit and select
       if (isFilterMode) {
-        // Navigation in filter mode
-        if (key.upArrow) {
-          moveUp();
-          return;
-        }
-
-        if (key.downArrow) {
-          moveDown();
-          return;
-        }
-
-        // Enter: select current highlighted item
+        // Enter: exit filter mode and select first filtered item
         if (key.return) {
+          setIsFilterMode(false);
           if (filteredOptions.length > 0) {
-            confirmSelection();
+            // Select first filtered item
+            setSelectedIndex(0);
           }
           return;
         }
 
-        // Space: toggle in multi-select mode
-        if (multiSelect && char === ' ') {
-          const option = filteredOptions[selectedIndex];
-          if (option) {
-            toggleSelection(option);
-          }
-          return;
-        }
-
-        // Other keys: let TextInput handle (typing)
+        // All other keys: let TextInput handle (typing)
         return;
       }
 
@@ -204,11 +190,7 @@ export function useSelection({
 
       // Selection
       if (key.return) {
-        if (multiSelect) {
-          confirmSelection();
-        } else {
-          confirmSelection();
-        }
+        confirmSelection();
         return;
       }
 
