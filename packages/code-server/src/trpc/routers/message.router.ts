@@ -106,6 +106,21 @@ const StreamEventSchema = z.discriminatedUnion('type', [
     duration: z.number(),
   }),
 
+  // Ask tool (client-server architecture)
+  z.object({
+    type: z.literal('ask-question'),
+    questionId: z.string(),
+    questions: z.array(z.object({
+      question: z.string(),
+      header: z.string(),
+      multiSelect: z.boolean(),
+      options: z.array(z.object({
+        label: z.string(),
+        description: z.string(),
+      })),
+    })),
+  }),
+
   // Completion
   z.object({
     type: z.literal('complete'),
@@ -375,6 +390,34 @@ export const messageRouter = router({
         userMessage: input.userMessage,
         attachments: input.attachments,
       });
+    }),
+
+  /**
+   * Answer Ask tool question
+   * Called by client when user answers Ask tool question
+   * Resolves pending Ask tool Promise on server
+   * SECURITY: Protected + moderate rate limiting (30 req/min)
+   */
+  answerAsk: moderateProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        questionId: z.string(),
+        answers: z.record(z.union([z.string(), z.array(z.string())])),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Import pending asks manager
+      const { resolvePendingAsk } = await import('../../services/ask-manager.service.js');
+
+      // Resolve the pending ask
+      const resolved = await resolvePendingAsk(input.questionId, input.answers);
+
+      if (!resolved) {
+        throw new Error('Question not found or already answered');
+      }
+
+      return { success: true };
     }),
 
   /**

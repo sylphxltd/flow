@@ -79,6 +79,7 @@ export type { AIConfig, ProviderConfig, ProviderId } from './config/ai-config.js
 export type * from './types/session.types.js'
 export type * from './types/common.types.js'
 export type * from './types/interaction.types.js'
+export type * from './types/todo.types.js'
 
 // ============================================================================
 // Session Management

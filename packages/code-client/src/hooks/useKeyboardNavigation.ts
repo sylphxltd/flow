@@ -703,10 +703,14 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             (async () => {
               try {
                 const { readFile } = await import('node:fs/promises');
-                const { countTokens } = await import('@sylphx/code-core');
+                const { getTRPCClient } = await import('../trpc-provider.js');
                 const content = await readFile(selected.path, 'utf8');
-                const tokenCount = await countTokens(content, currentSession?.model);
-                setAttachmentTokenCount(selected.path, tokenCount);
+                const client = getTRPCClient();
+                const result = await client.config.countTokens.query({
+                  text: content,
+                  model: currentSession?.model
+                });
+                setAttachmentTokenCount(selected.path, result.count);
               } catch (error) {
                 console.error('Failed to count tokens:', error);
               }

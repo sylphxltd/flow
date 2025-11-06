@@ -4,7 +4,6 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { AppRouter } from '@sylphx/code-server';
 import { useTRPCClient } from '../trpc-provider.js';
 
 interface ModelDetails {
@@ -27,7 +26,7 @@ interface ModelDetails {
  * - Client shouldn't need updates when new providers are added
  */
 export function useModelDetails(providerId: string | null, modelId: string | null) {
-  const trpc = useTRPCClient<AppRouter>();
+  const trpc = useTRPCClient();
   const [details, setDetails] = useState<ModelDetails>({
     contextLength: null,
     tokenizerInfo: null,
@@ -52,8 +51,8 @@ export function useModelDetails(providerId: string | null, modelId: string | nul
 
         // Fetch model details and tokenizer info in parallel
         const [detailsResult, tokInfo] = await Promise.all([
-          trpc.config!.getModelDetails.query({ providerId: providerId as any, modelId }),
-          trpc.config!.getTokenizerInfo.query({ model: modelId }),
+          trpc.config.getModelDetails.query({ providerId, modelId }),
+          trpc.config.getTokenizerInfo.query({ model: modelId }),
         ]);
 
         if (mounted) {

@@ -104,7 +104,7 @@ async function main() {
       }
 
       // Setup tRPC client
-      let client: TypedTRPCClient<AppRouter>;
+      let client: TypedTRPCClient;
 
       if (options.serverUrl) {
         // Remote mode: Connect to existing HTTP server
@@ -122,13 +122,13 @@ async function main() {
           process.exit(1);
         }
 
-        client = createHTTPClientFromLib<AppRouter>(options.serverUrl);
+        client = createHTTPClientFromLib(options.serverUrl);
       } else {
         // In-process mode (default): Embed server
         const server = await initEmbeddedServer({ quiet: options.quiet });
 
         // Create in-process tRPC client (zero overhead)
-        client = createInProcessClient<AppRouter>({
+        client = createInProcessClient({
           router: server.getRouter(),
           createContext: server.getContext(),
         });

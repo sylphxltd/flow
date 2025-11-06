@@ -10,7 +10,6 @@
 import { useCallback } from 'react';
 import { useAppStore } from '../stores/app-store.js';
 import { getTRPCClient } from '../trpc-provider.js';
-import type { AppRouter } from '@sylphx/code-server';
 import type { FileAttachment, TokenUsage } from '@sylphx/code-core';
 
 /**
@@ -49,6 +48,17 @@ export interface SendMessageOptions {
 
   // Message events
   onAssistantMessageCreated?: (messageId: string) => void;
+
+  // Ask tool events (client-server architecture)
+  onAskQuestion?: (questionId: string, questions: Array<{
+    question: string;
+    header: string;
+    multiSelect: boolean;
+    options: Array<{
+      label: string;
+      description: string;
+    }>;
+  }>) => void;
 }
 
 export function useChat() {
@@ -80,6 +90,7 @@ export function useChat() {
       onSessionTitleDelta,
       onSessionTitleComplete,
       onAssistantMessageCreated,
+      onAskQuestion,
     } = options;
 
     if (!currentSession || !currentSessionId) {
@@ -88,10 +99,10 @@ export function useChat() {
     }
 
     try {
-      const client = getTRPCClient<AppRouter>();
+      const client = getTRPCClient();
 
       // Subscribe to streaming response
-      const subscription = (client.message as any).streamResponse.subscribe(
+      const subscription = client.message.streamResponse.subscribe(
         {
           sessionId: currentSessionId,
           userMessage: message,
@@ -155,6 +166,10 @@ export function useChat() {
 
               case 'tool-error':
                 onToolError?.(event.toolCallId, event.toolName, event.error, event.duration);
+                break;
+
+              case 'ask-question':
+                onAskQuestion?.(event.questionId, event.questions);
                 break;
 
               case 'complete':

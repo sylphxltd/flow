@@ -4,7 +4,6 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { AppRouter } from '@sylphx/code-server';
 import { useTRPCClient } from '../trpc-provider.js';
 
 interface Provider {
@@ -17,7 +16,7 @@ interface Provider {
  * Returns provider metadata (id, name) from server
  */
 export function useProviders() {
-  const trpc = useTRPCClient<AppRouter>();
+  const trpc = useTRPCClient();
   const [providers, setProviders] = useState<Record<string, Provider>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +28,7 @@ export function useProviders() {
       try {
         setLoading(true);
         setError(null);
-        const data = await trpc.config!.getProviders.query();
+        const data = await trpc.config.getProviders.query();
         if (mounted) {
           setProviders(data);
         }
