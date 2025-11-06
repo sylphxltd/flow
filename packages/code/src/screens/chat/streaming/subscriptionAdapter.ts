@@ -101,8 +101,11 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
   return async (userMessage: string, attachments?: FileAttachment[]) => {
     // Block if no provider configured
-    // Show helpful error message to user
-    if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
+    // Get model from provider config
+    const provider = aiConfig?.defaultProvider;
+    const model = provider ? aiConfig?.providers?.[provider]?.defaultModel : undefined;
+
+    if (!provider || !model) {
       addLog('[subscriptionAdapter] No AI provider configured. Use /provider to configure.');
 
       // Add error message to UI (optimistically)
@@ -122,8 +125,8 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
           undefined, // finishReason
           undefined, // metadata
           undefined, // todoSnapshot
-          aiConfig?.defaultProvider,
-          aiConfig?.defaultModel
+          provider,
+          model
         );
       }
       return;
@@ -153,8 +156,8 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
           memory: systemStatus.memory,
         },
         todoSnapshot,
-        aiConfig?.defaultProvider,
-        aiConfig?.defaultModel
+        provider,
+        model
       );
     }
 
@@ -178,8 +181,8 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       // If sessionId is null, pass provider/model for lazy session creation
       const observable = await caller.message.streamResponse({
         sessionId: sessionId,
-        provider: sessionId ? undefined : aiConfig.defaultProvider,
-        model: sessionId ? undefined : aiConfig.defaultModel,
+        provider: sessionId ? undefined : provider,
+        model: sessionId ? undefined : model,
         userMessage,
         attachments,
       });
