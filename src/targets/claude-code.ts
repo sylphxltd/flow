@@ -414,8 +414,12 @@ Please begin your response with a comprehensive summary of all the instructions 
         // Transform agent content (add YAML front matter, etc.)
         const transformed = await this.transformAgentContent(content, undefined, sourcePath);
 
+        // Extract rules from frontmatter to pass to enhancer
+        const { metadata } = await yamlUtils.extractFrontMatter(transformed);
+        const rules = metadata.rules as string[] | undefined;
+
         // Enhance with rules and output styles
-        const enhanced = await enhanceAgentContent(transformed);
+        const enhanced = await enhanceAgentContent(transformed, rules);
 
         return enhanced;
       },

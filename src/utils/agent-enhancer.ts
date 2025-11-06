@@ -18,11 +18,11 @@ import { yamlUtils } from './target-utils.js';
 /**
  * Load and combine rules and output styles
  */
-export async function loadRulesAndStyles(): Promise<string> {
+export async function loadRulesAndStyles(ruleNames?: string[]): Promise<string> {
   const sections: string[] = [];
 
-  // Load rules
-  const rulesContent = await loadRules();
+  // Load rules (either specified rules or default to 'core')
+  const rulesContent = await loadRules(ruleNames);
   if (rulesContent) {
     sections.push(rulesContent);
   }
@@ -37,19 +37,32 @@ export async function loadRulesAndStyles(): Promise<string> {
 }
 
 /**
- * Load rules from assets/rules/core.md
+ * Load rules from assets/rules/*.md
+ * @param ruleNames - Array of rule file names (without .md extension). Defaults to ['core']
  */
-async function loadRules(): Promise<string> {
+async function loadRules(ruleNames?: string[]): Promise<string> {
   try {
     const rulesDir = getRulesDir();
-    const coreRulesPath = path.join(rulesDir, 'core.md');
+    const rulesToLoad = ruleNames && ruleNames.length > 0 ? ruleNames : ['core'];
+    const sections: string[] = [];
 
-    const content = await fs.readFile(coreRulesPath, 'utf8');
+    for (const ruleName of rulesToLoad) {
+      const rulePath = path.join(rulesDir, `${ruleName}.md`);
 
-    // Strip YAML front matter
-    return await yamlUtils.stripFrontMatter(content);
+      try {
+        const content = await fs.readFile(rulePath, 'utf8');
+        // Strip YAML front matter
+        const stripped = await yamlUtils.stripFrontMatter(content);
+        sections.push(stripped);
+      } catch (error) {
+        // Log warning if rule file not found, but continue with other rules
+        console.warn(`Warning: Rule file not found: ${ruleName}.md`);
+      }
+    }
+
+    return sections.join('\n\n---\n\n');
   } catch (_error) {
-    // If rules file doesn't exist, return empty string
+    // If rules directory doesn't exist, return empty string
     return '';
   }
 }
@@ -87,9 +100,11 @@ async function loadOutputStyles(): Promise<string> {
 
 /**
  * Enhance agent content by appending rules and output styles
+ * @param agentContent - The agent markdown content
+ * @param ruleNames - Optional array of rule file names to include (defaults to ['core'])
  */
-export async function enhanceAgentContent(agentContent: string): Promise<string> {
-  const rulesAndStyles = await loadRulesAndStyles();
+export async function enhanceAgentContent(agentContent: string, ruleNames?: string[]): Promise<string> {
+  const rulesAndStyles = await loadRulesAndStyles(ruleNames);
 
   if (!rulesAndStyles) {
     return agentContent;
