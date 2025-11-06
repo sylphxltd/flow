@@ -72,14 +72,22 @@ export function InlineSelection({
 
   return (
     <InputContentLayout subtitle={subtitle} helpText={getHelpText()}>
-      {/* Filter Input (when in filter mode) */}
-      {selection.isFilterMode && (
+      {/* Filter Display */}
+      {selection.isFilterMode ? (
+        // Active filter input (editable)
         <SelectionFilterInput
           value={selection.filterQuery}
           onChange={selection.setFilterQuery}
           placeholder={filterPlaceholder}
         />
-      )}
+      ) : selection.filterQuery ? (
+        // Filter applied (read-only display)
+        <Box marginBottom={1}>
+          <Text dimColor>Filter: </Text>
+          <Text color="cyan">{selection.filterQuery}</Text>
+          <Text dimColor> (press / to edit, Esc to clear)</Text>
+        </Box>
+      ) : null}
 
       {/* Options List */}
       <SelectionOptionsList
