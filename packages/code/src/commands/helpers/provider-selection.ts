@@ -15,7 +15,8 @@ export async function getProviderOptions(
 ): Promise<Array<{ label: string; value: string }>> {
   const { AI_PROVIDERS } = await import('@sylphx/code-core');
   const { getProvider } = await import('@sylphx/code-core');
-  const aiConfig = context.getConfig();
+  const { useAppStore } = await import('@sylphx/code-client');
+  const aiConfig = useAppStore.getState().aiConfig;
 
   return Object.values(AI_PROVIDERS).map((p) => {
     let isConfigured = false;
@@ -71,7 +72,8 @@ export async function ensureProviderConfigured(
 ): Promise<{ success: true; config: any } | { success: false; message: string }> {
   const { AI_PROVIDERS } = await import('@sylphx/code-core');
   const { getProvider } = await import('@sylphx/code-core');
-  const aiConfig = context.getConfig();
+  const { useAppStore } = await import('@sylphx/code-client');
+  const aiConfig = useAppStore.getState().aiConfig;
 
   const provider = getProvider(providerId as any);
   const providerConfig = aiConfig?.providers?.[providerId as keyof typeof aiConfig.providers];
@@ -123,7 +125,8 @@ export async function ensureProviderConfigured(
   const configResult = await configureProvider(context, providerId);
 
   // Check if now configured
-  const updatedConfig = context.getConfig();
+  const { useAppStore } = await import('@sylphx/code-client');
+  const updatedConfig = useAppStore.getState().aiConfig;
   const updatedProviderConfig =
     updatedConfig?.providers?.[providerId as keyof typeof updatedConfig.providers];
 
@@ -147,7 +150,8 @@ export async function switchToProvider(
   providerConfig: any
 ): Promise<string> {
   const { AI_PROVIDERS } = await import('@sylphx/code-core');
-  const aiConfig = context.getConfig();
+  const { useAppStore } = await import('@sylphx/code-client');
+  const aiConfig = useAppStore.getState().aiConfig;
 
   const newConfig = {
     ...aiConfig!,
@@ -170,17 +174,20 @@ export async function switchToProvider(
     },
   };
 
-  context.setAIConfig(newConfig);
+  const { useAppStore } = await import('@sylphx/code-client');
+  const store = useAppStore.getState();
+
+  store.setAIConfig(newConfig);
   await context.saveConfig(newConfig);
 
   // Update UI state
-  context.setUISelectedProvider(providerId as ProviderId);
-  context.setUISelectedModel(defaultModel);
+  store.setSelectedProvider(providerId as ProviderId);
+  store.setSelectedModel(defaultModel);
 
   // Update current session's provider (preserve history)
-  const currentSessionId = context.getCurrentSessionId();
+  const currentSessionId = store.currentSessionId;
   if (currentSessionId) {
-    await context.updateSessionProvider(currentSessionId, providerId, defaultModel);
+    await store.updateSessionProvider(currentSessionId, providerId, defaultModel);
   }
   // No fallback: Config is updated, next message will create session automatically
 

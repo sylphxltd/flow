@@ -46,18 +46,21 @@ export const providerCommand: Command = {
       return;
     }
 
-    const aiConfig = context.getConfig();
+    // Get store
+    const { useAppStore } = await import('@sylphx/code-client');
+    const store = useAppStore.getState();
+    const aiConfig = store.aiConfig;
 
     // If both action and providerId are provided, handle directly
     if (action && providerId) {
       if (action === 'use') {
         // Direct provider switch
-        context.updateProvider(providerId as any, {});
+        store.updateProvider(providerId as any, {});
         const updatedConfig = {
           ...aiConfig,
           defaultProvider: providerId,
         } as any;
-        context.setAIConfig(updatedConfig);
+        store.setAIConfig(updatedConfig);
 
         // Save to server
         await context.saveConfig(updatedConfig);
@@ -83,29 +86,38 @@ export const providerCommand: Command = {
           context.addLog('[provider] Provider management closed');
         }}
         onSelectProvider={async (providerId) => {
+          // Get fresh store reference
+          const { useAppStore } = await import('@sylphx/code-client');
+          const freshStore = useAppStore.getState();
+          const freshAiConfig = freshStore.aiConfig;
+
           // Update store state
-          context.updateProvider(providerId as any, {});
+          freshStore.updateProvider(providerId as any, {});
           const updatedConfig = {
-            ...aiConfig,
+            ...freshAiConfig,
             defaultProvider: providerId,
             // ❌ Don't set top-level defaultModel
             // Model should come from provider's default-model
           } as any;
-          context.setAIConfig(updatedConfig);
+          freshStore.setAIConfig(updatedConfig);
 
           // CRITICAL: Save to server!
           await context.saveConfig(updatedConfig);
 
-          const providerConfig = aiConfig?.providers?.[providerId] || {};
+          const providerConfig = freshAiConfig?.providers?.[providerId] || {};
           const providerDefaultModel = providerConfig.defaultModel as string;
           context.addLog(`[provider] Switched to provider: ${providerId} (model: ${providerDefaultModel || 'default'}) and saved config`);
         }}
         onConfigureProvider={async (providerId, config) => {
+          // Get fresh store reference
+          const { useAppStore } = await import('@sylphx/code-client');
+          const freshStore = useAppStore.getState();
+
           // Update store state
-          context.updateProvider(providerId as any, config);
+          freshStore.updateProvider(providerId as any, config);
 
           // Build updated config
-          const currentConfig = context.getConfig();
+          const currentConfig = freshStore.aiConfig;
           const updatedConfig = {
             ...currentConfig!,
             providers: {
@@ -113,7 +125,7 @@ export const providerCommand: Command = {
               [providerId]: config,
             },
           } as any;
-          context.setAIConfig(updatedConfig);
+          freshStore.setAIConfig(updatedConfig);
 
           // CRITICAL: Save to server!
           await context.saveConfig(updatedConfig);
