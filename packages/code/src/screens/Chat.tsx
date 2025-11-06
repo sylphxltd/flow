@@ -72,6 +72,8 @@ export default function Chat(_props: ChatProps) {
   const setSelectedModel = useAppStore((state) => state.setSelectedModel);
   const updateNotificationSettings = useAppStore((state) => state.updateNotificationSettings);
   const notificationSettings = useAppStore((state) => state.notificationSettings);
+  const selectedProvider = useAppStore((state) => state.selectedProvider);
+  const selectedModel = useAppStore((state) => state.selectedModel);
 
   // Helper function
   const addLog = (message: string) => {
@@ -605,8 +607,8 @@ export default function Chat(_props: ChatProps) {
         {/* Status Bar */}
         <Box flexShrink={0} paddingTop={1} flexDirection="row">
           <StatusBar
-            provider={currentSession?.provider || aiConfig?.defaultProvider || null}
-            model={currentSession?.model || (aiConfig?.defaultProvider ? aiConfig.providers?.[aiConfig.defaultProvider]?.defaultModel : null) || null}
+            provider={currentSession?.provider || selectedProvider || null}
+            model={currentSession?.model || selectedModel || null}
             usedTokens={currentSession ? usedTokens : 0}
           />
         </Box>
