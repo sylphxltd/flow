@@ -232,9 +232,15 @@ function ControlledTextInput({
 
       // Return key pressed (input will be '\r' or '\n')
       if (key.return) {
+        console.log('[ControlledTextInput] Enter key detected!');
+        console.log('[ControlledTextInput] shift:', key.shift, 'meta:', key.meta);
+        console.log('[ControlledTextInput] onSubmit type:', typeof onSubmit);
+        console.log('[ControlledTextInput] value:', JSON.stringify(value));
+
         // Shift+Return or Option+Return (Meta+Return) - insert newline
         // Matches Claude Code official behavior
         if (key.shift || key.meta) {
+          console.log('[ControlledTextInput] Shift/Meta+Enter, inserting newline');
           const result = TextOps.insertText(value, cursor, '\n');
           onChange(result.text);
           onCursorChange(result.cursor);
@@ -242,7 +248,13 @@ function ControlledTextInput({
         }
 
         // Regular Return - submit (Claude Code default)
-        onSubmit?.(value);
+        console.log('[ControlledTextInput] Regular Enter, calling onSubmit...');
+        if (onSubmit) {
+          const result = onSubmit(value);
+          console.log('[ControlledTextInput] onSubmit returned:', result instanceof Promise ? 'Promise' : result);
+        } else {
+          console.log('[ControlledTextInput] ERROR: onSubmit is undefined!');
+        }
         return;
       }
 

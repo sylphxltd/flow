@@ -102,7 +102,16 @@ export function createHandleSubmit(params: MessageHandlerParams) {
   } = params;
 
   return async (value: string) => {
-    if (!value.trim()) return;
+    console.log('[handleSubmit] ===== CALLED =====');
+    console.log('[handleSubmit] value:', JSON.stringify(value));
+    console.log('[handleSubmit] value.trim():', JSON.stringify(value.trim()));
+
+    if (!value.trim()) {
+      console.log('[handleSubmit] Empty value, returning early');
+      return;
+    }
+
+    console.log('[handleSubmit] Proceeding with submission...');
 
     // Reset history browsing state
     // (messageHistory will auto-update from sessions after message is added)
@@ -111,8 +120,11 @@ export function createHandleSubmit(params: MessageHandlerParams) {
 
     // If already streaming, ignore submit (don't start new stream)
     if (isStreaming) {
+      console.log('[handleSubmit] Already streaming, ignoring');
       return;
     }
+
+    console.log('[handleSubmit] Not streaming, continuing...');
 
     // Handle pendingInput for text type
     if (pendingInput && pendingInput.type === 'text' && inputResolver.current) {
@@ -263,16 +275,20 @@ export function createHandleSubmit(params: MessageHandlerParams) {
     }
 
     // For regular messages, clear input after getting the value
+    console.log('[handleSubmit] Regular message, clearing input...');
     setInput('');
 
     // Get attachments for this message
     const attachmentsForMessage: FileAttachment[] = [...pendingAttachments];
+    console.log('[handleSubmit] Attachments:', attachmentsForMessage.length);
 
     // Clear pending attachments after capturing them
     clearAttachments();
 
     // Regular message - send to AI using shared helper
+    console.log('[handleSubmit] Calling sendUserMessageToAI with:', userMessage);
     await sendUserMessageToAI(userMessage, attachmentsForMessage);
+    console.log('[handleSubmit] sendUserMessageToAI completed');
 
     // Add to message history (append since we store oldest-first)
     setMessageHistory((prev) => {

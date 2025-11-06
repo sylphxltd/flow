@@ -103,12 +103,20 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
   } = params;
 
   return async (userMessage: string, attachments?: FileAttachment[]) => {
+    console.log('[subscriptionAdapter] ===== CALLED =====');
+    console.log('[subscriptionAdapter] userMessage:', JSON.stringify(userMessage));
+    console.log('[subscriptionAdapter] selectedProvider:', selectedProvider);
+    console.log('[subscriptionAdapter] selectedModel:', selectedModel);
+
     // Block if no provider configured
     // Use selectedProvider and selectedModel from store (reactive state)
     const provider = selectedProvider;
     const model = selectedModel;
 
     if (!provider || !model) {
+      console.log('[subscriptionAdapter] ERROR: No provider or model configured!');
+      console.log('[subscriptionAdapter] provider:', provider);
+      console.log('[subscriptionAdapter] model:', model);
       addLog('[subscriptionAdapter] No AI provider configured. Use /provider to configure.');
 
       // Add error message to UI (optimistically)
@@ -134,6 +142,8 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       }
       return;
     }
+
+    console.log('[subscriptionAdapter] Provider configured, proceeding...');
 
     // LAZY SESSIONS: Server will create session if currentSessionId is null
     // Client just passes null, server handles creation
