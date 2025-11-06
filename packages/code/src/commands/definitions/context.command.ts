@@ -16,7 +16,7 @@ export const contextCommand: Command = {
     const { useAppStore } = await import('@sylphx/code-client');
 
     const store = useAppStore.getState();
-    const currentSession = store.sessions.find((s) => s.id === store.currentSessionId);
+    const { currentSession } = store;
     if (!currentSession) {
       return 'No active session. Start chatting first to see context usage.';
     }

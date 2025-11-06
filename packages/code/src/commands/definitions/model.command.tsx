@@ -29,7 +29,7 @@ export const modelCommand: Command = {
     // If arg provided, switch directly
     if (context.args.length > 0) {
       const modelId = context.args[0];
-      const currentSession = store.sessions.find((s) => s.id === store.currentSessionId);
+      const { currentSession } = store;
       const aiConfig = store.aiConfig;
       const provider = currentSession?.provider || aiConfig?.defaultProvider;
 
@@ -70,8 +70,7 @@ export const modelCommand: Command = {
     }
 
     // Get current session's provider or selected provider from store
-    const currentSession = store.sessions.find((s) => s.id === store.currentSessionId);
-    const { selectedProvider } = store;
+    const { currentSession, selectedProvider } = store;
     const currentProviderId = currentSession?.provider || selectedProvider;
 
     if (!currentProviderId) {
