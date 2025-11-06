@@ -85,6 +85,10 @@ export interface CommandContext {
   // Get current AI config
   getConfig: () => AIConfig | null;
 
+  // Get selected provider and model from store (reactive state)
+  getSelectedProvider: () => string | null;
+  getSelectedModel: () => string | null;
+
   // Save AI config
   saveConfig: (config: AIConfig) => Promise<void>;
 

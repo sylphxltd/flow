@@ -245,6 +245,8 @@ export default function Chat(_props: ChatProps) {
         addMessage,
         updateNotificationSettings,
         getAIConfig: () => useAppStore.getState().aiConfig,
+        getSelectedProvider: () => useAppStore.getState().selectedProvider,
+        getSelectedModel: () => useAppStore.getState().selectedModel,
         getSessions: async () => {
           const { getTRPCClient } = await import('@sylphx/code-server');
           const client = await getTRPCClient();

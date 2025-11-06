@@ -47,6 +47,8 @@ export interface CommandContextParams {
 
   // Store getters (use getState() to avoid reactivity)
   getAIConfig: () => AIConfig | null;
+  getSelectedProvider: () => string | null;
+  getSelectedModel: () => string | null;
   getSessions: () => Promise<Session[]>;
   getCurrentSessionId: () => string | null;
   setCurrentSession: (sessionId: string | null) => Promise<void>;
@@ -110,6 +112,8 @@ export function createCommandContext(args: string[], params: CommandContextParam
     addMessage,
     updateNotificationSettings,
     getAIConfig,
+    getSelectedProvider,
+    getSelectedModel,
     getSessions,
     getCurrentSessionId,
     setCurrentSession,
@@ -137,10 +141,9 @@ export function createCommandContext(args: string[], params: CommandContextParam
     args,
 
     sendMessage: async (content: string) => {
-      // Get AI config to determine provider/model
-      const aiConfig = getAIConfig();
-      const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
-      const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+      // Get selected provider/model from store (reactive state)
+      const provider = (getSelectedProvider() || 'openrouter') as ProviderId;
+      const model = getSelectedModel() || 'anthropic/claude-3.5-sonnet';
 
       // Reuse existing command session or pass null (will create new session)
       const sessionIdToUse = commandSessionRef.current || currentSessionId;
@@ -187,6 +190,8 @@ export function createCommandContext(args: string[], params: CommandContextParam
     },
 
     getConfig: () => getAIConfig(),
+    getSelectedProvider: () => getSelectedProvider(),
+    getSelectedModel: () => getSelectedModel(),
     saveConfig: (config) => saveConfig(config),
     getCurrentSession: () => getCurrentSession(),
     updateProvider: (provider, data) => updateProvider(provider, data),

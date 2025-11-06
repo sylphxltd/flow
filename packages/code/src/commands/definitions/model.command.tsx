@@ -65,9 +65,9 @@ export const modelCommand: Command = {
       return 'No providers configured. Please configure a provider first.';
     }
 
-    // Get current session's provider
+    // Get current session's provider or selected provider from store
     const currentSession = context.getCurrentSession();
-    const currentProviderId = currentSession?.provider || aiConfig.defaultProvider;
+    const currentProviderId = currentSession?.provider || context.getSelectedProvider();
 
     if (!currentProviderId) {
       return 'No provider selected. Use /provider to select a provider first.';

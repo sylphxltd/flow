@@ -10,17 +10,19 @@ export const newCommand: Command = {
   label: '/new',
   description: 'Create a new chat session',
   execute: async (context) => {
-    const aiConfig = context.getConfig();
+    // Get selected provider/model from store (reactive state)
+    const provider = context.getSelectedProvider();
+    const model = context.getSelectedModel();
 
-    if (!aiConfig?.defaultProvider || !aiConfig?.defaultModel) {
+    if (!provider || !model) {
       return 'No AI provider configured. Use /provider to configure a provider first.';
     }
 
     // Create new session with current provider and model
-    const newSessionId = await context.createSession(aiConfig.defaultProvider, aiConfig.defaultModel);
+    const newSessionId = await context.createSession(provider, model);
     await context.setCurrentSession(newSessionId);
 
-    return `Created new chat session with ${aiConfig.defaultProvider} (${aiConfig.defaultModel})`;
+    return `Created new chat session with ${provider} (${model})`;
   },
 };
 
