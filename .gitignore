@@ -45,6 +45,16 @@ dist/
 package-lock.json
 *.tgz
 .turbo/
+*.tsbuildinfo
+
+# TypeScript compiled output in src/ directories (should only be in dist/)
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+
+# Exception: Keep certain config files
+!packages/*/src/**/*.config.js
 
 ## Unused vector storage implementations
 src/utils/hnsw-vector-storage.ts
