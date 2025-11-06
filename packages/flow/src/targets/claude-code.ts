@@ -249,10 +249,21 @@ Please begin your response with a comprehensive summary of all the instructions 
       // Use child_process directly to bypass security validation for this specific case
       // This is safe because we're controlling the command and just passing the prompt as an argument
 
+      if (options.verbose) {
+        console.log(`🚀 Executing: claude ${args.join(' ')}`);
+        console.log('');
+      }
+
       await new Promise<void>((resolve, reject) => {
         const child = spawn('claude', args, {
           stdio: 'inherit',
           shell: false,
+        });
+
+        child.on('spawn', () => {
+          if (options.verbose) {
+            console.log('✓ Claude process spawned successfully');
+          }
         });
 
         child.on('close', (code) => {
@@ -266,6 +277,9 @@ Please begin your response with a comprehensive summary of all the instructions 
         });
 
         child.on('error', (error) => {
+          if (options.verbose) {
+            console.error('✗ Error spawning Claude:', error);
+          }
           reject(error);
         });
       });

@@ -49,7 +49,12 @@ export function findPackageRoot(context?: string): string {
   throw new Error(errorMsg);
 }
 
-const ASSETS_ROOT = path.join(findPackageRoot(), 'assets');
+// Find monorepo root (parent of packages/flow) for assets
+const PACKAGE_ROOT = findPackageRoot();
+const MONOREPO_ROOT = path.join(PACKAGE_ROOT, '..', '..');
+const ASSETS_ROOT = fs.existsSync(path.join(MONOREPO_ROOT, 'assets'))
+  ? path.join(MONOREPO_ROOT, 'assets')
+  : path.join(PACKAGE_ROOT, 'assets');
 
 /**
  * Get path to agents directory
