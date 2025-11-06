@@ -149,17 +149,41 @@ export function useSelection({
         return;
       }
 
-      // In filter mode: only handle Enter to exit and select
+      // In filter mode: handle navigation and selection
       if (isFilterMode) {
+        // Navigation in filter mode
+        if (key.upArrow) {
+          moveUp();
+          return;
+        }
+
+        if (key.downArrow) {
+          moveDown();
+          return;
+        }
+
+        // Enter: select current highlighted item
         if (key.return) {
-          // Exit filter mode and select current item
-          setIsFilterMode(false);
           if (filteredOptions.length > 0) {
             confirmSelection();
           }
+          return;
         }
+
+        // Space: toggle in multi-select mode
+        if (multiSelect && char === ' ') {
+          const option = filteredOptions[selectedIndex];
+          if (option) {
+            toggleSelection(option);
+          }
+          return;
+        }
+
+        // Other keys: let TextInput handle (typing)
         return;
       }
+
+      // Not in filter mode - normal selection mode
 
       // Enter filter mode
       if (filter && char === '/') {

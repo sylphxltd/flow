@@ -53,7 +53,10 @@ export function InlineSelection({
   // Help text based on mode
   const getHelpText = (): string => {
     if (selection.isFilterMode) {
-      return 'Type to filter  |  Enter: Confirm  |  Esc: Clear filter';
+      if (multiSelect) {
+        return 'Type to filter  |  ↑↓: Navigate  |  Space: Toggle  |  Enter: Confirm  |  Esc: Clear';
+      }
+      return 'Type to filter  |  ↑↓: Navigate  |  Enter: Select  |  Esc: Clear';
     }
     if (multiSelect) {
       const filterHint = filter ? '  |  /: Filter' : '';
@@ -71,13 +74,6 @@ export function InlineSelection({
           value={selection.filterQuery}
           onChange={selection.setFilterQuery}
           placeholder={filterPlaceholder}
-          onSubmit={() => {
-            // Exit filter mode and select first filtered item
-            selection.exitFilterMode();
-            if (selection.filteredOptions.length > 0) {
-              selection.confirmSelection();
-            }
-          }}
         />
       )}
 
