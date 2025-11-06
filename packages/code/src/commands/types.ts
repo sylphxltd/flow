@@ -57,99 +57,44 @@ export type WaitForInputOptions =
 
 /**
  * Command execution context
- * Provides methods for commands to interact with the system
+ *
+ * ARCHITECTURE:
+ * - Commands should directly use useAppStore for most operations
+ * - CommandContext only provides UI-specific operations that need React context
+ * - For store operations: import { useAppStore } from '@sylphx/code-client'
  */
 export interface CommandContext {
-  // Arguments passed to command
+  // Command arguments
   args: string[];
 
-  // Send message to chat (like AI response)
+  // UI INTERACTION (needs React context)
+  // Wait for user input (text or selection)
+  waitForInput: (
+    options: WaitForInputOptions
+  ) => Promise<string | Record<string, string | string[]>>;
+
+  // Replace input area with custom component
+  setInputComponent: (component: ReactNode | null, title?: string) => void;
+
+  // SPECIAL OPERATIONS (complex logic or file system)
+  // Send message as assistant (wraps complex logic)
   sendMessage: (content: string) => void;
 
   // Send user message and trigger AI response
-  // Used for commands that want to continue the conversation (like compact)
   triggerAIResponse: (
     message: string,
     attachments?: Array<{ path: string; relativePath: string; size?: number }>
   ) => Promise<void>;
 
-  // Wait for user input (text or selection)
-  // Returns: string for text, Record<string, string | string[]> for selection
-  //   - Single-select: question id -> answer id (string)
-  //   - Multi-select: question id -> answer ids (string[])
-  // Note: selection with 1 question and 10 questions use the same interface
-  waitForInput: (
-    options: WaitForInputOptions
-  ) => Promise<string | Record<string, string | string[]>>;
-
-  // Get current AI config
-  getConfig: () => AIConfig | null;
-
-  // Save AI config
+  // Save config to file system (uses tRPC)
   saveConfig: (config: AIConfig) => Promise<void>;
 
-  // Get current session
-  getCurrentSession: () => Session | undefined;
-
-  // Update provider settings
-  updateProvider: (provider: ProviderId, data: { apiKey?: string; defaultModel?: string }) => void;
-
-  // Set AI config
-  setAIConfig: (config: AIConfig) => void;
-
-  // Update session model (preserve history)
-  updateSessionModel: (sessionId: string, model: string) => Promise<void>;
-
-  // Update session provider and model (preserve history)
-  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => Promise<void>;
-
-  // Set UI selected provider and model (for UI state synchronization)
-  setUISelectedProvider: (provider: ProviderId | null) => void;
-  setUISelectedModel: (model: string | null) => void;
-
-  // Get all available commands (for help command)
+  // CONVENIENCE (available from store but commonly used)
+  // Get all commands (not in store)
   getCommands: () => Command[];
 
-  // Create new session
-  createSession: (provider: ProviderId, model: string) => Promise<string>;
-
-  // Get current session ID
-  getCurrentSessionId: () => string | null;
-
-  // Set current session
-  setCurrentSession: (sessionId: string | null) => Promise<void>;
-
-  // Navigate to different screen
-  navigateTo: (
-    screen:
-      | 'main-menu'
-      | 'provider-management'
-      | 'model-selection'
-      | 'chat'
-      | 'command-palette'
-      | 'logs'
-  ) => void;
-
-  // Add debug log
+  // Add debug log (same as useAppStore.getState().addLog)
   addLog: (message: string) => void;
-
-  // Notification settings
-  notificationSettings: {
-    osNotifications: boolean;
-    terminalNotifications: boolean;
-    sound: boolean;
-  };
-  updateNotificationSettings: (
-    settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>
-  ) => void;
-
-  // Update output for commands that display information
-  updateOutput: (content: string) => void;
-
-  // Replace input area with custom component (universal method)
-  // Commands can use JSX in .tsx files: context.setInputComponent(<YourComponent />, 'Title')
-  // Title replaces 'YOU' header in InputSection
-  setInputComponent: (component: ReactNode | null, title?: string) => void;
 }
 
 /**

@@ -22,11 +22,15 @@ export const modelCommand: Command = {
     },
   ],
   execute: async (context) => {
+    // Get store
+    const { useAppStore } = await import('@sylphx/code-client');
+    const store = useAppStore.getState();
+
     // If arg provided, switch directly
     if (context.args.length > 0) {
       const modelId = context.args[0];
-      const currentSession = context.getCurrentSession();
-      const aiConfig = context.getConfig();
+      const currentSession = store.sessions.find((s) => s.id === store.currentSessionId);
+      const aiConfig = store.aiConfig;
       const provider = currentSession?.provider || aiConfig?.defaultProvider;
 
       if (!provider) {
@@ -45,30 +49,29 @@ export const modelCommand: Command = {
           },
         },
       };
-      context.setAIConfig(newConfig);
+      store.setAIConfig(newConfig);
 
       // Save config to file
       await context.saveConfig(newConfig);
 
       // Update current session's model (preserve history)
-      const currentSessionId = context.getCurrentSessionId();
+      const currentSessionId = store.currentSessionId;
       if (currentSessionId) {
-        await context.updateSessionModel(currentSessionId, modelId);
+        await store.updateSessionModel(currentSessionId, modelId);
       }
 
       return `Switched to model: ${modelId}`;
     }
 
     // No args - show model selection UI
-    const aiConfig = context.getConfig();
+    const aiConfig = store.aiConfig;
     if (!aiConfig?.providers) {
       return 'No providers configured. Please configure a provider first.';
     }
 
     // Get current session's provider or selected provider from store
-    const currentSession = context.getCurrentSession();
-    const { useAppStore } = await import('@sylphx/code-client');
-    const { selectedProvider } = useAppStore.getState();
+    const currentSession = store.sessions.find((s) => s.id === store.currentSessionId);
+    const { selectedProvider } = store;
     const currentProviderId = currentSession?.provider || selectedProvider;
 
     if (!currentProviderId) {
@@ -105,27 +108,31 @@ export const modelCommand: Command = {
         onSelect={async (modelId) => {
           const provider = currentProviderId;
 
+          // Get fresh store reference
+          const { useAppStore } = await import('@sylphx/code-client');
+          const freshStore = useAppStore.getState();
+
           // Update model and save to provider config
           const newConfig = {
-            ...aiConfig!,
+            ...freshStore.aiConfig!,
             defaultModel: modelId,
             providers: {
-              ...aiConfig!.providers,
+              ...freshStore.aiConfig!.providers,
               [provider]: {
-                ...aiConfig!.providers?.[provider],
+                ...freshStore.aiConfig!.providers?.[provider],
                 defaultModel: modelId,
               },
             },
           };
-          context.setAIConfig(newConfig);
+          freshStore.setAIConfig(newConfig);
 
           // Save config to file
           await context.saveConfig(newConfig);
 
           // Update current session's model (preserve history)
-          const currentSessionId = context.getCurrentSessionId();
+          const currentSessionId = freshStore.currentSessionId;
           if (currentSessionId) {
-            await context.updateSessionModel(currentSessionId, modelId);
+            await freshStore.updateSessionModel(currentSessionId, modelId);
           }
 
           context.setInputComponent(null);

@@ -10,25 +10,13 @@ import type { Command, CommandContext, WaitForInputOptions } from '../../../comm
 
 /**
  * Parameters needed to create command context
+ *
+ * ARCHITECTURE:
+ * - Only pass what's truly needed for UI interaction
+ * - Commands use useAppStore directly for most operations
  */
 export interface CommandContextParams {
-  // Zustand store methods (async ones return Promises)
-  createSession: (provider: ProviderId, model: string) => Promise<string>;
-  updateProvider: (provider: ProviderId, data: { apiKey?: string; defaultModel?: string }) => void;
-  setAIConfig: (config: AIConfig) => void;
-  updateSessionModel: (sessionId: string, model: string) => Promise<void>;
-  updateSessionProvider: (sessionId: string, provider: ProviderId, model: string) => Promise<void>;
-  setSelectedProvider: (provider: ProviderId | null) => void;
-  setSelectedModel: (model: string | null) => void;
-  navigateTo: (
-    screen:
-      | 'main-menu'
-      | 'provider-management'
-      | 'model-selection'
-      | 'chat'
-      | 'command-palette'
-      | 'logs'
-  ) => void;
+  // For message operations (complex logic)
   addMessage: (
     sessionId: string | null,
     role: 'user' | 'assistant',
@@ -41,29 +29,20 @@ export interface CommandContextParams {
     provider?: ProviderId,
     model?: string
   ) => Promise<string>;
-  updateNotificationSettings: (
-    settings: Partial<{ osNotifications: boolean; terminalNotifications: boolean; sound: boolean }>
-  ) => void;
 
-  // Store getters (use getState() to avoid reactivity)
-  getAIConfig: () => AIConfig | null;
-  getCurrentSessionId: () => string | null;
-  setCurrentSession: (sessionId: string | null) => Promise<void>;
-  getNotificationSettings: () => {
-    osNotifications: boolean;
-    terminalNotifications: boolean;
-    sound: boolean;
-  };
+  // Current session ID for command session tracking
+  currentSessionId: string | null;
 
-  // Hook methods
+  // File system operations
   saveConfig: (config: AIConfig) => Promise<void>;
-  getCurrentSession: () => Session | undefined;
+
+  // AI operations
   sendUserMessageToAI: (
     message: string,
     attachments?: Array<{ path: string; relativePath: string; size?: number }>
   ) => Promise<void>;
 
-  // UI state setters
+  // UI state setters (for waitForInput implementation)
   setInput: (value: string) => void;
   setPendingInput: (options: WaitForInputOptions | null) => void;
   setMultiSelectionPage: (page: number) => void;
@@ -74,19 +53,14 @@ export interface CommandContextParams {
   setIsFilterMode: (isFilterMode: boolean) => void;
   setInputComponent: (component: ReactNode | null, title?: string) => void;
 
-  // Refs
+  // Refs for async operations
   inputResolver: React.MutableRefObject<
     ((value: string | Record<string, string | string[]>) => void) | null
   >;
   commandSessionRef: React.MutableRefObject<string | null>;
 
-  // State
-  currentSessionId: string | null;
-
-  // Helper functions
+  // Convenience (could use store directly)
   addLog: (message: string) => void;
-
-  // Commands
   getCommands: () => Command[];
 }
 
@@ -98,22 +72,9 @@ export interface CommandContextParams {
  */
 export function createCommandContext(args: string[], params: CommandContextParams): CommandContext {
   const {
-    createSession,
-    updateProvider,
-    setAIConfig,
-    updateSessionModel,
-    updateSessionProvider,
-    setSelectedProvider,
-    setSelectedModel,
-    navigateTo,
     addMessage,
-    updateNotificationSettings,
-    getAIConfig,
-    getCurrentSessionId,
-    setCurrentSession,
-    getNotificationSettings,
+    currentSessionId,
     saveConfig,
-    getCurrentSession,
     sendUserMessageToAI,
     setInput,
     setPendingInput,
@@ -126,7 +87,6 @@ export function createCommandContext(args: string[], params: CommandContextParam
     setInputComponent,
     inputResolver,
     commandSessionRef,
-    currentSessionId,
     addLog,
     getCommands,
   } = params;
@@ -185,25 +145,9 @@ export function createCommandContext(args: string[], params: CommandContextParam
       });
     },
 
-    getConfig: () => getAIConfig(),
-    saveConfig: (config) => saveConfig(config),
-    getCurrentSession: () => getCurrentSession(),
-    updateProvider: (provider, data) => updateProvider(provider, data),
-    setAIConfig: (config) => setAIConfig(config),
-    updateSessionModel: (sessionId, model) => updateSessionModel(sessionId, model),
-    updateSessionProvider: (sessionId, provider, model) =>
-      updateSessionProvider(sessionId, provider, model),
-    setUISelectedProvider: (provider) => setSelectedProvider(provider),
-    setUISelectedModel: (model) => setSelectedModel(model),
-    createSession: (provider, model) => createSession(provider, model),
-    getCurrentSessionId: () => getCurrentSessionId(),
-    setCurrentSession: (sessionId) => setCurrentSession(sessionId),
-    navigateTo: (screen) => navigateTo(screen),
-    addLog: (message) => addLog(message),
-    notificationSettings: getNotificationSettings(),
-    updateNotificationSettings: (settings) => updateNotificationSettings(settings),
-    updateOutput: (content) => addLog(content),
-    getCommands: () => getCommands(),
     setInputComponent: (component, title) => setInputComponent(component, title),
+    saveConfig: (config) => saveConfig(config),
+    getCommands: () => getCommands(),
+    addLog: (message) => addLog(message),
   };
 }

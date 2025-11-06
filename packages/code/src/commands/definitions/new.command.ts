@@ -10,17 +10,18 @@ export const newCommand: Command = {
   label: '/new',
   description: 'Create a new chat session',
   execute: async (context) => {
-    // Get selected provider/model from store directly
+    // Get store and selected provider/model
     const { useAppStore } = await import('@sylphx/code-client');
-    const { selectedProvider, selectedModel } = useAppStore.getState();
+    const store = useAppStore.getState();
+    const { selectedProvider, selectedModel } = store;
 
     if (!selectedProvider || !selectedModel) {
       return 'No AI provider configured. Use /provider to configure a provider first.';
     }
 
     // Create new session with current provider and model
-    const newSessionId = await context.createSession(selectedProvider, selectedModel);
-    await context.setCurrentSession(newSessionId);
+    const newSessionId = await store.createSession(selectedProvider, selectedModel);
+    await store.setCurrentSession(newSessionId);
 
     return `Created new chat session with ${selectedProvider} (${selectedModel})`;
   },
