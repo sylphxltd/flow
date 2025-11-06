@@ -14,7 +14,7 @@ import type { AppRouter } from '@sylphx/code-server';
  */
 export async function getRecentSessions(limit: number = 100): Promise<SessionMetadata[]> {
   const client = getTRPCClient<AppRouter>();
-  const result = await client.session!.getRecent.query({ limit });
+  const result = await (client.session as any).getRecent.query({ limit });
   return result.sessions;
 }
 
@@ -24,5 +24,5 @@ export async function getRecentSessions(limit: number = 100): Promise<SessionMet
  */
 export async function getLastSession(): Promise<Session | null> {
   const client = getTRPCClient<AppRouter>();
-  return await client.session!.getLast.query();
+  return await (client.session as any).getLast.query();
 }

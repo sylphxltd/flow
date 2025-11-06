@@ -4,7 +4,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { scanProjectFiles } from '@sylphx/code-core';
+import { getTRPCClient } from '../trpc-provider.js';
+import type { AppRouter } from '@sylphx/code-server';
 
 export function useProjectFiles() {
   const [projectFiles, setProjectFiles] = useState<Array<{ path: string; relativePath: string; size: number }>>([]);
@@ -14,8 +15,9 @@ export function useProjectFiles() {
     const loadFiles = async () => {
       setFilesLoading(true);
       try {
-        const files = await scanProjectFiles(process.cwd());
-        setProjectFiles(files);
+        const client = getTRPCClient<AppRouter>();
+        const result = await client.config!.scanProjectFiles.query({ cwd: process.cwd() });
+        setProjectFiles(result.files);
       } catch (error) {
         console.error('Failed to load project files:', error);
       } finally {

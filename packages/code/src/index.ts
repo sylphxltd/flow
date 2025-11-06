@@ -21,7 +21,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { CodeServer } from '@sylphx/code-server';
+import { CodeServer, type AppRouter } from '@sylphx/code-server';
 import {
   TRPCProvider,
   createInProcessClient,
@@ -104,7 +104,7 @@ async function main() {
       }
 
       // Setup tRPC client
-      let client: TypedTRPCClient;
+      let client: TypedTRPCClient<AppRouter>;
 
       if (options.serverUrl) {
         // Remote mode: Connect to existing HTTP server
@@ -122,13 +122,13 @@ async function main() {
           process.exit(1);
         }
 
-        client = createHTTPClientFromLib(options.serverUrl);
+        client = createHTTPClientFromLib<AppRouter>(options.serverUrl);
       } else {
         // In-process mode (default): Embed server
         const server = await initEmbeddedServer({ quiet: options.quiet });
 
         // Create in-process tRPC client (zero overhead)
-        client = createInProcessClient({
+        client = createInProcessClient<AppRouter>({
           router: server.getRouter(),
           createContext: server.getContext(),
         });
