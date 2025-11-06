@@ -170,6 +170,9 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
           const currentQuestion = questions[multiSelectionPage];
           const totalQuestions = questions.length;
 
+          // Guard: currentQuestion should always exist
+          if (!currentQuestion) return;
+
           // Calculate filtered options first (needed for arrow key navigation)
           const filteredOptions = currentQuestion.options.filter(
             (option) =>
@@ -344,6 +347,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
               // Restore choices for the new question if it's multi-select
               const nextPage = (multiSelectionPage + 1) % totalQuestions;
               const nextQuestion = questions[nextPage];
+              if (!nextQuestion) return;
               if (nextQuestion.multiSelect) {
                 // If question was already answered, restore the answer
                 if (multiSelectionAnswers[nextQuestion.id]) {
@@ -380,6 +384,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
               // Restore choices for the new question if it's multi-select
               const prevPage = (multiSelectionPage - 1 + totalQuestions) % totalQuestions;
               const prevQuestion = questions[prevPage];
+              if (!prevQuestion) return;
               if (prevQuestion.multiSelect) {
                 // If question was already answered, restore the answer
                 if (multiSelectionAnswers[prevQuestion.id]) {
@@ -432,7 +437,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
           }
 
           // Space - toggle multi-select choice (only for multi-select questions and NOT in filter mode)
-          if (char === ' ' && currentQuestion.multiSelect && !isFilterMode) {
+          if (char === ' ' && currentQuestion?.multiSelect && !isFilterMode) {
             const selectedOption = filteredOptions[selectedCommandIndex];
             if (selectedOption) {
               const selectedValue = selectedOption.value || selectedOption.label;
@@ -465,7 +470,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
             }
 
             // Multi-select mode: confirm current choices
-            if (currentQuestion.multiSelect) {
+            if (currentQuestion?.multiSelect) {
               if (multiSelectChoices.size === 0) {
                 addLog(`[multi-select] No choices selected, skipping`);
                 return;
@@ -655,7 +660,7 @@ export function useKeyboardNavigation(props: KeyboardNavigationProps) {
           const selectedOption = options[selectedCommandIndex];
           if (selectedOption) {
             const response = await pendingCommand.command.execute(createCommandContext([selectedOption.id]));
-            if (currentSessionId) {
+            if (currentSessionId && response) {
               addMessage(currentSessionId, 'assistant', response);
             }
             setPendingCommand(null);

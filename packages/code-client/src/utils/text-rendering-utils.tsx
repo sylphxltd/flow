@@ -61,6 +61,7 @@ export function renderTextWithTags(
 
     // Check if this tag is valid
     const fileName = match[1];
+    if (!fileName) continue;
     const isValidTag = validTags ? validTags.has(fileName) : false;
 
     // Add @file tag (with or without highlighting)
@@ -153,7 +154,9 @@ export function extractFileReferences(text: string): string[] {
   let match;
 
   while ((match = regex.exec(text)) !== null) {
-    refs.push(match[1]);
+    if (match[1]) {
+      refs.push(match[1]);
+    }
   }
 
   return refs;

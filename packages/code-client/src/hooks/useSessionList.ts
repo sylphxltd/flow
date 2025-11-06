@@ -5,10 +5,10 @@
 
 import { useState, useCallback } from 'react';
 import { getRecentSessions } from '../api/sessions.js';
-import type { Session } from '@sylphx/code-core';
+import type { Session, SessionMetadata } from '@sylphx/code-core';
 
 export interface UseSessionListReturn {
-  sessions: Session[];
+  sessions: SessionMetadata[];
   loading: boolean;
   error: string | null;
   loadSessions: (limit?: number) => Promise<void>;
@@ -29,7 +29,7 @@ export interface UseSessionListReturn {
  * ```
  */
 export function useSessionList(): UseSessionListReturn {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<SessionMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

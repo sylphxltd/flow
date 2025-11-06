@@ -77,7 +77,7 @@ export function createHTTPClient(serverUrl: string): TypedTRPCClient {
   return createTRPCProxyClient<AppRouter>({
     links: [
       splitLink({
-        condition: (op) => op.type === 'subscription',
+        condition: (op: { type: string }) => op.type === 'subscription',
         true: httpSubscriptionLink({
           url: `${serverUrl}/trpc`,
           EventSource: EventSource as any,

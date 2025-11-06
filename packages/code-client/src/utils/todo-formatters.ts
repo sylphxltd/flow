@@ -18,6 +18,8 @@ export const getTodoIcon = (status: Todo['status']): string => {
       return '✓';
     case 'removed':
       return '✗';
+    default:
+      return '○';
   }
 };
 
@@ -34,6 +36,8 @@ export const getTodoColor = (status: Todo['status']): string => {
       return 'green';
     case 'removed':
       return 'red';
+    default:
+      return 'gray';
   }
 };
 

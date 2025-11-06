@@ -31,9 +31,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { AIConfig, ProviderId } from '@sylphx/code-core';
-import type { Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata } from '@sylphx/code-core';
-import type { Todo, TodoUpdate } from '@sylphx/code-core';
+import type { AIConfig, ProviderId, Session, MessagePart, FileAttachment, TokenUsage, MessageMetadata, Todo, TodoUpdate } from '@sylphx/code-core';
 import { getTRPCClient } from '../trpc-provider.js';
 
 export type Screen = 'main-menu' | 'provider-management' | 'model-selection' | 'chat' | 'command-palette' | 'logs' | 'dashboard';
@@ -151,8 +149,7 @@ export const useAppStore = create<AppState>()(
               }
             }
           },
-          false,
-          { type: 'setAIConfig', config }
+          false
         );
       },
       updateProvider: (provider, data) =>

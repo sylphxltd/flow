@@ -22,7 +22,7 @@
  * ```
  */
 
-import type { TRPCLink } from '@trpc/client';
+import type { TRPCLink, TRPCClientError } from '@trpc/client';
 import type { AnyRouter } from '@trpc/server';
 import { observable } from '@trpc/server/observable';
 
@@ -102,7 +102,7 @@ export function inProcessLink<TRouter extends AnyRouter>(
               }
             }
           } catch (error) {
-            observer.error(error);
+            observer.error(error as TRPCClientError<TRouter>);
           }
         })();
       });
