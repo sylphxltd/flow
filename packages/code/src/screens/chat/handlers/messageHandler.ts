@@ -3,6 +3,7 @@
  * Creates handleSubmit callback for message submission
  */
 
+import { resolveProviderAndModel } from '@sylphx/code-client';
 import type { FileAttachment } from '../../../../types/session.types.js';
 import type { CommandContext } from '../../../commands/types.js';
 
@@ -119,8 +120,7 @@ export function createHandleSubmit(params: MessageHandlerParams) {
 
       // Add user's text input to chat history
       const aiConfig = getAIConfig();
-      const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
-      const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+      const { provider, model } = resolveProviderAndModel(aiConfig);
 
       const sessionIdToUse = commandSessionRef.current || currentSessionId;
       const resultSessionId = await addMessage(
@@ -184,8 +184,7 @@ export function createHandleSubmit(params: MessageHandlerParams) {
         setInput('');
 
         const aiConfig = getAIConfig();
-        const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
-        const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+        const { provider, model } = resolveProviderAndModel(aiConfig);
 
         const sessionIdToUse = commandSessionRef.current || currentSessionId;
         const resultSessionId = await addMessage(
@@ -219,8 +218,7 @@ export function createHandleSubmit(params: MessageHandlerParams) {
 
       // Add user command to conversation
       const aiConfig = getAIConfig();
-      const provider = (aiConfig?.defaultProvider || 'openrouter') as ProviderId;
-      const model = aiConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+      const { provider, model } = resolveProviderAndModel(aiConfig);
 
       const sessionIdToUse = commandSessionRef.current || currentSessionId;
       const resultSessionId = await addMessage(

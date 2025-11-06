@@ -77,6 +77,7 @@ export { useTokenCalculation } from './hooks/useTokenCalculation.js'
 // ============================================================================
 // Utilities
 // ============================================================================
+export * from './utils/config.js'
 export * from './utils/cursor-utils.js'
 export * from './utils/scroll-viewport.js'
 export * from './utils/text-rendering-utils.js'

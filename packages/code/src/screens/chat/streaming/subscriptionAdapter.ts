@@ -13,10 +13,9 @@
  */
 
 import { getTRPCClient, useAppStore } from '@sylphx/code-client';
+import type { AIConfig, FileAttachment, MessagePart, TokenUsage } from '@sylphx/code-core';
+import type { StreamEvent } from '@sylphx/code-server';
 import type React from 'react';
-import type { AIConfig } from '../../../../config/ai-config.js';
-import type { StreamEvent } from '../../../../server/trpc/routers/message.router.js';
-import type { FileAttachment, MessagePart, TokenUsage } from '../../../../types/session.types.js';
 
 /**
  * Parameters for subscription adapter
