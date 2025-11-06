@@ -35,8 +35,9 @@
     "@sylphx/code-server": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
     "@types/node": "^24.9.2",
+    "@types/react": "^19.0.0",
+    "ink-testing-library": "^4.0.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.6"
   }

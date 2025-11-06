@@ -424,6 +424,7 @@ export default function Chat(_props: ChatProps) {
   });
 
   // Message history navigation (like bash)
+  // IMPORTANT: Only handle up/down arrows here, let ControlledTextInput handle Enter
   useInput(
     (char, key) => {
       // inputComponent has its own keyboard handling (e.g. ProviderManagement)
@@ -481,10 +482,12 @@ export default function Chat(_props: ChatProps) {
         return;
       }
 
-      // Any other key - exit history browsing mode
-      if (historyIndex !== -1 && char) {
+      // Exit history browsing mode on ANY other key (including Enter, typing, etc.)
+      // Don't consume the event - let ControlledTextInput handle it
+      if (historyIndex !== -1) {
         setHistoryIndex(-1);
         setTempInput('');
+        // Don't return - let the event propagate to ControlledTextInput
       }
     },
     { isActive: !isStreaming }
