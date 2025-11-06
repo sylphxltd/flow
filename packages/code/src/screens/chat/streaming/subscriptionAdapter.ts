@@ -203,6 +203,10 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       // Call subscription procedure (returns Observable)
       // If sessionId is null, pass provider/model for lazy session creation
       // NOTE: Don't await subscriptions - they return observables synchronously
+      console.log('[subscriptionAdapter] About to call streamResponse...');
+      console.log('[subscriptionAdapter] caller.message type:', typeof caller.message);
+      console.log('[subscriptionAdapter] caller.message.streamResponse type:', typeof caller.message.streamResponse);
+
       const observable = caller.message.streamResponse({
         sessionId: sessionId,
         provider: sessionId ? undefined : provider,
@@ -211,7 +215,11 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         attachments,
       });
 
-      console.log('[subscriptionAdapter] Observable received, subscribing...');
+      console.log('[subscriptionAdapter] Observable received!');
+      console.log('[subscriptionAdapter] Observable type:', typeof observable);
+      console.log('[subscriptionAdapter] Observable constructor:', observable?.constructor?.name);
+      console.log('[subscriptionAdapter] Observable has subscribe?', typeof observable?.subscribe);
+      console.log('[subscriptionAdapter] About to call subscribe...');
 
       // Subscribe to observable
       const subscription = observable.subscribe({
