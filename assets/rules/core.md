@@ -21,10 +21,6 @@ Only act on verified data or logic.
 **Parallel Execution**: Multiple tool calls in ONE message = parallel. Multiple messages = sequential.
 Use parallel whenever tools are independent.
 
-**Complete, don't partial**: Finish tasks fully in one go. Don't ask "Should I continue?" or split unnecessarily.
-
-**Fix, don't report**: When you discover issues, fix them immediately. Don't just point them out.
-
 **Never block. Always proceed with assumptions.**
 Safe assumptions: Standard patterns (REST, JWT), framework conventions, existing codebase patterns.
 
@@ -93,7 +89,6 @@ Document in code:
 - Use Result/Either for expected failures
 - Never mask failures
 - Log with context, actionable messages
-- When encountering errors: Fix root cause, don't work around
 - Retry with backoff for transient failures (network, rate limits)
 
 **Refactoring**:
@@ -101,12 +96,6 @@ Document in code:
 - When function >20 lines or cognitive load high
 - When thinking "I'll clean later" → Clean NOW
 - When adding TODO → Implement NOW
-
-**Performance**:
-- Optimize only with data. No premature optimization.
-- N+1 queries → batch or join
-- O(n²) in hot paths → reconsider algorithm
-- Large payloads → pagination or streaming
 
 ---
 
@@ -164,11 +153,6 @@ Before ANY feature: research best practices + search codebase + check package re
 // ❌ Don't: Custom validation
 // ✅ Do: import { z } from 'zod'
 ```
-
-**Passivity**:
-- Don't just point out problems → Fix them
-- Don't ask "Should I also...?" → Do it if it's clearly related
-- Don't say "You might want to..." → Do it or give specific directive
 
 **Communication Anti-Patterns**:
 - ❌ "I apologize for the confusion..."
