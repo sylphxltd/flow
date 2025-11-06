@@ -24,6 +24,8 @@ export interface SubscriptionAdapterParams {
   // Configuration
   aiConfig: AIConfig | null;
   currentSessionId: string | null;
+  selectedProvider: string | null;
+  selectedModel: string | null;
 
   // Functions from hooks/store
   addMessage: (
@@ -83,6 +85,8 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
   const {
     aiConfig,
     currentSessionId,
+    selectedProvider,
+    selectedModel,
     addMessage,
     addLog,
     updateSessionTitle,
@@ -100,9 +104,9 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
   return async (userMessage: string, attachments?: FileAttachment[]) => {
     // Block if no provider configured
-    // Get model from provider config
-    const provider = aiConfig?.defaultProvider;
-    const model = provider ? aiConfig?.providers?.[provider]?.defaultModel : undefined;
+    // Use selectedProvider and selectedModel from store (reactive state)
+    const provider = selectedProvider;
+    const model = selectedModel;
 
     if (!provider || !model) {
       addLog('[subscriptionAdapter] No AI provider configured. Use /provider to configure.');

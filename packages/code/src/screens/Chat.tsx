@@ -199,6 +199,8 @@ export default function Chat(_props: ChatProps) {
     createSubscriptionSendUserMessageToAI({
       aiConfig,
       currentSessionId,
+      selectedProvider,
+      selectedModel,
       addMessage,
       addLog,
       updateSessionTitle,
@@ -216,6 +218,8 @@ export default function Chat(_props: ChatProps) {
     [
       aiConfig,
       currentSessionId,
+      selectedProvider,
+      selectedModel,
       addMessage,
       addLog,
       updateSessionTitle,
