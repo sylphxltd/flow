@@ -73,30 +73,41 @@ export function inProcessLink<TRouter extends AnyRouter>(
               observer.complete();
             } else if (type === 'subscription') {
               // Subscription - stream results
+              console.log('[inProcessLink] Executing subscription:', path);
+              console.log('[inProcessLink] Calling procedureFn with input:', input);
               const subscription = await procedureFn(input);
+              console.log('[inProcessLink] Subscription returned:', typeof subscription);
 
               if (Symbol.asyncIterator in subscription) {
+                console.log('[inProcessLink] Async iterable subscription detected');
                 // Async iterable subscription
                 for await (const data of subscription as AsyncIterable<any>) {
+                  console.log('[inProcessLink] Received data from async iterator');
                   observer.next({ result: { type: 'data', data } });
                 }
+                console.log('[inProcessLink] Async iterator completed');
                 observer.complete();
               } else {
+                console.log('[inProcessLink] Observable subscription detected');
                 // Observable subscription
                 const sub = subscription.subscribe({
                   next: (data: any) => {
+                    console.log('[inProcessLink] Observable next:', data?.type || data);
                     observer.next({ result: { type: 'data', data } });
                   },
                   error: (err: any) => {
+                    console.log('[inProcessLink] Observable error:', err);
                     observer.error(err);
                   },
                   complete: () => {
+                    console.log('[inProcessLink] Observable complete');
                     observer.complete();
                   },
                 });
 
                 // Return unsubscribe function
                 return () => {
+                  console.log('[inProcessLink] Unsubscribing');
                   sub.unsubscribe();
                 };
               }
