@@ -13,6 +13,7 @@ export { CodeServer, type ServerConfig } from './server.js';
 // ============================================================================
 export { appRouter, type AppRouter } from './trpc/routers/index.js';
 export { createContext, type Context } from './trpc/context.js';
+export { createAppContext, initializeAppContext, closeAppContext, type AppContext } from './context.js';
 
 // ============================================================================
 // Streaming Service

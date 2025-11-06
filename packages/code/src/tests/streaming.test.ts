@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createInProcessClient } from '@sylphx/code-client';
 import type { AppContext } from '@sylphx/code-server';
-import { createAppContext } from '@sylphx/code-server';
+import { createAppContext, initializeAppContext, closeAppContext } from '@sylphx/code-server';
 
 describe('Streaming Integration', () => {
   let appContext: AppContext;
@@ -14,9 +14,16 @@ describe('Streaming Integration', () => {
 
   beforeAll(async () => {
     // Create app context (database, services, etc.)
-    const result = await createAppContext();
-    appContext = result.context;
-    cleanup = result.cleanup;
+    appContext = createAppContext({
+      cwd: process.cwd(),
+    });
+
+    // Initialize all services
+    await initializeAppContext(appContext);
+
+    cleanup = async () => {
+      await closeAppContext(appContext);
+    };
   });
 
   afterAll(async () => {

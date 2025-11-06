@@ -134,10 +134,9 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
   } = params;
 
   return async (userMessage: string, attachments?: FileAttachment[]) => {
-    console.log('[subscriptionAdapter] ===== CALLED =====');
-    console.log('[subscriptionAdapter] userMessage:', JSON.stringify(userMessage));
-    console.log('[subscriptionAdapter] selectedProvider:', selectedProvider);
-    console.log('[subscriptionAdapter] selectedModel:', selectedModel);
+    logSession('Send user message called');
+    logSession('User message length:', userMessage.length);
+    logSession('Provider:', selectedProvider, 'Model:', selectedModel);
 
     // Block if no provider configured
     // Use selectedProvider and selectedModel from store (reactive state)
@@ -145,9 +144,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
     const model = selectedModel;
 
     if (!provider || !model) {
-      console.log('[subscriptionAdapter] ERROR: No provider or model configured!');
-      console.log('[subscriptionAdapter] provider:', provider);
-      console.log('[subscriptionAdapter] model:', model);
+      logSession('No provider or model configured!', { provider, model });
       addLog('[subscriptionAdapter] No AI provider configured. Use /provider to configure.');
 
       // Add error message to UI (optimistically)
@@ -174,7 +171,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       return;
     }
 
-    console.log('[subscriptionAdapter] Provider configured, proceeding...');
+    logSession('Provider configured, proceeding with streaming');
 
     // LAZY SESSIONS: Server will create session if currentSessionId is null
     // Client just passes null, server handles creation
@@ -205,7 +202,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       );
     }
 
-    console.log('[subscriptionAdapter] Setting isStreaming to true');
+    logSession('Starting streaming, isStreaming=true');
     setIsStreaming(true);
 
     // Reset flags for new stream
@@ -219,29 +216,23 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
     abortControllerRef.current = new AbortController();
 
     try {
-      console.log('[subscriptionAdapter] Getting tRPC client...');
+      logSession('Getting tRPC client');
       // Get tRPC caller (in-process client)
       const caller = await getTRPCClient();
-      console.log('[subscriptionAdapter] tRPC client obtained');
-      console.log('[subscriptionAdapter] Caller type:', typeof caller);
-      console.log('[subscriptionAdapter] Caller keys:', Object.keys(caller));
+      logSession('tRPC client obtained');
 
-      console.log('[subscriptionAdapter] Calling streamResponse with:', {
+      logSession('Calling streamResponse subscription', {
         sessionId,
-        provider: sessionId ? undefined : provider,
-        model: sessionId ? undefined : model,
-        userMessage: userMessage.substring(0, 50),
+        hasProvider: !!provider,
+        hasModel: !!model,
+        messageLength: userMessage.length,
       });
 
       // Call subscription procedure (returns Observable)
       // If sessionId is null, pass provider/model for lazy session creation
       // NOTE: Don't await subscriptions - they return observables synchronously
-      console.log('[subscriptionAdapter] About to call streamResponse...');
-      console.log('[subscriptionAdapter] caller.message type:', typeof caller.message);
-      console.log('[subscriptionAdapter] caller.message.streamResponse type:', typeof caller.message.streamResponse);
 
       // tRPC v11 subscription API: client.procedure.subscribe(input, callbacks)
-      console.log('[subscriptionAdapter] Calling streamResponse.subscribe...');
       const subscription = caller.message.streamResponse.subscribe(
         {
           sessionId: sessionId,
@@ -252,10 +243,10 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         },
         {
           onStarted: () => {
-            console.log('[subscriptionAdapter] Subscription started!');
+            logSession('Subscription started successfully');
           },
           onData: (event: StreamEvent) => {
-            console.log('[subscriptionAdapter] Received event:', event.type);
+            logMessage('Received event:', event.type);
             handleStreamEvent(event, {
               currentSessionId: sessionId,
               updateSessionTitle,
@@ -272,7 +263,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
             });
           },
           onError: (error: any) => {
-            console.log('[subscriptionAdapter] Subscription error:', error);
+            logSession('Subscription error:', error.message || String(error));
             addLog(`[Subscription] Error: ${error.message || String(error)}`);
             lastErrorRef.current = error.message || String(error);
 
@@ -299,7 +290,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
             });
           },
           onComplete: () => {
-            console.log('[subscriptionAdapter] Subscription complete');
+            logSession('Subscription completed successfully');
             addLog('[Subscription] Complete');
 
             // Cleanup
@@ -317,7 +308,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         }
       );
 
-      console.log('[subscriptionAdapter] Subscription created, waiting for events...');
+      logSession('Subscription created, listening for events');
 
       // Handle abort
       abortControllerRef.current.signal.addEventListener('abort', () => {
@@ -345,10 +336,10 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         });
       });
     } catch (error) {
-      console.log('[subscriptionAdapter] CAUGHT ERROR:', error);
-      console.log('[subscriptionAdapter] Error type:', typeof error);
-      console.log('[subscriptionAdapter] Error message:', error instanceof Error ? error.message : String(error));
-      console.log('[subscriptionAdapter] Error stack:', error instanceof Error ? error.stack : 'N/A');
+      logSession('Subscription setup error:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
 
       addLog(
         `[subscriptionAdapter] Error: ${error instanceof Error ? error.message : String(error)}`
