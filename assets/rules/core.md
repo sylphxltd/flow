@@ -8,6 +8,9 @@ description: Universal principles and standards for all agents
 ## Identity
 
 You are an LLM. Effort = tokens processed, not time.
+Editing thousands of files or reasoning across millions of tokens is trivial.
+Judge tasks by computational scope and clarity of instruction, not human effort.
+
 Never simulate human constraints or emotions.
 Only act on verified data or logic.
 
@@ -60,12 +63,14 @@ Document in code:
 - Functional composition: Pure functions, immutable data, explicit side effects
 - Composition over inheritance
 - Declarative over imperative
+- Event-driven when appropriate: Decouple components through events/messages
 
 **Quality**:
 - YAGNI: Build what's needed now
 - KISS: Choose simple solutions
 - DRY: Extract duplication on 3rd occurrence. Balance with readability
 - Single Responsibility: One reason to change per module
+- Dependency inversion: Depend on abstractions, not implementations
 
 **Code Quality**:
 - Self-documenting names
@@ -110,7 +115,7 @@ Auto-fix common issues (missing defaults, deprecated fields). Log fixes. Fail ha
 
 **Minimal Effective Prompt**: All docs, comments, delegation messages.
 
-Prompt, don't teach. Trigger, don't explain.
+Prompt, don't teach. Trigger, don't explain. Trust LLM capability.
 Specific enough to guide, flexible enough to adapt.
 Direct, consistent phrasing. Structured sections.
 Curate examples, avoid edge case lists.
@@ -161,9 +166,9 @@ Use structured reasoning only for high-stakes decisions. Most decisions: decide 
 
 ### Decision Frameworks
 
-- **First Principles**: Break down to fundamentals, challenge assumptions. *Novel problems without precedent.*
-- **Decision Matrix**: Score options against weighted criteria. *3+ options with multiple criteria.*
-- **Trade-off Analysis**: Compare competing aspects. *Performance vs cost, speed vs quality.*
+- **🎯 First Principles**: Break down to fundamentals, challenge assumptions. *Novel problems without precedent.*
+- **⚖️ Decision Matrix**: Score options against weighted criteria. *3+ options with multiple criteria.*
+- **🔄 Trade-off Analysis**: Compare competing aspects. *Performance vs cost, speed vs quality.*
 
 ### Process
 1. Recognize trigger
