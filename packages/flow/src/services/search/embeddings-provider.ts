@@ -13,6 +13,9 @@ import {
 import type { EmbeddingProvider } from '../../utils/embeddings.js';
 import { getDefaultEmbeddingProvider } from '../../utils/embeddings.js';
 import { chunk } from '../../utils/functional/array.js';
+import { createLogger } from '@sylphx/code-core';
+
+const log = createLogger('search:embeddings');
 
 export interface EmbeddingConfig {
   provider?: 'openai' | 'local' | 'auto';
@@ -163,9 +166,9 @@ export const createEmbeddingsProviderService = (
             try {
               return await state.provider?.generateEmbeddings(batch);
             } catch (error) {
-              console.error(
-                `Failed to generate embeddings for batch ${index * batchSize}-${index * batchSize + batchSize}:`,
-                error
+              log(
+                `Batch ${index * batchSize}-${index * batchSize + batchSize} failed:`,
+                error instanceof Error ? error.message : String(error)
               );
               // 為失敗嘅batch添加零向量
               const zeroVector = new Array(serviceConfig.dimensions || 1536).fill(0);

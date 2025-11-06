@@ -6,6 +6,9 @@
  */
 
 import type { SearchIndex } from './tfidf.js';
+import { createLogger } from '@sylphx/code-core';
+
+const log = createLogger('search:indexing');
 
 // ============================================================================
 // TYPES
@@ -182,14 +185,12 @@ export const createIndexer = (config: IndexerConfig): Indexer => {
         .buildIndex()
         .then((index) => {
           state = setCompleted(state, index);
-          console.error(
-            `[INFO] ${config.name} indexing complete: ${index.totalDocuments} documents`
-          );
+          log(`${config.name} indexing complete:`, index.totalDocuments, 'documents');
           return index;
         })
         .catch((error) => {
           state = setError(state, error as Error);
-          console.error(`[ERROR] ${config.name} indexing failed:`, error);
+          log(`${config.name} indexing failed:`, error instanceof Error ? error.message : String(error));
           throw error;
         });
 
@@ -229,9 +230,9 @@ export const createIndexer = (config: IndexerConfig): Indexer => {
         return;
       }
 
-      console.error(`[INFO] Starting background ${config.name} indexing...`);
+      log(`Starting background ${config.name} indexing`);
       indexer.loadIndex().catch((error) => {
-        console.error(`[ERROR] Background ${config.name} indexing failed:`, error);
+        log(`Background ${config.name} indexing failed:`, error instanceof Error ? error.message : String(error));
       });
     },
   };
@@ -256,11 +257,11 @@ export const withLogging =
       ...baseIndexer,
       loadIndex: async () => {
         if (verbose) {
-          console.error('[DEBUG] Loading index...');
+          log('Loading index...');
         }
         const index = await baseIndexer.loadIndex();
         if (verbose) {
-          console.error('[DEBUG] Index loaded:', index.totalDocuments, 'documents');
+          log('Index loaded:', index.totalDocuments, 'documents');
         }
         return index;
       },
@@ -308,7 +309,7 @@ export const withRetry =
             return await baseIndexer.loadIndex();
           } catch (error) {
             lastError = error as Error;
-            console.error(`[WARN] Indexing attempt ${i + 1}/${maxRetries} failed:`, error);
+            log(`Indexing attempt ${i + 1}/${maxRetries} failed:`, error instanceof Error ? error.message : String(error));
 
             if (i < maxRetries - 1) {
               await new Promise((resolve) => setTimeout(resolve, delayMs));

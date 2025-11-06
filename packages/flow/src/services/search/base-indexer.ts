@@ -4,6 +4,9 @@
  */
 
 import type { SearchIndex } from './tfidf.js';
+import { createLogger } from '@sylphx/code-core';
+
+const log = createLogger('search:indexing');
 
 export interface IndexingStatus {
   isIndexing: boolean;
@@ -68,9 +71,9 @@ export abstract class BaseIndexer {
       return;
     }
 
-    console.error(`[INFO] Starting background ${this.config.name} indexing...`);
+    log(`Starting background ${this.config.name} indexing`);
     this.loadIndex().catch((error) => {
-      console.error(`[ERROR] Background ${this.config.name} indexing failed:`, error);
+      log(`Background ${this.config.name} indexing failed:`, error instanceof Error ? error.message : String(error));
     });
   }
 
@@ -101,15 +104,13 @@ export abstract class BaseIndexer {
         this.status.progress = 100;
         this.status.totalItems = index.totalDocuments;
         this.status.indexedItems = index.totalDocuments;
-        console.error(
-          `[INFO] ${this.config.name} indexing complete: ${index.totalDocuments} documents`
-        );
+        log(`${this.config.name} indexing complete:`, index.totalDocuments, 'documents');
         return index;
       })
       .catch((error) => {
         this.status.isIndexing = false;
         this.status.error = error instanceof Error ? error.message : String(error);
-        console.error(`[ERROR] ${this.config.name} indexing failed:`, error);
+        log(`${this.config.name} indexing failed:`, error instanceof Error ? error.message : String(error));
         throw error;
       });
 

@@ -7,6 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getKnowledgeDir } from './paths.js';
 import { buildSearchIndex, processQuery, type SearchIndex } from './tfidf.js';
+import { createLogger } from '@sylphx/code-core';
+
+const log = createLogger('search:query');
 
 let cachedIndex: SearchIndex | null = null;
 let indexingPromise: Promise<SearchIndex> | null = null;
@@ -57,14 +60,12 @@ async function buildKnowledgeIndex(): Promise<SearchIndex> {
     throw new Error(`Knowledge directory not found: ${knowledgeDir}`);
   }
 
-  console.error('[INFO] Building knowledge search index...');
+  log('Building knowledge search index');
   const files = scanKnowledgeFiles(knowledgeDir);
-  console.error(`[INFO] Found ${files.length} knowledge files`);
+  log(`Found ${files.length} knowledge files`);
 
   const index = buildSearchIndex(files);
-  console.error(
-    `[INFO] Knowledge index built: ${index.totalDocuments} documents, ${index.idf.size} terms`
-  );
+  log(`Knowledge index built: ${index.totalDocuments} documents, ${index.idf.size} terms`);
 
   return index;
 }
@@ -98,7 +99,7 @@ export async function loadSearchIndex(): Promise<SearchIndex | null> {
     .catch((error) => {
       indexingStatus.isIndexing = false;
       indexingStatus.error = error instanceof Error ? error.message : String(error);
-      console.error('[ERROR] Failed to build knowledge index:', error);
+      log('Failed to build knowledge index:', error instanceof Error ? error.message : String(error));
       throw error;
     });
 
@@ -113,9 +114,9 @@ export function startKnowledgeIndexing() {
     return;
   }
 
-  console.error('[INFO] Starting background knowledge indexing...');
+  log('Starting background knowledge indexing');
   loadSearchIndex().catch((error) => {
-    console.error('[ERROR] Background knowledge indexing failed:', error);
+    log('Background knowledge indexing failed:', error instanceof Error ? error.message : String(error));
   });
 }
 

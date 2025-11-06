@@ -6,6 +6,9 @@
 import { secretUtils } from '../../utils/secret-utils.js';
 import { envSecurity, securitySchemas } from '../../utils/security.js';
 import { generateMockEmbedding } from '../storage/vector-storage.js';
+import { createLogger } from '@sylphx/code-core';
+
+const log = createLogger('search:embeddings');
 
 export interface ModelInfo {
   id: string;
@@ -55,7 +58,7 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       try {
         this.baseURL = securitySchemas.url.parse(providedBaseURL);
       } catch (_error) {
-        console.warn('[WARN] Invalid OPENAI_BASE_URL format, using default');
+        log('Invalid OPENAI_BASE_URL format, using default');
         this.baseURL = 'https://api.openai.com/v1';
       }
     } else {
@@ -74,19 +77,17 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       try {
         securitySchemas.apiKey.parse(this.apiKey);
       } catch (_error) {
-        console.warn(
-          '[WARN] Invalid OPENAI_API_KEY format. Embeddings will use mock implementation.'
-        );
+        log('Invalid OPENAI_API_KEY format, using mock implementation');
         this.apiKey = '';
       }
     } else {
-      console.warn('[WARN] OPENAI_API_KEY not set. Embeddings will use mock implementation.');
+      log('OPENAI_API_KEY not set, using mock implementation');
     }
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
     if (!this.apiKey) {
-      console.warn('[WARN] Using mock embedding (no API key)');
+      log('Using mock embedding (no API key)');
       return generateMockEmbedding(text, this.dimensions);
     }
 
@@ -111,15 +112,15 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       const data = await response.json();
       return data.data[0].embedding;
     } catch (error) {
-      console.error('[ERROR] Failed to generate OpenAI embedding:', error);
-      console.warn('[WARN] Falling back to mock embedding');
+      log('Failed to generate OpenAI embedding:', error instanceof Error ? error.message : String(error));
+      log('Falling back to mock embedding');
       return generateMockEmbedding(text, this.dimensions);
     }
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
     if (!this.apiKey) {
-      console.warn('[WARN] Using mock embeddings (no API key)');
+      log('Using mock embeddings (no API key)');
       return texts.map((text) => generateMockEmbedding(text, this.dimensions));
     }
 
@@ -144,8 +145,8 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       const data = await response.json();
       return data.data.map((item: { embedding: number[] }) => item.embedding);
     } catch (error) {
-      console.error('[ERROR] Failed to generate OpenAI embeddings:', error);
-      console.warn('[WARN] Falling back to mock embeddings');
+      log('Failed to generate OpenAI embeddings:', error instanceof Error ? error.message : String(error));
+      log('Falling back to mock embeddings');
       return texts.map((text) => generateMockEmbedding(text, this.dimensions));
     }
   }
