@@ -1,223 +1,232 @@
-# Debug Logging & Testing Guide
+# Debug Logging Guide
 
-## Overview
-
-我哋用環境變數控制 debug logging，可以喺唔影響 production 嘅情況下啟用詳細嘅 logs。
+> 使用 industry-standard [`debug`](https://www.npmjs.com/package/debug) package
+>
+> 同樣嘅工具用於：Express, Socket.io, Mongoose, 等等
 
 ## 🎯 Quick Start
 
-### 1. Debug to stderr (睇 console)
-
 ```bash
-DEBUG=* bun ./packages/code/src/index.ts
-```
+# Enable all sylphx debug logs
+DEBUG=sylphx:* bun ./packages/code/src/index.ts
 
-### 2. Debug to file (唔阻礙 TUI)
+# Enable specific namespace
+DEBUG=sylphx:subscription:* bun ./packages/code/src/index.ts
 
-```bash
-DEBUG=* DEBUG_FILE=debug.log bun ./packages/code/src/index.ts
-# Logs written to: ~/.sylphx-code/logs/debug.log
-```
+# Enable multiple namespaces
+DEBUG=sylphx:subscription:*,sylphx:stream:* bun ./packages/code/src/index.ts
 
-### 3. Non-interactive testing (最適合自動化測試)
-
-```bash
-DEBUG=* bun ./packages/code/src/test-harness.ts "test message"
-# Results: ~/.sylphx-code/logs/test-result-{timestamp}.json
-# Debug logs: ~/.sylphx-code/logs/test-debug-{timestamp}.log
-```
-
-## Usage
-
-### Enable All Debug Logs
-
-```bash
-# To stderr (will interfere with TUI)
-DEBUG=* bun ./packages/code/src/index.ts
-
-# To file (TUI remains clean)
-DEBUG=* DEBUG_FILE=debug.log bun ./packages/code/src/index.ts
-```
-
-### Enable Specific Namespaces
-
-```bash
-# 只顯示 subscription 相關嘅 logs
-DEBUG=subscription:* DEBUG_FILE=sub.log bun ./packages/code/src/index.ts
-
-# 只顯示 session 同 message logs
-DEBUG=subscription:session,subscription:message DEBUG_FILE=session.log bun ./packages/code/src/index.ts
-
-# 顯示 streaming 相關嘅 logs
-DEBUG=stream:* DEBUG_FILE=stream.log bun ./packages/code/src/index.ts
-```
-
-### No Debug Logs (Production)
-
-```bash
-# Normal usage - no debug logs
+# Production (no debug logs)
 bun ./packages/code/src/index.ts
 ```
 
-## Available Namespaces
-
-### Subscription Adapter
-- `subscription:session` - Session creation/loading
-- `subscription:message` - Message creation/updates
-- `subscription:content` - Content streaming (reasoning/text)
-
-### Streaming Service
-- `stream:session` - Session management
-- `stream:provider` - Provider configuration
-- `stream:message` - Message processing
-- `stream:ai` - AI model interactions
-
-### tRPC
-- `trpc:link` - In-process link operations
-- `trpc:subscription` - Subscription events
-
-## Examples
-
-### Debug Session Issues
-
-```bash
-DEBUG=subscription:session,stream:session bun ./packages/code/src/index.ts
-```
-
-Output:
-```
-[subscription:session] Created skeleton session: session-1762438412068
-[stream:session] Loading session: session-1762438412068
-[stream:session] Session loaded successfully
-```
-
-### Debug Message Streaming
-
-```bash
-DEBUG=subscription:message,subscription:content bun ./packages/code/src/index.ts
-```
-
-Output:
-```
-[subscription:message] Message created: 59d159e3-beb3-44ae-8b9c-c71521d2b5d0
-[subscription:message] Added assistant message, total: 1
-[subscription:content] Reasoning start
-[subscription:content] Adding reasoning part, existing parts: 0
-```
-
-### Debug Everything (Nuclear Option)
-
-```bash
-DEBUG=* bun ./packages/code/src/index.ts
-```
-
-## Testing Without TUI
-
-### 1. Headless Mode (For LLM Testing)
-
-```bash
-# Run in headless mode with debug logs
-DEBUG=subscription:*,stream:* bun ./packages/code/src/headless.ts <<< "hihi"
-```
-
-### 2. Unit Tests with Debug Logs
-
-```bash
-DEBUG=* bun test
-```
-
-### 3. Integration Tests
-
-```bash
-DEBUG=subscription:*,stream:* bun test:integration
-```
-
-## Adding Debug Logs to Your Code
+## 📝 Usage in Code
 
 ```typescript
 import { createLogger } from '@sylphx/code-core';
 
-// Create a logger for your namespace
-const log = createLogger('myfeature');
+// Create logger for your namespace
+const log = createLogger('subscription:session');
 
 // Use it
-log('Processing data:', data);
-log('Error occurred:', error);
+log('Session created:', sessionId);
+log('Loading session:', { id: sessionId, provider });
 ```
 
-## Best Practices
+## 🎨 Features (from `debug` package)
 
-1. **使用有意義嘅 namespace** - 例如 `feature:component` format
-2. **唔好 log sensitive data** - API keys, tokens, etc.
-3. **Production 時 disable** - 唔好 set DEBUG environment variable
-4. **測試時用 specific namespaces** - 唔好成日用 `DEBUG=*`
+### 1. Color-coded Namespaces
 
-## 🤖 Non-Interactive Testing (For LLMs / CI/CD)
-
-### Test Harness
-
-專門為自動化測試而設計，完全 non-interactive：
+每個 namespace 自動有唔同顏色，易分辨：
 
 ```bash
-# Basic test
-bun ./packages/code/src/test-harness.ts "test message"
-
-# With debug logging
-DEBUG=* bun ./packages/code/src/test-harness.ts "test message"
-
-# Custom output location
-bun ./packages/code/src/test-harness.ts "test" --output my-test.json
-
-# Read input from file
-bun ./packages/code/src/test-harness.ts --input test-cases.txt
+DEBUG=sylphx:* bun ./packages/code/src/index.ts
 ```
 
-### Test Result Format
-
-Result JSON:
-
-```json
-{
-  "timestamp": "2025-01-06T10:30:00.000Z",
-  "success": true,
-  "sessionId": "session-1234567890",
-  "events": ["session-created", "assistant-message-created", "reasoning-start", ...],
-  "errors": [],
-  "duration": 2500,
-  "output": "AI response text here..."
-}
+Output:
+```
+  sylphx:subscription:session Session created: session-123 +0ms
+  sylphx:subscription:message Message created: msg-456 +2ms
+  sylphx:stream:ai Streaming response +150ms
 ```
 
-### Where to Find Logs
+### 2. Timestamps
 
-| Type | Location | Usage |
-|------|----------|-------|
-| Debug logs (file) | `~/.sylphx-code/logs/test-debug-{timestamp}.log` | Detailed execution trace |
-| Test results | `~/.sylphx-code/logs/test-result-{timestamp}.json` | Structured test output |
-| Debug logs (stderr) | Console stderr | Quick debugging |
+自動顯示相對時間 (`+Xms`)：
 
-### Example: Complete Test Workflow
+```
+  sylphx:subscription:session Session created +0ms
+  sylphx:subscription:message Message added +2ms
+  sylphx:subscription:content Reasoning start +150ms
+```
+
+### 3. Wildcard Matching
 
 ```bash
-# 1. Run test with full debug logging
-DEBUG=* bun ./packages/code/src/test-harness.ts "implement fibonacci function"
+# All sylphx logs
+DEBUG=sylphx:*
 
-# 2. Check test result
-cat ~/.sylphx-code/logs/test-result-*.json | jq '.success'
+# Only subscription logs
+DEBUG=sylphx:subscription:*
 
-# 3. Read debug logs
-tail -f ~/.sylphx-code/logs/test-debug-*.log
+# Specific logger
+DEBUG=sylphx:subscription:session
 
-# 4. Grep for specific events
-grep "subscription:message" ~/.sylphx-code/logs/test-debug-*.log
+# Multiple namespaces
+DEBUG=sylphx:subscription:*,sylphx:stream:*
 ```
 
-### Benefits
+### 4. No Performance Impact When Disabled
 
-呢個方法俾你：
-- ✅ 睇到 internal state changes (in log file)
-- ✅ Debug without UI interference
-- ✅ Programmatic result checking (JSON output)
-- ✅ Automate testing in CI/CD
-- ✅ No production impact
-- ✅ LLMs can read structured output
+```bash
+# No DEBUG env var = zero overhead
+bun ./packages/code/src/index.ts
+```
+
+## 📊 Available Namespaces
+
+### Subscription
+- `sylphx:subscription:session` - Session creation/loading
+- `sylphx:subscription:message` - Message handling
+- `sylphx:subscription:content` - Content streaming
+
+### Streaming
+- `sylphx:stream:session` - Server-side session management
+- `sylphx:stream:provider` - Provider configuration
+- `sylphx:stream:ai` - AI model interactions
+
+### tRPC
+- `sylphx:trpc:link` - In-process link
+- `sylphx:trpc:subscription` - Subscription events
+
+## 🔧 Advanced Usage
+
+### Disable Colors
+
+```bash
+DEBUG_COLORS=no DEBUG=sylphx:* bun ./packages/code/src/index.ts
+```
+
+### Hide Timestamp
+
+```bash
+DEBUG_HIDE_DATE=yes DEBUG=sylphx:* bun ./packages/code/src/index.ts
+```
+
+### Save to File
+
+```bash
+# Redirect stderr to file
+DEBUG=sylphx:* bun ./packages/code/src/index.ts 2> debug.log
+
+# Or use standard output redirection
+DEBUG=sylphx:* bun ./packages/code/src/index.ts 2>&1 | tee debug.log
+```
+
+## 📖 Examples
+
+### Example 1: Debug Subscription Flow
+
+```bash
+DEBUG=sylphx:subscription:* bun ./packages/code/src/index.ts
+```
+
+Output:
+```
+  sylphx:subscription:session Created skeleton session: session-123 +0ms
+  sylphx:subscription:message Message created: msg-456 session: session-123 +2ms
+  sylphx:subscription:message Added assistant message, total: 1 +0ms
+  sylphx:subscription:content Reasoning start, session: session-123 +150ms
+```
+
+### Example 2: Debug Everything
+
+```bash
+DEBUG=sylphx:* bun ./packages/code/src/index.ts
+```
+
+### Example 3: Debug Specific Issue
+
+```bash
+# Only session-related logs
+DEBUG=sylphx:*:session bun ./packages/code/src/index.ts
+```
+
+## 🤖 For LLMs / Automated Testing
+
+### Option 1: Use Vitest (推薦)
+
+```bash
+# Run tests with JSON output
+bun test --reporter=json > results.json
+
+# Check results
+cat results.json | jq '.success'
+```
+
+### Option 2: Use Test Harness + Debug
+
+```bash
+# Run with debug logging
+DEBUG=sylphx:* bun ./packages/code/src/test-harness.ts "test" 2> debug.log
+
+# Read result
+cat ~/.sylphx-code/logs/test-result-*.json
+
+# Read debug logs
+cat debug.log
+```
+
+## 📚 Why `debug` Package?
+
+1. **Industry Standard** ✅
+   - Used by Express, Socket.io, Mongoose, Koa, etc.
+   - 20M+ weekly downloads on npm
+   - Battle-tested in production
+
+2. **Zero Learning Curve** ✅
+   - Developers already know it
+   - Standard DEBUG env var
+   - Familiar patterns
+
+3. **Feature-Rich** ✅
+   - Color-coded output
+   - Timestamps
+   - Wildcard matching
+   - No overhead when disabled
+
+4. **Well Documented** ✅
+   - [Official docs](https://www.npmjs.com/package/debug)
+   - Tons of examples online
+   - Large community
+
+## 🔗 Resources
+
+- [debug package on npm](https://www.npmjs.com/package/debug)
+- [GitHub repository](https://github.com/debug-js/debug)
+- [Our Testing Guide](./TESTING.md)
+
+## 🎯 Migration from Custom Logger
+
+舊方式 (custom):
+```typescript
+const log = createLogger('subscription');
+log('Session created:', sessionId);
+```
+
+新方式 (debug package):
+```typescript
+const log = createLogger('subscription:session');
+log('Session created:', sessionId);
+```
+
+Enable:
+```bash
+# Old
+DEBUG=subscription:*
+
+# New
+DEBUG=sylphx:subscription:*
+```
+
+完全向後兼容！只需要 prefix `sylphx:` 就得了。
