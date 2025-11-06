@@ -11,7 +11,7 @@
  */
 
 import {
-  getTRPCClient,
+  getRecentSessions,
   useAIConfig,
   useAppStore,
   useAskToolHandler,
@@ -248,10 +248,7 @@ export default function Chat(_props: ChatProps) {
         getAIConfig: () => useAppStore.getState().aiConfig,
         getSelectedProvider: () => useAppStore.getState().selectedProvider,
         getSelectedModel: () => useAppStore.getState().selectedModel,
-        getSessions: async () => {
-          const client = getTRPCClient();
-          return await client.session.getRecent.query({ limit: 100 });
-        },
+        getSessions: () => getRecentSessions(100),
         getCurrentSessionId: () => currentSessionId,
         setCurrentSession,
         getNotificationSettings: () => notificationSettings,
