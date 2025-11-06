@@ -147,6 +147,31 @@ export interface SessionMessage {
 }
 
 /**
+ * Session metadata (lightweight)
+ * Used for lists and selection UI - no messages or todos included
+ *
+ * Design: Data on demand
+ * ======================
+ * - SessionMetadata: Lightweight, for lists/selection (this type)
+ * - Session: Full data with messages/todos (below)
+ *
+ * Why separate types:
+ * - Avoids loading all messages when showing session list
+ * - Efficient cursor-based pagination
+ * - Clear API contracts (metadata vs full session)
+ */
+export interface SessionMetadata {
+  id: string;
+  title?: string;
+  provider: ProviderId;
+  model: string;
+  agentId: string;
+  created: number;
+  updated: number;
+  messageCount: number;
+}
+
+/**
  * Chat session
  *
  * Design: Per-session todo lists

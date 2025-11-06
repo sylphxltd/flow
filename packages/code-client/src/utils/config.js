@@ -1,0 +1,23 @@
+/**
+ * Config utility functions
+ * Centralized provider/model resolution logic
+ */
+/**
+ * Resolve provider and model from AI config
+ *
+ * Extracts the configured provider and model from the nested config structure:
+ * - config.defaultProvider → provider name
+ * - config.providers[provider].defaultModel → model name
+ *
+ * Falls back to sensible defaults if config is missing or incomplete.
+ *
+ * @param aiConfig - AI configuration object (can be null)
+ * @returns Provider ID and model name
+ */
+export function resolveProviderAndModel(aiConfig) {
+    const provider = (aiConfig?.defaultProvider || 'openrouter');
+    const providerConfig = aiConfig?.providers?.[provider];
+    const model = providerConfig?.defaultModel || 'anthropic/claude-3.5-sonnet';
+    return { provider, model };
+}
+//# sourceMappingURL=config.js.map

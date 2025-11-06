@@ -1,0 +1,73 @@
+/**
+ * Claude Code Provider
+ * Uses Claude Code CLI with OAuth authentication
+ * Supports Vercel AI SDK tools (executed by framework, not CLI)
+ */
+import which from 'which';
+import { ClaudeCodeLanguageModel } from './claude-code-language-model.js';
+export class ClaudeCodeProvider {
+    id = 'claude-code';
+    name = 'Claude Code';
+    description = 'Claude Code local models';
+    getConfigSchema() {
+        // No configuration needed - uses Claude CLI OAuth
+        return [];
+    }
+    isConfigured(_config) {
+        // Claude Code uses CLI OAuth - check if 'claude' command exists
+        // Using 'which' package: fast, cross-platform, industry standard
+        try {
+            which.sync('claude');
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+    async fetchModels(_config) {
+        // Claude Code has fixed set of models
+        return [
+            { id: 'opus', name: 'Claude 4.1 Opus (Most Capable)' },
+            { id: 'sonnet', name: 'Claude 4.5 Sonnet (Balanced)' },
+            { id: 'haiku', name: 'Claude 4.5 Haiku (Fastest)' },
+        ];
+    }
+    async getModelDetails(modelId, _config) {
+        // Claude Code models have known specs
+        const specs = {
+            opus: {
+                contextLength: 200000,
+                maxOutput: 4096,
+                inputPrice: 0,
+                outputPrice: 0,
+            },
+            sonnet: {
+                contextLength: 200000,
+                maxOutput: 8192,
+                inputPrice: 0,
+                outputPrice: 0,
+            },
+            haiku: {
+                contextLength: 200000,
+                maxOutput: 4096,
+                inputPrice: 0,
+                outputPrice: 0,
+            },
+        };
+        return specs[modelId] || null;
+    }
+    createClient(_config, modelId) {
+        // Use custom LanguageModelV2 implementation with Claude Code CLI
+        // This implementation:
+        // - Uses Claude Agent SDK query() function
+        // - Accesses Claude Code CLI via OAuth (no API key needed)
+        // - Supports basic text generation
+        // - Returns LanguageModelV2 compatible with AI SDK v5
+        // Note: Custom Vercel tools support is limited - Claude Agent SDK only supports
+        // built-in tools and MCP servers, not arbitrary tool schemas
+        return new ClaudeCodeLanguageModel({
+            modelId,
+        });
+    }
+}
+//# sourceMappingURL=claude-code-provider.js.map

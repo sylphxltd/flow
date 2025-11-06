@@ -1,0 +1,1 @@
+{"version":3,"file":"useSessionPersistence.js","sourceRoot":"","sources":["useSessionPersistence.ts"],"names":[],"mappings":"AAAA;;;;;;;;GAQG;AAEH,OAAO,EAAE,SAAS,EAAE,MAAM,OAAO,CAAC;AAIlC,MAAM,UAAU,qBAAqB;IACnC,SAAS,CAAC,GAAG,EAAE;QACb,uDAAuD;QACvD,qEAAqE;QACrE,qFAAqF;QAErF,0EAA0E;QAC1E,iEAAiE;QAEjE,kEAAkE;IACpE,CAAC,EAAE,EAAE,CAAC,CAAC;AACT,CAAC"}

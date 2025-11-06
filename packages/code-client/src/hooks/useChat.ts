@@ -12,6 +12,8 @@ import {
   injectSystemStatusToOutput,
   buildTodoContext,
   type SystemStatus,
+  type FileAttachment,
+  type TokenUsage,
 } from '@sylphx/code-core';
 import { processStream } from '@sylphx/code-core';
 import {
@@ -116,6 +118,42 @@ class FileContentCache {
 
 const fileContentCache = new FileContentCache();
 
+/**
+ * Options for sending a message
+ */
+export interface SendMessageOptions {
+  // Data
+  attachments?: FileAttachment[];
+  abortSignal?: AbortSignal;
+
+  // Lifecycle callbacks (required/optional)
+  onComplete?: () => void;
+  onAbort?: () => void;
+  onError?: (error: string) => void;
+  onFinish?: (usage: TokenUsage, finishReason: string) => void;
+
+  // Tool streaming callbacks
+  onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
+  onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
+  onToolInputStart?: (toolCallId: string, toolName: string) => void;
+  onToolInputDelta?: (toolCallId: string, toolName: string, argsTextDelta: string) => void;
+  onToolInputEnd?: (toolCallId: string, toolName: string, args: unknown) => void;
+  onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void;
+
+  // Reasoning streaming callbacks
+  onReasoningStart?: () => void;
+  onReasoningDelta?: (text: string) => void;
+  onReasoningEnd?: (duration: number) => void;
+
+  // Text streaming callbacks
+  onTextStart?: () => void;
+  onTextDelta?: (text: string) => void;
+  onTextEnd?: () => void;
+
+  // User interaction
+  onUserInputRequest?: (request: UserInputRequest) => Promise<string>;
+}
+
 export function useChat() {
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
@@ -125,43 +163,6 @@ export function useChat() {
   const setError = useAppStore((state) => state.setError);
   const addDebugLog = useAppStore((state) => state.addDebugLog);
   const notificationSettings = useAppStore((state) => state.notificationSettings);
-
-  /**
-   * Send message and stream response
-   * @param abortSignal - Optional abort signal to cancel the stream
-   */
-  interface SendMessageOptions {
-    // Data
-    attachments?: FileAttachment[];
-    abortSignal?: AbortSignal;
-
-    // Lifecycle callbacks (required/optional)
-    onComplete?: () => void;
-    onAbort?: () => void;
-    onError?: (error: string) => void;
-    onFinish?: (usage: TokenUsage, finishReason: string) => void;
-
-    // Tool streaming callbacks
-    onToolCall?: (toolCallId: string, toolName: string, args: unknown) => void;
-    onToolResult?: (toolCallId: string, toolName: string, result: unknown, duration: number) => void;
-    onToolInputStart?: (toolCallId: string, toolName: string) => void;
-    onToolInputDelta?: (toolCallId: string, toolName: string, argsTextDelta: string) => void;
-    onToolInputEnd?: (toolCallId: string, toolName: string, args: unknown) => void;
-    onToolError?: (toolCallId: string, toolName: string, error: string, duration: number) => void;
-
-    // Reasoning streaming callbacks
-    onReasoningStart?: () => void;
-    onReasoningDelta?: (text: string) => void;
-    onReasoningEnd?: (duration: number) => void;
-
-    // Text streaming callbacks
-    onTextStart?: () => void;
-    onTextDelta?: (text: string) => void;
-    onTextEnd?: () => void;
-
-    // User interaction
-    onUserInputRequest?: (request: UserInputRequest) => Promise<string>;
-  }
 
   const sendMessage = async (
     message: string,

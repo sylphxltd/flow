@@ -33,7 +33,7 @@ export function useAskToolHandler({
       return new Promise((resolve) => {
         addDebugLog(`[ask tool] Waiting for user selection (${request.questions.length} question${request.questions.length > 1 ? 's' : ''})`);
         inputResolver.current = resolve;
-        setPendingInput(request);
+        setPendingInput(request as unknown as WaitForInputOptions);
 
         // Reset selection state
         setMultiSelectionPage(0);
