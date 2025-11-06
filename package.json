@@ -34,7 +34,12 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
-    "test": "turbo run test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:streaming": "vitest run packages/code/src/tests/streaming.test.ts",
+    "test:adapter": "vitest run packages/code/src/tests/subscription-adapter.test.ts",
     "lint": "turbo run lint",
     "format": "biome format --write .",
     "type-check": "turbo run type-check",

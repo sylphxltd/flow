@@ -1,9 +1,14 @@
 import { defineConfig } from 'vitest/config';
+import path from 'node:path';
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    include: ['**/*.test.ts', '**/*.test.tsx'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**'],
+    testTimeout: 60000, // 60s for integration tests
+    hookTimeout: 30000,
     // Test isolation - run each test file in separate process to prevent mock pollution
     pool: 'forks',
     poolOptions: {
@@ -29,6 +34,13 @@ export default defineConfig({
           lines: 80,
         },
       },
+    },
+  },
+  resolve: {
+    alias: {
+      '@sylphx/code-core': path.resolve(__dirname, './packages/code-core/src'),
+      '@sylphx/code-server': path.resolve(__dirname, './packages/code-server/src'),
+      '@sylphx/code-client': path.resolve(__dirname, './packages/code-client/src'),
     },
   },
 });
