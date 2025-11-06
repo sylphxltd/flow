@@ -14,8 +14,14 @@
 
 import { getTRPCClient, useAppStore } from '@sylphx/code-client';
 import type { AIConfig, FileAttachment, MessagePart, TokenUsage } from '@sylphx/code-core';
+import { createLogger } from '@sylphx/code-core';
 import type { StreamEvent } from '@sylphx/code-server';
 import type React from 'react';
+
+// Create debug loggers for different components
+const logSession = createLogger('subscription:session');
+const logMessage = createLogger('subscription:message');
+const logContent = createLogger('subscription:content');
 
 /**
  * Parameters for subscription adapter
@@ -67,13 +73,38 @@ function updateActiveMessageContent(
 ) {
   useAppStore.setState((state) => {
     const session = state.currentSession;
-    if (!session || session.id !== currentSessionId) return;
+    if (!session || session.id !== currentSessionId) {
+      logContent('Session mismatch! expected:', currentSessionId, 'got:', session?.id);
+      return;
+    }
 
     const activeMessage = session.messages.find((m) => m.status === 'active');
-    if (!activeMessage) return;
+    if (!activeMessage) {
+      logContent('No active message found! messages:', session.messages.length);
+      return;
+    }
 
     activeMessage.content = updater(activeMessage.content);
   });
+}
+
+/**
+ * Load session in background (non-blocking)
+ * Called when server creates a new session
+ */
+function loadSessionInBackground(sessionId: string) {
+  // Fire and forget - don't block event handling
+  (async () => {
+    try {
+      const client = getTRPCClient();
+      const session = await client.session.getById.query({ sessionId });
+      useAppStore.setState((state) => {
+        state.currentSession = session;
+      });
+    } catch (error) {
+      console.error('[loadSessionInBackground] Failed to load session:', error);
+    }
+  })();
 }
 
 /**
@@ -348,25 +379,36 @@ function handleStreamEvent(
     notificationSettings: { notifyOnCompletion: boolean; notifyOnError: boolean };
   }
 ) {
-  const { currentSessionId } = context;
+  // IMPORTANT: Get currentSessionId from store (not from context)
+  // For lazy sessions, the sessionId is updated in store after session-created event
+  const currentSessionId = useAppStore.getState().currentSessionId;
 
   switch (event.type) {
     case 'session-created':
       // LAZY SESSION: Server created new session, update client state
       context.addLog(`[Session] Created: ${event.sessionId}`);
 
-      // Update currentSessionId in store
+      // Create skeleton session immediately (don't wait for background load)
       useAppStore.setState((state) => {
         state.currentSessionId = event.sessionId;
+        state.currentSession = {
+          id: event.sessionId,
+          provider: event.provider,
+          model: event.model,
+          agentId: 'coder', // Default agent
+          enabledRuleIds: [],
+          messages: [],
+          todos: [],
+          nextTodoId: 1,
+          created: Date.now(),
+          updated: Date.now(),
+        };
       });
 
-      // Load the new session from server
-      getTRPCClient().then(async (client) => {
-        const session = await client.session.getById({ sessionId: event.sessionId });
-        useAppStore.setState((state) => {
-          state.currentSession = session;
-        });
-      });
+      logSession('Created skeleton session:', event.sessionId);
+
+      // Load full session from server in background (to get any server-side data)
+      loadSessionInBackground(event.sessionId);
       break;
 
     case 'session-title-start':
@@ -389,6 +431,8 @@ function handleStreamEvent(
       // Backend created assistant message, store the ID
       context.streamingMessageIdRef.current = event.messageId;
 
+      logMessage('Message created:', event.messageId, 'session:', currentSessionId);
+
       // Sync to Zustand store
       useAppStore.setState((state) => {
         const session = state.currentSession;
@@ -399,15 +443,22 @@ function handleStreamEvent(
             timestamp: Date.now(),
             status: 'active',
           });
+          logMessage('Added assistant message, total:', session.messages.length);
+        } else {
+          logMessage('Session mismatch! expected:', currentSessionId, 'got:', session?.id);
         }
       });
       break;
 
     case 'reasoning-start':
-      updateActiveMessageContent(currentSessionId, (prev) => [
-        ...prev,
-        { type: 'reasoning', content: '', status: 'active', startTime: Date.now() } as MessagePart,
-      ]);
+      logContent('Reasoning start, session:', currentSessionId);
+      updateActiveMessageContent(currentSessionId, (prev) => {
+        logContent('Adding reasoning part, existing parts:', prev.length);
+        return [
+          ...prev,
+          { type: 'reasoning', content: '', status: 'active', startTime: Date.now() } as MessagePart,
+        ];
+      });
       break;
 
     case 'reasoning-delta':

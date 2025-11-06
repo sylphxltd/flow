@@ -98,6 +98,7 @@ export { formatTodoChange, formatTodoCount } from './utils/todo-formatters.js'
 export { formatTokenCount, getTokenizerInfo, countTokens } from './utils/token-counter.js'
 export { filterFiles, type FileInfo } from './utils/file-scanner.js'
 export { fetchModels, type ModelInfo } from './utils/ai-model-fetcher.js'
+export { debugLog, createLogger } from './utils/debug-logger.js'
 
 // ============================================================================
 // Tools

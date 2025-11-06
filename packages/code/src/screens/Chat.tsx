@@ -60,6 +60,7 @@ export default function Chat(_props: ChatProps) {
   const navigateTo = useAppStore((state) => state.navigateTo);
   const aiConfig = useAppStore((state) => state.aiConfig);
   const currentSessionId = useAppStore((state) => state.currentSessionId);
+  const currentSession = useAppStore((state) => state.currentSession); // IMPORTANT: Get directly from store for reactivity
   const createSession = useAppStore((state) => state.createSession);
   const updateSessionModel = useAppStore((state) => state.updateSessionModel);
   const updateSessionProvider = useAppStore((state) => state.updateSessionProvider);
@@ -81,7 +82,7 @@ export default function Chat(_props: ChatProps) {
   };
 
   // Custom hooks
-  const { sendMessage, currentSession } = useChat();
+  const { sendMessage } = useChat();
   const { saveConfig } = useAIConfig();
   const usedTokens = useTokenCalculation(currentSession || null);
 
