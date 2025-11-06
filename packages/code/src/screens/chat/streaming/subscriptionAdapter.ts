@@ -174,6 +174,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       );
     }
 
+    console.log('[subscriptionAdapter] Setting isStreaming to true');
     setIsStreaming(true);
 
     // Reset flags for new stream
@@ -187,8 +188,17 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
     abortControllerRef.current = new AbortController();
 
     try {
+      console.log('[subscriptionAdapter] Getting tRPC client...');
       // Get tRPC caller (in-process client)
       const caller = await getTRPCClient();
+      console.log('[subscriptionAdapter] tRPC client obtained');
+
+      console.log('[subscriptionAdapter] Calling streamResponse with:', {
+        sessionId,
+        provider: sessionId ? undefined : provider,
+        model: sessionId ? undefined : model,
+        userMessage: userMessage.substring(0, 50),
+      });
 
       // Call subscription procedure (returns Observable)
       // If sessionId is null, pass provider/model for lazy session creation
@@ -200,9 +210,12 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         attachments,
       });
 
+      console.log('[subscriptionAdapter] Observable received, subscribing...');
+
       // Subscribe to observable
       const subscription = observable.subscribe({
         next: (event: StreamEvent) => {
+          console.log('[subscriptionAdapter] Received event:', event.type);
           handleStreamEvent(event, {
             currentSessionId: sessionId,
             updateSessionTitle,
@@ -219,6 +232,7 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
           });
         },
         error: (error: any) => {
+          console.log('[subscriptionAdapter] Subscription error:', error);
           addLog(`[Subscription] Error: ${error.message || String(error)}`);
           lastErrorRef.current = error.message || String(error);
 
