@@ -11,7 +11,8 @@ export const sessionsCommand: Command = {
   description: 'View and switch between chat sessions',
   execute: async (context) => {
     const { formatSessionDisplay } = await import('@sylphx/code-core');
-    const sessions = await context.getSessions();
+    const { getRecentSessions } = await import('@sylphx/code-client');
+    const sessions = await getRecentSessions(100);
 
     if (sessions.length === 0) {
       return 'No sessions available. Start chatting to create a session.';
