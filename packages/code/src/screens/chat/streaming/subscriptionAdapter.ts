@@ -202,7 +202,8 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
 
       // Call subscription procedure (returns Observable)
       // If sessionId is null, pass provider/model for lazy session creation
-      const observable = await caller.message.streamResponse({
+      // NOTE: Don't await subscriptions - they return observables synchronously
+      const observable = caller.message.streamResponse({
         sessionId: sessionId,
         provider: sessionId ? undefined : provider,
         model: sessionId ? undefined : model,
