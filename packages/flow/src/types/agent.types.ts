@@ -9,6 +9,7 @@
 export interface AgentMetadata {
   name: string;
   description: string;
+  rules?: string[]; // Optional list of rule files to include (e.g., ['core', 'code-standards'])
 }
 
 /**
