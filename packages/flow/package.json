@@ -8,7 +8,7 @@
     "sylphx-flow": "./dist/index.js"
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
+    "build": "bunup",
     "dev": "bun src/index.ts",
     "start": "bun dist/index.js",
     "test": "vitest run",
