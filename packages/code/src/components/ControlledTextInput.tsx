@@ -20,7 +20,7 @@ export interface ControlledTextInputProps {
   onChange: (value: string) => void;
   cursor: number;
   onCursorChange: (cursor: number) => void;
-  onSubmit?: (value: string) => void;
+  onSubmit?: (value: string) => void | Promise<void>;
   placeholder?: string;
   showCursor?: boolean;
   focus?: boolean;

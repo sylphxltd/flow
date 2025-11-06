@@ -12,7 +12,7 @@ import ControlledTextInput from './ControlledTextInput.js';
 interface TextInputWithHintProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (value: string) => void;
+  onSubmit: (value: string) => void | Promise<void>;
   placeholder?: string;
   showCursor?: boolean;
   hint?: string; // Ghost text to show after cursor
