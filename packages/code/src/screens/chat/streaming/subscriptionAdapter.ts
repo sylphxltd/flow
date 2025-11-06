@@ -209,90 +209,84 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       console.log('[subscriptionAdapter] caller.message type:', typeof caller.message);
       console.log('[subscriptionAdapter] caller.message.streamResponse type:', typeof caller.message.streamResponse);
 
-      let observable;
-      try {
-        console.log('[subscriptionAdapter] Calling streamResponse NOW...');
-        observable = caller.message.streamResponse({
+      // tRPC v11 subscription API: client.procedure.subscribe(input, callbacks)
+      console.log('[subscriptionAdapter] Calling streamResponse.subscribe...');
+      const subscription = caller.message.streamResponse.subscribe(
+        {
           sessionId: sessionId,
           provider: sessionId ? undefined : provider,
           model: sessionId ? undefined : model,
           userMessage,
           attachments,
-        });
-        console.log('[subscriptionAdapter] streamResponse call completed');
-      } catch (err) {
-        console.log('[subscriptionAdapter] ERROR calling streamResponse:', err);
-        throw err;
-      }
-
-      console.log('[subscriptionAdapter] Observable received!');
-      console.log('[subscriptionAdapter] Observable type:', typeof observable);
-      console.log('[subscriptionAdapter] Observable constructor:', observable?.constructor?.name);
-      console.log('[subscriptionAdapter] Observable has subscribe?', typeof observable?.subscribe);
-      console.log('[subscriptionAdapter] About to call subscribe...');
-
-      // Subscribe to observable
-      const subscription = observable.subscribe({
-        next: (event: StreamEvent) => {
-          console.log('[subscriptionAdapter] Received event:', event.type);
-          handleStreamEvent(event, {
-            currentSessionId: sessionId,
-            updateSessionTitle,
-            setIsTitleStreaming,
-            setStreamingTitle,
-            streamingMessageIdRef,
-            usageRef,
-            finishReasonRef,
-            lastErrorRef,
-            addLog,
-            aiConfig,
-            userMessage,
-            notificationSettings,
-          });
         },
-        error: (error: any) => {
-          console.log('[subscriptionAdapter] Subscription error:', error);
-          addLog(`[Subscription] Error: ${error.message || String(error)}`);
-          lastErrorRef.current = error.message || String(error);
+        {
+          onStarted: () => {
+            console.log('[subscriptionAdapter] Subscription started!');
+          },
+          onData: (event: StreamEvent) => {
+            console.log('[subscriptionAdapter] Received event:', event.type);
+            handleStreamEvent(event, {
+              currentSessionId: sessionId,
+              updateSessionTitle,
+              setIsTitleStreaming,
+              setStreamingTitle,
+              streamingMessageIdRef,
+              usageRef,
+              finishReasonRef,
+              lastErrorRef,
+              addLog,
+              aiConfig,
+              userMessage,
+              notificationSettings,
+            });
+          },
+          onError: (error: any) => {
+            console.log('[subscriptionAdapter] Subscription error:', error);
+            addLog(`[Subscription] Error: ${error.message || String(error)}`);
+            lastErrorRef.current = error.message || String(error);
 
-          // Add error message part to UI
-          updateActiveMessageContent(sessionId, (prev) => [
-            ...prev,
-            {
-              type: 'error',
-              error: error.message || String(error),
-              status: 'completed',
-            } as MessagePart,
-          ]);
+            // Add error message part to UI
+            updateActiveMessageContent(sessionId, (prev) => [
+              ...prev,
+              {
+                type: 'error',
+                error: error.message || String(error),
+                status: 'completed',
+              } as MessagePart,
+            ]);
 
-          // Cleanup
-          cleanupAfterStream({
-            currentSessionId: sessionId,
-            wasAbortedRef,
-            lastErrorRef,
-            usageRef,
-            finishReasonRef,
-            streamingMessageIdRef,
-            setIsStreaming,
-            notificationSettings,
-          });
-        },
-        complete: () => {
-          addLog('[Subscription] Complete');
+            // Cleanup
+            cleanupAfterStream({
+              currentSessionId: sessionId,
+              wasAbortedRef,
+              lastErrorRef,
+              usageRef,
+              finishReasonRef,
+              streamingMessageIdRef,
+              setIsStreaming,
+              notificationSettings,
+            });
+          },
+          onComplete: () => {
+            console.log('[subscriptionAdapter] Subscription complete');
+            addLog('[Subscription] Complete');
 
-          // Cleanup
-          cleanupAfterStream({
-            currentSessionId: sessionId,
-            wasAbortedRef,
-            lastErrorRef,
-            usageRef,
-            finishReasonRef,
-            streamingMessageIdRef,
-            setIsStreaming,
-            notificationSettings,
-          });
-        },
-      });
+            // Cleanup
+            cleanupAfterStream({
+              currentSessionId: sessionId,
+              wasAbortedRef,
+              lastErrorRef,
+              usageRef,
+              finishReasonRef,
+              streamingMessageIdRef,
+              setIsStreaming,
+              notificationSettings,
+            });
+          },
+        }
+      );
+
+      console.log('[subscriptionAdapter] Subscription created, waiting for events...');
 
       // Handle abort
       abortControllerRef.current.signal.addEventListener('abort', () => {
