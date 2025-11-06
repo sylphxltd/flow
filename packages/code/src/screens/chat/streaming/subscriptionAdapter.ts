@@ -192,6 +192,8 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       // Get tRPC caller (in-process client)
       const caller = await getTRPCClient();
       console.log('[subscriptionAdapter] tRPC client obtained');
+      console.log('[subscriptionAdapter] Caller type:', typeof caller);
+      console.log('[subscriptionAdapter] Caller keys:', Object.keys(caller));
 
       console.log('[subscriptionAdapter] Calling streamResponse with:', {
         sessionId,
@@ -207,13 +209,21 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
       console.log('[subscriptionAdapter] caller.message type:', typeof caller.message);
       console.log('[subscriptionAdapter] caller.message.streamResponse type:', typeof caller.message.streamResponse);
 
-      const observable = caller.message.streamResponse({
-        sessionId: sessionId,
-        provider: sessionId ? undefined : provider,
-        model: sessionId ? undefined : model,
-        userMessage,
-        attachments,
-      });
+      let observable;
+      try {
+        console.log('[subscriptionAdapter] Calling streamResponse NOW...');
+        observable = caller.message.streamResponse({
+          sessionId: sessionId,
+          provider: sessionId ? undefined : provider,
+          model: sessionId ? undefined : model,
+          userMessage,
+          attachments,
+        });
+        console.log('[subscriptionAdapter] streamResponse call completed');
+      } catch (err) {
+        console.log('[subscriptionAdapter] ERROR calling streamResponse:', err);
+        throw err;
+      }
 
       console.log('[subscriptionAdapter] Observable received!');
       console.log('[subscriptionAdapter] Observable type:', typeof observable);
@@ -310,6 +320,11 @@ export function createSubscriptionSendUserMessageToAI(params: SubscriptionAdapte
         });
       });
     } catch (error) {
+      console.log('[subscriptionAdapter] CAUGHT ERROR:', error);
+      console.log('[subscriptionAdapter] Error type:', typeof error);
+      console.log('[subscriptionAdapter] Error message:', error instanceof Error ? error.message : String(error));
+      console.log('[subscriptionAdapter] Error stack:', error instanceof Error ? error.stack : 'N/A');
+
       addLog(
         `[subscriptionAdapter] Error: ${error instanceof Error ? error.message : String(error)}`
       );
