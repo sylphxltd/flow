@@ -349,6 +349,8 @@ async function sendNotification(verbose: boolean): Promise<string> {
  * Send notification on macOS using osascript
  */
 async function sendMacNotification(title: string, message: string): Promise<void> {
+  // Note: macOS display notification doesn't support custom icons directly
+  // The icon shown will be the Terminal app icon or the app that triggered the notification
   const script = `display notification "${escapeForAppleScript(message)}" with title "${escapeForAppleScript(title)}"`;
   await execAsync(`osascript -e '${script}'`);
 }
@@ -360,7 +362,10 @@ async function sendLinuxNotification(title: string, message: string): Promise<vo
   // Try to use notify-send, fail silently if not available
   try {
     await execAsync('which notify-send');
-    await execAsync(`notify-send "${escapeForShell(title)}" "${escapeForShell(message)}"`);
+    // Add icon support - using 'dialog-information' which is commonly available
+    await execAsync(
+      `notify-send -i "dialog-information" "${escapeForShell(title)}" "${escapeForShell(message)}"`
+    );
   } catch {
     // notify-send not available, skip notification silently
   }
@@ -377,7 +382,8 @@ async function sendWindowsNotification(title: string, message: string): Promise<
 $template = @"
 <toast>
     <visual>
-        <binding template="ToastText02">
+        <binding template="ToastImageAndText02">
+            <image id="1" src="%SystemRoot%\\System32\\Shell32.dll,-16739" alt="info icon"/>
             <text id="1">${escapeForXml(title)}</text>
             <text id="2">${escapeForXml(message)}</text>
         </binding>
