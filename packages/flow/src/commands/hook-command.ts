@@ -311,8 +311,8 @@ function formatBytes(bytes: number): string {
  * Send OS-level notification
  */
 async function sendNotification(verbose: boolean): Promise<string> {
-  const title = 'Claude Code';
-  const message = 'Awaiting your input';
+  const title = '🔮 Sylphx Flow';
+  const message = 'Claude Code is ready';
   const platform = os.platform();
 
   if (verbose) {

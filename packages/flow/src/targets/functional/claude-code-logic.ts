@@ -32,7 +32,6 @@ export interface ClaudeCodeSettings {
 
 export interface HookConfig {
   sessionCommand?: string;
-  messageCommand?: string;
   notificationCommand?: string;
 }
 
@@ -43,18 +42,16 @@ export interface HookConfig {
 export const generateHookCommands = async (targetId: string): Promise<HookConfig> => {
   return {
     sessionCommand: `sylphx-flow hook --type session --target ${targetId}`,
-    messageCommand: `sylphx-flow hook --type message --target ${targetId}`,
     notificationCommand: `sylphx-flow hook --type notification --target ${targetId}`,
   };
 };
 
 /**
  * Default hook commands (fallback)
- * Now using unified hook command for all content (rules, output styles, system info)
+ * Simplified to only include session and notification hooks
  */
 export const DEFAULT_HOOKS: HookConfig = {
   sessionCommand: 'sylphx-flow hook --type session --target claude-code',
-  messageCommand: 'sylphx-flow hook --type message --target claude-code',
   notificationCommand: 'sylphx-flow hook --type notification --target claude-code',
 };
 
@@ -78,7 +75,6 @@ export const buildHookConfiguration = (
   config: HookConfig = DEFAULT_HOOKS
 ): ClaudeCodeSettings['hooks'] => {
   const sessionCommand = config.sessionCommand || DEFAULT_HOOKS.sessionCommand!;
-  const messageCommand = config.messageCommand || DEFAULT_HOOKS.messageCommand!;
   const notificationCommand = config.notificationCommand || DEFAULT_HOOKS.notificationCommand!;
 
   return {
@@ -88,16 +84,6 @@ export const buildHookConfiguration = (
           {
             type: 'command',
             command: sessionCommand,
-          },
-        ],
-      },
-    ],
-    UserPromptSubmit: [
-      {
-        hooks: [
-          {
-            type: 'command',
-            command: messageCommand,
           },
         ],
       },
