@@ -96,6 +96,12 @@ export const getTargetsWithMCPSupport = (): readonly Target[] =>
   getImplementedTargets().filter((target) => !!target.setupMCP);
 
 /**
+ * Get targets that support command execution (agent running)
+ */
+export const getTargetsWithCommandSupport = (): readonly Target[] =>
+  getImplementedTargets().filter((target) => !!target.executeCommand);
+
+/**
  * Check if target is implemented
  */
 export const isTargetImplemented = (id: string): boolean => {

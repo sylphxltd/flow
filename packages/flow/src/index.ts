@@ -10,11 +10,14 @@ import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { codebaseCommand } from './commands/codebase-command.js';
 import { hookCommand } from './commands/hook-command.js';
-import { initCommand } from './commands/init-command.js';
 import { knowledgeCommand } from './commands/knowledge-command.js';
-import { runCommand } from './commands/run-command.js';
-
-import { showDefaultHelp } from './utils/help.js';
+import {
+  flowCommand,
+  statusCommand,
+  doctorCommand,
+  upgradeCommand,
+  executeFlow,
+} from './commands/flow-command.js';
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
@@ -46,17 +49,37 @@ export function createCLI(): Command {
     writeOut: (str) => process.stdout.write(str),
   });
 
-  // Add all commands directly using Commander.js
-  program.addCommand(initCommand);
-  program.addCommand(runCommand);
+  // Add commands
+  program.addCommand(flowCommand);
+  program.addCommand(statusCommand);
+  program.addCommand(doctorCommand);
+  program.addCommand(upgradeCommand);
   program.addCommand(codebaseCommand);
   program.addCommand(knowledgeCommand);
   program.addCommand(hookCommand);
 
-  // Default action when no command is provided
-  program.action(() => {
-    showDefaultHelp();
-  });
+  // Default action: run smart flow
+  program
+    .argument('[prompt]', 'The prompt to execute with agent (optional)')
+    .option('--init-only', 'Only initialize, do not run')
+    .option('--run-only', 'Only run, skip initialization')
+    .option('--clean', 'Clean all configurations and reinitialize')
+    .option('--upgrade', 'Upgrade Sylphx Flow to latest version')
+    .option('--upgrade-target', 'Upgrade target platform (Claude Code/OpenCode)')
+    .option('--target <type>', 'Target platform (opencode, claude-code, auto-detect)')
+    .option('--verbose', 'Show detailed output')
+    .option('--dry-run', 'Show what would be done without making changes')
+    .option('--no-mcp', 'Skip MCP installation')
+    .option('--no-agents', 'Skip agents installation')
+    .option('--no-rules', 'Skip rules installation')
+    .option('--no-output-styles', 'Skip output styles installation')
+    .option('--no-slash-commands', 'Skip slash commands installation')
+    .option('--no-hooks', 'Skip hooks setup')
+    .option('--agent <name>', 'Agent to use (default: coder)', 'coder')
+    .option('--agent-file <path>', 'Load agent from specific file path (overrides --agent)')
+    .action(async (prompt, options) => {
+      await executeFlow(prompt, options);
+    });
 
   return program;
 }
@@ -64,15 +87,15 @@ export function createCLI(): Command {
 /**
  * Run the CLI application with enhanced error handling and process management
  */
-export function runCLI(): void {
+export async function runCLI(): Promise<void> {
   const program = createCLI();
 
   // Set up global error handling before parsing
   setupGlobalErrorHandling();
 
   try {
-    // Parse and execute commands
-    program.parse(process.argv);
+    // Parse and execute commands - use parseAsync for async actions
+    await program.parseAsync(process.argv);
   } catch (error) {
     handleCommandError(error);
   }
@@ -161,4 +184,10 @@ function handleCommandError(error: unknown): void {
 }
 
 // Execute CLI when run as script
-runCLI();
+(async () => {
+  try {
+    await runCLI();
+  } catch (error) {
+    handleCommandError(error);
+  }
+})();
