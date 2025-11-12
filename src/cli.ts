@@ -116,6 +116,12 @@ function setupGlobalErrorHandling(): void {
     console.log('\nSylphx Flow CLI terminated');
     process.exit(0);
   });
+
+  // Ensure clean exit by allowing the event loop to drain
+  process.on('beforeExit', () => {
+    // Node.js will exit automatically after this handler completes
+    // No explicit process.exit() needed
+  });
 }
 
 /**
