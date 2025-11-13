@@ -44,10 +44,10 @@ sylphx-flow --version
 
 ## Quick Start
 
-### 1. Initialize Your Project
+### 1. Setup Your Project
 
 ```bash
-sylphx-flow init
+sylphx-flow setup
 ```
 
 This command will:
@@ -56,14 +56,19 @@ This command will:
 - Set up agent and rule directories
 - Configure smart defaults
 
+**Note:** Setup is automatic! If you skip this step and run a task directly, Sylphx Flow will automatically initialize on first use.
+
 ### 2. Run Your First Task
 
 ```bash
-# Direct prompt
+# Direct prompt (auto-setup if needed)
 sylphx-flow "implement user authentication"
 
 # With specific agent
 sylphx-flow "review code for security" --agent reviewer
+
+# Loop mode for continuous work
+sylphx-flow "process github issues" --loop
 ```
 
 ### 3. Try Loop Mode

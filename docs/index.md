@@ -64,8 +64,8 @@ Traditional AI coding tools make you work too hard - spending more time writing 
 # Install globally
 bun install -g @sylphx/flow
 
-# Initialize your project
-sylphx-flow init
+# Setup your project (first time only)
+sylphx-flow setup
 
 # Start building
 sylphx-flow "implement authentication"

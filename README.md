@@ -56,7 +56,7 @@ User: "I'm using TypeScript + React + Next.js 14 App Router,
 
 ```bash
 # What you type with Sylphx Flow ✅
-sylphx-flow run "implement authentication"
+sylphx-flow "implement authentication"
 
 # You get: Production-ready code that:
 ✅ Uses YOUR tech stack (auto-detected)
@@ -82,13 +82,15 @@ npm install -g @sylphx/flow
 bun install -g @sylphx/flow
 ```
 
-### Initialize your project
+### Setup your project (first time)
 
 ```bash
-sylphx-flow init
+sylphx-flow setup
 ```
 
 Done. Everything configured. Never think about setup again.
+
+**Pro tip:** Setup is automatic! Just run any task and Sylphx Flow will initialize on first use.
 
 ### Usage
 
@@ -106,14 +108,6 @@ sylphx-flow "check for new commits" --loop 300 --max-runs 20
 sylphx-flow "@task.txt"
 sylphx-flow "@complex-prompt.md" --loop --max-runs 10
 
-# Interactive AI chat
-sylphx-flow code
-
-# Or interactive build mode
-sylphx-flow
-> implement OAuth
-> add tests
-> optimize performance
 ```
 
 **That's literally it.** No configuration files. No prompt engineering. No context management.
@@ -293,16 +287,14 @@ export OPENAI_API_KEY="your-key-here"  # Auto-switches search mode
 ### Start Building
 
 ```bash
-# Method 1: Direct command
-sylphx-flow run "implement user registration"
+# Direct command (most common)
+sylphx-flow "implement user registration"
 
-# Method 2: Interactive mode (recommended)
-sylphx-flow run
-# Then just chat naturally:
-# > add authentication
-# > review the code
-# > add tests
-# > optimize performance
+# With specific agent
+sylphx-flow "review security" --agent reviewer
+
+# Loop mode for continuous work
+sylphx-flow "process github issues" --loop
 ```
 
 **That's it. Start building.**
@@ -340,7 +332,7 @@ in src/app/(dashboard)/settings..."
 <td>
 
 ```bash
-flow run "user profile page"
+sylphx-flow "user profile page"
 ```
 
 **10 seconds.**
@@ -383,7 +375,7 @@ AI already knows:
 <td>
 
 ```bash
-flow run "review for security" \
+sylphx-flow "review for security" \
   --agent reviewer
 ```
 
@@ -522,22 +514,29 @@ $ flow codebase search "authentication middleware"
 ### Core Commands
 
 ```bash
-# Initialize project (once)
-flow init
+# Setup project (first time only, optional - auto-runs on first use)
+sylphx-flow setup
 
 # Run AI agents
-flow run "your task"                          # Use default agent (coder)
-flow run "review code" --agent reviewer       # Use reviewer agent
-flow run "write docs" --agent writer          # Use writer agent
-flow run "complex task" --agent orchestrator  # Use orchestrator
+sylphx-flow "your task"                            # Use default agent (coder)
+sylphx-flow "review code" --agent reviewer         # Use reviewer agent
+sylphx-flow "write docs" --agent writer            # Use writer agent
+sylphx-flow "complex task" --agent orchestrator    # Use orchestrator
+
+# Loop mode for continuous work
+sylphx-flow "process issues" --loop                # Continuous execution
+sylphx-flow "monitor and fix" --loop 300           # With 5min wait time
+
+# File input for complex prompts
+sylphx-flow "@detailed-task.txt" --loop
 
 # Search knowledge base
-flow knowledge search "react patterns"
-flow knowledge get "/stacks/react-app"
+sylphx-flow knowledge search "react patterns"
+sylphx-flow knowledge get "/stacks/react-app"
 
 # Search your codebase
-flow codebase search "authentication logic"
-flow codebase reindex  # After major code changes
+sylphx-flow codebase search "authentication logic"
+sylphx-flow codebase reindex  # After major code changes
 ```
 
 ### Specialized Agents
