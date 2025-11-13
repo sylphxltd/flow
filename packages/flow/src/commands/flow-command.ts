@@ -214,6 +214,11 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     console.log(chalk.cyan('⚡ Quick mode enabled - using saved defaults\n'));
   }
 
+  // Continue mode always requires print mode
+  if (options.continue && !options.print) {
+    options.print = true;
+  }
+
   // Import orchestrator functions
   const {
     checkUpgrades,
@@ -452,7 +457,7 @@ export const flowCommand = new Command('flow')
   .option('--agent <name>', 'Agent to use (default: coder)', 'coder')
   .option('--agent-file <path>', 'Load agent from specific file')
   .option('-p, --print', 'Headless print mode (output only, no interactive)')
-  .option('-c, --continue', 'Continue previous conversation')
+  .option('-c, --continue', 'Continue previous conversation (requires print mode)')
 
   // Prompt argument
   .argument('[prompt]', 'Prompt to execute with agent (optional)')
