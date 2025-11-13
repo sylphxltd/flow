@@ -200,6 +200,12 @@ export class SmartConfigService {
 
   /**
    * Runtime selection - choose provider and agent for this run
+   *
+   * DESIGN PRINCIPLE: Smart Defaults
+   * - Has saved default → Use it (no prompt)
+   * - No saved default → Prompt user
+   * - Explicit flag (--select-provider/--select-agent) → Force prompt (override)
+   * - Explicit option (--provider/--agent) → Use specified value
    */
   static async selectRuntimeChoices(options: SmartConfigOptions): Promise<RuntimeChoices> {
     const config = await ConfigService.loadConfiguration();
@@ -207,24 +213,33 @@ export class SmartConfigService {
 
     // Handle provider selection
     if (options.provider) {
+      // 1. Explicit option provided
       choices.provider = options.provider;
-    } else if (options.useDefaults && config.user.defaultProvider) {
-      // Use saved default provider when --use-defaults flag is set
+    } else if (options.selectProvider) {
+      // 2. Force selection (override defaults)
+      choices.provider = await this.selectProvider(config.user);
+    } else if (config.user.defaultProvider) {
+      // 3. Use saved default (SMART DEFAULT - no prompt needed)
       choices.provider = config.user.defaultProvider;
       console.log(chalk.dim(`  ✓ Provider: ${choices.provider}`));
     } else {
+      // 4. No default saved, must prompt
       choices.provider = await this.selectProvider(config.user);
     }
 
     // Handle agent selection
     if (options.agent) {
+      // 1. Explicit option provided
       choices.agent = options.agent;
-    } else if (options.useDefaults && config.user.defaultAgent) {
-      // Use saved default agent when --use-defaults flag is set
+    } else if (options.selectAgent) {
+      // 2. Force selection (override defaults)
+      choices.agent = await this.selectAgent(config.user.defaultAgent);
+    } else if (config.user.defaultAgent) {
+      // 3. Use saved default (SMART DEFAULT - no prompt needed)
       choices.agent = config.user.defaultAgent;
       console.log(chalk.dim(`  ✓ Agent: ${choices.agent}`));
     } else {
-      // Always prompt for agent selection unless explicitly skipped
+      // 4. No default saved, must prompt
       choices.agent = await this.selectAgent(config.user.defaultAgent);
     }
 
