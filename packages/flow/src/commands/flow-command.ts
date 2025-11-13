@@ -12,6 +12,7 @@ import { UpgradeManager } from '../core/upgrade-manager.js';
 import { loadAgentContent, extractAgentInstructions } from './run-command.js';
 import { ClaudeConfigService } from '../services/claude-config-service.js';
 import { ConfigService } from '../services/config-service.js';
+import { projectSettings } from '../utils/settings.js';
 
 export interface FlowOptions {
   target?: string;
@@ -230,47 +231,53 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
   // Show welcome banner
   showWelcome();
 
-  // Detect project state
-  const detector = new StateDetector();
-  const upgradeManager = new UpgradeManager();
-
-  if (options.verbose) {
-    console.log(chalk.dim('🤔 Checking project status...\n'));
-  }
-
-  const state = await detector.detect();
-
-  if (options.verbose) {
-    await showStatus(state);
-  }
-
-  // Step 1: Check for upgrades
-  if (!options.quick) {
-    await checkUpgrades(state, options);
-  }
-
-  // Step 1: Upgrade (if requested)
-  if (options.upgrade && state.outdated && state.latestVersion) {
-    console.log(chalk.cyan.bold('━━━ 📦 Upgrading Flow\n'));
-    await upgradeManager.upgradeFlow(state);
-    console.log(chalk.green('✓ Upgrade complete\n'));
-    // Re-detect after upgrade
-    state.version = state.latestVersion;
-    state.outdated = false;
-  }
-
-  // Step 2: Upgrade target (if requested)
-  if (options.upgradeTarget && state.target) {
-    console.log(chalk.cyan.bold(`━━━ 🎯 Upgrading ${state.target}\n`));
-    await upgradeManager.upgradeTarget(state);
-    console.log(chalk.green('✓ Target upgrade complete\n'));
-  }
-
-  // Step 2.5: Check component integrity
-  await checkComponentIntegrity(state, options);
-
   // Declare at function level to persist across steps
   let selectedTarget: string | undefined;
+  let state: ProjectState | undefined;
+
+  // First: determine target (from options, saved settings, or init will prompt)
+  const initialTarget = options.target || (await projectSettings.getDefaultTarget());
+
+  // Only detect state if we have a target (can't check components without knowing target structure)
+  if (initialTarget && !options.clean) {
+    const detector = new StateDetector();
+    const upgradeManager = new UpgradeManager();
+
+    if (options.verbose) {
+      console.log(chalk.dim('🤔 Checking project status...\n'));
+    }
+
+    state = await detector.detect();
+
+    if (options.verbose) {
+      await showStatus(state);
+    }
+
+    // Step 1: Check for upgrades
+    if (!options.quick) {
+      await checkUpgrades(state, options);
+    }
+
+    // Step 1: Upgrade (if requested)
+    if (options.upgrade && state.outdated && state.latestVersion) {
+      console.log(chalk.cyan.bold('━━━ 📦 Upgrading Flow\n'));
+      await upgradeManager.upgradeFlow(state);
+      console.log(chalk.green('✓ Upgrade complete\n'));
+      // Re-detect after upgrade
+      state.version = state.latestVersion;
+      state.outdated = false;
+    }
+
+    // Step 2: Upgrade target (if requested)
+    if (options.upgradeTarget && state.target) {
+      console.log(chalk.cyan.bold(`━━━ 🎯 Upgrading ${state.target}\n`));
+      await upgradeManager.upgradeTarget(state);
+      console.log(chalk.green('✓ Target upgrade complete\n'));
+    }
+
+    // Step 2.5: Check component integrity (only if we have valid state)
+    await checkComponentIntegrity(state, options);
+  }
 
   // Step 3: Initialize (if needed and not run-only)
   if (!options.runOnly || options.clean) {
