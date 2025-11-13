@@ -87,7 +87,7 @@ export class StateDetector {
         state.components.hooks.installed = false;
         // OpenCode appends output styles to AGENTS.md
         state.components.outputStyles.installed = await this.checkOutputStylesInAGENTS();
-        await this.checkComponent('slashCommands', '.opencode/commands', '*.md', state);
+        await this.checkComponent('slashCommands', '.opencode/command', '*.md', state);
       } else {
         // Claude Code (default)
         await this.checkComponent('agents', '.claude/agents', '*.md', state);

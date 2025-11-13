@@ -97,13 +97,23 @@ export async function checkComponentIntegrity(
   // Skip in quick mode
   if (options.quick) return;
 
-  // Find missing components
+  // Find missing components (target-aware)
   const missing: string[] = [];
   if (!state.components.agents.installed) missing.push('agents');
   if (!state.components.rules.installed) missing.push('rules');
-  if (!state.components.hooks.installed) missing.push('hooks');
+
+  // Only check hooks for Claude Code (OpenCode doesn't have separate hooks)
+  if (state.target !== 'opencode' && !state.components.hooks.installed) {
+    missing.push('hooks');
+  }
+
   if (!state.components.mcp.installed) missing.push('mcp');
-  if (!state.components.outputStyles.installed) missing.push('output styles');
+
+  // Only check output styles for Claude Code (OpenCode uses AGENTS.md)
+  if (state.target !== 'opencode' && !state.components.outputStyles.installed) {
+    missing.push('output styles');
+  }
+
   if (!state.components.slashCommands.installed) missing.push('slash commands');
 
   // If no missing components, we're good
@@ -122,7 +132,8 @@ export async function checkComponentIntegrity(
   ]);
 
   if (repair) {
-    options.runOnly = false; // Enable init to repair
+    // Set repair mode - will trigger component installation without full re-init
+    options.repair = true;
     console.log(chalk.cyan('\n🔧 Repairing components...\n'));
   } else {
     console.log(chalk.dim('Skipping repair. Components may not work correctly.\n'));

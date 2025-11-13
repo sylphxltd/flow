@@ -21,6 +21,7 @@ export interface FlowOptions {
   clean?: boolean;
   initOnly?: boolean;
   runOnly?: boolean;
+  repair?: boolean;     // Repair mode - install missing components
   upgrade?: boolean;
   upgradeTarget?: boolean;
   mcp?: boolean;
@@ -279,8 +280,8 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     await checkComponentIntegrity(state, options);
   }
 
-  // Step 3: Initialize (if needed and not run-only)
-  if (!options.runOnly || options.clean) {
+  // Step 3: Initialize (if needed and not run-only, or if repair mode)
+  if (!options.runOnly || options.clean || options.repair) {
     console.log(chalk.cyan.bold('━━━ 🚀 Initializing Project\n'));
 
     // Import core init functions
@@ -291,9 +292,14 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     } = await import('./init-core.js');
 
     try {
+      // In repair mode, use existing target from state
+      const targetForInit = options.repair && state?.target
+        ? state.target
+        : options.target;
+
       // Prepare init options
       const initOptions = {
-        target: options.target, // Pass through user's choice
+        target: targetForInit, // Use existing target in repair mode
         verbose: options.verbose,
         dryRun: options.dryRun,
         clear: options.clean || false,
@@ -305,7 +311,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
         hooks: options.hooks !== false,
       };
 
-      // Select and validate target (will prompt if not provided)
+      // Select and validate target (will use existing in repair mode, or prompt if needed)
       const targetId = await selectAndValidateTarget(initOptions);
       selectedTarget = targetId; // Save for later use
 
