@@ -14,8 +14,8 @@ import type { FlowOptions } from '../commands/flow-command.js';
 
 export interface LoopOptions {
   enabled: boolean;
-  interval: number;          // Seconds between runs
-  maxRuns?: number;          // Optional safety limit (default: infinite)
+  interval: number;          // Wait time in seconds between runs (0 = no wait)
+  maxRuns?: number;          // Optional max iterations (default: infinite)
 }
 
 export interface LoopResult {
@@ -58,7 +58,7 @@ export class LoopController {
     options: LoopOptions
   ): Promise<void> {
     console.log(chalk.cyan.bold('\n━━━ 🔄 Loop Mode Activated\n'));
-    console.log(chalk.dim(`  Interval: ${options.interval}s`));
+    console.log(chalk.dim(`  Wait time: ${options.interval}s`));
     console.log(chalk.dim(`  Max runs: ${options.maxRuns || '∞'}`));
     console.log(chalk.dim(`  Stop: Ctrl+C or max-runs limit\n`));
 

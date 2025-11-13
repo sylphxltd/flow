@@ -7,31 +7,39 @@ Loop mode enables the LLM to continuously execute the same task, automatically p
 **Simple: Keep working on X until I stop you**
 
 ```bash
-bun dev:flow "process all GitHub issues" --loop 60
+bun dev:flow "process all GitHub issues" --loop
 ```
 
 **Behavior:**
 1. Execute task (fresh start)
-2. Wait 60 seconds
-3. Execute with `--continue` (preserve context)
-4. Wait 60 seconds
-5. Execute with `--continue` again
-6. ... infinite loop until Ctrl+C or max-runs
+2. Immediately execute with `--continue` (preserve context)
+3. Immediately execute with `--continue` again
+4. ... infinite loop until Ctrl+C or max-runs
+
+**With wait time:**
+```bash
+bun dev:flow "check for new issues" --loop 300
+```
+1. Execute task
+2. Wait 300 seconds (5 minutes)
+3. Execute with `--continue`
+4. Wait 300 seconds
+5. ... continue until stopped
 
 ---
 
 ## 🚀 Basic Usage
 
-### Simplest - Use default (no cooldown)
+### Simplest - Use default (no wait time)
 ```bash
 bun dev:flow "task" --loop
-# Execute continuously with no cooldown between iterations
+# Execute continuously with no wait between iterations
 ```
 
-### Specify interval
+### Specify wait time
 ```bash
 bun dev:flow "task" --loop 120
-# Execute every 120 seconds (2 minutes)
+# Wait 120 seconds between each iteration
 ```
 
 ### Add safety limit
@@ -88,31 +96,38 @@ bun dev:flow "continue refactoring legacy code" --loop 600 --max-runs 6
 ## 📚 API Reference
 
 ### `--loop [seconds]`
-Enable loop mode with optional cooldown interval in seconds
+Enable loop mode with optional wait time between iterations
 
-**Default:** 0 seconds (no cooldown - execute immediately after task completes)
+**Default:** 0 seconds (no wait - execute immediately after previous task completes)
+
+**When to use wait time:**
+- Rate limiting: Prevent hitting API limits
+- Resource management: Give system time to recover
+- Polling: Check for changes periodically
+- Natural pacing: Space out operations
+
 **Recommended values:**
-- No cooldown: 0 seconds (default - let task execution time be the natural interval)
-- Quick checks: 30-60 seconds (for monitoring tasks that finish quickly)
-- Standard interval: 60-300 seconds (for periodic checks)
-- Long interval: 600-3600 seconds (for infrequent updates)
+- No wait: 0 seconds (default - for continuous work)
+- Quick polling: 30-60 seconds
+- Standard polling: 60-300 seconds (1-5 minutes)
+- Long polling: 600-3600 seconds (10-60 minutes)
 
 **Examples:**
 ```bash
---loop         # Default: 0s cooldown (immediate re-execution)
---loop 0       # Same as above: no cooldown
---loop 60      # Wait 60 seconds after task completes
---loop 300     # Wait 5 minutes after task completes
---loop 3600    # Wait 1 hour after task completes
+--loop         # No wait (immediate re-execution after task completes)
+--loop 0       # Same as above
+--loop 60      # Wait 60 seconds between iterations
+--loop 300     # Wait 5 minutes between iterations
+--loop 3600    # Wait 1 hour between iterations
 ```
 
-**Note:** `[seconds]` is optional - defaults to 0 seconds (no cooldown) if not provided
+**Note:** `[seconds]` is optional - defaults to 0 (no wait time)
 
 **Why 0s default?**
-- LLM tasks typically take several minutes to complete
-- Task execution time provides natural interval
-- No wasted time between iterations
-- User can add cooldown if needed (e.g., for API rate limits)
+- LLM tasks typically take 2-5 minutes
+- Task execution time is already a natural interval
+- No wasted idle time
+- Add wait time only when needed (rate limits, polling, etc.)
 
 ---
 
@@ -135,7 +150,7 @@ Purpose: Prevent forgetting to stop loop, or set work time limit
 ```
 ━━━ 🔄 Loop Mode Activated
 
-  Interval: 60s
+  Wait time: 0s
   Max runs: ∞
   Stop: Ctrl+C or max-runs limit
 ```
@@ -147,6 +162,10 @@ Started: 14:32:15
 
 [... task execution ...]
 
+⏳ Waiting 0s until next run... (completed: 3/∞)
+```
+or with wait time:
+```
 ⏳ Waiting 60s until next run... (completed: 3/∞)
 ```
 
@@ -197,14 +216,14 @@ This allows the LLM to continuously improve without repeating the same work.
 
 ## 📊 Work Time Calculation
 
-**Note:** These estimates assume ~2-3 minutes average task execution time + cooldown interval.
+**Note:** These estimates assume ~2-3 minutes average task execution time + wait time between iterations.
 
-| Interval | Max Runs | Approx Total Time |
-|----------|----------|-------------------|
-| 0s (no cooldown) | 10 | ~20-30 minutes (task time only) |
-| 0s (no cooldown) | 30 | ~1-1.5 hours (task time only) |
-| 60s cooldown | 10 | ~30-40 minutes (task + cooldown) |
-| 60s cooldown | 30 | ~1.5-2 hours (task + cooldown) |
+| Wait Time | Max Runs | Approx Total Time |
+|-----------|----------|-------------------|
+| 0s (no wait) | 10 | ~20-30 minutes (task time only) |
+| 0s (no wait) | 30 | ~1-1.5 hours (task time only) |
+| 60s wait | 10 | ~30-40 minutes (task + wait) |
+| 60s wait | 30 | ~1.5-2 hours (task + wait) |
 | 300s (5min) | 12 | ~2-3 hours |
 | 600s (10min) | 6 | ~1.5-2 hours |
 | 3600s (1 hour) | 8 | ~8-9 hours |
@@ -217,8 +236,8 @@ This allows the LLM to continuously improve without repeating the same work.
 
 1. **Use default (0s) for most cases**
    ```bash
-   --loop              # No cooldown - task execution time is the interval
-   --loop 60           # Add cooldown if needed (e.g., API rate limits)
+   --loop              # No wait - continuous execution
+   --loop 60           # Add wait time if needed (e.g., API rate limits, polling)
    ```
 
 2. **Use max-runs for safety**
@@ -242,13 +261,13 @@ This allows the LLM to continuously improve without repeating the same work.
 
 ### ❌ DON'T
 
-1. **Don't add cooldown unnecessarily**
+1. **Don't add wait time unnecessarily**
    ```bash
    # Unnecessary - task already takes time
-   --loop 60    # Only use if you need cooldown for specific reason
+   --loop 60    # Only use if you need wait time for specific reason (rate limits, polling)
 
-   # Better
-   --loop       # Let task execution be the natural interval
+   # Better for continuous work
+   --loop       # No wait - task execution time is the natural interval
    ```
 
 2. **Don't run production without max-runs**
