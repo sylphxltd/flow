@@ -159,7 +159,7 @@ export async function initializeProject(
 
   console.log(chalk.cyan.bold('━ Initializing Project\n'));
 
-  const { initCommand } = await import('./init-command.js');
+  const { runInit } = await import('./init-command.js');
 
   const initOptions = {
     target: targetId,
@@ -176,7 +176,7 @@ export async function initializeProject(
   };
 
   try {
-    await initCommand.action(initOptions);
+    await runInit(initOptions);
 
     if (!options.dryRun) {
       console.log(chalk.green.bold('\n✓ Initialization complete\n'));

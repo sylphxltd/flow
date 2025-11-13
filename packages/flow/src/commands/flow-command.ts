@@ -9,7 +9,7 @@ import { CLIError } from '../utils/error-handler.js';
 import type { RunCommandOptions } from '../types.js';
 import { StateDetector, type ProjectState } from '../core/state-detector.js';
 import { UpgradeManager } from '../core/upgrade-manager.js';
-import { initCommand } from './init-command.js';
+import { initCommand, runInit } from './init-command.js';
 import { loadAgentContent, extractAgentInstructions } from './run-command.js';
 import { ClaudeConfigService } from '../services/claude-config-service.js';
 import { ConfigService } from '../services/config-service.js';
@@ -285,7 +285,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     }
 
     const initOptions = {
-      target: selectedTarget,
+      target: selectedTarget || options.target,
       verbose: options.verbose,
       dryRun: options.dryRun,
       clear: options.clean || false,
@@ -299,7 +299,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     };
 
     try {
-      await initCommand.action(initOptions);
+      await runInit(initOptions);
 
       if (!options.dryRun) {
         console.log(chalk.green.bold('✓ Initialization complete\n'));
@@ -475,8 +475,8 @@ export const setupCommand = new Command('setup')
     showWelcome();
 
     // Initialize project with default target
-    const { initCommand } = await import('./init-command.js');
-    await initCommand.action({
+    const { runInit } = await import('./init-command.js');
+    await runInit({
       target: undefined, // Let user choose
       verbose: false,
       dryRun: false,
