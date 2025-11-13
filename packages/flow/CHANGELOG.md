@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.0.4
+
+### Patch Changes
+
+- Fix false "missing components" warning by checking if directories contain files
+
 ## 1.0.3
 
 ### Patch Changes
