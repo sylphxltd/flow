@@ -1,17 +1,32 @@
-<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle -->
-  <circle cx="128" cy="128" r="120" fill="#6B46C1" opacity="0.9"/>
-  
-  <!-- Flow spiral/aura effect -->
-  <path d="M 128 48 Q 80 80 96 128 Q 112 176 128 208 Q 144 176 160 128 Q 176 80 128 48 M 128 72 Q 88 96 100 128 Q 112 160 128 184 Q 144 160 156 128 Q 168 96 128 72 M 128 96 Q 104 112 112 128 Q 120 144 128 160 Q 136 144 144 128 Q 152 112 128 96" 
-        fill="none" stroke="#A78BFA" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
-  
-  <!-- Center diamond/gem -->
-  <polygon points="128,104 140,128 128,152 116,128" fill="#FBBF24" opacity="0.95"/>
-  
-  <!-- Small particles -->
-  <circle cx="64" cy="88" r="6" fill="#C4B5FD" opacity="0.7"/>
-  <circle cx="192" cy="88" r="6" fill="#C4B5FD" opacity="0.7"/>
-  <circle cx="72" cy="168" r="4" fill="#C4B5FD" opacity="0.6"/>
-  <circle cx="184" cy="168" r="4" fill="#C4B5FD" opacity="0.6"/>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5B21B6"/>
+      <stop offset="100%" style="stop-color:#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A78BFA"/>
+      <stop offset="50%" style="stop-color:#818CF8"/>
+      <stop offset="100%" style="stop-color:#06B6D4"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:0.6"/>
+      <stop offset="70%" style="stop-color:#7C3AED;stop-opacity:0.2"/>
+      <stop offset="100%" style="stop-color:#5B21B6;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)"/>
+  <circle cx="256" cy="256" r="200" fill="url(#glow)" opacity="0.4"/>
+
+  <g transform="translate(256, 256)">
+    <path d="M -80,-40 Q -120,-80 -140,-40 Q -160,0 -140,40 Q -120,80 -80,40 L -40,0 L -80,-40 Z M 80,40 Q 120,80 140,40 Q 160,0 140,-40 Q 120,-80 80,-40 L 40,0 L 80,40 Z" fill="none" stroke="url(#flowGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+    <ellipse cx="0" cy="0" rx="50" ry="50" fill="url(#flowGrad)" opacity="0.8"/>
+    <circle cx="-100" cy="0" r="8" fill="#06B6D4" opacity="0.9"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+    <circle cx="0" cy="-60" r="8" fill="#818CF8" opacity="0.9"><animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/></circle>
+    <circle cx="100" cy="0" r="8" fill="#A78BFA" opacity="0.9"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+    <circle cx="0" cy="60" r="8" fill="#06B6D4" opacity="0.9"><animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/></circle>
+  </g>
+
+  <circle cx="256" cy="256" r="240" fill="none" stroke="url(#flowGrad)" stroke-width="4" opacity="0.3"/>
 </svg>
