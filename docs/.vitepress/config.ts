@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'Sylphx Flow',
   description: 'AI-powered development workflow automation',
   base: '/',
+  ignoreDeadLinks: true,
 
   themeConfig: {
     logo: '/logo.svg',
