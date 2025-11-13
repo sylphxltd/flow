@@ -99,22 +99,29 @@ export async function checkComponentIntegrity(
 
   // Find missing components (target-aware)
   const missing: string[] = [];
+
+  // Agents are always required
   if (!state.components.agents.installed) missing.push('agents');
-  if (!state.components.rules.installed) missing.push('rules');
 
-  // Only check hooks for Claude Code (OpenCode doesn't have separate hooks)
-  if (state.target !== 'opencode' && !state.components.hooks.installed) {
-    missing.push('hooks');
+  // For OpenCode: check rules (separate AGENTS.md file)
+  // For Claude Code: rules are included in agent files, so skip this check
+  if (state.target === 'opencode' && !state.components.rules.installed) {
+    missing.push('rules');
   }
 
-  if (!state.components.mcp.installed) missing.push('mcp');
+  // Hooks are optional - don't check
+  // Claude Code can have hooks in .claude/hooks/*.js but they're optional
+  // OpenCode doesn't have separate hooks
 
-  // Only check output styles for Claude Code (OpenCode uses AGENTS.md)
-  if (state.target !== 'opencode' && !state.components.outputStyles.installed) {
-    missing.push('output styles');
-  }
+  // MCP is optional now - many users don't use MCP
+  // if (!state.components.mcp.installed) missing.push('mcp');
 
-  if (!state.components.slashCommands.installed) missing.push('slash commands');
+  // Output styles:
+  // - Claude Code: included in agent files, so skip check
+  // - OpenCode: included in AGENTS.md, so skip check
+
+  // Slash commands are optional
+  // if (!state.components.slashCommands.installed) missing.push('slash commands');
 
   // If no missing components, we're good
   if (missing.length === 0) return;

@@ -91,9 +91,18 @@ export class StateDetector {
       } else {
         // Claude Code (default)
         await this.checkComponent('agents', '.claude/agents', '*.md', state);
-        await this.checkComponent('rules', '.claude/rules', '*.md', state);
+
+        // Claude Code includes rules and output styles in agent files
+        // So we mark them as installed if agents are installed
+        state.components.rules.installed = state.components.agents.installed;
+        state.components.rules.count = state.components.agents.count;
+
+        state.components.outputStyles.installed = state.components.agents.installed;
+
+        // Check hooks (optional for Claude Code)
         await this.checkComponent('hooks', '.claude/hooks', '*.js', state);
-        await this.checkComponent('outputStyles', '.claude/output-styles', '*.md', state);
+
+        // Check slash commands
         await this.checkComponent('slashCommands', '.claude/commands', '*.md', state);
       }
 
