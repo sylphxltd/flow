@@ -16,7 +16,7 @@ hero:
 features:
   - icon: 🔄
     title: Loop Mode
-    details: Autonomous continuous execution with automatic context preservation. Set it and forget it.
+    details: Autonomous continuous execution with automatic context preservation. Claude Code supported.
 
   - icon: 📝
     title: File Input Support
@@ -42,14 +42,14 @@ features:
 ## Quick Example
 
 ```bash
-# Continuous autonomous work
-sylphx-flow "process all github issues" --loop
+# Continuous autonomous work (Claude Code)
+sylphx-flow "process all github issues" --loop --target claude-code
 
 # With wait time for polling
 sylphx-flow "check for new commits" --loop 300 --max-runs 20
 
 # Load prompts from files
-sylphx-flow "@complex-task.txt" --loop
+sylphx-flow "@complex-task.txt"
 ```
 
 ## Why Sylphx Flow?
@@ -64,10 +64,7 @@ Traditional AI coding tools make you work too hard - spending more time writing 
 # Install globally
 bun install -g @sylphx/flow
 
-# Setup your project (first time only)
-sylphx-flow setup
-
-# Start building
+# Start using (auto-initializes on first use)
 sylphx-flow "implement authentication"
 ```
 

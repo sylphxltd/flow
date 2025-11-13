@@ -72,25 +72,24 @@ sylphx-flow "implement authentication"
 
 ## 🚀 Installation
 
-### Install globally (required)
+### Install globally
 
 ```bash
 # Using npm
 npm install -g @sylphx/flow
 
-# Using bun
+# Using bun (recommended)
 bun install -g @sylphx/flow
 ```
 
-### Setup your project (first time)
+### Start using immediately
 
 ```bash
-sylphx-flow setup
+# Setup happens automatically on first use!
+sylphx-flow "your first task"
 ```
 
-Done. Everything configured. Never think about setup again.
-
-**Pro tip:** Setup is automatic! Just run any task and Sylphx Flow will initialize on first use.
+**That's it.** No configuration needed. Works with Claude Code and OpenCode.
 
 ### Usage
 
@@ -100,13 +99,13 @@ sylphx-flow "add password reset"
 sylphx-flow "review for security" --agent reviewer
 sylphx-flow "write API docs" --agent writer
 
-# Loop Mode - Autonomous Continuous Execution
-sylphx-flow "process all github issues" --loop
+# Loop Mode - Autonomous Continuous Execution (Claude Code only)
+sylphx-flow "process all github issues" --loop --target claude-code
 sylphx-flow "check for new commits" --loop 300 --max-runs 20
 
 # File Input - Load prompts from files
 sylphx-flow "@task.txt"
-sylphx-flow "@complex-prompt.md" --loop --max-runs 10
+sylphx-flow "@complex-prompt.md"
 
 ```
 
@@ -122,10 +121,11 @@ sylphx-flow "@complex-prompt.md" --loop --max-runs 10
 
 ```bash
 # Continuous autonomous work (zero wait time)
-sylphx-flow "process all github issues" --loop
+# Note: Currently supported with Claude Code only
+sylphx-flow "process all github issues" --loop --target claude-code
 
 # With wait time for polling scenarios
-sylphx-flow "check for new commits" --loop 300 --max-runs 20
+sylphx-flow "check for new commits" --loop 300 --max-runs 20 --target claude-code
 ```
 
 **How it works:**
@@ -134,6 +134,10 @@ sylphx-flow "check for new commits" --loop 300 --max-runs 20
 - **Stop**: Ctrl+C (graceful) or `--max-runs` limit
 - **Zero wait default**: Task execution time is the natural interval
 - **Smart configuration**: Saves provider/agent preferences automatically
+
+**Platform Support:**
+- ✅ **Claude Code**: Full loop mode support with headless execution
+- ⏳ **OpenCode**: Coming soon (OpenCode `run` command has known issues with background execution)
 
 **Perfect for:**
 - 🔄 Continuous task processing (GitHub issues, PRs, etc.)
@@ -275,13 +279,11 @@ const result = await pipe(
 npm install -g @sylphx/flow
 # or: bun install -g @sylphx/flow
 
-# 2. Initialize (one time)
-sylphx-flow init
+# 2. Start using (auto-initializes on first use)
+sylphx-flow "your first task"
 
-# 3. (Optional) Set OpenAI-compatible API key to use vector search
-# Without key: Uses TF-IDF search (fast, free)
-# With key: Auto-upgrades to vector search (higher quality)
-export OPENAI_API_KEY="your-key-here"  # Auto-switches search mode
+# Setup is automatic! But you can also run setup explicitly:
+# sylphx-flow --init-only
 ```
 
 ### Start Building
@@ -514,21 +516,31 @@ $ flow codebase search "authentication middleware"
 ### Core Commands
 
 ```bash
-# Setup project (first time only, optional - auto-runs on first use)
-sylphx-flow setup
-
-# Run AI agents
+# Run AI agents (auto-initializes on first use)
 sylphx-flow "your task"                            # Use default agent (coder)
 sylphx-flow "review code" --agent reviewer         # Use reviewer agent
 sylphx-flow "write docs" --agent writer            # Use writer agent
 sylphx-flow "complex task" --agent orchestrator    # Use orchestrator
 
-# Loop mode for continuous work
-sylphx-flow "process issues" --loop                # Continuous execution
-sylphx-flow "monitor and fix" --loop 300           # With 5min wait time
+# Choose platform (auto-detects by default)
+sylphx-flow "task" --target claude-code            # Use Claude Code
+sylphx-flow "task" --target opencode               # Use OpenCode
+
+# Loop mode for continuous work (Claude Code only)
+sylphx-flow "process issues" --loop --target claude-code  # Continuous execution
+sylphx-flow "monitor and fix" --loop 300 --max-runs 20    # With 5min wait time
 
 # File input for complex prompts
-sylphx-flow "@detailed-task.txt" --loop
+sylphx-flow "@detailed-task.txt"
+sylphx-flow "@prompt.md" --agent reviewer
+
+# Synchronize templates with latest Flow updates
+sylphx-flow --sync --target opencode               # Sync OpenCode setup
+sylphx-flow --sync --target claude-code            # Sync Claude Code setup
+
+# Manual initialization (optional, happens automatically)
+sylphx-flow --init-only                            # Setup without running
+sylphx-flow --init-only --target opencode          # Setup for specific platform
 
 # Search knowledge base
 sylphx-flow knowledge search "react patterns"
@@ -602,7 +614,8 @@ sylphx-flow codebase reindex  # After major code changes
 
 ### Works With
 
-- **🤖 Claude Code** - Native integration (recommended)
+- **🤖 Claude Code** - Native integration with full loop mode support
+- **🔷 OpenCode** - Full support (loop mode coming soon)
 - **💻 Cursor** - Full MCP support
 - **⚡ Any MCP-compatible tool** - Standard protocol
 

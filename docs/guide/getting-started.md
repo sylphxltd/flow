@@ -8,10 +8,10 @@ Sylphx Flow is an AI-powered development workflow automation tool that enables t
 
 ## Key Features
 
-- **🔄 Loop Mode**: Autonomous continuous execution
+- **🔄 Loop Mode**: Autonomous continuous execution (Claude Code)
 - **📝 File Input**: Load prompts from files
 - **🧠 Smart Configuration**: Learns from your choices
-- **🔌 OpenCode Integration**: Full OpenCode support
+- **🔌 Platform Support**: Claude Code and OpenCode
 - **⚡ MEP Architecture**: Minimal Effective Prompt design
 - **🌐 70+ Languages**: StarCoder2 tokenization
 
@@ -44,41 +44,49 @@ sylphx-flow --version
 
 ## Quick Start
 
-### 1. Setup Your Project
+### 1. Run Your First Task
+
+**Setup happens automatically!** Just run a task and Flow will initialize on first use.
 
 ```bash
-sylphx-flow setup
-```
-
-This command will:
-- Detect your target platform (Claude Code or OpenCode)
-- Create necessary configuration files
-- Set up agent and rule directories
-- Configure smart defaults
-
-**Note:** Setup is automatic! If you skip this step and run a task directly, Sylphx Flow will automatically initialize on first use.
-
-### 2. Run Your First Task
-
-```bash
-# Direct prompt (auto-setup if needed)
+# Direct prompt (auto-initializes)
 sylphx-flow "implement user authentication"
 
 # With specific agent
 sylphx-flow "review code for security" --agent reviewer
 
-# Loop mode for continuous work
-sylphx-flow "process github issues" --loop
+# Choose platform explicitly
+sylphx-flow "write tests" --target claude-code
+sylphx-flow "refactor code" --target opencode
 ```
 
-### 3. Try Loop Mode
+### 2. Try Loop Mode (Claude Code)
+
+**Autonomous continuous execution** - the AI keeps working until you stop it.
 
 ```bash
 # Continuous execution (zero wait time)
-sylphx-flow "process github issues" --loop
+sylphx-flow "process github issues" --loop --target claude-code
 
 # With wait time and max runs
-sylphx-flow "check for updates" --loop 300 --max-runs 10
+sylphx-flow "check for updates" --loop 300 --max-runs 10 --target claude-code
+```
+
+**Platform Support:**
+- ✅ **Claude Code**: Full loop mode support
+- ⏳ **OpenCode**: Coming soon (OpenCode `run` has known issues with background execution)
+
+### 3. Synchronize Templates
+
+Keep your setup up-to-date with the latest Flow templates:
+
+```bash
+# Sync all template files (agents, rules, slash commands)
+sylphx-flow --sync
+
+# Sync for specific platform
+sylphx-flow --sync --target claude-code
+sylphx-flow --sync --target opencode
 ```
 
 ### 4. Use File Input
