@@ -303,20 +303,10 @@ export async function runInit(options: any): Promise<void> {
     );
 }
 
-// Create the init command
-export const initCommand = new Command('init')
-  .description('Initialize project with Sylphx Flow development agents and MCP tools')
-  .option(
-    '--target <type>',
-    `Force specific target (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`
-  )
-  .option('--verbose', 'Show detailed output')
-  .option('--dry-run', 'Show what would be done without making changes')
-  .option('--clear', 'Clear obsolete items before processing')
-  .option('--no-mcp', 'Skip MCP tools installation')
-  .option('--no-agents', 'Skip agents installation')
-  .option('--no-rules', 'Skip rules installation')
-  .option('--no-output-styles', 'Skip output styles installation')
-  .option('--no-slash-commands', 'Skip slash commands installation')
-  .option('--no-hooks', 'Skip hooks setup')
-  .action(runInit);
+/**
+ * LEGACY: init command has been integrated into the flow command.
+ * Use `flow --init-only` instead of standalone `init` command.
+ *
+ * This export is kept for backward compatibility but will be removed in future versions.
+ * The runInit() function is the core implementation used by flow command.
+ */

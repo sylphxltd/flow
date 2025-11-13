@@ -17,7 +17,6 @@ import {
   setupCommand,
   doctorCommand,
   upgradeCommand,
-  executeFlow,
 } from './commands/flow-command.js';
 
 // Read version from package.json
@@ -50,7 +49,7 @@ export function createCLI(): Command {
     writeOut: (str) => process.stdout.write(str),
   });
 
-  // Add commands
+  // Add commands - flow is the primary command for all operations
   program.addCommand(flowCommand);
   program.addCommand(setupCommand);
   program.addCommand(statusCommand);
@@ -59,29 +58,6 @@ export function createCLI(): Command {
   program.addCommand(codebaseCommand);
   program.addCommand(knowledgeCommand);
   program.addCommand(hookCommand);
-
-  // Default action: run smart flow
-  program
-    .argument('[prompt]', 'The prompt to execute with agent (optional)')
-    .option('--init-only', 'Only initialize, do not run')
-    .option('--run-only', 'Only run, skip initialization')
-    .option('--clean', 'Clean all configurations and reinitialize')
-    .option('--upgrade', 'Upgrade Sylphx Flow to latest version')
-    .option('--upgrade-target', 'Upgrade target platform (Claude Code/OpenCode)')
-    .option('--target <type>', 'Target platform (opencode, claude-code, auto-detect)')
-    .option('--verbose', 'Show detailed output')
-    .option('--dry-run', 'Show what would be done without making changes')
-    .option('--no-mcp', 'Skip MCP installation')
-    .option('--no-agents', 'Skip agents installation')
-    .option('--no-rules', 'Skip rules installation')
-    .option('--no-output-styles', 'Skip output styles installation')
-    .option('--no-slash-commands', 'Skip slash commands installation')
-    .option('--no-hooks', 'Skip hooks setup')
-    .option('--agent <name>', 'Agent to use (default: coder)', 'coder')
-    .option('--agent-file <path>', 'Load agent from specific file path (overrides --agent)')
-    .action(async (prompt, options) => {
-      await executeFlow(prompt, options);
-    });
 
   return program;
 }

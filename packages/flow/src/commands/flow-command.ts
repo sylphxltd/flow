@@ -467,11 +467,15 @@ export const flowCommand = new Command('flow')
   });
 
 /**
- * Setup command - configure API keys and preferences
+ * Setup command - alias for `flow --init-only`
+ * Kept for backward compatibility, but users should prefer `flow --init-only`
  */
 export const setupCommand = new Command('setup')
-  .description('Initialize project configuration (one-time setup)')
+  .description('Initialize project configuration (alias for: flow --init-only)')
   .action(async () => {
+    console.log(chalk.yellow('ℹ  The "setup" command is deprecated.'));
+    console.log(chalk.yellow('   Please use: flow --init-only\n'));
+
     showWelcome();
 
     // Initialize project with default target
@@ -491,6 +495,7 @@ export const setupCommand = new Command('setup')
     });
 
     console.log(chalk.green('\n✅ Setup complete!'));
+    console.log(chalk.dim('\nNext time, use: flow --init-only'));
   });
 
 /**

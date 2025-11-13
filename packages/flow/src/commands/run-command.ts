@@ -108,90 +108,13 @@ function getExecutableTargets(): string[] {
   });
 }
 
-// Create the run command
-export const runCommand = new Command('run')
-  .description(
-    'Run a prompt with a specific agent (default: coder) using the detected or specified target'
-  )
-  .option(
-    '--target <name>',
-    `Target platform (${targetManager.getImplementedTargetIDs().join(', ')}, default: auto-detect)`
-  )
-  .option('--agent <name>', 'Agent to use (default: coder)')
-  .option('--agent-file <path>', 'Load agent from specific file path (overrides --agent)')
-  .option('--verbose', 'Show detailed output')
-  .option('--dry-run', 'Show what would be done without executing the command')
-  .argument(
-    '[prompt]',
-    'The prompt to execute with the agent (optional - if not provided, will start Claude Code interactively)'
-  )
-  .action(async (prompt, options) => {
-    // Set prompt in options
-    options.prompt = prompt;
-
-    // Set default agent
-    if (!options.agent) {
-      options.agent = 'coder';
-    }
-
-    // Resolve target
-    options.target = await targetManager.resolveTarget({
-      target: options.target,
-      allowSelection: true,
-    });
-
-    const { verbose } = options;
-
-    if (verbose) {
-      console.log('🚀 Sylphx Flow Run');
-      console.log('====================');
-      console.log(`🎯 Target: ${options.target}`);
-      console.log(`🤖 Agent: ${options.agent}`);
-      if (prompt) {
-        console.log(`💬 Prompt: ${prompt}`);
-      } else {
-        console.log('💬 Prompt: [Interactive mode]');
-      }
-      console.log('');
-    }
-
-    // Load agent content and extract instructions
-    const agentContent = await loadAgentContent(options.agent, options.agentFile);
-    const agentInstructions = extractAgentInstructions(agentContent);
-
-    // Create system prompt with agent instructions
-    const systemPrompt = `AGENT INSTRUCTIONS:
-${agentInstructions}`;
-
-    if (verbose) {
-      const source = options.agentFile ? `file: ${options.agentFile}` : `agent: ${options.agent}`;
-      console.log(`📝 Using agent content from ${source} (${systemPrompt.length} chars)`);
-    }
-
-    // Prepare user prompt
-    let userPrompt = '';
-    if (prompt && prompt.trim() !== '') {
-      userPrompt = prompt;
-    }
-    // If no prompt provided, leave userPrompt empty for true interactive mode
-    // Don't add "INTERACTIVE MODE:" message - let Claude handle it naturally
-
-    if (verbose) {
-      console.log('📝 System Prompt:');
-      console.log('================');
-      console.log(systemPrompt.substring(0, 500) + (systemPrompt.length > 500 ? '...' : ''));
-      console.log('');
-      if (userPrompt.trim() !== '') {
-        console.log('📝 User Prompt:');
-        console.log('==============');
-        console.log(userPrompt.substring(0, 500) + (userPrompt.length > 500 ? '...' : ''));
-        console.log('');
-      } else {
-        console.log('📝 User Prompt: [Interactive mode - Claude will greet the user]');
-        console.log('');
-      }
-    }
-
-    // Execute command with the resolved target
-    await executeTargetCommand(options.target, systemPrompt, userPrompt, options);
-  });
+/**
+ * LEGACY: run command has been integrated into the flow command.
+ * Use `flow [prompt]` instead of standalone `run` command.
+ *
+ * This file now only exports utility functions:
+ * - loadAgentContent()
+ * - extractAgentInstructions()
+ *
+ * These are used internally by the flow command.
+ */
