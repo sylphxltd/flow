@@ -404,7 +404,7 @@ export const opencodeTarget: Target = {
   async executeCommand(
     systemPrompt: string,
     userPrompt: string,
-    options: { verbose?: boolean; dryRun?: boolean } = {}
+    options: { verbose?: boolean; dryRun?: boolean; print?: boolean; continue?: boolean } = {}
   ): Promise<void> {
     if (options.dryRun) {
       console.log('Dry run: Would execute OpenCode');
@@ -415,13 +415,24 @@ export const opencodeTarget: Target = {
     }
 
     try {
-      // For now, just launch OpenCode CLI if available
-      // TODO: Implement proper OpenCode CLI integration
       const { spawn } = await import('node:child_process');
 
       const args = [];
-      if (userPrompt && userPrompt.trim() !== '') {
-        args.push(userPrompt);
+
+      // Handle print mode (headless)
+      if (options.print) {
+        args.push('run');
+        if (options.continue) {
+          args.push('-c');
+        }
+        if (userPrompt && userPrompt.trim() !== '') {
+          args.push(userPrompt);
+        }
+      } else {
+        // Normal mode with -p flag for prompt
+        if (userPrompt && userPrompt.trim() !== '') {
+          args.push('-p', userPrompt);
+        }
       }
 
       if (options.verbose) {

@@ -208,7 +208,7 @@ export const claudeCodeTarget: Target = {
   async executeCommand(
     systemPrompt: string,
     userPrompt: string,
-    options: { verbose?: boolean; dryRun?: boolean } = {}
+    options: { verbose?: boolean; dryRun?: boolean; print?: boolean; continue?: boolean } = {}
   ): Promise<void> {
     // Sanitize and validate inputs
     const sanitizedSystemPrompt = sanitize.yamlContent(systemPrompt);
@@ -231,6 +231,14 @@ Please begin your response with a comprehensive summary of all the instructions 
     try {
       // Build arguments
       const args = ['--dangerously-skip-permissions'];
+
+      // Add print and continue flags
+      if (options.print) {
+        args.push('-p');
+      }
+      if (options.continue) {
+        args.push('-c');
+      }
 
       args.push('--system-prompt', enhancedSystemPrompt);
       if (options.verbose) {

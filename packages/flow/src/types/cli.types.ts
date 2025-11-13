@@ -71,3 +71,17 @@ export interface CommandConfig {
  * All CLI commands implement this signature
  */
 export type CommandHandler = (options: CommandOptions) => Promise<void>;
+
+/**
+ * Options for executing commands on targets (Claude Code, OpenCode)
+ */
+export interface RunCommandOptions {
+  target?: string;
+  verbose?: boolean;
+  dryRun?: boolean;
+  agent?: string;
+  agentFile?: string;
+  prompt?: string;
+  print?: boolean;      // Headless print mode
+  continue?: boolean;   // Continue previous conversation
+}

@@ -38,6 +38,10 @@ export interface FlowOptions {
   useDefaults?: boolean;
   provider?: string;
   quick?: boolean;
+
+  // Execution modes
+  print?: boolean;      // Headless print mode
+  continue?: boolean;   // Continue previous conversation
 }
 
 /**
@@ -393,6 +397,8 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
       agent,
       agentFile: options.agentFile,
       prompt,
+      print: options.print,
+      continue: options.continue,
     };
 
     try {
@@ -445,6 +451,8 @@ export const flowCommand = new Command('flow')
   // Run options
   .option('--agent <name>', 'Agent to use (default: coder)', 'coder')
   .option('--agent-file <path>', 'Load agent from specific file')
+  .option('-p, --print', 'Headless print mode (output only, no interactive)')
+  .option('-c, --continue', 'Continue previous conversation')
 
   // Prompt argument
   .argument('[prompt]', 'Prompt to execute with agent (optional)')
