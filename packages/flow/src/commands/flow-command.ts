@@ -369,10 +369,8 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
 
     const userPrompt = prompt?.trim() || '';
 
-    // 如果目标是 Claude Code，设置环境变量
-    if (resolvedTarget === 'claude-code') {
-      await ClaudeConfigService.setupEnvironment(verbose);
-    }
+    // Environment should already be set up by SmartConfigService in main flow
+    // No need to setup again here
 
     // Run options
     const runOptions: RunCommandOptions = {
