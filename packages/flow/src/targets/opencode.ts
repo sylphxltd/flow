@@ -485,9 +485,9 @@ export const opencodeTarget: Target = {
         }
       }
 
-      if (options.verbose) {
-        console.log('🚀 Executing OpenCode');
-        console.log(`🚀 Command: opencode ${args.join(' ')}`);
+      // Always print command for debugging in loop/headless mode
+      if (options.verbose || options.print) {
+        console.log(chalk.dim(`$ opencode ${args.join(' ')}`));
       }
 
       await new Promise<void>((resolve, reject) => {
