@@ -411,6 +411,12 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
       }
 
       if (options.dryRun) {
+        // Ensure we have a target ID for dry run
+        if (!selectedTarget) {
+          const targetId = await selectAndValidateTarget(initOptions);
+          selectedTarget = targetId;
+        }
+
         console.log(
           boxen(
             chalk.yellow('⚠ Dry Run Mode') + chalk.dim('\nNo changes will be made to your project'),
@@ -423,7 +429,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
           )
         );
 
-        await previewDryRun(targetId, initOptions);
+        await previewDryRun(selectedTarget, initOptions);
 
         console.log(
           '\n' +
@@ -438,7 +444,13 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
 
         console.log(chalk.dim('✓ Initialization dry run complete\n'));
       } else {
-        await installComponents(targetId, initOptions);
+        // Ensure we have a target ID for installation
+        if (!selectedTarget) {
+          const targetId = await selectAndValidateTarget(initOptions);
+          selectedTarget = targetId;
+        }
+
+        await installComponents(selectedTarget, initOptions);
         console.log(chalk.green.bold('✓ Initialization complete\n'));
       }
     } catch (error) {
