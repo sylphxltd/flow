@@ -346,6 +346,11 @@ export class SmartConfigService {
 
     const config = providerConfigs[provider as keyof typeof providerConfigs];
     process.env.ANTHROPIC_BASE_URL = config.ANTHROPIC_BASE_URL;
-    process.env.ANTHROPIC_API_KEY = apiKeys[provider];
+    process.env.ANTHROPIC_AUTH_TOKEN = apiKeys[provider]; // Claude Code uses ANTHROPIC_AUTH_TOKEN, not ANTHROPIC_API_KEY
+
+    // Verbose logging
+    console.log(chalk.green(`✓ Environment configured for ${provider}`));
+    console.log(chalk.dim(`  ANTHROPIC_BASE_URL: ${config.ANTHROPIC_BASE_URL}`));
+    console.log(chalk.dim(`  ANTHROPIC_AUTH_TOKEN: ${apiKeys[provider]?.substring(0, 10)}...`));
   }
 }
