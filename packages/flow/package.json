@@ -1,6 +1,6 @@
 {
   "name": "@sylphx/flow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-powered development workflow automation with autonomous loop mode and smart configuration",
   "type": "module",
   "bin": {
@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "commander": "^14.0.2",
