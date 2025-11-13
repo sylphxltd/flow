@@ -14,7 +14,8 @@
     "start": "bun src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "rm -rf assets && cp -r ../../assets assets"
   },
   "dependencies": {
     "commander": "^14.0.2",
@@ -38,6 +39,7 @@
   },
   "files": [
     "src",
+    "assets",
     "README.md",
     "CHANGELOG.md",
     "LOOP_MODE.md",
