@@ -430,10 +430,8 @@ export const opencodeTarget: Target = {
     if (options.dryRun) {
       // Build the command for display
       const dryRunArgs = ['opencode'];
-      if (options.agent) {
-        dryRunArgs.push('--agent', options.agent);
-      }
       if (options.print) {
+        // Don't use --agent with 'run' (OpenCode bug)
         dryRunArgs.push('run');
         if (options.continue) {
           dryRunArgs.push('-c');
@@ -442,6 +440,9 @@ export const opencodeTarget: Target = {
           dryRunArgs.push(`"${userPrompt}"`);
         }
       } else {
+        if (options.agent) {
+          dryRunArgs.push('--agent', options.agent);
+        }
         if (userPrompt && userPrompt.trim() !== '') {
           dryRunArgs.push('-p', `"${userPrompt}"`);
         }
@@ -460,14 +461,13 @@ export const opencodeTarget: Target = {
 
       const args = [];
 
-      // Add agent flag (OpenCode uses --agent instead of system prompt)
-      if (options.agent) {
-        args.push('--agent', options.agent);
-      }
-
       // Handle print mode (headless)
       if (options.print) {
+        // Note: Don't use --agent flag with 'run' command - OpenCode has a bug
+        // TypeError: undefined is not an object (evaluating 'input.agent.model')
+        // Default agent is 'coder' anyway
         args.push('run');
+        // Use -c flag to continue last session (stdin is closed to prevent hanging)
         if (options.continue) {
           args.push('-c');
         }
@@ -475,6 +475,10 @@ export const opencodeTarget: Target = {
           args.push(userPrompt);
         }
       } else {
+        // Add agent flag for normal mode (TUI)
+        if (options.agent) {
+          args.push('--agent', options.agent);
+        }
         // Normal mode with -p flag for prompt
         if (userPrompt && userPrompt.trim() !== '') {
           args.push('-p', userPrompt);
@@ -488,7 +492,9 @@ export const opencodeTarget: Target = {
 
       await new Promise<void>((resolve, reject) => {
         const child = spawn('opencode', args, {
-          stdio: 'inherit',
+          // In print mode (headless), close stdin to prevent waiting for input
+          // In normal mode, inherit all stdio for interactive TUI
+          stdio: options.print ? ['ignore', 'inherit', 'inherit'] : 'inherit',
           shell: true,
           env: process.env, // Pass environment variables
         });
