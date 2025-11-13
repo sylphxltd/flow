@@ -236,27 +236,46 @@ export class SmartConfigService {
    * Select provider for this run
    */
   private static async selectProvider(userSettings: UserSettings): Promise<string> {
-    // Get available providers (already includes 'default')
-    const availableProviders = ConfigService.getAvailableProviders(userSettings);
+    const apiKeys = userSettings.apiKeys || {};
 
-    if (availableProviders.length === 1) {
-      const provider = availableProviders[0];
-      console.log(chalk.dim(`Using provider: ${provider}`));
-      return provider;
-    }
+    // Always show all 3 providers
+    const allProviders = [
+      { id: 'default', name: 'Default (Claude Code configuration)', hasKey: true },
+      { id: 'kimi', name: 'Kimi', hasKey: !!apiKeys.kimi },
+      { id: 'z.ai', name: 'Z.ai (Recommended)', hasKey: !!apiKeys['z.ai'] },
+    ];
 
     const { provider } = await inquirer.prompt([
       {
         type: 'list',
         name: 'provider',
-        message: 'Select provider (use arrow keys, Enter for default):',
-        choices: availableProviders.map(p => ({
-          name: p === 'default' ? 'Default (Claude Code configuration)' : p.charAt(0).toUpperCase() + p.slice(1),
-          value: p,
+        message: 'Select provider:',
+        choices: allProviders.map(p => ({
+          name: p.hasKey ? p.name : `${p.name} (Need API key)`,
+          value: p.id,
         })),
-        default: userSettings.defaultProvider || 'default', // Claude Code default
+        default: userSettings.defaultProvider || 'default',
       },
     ]);
+
+    // If user selected a provider without API key, prompt for it
+    if (provider !== 'default' && !apiKeys[provider]) {
+      console.log(chalk.cyan(`\n🔑 Configure ${provider} API key:\n`));
+      const { apiKey } = await inquirer.prompt([
+        {
+          type: 'password',
+          name: 'apiKey',
+          message: `Enter API Key for ${provider}:`,
+          mask: '*',
+          validate: (input) => input.length > 10 || 'API Key appears too short',
+        },
+      ]);
+
+      // Save the API key
+      apiKeys[provider] = apiKey;
+      await ConfigService.saveHomeSettings({ apiKeys });
+      console.log(chalk.green(`✓ API Key saved for ${provider}\n`));
+    }
 
     return provider;
   }
