@@ -243,7 +243,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
   // Resolve prompt (handle file input)
   const resolvedPrompt = await resolvePrompt(prompt);
 
-  // Loop mode: wrap execution in LoopController
+  // Loop mode: Setup once, then loop only execution
   if (options.loop !== undefined) {
     const { LoopController } = await import('../core/loop-controller.js');
     const controller = new LoopController();
@@ -254,16 +254,24 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     // Auto-enable headless mode for loop
     options.print = true;
 
-    // Execute in loop
+    // ONE-TIME SETUP: Do all initialization once before loop starts
+    const setupContext = await executeSetupPhase(resolvedPrompt, options);
+
+    // Save original continue flag
+    const originalContinue = options.continue || false;
+
+    // LOOP: Only execute the command repeatedly
     await controller.run(
       async () => {
-        // Each iteration executes the full flow
-        // Auto-enable continue from 2nd iteration
         const isFirstIteration = controller['state'].iteration === 1;
-        options.continue = !isFirstIteration;
+
+        // Continue logic:
+        // - If user specified --continue, always use it (all iterations)
+        // - If user didn't specify, only use from 2nd iteration onwards
+        options.continue = originalContinue || !isFirstIteration;
 
         try {
-          await executeFlowOnce(resolvedPrompt, options);
+          await executeCommandOnly(setupContext, resolvedPrompt, options);
           return { exitCode: 0 };
         } catch (error) {
           return { exitCode: 1, error: error as Error };
@@ -281,6 +289,250 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
 
   // Normal execution (non-loop)
   await executeFlowOnce(resolvedPrompt, options);
+}
+
+/**
+ * Setup context for command execution
+ * Returns everything needed to execute the command repeatedly
+ */
+interface SetupContext {
+  resolvedTarget: string;
+  agent: string;
+  systemPrompt: string;
+  runOptions: RunCommandOptions;
+}
+
+/**
+ * Execute setup phase once (for loop mode)
+ * Returns context needed for repeated command execution
+ */
+async function executeSetupPhase(prompt: string | undefined, options: FlowOptions): Promise<SetupContext> {
+  // Quick mode: enable useDefaults and skip prompts
+  if (options.quick) {
+    options.useDefaults = true;
+    console.log(chalk.cyan('⚡ Quick mode enabled - using saved defaults\n'));
+  }
+
+  // Import orchestrator functions
+  const {
+    checkUpgrades,
+    checkComponentIntegrity,
+    selectTarget,
+    initializeProject,
+  } = await import('./flow-orchestrator.js');
+
+  // Show welcome banner (only once)
+  showWelcome();
+
+  let selectedTarget: string | undefined;
+  let state: ProjectState | undefined;
+
+  // Determine target
+  const initialTarget = options.target || (await projectSettings.getDefaultTarget());
+
+  // Detect state if we have a target
+  if (initialTarget && !options.clean) {
+    const detector = new StateDetector();
+
+    if (options.verbose) {
+      console.log(chalk.dim('🤔 Checking project status...\n'));
+    }
+
+    state = await detector.detect();
+
+    if (options.verbose) {
+      await showStatus(state);
+    }
+
+    // Check for upgrades
+    if (!options.quick) {
+      await checkUpgrades(state, options);
+    }
+
+    // Check component integrity
+    await checkComponentIntegrity(state, options);
+  }
+
+  // Initialize if needed
+  const shouldInitialize =
+    !state?.initialized ||
+    options.clean ||
+    options.repair ||
+    options.initOnly;
+
+  if (shouldInitialize) {
+    try {
+      const { selectAndValidateTarget, previewDryRun, installComponents } =
+        await import('./init-core.js');
+
+      const initOptions = {
+        target: options.target,
+        verbose: options.verbose || false,
+        dryRun: options.dryRun || false,
+        clear: options.clean || false,
+        mcp: options.mcp !== false,
+        agents: options.agents !== false,
+        rules: options.rules !== false,
+        outputStyles: options.outputStyles !== false,
+        slashCommands: options.slashCommands !== false,
+        hooks: options.hooks !== false,
+      };
+
+      const targetId = await selectAndValidateTarget(initOptions);
+      selectedTarget = targetId;
+
+      if (options.dryRun) {
+        console.log(
+          boxen(
+            chalk.yellow('⚠ Dry Run Mode') + chalk.dim('\nNo changes will be made to your project'),
+            {
+              padding: 1,
+              margin: { top: 0, bottom: 1, left: 0, right: 0 },
+              borderStyle: 'round',
+              borderColor: 'yellow',
+            }
+          )
+        );
+
+        await previewDryRun(targetId, initOptions);
+
+        console.log(
+          '\n' +
+            boxen(chalk.green.bold('✓ Dry run complete'), {
+              padding: { top: 0, bottom: 0, left: 2, right: 2 },
+              margin: 0,
+              borderStyle: 'round',
+              borderColor: 'green',
+            }) +
+            '\n'
+        );
+
+        console.log(chalk.dim('✓ Initialization dry run complete\n'));
+      } else {
+        await installComponents(targetId, initOptions);
+        console.log(chalk.green.bold('✓ Initialization complete\n'));
+      }
+    } catch (error) {
+      console.error(chalk.red.bold('✗ Initialization failed:'), error);
+      process.exit(1);
+    }
+  }
+
+  // Resolve target
+  let targetForResolution = options.target || state?.target || selectedTarget;
+  if (selectedTarget) {
+    targetForResolution = selectedTarget;
+  }
+
+  if (!targetForResolution) {
+    console.error(chalk.red.bold('✗ No target selected. Use --target or run init first.'));
+    process.exit(1);
+  }
+
+  const resolvedTarget = await targetManager.resolveTarget({
+    target: targetForResolution,
+    allowSelection: false,
+  });
+
+  console.log(chalk.cyan.bold(`━━━ 🎯 Launching ${resolvedTarget}\n`));
+
+  // Check if target supports command execution
+  const { getTargetsWithCommandSupport } = await import('../config/targets.js');
+  const supportedTargets = getTargetsWithCommandSupport().map(t => t.id);
+
+  if (!supportedTargets.includes(resolvedTarget)) {
+    console.log(chalk.red.bold('✗ Unsupported target platform\n'));
+    console.log(chalk.yellow(`Target '${resolvedTarget}' does not support agent execution.`));
+    console.log(chalk.cyan(`Supported platforms: ${supportedTargets.join(', ')}\n`));
+    console.log(chalk.dim('Tip: Use --target claude-code to specify Claude Code platform'));
+    console.log(chalk.dim('Example: bun dev:flow --target claude-code\n'));
+    process.exit(1);
+  }
+
+  // Claude Code handling
+  if (resolvedTarget === 'claude-code') {
+    const { SmartConfigService } = await import('../services/smart-config-service.js');
+    const { ConfigService } = await import('../services/config-service.js');
+
+    if (!(await ConfigService.hasInitialSetup())) {
+      console.log(chalk.cyan('🔑 First-time setup for Claude Code\n'));
+      await SmartConfigService.initialSetup();
+      console.log(chalk.green('✓ Setup complete!\n'));
+    }
+
+    const runtimeChoices = await SmartConfigService.selectRuntimeChoices({
+      selectProvider: options.selectProvider,
+      selectAgent: options.selectAgent,
+      useDefaults: options.useDefaults,
+      provider: options.provider,
+      agent: options.agent,
+    });
+
+    await SmartConfigService.setupEnvironment(runtimeChoices.provider!);
+    options.agent = runtimeChoices.agent;
+  }
+
+  const agent = options.agent || 'coder';
+  const verbose = options.verbose || false;
+
+  if (verbose || options.runOnly || !options.quick) {
+    console.log(`  🤖 Agent: ${chalk.cyan(agent)}`);
+    console.log(`  🎯 Target: ${chalk.cyan(resolvedTarget)}`);
+    if (prompt) {
+      console.log(`  💬 Prompt: ${chalk.dim(prompt)}\n`);
+    } else {
+      console.log(`  💬 Mode: ${chalk.dim('Interactive')}\n`);
+    }
+  }
+
+  // Load agent and prepare prompts
+  const agentContent = await loadAgentContent(agent, options.agentFile);
+  const agentInstructions = extractAgentInstructions(agentContent);
+  const systemPrompt = `AGENT INSTRUCTIONS:\n${agentInstructions}`;
+
+  // Prepare run options
+  const runOptions: RunCommandOptions = {
+    target: resolvedTarget,
+    verbose,
+    dryRun: options.dryRun,
+    agent,
+    agentFile: options.agentFile,
+    prompt,
+    print: options.print,
+    continue: options.continue,
+  };
+
+  return {
+    resolvedTarget,
+    agent,
+    systemPrompt,
+    runOptions,
+  };
+}
+
+/**
+ * Execute command only (for loop mode iterations)
+ * Uses pre-setup context to execute command without re-doing setup
+ */
+async function executeCommandOnly(
+  context: SetupContext,
+  prompt: string | undefined,
+  options: FlowOptions
+): Promise<void> {
+  const userPrompt = prompt?.trim() || '';
+
+  // Update continue flag in runOptions
+  const runOptions = {
+    ...context.runOptions,
+    continue: options.continue,
+  };
+
+  try {
+    await executeTargetCommand(context.resolvedTarget, context.systemPrompt, userPrompt, runOptions);
+  } catch (error) {
+    console.error(chalk.red.bold('\n✗ Launch failed:'), error);
+    throw error;
+  }
 }
 
 /**
