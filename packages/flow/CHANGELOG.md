@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.0.2
+
+### Patch Changes
+
+- Fix missing dist directory in npm package by adding prepublishOnly script
+
 ## 1.0.0
 
 ### Major Changes
