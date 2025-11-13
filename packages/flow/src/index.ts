@@ -53,7 +53,7 @@ export function createCLI(): Command {
   // Default action: delegate to flow command for convenience
   // This allows `sylphx-flow "prompt"` instead of requiring `sylphx-flow flow "prompt"`
   program
-    .argument('[prompt]', 'Prompt to execute with agent (optional)')
+    .argument('[prompt]', 'Prompt to execute with agent (optional, supports @file.txt for file input)')
     .option('--init-only', 'Only initialize, do not run')
     .option('--run-only', 'Only run, skip initialization')
     .option('--clean', 'Clean all configurations and reinitialize')

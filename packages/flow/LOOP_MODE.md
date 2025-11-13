@@ -1,46 +1,46 @@
 # 🔄 Loop Mode - Continuous Autonomous Execution
 
-Loop mode讓LLM持續執行同一個任務，自動保留context，直到你手動停止。
+Loop mode enables the LLM to continuously execute the same task, automatically preserving context, until you manually stop it.
 
-## 🎯 核心概念
+## 🎯 Core Concept
 
-**簡單講：Keep working on X until I stop you**
+**Simple: Keep working on X until I stop you**
 
 ```bash
-bun dev:flow "處理github所有issue" --loop 60
+bun dev:flow "process all GitHub issues" --loop 60
 ```
 
-**行為:**
-1. 執行task (fresh start)
-2. 等60秒
-3. 用 `--continue` 再執行 (preserve context)
-4. 等60秒
-5. 再 `--continue` 執行
-6. ... 無限循環直到 Ctrl+C 或 max-runs
+**Behavior:**
+1. Execute task (fresh start)
+2. Wait 60 seconds
+3. Execute with `--continue` (preserve context)
+4. Wait 60 seconds
+5. Execute with `--continue` again
+6. ... infinite loop until Ctrl+C or max-runs
 
 ---
 
-## 🚀 基本用法
+## 🚀 Basic Usage
 
-### 最簡單 - 用default interval (60秒)
+### Simplest - Use default interval (60 seconds)
 ```bash
 bun dev:flow "task" --loop
-# 每60秒執行一次，直到你按Ctrl+C
+# Execute every 60 seconds until you press Ctrl+C
 ```
 
-### 指定interval
+### Specify interval
 ```bash
 bun dev:flow "task" --loop 120
-# 每120秒（2分鐘）執行一次
+# Execute every 120 seconds (2 minutes)
 ```
 
-### 加safety limit
+### Add safety limit
 ```bash
 bun dev:flow "task" --loop 60 --max-runs 20
-# 最多執行20次就停
+# Stop after 20 iterations
 ```
 
-### 組合使用
+### Combined usage
 ```bash
 # Default interval + max runs
 bun dev:flow "task" --loop --max-runs 10
@@ -53,34 +53,34 @@ bun dev:flow "task" --loop 300 --max-runs 5
 
 ## 💡 Use Cases
 
-### 1. GitHub Issue處理
+### 1. GitHub Issue Handling
 ```bash
 bun dev:flow "check github issues and handle them one by one" --loop 300
-# 每5分鐘檢查一次，持續處理issue
+# Check every 5 minutes, continuously process issues
 ```
 
 ### 2. Code Review
 ```bash
 bun dev:flow "review recent commits and provide feedback" --loop 3600
-# 每小時review新既commits
+# Review new commits every hour
 ```
 
-### 3. 文檔更新
+### 3. Documentation Updates
 ```bash
 bun dev:flow "check if docs need update and fix them" --loop 1800
-# 每30分鐘同步文檔
+# Sync documentation every 30 minutes
 ```
 
-### 4. 測試修復
+### 4. Test Fixing
 ```bash
 bun dev:flow "run tests, if fail try to fix" --loop 60 --max-runs 10
-# 最多試10次，每次等60秒
+# Try up to 10 times, wait 60 seconds each time
 ```
 
-### 5. 增量重構
+### 5. Incremental Refactoring
 ```bash
 bun dev:flow "continue refactoring legacy code" --loop 600 --max-runs 6
-# 每10分鐘工作一次，總共工作1小時
+# Work every 10 minutes, total 1 hour
 ```
 
 ---
@@ -88,43 +88,43 @@ bun dev:flow "continue refactoring legacy code" --loop 600 --max-runs 6
 ## 📚 API Reference
 
 ### `--loop [seconds]`
-啟用loop mode，可選設定間隔時間（秒）
+Enable loop mode with optional interval in seconds
 
-**Default:** 60秒 (如果無provide數字)
-**最小值:** 5秒 (防止太頻繁)
-**推薦值:**
-- 快速任務: 30-60秒
-- 標準任務: 60-300秒
-- 重型任務: 600-3600秒
+**Default:** 60 seconds (if no number provided)
+**Minimum:** 5 seconds (prevent too frequent execution)
+**Recommended values:**
+- Quick tasks: 30-60 seconds
+- Standard tasks: 60-300 seconds
+- Heavy tasks: 600-3600 seconds
 
-**例子:**
+**Examples:**
 ```bash
---loop         # Default 60秒
---loop 60      # 每60秒
---loop 300     # 每5分鐘
---loop 3600    # 每1小時
+--loop         # Default 60 seconds
+--loop 60      # Every 60 seconds
+--loop 300     # Every 5 minutes
+--loop 3600    # Every 1 hour
 ```
 
-**Note:** `[seconds]` 係optional，唔provide就用default 60秒
+**Note:** `[seconds]` is optional - defaults to 60 seconds if not provided
 
 ---
 
 ### `--max-runs <count>`
-最大執行次數（可選，default: 無限）
+Maximum number of iterations (optional, default: infinite)
 
-用途：防止忘記關loop，或者設定工作時間上限
+Purpose: Prevent forgetting to stop loop, or set work time limit
 
-**例子:**
+**Examples:**
 ```bash
---max-runs 10     # 最多10次
---max-runs 100    # 最多100次
+--max-runs 10     # Maximum 10 iterations
+--max-runs 100    # Maximum 100 iterations
 ```
 
 ---
 
 ## 🎨 Output Format
 
-### Loop開始
+### Loop Start
 ```
 ━━━ 🔄 Loop Mode Activated
 
@@ -133,7 +133,7 @@ bun dev:flow "continue refactoring legacy code" --loop 600 --max-runs 6
   Stop: Ctrl+C or max-runs limit
 ```
 
-### 每次iteration
+### Each Iteration
 ```
 🔄 Loop iteration 3/∞
 Started: 14:32:15
@@ -143,7 +143,7 @@ Started: 14:32:15
 ⏳ Waiting 60s until next run... (completed: 3/∞)
 ```
 
-### Loop結束
+### Loop End
 ```
 ⚠️  Interrupt received - finishing current iteration...
 
@@ -160,13 +160,13 @@ Started: 14:32:15
 ## 🛡️ Safety Features
 
 ### 1. Graceful Shutdown
-按 `Ctrl+C` 會優雅地停止：
-- 完成當前iteration
-- 顯示summary
+Press `Ctrl+C` to stop gracefully:
+- Complete current iteration
+- Display summary
 - Clean up resources
 
 ### 2. Error Resilience
-遇到error會繼續執行（唔會停）：
+Continues execution when encountering errors (won't stop):
 ```
 ⚠️  Task encountered error (continuing...)
 Error: API rate limit
@@ -175,29 +175,29 @@ Error: API rate limit
 ```
 
 ### 3. Auto-headless Mode
-Loop mode自動啟用headless模式：
-- 無interactive prompts
-- 純output
-- 適合background execution
+Loop mode automatically enables headless mode:
+- No interactive prompts
+- Output only
+- Suitable for background execution
 
 ### 4. Context Persistence
 **First iteration:** Fresh start
 **2nd+ iterations:** Auto `--continue` (LLM builds on previous work)
 
-這樣LLM可以持續改進，唔會重複做同樣野。
+This allows the LLM to continuously improve without repeating the same work.
 
 ---
 
-## 📊 工作時間計算
+## 📊 Work Time Calculation
 
 | Interval | Max Runs | Total Time |
 |----------|----------|------------|
-| 60s | 10 | ~10分鐘 |
-| 60s | 30 | ~30分鐘 |
-| 60s | 60 | ~1小時 |
-| 300s (5分) | 12 | ~1小時 |
-| 600s (10分) | 6 | ~1小時 |
-| 3600s (1小時) | 8 | ~8小時 |
+| 60s | 10 | ~10 minutes |
+| 60s | 30 | ~30 minutes |
+| 60s | 60 | ~1 hour |
+| 300s (5min) | 12 | ~1 hour |
+| 600s (10min) | 6 | ~1 hour |
+| 3600s (1 hour) | 8 | ~8 hours |
 
 ---
 
@@ -205,50 +205,50 @@ Loop mode自動啟用headless模式：
 
 ### ✅ DO
 
-1. **設定合理interval**
+1. **Set reasonable interval**
    ```bash
-   --loop 60    # 大部分情況OK
-   --loop 300   # 非緊急任務
+   --loop 60    # OK for most cases
+   --loop 300   # Non-urgent tasks
    ```
 
-2. **用max-runs做safety**
+2. **Use max-runs for safety**
    ```bash
-   --max-runs 50   # 防止無限loop
+   --max-runs 50   # Prevent infinite loop
    ```
 
-3. **Task要明確**
+3. **Clear task definition**
    ```bash
    # Good
    "check new github issues and reply to them"
 
-   # Bad (太模糊)
+   # Bad (too vague)
    "do stuff"
    ```
 
-4. **測試先用小值**
+4. **Test with small values first**
    ```bash
-   --loop 10 --max-runs 3   # 先測試30秒
+   --loop 10 --max-runs 3   # Test for 30 seconds first
    ```
 
 ### ❌ DON'T
 
-1. **唔好用極短interval**
+1. **Don't use extremely short intervals**
    ```bash
-   --loop 5    # 太頻繁，浪費資源
+   --loop 5    # Too frequent, waste resources
    ```
 
-2. **唔好無max-runs跑production**
+2. **Don't run production without max-runs**
    ```bash
-   # 危險 - 可能永遠run
+   # Dangerous - may run forever
    --loop 60
 
-   # 安全
+   # Safe
    --loop 60 --max-runs 100
    ```
 
-3. **唔好做destructive操作**
+3. **Don't do destructive operations**
    ```bash
-   # 危險！
+   # Dangerous!
    "delete old files" --loop 60
    ```
 
@@ -256,29 +256,29 @@ Loop mode自動啟用headless模式：
 
 ## 🐛 Troubleshooting
 
-### Q: Loop跑得太快
-**A:** 增加interval
+### Q: Loop runs too fast
+**A:** Increase interval
 ```bash
 --loop 120   # instead of --loop 30
 ```
 
-### Q: Loop永遠唔停
-**A:** 加max-runs safety limit
+### Q: Loop never stops
+**A:** Add max-runs safety limit
 ```bash
 --loop 60 --max-runs 50
 ```
 
-### Q: 想睇detail output
-**A:** 加verbose flag
+### Q: Want detailed output
+**A:** Add verbose flag
 ```bash
 --loop 60 --verbose
 ```
 
-### Q: Task一直fail
-**A:** Check error message，可能係：
-- API rate limit → 增加interval
-- 權限問題 → Fix permissions
-- Task本身有問題 → Test without loop first
+### Q: Task keeps failing
+**A:** Check error message, could be:
+- API rate limit → Increase interval
+- Permission issues → Fix permissions
+- Task itself has problems → Test without loop first
 
 ---
 
@@ -349,6 +349,15 @@ bun dev:flow "deploy changes" --loop 60 --max-runs 3
 bun dev:flow "cleanup old data" --loop 3600 --max-runs 5
 ```
 
+### Tip 4: File Input Support
+```bash
+# Load prompt from file for longer instructions
+bun dev:flow "@long-task.txt" --loop 300 --max-runs 10
+
+# Use absolute path
+bun dev:flow "@/path/to/prompt.txt" --loop 60
+```
+
 ---
 
 ## 📊 Performance
@@ -394,6 +403,7 @@ Iteration 2+: options.continue = true  // Build on previous
 - Graceful shutdown
 - Progress tracking
 - Error resilience
+- File input support for prompts
 
 **Removed complexity:**
 - ~~until-success~~

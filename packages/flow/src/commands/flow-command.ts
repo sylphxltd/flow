@@ -210,9 +210,39 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 /**
+ * Resolve prompt - handle file input if needed
+ * Supports @filename syntax: @prompt.txt or @/path/to/prompt.txt
+ */
+async function resolvePrompt(prompt: string | undefined): Promise<string | undefined> {
+  if (!prompt) return prompt;
+
+  // Check for file input syntax: @filename
+  if (prompt.startsWith('@')) {
+    const filePath = prompt.slice(1); // Remove @ prefix
+
+    try {
+      const resolvedPath = path.isAbsolute(filePath)
+        ? filePath
+        : path.resolve(process.cwd(), filePath);
+
+      const content = await fs.readFile(resolvedPath, 'utf-8');
+      console.log(chalk.dim(`  ✓ Loaded prompt from: ${filePath}\n`));
+      return content.trim();
+    } catch (error) {
+      throw new Error(`Failed to read prompt file: ${filePath}`);
+    }
+  }
+
+  return prompt;
+}
+
+/**
  * Main flow execution logic - simplified with orchestrator
  */
 export async function executeFlow(prompt: string | undefined, options: FlowOptions): Promise<void> {
+  // Resolve prompt (handle file input)
+  const resolvedPrompt = await resolvePrompt(prompt);
+
   // Loop mode: wrap execution in LoopController
   if (options.loop !== undefined) {
     const { LoopController } = await import('../core/loop-controller.js');
@@ -233,7 +263,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
         options.continue = !isFirstIteration;
 
         try {
-          await executeFlowOnce(prompt, options);
+          await executeFlowOnce(resolvedPrompt, options);
           return { exitCode: 0 };
         } catch (error) {
           return { exitCode: 1, error: error as Error };
@@ -250,7 +280,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
   }
 
   // Normal execution (non-loop)
-  await executeFlowOnce(prompt, options);
+  await executeFlowOnce(resolvedPrompt, options);
 }
 
 /**
@@ -567,7 +597,7 @@ export const flowCommand = new Command('flow')
   .option('-c, --continue', 'Continue previous conversation (requires print mode)')
 
   // Prompt argument
-  .argument('[prompt]', 'Prompt to execute with agent (optional)')
+  .argument('[prompt]', 'Prompt to execute with agent (optional, supports @file.txt for file input)')
 
   .action(async (prompt, options) => {
     await executeFlow(prompt, options);
