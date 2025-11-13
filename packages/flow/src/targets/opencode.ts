@@ -40,7 +40,7 @@ export const opencodeTarget: Target = {
     mcpConfigPath: 'mcp',
     rulesFile: 'AGENTS.md',
     outputStylesDir: undefined, // OpenCode doesn't support output styles as separate files
-    slashCommandsDir: '.opencode/commands',
+    slashCommandsDir: '.opencode/command', // OpenCode uses singular 'command', not 'commands'
     installation: {
       createAgentDir: true,
       createConfigFile: true,
