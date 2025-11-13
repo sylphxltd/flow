@@ -85,7 +85,52 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 /**
- * Step 2: Handle target selection
+ * Step 2: Check component integrity and prompt for repair
+ */
+export async function checkComponentIntegrity(
+  state: ProjectState,
+  options: FlowOptions
+): Promise<void> {
+  // Skip if not initialized or cleaning or init-only
+  if (!state.initialized || options.clean || options.initOnly) return;
+
+  // Skip in quick mode
+  if (options.quick) return;
+
+  // Find missing components
+  const missing: string[] = [];
+  if (!state.components.agents.installed) missing.push('agents');
+  if (!state.components.rules.installed) missing.push('rules');
+  if (!state.components.hooks.installed) missing.push('hooks');
+  if (!state.components.mcp.installed) missing.push('mcp');
+  if (!state.components.outputStyles.installed) missing.push('output styles');
+  if (!state.components.slashCommands.installed) missing.push('slash commands');
+
+  // If no missing components, we're good
+  if (missing.length === 0) return;
+
+  // Prompt user to repair
+  console.log(chalk.yellow(`\n⚠️  Missing components detected: ${missing.join(', ')}\n`));
+  const { default: inquirer } = await import('inquirer');
+  const { repair } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'repair',
+      message: 'Install missing components now?',
+      default: true,
+    },
+  ]);
+
+  if (repair) {
+    options.runOnly = false; // Enable init to repair
+    console.log(chalk.cyan('\n🔧 Repairing components...\n'));
+  } else {
+    console.log(chalk.dim('Skipping repair. Components may not work correctly.\n'));
+  }
+}
+
+/**
+ * Step 3: Handle target selection
  * Returns the selected target ID
  */
 export async function selectTarget(

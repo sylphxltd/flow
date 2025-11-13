@@ -213,6 +213,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
   // Import orchestrator functions
   const {
     checkUpgrades,
+    checkComponentIntegrity,
     selectTarget,
     initializeProject,
     launchTarget,
@@ -256,6 +257,9 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     await upgradeManager.upgradeTarget(state);
     console.log(chalk.green('✓ Target upgrade complete\n'));
   }
+
+  // Step 2.5: Check component integrity
+  await checkComponentIntegrity(state, options);
 
   // Declare at function level to persist across steps
   let selectedTarget: string | undefined;
