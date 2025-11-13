@@ -43,6 +43,13 @@ export interface FlowOptions {
   // Execution modes
   print?: boolean;      // Headless print mode
   continue?: boolean;   // Continue previous conversation
+
+  // Loop mode (autonomous execution)
+  loop?: number;        // Loop every N seconds (--loop 60)
+  maxRuns?: number;     // Max iterations (default: 100)
+  untilSuccess?: boolean;    // Exit when task succeeds
+  untilStable?: boolean;     // Exit when output unchanged
+  onError?: 'continue' | 'stop' | 'retry';  // Error handling strategy
 }
 
 /**
@@ -209,6 +216,50 @@ function compareVersions(v1: string, v2: string): number {
  * Main flow execution logic - simplified with orchestrator
  */
 export async function executeFlow(prompt: string | undefined, options: FlowOptions): Promise<void> {
+  // Loop mode: wrap execution in LoopController
+  if (options.loop) {
+    const { LoopController } = await import('../core/loop-controller.js');
+    const controller = new LoopController();
+
+    // Auto-enable headless mode for loop
+    options.print = true;
+
+    // Execute in loop
+    await controller.run(
+      async () => {
+        // Each iteration executes the full flow
+        // Auto-enable continue from 2nd iteration
+        const isFirstIteration = controller['state'].iteration === 1;
+        options.continue = !isFirstIteration;
+
+        try {
+          await executeFlowOnce(prompt, options);
+          return { exitCode: 0 };
+        } catch (error) {
+          return { exitCode: 1, error: error as Error };
+        }
+      },
+      {
+        enabled: true,
+        interval: options.loop,
+        maxRuns: options.maxRuns,
+        untilSuccess: options.untilSuccess,
+        untilStable: options.untilStable,
+        onError: options.onError,
+      }
+    );
+
+    return;
+  }
+
+  // Normal execution (non-loop)
+  await executeFlowOnce(prompt, options);
+}
+
+/**
+ * Single flow execution (used by both normal and loop mode)
+ */
+async function executeFlowOnce(prompt: string | undefined, options: FlowOptions): Promise<void> {
   // Quick mode: enable useDefaults and skip prompts
   if (options.quick) {
     options.useDefaults = true;

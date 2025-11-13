@@ -77,6 +77,14 @@ export function createCLI(): Command {
     .option('--agent-file <path>', 'Load agent from specific file')
     .option('-p, --print', 'Headless print mode (output only, no interactive)')
     .option('-c, --continue', 'Continue previous conversation (requires print mode)')
+
+    // Loop mode options
+    .option('--loop <seconds>', 'Loop mode: run every N seconds', parseInt)
+    .option('--max-runs <count>', 'Maximum iterations in loop mode', parseInt)
+    .option('--until-success', 'Exit loop when task succeeds')
+    .option('--until-stable', 'Exit loop when output unchanged')
+    .option('--on-error <strategy>', 'Error handling: continue|stop|retry', 'continue')
+
     .action(async (prompt, options) => {
       await executeFlow(prompt, options);
     });
