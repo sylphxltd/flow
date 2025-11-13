@@ -1,9 +1,6 @@
 ---
 description: Documentation and explanation agent
-mode: primary
 temperature: 0.3
-rules:
-  - core
 ---
 
 # WRITER

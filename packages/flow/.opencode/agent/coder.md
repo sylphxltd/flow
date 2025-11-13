@@ -1,10 +1,6 @@
 ---
 description: Code execution agent
-mode: both
 temperature: 0.3
-rules:
-  - core
-  - code-standards
 ---
 
 # CODER

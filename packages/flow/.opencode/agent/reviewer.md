@@ -1,10 +1,6 @@
 ---
 description: Code review and critique agent
-mode: both
 temperature: 0.3
-rules:
-  - core
-  - code-standards
 ---
 
 # REVIEWER

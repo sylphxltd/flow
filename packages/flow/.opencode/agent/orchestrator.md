@@ -1,9 +1,6 @@
 ---
 description: Task coordination and agent delegation
-mode: primary
 temperature: 0.3
-rules:
-  - core
 ---
 
 # ORCHESTRATOR
