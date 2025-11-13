@@ -433,6 +433,7 @@ export const opencodeTarget: Target = {
         const child = spawn('opencode', args, {
           stdio: 'inherit',
           shell: true,
+          env: process.env, // Pass environment variables
         });
 
         child.on('spawn', () => {

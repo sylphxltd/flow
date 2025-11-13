@@ -258,6 +258,7 @@ Please begin your response with a comprehensive summary of all the instructions 
         const child = spawn('claude', args, {
           stdio: 'inherit',
           shell: false,
+          env: process.env, // Pass environment variables including ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY
         });
 
         child.on('spawn', () => {
