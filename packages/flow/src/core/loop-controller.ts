@@ -1,12 +1,12 @@
 /**
- * Loop Controller - Autonomous execution with intelligent exit conditions
+ * Loop Controller - Simple continuous execution
  *
- * Enables continuous/periodic task execution with:
- * - Configurable intervals
- * - Multiple exit conditions
- * - Error handling strategies
- * - Progress tracking
- * - Graceful shutdown
+ * Core concept: Keep executing the same task with context persistence
+ * - First run: Fresh start
+ * - Subsequent runs: Auto-continue (builds on previous work)
+ * - Stop: Manual (Ctrl+C) or max-runs limit
+ *
+ * Use case: "Keep working on X until I stop you"
  */
 
 import chalk from 'chalk';
@@ -15,25 +15,17 @@ import type { FlowOptions } from '../commands/flow-command.js';
 export interface LoopOptions {
   enabled: boolean;
   interval: number;          // Seconds between runs
-  maxRuns?: number;          // Max iterations (default: 100)
-  untilSuccess?: boolean;    // Exit when task succeeds
-  untilStable?: boolean;     // Exit when output unchanged
-  onError?: ErrorStrategy;   // Error handling strategy
+  maxRuns?: number;          // Optional safety limit (default: infinite)
 }
-
-export type ErrorStrategy = 'continue' | 'stop' | 'retry';
 
 export interface LoopResult {
   exitCode: number;
-  output?: string;
   error?: Error;
 }
 
 export interface LoopState {
   iteration: number;
   startTime: Date;
-  lastOutput: string | null;
-  consecutiveErrors: number;
   successCount: number;
   errorCount: number;
 }
@@ -49,8 +41,6 @@ export class LoopController {
     this.state = {
       iteration: 0,
       startTime: new Date(),
-      lastOutput: null,
-      consecutiveErrors: 0,
       successCount: 0,
       errorCount: 0,
     };
@@ -61,6 +51,7 @@ export class LoopController {
 
   /**
    * Execute task in loop mode
+   * Simple: Keep running same task until manual stop or max-runs
    */
   async run(
     executor: () => Promise<LoopResult>,
@@ -69,9 +60,7 @@ export class LoopController {
     console.log(chalk.cyan.bold('\n━━━ 🔄 Loop Mode Activated\n'));
     console.log(chalk.dim(`  Interval: ${options.interval}s`));
     console.log(chalk.dim(`  Max runs: ${options.maxRuns || '∞'}`));
-    if (options.untilSuccess) console.log(chalk.dim('  Exit: Until success'));
-    if (options.untilStable) console.log(chalk.dim('  Exit: Until stable'));
-    console.log(chalk.dim(`  On error: ${options.onError || 'continue'}\n`));
+    console.log(chalk.dim(`  Stop: Ctrl+C or max-runs limit\n`));
 
     while (this.shouldContinue(options)) {
       this.state.iteration++;
@@ -79,7 +68,7 @@ export class LoopController {
       try {
         await this.executeIteration(executor, options);
       } catch (error) {
-        await this.handleError(error as Error, options);
+        this.handleError(error as Error);
       }
 
       // Wait for next iteration
@@ -93,6 +82,7 @@ export class LoopController {
 
   /**
    * Execute single iteration
+   * Simple: Run task, track success/error, continue
    */
   private async executeIteration(
     executor: () => Promise<LoopResult>,
@@ -108,73 +98,23 @@ export class LoopController {
 
     const result = await executor();
 
-    // Update state
+    // Update state (just count success/error)
     if (result.error || result.exitCode !== 0) {
-      this.state.consecutiveErrors++;
       this.state.errorCount++;
+      console.log(chalk.yellow(`\n⚠️  Task encountered error (continuing...)`));
     } else {
-      this.state.consecutiveErrors = 0;
       this.state.successCount++;
-    }
-
-    // Check exit conditions
-    if (options.untilSuccess && result.exitCode === 0) {
-      console.log(chalk.green('\n✓ Success condition met - stopping loop\n'));
-      this.shouldStop = true;
-      return;
-    }
-
-    if (options.untilStable && this.isStable(result.output)) {
-      console.log(chalk.green('\n✓ Stable state reached - stopping loop\n'));
-      this.shouldStop = true;
-      return;
-    }
-
-    // Save output for stability check
-    if (result.output) {
-      this.state.lastOutput = result.output;
-    }
-
-    // Check error threshold
-    if (this.state.consecutiveErrors >= 5) {
-      console.log(
-        chalk.red('\n❌ Too many consecutive errors (5) - stopping loop\n')
-      );
-      this.shouldStop = true;
     }
   }
 
   /**
    * Handle execution error
+   * Simple: Log and continue (resilient)
    */
-  private async handleError(
-    error: Error,
-    options: LoopOptions
-  ): Promise<void> {
-    const strategy = options.onError || 'continue';
-
-    switch (strategy) {
-      case 'stop':
-        console.error(chalk.red('\n❌ Error occurred - stopping loop'));
-        console.error(chalk.red(`Error: ${error.message}\n`));
-        this.shouldStop = true;
-        throw error;
-
-      case 'retry':
-        console.log(chalk.yellow('\n⚠️  Error occurred - retrying immediately'));
-        console.error(chalk.dim(`Error: ${error.message}\n`));
-        // Don't increment iteration for retry
-        this.state.iteration--;
-        break;
-
-      case 'continue':
-      default:
-        console.error(
-          chalk.yellow('\n⚠️  Error occurred - continuing to next iteration')
-        );
-        console.error(chalk.dim(`Error: ${error.message}\n`));
-        break;
-    }
+  private handleError(error: Error): void {
+    this.state.errorCount++;
+    console.error(chalk.yellow('\n⚠️  Error occurred - continuing to next iteration'));
+    console.error(chalk.dim(`Error: ${error.message}\n`));
   }
 
   /**
@@ -210,21 +150,12 @@ export class LoopController {
 
   /**
    * Check if should continue looping
+   * Simple: Stop only on manual interrupt or max-runs
    */
   private shouldContinue(options: LoopOptions): boolean {
     if (this.shouldStop) return false;
     if (options.maxRuns && this.state.iteration >= options.maxRuns) return false;
     return true;
-  }
-
-  /**
-   * Check if output is stable (unchanged from last run)
-   */
-  private isStable(currentOutput?: string): boolean {
-    if (!this.state.lastOutput || !currentOutput) return false;
-
-    // Simple string comparison (can be enhanced with diff)
-    return this.state.lastOutput.trim() === currentOutput.trim();
   }
 
   /**

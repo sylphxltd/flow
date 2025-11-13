@@ -44,12 +44,9 @@ export interface FlowOptions {
   print?: boolean;      // Headless print mode
   continue?: boolean;   // Continue previous conversation
 
-  // Loop mode (autonomous execution)
+  // Loop mode (continuous execution)
   loop?: number;        // Loop every N seconds (--loop 60)
-  maxRuns?: number;     // Max iterations (default: 100)
-  untilSuccess?: boolean;    // Exit when task succeeds
-  untilStable?: boolean;     // Exit when output unchanged
-  onError?: 'continue' | 'stop' | 'retry';  // Error handling strategy
+  maxRuns?: number;     // Optional max iterations (default: infinite)
 }
 
 /**
@@ -243,9 +240,6 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
         enabled: true,
         interval: options.loop,
         maxRuns: options.maxRuns,
-        untilSuccess: options.untilSuccess,
-        untilStable: options.untilStable,
-        onError: options.onError,
       }
     );
 

@@ -79,11 +79,8 @@ export function createCLI(): Command {
     .option('-c, --continue', 'Continue previous conversation (requires print mode)')
 
     // Loop mode options
-    .option('--loop <seconds>', 'Loop mode: run every N seconds', parseInt)
-    .option('--max-runs <count>', 'Maximum iterations in loop mode', parseInt)
-    .option('--until-success', 'Exit loop when task succeeds')
-    .option('--until-stable', 'Exit loop when output unchanged')
-    .option('--on-error <strategy>', 'Error handling: continue|stop|retry', 'continue')
+    .option('--loop <seconds>', 'Loop mode: run every N seconds (continuous execution)', parseInt)
+    .option('--max-runs <count>', 'Optional max iterations (default: infinite)', parseInt)
 
     .action(async (prompt, options) => {
       await executeFlow(prompt, options);
