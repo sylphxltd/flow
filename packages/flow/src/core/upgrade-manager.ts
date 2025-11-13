@@ -6,7 +6,8 @@ import chalk from 'chalk';
 import ora from 'ora';
 import type { ProjectState } from './state-detector.js';
 import { CLIError } from '../utils/error-handler.js';
-import { CONFIG_FILENAME } from '../config/constants.js';
+import { ConfigService } from '../services/config-service.js';
+import { getProjectSettingsFile } from '../config/constants.js';
 
 const execAsync = promisify(exec);
 
@@ -62,7 +63,7 @@ export class UpgradeManager {
     }
 
     // 当前 Target 版本
-    const configPath = path.join(this.projectPath, CONFIG_FILENAME);
+    const configPath = path.join(this.projectPath, getProjectSettingsFile());
     try {
       const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
       const target = config.target;
@@ -109,7 +110,7 @@ export class UpgradeManager {
       // 我们只需要更新配置文件和 component
 
       // 更新配置文件中的版本号
-      const configPath = path.join(this.projectPath, CONFIG_FILENAME);
+      const configPath = path.join(this.projectPath, getProjectSettingsFile());
       try {
         const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
         config.version = state.latestVersion;
@@ -232,9 +233,9 @@ export class UpgradeManager {
     }
 
     // 备份配置文件
-    const configPath = path.join(this.projectPath, CONFIG_FILENAME);
+    const configPath = path.join(this.projectPath, getProjectSettingsFile());
     try {
-      await fs.cp(configPath, path.join(backupPath, CONFIG_FILENAME));
+      await fs.cp(configPath, path.join(backupPath, getProjectSettingsFile()));
     } catch {
       // 配置文件可能不存在
     }
@@ -244,7 +245,7 @@ export class UpgradeManager {
 
   private async getCurrentFlowVersion(): Promise<string | null> {
     try {
-      const configPath = path.join(this.projectPath, CONFIG_FILENAME);
+      const configPath = path.join(this.projectPath, getProjectSettingsFile());
       const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
       return config.version || null;
     } catch {

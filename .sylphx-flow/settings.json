@@ -1,8 +1,0 @@
-{
-  "defaultTarget": "claude-code",
-  "version": "1.0.0",
-  "invocationMethod": {
-    "type": "local-dev",
-    "script": "bun run dev"
-  }
-}

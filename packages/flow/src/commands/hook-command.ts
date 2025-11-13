@@ -346,13 +346,23 @@ async function sendNotification(verbose: boolean): Promise<string> {
 }
 
 /**
- * Send notification on macOS using osascript
+ * Send notification on macOS using terminal-notifier or osascript
  */
 async function sendMacNotification(title: string, message: string): Promise<void> {
-  // Note: macOS display notification doesn't support custom icons directly
-  // The icon shown will be the Terminal app icon or the app that triggered the notification
-  const script = `display notification "${escapeForAppleScript(message)}" with title "${escapeForAppleScript(title)}"`;
-  await execAsync(`osascript -e '${script}'`);
+  const iconPath = '/Users/kyle/flow/assets/icons/flow-notification-icon.png';
+
+  // Try terminal-notifier if available (supports custom icons)
+  try {
+    await execAsync('which terminal-notifier');
+    await execAsync(
+      `terminal-notifier -message "${escapeForShell(message)}" -title "${escapeForShell(title)}" -appIcon "${iconPath}"`
+    );
+  } catch {
+    // Fallback to osascript if terminal-notifier not available
+    // Note: osascript doesn't support custom icons, will show Terminal app icon
+    const script = `display notification "${escapeForAppleScript(message)}" with title "${escapeForAppleScript(title)}"`;
+    await execAsync(`osascript -e '${script}'`);
+  }
 }
 
 /**
@@ -362,9 +372,9 @@ async function sendLinuxNotification(title: string, message: string): Promise<vo
   // Try to use notify-send, fail silently if not available
   try {
     await execAsync('which notify-send');
-    // Add icon support - using 'dialog-information' which is commonly available
+    // Use Flow-themed spiral emoji as icon for Sylphx Flow
     await execAsync(
-      `notify-send -i "dialog-information" "${escapeForShell(title)}" "${escapeForShell(message)}"`
+      `notify-send -i "🌀" "${escapeForShell(title)}" "${escapeForShell(message)}"`
     );
   } catch {
     // notify-send not available, skip notification silently

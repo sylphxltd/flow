@@ -5,7 +5,7 @@ import { targetManager } from '../core/target-manager.js';
 import { CLIError } from '../utils/error-handler.js';
 import { getAgentsDir } from '../utils/paths.js';
 
-async function loadAgentContent(agentName: string, agentFilePath?: string): Promise<string> {
+export async function loadAgentContent(agentName: string, agentFilePath?: string): Promise<string> {
   const { enhanceAgentContent } = await import('../utils/agent-enhancer.js');
 
   try {
@@ -47,7 +47,7 @@ async function loadAgentContent(agentName: string, agentFilePath?: string): Prom
   }
 }
 
-function extractAgentInstructions(agentContent: string): string {
+export function extractAgentInstructions(agentContent: string): string {
   // Extract content after YAML front matter
   const yamlFrontMatterRegex = /^---\s*\n[\s\S]*?\n---\s*\n/;
   const match = agentContent.match(yamlFrontMatterRegex);

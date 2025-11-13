@@ -113,33 +113,28 @@ export function getAgentSearchPaths(cwd: string): string[] {
 /**
  * Load all available agents from all sources
  */
-export async function loadAllAgents(cwd: string): Promise<Agent[]> {
+export async function loadAllAgents(cwd: string, targetAgentDir?: string): Promise<Agent[]> {
   const systemPath = await getSystemAgentsPath();
   const [globalPath, projectPath] = getAgentSearchPaths(cwd);
 
-  const [systemAgents, globalAgents, projectAgents] = await Promise.all([
-    loadAgentsFromDirectory(systemPath, true),  // System agents are marked as builtin
-    loadAgentsFromDirectory(globalPath, false),
-    loadAgentsFromDirectory(projectPath, false),
-  ]);
+  let allAgentPaths = [systemPath, globalPath, projectPath];
 
-  // Priority: system < global < project
-  // Use Map to deduplicate by ID (later entries override earlier ones)
+  // If a target-specific agent directory is provided, add it with highest priority
+  if (targetAgentDir) {
+    const targetPath = join(cwd, targetAgentDir); // Assuming targetAgentDir is relative to cwd
+    allAgentPaths.push(targetPath);
+  }
+
+  // Load agents from all paths
+  const loadedAgentsPromises = allAgentPaths.map(path => loadAgentsFromDirectory(path, path === systemPath));
+  const loadedAgentsArrays = await Promise.all(loadedAgentsPromises);
+
+  // Flatten and deduplicate
   const agentMap = new Map<string, Agent>();
-
-  // Add system agents first (lowest priority)
-  for (const agent of systemAgents) {
-    agentMap.set(agent.id, agent);
-  }
-
-  // Add global agents (override system)
-  for (const agent of globalAgents) {
-    agentMap.set(agent.id, agent);
-  }
-
-  // Add project agents (override globals and system)
-  for (const agent of projectAgents) {
-    agentMap.set(agent.id, agent);
+  for (const agentArray of loadedAgentsArrays) {
+    for (const agent of agentArray) {
+      agentMap.set(agent.id, agent);
+    }
   }
 
   return Array.from(agentMap.values());

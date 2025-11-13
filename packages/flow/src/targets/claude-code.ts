@@ -262,7 +262,7 @@ Please begin your response with a comprehensive summary of all the instructions 
 
         child.on('spawn', () => {
           if (options.verbose) {
-            console.log('✓ Claude process spawned successfully');
+            console.log('✓ Claude Code started');
           }
         });
 

@@ -14,6 +14,7 @@ import { knowledgeCommand } from './commands/knowledge-command.js';
 import {
   flowCommand,
   statusCommand,
+  setupCommand,
   doctorCommand,
   upgradeCommand,
   executeFlow,
@@ -51,6 +52,7 @@ export function createCLI(): Command {
 
   // Add commands
   program.addCommand(flowCommand);
+  program.addCommand(setupCommand);
   program.addCommand(statusCommand);
   program.addCommand(doctorCommand);
   program.addCommand(upgradeCommand);

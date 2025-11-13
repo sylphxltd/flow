@@ -9,6 +9,7 @@ import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '.
 import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';
 import { secretUtils } from '../utils/secret-utils.js';
 import { fileUtils, generateHelpText, yamlUtils } from '../utils/target-utils.js';
+import { CLIError } from '../utils/error-handler.js';
 
 /**
  * OpenCode target - composition approach with all original functionality
@@ -395,5 +396,70 @@ export const opencodeTarget: Target = {
     );
 
     return { count: results.length };
+  },
+
+  /**
+   * Execute OpenCode CLI
+   */
+  async executeCommand(
+    systemPrompt: string,
+    userPrompt: string,
+    options: { verbose?: boolean; dryRun?: boolean } = {}
+  ): Promise<void> {
+    if (options.dryRun) {
+      console.log('Dry run: Would execute OpenCode');
+      console.log('System prompt length:', systemPrompt.length);
+      console.log('User prompt length:', userPrompt.length);
+      console.log('✓ Dry run completed successfully');
+      return;
+    }
+
+    try {
+      // For now, just launch OpenCode CLI if available
+      // TODO: Implement proper OpenCode CLI integration
+      const { spawn } = await import('node:child_process');
+
+      const args = [];
+      if (userPrompt && userPrompt.trim() !== '') {
+        args.push(userPrompt);
+      }
+
+      if (options.verbose) {
+        console.log('🚀 Executing OpenCode');
+        console.log(`🚀 Command: opencode ${args.join(' ')}`);
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn('opencode', args, {
+          stdio: 'inherit',
+          shell: true,
+        });
+
+        child.on('spawn', () => {
+          if (options.verbose) {
+            console.log('✓ OpenCode process started');
+          }
+        });
+
+        child.on('error', (error) => {
+          console.error('✗ Error spawning OpenCode:', error);
+          reject(error);
+        });
+
+        child.on('close', (code) => {
+          if (code !== 0) {
+            reject(new Error(`OpenCode exited with code ${code}`));
+          } else {
+            resolve();
+          }
+        });
+      });
+
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new CLIError(`Failed to execute OpenCode: ${error.message}`, 'OPENCODE_ERROR');
+      }
+      throw error;
+    }
   },
 };

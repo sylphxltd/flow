@@ -7,7 +7,7 @@ import { targetManager } from '../core/target-manager.js';
 import { CLIError } from '../utils/error-handler.js';
 import { projectSettings } from '../utils/settings.js';
 import { validateTarget } from '../utils/target-config.js';
-import { CONFIG_FILENAME } from '../config/constants.js';
+import { ConfigService } from '../services/config-service.js';
 
 // Create the init command
 export const initCommand = new Command('init')
@@ -281,18 +281,12 @@ export const initCommand = new Command('init')
         targetNameOption._tag === 'Some' ? targetNameOption.value.name : targetId;
       targetInfo.push(`Target: ${targetName}`);
 
-      // Also save to CONFIG_FILENAME for StateDetector
-      const fs = await import('node:fs/promises');
-      const path = await import('node:path');
-      const configPath = path.join(process.cwd(), CONFIG_FILENAME);
-      let config = {};
-      try {
-        config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
-      } catch {
-        // File doesn't exist yet, start with empty config
-      }
-      config.target = targetId;
-      await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+      // Save to new ConfigService for proper layered configuration
+      await ConfigService.saveProjectSettings({
+        target: targetId,
+        version: '1.0.0',
+        lastUpdated: new Date().toISOString()
+      });
     } catch (error) {
       // Don't fail the entire setup if we can't save settings
       console.warn(

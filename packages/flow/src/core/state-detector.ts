@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectSettings } from '../utils/settings.js';
 import { targetManager } from './target-manager.js';
-import { CONFIG_FILENAME } from '../config/constants.js';
+import { ConfigService } from '../services/config-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,18 +59,15 @@ export class StateDetector {
     };
 
     try {
-      // Check if initialized
-      const configPath = path.join(this.projectPath, CONFIG_FILENAME);
-      const configExists = await fs.access(configPath).then(() => true).catch(() => false);
+      // Check if initialized - use ConfigService for consistency
+      state.initialized = await ConfigService.isInitialized(this.projectPath);
 
-      if (!configExists) {
+      if (!state.initialized) {
         return state; // Not initialized
       }
 
-      state.initialized = true;
-
-      // Read config
-      const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
+      // Read project settings
+      const config = await ConfigService.loadProjectSettings(this.projectPath);
       state.version = config.version || null;
       state.target = config.target || null;
       state.lastUpdated = config.lastUpdated ? new Date(config.lastUpdated) : null;
@@ -135,38 +132,38 @@ export class StateDetector {
     const explanations: string[] = [];
 
     if (!state.initialized) {
-      explanations.push('项目尚未初始化');
-      explanations.push('运行 `bun dev:flow` 开始初始化');
+      explanations.push('Project not initialized yet');
+      explanations.push('Run `bun dev:flow` to start initialization');
       return explanations;
     }
 
     if (state.corrupted) {
-      explanations.push('检测到配置损坏');
-      explanations.push('运行 `bun dev:flow --clean` 修复');
+      explanations.push('Configuration corruption detected');
+      explanations.push('Run `bun dev:flow --clean` to repair');
       return explanations;
     }
 
     if (state.outdated) {
-      explanations.push(`Flow 版本过时: ${state.version} → ${state.latestVersion}`);
-      explanations.push('运行 `bun dev:flow upgrade` 升级');
+      explanations.push(`Flow version outdated: ${state.version} → ${state.latestVersion}`);
+      explanations.push('Run `bun dev:flow upgrade` to upgrade');
     }
 
     if (state.targetVersion && state.targetLatestVersion &&
         this.isVersionOutdated(state.targetVersion, state.targetLatestVersion)) {
-      explanations.push(`${state.target} 有更新可用`);
-      explanations.push(`运行 ​​​bun dev:flow upgrade-target 升级`);
+      explanations.push(`${state.target} update available`);
+      explanations.push(`Run \`bun dev:flow upgrade-target\` to upgrade`);
     }
 
     // Check components
     Object.entries(state.components).forEach(([name, component]) => {
       if (!component.installed) {
-        explanations.push(`缺少 ${name}`);
+        explanations.push(`Missing ${name}`);
       }
     });
 
     if (explanations.length === 0) {
-      explanations.push('项目状态正常');
-      explanations.push('运行 `bun dev:flow` 启动 Claude Code');
+      explanations.push('Project status is normal');
+      explanations.push('Run `bun dev:flow` to start Claude Code');
     }
 
     return explanations;
@@ -288,9 +285,9 @@ export class StateDetector {
       return true; // 初始化咗但冇 target
     }
 
-    // 检查必需组件
-    if (state.initialized && !state.components.agents.installed) {
-      return true; // 初始化咗但冇 agents
+    // 检查必需组件 - only check agents for claude-code
+    if (state.initialized && state.target === 'claude-code' && !state.components.agents.installed) {
+      return true; // claude-code 初始化咗但冇 agents
     }
 
     return false;

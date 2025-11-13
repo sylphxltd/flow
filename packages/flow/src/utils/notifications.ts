@@ -36,11 +36,11 @@ export async function sendOSNotification(title: string, message: string, options
   sound?: boolean;
   timeout?: number;
 }) {
-  const { 
-    icon = '🤖', 
-    urgency = 'normal', 
+  const {
+    icon = '🌀', // Flow-themed spiral emoji for Sylphx Flow notifications
+    urgency = 'normal',
     sound = true,
-    timeout = 5000 
+    timeout = 5000
   } = options || {};
   
   try {
@@ -97,7 +97,7 @@ export async function sendOSNotification(title: string, message: string, options
         });
         proc.on('error', reject);
       });
-      
+
     } else if (process.platform === 'win32') {
       // Windows: use PowerShell toast notifications
       const { spawn } = require('child_process');

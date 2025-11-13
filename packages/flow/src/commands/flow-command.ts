@@ -12,7 +12,7 @@ import { UpgradeManager } from '../core/upgrade-manager.js';
 import { initCommand } from './init-command.js';
 import { loadAgentContent, extractAgentInstructions } from './run-command.js';
 import { ClaudeConfigService } from '../services/claude-config-service.js';
-import { CONFIG_FILENAME } from '../config/constants.js';
+import { ConfigService } from '../services/config-service.js';
 
 export interface FlowOptions {
   target?: string;
@@ -31,6 +31,12 @@ export interface FlowOptions {
   hooks?: boolean;
   agent?: string;
   agentFile?: string;
+
+  // Smart configuration options
+  selectProvider?: boolean;
+  selectAgent?: boolean;
+  useDefaults?: boolean;
+  provider?: string;
 }
 
 /**
@@ -40,7 +46,7 @@ function showWelcome(): void {
   console.log(
     boxen(
       `${chalk.cyan.bold('Sylphx Flow')} ${chalk.dim('- AI-Powered Development Framework')}\n` +
-      `${chalk.dim('自动初始化 • 智能升级 • 一键启动')}`,
+      `${chalk.dim('Auto-initialization • Smart upgrades • One-click launch')}`,
       {
         padding: 1,
         margin: { bottom: 1 },
@@ -79,42 +85,42 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 async function showStatus(state: ProjectState): Promise<void> {
-  console.log(chalk.cyan.bold('📊 项目状态\n'));
+  console.log(chalk.cyan.bold('📊 Project Status\n'));
 
   if (!state.initialized) {
-    console.log('  ' + chalk.yellow('⚠  未初始化'));
+    console.log('  ' + chalk.yellow('⚠  Not initialized'));
   } else {
-    console.log(`  ${chalk.green('✓')} 已初始化 (Flow v${state.version || '未知'})`);
+    console.log(`  ${chalk.green('✓')} Initialized (Flow v${state.version || 'unknown'})`);
 
     if (state.target) {
       const versionStr = state.targetVersion ? ` (v${state.targetVersion})` : '';
-      console.log(`  ${chalk.green('✓')} 目标平台: ${state.target}${versionStr}`);
+      console.log(`  ${chalk.green('✓')} Target platform: ${state.target}${versionStr}`);
     }
 
-    // 组件状态
+    // Component status
     const components = state.components;
-    console.log(`\n  ${chalk.cyan('组件状态:')}`);
-    console.log(`    Agent: ${components.agents.installed ? chalk.green(`✓ ${components.agents.count}个`) : chalk.red('✗')}`);
-    console.log(`    Rules: ${components.rules.installed ? chalk.green(`✓ ${components.rules.count}个`) : chalk.red('✗')}`);
+    console.log(`\n  ${chalk.cyan('Components:')}`);
+    console.log(`    Agents: ${components.agents.installed ? chalk.green(`✓ ${components.agents.count}`) : chalk.red('✗')}`);
+    console.log(`    Rules: ${components.rules.installed ? chalk.green(`✓ ${components.rules.count}`) : chalk.red('✗')}`);
     console.log(`    Hooks: ${components.hooks.installed ? chalk.green('✓') : chalk.red('✗')}`);
-    console.log(`    MCP: ${components.mcp.installed ? chalk.green(`✓ ${components.mcp.serverCount}个服务器`) : chalk.red('✗')}`);
-    console.log(`    输出样式: ${components.outputStyles.installed ? chalk.green('✓') : chalk.red('✗')}`);
-    console.log(`    Slash命令: ${components.slashCommands.installed ? chalk.green(`✓ ${components.slashCommands.count}个`) : chalk.red('✗')}`);
+    console.log(`    MCP: ${components.mcp.installed ? chalk.green(`✓ ${components.mcp.serverCount} servers`) : chalk.red('✗')}`);
+    console.log(`    Output styles: ${components.outputStyles.installed ? chalk.green('✓') : chalk.red('✗')}`);
+    console.log(`    Slash commands: ${components.slashCommands.installed ? chalk.green(`✓ ${components.slashCommands.count}`) : chalk.red('✗')}`);
 
-    // 过时警告
+    // Outdated warnings
     if (state.outdated) {
-      console.log(`\n  ${chalk.yellow('⚠')} Flow 版本过时: ${state.version} → ${state.latestVersion}`);
+      console.log(`\n  ${chalk.yellow('⚠')} Flow version outdated: ${state.version} → ${state.latestVersion}`);
     }
 
     if (state.targetVersion && state.targetLatestVersion &&
         isVersionOutdated(state.targetVersion, state.targetLatestVersion)) {
-      console.log(`  ${chalk.yellow('⚠')} ${state.target} 有更新: v${state.targetVersion} → v${state.targetLatestVersion}`);
+      console.log(`  ${chalk.yellow('⚠')} ${state.target} update available: v${state.targetVersion} → v${state.targetLatestVersion}`);
     }
 
     if (state.lastUpdated) {
       const days = Math.floor((Date.now() - state.lastUpdated.getTime()) / (1000 * 60 * 60 * 24));
       if (days > 7) {
-        console.log(`\n  ${chalk.yellow('⚠')} 上次更新: ${days}天前`);
+        console.log(`\n  ${chalk.yellow('⚠')} Last updated: ${days} days ago`);
       }
     }
   }
@@ -194,19 +200,19 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 /**
- * Main flow execution logic
+ * Main flow execution logic with smart configuration
  */
 export async function executeFlow(prompt: string | undefined, options: FlowOptions): Promise<void> {
+  // Show welcome banner
+  showWelcome();
+
   // Create detector and upgrade manager
   const detector = new StateDetector();
   const upgradeManager = new UpgradeManager();
 
-  // Show welcome banner
-  showWelcome();
-
   // Run status check
   if (options.verbose) {
-    console.log(chalk.dim('🤔 正在检测项目状态...\n'));
+    console.log(chalk.dim('🤔 Checking project status...\n'));
   }
 
   const state = await detector.detect();
@@ -215,27 +221,56 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     await showStatus(state);
   }
 
-  // Step 0: Smart decision making
-  if (!options.initOnly && !options.runOnly && !options.clean) {
+  // Step 0: Always check for upgrades first
+  if (!options.initOnly && !options.runOnly) {
+    // Check Flow upgrade
+    if (await UpgradeManager.isUpgradeAvailable()) {
+      console.log(chalk.yellow(`📦 Sylphx Flow update available: ${state.version} → ${state.latestVersion}\n`));
+      const { default: inquirer } = await import('inquirer');
+      const { upgrade } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'upgrade',
+          message: 'Upgrade Sylphx Flow now?',
+          default: true,
+        },
+      ]);
+      if (upgrade) {
+        options.upgrade = true;
+      }
+    }
+
+    // Check target upgrade (if target exists)
+    if (state.target) {
+      // TODO: Check if target has update available
+      // For now, just show that we would check
+      if (options.verbose) {
+        console.log(chalk.dim(`Checking ${state.target} for updates...\n`));
+      }
+    }
+  }
+
+  // Step 0.5: Smart decision making
+  if (!options.initOnly && !options.runOnly) {
     const action = detector.recommendAction(state);
 
     switch (action) {
       case 'FULL_INIT':
-        console.log(chalk.cyan('🚀 检测到新项目，正在初始化...\n'));
+        console.log(chalk.cyan('🚀 New project detected, initializing...\n'));
         break;
       case 'REPAIR':
-        console.log(chalk.yellow('⚠  检测到配置损坏，正在修复...\n'));
+        console.log(chalk.yellow('⚠  Configuration corruption detected, repairing...\n'));
         options.clean = true;
         break;
       case 'UPGRADE':
         if (await UpgradeManager.isUpgradeAvailable()) {
-          console.log(chalk.yellow(`📦 检测到更新: ${state.version} → ${state.latestVersion}\n`));
+          console.log(chalk.yellow(`📦 Update available: ${state.version} → ${state.latestVersion}\n`));
           const { default: inquirer } = await import('inquirer');
           const { upgrade } = await inquirer.prompt([
             {
               type: 'confirm',
               name: 'upgrade',
-              message: '是否升级到最新版本?',
+              message: 'Upgrade to latest version?',
               default: true,
             },
           ]);
@@ -245,13 +280,13 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
         }
         break;
       case 'UPGRADE_TARGET':
-        console.log(chalk.yellow(`📦 ${state.target} 有更新可用\n`));
+        console.log(chalk.yellow(`📦 Update available for ${state.target}\n`));
         const { default: inquirer } = await import('inquirer');
         const { upgradeTarget } = await inquirer.prompt([
           {
             type: 'confirm',
             name: 'upgradeTarget',
-            message: `是否升级 ${state.target}?`,
+            message: `Upgrade ${state.target}?`,
             default: true,
           },
         ]);
@@ -264,7 +299,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
 
   // Step 1: Upgrade (if requested)
   if (options.upgrade && state.outdated && state.latestVersion) {
-    console.log(chalk.cyan.bold('━ 升级 Flow\n'));
+    console.log(chalk.cyan.bold('━ Upgrading Flow\n'));
     await upgradeManager.upgradeFlow(state);
     console.log('');
     // Re-detect after upgrade
@@ -274,17 +309,27 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
 
   // Step 2: Upgrade target (if requested)
   if (options.upgradeTarget && state.target) {
-    console.log(chalk.cyan.bold(`━ 升级 ${state.target}\n`));
+    console.log(chalk.cyan.bold(`━ Upgrading ${state.target}\n`));
     await upgradeManager.upgradeTarget(state);
     console.log('');
   }
 
+  // Declare at function level to persist across steps
+  let selectedTarget: string | undefined;
+
   // Step 3: Initialize (if needed and not run-only)
-  if (!options.runOnly) {
-    console.log(chalk.cyan.bold('━ 初始化项目\n'));
+  if (!options.runOnly || options.clean) {
+    console.log(chalk.cyan.bold('━ Initializing Project\n'));
+
+    // Force target selection when cleaning
+    if (options.clean) {
+      const { targetManager } = await import('../core/target-manager.js');
+      selectedTarget = await targetManager.promptForTargetSelection();
+      console.log(chalk.green(`✅ Selected target: ${selectedTarget}`));
+    }
 
     const initOptions = {
-      target: options.target || state.target || 'claude-code',
+      target: selectedTarget,
       verbose: options.verbose,
       dryRun: options.dryRun,
       clear: options.clean || false,
@@ -301,49 +346,73 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
       await initCommand.action(initOptions);
 
       if (!options.dryRun) {
-        console.log(chalk.green.bold('\n✓ 初始化完成\n'));
+        console.log(chalk.green.bold('\n✓ Initialization complete\n'));
       } else {
-        console.log(chalk.dim('\n✓ 模拟完成 - 跳过运行\n'));
+        console.log(chalk.dim('\n✓ Dry run complete - skipping execution\n'));
         return;
       }
     } catch (error) {
-      console.error(chalk.red.bold('\n✗ 初始化失败:'), error);
+      console.error(chalk.red.bold('\n✗ Initialization failed:'), error);
       process.exit(1);
     }
   }
 
-  // Step 4: Run agent (if not init-only)
+  // Step 4: Launch target (if not init-only)
   if (!options.initOnly) {
-    console.log(chalk.cyan.bold('━ 启动 Claude Code\n'));
+    // Resolve target - use the target we just selected
+    let targetForResolution = options.target || state.target;
 
-    // Resolve target - for flow command, prioritize targets that support command execution
-    const targetForResolution = options.target || state.target || 'claude-code';
+    // If we just selected a target during cleaning, use that
+    if (selectedTarget) {
+      targetForResolution = selectedTarget;
+    }
+
     const resolvedTarget = await targetManager.resolveTarget({
       target: targetForResolution,
-      allowSelection: false,
+      allowSelection: false, // Target should already be selected during init
     });
 
-    // 检查目标是否支持命令执行
+    console.log(chalk.cyan.bold(`━ Launching ${resolvedTarget}\n`));
+
+    // Check if target supports command execution
     const { getTargetsWithCommandSupport } = await import('../config/targets.js');
     const supportedTargets = getTargetsWithCommandSupport().map(t => t.id);
 
     if (!supportedTargets.includes(resolvedTarget)) {
-      console.log(chalk.red.bold('✗ 不支持的目标平台\n'));
-      console.log(chalk.yellow(`目标 '${resolvedTarget}' 不支持执行 agent 命令。`));
-      console.log(chalk.cyan(`支持的平台: ${supportedTargets.join(', ')}\n`));
-      console.log(chalk.dim('提示: 使用 --target claude-code 指定 Claude Code 平台'));
-      console.log(chalk.dim('例如: bun dev:flow --target claude-code\n'));
+      console.log(chalk.red.bold('✗ Unsupported target platform\n'));
+      console.log(chalk.yellow(`Target '${resolvedTarget}' does not support agent execution.`));
+      console.log(chalk.cyan(`Supported platforms: ${supportedTargets.join(', ')}\n`));
+      console.log(chalk.dim('Tip: Use --target claude-code to specify Claude Code platform'));
+      console.log(chalk.dim('Example: bun dev:flow --target claude-code\n'));
       process.exit(1);
     }
 
-    // Claude Code 特殊处理 - 需要配置 provider 和 agent
+    // Claude Code handling - needs provider/agent setup
     if (resolvedTarget === 'claude-code') {
-      // 配置 provider (如果需要)
-      await ClaudeConfigService.configureProvider(options.verbose);
+      // Handle provider and agent selection for Claude Code
+      const { SmartConfigService } = await import('../services/smart-config-service.js');
 
-      // 配置 agent (如果需要)
-      const selectedAgent = await ClaudeConfigService.configureAgent(options.verbose);
-      options.agent = selectedAgent;
+      // Check if API keys are configured, if not, run initial setup
+      const { ConfigService } = await import('../services/config-service.js');
+      if (!(await ConfigService.hasInitialSetup())) {
+        console.log(chalk.cyan('\n🔑 First-time setup for Claude Code:\n'));
+        await SmartConfigService.initialSetup();
+        console.log(chalk.green('\n✅ Claude Code setup complete!\n'));
+      }
+
+      const runtimeChoices = await SmartConfigService.selectRuntimeChoices({
+        selectProvider: options.selectProvider,
+        selectAgent: options.selectAgent,
+        useDefaults: options.useDefaults,
+        provider: options.provider,
+        agent: options.agent,
+      });
+
+      // Setup environment with selected provider
+      await SmartConfigService.setupEnvironment(runtimeChoices.provider!);
+
+      // Use selected agent
+      options.agent = runtimeChoices.agent;
     }
 
     const agent = options.agent || 'coder';
@@ -389,10 +458,10 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     }
 
     if (!options.dryRun) {
-      console.log(chalk.dim('\n✓ Claude Code 已退出\n'));
+      console.log(chalk.dim('\n✓ Claude Code has exited\n'));
     }
   } else {
-    console.log(chalk.dim('\n✓ Init-only 模式，已跳过运行\n'));
+    console.log(chalk.dim('\n✓ Init-only mode, skipping execution\n'));
   }
 }
 
@@ -408,6 +477,12 @@ export const flowCommand = new Command('flow')
   .option('--clean', 'Clean all configurations and reinitialize')
   .option('--upgrade', 'Upgrade Sylphx Flow to latest version')
   .option('--upgrade-target', 'Upgrade target platform (Claude Code/OpenCode)')
+
+  // Smart configuration options
+  .option('--select-provider', 'Prompt to select provider each run')
+  .option('--select-agent', 'Prompt to select agent each run')
+  .option('--use-defaults', 'Skip prompts, use saved defaults')
+  .option('--provider <provider>', 'Override provider for this run (anthropic|z.ai|kimi)')
 
   // Init options
   .option('--target <type>', 'Target platform (opencode, claude-code, auto-detect)')
@@ -432,6 +507,33 @@ export const flowCommand = new Command('flow')
   });
 
 /**
+ * Setup command - configure API keys and preferences
+ */
+export const setupCommand = new Command('setup')
+  .description('Initialize project configuration (one-time setup)')
+  .action(async () => {
+    showWelcome();
+
+    // Initialize project with default target
+    const { initCommand } = await import('./init-command.js');
+    await initCommand.action({
+      target: undefined, // Let user choose
+      verbose: false,
+      dryRun: false,
+      clear: false,
+      mcp: true,
+      agents: true,
+      rules: true,
+      outputStyles: true,
+      slashCommands: true,
+      hooks: true,
+      helpOption: () => {},
+    });
+
+    console.log(chalk.green('\n✅ Setup complete!'));
+  });
+
+/**
  * Status command - show project status
  */
 export const statusCommand = new Command('status')
@@ -450,7 +552,8 @@ export const statusCommand = new Command('status')
 
       // 配置文件内容
       try {
-        const configPath = path.join(process.cwd(), CONFIG_FILENAME);
+        const { getProjectSettingsFile } = await import('../config/constants.js');
+        const configPath = path.join(process.cwd(), getProjectSettingsFile());
         const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
         console.log('配置文件:', JSON.stringify(config, null, 2));
       } catch {
