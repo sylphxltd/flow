@@ -57,22 +57,25 @@ export const opencodeTarget: Target = {
     metadata?: AgentMetadata,
     _sourcePath?: string
   ): Promise<string> {
-    // For OpenCode, we preserve YAML front matter but remove name field
+    // For OpenCode, we preserve YAML front matter but remove unsupported fields
     const { metadata: existingMetadata, content: baseContent } =
       await yamlUtils.extractFrontMatter(content);
 
-    // Remove name field from metadata
-    const { name, ...metadataWithoutName } = existingMetadata;
+    // Remove fields that OpenCode doesn't support:
+    // - name: not used by OpenCode
+    // - mode: OpenCode doesn't support 'both' mode (only 'primary')
+    // - rules: OpenCode doesn't use rule references
+    const { name, mode, rules, ...cleanMetadata } = existingMetadata;
 
-    // If additional metadata is provided, merge it (but exclude name)
+    // If additional metadata is provided, merge it (but exclude unsupported fields)
     if (metadata) {
-      const { name: additionalName, ...additionalMetadataWithoutName } = metadata;
-      const mergedMetadata = { ...metadataWithoutName, ...additionalMetadataWithoutName };
+      const { name: additionalName, mode: additionalMode, rules: additionalRules, ...additionalCleanMetadata } = metadata;
+      const mergedMetadata = { ...cleanMetadata, ...additionalCleanMetadata };
       return yamlUtils.addFrontMatter(baseContent, mergedMetadata);
     }
 
-    // If no metadata provided, return content without name field
-    return yamlUtils.addFrontMatter(baseContent, metadataWithoutName);
+    // Return content with only OpenCode-supported fields
+    return yamlUtils.addFrontMatter(baseContent, cleanMetadata);
   },
 
   /**
