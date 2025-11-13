@@ -1,0 +1,50 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1b4b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#312e81;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Glow effect -->
+  <circle cx="200" cy="315" r="400" fill="url(#glow)"/>
+
+  <!-- Logo -->
+  <g transform="translate(120, 215)">
+    <circle cx="100" cy="100" r="90" fill="#6B46C1" opacity="0.9"/>
+    <path d="M 100 40 Q 65 65 76 100 Q 87 135 100 160 Q 113 135 124 100 Q 135 65 100 40 M 100 60 Q 73 78 82 100 Q 91 122 100 140 Q 109 122 118 100 Q 127 78 100 60 M 100 80 Q 85 92 91 100 Q 97 108 100 120 Q 103 108 109 100 Q 115 92 100 80"
+          fill="none" stroke="#A78BFA" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+    <polygon points="100,88 107,100 100,112 93,100" fill="#FBBF24" opacity="0.95"/>
+  </g>
+
+  <!-- Text -->
+  <text x="320" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="bold" fill="#ffffff">
+    Sylphx Flow
+  </text>
+  <text x="320" y="340" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="500" fill="#c4b5fd">
+    AI-Powered Development Automation
+  </text>
+  <text x="320" y="400" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="400" fill="#a78bfa">
+    Stop writing prompts. Start building software.
+  </text>
+
+  <!-- Feature badges -->
+  <g transform="translate(320, 440)">
+    <rect x="0" y="0" width="140" height="40" rx="20" fill="#6B46C1" opacity="0.8"/>
+    <text x="70" y="27" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">🔄 Loop Mode</text>
+
+    <rect x="160" y="0" width="150" height="40" rx="20" fill="#6B46C1" opacity="0.8"/>
+    <text x="235" y="27" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">📝 File Input</text>
+
+    <rect x="330" y="0" width="180" height="40" rx="20" fill="#6B46C1" opacity="0.8"/>
+    <text x="420" y="27" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">🧠 Smart Config</text>
+  </g>
+</svg>
