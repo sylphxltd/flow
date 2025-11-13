@@ -79,8 +79,23 @@ export class SmartConfigService {
       });
     }
 
-    // Mark setup as completed (no need for default preferences prompt)
-    await ConfigService.saveHomeSettings({ hasCompletedSetup: true });
+    // Ask user if they want to set a default provider
+    const { setDefault } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'setDefault',
+        message: `Set ${selectedProvider} as default provider for future runs?`,
+        default: selectedProvider === 'default', // Default to yes if they chose "default"
+      },
+    ]);
+
+    const homeSettings: any = { hasCompletedSetup: true };
+    if (setDefault) {
+      homeSettings.defaultProvider = selectedProvider;
+    }
+
+    // Mark setup as completed
+    await ConfigService.saveHomeSettings(homeSettings);
     console.log(chalk.green('\n✓ Setup complete!\n'));
   }
 
@@ -157,6 +172,20 @@ export class SmartConfigService {
       ]);
 
       userSettings.defaultProvider = defaultProvider;
+    } else if (availableProviders.length === 1) {
+      // Only one provider available, ask if user wants to set it as default
+      const { useAsDefault } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'useAsDefault',
+          message: `Use ${availableProviders[0]} as default provider?`,
+          default: true,
+        },
+      ]);
+
+      if (useAsDefault) {
+        userSettings.defaultProvider = availableProviders[0];
+      }
     }
 
     // Set default agent (will use dynamic loading)
@@ -202,52 +231,62 @@ export class SmartConfigService {
    * Runtime selection - choose provider and agent for this run
    *
    * DESIGN PRINCIPLE: Smart Defaults
-   * - Has saved default → Use it (no prompt)
-   * - No saved default → Prompt user
+   * - Has saved default AND useDefaults !== false → Use it (no prompt)
+   * - No saved default OR useDefaults === false → Prompt user
    * - Explicit flag (--select-provider/--select-agent) → Force prompt (override)
    * - Explicit option (--provider/--agent) → Use specified value
    */
   static async selectRuntimeChoices(options: SmartConfigOptions): Promise<RuntimeChoices> {
     const config = await ConfigService.loadConfiguration();
     const choices: RuntimeChoices = {};
+    let wasPrompted = false; // Track if we prompted the user (to decide if we should save)
 
     // Handle provider selection
     if (options.provider) {
       // 1. Explicit option provided
       choices.provider = options.provider;
-    } else if (options.selectProvider) {
-      // 2. Force selection (override defaults)
+    } else if (options.selectProvider || options.useDefaults === false) {
+      // 2. Force selection (override defaults) OR useDefaults explicitly disabled
       choices.provider = await this.selectProvider(config.user);
-    } else if (config.user.defaultProvider) {
+      // Don't save when user explicitly overrides (--select-provider or --use-defaults=false)
+    } else if (config.user.defaultProvider && options.useDefaults !== false) {
       // 3. Use saved default (SMART DEFAULT - no prompt needed)
       choices.provider = config.user.defaultProvider;
       console.log(chalk.dim(`  ✓ Provider: ${choices.provider}`));
     } else {
       // 4. No default saved, must prompt
       choices.provider = await this.selectProvider(config.user);
+      wasPrompted = true;
     }
 
     // Handle agent selection
     if (options.agent) {
       // 1. Explicit option provided
       choices.agent = options.agent;
-    } else if (options.selectAgent) {
-      // 2. Force selection (override defaults)
+    } else if (options.selectAgent || options.useDefaults === false) {
+      // 2. Force selection (override defaults) OR useDefaults explicitly disabled
       choices.agent = await this.selectAgent(config.user.defaultAgent);
-    } else if (config.user.defaultAgent) {
+      // Don't save when user explicitly overrides
+    } else if (config.user.defaultAgent && options.useDefaults !== false) {
       // 3. Use saved default (SMART DEFAULT - no prompt needed)
       choices.agent = config.user.defaultAgent;
       console.log(chalk.dim(`  ✓ Agent: ${choices.agent}`));
     } else {
       // 4. No default saved, must prompt
       choices.agent = await this.selectAgent(config.user.defaultAgent);
+      wasPrompted = true;
     }
 
-    // Save choices for next time
-    await ConfigService.saveHomeSettings({
-      defaultProvider: choices.provider,
-      defaultAgent: choices.agent,
-    });
+    // Save choices ONLY if:
+    // 1. User was prompted due to missing defaults (wasPrompted = true)
+    // 2. User didn't explicitly override (no --select-provider/agent flags)
+    // 3. Defaults are enabled (useDefaults !== false)
+    if (wasPrompted && options.useDefaults !== false && !options.selectProvider && !options.selectAgent) {
+      await ConfigService.saveHomeSettings({
+        defaultProvider: choices.provider,
+        defaultAgent: choices.agent,
+      });
+    }
 
     return choices;
   }
