@@ -79,23 +79,8 @@ export class SmartConfigService {
       });
     }
 
-    // Ask user if they want to set a default provider
-    const { setDefault } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'setDefault',
-        message: `Set ${selectedProvider} as default provider for future runs?`,
-        default: selectedProvider === 'default', // Default to yes if they chose "default"
-      },
-    ]);
-
-    const homeSettings: any = { hasCompletedSetup: true };
-    if (setDefault) {
-      homeSettings.defaultProvider = selectedProvider;
-    }
-
-    // Mark setup as completed
-    await ConfigService.saveHomeSettings(homeSettings);
+    // Mark setup as completed (only save API keys, no defaults)
+    await ConfigService.saveHomeSettings({ hasCompletedSetup: true });
     console.log(chalk.green('\n✓ Setup complete!\n'));
   }
 
@@ -128,164 +113,35 @@ export class SmartConfigService {
     await ConfigService.saveHomeSettings({ apiKeys: existingApiKeys });
   }
 
-  /**
-   * Setup default preferences
-   */
-  private static async setupDefaultPreferences(): Promise<void> {
-    console.log(chalk.cyan('⚙️  Setup Default Preferences\n'));
-
-    const userSettings = await ConfigService.loadHomeSettings();
-    const availableProviders = ConfigService.getAvailableProviders(userSettings);
-
-    if (availableProviders.length === 0) {
-      console.log(chalk.yellow('⚠  No API keys configured yet. Skipping preferences setup.'));
-      return;
-    }
-
-    const { setupDefaults } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'setupDefaults',
-        message: 'Set up default preferences?',
-        default: true,
-      },
-    ]);
-
-    if (!setupDefaults) {
-      console.log(chalk.dim('Skipping preferences setup.'));
-      return;
-    }
-
-    // Select default provider
-    if (availableProviders.length > 1) {
-      const { defaultProvider } = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'defaultProvider',
-          message: 'Select default provider:',
-          choices: availableProviders.map(p => ({
-            name: p.charAt(0).toUpperCase() + p.slice(1),
-            value: p,
-          })),
-          default: userSettings.defaultProvider || availableProviders[0],
-        },
-      ]);
-
-      userSettings.defaultProvider = defaultProvider;
-    } else if (availableProviders.length === 1) {
-      // Only one provider available, ask if user wants to set it as default
-      const { useAsDefault } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'useAsDefault',
-          message: `Use ${availableProviders[0]} as default provider?`,
-          default: true,
-        },
-      ]);
-
-      if (useAsDefault) {
-        userSettings.defaultProvider = availableProviders[0];
-      }
-    }
-
-    // Set default agent (will use dynamic loading)
-    const { useDefaultAgent } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'useDefaultAgent',
-        message: 'Set default agent?',
-        default: true,
-      },
-    ]);
-
-    if (useDefaultAgent) {
-      try {
-        const agents = await loadAllAgents(process.cwd());
-        if (agents.length > 0) {
-          const { defaultAgent } = await inquirer.prompt([
-            {
-              type: 'list',
-              name: 'defaultAgent',
-              message: 'Select default agent:',
-              choices: agents.map(a => ({
-                name: a.metadata.name || a.id,
-                value: a.id,
-              })),
-              default: userSettings.defaultAgent || (agents.find(a => a.id === 'coder')?.id || agents[0].id),
-            },
-          ]);
-
-          userSettings.defaultAgent = defaultAgent;
-        }
-      } catch (error) {
-        console.log(chalk.yellow('⚠  Could not load agents, using "coder" as default'));
-        userSettings.defaultAgent = 'coder';
-      }
-    }
-
-    await ConfigService.saveHomeSettings(userSettings);
-    console.log(chalk.green('✓ Default preferences saved'));
-  }
 
   /**
    * Runtime selection - choose provider and agent for this run
    *
-   * DESIGN PRINCIPLE: Smart Defaults
-   * - Has saved default AND useDefaults !== false → Use it (no prompt)
-   * - No saved default OR useDefaults === false → Prompt user
-   * - Explicit flag (--select-provider/--select-agent) → Force prompt (override)
-   * - Explicit option (--provider/--agent) → Use specified value
+   * DESIGN PRINCIPLE: Always Ask (Simple & Explicit)
+   * - Has args (--provider/--agent) → Use them directly
+   * - No args → Always prompt user
+   * - Never save runtime choices as defaults
    */
   static async selectRuntimeChoices(options: SmartConfigOptions): Promise<RuntimeChoices> {
     const config = await ConfigService.loadConfiguration();
     const choices: RuntimeChoices = {};
-    let wasPrompted = false; // Track if we prompted the user (to decide if we should save)
 
     // Handle provider selection
     if (options.provider) {
-      // 1. Explicit option provided
+      // Explicit option provided via args
       choices.provider = options.provider;
-    } else if (options.selectProvider || options.useDefaults === false) {
-      // 2. Force selection (override defaults) OR useDefaults explicitly disabled
-      choices.provider = await this.selectProvider(config.user);
-      // Don't save when user explicitly overrides (--select-provider or --use-defaults=false)
-    } else if (config.user.defaultProvider && options.useDefaults !== false) {
-      // 3. Use saved default (SMART DEFAULT - no prompt needed)
-      choices.provider = config.user.defaultProvider;
-      console.log(chalk.dim(`  ✓ Provider: ${choices.provider}`));
     } else {
-      // 4. No default saved, must prompt
+      // Always prompt
       choices.provider = await this.selectProvider(config.user);
-      wasPrompted = true;
     }
 
     // Handle agent selection
     if (options.agent) {
-      // 1. Explicit option provided
+      // Explicit option provided via args
       choices.agent = options.agent;
-    } else if (options.selectAgent || options.useDefaults === false) {
-      // 2. Force selection (override defaults) OR useDefaults explicitly disabled
-      choices.agent = await this.selectAgent(config.user.defaultAgent);
-      // Don't save when user explicitly overrides
-    } else if (config.user.defaultAgent && options.useDefaults !== false) {
-      // 3. Use saved default (SMART DEFAULT - no prompt needed)
-      choices.agent = config.user.defaultAgent;
-      console.log(chalk.dim(`  ✓ Agent: ${choices.agent}`));
     } else {
-      // 4. No default saved, must prompt
-      choices.agent = await this.selectAgent(config.user.defaultAgent);
-      wasPrompted = true;
-    }
-
-    // Save choices ONLY if:
-    // 1. User was prompted due to missing defaults (wasPrompted = true)
-    // 2. User didn't explicitly override (no --select-provider/agent flags)
-    // 3. Defaults are enabled (useDefaults !== false)
-    if (wasPrompted && options.useDefaults !== false && !options.selectProvider && !options.selectAgent) {
-      await ConfigService.saveHomeSettings({
-        defaultProvider: choices.provider,
-        defaultAgent: choices.agent,
-      });
+      // Always prompt
+      choices.agent = await this.selectAgent();
     }
 
     return choices;
@@ -304,22 +160,16 @@ export class SmartConfigService {
       { id: 'z.ai', name: 'Z.ai (Recommended)', hasKey: !!apiKeys['z.ai'] },
     ];
 
-    // Show last used provider hint
-    const lastUsed = userSettings.defaultProvider;
-    const message = lastUsed
-      ? `Select provider (last used: ${lastUsed}):`
-      : 'Select provider:';
-
     const { provider } = await inquirer.prompt([
       {
         type: 'list',
         name: 'provider',
-        message,
+        message: 'Select provider:',
         choices: allProviders.map(p => ({
           name: p.hasKey ? p.name : `${p.name} (Need API key)`,
           value: p.id,
         })),
-        default: lastUsed || 'default',
+        default: 'default',
       },
     ]);
 
@@ -348,7 +198,7 @@ export class SmartConfigService {
   /**
    * Select agent for this run
    */
-  private static async selectAgent(lastUsed?: string): Promise<string> {
+  private static async selectAgent(): Promise<string> {
     try {
       const agents = await loadAllAgents(process.cwd());
 
@@ -357,21 +207,16 @@ export class SmartConfigService {
         return 'coder';
       }
 
-      // Build message with last used hint
-      const message = lastUsed
-        ? `Select agent (last used: ${lastUsed}):`
-        : 'Select agent:';
-
       const { agent } = await inquirer.prompt([
         {
           type: 'list',
           name: 'agent',
-          message,
+          message: 'Select agent:',
           choices: agents.map(a => ({
             name: a.metadata.name || a.id,
             value: a.id,
           })),
-          default: lastUsed || agents.find(a => a.id === 'coder')?.id || agents[0].id,
+          default: agents.find(a => a.id === 'coder')?.id || agents[0].id,
         },
       ]);
 
