@@ -404,11 +404,11 @@ export const opencodeTarget: Target = {
   async executeCommand(
     systemPrompt: string,
     userPrompt: string,
-    options: { verbose?: boolean; dryRun?: boolean; print?: boolean; continue?: boolean } = {}
+    options: { verbose?: boolean; dryRun?: boolean; print?: boolean; continue?: boolean; agent?: string } = {}
   ): Promise<void> {
     if (options.dryRun) {
       console.log('Dry run: Would execute OpenCode');
-      console.log('System prompt length:', systemPrompt.length);
+      console.log('Agent:', options.agent || 'coder');
       console.log('User prompt length:', userPrompt.length);
       console.log('✓ Dry run completed successfully');
       return;
@@ -418,6 +418,11 @@ export const opencodeTarget: Target = {
       const { spawn } = await import('node:child_process');
 
       const args = [];
+
+      // Add agent flag (OpenCode uses --agent instead of system prompt)
+      if (options.agent) {
+        args.push('--agent', options.agent);
+      }
 
       // Handle print mode (headless)
       if (options.print) {
