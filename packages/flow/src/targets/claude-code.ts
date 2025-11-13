@@ -221,9 +221,19 @@ export const claudeCodeTarget: Target = {
 Please begin your response with a comprehensive summary of all the instructions and context provided above.`;
 
     if (options.dryRun) {
-      console.log('Dry run: Would execute Claude Code with --system-prompt');
-      console.log('System prompt to append length:', enhancedSystemPrompt.length, 'characters');
-      console.log('User prompt length:', sanitizedUserPrompt.length, 'characters');
+      // Build the command for display
+      const dryRunArgs = ['claude', '--dangerously-skip-permissions'];
+      if (options.print) dryRunArgs.push('-p');
+      if (options.continue) dryRunArgs.push('-c');
+      dryRunArgs.push('--system-prompt', '"<agent content>"');
+      if (sanitizedUserPrompt.trim() !== '') {
+        dryRunArgs.push(`"${sanitizedUserPrompt}"`);
+      }
+
+      console.log(chalk.cyan('Dry run - Would execute:'));
+      console.log(chalk.bold(dryRunArgs.join(' ')));
+      console.log(chalk.dim(`System prompt: ${enhancedSystemPrompt.length} characters`));
+      console.log(chalk.dim(`User prompt: ${sanitizedUserPrompt.length} characters`));
       console.log('✓ Dry run completed successfully');
       return;
     }

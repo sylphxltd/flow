@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import chalk from 'chalk';
 import { getRulesPath, ruleFileExists } from '../config/rules.js';
 import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 import { FileInstaller } from '../core/installers/file-installer.js';
@@ -407,9 +408,29 @@ export const opencodeTarget: Target = {
     options: { verbose?: boolean; dryRun?: boolean; print?: boolean; continue?: boolean; agent?: string } = {}
   ): Promise<void> {
     if (options.dryRun) {
-      console.log('Dry run: Would execute OpenCode');
-      console.log('Agent:', options.agent || 'coder');
-      console.log('User prompt length:', userPrompt.length);
+      // Build the command for display
+      const dryRunArgs = ['opencode'];
+      if (options.agent) {
+        dryRunArgs.push('--agent', options.agent);
+      }
+      if (options.print) {
+        dryRunArgs.push('run');
+        if (options.continue) {
+          dryRunArgs.push('-c');
+        }
+        if (userPrompt && userPrompt.trim() !== '') {
+          dryRunArgs.push(`"${userPrompt}"`);
+        }
+      } else {
+        if (userPrompt && userPrompt.trim() !== '') {
+          dryRunArgs.push('-p', `"${userPrompt}"`);
+        }
+      }
+
+      console.log(chalk.cyan('Dry run - Would execute:'));
+      console.log(chalk.bold(dryRunArgs.join(' ')));
+      console.log(chalk.dim(`Agent: ${options.agent || 'coder'}`));
+      console.log(chalk.dim(`User prompt: ${userPrompt.length} characters`));
       console.log('✓ Dry run completed successfully');
       return;
     }
