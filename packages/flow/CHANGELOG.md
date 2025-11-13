@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.0.6
+
+### Patch Changes
+
+- 841929e: Include assets directory with agents, rules, and templates in npm package
+
 ## 1.0.5
 
 ### Patch Changes
