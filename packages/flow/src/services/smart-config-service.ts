@@ -236,8 +236,8 @@ export class SmartConfigService {
    * Select provider for this run
    */
   private static async selectProvider(userSettings: UserSettings): Promise<string> {
-    // Always include default as an option
-    const availableProviders = ['default', ...ConfigService.getAvailableProviders(userSettings)];
+    // Get available providers (already includes 'default')
+    const availableProviders = ConfigService.getAvailableProviders(userSettings);
 
     if (availableProviders.length === 1) {
       const provider = availableProviders[0];

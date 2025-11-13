@@ -200,17 +200,24 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 /**
- * Main flow execution logic with smart configuration
+ * Main flow execution logic - simplified with orchestrator
  */
 export async function executeFlow(prompt: string | undefined, options: FlowOptions): Promise<void> {
+  // Import orchestrator functions
+  const {
+    checkUpgrades,
+    selectTarget,
+    initializeProject,
+    launchTarget,
+  } = await import('./flow-orchestrator.js');
+
   // Show welcome banner
   showWelcome();
 
-  // Create detector and upgrade manager
+  // Detect project state
   const detector = new StateDetector();
   const upgradeManager = new UpgradeManager();
 
-  // Run status check
   if (options.verbose) {
     console.log(chalk.dim('🤔 Checking project status...\n'));
   }
@@ -221,81 +228,8 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     await showStatus(state);
   }
 
-  // Step 0: Always check for upgrades first
-  if (!options.initOnly && !options.runOnly) {
-    // Check Flow upgrade
-    if (await UpgradeManager.isUpgradeAvailable()) {
-      console.log(chalk.yellow(`📦 Sylphx Flow update available: ${state.version} → ${state.latestVersion}\n`));
-      const { default: inquirer } = await import('inquirer');
-      const { upgrade } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'upgrade',
-          message: 'Upgrade Sylphx Flow now?',
-          default: true,
-        },
-      ]);
-      if (upgrade) {
-        options.upgrade = true;
-      }
-    }
-
-    // Check target upgrade (if target exists)
-    if (state.target) {
-      // TODO: Check if target has update available
-      // For now, just show that we would check
-      if (options.verbose) {
-        console.log(chalk.dim(`Checking ${state.target} for updates...\n`));
-      }
-    }
-  }
-
-  // Step 0.5: Smart decision making
-  if (!options.initOnly && !options.runOnly) {
-    const action = detector.recommendAction(state);
-
-    switch (action) {
-      case 'FULL_INIT':
-        console.log(chalk.cyan('🚀 New project detected, initializing...\n'));
-        break;
-      case 'REPAIR':
-        console.log(chalk.yellow('⚠  Configuration corruption detected, repairing...\n'));
-        options.clean = true;
-        break;
-      case 'UPGRADE':
-        if (await UpgradeManager.isUpgradeAvailable()) {
-          console.log(chalk.yellow(`📦 Update available: ${state.version} → ${state.latestVersion}\n`));
-          const { default: inquirer } = await import('inquirer');
-          const { upgrade } = await inquirer.prompt([
-            {
-              type: 'confirm',
-              name: 'upgrade',
-              message: 'Upgrade to latest version?',
-              default: true,
-            },
-          ]);
-          if (upgrade) {
-            options.upgrade = true;
-          }
-        }
-        break;
-      case 'UPGRADE_TARGET':
-        console.log(chalk.yellow(`📦 Update available for ${state.target}\n`));
-        const { default: inquirer } = await import('inquirer');
-        const { upgradeTarget } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'upgradeTarget',
-            message: `Upgrade ${state.target}?`,
-            default: true,
-          },
-        ]);
-        if (upgradeTarget) {
-          options.upgradeTarget = true;
-        }
-        break;
-    }
-  }
+  // Step 1: Check for upgrades
+  await checkUpgrades(state, options);
 
   // Step 1: Upgrade (if requested)
   if (options.upgrade && state.outdated && state.latestVersion) {
