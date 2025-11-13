@@ -238,6 +238,15 @@ export const opencodeTarget: Target = {
    * Install agents to .opencode/agent/ directory
    */
   async setupAgents(cwd: string, options: CommonOptions): Promise<SetupResult> {
+    // Clean up old 'commands' directory if it exists (migration from old structure)
+    // This ensures OpenCode won't crash with ConfigDirectoryTypoError
+    const oldCommandsDir = path.join(cwd, '.opencode/commands');
+    try {
+      await fs.rm(oldCommandsDir, { recursive: true, force: true });
+    } catch {
+      // Ignore if doesn't exist
+    }
+
     const installer = new FileInstaller();
     const agentsDir = path.join(cwd, this.config.agentDir);
 
@@ -376,11 +385,19 @@ export const opencodeTarget: Target = {
 
   /**
    * Setup slash commands for OpenCode
-   * Install slash command templates to .opencode/commands/ directory
+   * Install slash command templates to .opencode/command/ directory
    */
   async setupSlashCommands(cwd: string, options: CommonOptions): Promise<SetupResult> {
     if (!this.config.slashCommandsDir) {
       return { count: 0 };
+    }
+
+    // Clean up old 'commands' directory if it exists (migration from old structure)
+    const oldCommandsDir = path.join(cwd, '.opencode/commands');
+    try {
+      await fs.rm(oldCommandsDir, { recursive: true, force: true });
+    } catch {
+      // Ignore if doesn't exist
     }
 
     const installer = new FileInstaller();
