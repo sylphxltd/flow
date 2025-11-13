@@ -203,24 +203,28 @@ export class StateDetector {
       const fullPath = path.join(this.projectPath, componentPath);
       const exists = await fs.access(fullPath).then(() => true).catch(() => false);
 
-      state.components[componentName].installed = exists;
+      if (!exists) {
+        state.components[componentName].installed = false;
+        return;
+      }
 
-      if (exists) {
-        // 计算文件数量
-        const files = await fs.readdir(fullPath).catch(() => []);
-        const count = pattern === '*.js' ? files.filter(f => f.endsWith('.js')).length :
-                     pattern === '*.md' ? files.filter(f => f.endsWith('.md')).length : files.length;
+      // 计算文件数量
+      const files = await fs.readdir(fullPath).catch(() => []);
+      const count = pattern === '*.js' ? files.filter(f => f.endsWith('.js')).length :
+                   pattern === '*.md' ? files.filter(f => f.endsWith('.md')).length : files.length;
 
-        if (componentName === 'agents' || componentName === 'slashCommands' || componentName === 'rules') {
-          state.components[componentName].count = count;
-        }
+      // Component is only installed if it has files
+      state.components[componentName].installed = count > 0;
 
-        // 这里可以读取版本信息（如果保存了的话）
-        const versionPath = path.join(fullPath, '.version');
-        const versionExists = await fs.access(versionPath).then(() => true).catch(() => false);
-        if (versionExists) {
-          state.components[componentName].version = await fs.readFile(versionPath, 'utf-8');
-        }
+      if (componentName === 'agents' || componentName === 'slashCommands' || componentName === 'rules') {
+        state.components[componentName].count = count;
+      }
+
+      // 这里可以读取版本信息（如果保存了的话）
+      const versionPath = path.join(fullPath, '.version');
+      const versionExists = await fs.access(versionPath).then(() => true).catch(() => false);
+      if (versionExists) {
+        state.components[componentName].version = await fs.readFile(versionPath, 'utf-8');
       }
     } catch {
       state.components[componentName].installed = false;
