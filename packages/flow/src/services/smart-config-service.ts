@@ -21,7 +21,7 @@ export class SmartConfigService {
    * Initial setup - configure API keys once
    */
   static async initialSetup(): Promise<void> {
-    console.log(chalk.cyan('🔑 Initial Setup - Configure API Keys (one-time)\n'));
+    console.log(chalk.cyan.bold('🔑 Initial Setup - Configure API Keys\n'));
 
     const userSettings = await ConfigService.loadHomeSettings();
     const apiKeys = userSettings.apiKeys || {};
@@ -36,10 +36,10 @@ export class SmartConfigService {
     const existingProviders = providers.filter(p => p.hasKey);
 
     // Ask which providers to configure
-    console.log(chalk.cyan('Available providers:'));
-    console.log(chalk.dim('  • Default (Claude Code\'s own configuration)'));
+    console.log(chalk.cyan('Available providers:\n'));
+    console.log(chalk.dim('  • Default (uses Claude Code configuration)'));
     providers.forEach(p => {
-      const status = p.hasKey ? chalk.green('✓') : chalk.red('✗');
+      const status = p.hasKey ? chalk.green('✓') : chalk.yellow('○');
       console.log(`  ${status} ${p.name}`);
     });
     console.log('');
@@ -73,18 +73,15 @@ export class SmartConfigService {
     }
 
     if (existingProviders.length > 0) {
-      console.log(chalk.green('✅ Already configured:'));
+      console.log(chalk.green('\n✅ Already configured:'));
       existingProviders.forEach(p => {
         console.log(chalk.dim(`  • ${p.name}`));
       });
-      console.log('');
     }
 
-    // Set up default preferences
-    await this.setupDefaultPreferences();
-
-    // Mark setup as completed
+    // Mark setup as completed (no need for default preferences prompt)
     await ConfigService.saveHomeSettings({ hasCompletedSetup: true });
+    console.log(chalk.green('\n✓ Setup complete!\n'));
   }
 
   /**
@@ -211,23 +208,31 @@ export class SmartConfigService {
     // Handle provider selection
     if (options.provider) {
       choices.provider = options.provider;
-    } else if (options.selectProvider || !config.choices.provider) {
-      choices.provider = await this.selectProvider(config.user);
+    } else if (options.useDefaults && config.user.defaultProvider) {
+      // Use saved default provider when --use-defaults flag is set
+      choices.provider = config.user.defaultProvider;
+      console.log(chalk.dim(`  ✓ Provider: ${choices.provider}`));
     } else {
-      choices.provider = config.choices.provider;
+      choices.provider = await this.selectProvider(config.user);
     }
 
     // Handle agent selection
     if (options.agent) {
       choices.agent = options.agent;
-    } else if (options.useDefaults && config.choices.agent) {
+    } else if (options.useDefaults && config.user.defaultAgent) {
       // Use saved default agent when --use-defaults flag is set
-      choices.agent = config.choices.agent;
-      console.log(chalk.dim(`Using default agent: ${choices.agent}`));
+      choices.agent = config.user.defaultAgent;
+      console.log(chalk.dim(`  ✓ Agent: ${choices.agent}`));
     } else {
       // Always prompt for agent selection unless explicitly skipped
-      choices.agent = await this.selectAgent();
+      choices.agent = await this.selectAgent(config.user.defaultAgent);
     }
+
+    // Save choices for next time
+    await ConfigService.saveHomeSettings({
+      defaultProvider: choices.provider,
+      defaultAgent: choices.agent,
+    });
 
     return choices;
   }
@@ -245,16 +250,22 @@ export class SmartConfigService {
       { id: 'z.ai', name: 'Z.ai (Recommended)', hasKey: !!apiKeys['z.ai'] },
     ];
 
+    // Show last used provider hint
+    const lastUsed = userSettings.defaultProvider;
+    const message = lastUsed
+      ? `Select provider (last used: ${lastUsed}):`
+      : 'Select provider:';
+
     const { provider } = await inquirer.prompt([
       {
         type: 'list',
         name: 'provider',
-        message: 'Select provider:',
+        message,
         choices: allProviders.map(p => ({
           name: p.hasKey ? p.name : `${p.name} (Need API key)`,
           value: p.id,
         })),
-        default: userSettings.defaultProvider || 'default',
+        default: lastUsed || 'default',
       },
     ]);
 
@@ -283,7 +294,7 @@ export class SmartConfigService {
   /**
    * Select agent for this run
    */
-  private static async selectAgent(): Promise<string> {
+  private static async selectAgent(lastUsed?: string): Promise<string> {
     try {
       const agents = await loadAllAgents(process.cwd());
 
@@ -292,16 +303,21 @@ export class SmartConfigService {
         return 'coder';
       }
 
+      // Build message with last used hint
+      const message = lastUsed
+        ? `Select agent (last used: ${lastUsed}):`
+        : 'Select agent:';
+
       const { agent } = await inquirer.prompt([
         {
           type: 'list',
           name: 'agent',
-          message: 'Select agent (use arrow keys, Enter for default):',
+          message,
           choices: agents.map(a => ({
             name: a.metadata.name || a.id,
             value: a.id,
           })),
-          default: agents.find(a => a.id === 'coder')?.id || agents[0].id,
+          default: lastUsed || agents.find(a => a.id === 'coder')?.id || agents[0].id,
         },
       ]);
 
@@ -340,7 +356,7 @@ export class SmartConfigService {
     // Setup environment based on provider
     if (provider === 'default') {
       // Don't override anything - use user's existing Claude Code configuration
-      console.log(chalk.dim('Using Claude Code default configuration'));
+      console.log(chalk.dim('  ✓ Using Claude Code default configuration'));
       return;
     }
 
@@ -348,9 +364,7 @@ export class SmartConfigService {
     process.env.ANTHROPIC_BASE_URL = config.ANTHROPIC_BASE_URL;
     process.env.ANTHROPIC_AUTH_TOKEN = apiKeys[provider]; // Claude Code uses ANTHROPIC_AUTH_TOKEN, not ANTHROPIC_API_KEY
 
-    // Verbose logging
-    console.log(chalk.green(`✓ Environment configured for ${provider}`));
-    console.log(chalk.dim(`  ANTHROPIC_BASE_URL: ${config.ANTHROPIC_BASE_URL}`));
-    console.log(chalk.dim(`  ANTHROPIC_AUTH_TOKEN: ${apiKeys[provider]?.substring(0, 10)}...`));
+    // Success message
+    console.log(chalk.green(`  ✓ Environment configured for ${provider}`));
   }
 }

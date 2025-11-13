@@ -37,6 +37,7 @@ export interface FlowOptions {
   selectAgent?: boolean;
   useDefaults?: boolean;
   provider?: string;
+  quick?: boolean;
 }
 
 /**
@@ -203,6 +204,12 @@ function compareVersions(v1: string, v2: string): number {
  * Main flow execution logic - simplified with orchestrator
  */
 export async function executeFlow(prompt: string | undefined, options: FlowOptions): Promise<void> {
+  // Quick mode: enable useDefaults and skip prompts
+  if (options.quick) {
+    options.useDefaults = true;
+    console.log(chalk.cyan('⚡ Quick mode enabled - using saved defaults\n'));
+  }
+
   // Import orchestrator functions
   const {
     checkUpgrades,
@@ -229,13 +236,15 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
   }
 
   // Step 1: Check for upgrades
-  await checkUpgrades(state, options);
+  if (!options.quick) {
+    await checkUpgrades(state, options);
+  }
 
   // Step 1: Upgrade (if requested)
   if (options.upgrade && state.outdated && state.latestVersion) {
-    console.log(chalk.cyan.bold('━ Upgrading Flow\n'));
+    console.log(chalk.cyan.bold('━━━ 📦 Upgrading Flow\n'));
     await upgradeManager.upgradeFlow(state);
-    console.log('');
+    console.log(chalk.green('✓ Upgrade complete\n'));
     // Re-detect after upgrade
     state.version = state.latestVersion;
     state.outdated = false;
@@ -243,9 +252,9 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
 
   // Step 2: Upgrade target (if requested)
   if (options.upgradeTarget && state.target) {
-    console.log(chalk.cyan.bold(`━ Upgrading ${state.target}\n`));
+    console.log(chalk.cyan.bold(`━━━ 🎯 Upgrading ${state.target}\n`));
     await upgradeManager.upgradeTarget(state);
-    console.log('');
+    console.log(chalk.green('✓ Target upgrade complete\n'));
   }
 
   // Declare at function level to persist across steps
@@ -253,13 +262,13 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
 
   // Step 3: Initialize (if needed and not run-only)
   if (!options.runOnly || options.clean) {
-    console.log(chalk.cyan.bold('━ Initializing Project\n'));
+    console.log(chalk.cyan.bold('━━━ 🚀 Initializing Project\n'));
 
     // Force target selection when cleaning
     if (options.clean) {
       const { targetManager } = await import('../core/target-manager.js');
       selectedTarget = await targetManager.promptForTargetSelection();
-      console.log(chalk.green(`✅ Selected target: ${selectedTarget}`));
+      console.log(chalk.green(`  ✓ Selected target: ${selectedTarget}\n`));
     }
 
     const initOptions = {
@@ -280,13 +289,13 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
       await initCommand.action(initOptions);
 
       if (!options.dryRun) {
-        console.log(chalk.green.bold('\n✓ Initialization complete\n'));
+        console.log(chalk.green.bold('✓ Initialization complete\n'));
       } else {
-        console.log(chalk.dim('\n✓ Dry run complete - skipping execution\n'));
+        console.log(chalk.dim('✓ Dry run complete - skipping execution\n'));
         return;
       }
     } catch (error) {
-      console.error(chalk.red.bold('\n✗ Initialization failed:'), error);
+      console.error(chalk.red.bold('✗ Initialization failed:'), error);
       process.exit(1);
     }
   }
@@ -306,7 +315,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
       allowSelection: false, // Target should already be selected during init
     });
 
-    console.log(chalk.cyan.bold(`━ Launching ${resolvedTarget}\n`));
+    console.log(chalk.cyan.bold(`━━━ 🎯 Launching ${resolvedTarget}\n`));
 
     // Check if target supports command execution
     const { getTargetsWithCommandSupport } = await import('../config/targets.js');
@@ -329,9 +338,9 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
       // Check if API keys are configured, if not, run initial setup
       const { ConfigService } = await import('../services/config-service.js');
       if (!(await ConfigService.hasInitialSetup())) {
-        console.log(chalk.cyan('\n🔑 First-time setup for Claude Code:\n'));
+        console.log(chalk.cyan('🔑 First-time setup for Claude Code\n'));
         await SmartConfigService.initialSetup();
-        console.log(chalk.green('\n✅ Claude Code setup complete!\n'));
+        console.log(chalk.green('✓ Setup complete!\n'));
       }
 
       const runtimeChoices = await SmartConfigService.selectRuntimeChoices({
@@ -352,13 +361,13 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     const agent = options.agent || 'coder';
     const verbose = options.verbose || false;
 
-    if (verbose || options.runOnly) {
-      console.log(`🤖 Agent: ${agent}`);
-      console.log(`🎯 Target: ${resolvedTarget}`);
+    if (verbose || options.runOnly || !options.quick) {
+      console.log(`  🤖 Agent: ${chalk.cyan(agent)}`);
+      console.log(`  🎯 Target: ${chalk.cyan(resolvedTarget)}`);
       if (prompt) {
-        console.log(`💬 Prompt: ${prompt}\n`);
+        console.log(`  💬 Prompt: ${chalk.dim(prompt)}\n`);
       } else {
-        console.log('💬 Interactive mode\n');
+        console.log(`  💬 Mode: ${chalk.dim('Interactive')}\n`);
       }
     }
 
@@ -385,15 +394,16 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     try {
       await executeTargetCommand(resolvedTarget, systemPrompt, userPrompt, runOptions);
     } catch (error) {
-      console.error(chalk.red.bold('\n✗ 启动失败:'), error);
+      console.error(chalk.red.bold('\n✗ Launch failed:'), error);
       process.exit(1);
     }
 
     if (!options.dryRun) {
-      console.log(chalk.dim('\n✓ Claude Code has exited\n'));
+      console.log(chalk.dim('━━━\n'));
+      console.log(chalk.green('✓ Session complete\n'));
     }
   } else {
-    console.log(chalk.dim('\n✓ Init-only mode, skipping execution\n'));
+    console.log(chalk.dim('✓ Init-only mode, skipping execution\n'));
   }
 }
 
@@ -411,6 +421,7 @@ export const flowCommand = new Command('flow')
   .option('--upgrade-target', 'Upgrade target platform (Claude Code/OpenCode)')
 
   // Smart configuration options
+  .option('--quick', 'Quick mode: use saved defaults and skip all prompts')
   .option('--select-provider', 'Prompt to select provider each run')
   .option('--select-agent', 'Prompt to select agent each run')
   .option('--use-defaults', 'Skip prompts, use saved defaults')
