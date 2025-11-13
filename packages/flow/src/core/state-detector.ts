@@ -285,7 +285,18 @@ export class StateDetector {
         return { exists: false, serverCount: 0, version: null };
       }
 
-      const content = JSON.parse(await fs.readFile(mcpPath, 'utf-8'));
+      // Use proper JSONC parser for OpenCode (handles comments)
+      let content: any;
+      if (target === 'opencode') {
+        // Import dynamically to avoid circular dependency
+        const { fileUtils } = await import('../utils/target-utils.js');
+        const { opencodeTarget } = await import('../targets/opencode.js');
+        content = await fileUtils.readConfig(opencodeTarget.config, this.projectPath);
+      } else {
+        // Claude Code uses plain JSON
+        content = JSON.parse(await fs.readFile(mcpPath, 'utf-8'));
+      }
+
       const servers = content[serversKey] || {};
 
       return {
