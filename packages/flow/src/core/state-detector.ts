@@ -77,15 +77,28 @@ export class StateDetector {
         state.outdated = this.isVersionOutdated(state.version, state.latestVersion);
       }
 
-      // Check components
-      await this.checkComponent('agents', '.claude/agents', '*.md', state);
-      await this.checkComponent('rules', '.claude/rules', '*.md', state);
-      await this.checkComponent('hooks', '.claude/hooks', '*.js', state);
-      await this.checkComponent('outputStyles', '.claude/output-styles', '*.md', state);
-      await this.checkComponent('slashCommands', '.claude/commands', '*.md', state);
+      // Check components based on target
+      if (state.target === 'opencode') {
+        // OpenCode uses different directory structure
+        await this.checkComponent('agents', '.opencode/agent', '*.md', state);
+        // OpenCode uses AGENTS.md for rules
+        await this.checkFileComponent('rules', 'AGENTS.md', state);
+        // OpenCode doesn't have separate hooks directory (hooks config in opencode.jsonc)
+        state.components.hooks.installed = false;
+        // OpenCode appends output styles to AGENTS.md
+        state.components.outputStyles.installed = await this.checkOutputStylesInAGENTS();
+        await this.checkComponent('slashCommands', '.opencode/commands', '*.md', state);
+      } else {
+        // Claude Code (default)
+        await this.checkComponent('agents', '.claude/agents', '*.md', state);
+        await this.checkComponent('rules', '.claude/rules', '*.md', state);
+        await this.checkComponent('hooks', '.claude/hooks', '*.js', state);
+        await this.checkComponent('outputStyles', '.claude/output-styles', '*.md', state);
+        await this.checkComponent('slashCommands', '.claude/commands', '*.md', state);
+      }
 
       // Check MCP
-      const mcpConfig = await this.checkMCPConfig();
+      const mcpConfig = await this.checkMCPConfig(state.target);
       state.components.mcp.installed = mcpConfig.exists;
       state.components.mcp.serverCount = mcpConfig.serverCount;
       state.components.mcp.version = mcpConfig.version;
@@ -214,9 +227,58 @@ export class StateDetector {
     }
   }
 
-  private async checkMCPConfig(): Promise<{ exists: boolean; serverCount: number; version: string | null }> {
+  private async checkFileComponent(
+    componentName: keyof ProjectState['components'],
+    filePath: string,
+    state: ProjectState
+  ): Promise<void> {
     try {
-      const mcpPath = path.join(this.projectPath, '.mcp.json');
+      const fullPath = path.join(this.projectPath, filePath);
+      const exists = await fs.access(fullPath).then(() => true).catch(() => false);
+
+      state.components[componentName].installed = exists;
+
+      if (exists && componentName === 'rules') {
+        // For AGENTS.md, count is always 1
+        state.components[componentName].count = 1;
+      }
+    } catch {
+      state.components[componentName].installed = false;
+    }
+  }
+
+  private async checkOutputStylesInAGENTS(): Promise<boolean> {
+    try {
+      const agentsPath = path.join(this.projectPath, 'AGENTS.md');
+      const exists = await fs.access(agentsPath).then(() => true).catch(() => false);
+
+      if (!exists) {
+        return false;
+      }
+
+      // Check if AGENTS.md contains output styles section
+      const content = await fs.readFile(agentsPath, 'utf-8');
+      return content.includes('# Output Styles');
+    } catch {
+      return false;
+    }
+  }
+
+  private async checkMCPConfig(target?: string | null): Promise<{ exists: boolean; serverCount: number; version: string | null }> {
+    try {
+      let mcpPath: string;
+      let serversKey: string;
+
+      if (target === 'opencode') {
+        // OpenCode uses opencode.jsonc with mcp key
+        mcpPath = path.join(this.projectPath, 'opencode.jsonc');
+        serversKey = 'mcp';
+      } else {
+        // Claude Code uses .mcp.json with mcpServers key
+        mcpPath = path.join(this.projectPath, '.mcp.json');
+        serversKey = 'mcpServers';
+      }
+
       const exists = await fs.access(mcpPath).then(() => true).catch(() => false);
 
       if (!exists) {
@@ -224,7 +286,7 @@ export class StateDetector {
       }
 
       const content = JSON.parse(await fs.readFile(mcpPath, 'utf-8'));
-      const servers = content.mcpServers || {};
+      const servers = content[serversKey] || {};
 
       return {
         exists: true,
