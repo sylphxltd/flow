@@ -280,8 +280,19 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     await checkComponentIntegrity(state, options);
   }
 
-  // Step 3: Initialize (if needed and not run-only, or if repair mode)
-  if (!options.runOnly || options.clean || options.repair) {
+  // Step 3: Initialize (only if actually needed)
+  // Positive logic: should initialize when:
+  // - Not initialized yet (state?.initialized === false)
+  // - Clean mode (wipe and reinstall)
+  // - Repair mode (install missing components)
+  // - Init-only mode (user explicitly wants init)
+  const shouldInitialize =
+    !state?.initialized ||     // Not initialized yet
+    options.clean ||           // Clean reinstall
+    options.repair ||          // Repair missing components
+    options.initOnly;          // Explicit init request
+
+  if (shouldInitialize) {
     console.log(chalk.cyan.bold('━━━ 🚀 Initializing Project\n'));
 
     // Import core init functions
