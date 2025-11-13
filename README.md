@@ -94,15 +94,23 @@ Done. Everything configured. Never think about setup again.
 
 ```bash
 # Direct prompt
-sylphx-flow run "add password reset"
-sylphx-flow run "review for security" --agent reviewer
-sylphx-flow run "write API docs" --agent writer
+sylphx-flow "add password reset"
+sylphx-flow "review for security" --agent reviewer
+sylphx-flow "write API docs" --agent writer
+
+# Loop Mode - Autonomous Continuous Execution
+sylphx-flow "process all github issues" --loop
+sylphx-flow "check for new commits" --loop 300 --max-runs 20
+
+# File Input - Load prompts from files
+sylphx-flow "@task.txt"
+sylphx-flow "@complex-prompt.md" --loop --max-runs 10
 
 # Interactive AI chat
 sylphx-flow code
 
 # Or interactive build mode
-sylphx-flow run
+sylphx-flow
 > implement OAuth
 > add tests
 > optimize performance
@@ -114,7 +122,60 @@ sylphx-flow run
 
 ## 🌟 Core Innovations
 
-### 1. MEP (Minimal Effective Prompt) Architecture
+### 1. Loop Mode - Autonomous Continuous Execution
+
+**Revolutionary autonomous AI that keeps working until you stop it.**
+
+```bash
+# Continuous autonomous work (zero wait time)
+sylphx-flow "process all github issues" --loop
+
+# With wait time for polling scenarios
+sylphx-flow "check for new commits" --loop 300 --max-runs 20
+```
+
+**How it works:**
+- **First iteration**: Fresh start
+- **2nd+ iterations**: Auto-continue with context preservation
+- **Stop**: Ctrl+C (graceful) or `--max-runs` limit
+- **Zero wait default**: Task execution time is the natural interval
+- **Smart configuration**: Saves provider/agent preferences automatically
+
+**Perfect for:**
+- 🔄 Continuous task processing (GitHub issues, PRs, etc.)
+- 📊 Periodic monitoring and auto-fixing
+- 🧹 Incremental refactoring
+- 🧪 Test fixing loops
+- 📝 Documentation updates
+
+See [LOOP_MODE.md](./packages/flow/LOOP_MODE.md) for complete documentation.
+
+---
+
+### 2. File Input Support
+
+**Load prompts from files for complex, reusable instructions.**
+
+```bash
+# Basic file input
+sylphx-flow "@task.txt"
+
+# Absolute path
+sylphx-flow "@/path/to/prompt.md"
+
+# Combined with loop mode
+sylphx-flow "@complex-task.txt" --loop --max-runs 10
+```
+
+**Benefits:**
+- 📝 **No shell escaping** - write natural language prompts
+- 🔄 **Reusable** - version control your prompts alongside code
+- 🔀 **Complex instructions** - no character limits
+- 🚀 **Seamless integration** - works with all CLI flags
+
+---
+
+### 3. MEP (Minimal Effective Prompt) Architecture
 
 **The Philosophy:** AI should adapt to you, not the other way around.
 
@@ -152,7 +213,7 @@ You: [Ship it]
 - 🖥️ Your environment (via system hooks)
 - ⏰ Current time and context (automatic)
 
-### 2. StarCoder2 Tokenization - 70+ Languages
+### 4. StarCoder2 Tokenization - 70+ Languages
 
 **First production platform to use StarCoder2 tokenization for code search.**
 
@@ -176,7 +237,7 @@ $ flow codebase search "ユーザーログイン処理"       # Japanese
 - Semantic tokenization, not keyword matching
 - TF-IDF search powered by world-class tokenization
 
-### 3. Curated Knowledge Base (No Maintenance)
+### 5. Curated Knowledge Base (No Maintenance)
 
 **We don't let you add custom knowledge. Here's why:**
 
@@ -191,7 +252,7 @@ $ flow codebase search "ユーザーログイン処理"       # Japanese
 **"But I need project-specific patterns!"**
 → Use codebase search. Your patterns are already in your code.
 
-### 4. Functional Architecture
+### 6. Functional Architecture
 
 **Built with pure functional programming principles:**
 
