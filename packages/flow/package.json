@@ -4,17 +4,17 @@
   "description": "AI-powered development workflow automation with autonomous loop mode and smart configuration",
   "type": "module",
   "bin": {
-    "sylphx-flow": "./dist/index.js"
+    "sylphx-flow": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "bunup",
     "dev": "bun src/index.ts",
-    "start": "bun dist/index.js",
+    "start": "bun src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "bun run build"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "commander": "^14.0.2",
@@ -37,10 +37,11 @@
     "access": "public"
   },
   "files": [
-    "dist",
+    "src",
     "README.md",
     "CHANGELOG.md",
-    "LOOP_MODE.md"
+    "LOOP_MODE.md",
+    "package.json"
   ],
   "keywords": [
     "ai",
