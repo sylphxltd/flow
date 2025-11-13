@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.0.5
+
+### Patch Changes
+
+- Fix Claude Code component detection - rules and output styles are included in agent files
+
 ## 1.0.4
 
 ### Patch Changes
