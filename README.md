@@ -6,11 +6,13 @@
 
 The first AI development platform where you just say what you want, and it happens. Built on MEP (Minimal Effective Prompt) architecture with StarCoder2 tokenization for true code understanding.
 
+[![npm version](https://img.shields.io/npm/v/@sylphx/flow.svg)](https://www.npmjs.com/package/@sylphx/flow)
 [![GitHub Stars](https://img.shields.io/github/stars/sylphxltd/flow?style=social)](https://github.com/sylphxltd/flow)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![Twitter Follow](https://img.shields.io/twitter/follow/SylphxAI?style=social)](https://x.com/SylphxAI)
 
-[Quick Start](#-quick-start) • [Documentation](https://github.com/sylphxltd/flow/wiki) • [Examples](#-real-world-examples)
+[Quick Start](#-installation) • [Documentation](https://flow.sylphx.ai) • [npm](https://www.npmjs.com/package/@sylphx/flow) • [Twitter](https://x.com/SylphxAI)
 
 </div>
 
@@ -267,6 +269,247 @@ const result = await pipe(
   synthesize
 )("implement OAuth");
 ```
+
+---
+
+## 📚 Complete Feature Breakdown
+
+### 🤖 AI Agents - Specialized Experts
+
+Sylphx Flow includes production-ready AI agents, each an expert in their domain:
+
+**Available Agents:**
+
+| Agent | Purpose | Use When |
+|-------|---------|----------|
+| **Coder** | Feature implementation, bug fixes | Building new features, fixing bugs |
+| **Reviewer** | Code review, security analysis | Before merging, security audits |
+| **Writer** | Documentation, technical writing | API docs, README updates |
+| **Orchestrator** | Complex multi-step tasks | Architecture changes, large refactors |
+
+```bash
+# Use specific agent
+sylphx-flow "review security vulnerabilities" --agent reviewer
+sylphx-flow "document API endpoints" --agent writer
+sylphx-flow "refactor authentication system" --agent orchestrator
+```
+
+**Why different agents?**
+- Each has specialized knowledge and prompting
+- Better results than generic "do everything" AI
+- Clear separation of concerns
+- Optimized for specific workflows
+
+---
+
+### 📜 Rules System - Best Practices Built-In
+
+Every agent follows industry best practices automatically:
+
+**Core Rules Include:**
+- **Code Quality**: SOLID principles, DRY, KISS, clean code
+- **Security**: Input validation, SQL injection prevention, XSS protection
+- **Testing**: TDD approach, comprehensive test coverage
+- **Error Handling**: Proper error boundaries, graceful degradation
+- **Performance**: Optimization patterns, caching strategies
+- **Documentation**: Inline comments, API documentation standards
+
+```bash
+# Rules are automatic - AI always follows them
+sylphx-flow "implement login"
+# ✅ Automatically applies: security rules, validation rules, testing rules
+```
+
+**Sync rules with latest updates:**
+```bash
+sylphx-flow --sync
+```
+
+---
+
+### 🔌 MCP Server Integration - Extended Capabilities
+
+Model Context Protocol (MCP) servers give agents superpowers:
+
+**Pre-configured MCP Servers:**
+- **Web Search** - Real-time information from the internet
+- **Code Indexing** - Semantic code understanding
+- **File Operations** - Advanced file manipulation
+- **Git Operations** - Repository management
+- **API Integrations** - External service connections
+
+```bash
+# MCP servers are auto-installed during setup
+sylphx-flow --init-only
+
+# Configure additional MCP servers
+# Flow automatically discovers and configures MCP servers
+```
+
+**How MCP Works:**
+1. **Setup**: Auto-installed during initialization
+2. **Discovery**: Flow detects available MCP servers
+3. **Integration**: Agents access MCP capabilities automatically
+4. **Execution**: MCP servers handle specialized tasks
+
+---
+
+### 🔍 Codebase Semantic Search - Find Code by Meaning
+
+Search your codebase by **what code does**, not what it's called:
+
+**Features:**
+- **Semantic Understanding**: StarCoder2 tokenization
+- **70+ Languages**: Works across all major languages
+- **Natural Language Queries**: Search in plain English (or any language)
+- **Fast**: <100ms search response
+- **Context-Aware**: Understands code relationships
+
+```bash
+# Search by functionality
+sylphx-flow codebase search "user authentication logic"
+
+# Find similar patterns
+sylphx-flow codebase search "payment processing workflow"
+
+# Multilingual support
+sylphx-flow codebase search "處理用戶登入嘅邏輯"  # Chinese
+sylphx-flow codebase search "ユーザーログイン処理"  # Japanese
+
+# Reindex after major changes
+sylphx-flow codebase reindex
+```
+
+**Why it's revolutionary:**
+- Find code you didn't know existed
+- Discover similar patterns across codebase
+- Works even when variable names differ
+- True semantic understanding, not keyword matching
+
+---
+
+### 📖 Knowledge Semantic Search - Best Practices at Your Fingertips
+
+Access curated knowledge base with industry best practices:
+
+**Knowledge Categories:**
+- **Architecture Patterns**: Microservices, Event-driven, CQRS, etc.
+- **Security Best Practices**: OWASP Top 10, secure coding
+- **Framework Guides**: React, Vue, Angular, Next.js, etc.
+- **Language Idioms**: JavaScript, TypeScript, Python, Go, Rust
+- **Testing Strategies**: Unit, Integration, E2E testing
+- **DevOps Practices**: CI/CD, Docker, Kubernetes
+
+```bash
+# Search knowledge base
+sylphx-flow knowledge search "react performance optimization"
+sylphx-flow knowledge search "secure password hashing"
+sylphx-flow knowledge search "microservices communication patterns"
+
+# List all available knowledge
+sylphx-flow knowledge list
+
+# Update knowledge base
+sylphx-flow knowledge update
+```
+
+**Curated vs Custom Knowledge:**
+- **Curated** (Flow): Professionally maintained, always current
+- **Custom** (Other tools): You maintain, gets outdated
+- **Zero Maintenance**: We update best practices for you
+- **Quality Guaranteed**: Every guide is verified
+
+---
+
+### 🎛️ Smart Configuration - Learns Your Preferences
+
+Flow remembers your choices so you don't repeat yourself:
+
+**Auto-Saved Settings:**
+- **Default Target**: Claude Code vs OpenCode
+- **Preferred Agent**: coder, reviewer, writer, orchestrator
+- **Default Provider**: Anthropic, Z.AI, Kimi AI
+- **Loop Settings**: Wait time, max runs
+
+```bash
+# First time - Flow asks for your preferences
+sylphx-flow "task" --target claude-code --agent coder
+# ✅ Saves: target=claude-code, agent=coder
+
+# Next time - uses saved defaults
+sylphx-flow "another task"
+# ✅ Uses: claude-code + coder automatically
+
+# Override when needed
+sylphx-flow "review code" --agent reviewer
+# ✅ Uses: claude-code (saved) + reviewer (override)
+
+# Reset to defaults
+sylphx-flow --select-agent  # Prompt to choose agent this time
+sylphx-flow --select-provider  # Prompt to choose provider
+```
+
+**Configuration File:**
+```json
+// .sylphx-flow/settings.json
+{
+  "defaultTarget": "claude-code",
+  "defaultAgent": "coder",
+  "defaultProvider": "anthropic"
+}
+```
+
+---
+
+### ⚙️ System Hooks - Environment Awareness
+
+Flow integrates with your development environment:
+
+**Auto-Detected Information:**
+- **Current Time**: Always knows the current date/time
+- **Operating System**: macOS, Linux, Windows
+- **Git Status**: Current branch, uncommitted changes
+- **Node Version**: Detects Node.js/Bun version
+- **Environment Variables**: Accesses necessary env vars
+
+```bash
+# Hooks work automatically - no configuration needed
+sylphx-flow "create deployment script"
+# ✅ Knows: OS, current time, git branch, etc.
+```
+
+**Why This Matters:**
+- No need to tell AI "it's 2025" or "I'm on macOS"
+- AI writes OS-appropriate commands automatically
+- Time-sensitive operations work correctly
+- Environment-specific configurations handled
+
+---
+
+### 🔄 Template Synchronization - Stay Up-to-Date
+
+Keep your setup synchronized with the latest Flow templates:
+
+```bash
+# Sync all templates (agents, rules, slash commands, output styles)
+sylphx-flow --sync
+
+# Sync for specific platform
+sylphx-flow --sync --target claude-code
+sylphx-flow --sync --target opencode
+```
+
+**What Gets Synced:**
+- **Agents**: Latest agent definitions and capabilities
+- **Rules**: Updated best practices and coding standards
+- **Slash Commands**: New command templates
+- **Output Styles**: Improved response formatting
+
+**Safe Sync:**
+- Doesn't overwrite user customizations
+- Creates backups before sync
+- Notifies of conflicts
+- Can rollback if needed
 
 ---
 

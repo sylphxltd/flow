@@ -20,6 +20,7 @@ export default defineConfig({
 
     // Twitter
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:site', content: '@SylphxAI' }],
     ['meta', { name: 'twitter:title', content: 'Sylphx Flow - AI-Powered Development Automation' }],
     ['meta', { name: 'twitter:description', content: 'Stop writing prompts. Start building software. Autonomous AI agents with Loop Mode, File Input, and Smart Configuration.' }],
     ['meta', { name: 'twitter:image', content: 'https://flow.sylphx.com/og-image.svg' }],
@@ -36,56 +37,43 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Features', link: '/features/loop-mode' },
-      { text: 'API Reference', link: '/api/cli-commands' },
-      { text: 'GitHub', link: 'https://github.com/sylphxltd/flow' }
+      { text: 'GitHub', link: 'https://github.com/sylphxltd/flow' },
+      { text: 'npm', link: 'https://www.npmjs.com/package/@sylphx/flow' }
     ],
 
     sidebar: {
       '/guide/': [
         {
-          text: 'Introduction',
+          text: 'Getting Started',
           items: [
-            { text: 'Getting Started', link: '/guide/getting-started' },
-            { text: 'Installation', link: '/guide/installation' },
-            { text: 'Quick Start', link: '/guide/quick-start' }
+            { text: 'Introduction', link: '/guide/getting-started' }
           ]
         },
         {
           text: 'Core Concepts',
           items: [
-            { text: 'MEP Architecture', link: '/guide/mep-architecture' },
-            { text: 'Configuration', link: '/guide/configuration' },
-            { text: 'Project Structure', link: '/guide/project-structure' }
+            { text: 'Rules System', link: '/guide/rules' },
+            { text: 'MCP Integration', link: '/guide/mcp' }
           ]
         }
       ],
 
       '/features/': [
         {
-          text: 'Features',
+          text: 'Core Features',
           items: [
             { text: 'Loop Mode', link: '/features/loop-mode' },
-            { text: 'File Input', link: '/features/file-input' },
-            { text: 'Smart Configuration', link: '/features/smart-config' },
-            { text: 'OpenCode Integration', link: '/features/opencode' }
-          ]
-        }
-      ],
-
-      '/api/': [
-        {
-          text: 'API Reference',
-          items: [
-            { text: 'CLI Commands', link: '/api/cli-commands' },
-            { text: 'Configuration File', link: '/api/configuration' },
-            { text: 'Agents', link: '/api/agents' }
+            { text: 'AI Agents', link: '/features/agents' },
+            { text: 'Semantic Search', link: '/features/semantic-search' }
           ]
         }
       ]
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/sylphxltd/flow' }
+      { icon: 'github', link: 'https://github.com/sylphxltd/flow' },
+      { icon: 'npm', link: 'https://www.npmjs.com/package/@sylphx/flow' },
+      { icon: 'twitter', link: 'https://x.com/SylphxAI' }
     ],
 
     footer: {
