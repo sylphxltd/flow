@@ -1,22 +1,20 @@
 import boxen from 'boxen';
 import chalk from 'chalk';
-import { Command } from 'commander';
 import gradient from 'gradient-string';
-import ora from 'ora';
-import { targetManager } from '../core/target-manager.js';
-import { CLIError } from '../utils/error-handler.js';
-import { projectSettings } from '../utils/settings.js';
-import { validateTarget } from '../utils/target-config.js';
-import { ConfigService } from '../services/config-service.js';
+import {
+  selectAndValidateTarget,
+  previewDryRun,
+  installComponents,
+  type InitOptions,
+} from './init-core.js';
 
 /**
- * Core init logic extracted as a function so it can be called directly
+ * Legacy init with full UI - used by setup command for backward compatibility
+ * The flow command uses init-core functions directly for better integration
  */
-export async function runInit(options: any): Promise<void> {
-  let targetId = options.target;
-
-    // Create ASCII art title
-    const title = `
+export async function runInit(options: InitOptions): Promise<void> {
+  // Create ASCII art title
+  const title = `
 ███████╗██╗   ██╗██╗     ██████╗ ██╗  ██╗██╗  ██╗    ███████╗██╗      ██████╗ ██╗    ██╗
 ██╔════╝╚██╗ ██╔╝██║     ██╔══██╗██║  ██║╚██╗██╔╝    ██╔════╝██║     ██╔═══██╗██║    ██║
 ███████╗ ╚████╔╝ ██║     ██████╔╝███████║ ╚███╔╝     █████╗  ██║     ██║   ██║██║ █╗ ██║
@@ -25,282 +23,64 @@ export async function runInit(options: any): Promise<void> {
 ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝
 `;
 
-    console.log(gradient(['cyan', 'blue'])(title));
-    console.log(chalk.dim.cyan('                          Project Initialization\n'));
+  console.log(gradient(['cyan', 'blue'])(title));
+  console.log(chalk.dim.cyan('                          Project Initialization\n'));
 
-    // Target selection
-    if (!targetId) {
-      targetId = await targetManager.promptForTargetSelection();
-      options.target = targetId;
-    }
+  // Select and validate target using core function
+  const targetId = await selectAndValidateTarget(options);
 
-    // Validate target
-    if (targetId) {
-      try {
-        validateTarget(targetId);
-      } catch (error) {
-        if (error instanceof Error) {
-          throw new CLIError(error.message, 'UNSUPPORTED_TARGET');
+  // Dry run preview
+  if (options.dryRun) {
+    console.log(
+      boxen(
+        chalk.yellow('⚠ Dry Run Mode') + chalk.dim('\nNo changes will be made to your project'),
+        {
+          padding: 1,
+          margin: { top: 0, bottom: 1, left: 0, right: 0 },
+          borderStyle: 'round',
+          borderColor: 'yellow',
         }
-        throw error;
-      }
+      )
+    );
 
-      if (options.merge) {
-        throw new CLIError(
-          'The --merge option is not supported with init command.',
-          'INVALID_OPTION'
-        );
-      }
-    }
+    await previewDryRun(targetId, options);
 
-    if (!targetId) {
-      throw new Error('Target ID not set');
-    }
-
-    // Dry run
-    if (options.dryRun) {
-      console.log(
-        boxen(
-          chalk.yellow('⚠ Dry Run Mode') + chalk.dim('\nNo changes will be made to your project'),
-          {
-            padding: 1,
-            margin: { top: 0, bottom: 1, left: 0, right: 0 },
-            borderStyle: 'round',
-            borderColor: 'yellow',
-          }
-        )
-      );
-
-      const targetOption = targetManager.getTarget(targetId);
-      if (targetOption._tag === 'None') {
-        throw new Error(`Target not found: ${targetId}`);
-      }
-
-      const target = targetOption.value;
-
-      if (options.mcp !== false && target.setupMCP) {
-        console.log(chalk.cyan.bold('MCP Tools:'));
-        console.log(chalk.dim('  ✓ MCP servers will be configured'));
-      }
-
-      if (options.agents !== false && target.setupAgents) {
-        console.log(chalk.cyan.bold('\nAgents:'));
-        console.log(chalk.dim('  ✓ Development agents will be installed'));
-      }
-
-      if (options.outputStyles !== false && target.setupOutputStyles) {
-        console.log(chalk.cyan.bold('\nOutput Styles:'));
-        console.log(chalk.dim('  ✓ Output styles will be installed'));
-      }
-
-      if (options.rules !== false && target.setupRules) {
-        console.log(chalk.cyan.bold('\nRules:'));
-        console.log(chalk.dim('  ✓ Custom rules will be installed'));
-      }
-
-      if (options.slashCommands !== false && target.setupSlashCommands) {
-        console.log(chalk.cyan.bold('\nSlash Commands:'));
-        console.log(chalk.dim('  ✓ Slash commands will be installed'));
-      }
-
-      if (options.hooks !== false && target.setupHooks) {
-        console.log(chalk.cyan.bold('\nHooks:'));
-        console.log(chalk.dim('  ✓ Hooks will be configured'));
-      }
-
-      console.log(
-        '\n' +
-          boxen(chalk.green.bold('✓ Dry run complete'), {
-            padding: { top: 0, bottom: 0, left: 2, right: 2 },
-            margin: 0,
-            borderStyle: 'round',
-            borderColor: 'green',
-          }) +
-          '\n'
-      );
-      return;
-    }
-
-    // Get target instance
-    const targetOption = targetManager.getTarget(targetId);
-    if (targetOption._tag === 'None') {
-      throw new Error(`Target not found: ${targetId}`);
-    }
-
-    const target = targetOption.value;
-
-    // Setup MCP servers if target supports it and MCP is enabled
-    // Note: No spinner here because MCP setup is interactive (user prompts)
-    if (target.setupMCP && options.mcp !== false) {
-      try {
-        const result = await target.setupMCP(process.cwd(), options);
-        if (result.count > 0) {
-          console.log(
-            chalk.green(
-              `✔ Installed ${chalk.cyan(result.count)} MCP server${result.count !== 1 ? 's' : ''}`
-            )
-          );
-        } else {
-          console.log(chalk.dim('ℹ No MCP servers selected'));
-        }
-      } catch (error) {
-        // If user cancels MCP setup (Ctrl+C), continue with other components
-        if (error instanceof Error && error.name === 'ExitPromptError') {
-          console.log(chalk.yellow('\n⚠️  MCP setup cancelled, continuing with other components\n'));
-        } else {
-          console.error(chalk.red('✖ Failed to setup MCP servers'));
-          throw error;
-        }
-      }
-    }
-
-    console.log(chalk.cyan.bold('\n━━━ Installing Core Components ━━━\n'));
-
-    // Install agents if target supports it and agents are not skipped
-    if (target.setupAgents && options.agents !== false) {
-      const agentSpinner = ora({ text: 'Installing agents', color: 'cyan' }).start();
-      try {
-        const result = await target.setupAgents(process.cwd(), { ...options, quiet: true });
-        agentSpinner.succeed(
-          chalk.green(`Installed ${chalk.cyan(result.count)} agent${result.count !== 1 ? 's' : ''}`)
-        );
-      } catch (error) {
-        agentSpinner.fail(chalk.red('Failed to install agents'));
-        throw error;
-      }
-    }
-
-    // Install output styles if target supports it and output styles are not skipped
-    if (target.setupOutputStyles && options.outputStyles !== false) {
-      const outputStylesSpinner = ora({ text: 'Installing output styles', color: 'cyan' }).start();
-      try {
-        const result = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
-        if (result.count > 0) {
-          outputStylesSpinner.succeed(
-            chalk.green(
-              `Installed ${chalk.cyan(result.count)} output style${result.count !== 1 ? 's' : ''}`
-            )
-          );
-        } else if (result.message) {
-          outputStylesSpinner.info(chalk.dim(result.message));
-        } else {
-          outputStylesSpinner.info(chalk.dim('No output styles to install'));
-        }
-      } catch (error) {
-        outputStylesSpinner.fail(chalk.red('Failed to install output styles'));
-        throw error;
-      }
-    }
-
-    // Install rules if target supports it and rules are not skipped
-    if (target.setupRules && options.rules !== false) {
-      const rulesSpinner = ora({ text: 'Installing rules', color: 'cyan' }).start();
-      try {
-        const result = await target.setupRules(process.cwd(), { ...options, quiet: true });
-        if (result.count > 0) {
-          rulesSpinner.succeed(
-            chalk.green(
-              `Installed ${chalk.cyan(result.count)} rule${result.count !== 1 ? 's' : ''}`
-            )
-          );
-        } else if (result.message) {
-          rulesSpinner.info(chalk.dim(result.message));
-        } else {
-          rulesSpinner.info(chalk.dim('No rules to install'));
-        }
-      } catch (error) {
-        rulesSpinner.fail(chalk.red('Failed to install rules'));
-        throw error;
-      }
-    }
-
-    // Install slash commands if target supports it and slash commands are not skipped
-    if (target.setupSlashCommands && options.slashCommands !== false) {
-      const slashCommandsSpinner = ora({
-        text: 'Installing slash commands',
-        color: 'cyan',
-      }).start();
-      try {
-        const result = await target.setupSlashCommands(process.cwd(), { ...options, quiet: true });
-        if (result.count > 0) {
-          slashCommandsSpinner.succeed(
-            chalk.green(
-              `Installed ${chalk.cyan(result.count)} slash command${result.count !== 1 ? 's' : ''}`
-            )
-          );
-        } else if (result.message) {
-          slashCommandsSpinner.info(chalk.dim(result.message));
-        } else {
-          slashCommandsSpinner.info(chalk.dim('No slash commands to install'));
-        }
-      } catch (error) {
-        slashCommandsSpinner.fail(chalk.red('Failed to install slash commands'));
-        throw error;
-      }
-    }
-
-    // Setup hooks if target supports it and hooks are not skipped
-    if (target.setupHooks && options.hooks !== false) {
-      const hooksSpinner = ora({ text: 'Setting up hooks', color: 'cyan' }).start();
-      try {
-        const result = await target.setupHooks(process.cwd(), { ...options, quiet: true });
-        if (result.count > 0) {
-          const message = result.message
-            ? `Configured ${chalk.cyan(result.count)} hook${result.count !== 1 ? 's' : ''} - ${result.message}`
-            : `Configured ${chalk.cyan(result.count)} hook${result.count !== 1 ? 's' : ''}`;
-          hooksSpinner.succeed(chalk.green(message));
-        } else {
-          hooksSpinner.info(chalk.dim(result.message || 'No hooks to configure'));
-        }
-      } catch (error) {
-        // Don't fail entire setup if hooks fail
-        hooksSpinner.warn(chalk.yellow('Could not setup hooks'));
-        console.warn(chalk.dim(`  ${error instanceof Error ? error.message : String(error)}`));
-      }
-    }
-
-    // Save the selected target as project default
-    const targetInfo: string[] = [];
-    try {
-      await projectSettings.setDefaultTarget(targetId);
-      const targetNameOption = targetManager.getTarget(targetId);
-      const targetName =
-        targetNameOption._tag === 'Some' ? targetNameOption.value.name : targetId;
-      targetInfo.push(`Target: ${targetName}`);
-
-      // Save to new ConfigService for proper layered configuration
-      await ConfigService.saveProjectSettings({
-        target: targetId,
-        version: '1.0.0',
-        lastUpdated: new Date().toISOString()
-      });
-    } catch (error) {
-      // Don't fail the entire setup if we can't save settings
-      console.warn(
-        chalk.yellow(
-          `⚠ Warning: Could not save default target: ${error instanceof Error ? error.message : String(error)}`
-        )
-      );
-    }
-
-    // Success summary
     console.log(
       '\n' +
-        boxen(
-          chalk.green.bold('✓ Setup complete!') +
-            '\n\n' +
-            chalk.dim(targetInfo.join('\n')) +
-            '\n\n' +
-            chalk.cyan('Ready to code with Sylphx Flow'),
-          {
-            padding: 1,
-            margin: 0,
-            borderStyle: 'round',
-            borderColor: 'green',
-          }
-        ) +
+        boxen(chalk.green.bold('✓ Dry run complete'), {
+          padding: { top: 0, bottom: 0, left: 2, right: 2 },
+          margin: 0,
+          borderStyle: 'round',
+          borderColor: 'green',
+        }) +
         '\n'
     );
+    return;
+  }
+
+  console.log(chalk.cyan.bold('\n━━━ Installing Core Components ━━━\n'));
+
+  // Install components using core function
+  const result = await installComponents(targetId, options);
+
+  // Success summary
+  console.log(
+    '\n' +
+      boxen(
+        chalk.green.bold('✓ Setup complete!') +
+          '\n\n' +
+          chalk.dim(`Target: ${result.targetName}`) +
+          '\n\n' +
+          chalk.cyan('Ready to code with Sylphx Flow'),
+        {
+          padding: 1,
+          margin: 0,
+          borderStyle: 'round',
+          borderColor: 'green',
+        }
+      ) +
+      '\n'
+  );
 }
 
 /**

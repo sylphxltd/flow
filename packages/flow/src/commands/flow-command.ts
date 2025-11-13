@@ -9,7 +9,6 @@ import { CLIError } from '../utils/error-handler.js';
 import type { RunCommandOptions } from '../types.js';
 import { StateDetector, type ProjectState } from '../core/state-detector.js';
 import { UpgradeManager } from '../core/upgrade-manager.js';
-import { initCommand, runInit } from './init-command.js';
 import { loadAgentContent, extractAgentInstructions } from './run-command.js';
 import { ClaudeConfigService } from '../services/claude-config-service.js';
 import { ConfigService } from '../services/config-service.js';
@@ -277,35 +276,72 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
   if (!options.runOnly || options.clean) {
     console.log(chalk.cyan.bold('━━━ 🚀 Initializing Project\n'));
 
-    // Force target selection when cleaning
-    if (options.clean) {
-      const { targetManager } = await import('../core/target-manager.js');
-      selectedTarget = await targetManager.promptForTargetSelection();
-      console.log(chalk.green(`  ✓ Selected target: ${selectedTarget}\n`));
-    }
-
-    const initOptions = {
-      target: selectedTarget || options.target,
-      verbose: options.verbose,
-      dryRun: options.dryRun,
-      clear: options.clean || false,
-      mcp: options.mcp !== false,
-      agents: options.agents !== false,
-      rules: options.rules !== false,
-      outputStyles: options.outputStyles !== false,
-      slashCommands: options.slashCommands !== false,
-      hooks: options.hooks !== false,
-      helpOption: () => {},
-    };
+    // Import core init functions
+    const {
+      selectAndValidateTarget,
+      previewDryRun,
+      installComponents,
+    } = await import('./init-core.js');
 
     try {
-      await runInit(initOptions);
+      // Force target selection when cleaning
+      if (options.clean) {
+        const { targetManager } = await import('../core/target-manager.js');
+        selectedTarget = await targetManager.promptForTargetSelection();
+        console.log(chalk.green(`  ✓ Selected target: ${selectedTarget}\n`));
+      }
 
-      if (!options.dryRun) {
-        console.log(chalk.green.bold('✓ Initialization complete\n'));
-      } else {
+      const initOptions = {
+        target: selectedTarget || options.target,
+        verbose: options.verbose,
+        dryRun: options.dryRun,
+        clear: options.clean || false,
+        mcp: options.mcp !== false,
+        agents: options.agents !== false,
+        rules: options.rules !== false,
+        outputStyles: options.outputStyles !== false,
+        slashCommands: options.slashCommands !== false,
+        hooks: options.hooks !== false,
+      };
+
+      // Select and validate target
+      const targetId = await selectAndValidateTarget(initOptions);
+      selectedTarget = targetId; // Save for later use
+
+      // Dry run preview
+      if (options.dryRun) {
+        console.log(
+          boxen(
+            chalk.yellow('⚠ Dry Run Mode') + chalk.dim('\nNo changes will be made to your project'),
+            {
+              padding: 1,
+              margin: { top: 0, bottom: 1, left: 0, right: 0 },
+              borderStyle: 'round',
+              borderColor: 'yellow',
+            }
+          )
+        );
+
+        await previewDryRun(targetId, initOptions);
+
+        console.log(
+          '\n' +
+            boxen(chalk.green.bold('✓ Dry run complete'), {
+              padding: { top: 0, bottom: 0, left: 2, right: 2 },
+              margin: 0,
+              borderStyle: 'round',
+              borderColor: 'green',
+            }) +
+            '\n'
+        );
+
         console.log(chalk.dim('✓ Initialization dry run complete\n'));
         // Don't return - continue to show execution command
+      } else {
+        // Actually install components
+        const result = await installComponents(targetId, initOptions);
+
+        console.log(chalk.green.bold('✓ Initialization complete\n'));
       }
     } catch (error) {
       console.error(chalk.red.bold('✗ Initialization failed:'), error);
