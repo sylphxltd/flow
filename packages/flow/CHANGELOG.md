@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.0.3
+
+### Patch Changes
+
+- Publish source code instead of bundled dist to fix Unicode and native binding issues
+
 ## 1.0.2
 
 ### Patch Changes
