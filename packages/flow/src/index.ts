@@ -56,7 +56,7 @@ export function createCLI(): Command {
     .argument('[prompt]', 'Prompt to execute with agent (optional, supports @file.txt for file input)')
     .option('--init-only', 'Only initialize, do not run')
     .option('--run-only', 'Only run, skip initialization')
-    .option('--clean', 'Clean all configurations and reinitialize')
+    .option('--sync', 'Synchronize with Flow templates (delete and re-install template files)')
     .option('--upgrade', 'Upgrade Sylphx Flow to latest version')
     .option('--upgrade-target', 'Upgrade target platform (Claude Code/OpenCode)')
     .option('--quick', 'Quick mode: use saved defaults and skip all prompts')

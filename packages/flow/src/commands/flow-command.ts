@@ -18,7 +18,7 @@ export interface FlowOptions {
   target?: string;
   verbose?: boolean;
   dryRun?: boolean;
-  clean?: boolean;
+  sync?: boolean;       // Sync mode - delete and re-install template files
   initOnly?: boolean;
   runOnly?: boolean;
   repair?: boolean;     // Repair mode - install missing components
@@ -331,7 +331,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
   const initialTarget = options.target || (await projectSettings.getDefaultTarget());
 
   // Detect state if we have a target
-  if (initialTarget && !options.clean) {
+  if (initialTarget && !options.sync) {
     const detector = new StateDetector();
 
     if (options.verbose) {
@@ -356,7 +356,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
   // Initialize if needed
   const shouldInitialize =
     !state?.initialized ||
-    options.clean ||
+    options.sync ||
     options.repair ||
     options.initOnly;
 
@@ -369,7 +369,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
         target: options.target,
         verbose: options.verbose || false,
         dryRun: options.dryRun || false,
-        clear: options.clean || false,
+        clear: options.sync || false,
         mcp: options.mcp !== false,
         agents: options.agents !== false,
         rules: options.rules !== false,
@@ -378,8 +378,37 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
         hooks: options.hooks !== false,
       };
 
-      const targetId = await selectAndValidateTarget(initOptions);
-      selectedTarget = targetId;
+      // Handle sync mode - delete template files first
+      if (options.sync && !options.dryRun) {
+        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete } = await import('../utils/sync-utils.js');
+
+        // Need target to build manifest
+        const targetId = await selectAndValidateTarget(initOptions);
+        selectedTarget = targetId;
+
+        const targetOption = targetManager.getTarget(targetId);
+        if (targetOption._tag === 'None') {
+          throw new Error(`Target not found: ${targetId}`);
+        }
+
+        const target = targetOption.value;
+        const manifest = await buildSyncManifest(process.cwd(), target);
+
+        console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
+        showSyncPreview(manifest, process.cwd());
+
+        const confirmed = await confirmSync();
+        if (!confirmed) {
+          console.log(chalk.yellow('\n✗ Sync cancelled\n'));
+          process.exit(0);
+        }
+
+        const deletedCount = await executeSyncDelete(manifest);
+        console.log(chalk.green(`\n✓ Deleted ${deletedCount} files\n`));
+      } else if (!options.sync) {
+        const targetId = await selectAndValidateTarget(initOptions);
+        selectedTarget = targetId;
+      }
 
       if (options.dryRun) {
         console.log(
@@ -570,7 +599,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
   const initialTarget = options.target || (await projectSettings.getDefaultTarget());
 
   // Only detect state if we have a target (can't check components without knowing target structure)
-  if (initialTarget && !options.clean) {
+  if (initialTarget && !options.sync) {
     const detector = new StateDetector();
     const upgradeManager = new UpgradeManager();
 
@@ -613,12 +642,12 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
   // Step 3: Initialize (only if actually needed)
   // Positive logic: should initialize when:
   // - Not initialized yet (state?.initialized === false)
-  // - Clean mode (wipe and reinstall)
+  // - Sync mode (wipe and reinstall)
   // - Repair mode (install missing components)
   // - Init-only mode (user explicitly wants init)
   const shouldInitialize =
     !state?.initialized ||     // Not initialized yet
-    options.clean ||           // Clean reinstall
+    options.sync ||            // Sync reinstall
     options.repair ||          // Repair missing components
     options.initOnly;          // Explicit init request
 
@@ -643,7 +672,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
         target: targetForInit, // Use existing target in repair mode
         verbose: options.verbose,
         dryRun: options.dryRun,
-        clear: options.clean || false,
+        clear: options.sync || false,
         mcp: options.mcp !== false,
         agents: options.agents !== false,
         rules: options.rules !== false,
@@ -652,12 +681,47 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
         hooks: options.hooks !== false,
       };
 
-      // Select and validate target (will use existing in repair mode, or prompt if needed)
-      const targetId = await selectAndValidateTarget(initOptions);
-      selectedTarget = targetId; // Save for later use
+      // Handle sync mode - delete template files first
+      if (options.sync && !options.dryRun) {
+        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete } = await import('../utils/sync-utils.js');
+
+        // Need target to build manifest
+        const targetId = await selectAndValidateTarget(initOptions);
+        selectedTarget = targetId;
+
+        const targetOption = targetManager.getTarget(targetId);
+        if (targetOption._tag === 'None') {
+          throw new Error(`Target not found: ${targetId}`);
+        }
+
+        const target = targetOption.value;
+        const manifest = await buildSyncManifest(process.cwd(), target);
+
+        console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
+        showSyncPreview(manifest, process.cwd());
+
+        const confirmed = await confirmSync();
+        if (!confirmed) {
+          console.log(chalk.yellow('\n✗ Sync cancelled\n'));
+          process.exit(0);
+        }
+
+        const deletedCount = await executeSyncDelete(manifest);
+        console.log(chalk.green(`\n✓ Deleted ${deletedCount} files\n`));
+      } else {
+        // Select and validate target (will use existing in repair mode, or prompt if needed)
+        const targetId = await selectAndValidateTarget(initOptions);
+        selectedTarget = targetId; // Save for later use
+      }
 
       // Dry run preview
       if (options.dryRun) {
+        // Ensure we have a target ID for dry run
+        if (!selectedTarget) {
+          const targetId = await selectAndValidateTarget(initOptions);
+          selectedTarget = targetId;
+        }
+
         console.log(
           boxen(
             chalk.yellow('⚠ Dry Run Mode') + chalk.dim('\nNo changes will be made to your project'),
@@ -670,7 +734,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
           )
         );
 
-        await previewDryRun(targetId, initOptions);
+        await previewDryRun(selectedTarget, initOptions);
 
         console.log(
           '\n' +
@@ -687,7 +751,13 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
         // Don't return - continue to show execution command
       } else {
         // Actually install components
-        const result = await installComponents(targetId, initOptions);
+        // Ensure we have a target ID for installation
+        if (!selectedTarget) {
+          const targetId = await selectAndValidateTarget(initOptions);
+          selectedTarget = targetId;
+        }
+
+        const result = await installComponents(selectedTarget, initOptions);
 
         console.log(chalk.green.bold('✓ Initialization complete\n'));
       }
@@ -820,7 +890,7 @@ export const flowCommand = new Command('flow')
   // Smart options
   .option('--init-only', 'Only initialize, do not run')
   .option('--run-only', 'Only run, skip initialization')
-  .option('--clean', 'Clean all configurations and reinitialize')
+  .option('--sync', 'Synchronize with Flow templates (delete and re-install template files)')
   .option('--upgrade', 'Upgrade Sylphx Flow to latest version')
   .option('--upgrade-target', 'Upgrade target platform (Claude Code/OpenCode)')
 
