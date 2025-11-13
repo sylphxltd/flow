@@ -1,8 +1,7 @@
 {
   "name": "@sylphx/flow",
   "version": "1.0.0",
-  "private": true,
-  "description": "Sylphx Flow - Legacy CLI for project initialization and flow management",
+  "description": "AI-powered development workflow automation with autonomous loop mode and smart configuration",
   "type": "module",
   "bin": {
     "sylphx-flow": "./dist/index.js"
@@ -32,5 +31,36 @@
     "@types/node": "^24.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.6"
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LOOP_MODE.md"
+  ],
+  "keywords": [
+    "ai",
+    "automation",
+    "workflow",
+    "claude",
+    "opencode",
+    "cli",
+    "autonomous",
+    "loop-mode",
+    "developer-tools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sylphxltd/flow.git",
+    "directory": "packages/flow"
+  },
+  "bugs": {
+    "url": "https://github.com/sylphxltd/flow/issues"
+  },
+  "homepage": "https://github.com/sylphxltd/flow#readme",
+  "license": "MIT",
+  "author": "sylphxltd"
 }
