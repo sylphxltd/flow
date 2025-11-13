@@ -291,15 +291,9 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     } = await import('./init-core.js');
 
     try {
-      // Force target selection when cleaning
-      if (options.clean) {
-        const { targetManager } = await import('../core/target-manager.js');
-        selectedTarget = await targetManager.promptForTargetSelection();
-        console.log(chalk.green(`  ✓ Selected target: ${selectedTarget}\n`));
-      }
-
+      // Prepare init options
       const initOptions = {
-        target: selectedTarget || options.target,
+        target: options.target, // Pass through user's choice
         verbose: options.verbose,
         dryRun: options.dryRun,
         clear: options.clean || false,
@@ -311,7 +305,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
         hooks: options.hooks !== false,
       };
 
-      // Select and validate target
+      // Select and validate target (will prompt if not provided)
       const targetId = await selectAndValidateTarget(initOptions);
       selectedTarget = targetId; // Save for later use
 
@@ -359,11 +353,16 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
   // Step 4: Launch target (if not init-only)
   if (!options.initOnly) {
     // Resolve target - use the target we just selected
-    let targetForResolution = options.target || state.target;
+    let targetForResolution = options.target || state?.target || selectedTarget;
 
-    // If we just selected a target during cleaning, use that
+    // If we just selected a target during init, use that
     if (selectedTarget) {
       targetForResolution = selectedTarget;
+    }
+
+    if (!targetForResolution) {
+      console.error(chalk.red.bold('✗ No target selected. Use --target or run init first.'));
+      process.exit(1);
     }
 
     const resolvedTarget = await targetManager.resolveTarget({
