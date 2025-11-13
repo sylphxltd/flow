@@ -72,3 +72,4 @@ hive-mind-prompt-*.txt
 models/.cache/
 .sylphx-flow/*.db*
 .sylphx-flow.json
+.vercel
