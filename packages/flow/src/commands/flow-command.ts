@@ -248,8 +248,8 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
     const { LoopController } = await import('../core/loop-controller.js');
     const controller = new LoopController();
 
-    // Default to 60s if just --loop with no value
-    const interval = typeof options.loop === 'number' ? options.loop : 60;
+    // Default to 0s (no cooldown) if just --loop with no value
+    const interval = typeof options.loop === 'number' ? options.loop : 0;
 
     // Auto-enable headless mode for loop
     options.print = true;

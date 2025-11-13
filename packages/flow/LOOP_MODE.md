@@ -22,10 +22,10 @@ bun dev:flow "process all GitHub issues" --loop 60
 
 ## 🚀 Basic Usage
 
-### Simplest - Use default interval (60 seconds)
+### Simplest - Use default (no cooldown)
 ```bash
 bun dev:flow "task" --loop
-# Execute every 60 seconds until you press Ctrl+C
+# Execute continuously with no cooldown between iterations
 ```
 
 ### Specify interval
@@ -88,24 +88,31 @@ bun dev:flow "continue refactoring legacy code" --loop 600 --max-runs 6
 ## 📚 API Reference
 
 ### `--loop [seconds]`
-Enable loop mode with optional interval in seconds
+Enable loop mode with optional cooldown interval in seconds
 
-**Default:** 60 seconds (if no number provided)
-**Minimum:** 5 seconds (prevent too frequent execution)
+**Default:** 0 seconds (no cooldown - execute immediately after task completes)
 **Recommended values:**
-- Quick tasks: 30-60 seconds
-- Standard tasks: 60-300 seconds
-- Heavy tasks: 600-3600 seconds
+- No cooldown: 0 seconds (default - let task execution time be the natural interval)
+- Quick checks: 30-60 seconds (for monitoring tasks that finish quickly)
+- Standard interval: 60-300 seconds (for periodic checks)
+- Long interval: 600-3600 seconds (for infrequent updates)
 
 **Examples:**
 ```bash
---loop         # Default 60 seconds
---loop 60      # Every 60 seconds
---loop 300     # Every 5 minutes
---loop 3600    # Every 1 hour
+--loop         # Default: 0s cooldown (immediate re-execution)
+--loop 0       # Same as above: no cooldown
+--loop 60      # Wait 60 seconds after task completes
+--loop 300     # Wait 5 minutes after task completes
+--loop 3600    # Wait 1 hour after task completes
 ```
 
-**Note:** `[seconds]` is optional - defaults to 60 seconds if not provided
+**Note:** `[seconds]` is optional - defaults to 0 seconds (no cooldown) if not provided
+
+**Why 0s default?**
+- LLM tasks typically take several minutes to complete
+- Task execution time provides natural interval
+- No wasted time between iterations
+- User can add cooldown if needed (e.g., for API rate limits)
 
 ---
 
@@ -190,14 +197,17 @@ This allows the LLM to continuously improve without repeating the same work.
 
 ## 📊 Work Time Calculation
 
-| Interval | Max Runs | Total Time |
-|----------|----------|------------|
-| 60s | 10 | ~10 minutes |
-| 60s | 30 | ~30 minutes |
-| 60s | 60 | ~1 hour |
-| 300s (5min) | 12 | ~1 hour |
-| 600s (10min) | 6 | ~1 hour |
-| 3600s (1 hour) | 8 | ~8 hours |
+**Note:** These estimates assume ~2-3 minutes average task execution time + cooldown interval.
+
+| Interval | Max Runs | Approx Total Time |
+|----------|----------|-------------------|
+| 0s (no cooldown) | 10 | ~20-30 minutes (task time only) |
+| 0s (no cooldown) | 30 | ~1-1.5 hours (task time only) |
+| 60s cooldown | 10 | ~30-40 minutes (task + cooldown) |
+| 60s cooldown | 30 | ~1.5-2 hours (task + cooldown) |
+| 300s (5min) | 12 | ~2-3 hours |
+| 600s (10min) | 6 | ~1.5-2 hours |
+| 3600s (1 hour) | 8 | ~8-9 hours |
 
 ---
 
@@ -205,15 +215,15 @@ This allows the LLM to continuously improve without repeating the same work.
 
 ### ✅ DO
 
-1. **Set reasonable interval**
+1. **Use default (0s) for most cases**
    ```bash
-   --loop 60    # OK for most cases
-   --loop 300   # Non-urgent tasks
+   --loop              # No cooldown - task execution time is the interval
+   --loop 60           # Add cooldown if needed (e.g., API rate limits)
    ```
 
 2. **Use max-runs for safety**
    ```bash
-   --max-runs 50   # Prevent infinite loop
+   --max-runs 50       # Prevent infinite loop
    ```
 
 3. **Clear task definition**
@@ -225,31 +235,35 @@ This allows the LLM to continuously improve without repeating the same work.
    "do stuff"
    ```
 
-4. **Test with small values first**
+4. **Test with small max-runs first**
    ```bash
-   --loop 10 --max-runs 3   # Test for 30 seconds first
+   --loop --max-runs 3   # Test with 3 iterations first
    ```
 
 ### ❌ DON'T
 
-1. **Don't use extremely short intervals**
+1. **Don't add cooldown unnecessarily**
    ```bash
-   --loop 5    # Too frequent, waste resources
+   # Unnecessary - task already takes time
+   --loop 60    # Only use if you need cooldown for specific reason
+
+   # Better
+   --loop       # Let task execution be the natural interval
    ```
 
 2. **Don't run production without max-runs**
    ```bash
    # Dangerous - may run forever
-   --loop 60
+   --loop
 
    # Safe
-   --loop 60 --max-runs 100
+   --loop --max-runs 100
    ```
 
 3. **Don't do destructive operations**
    ```bash
    # Dangerous!
-   "delete old files" --loop 60
+   "delete old files" --loop
    ```
 
 ---
