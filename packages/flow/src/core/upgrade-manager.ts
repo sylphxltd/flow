@@ -158,11 +158,12 @@ export class UpgradeManager {
 
   private async upgradeClaudeCode(): Promise<void> {
     if (this.options.dryRun) {
-      console.log('模拟: npm update -g @anthropic-ai/claude-code');
+      console.log('模拟: claude update');
       return;
     }
 
-    const { stdout } = await execAsync('npm update -g @anthropic-ai/claude-code');
+    // Claude Code has built-in update command
+    const { stdout } = await execAsync('claude update');
 
     if (this.options.verbose) {
       console.log(stdout);
@@ -171,12 +172,12 @@ export class UpgradeManager {
 
   private async upgradeOpenCode(): Promise<void> {
     if (this.options.dryRun) {
-      console.log('模拟: opencode self-update');
+      console.log('模拟: opencode upgrade');
       return;
     }
 
-    // 假设 OpenCode 有 self-update 命令
-    const { stdout } = await execAsync('opencode self-update');
+    // OpenCode has built-in upgrade command
+    const { stdout } = await execAsync('opencode upgrade');
 
     if (this.options.verbose) {
       console.log(stdout);
