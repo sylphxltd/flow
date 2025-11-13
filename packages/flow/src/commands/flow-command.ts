@@ -214,9 +214,12 @@ function compareVersions(v1: string, v2: string): number {
  */
 export async function executeFlow(prompt: string | undefined, options: FlowOptions): Promise<void> {
   // Loop mode: wrap execution in LoopController
-  if (options.loop) {
+  if (options.loop !== undefined) {
     const { LoopController } = await import('../core/loop-controller.js');
     const controller = new LoopController();
+
+    // Default to 60s if just --loop with no value
+    const interval = typeof options.loop === 'number' ? options.loop : 60;
 
     // Auto-enable headless mode for loop
     options.print = true;
@@ -238,7 +241,7 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
       },
       {
         enabled: true,
-        interval: options.loop,
+        interval,
         maxRuns: options.maxRuns,
       }
     );

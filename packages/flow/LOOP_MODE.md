@@ -22,16 +22,31 @@ bun dev:flow "處理github所有issue" --loop 60
 
 ## 🚀 基本用法
 
-### 最簡單 - 無限loop
+### 最簡單 - 用default interval (60秒)
 ```bash
-bun dev:flow "task" --loop 60
+bun dev:flow "task" --loop
 # 每60秒執行一次，直到你按Ctrl+C
+```
+
+### 指定interval
+```bash
+bun dev:flow "task" --loop 120
+# 每120秒（2分鐘）執行一次
 ```
 
 ### 加safety limit
 ```bash
 bun dev:flow "task" --loop 60 --max-runs 20
 # 最多執行20次就停
+```
+
+### 組合使用
+```bash
+# Default interval + max runs
+bun dev:flow "task" --loop --max-runs 10
+
+# Custom interval + max runs
+bun dev:flow "task" --loop 300 --max-runs 5
 ```
 
 ---
@@ -72,9 +87,10 @@ bun dev:flow "continue refactoring legacy code" --loop 600 --max-runs 6
 
 ## 📚 API Reference
 
-### `--loop <seconds>`
-啟用loop mode，設定間隔時間（秒）
+### `--loop [seconds]`
+啟用loop mode，可選設定間隔時間（秒）
 
+**Default:** 60秒 (如果無provide數字)
 **最小值:** 5秒 (防止太頻繁)
 **推薦值:**
 - 快速任務: 30-60秒
@@ -83,10 +99,13 @@ bun dev:flow "continue refactoring legacy code" --loop 600 --max-runs 6
 
 **例子:**
 ```bash
+--loop         # Default 60秒
 --loop 60      # 每60秒
 --loop 300     # 每5分鐘
 --loop 3600    # 每1小時
 ```
+
+**Note:** `[seconds]` 係optional，唔provide就用default 60秒
 
 ---
 

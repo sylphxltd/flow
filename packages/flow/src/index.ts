@@ -79,7 +79,10 @@ export function createCLI(): Command {
     .option('-c, --continue', 'Continue previous conversation (requires print mode)')
 
     // Loop mode options
-    .option('--loop <seconds>', 'Loop mode: run every N seconds (continuous execution)', parseInt)
+    .option('--loop [seconds]', 'Loop mode: run every N seconds (default: 60s)', (value) => {
+      // If no value provided, default to 60
+      return value ? parseInt(value) : 60;
+    })
     .option('--max-runs <count>', 'Optional max iterations (default: infinite)', parseInt)
 
     .action(async (prompt, options) => {
