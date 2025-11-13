@@ -304,8 +304,8 @@ export async function executeFlow(prompt: string | undefined, options: FlowOptio
       if (!options.dryRun) {
         console.log(chalk.green.bold('✓ Initialization complete\n'));
       } else {
-        console.log(chalk.dim('✓ Dry run complete - skipping execution\n'));
-        return;
+        console.log(chalk.dim('✓ Initialization dry run complete\n'));
+        // Don't return - continue to show execution command
       }
     } catch (error) {
       console.error(chalk.red.bold('✗ Initialization failed:'), error);
