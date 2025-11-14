@@ -27,7 +27,17 @@
     "gray-matter": "^4.0.3",
     "yaml": "^2.8.1",
     "zod": "^4.1.12",
-    "debug": "^4.4.3"
+    "debug": "^4.4.3",
+    "react": "^19.2.0",
+    "ink": "^6.4.0",
+    "drizzle-orm": "^0.44.7",
+    "@modelcontextprotocol/sdk": "^1.21.0",
+    "@libsql/client": "^0.15.15",
+    "@lancedb/lancedb": "^0.22.2",
+    "@huggingface/transformers": "^3.7.6",
+    "chokidar": "^4.0.3",
+    "ignore": "^7.0.5",
+    "ai": "^5.0.88"
   },
   "devDependencies": {
     "@types/node": "^24.9.2",
