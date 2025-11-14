@@ -8,9 +8,10 @@ import path from 'node:path';
 import os from 'node:os';
 import {
   CONFIG_DIR,
+  USER_CONFIG_DIR,
   USER_SETTINGS_FILE,
   getProjectSettingsFile,
-  getProjectLocalSettingsFile
+  getProjectLocalSettingsFile,
 } from '../config/constants.js';
 
 /**
@@ -117,7 +118,7 @@ export class ConfigService {
    */
   static async saveHomeSettings(settings: UserSettings): Promise<void> {
     // Ensure directory exists
-    await fs.mkdir(USER_SETTINGS_FILE.replace('/settings.json', ''), { recursive: true });
+    await fs.mkdir(USER_CONFIG_DIR, { recursive: true });
 
     // Merge with existing settings and save
     const existing = await this.loadHomeSettings();
