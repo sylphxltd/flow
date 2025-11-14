@@ -219,6 +219,41 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     category: 'external',
     defaultInInit: true,
   },
+
+  coderag: {
+    id: 'coderag',
+    name: 'coderag',
+    description: 'CodeRAG - Lightning-fast hybrid code search (TF-IDF + Vector) for RAG',
+    config: {
+      type: 'stdio' as const,
+      command: 'npx',
+      args: ['-y', '@sylphx/coderag-mcp'],
+      env: {
+        OPENAI_API_KEY: '',
+        CODEBASE_ROOT: '',
+        INDEX_PATH: '.coderag',
+      },
+    },
+    envVars: {
+      OPENAI_API_KEY: {
+        description: 'OpenAI API key for embeddings (vector search)',
+        required: false,
+        secret: true,
+      },
+      CODEBASE_ROOT: {
+        description: 'Root directory of codebase to index',
+        required: false,
+        default: '.',
+      },
+      INDEX_PATH: {
+        description: 'Path to store index files',
+        required: false,
+        default: '.coderag',
+      },
+    },
+    category: 'core',
+    defaultInInit: true,
+  },
 };
 
 /**
