@@ -9,7 +9,7 @@ import {
   processSettings,
   serializeSettings,
   validateHookConfig,
-} from '../../../src/targets/functional/claude-code-logic.js';
+} from '../../../packages/flow/src/targets/functional/claude-code-logic';
 
 describe('claude-code-logic', () => {
   describe('parseSettings', () => {
@@ -35,22 +35,16 @@ describe('claude-code-logic', () => {
     it('should build hooks with default commands', () => {
       const hooks = buildHookConfiguration();
 
-      expect(hooks.SessionStart).toBeDefined();
-      expect(hooks.UserPromptSubmit).toBeDefined();
       expect(hooks.Notification).toBeDefined();
-      expect(hooks.SessionStart[0].hooks[0].command).toContain('hook --type session');
-      expect(hooks.UserPromptSubmit[0].hooks[0].command).toContain('hook --type message');
       expect(hooks.Notification[0].hooks[0].command).toContain('hook --type notification');
     });
 
     it('should build hooks with custom commands', () => {
       const hooks = buildHookConfiguration({
-        sessionCommand: 'custom-session',
-        messageCommand: 'custom-message',
+        notificationCommand: 'custom-notification',
       });
 
-      expect(hooks.SessionStart[0].hooks[0].command).toBe('custom-session');
-      expect(hooks.UserPromptSubmit[0].hooks[0].command).toBe('custom-message');
+      expect(hooks.Notification[0].hooks[0].command).toBe('custom-notification');
     });
   });
 
@@ -67,8 +61,7 @@ describe('claude-code-logic', () => {
 
       expect(merged.existingKey).toBe('value');
       expect(merged.hooks?.ExistingHook).toBeDefined();
-      expect(merged.hooks?.SessionStart).toBeDefined();
-      expect(merged.hooks?.UserPromptSubmit).toBeDefined();
+      expect(merged.hooks?.Notification).toBeDefined();
     });
 
     it('should create hooks if none exist', () => {
@@ -76,22 +69,19 @@ describe('claude-code-logic', () => {
       const merged = mergeSettings(existing);
 
       expect(merged.test).toBe('value');
-      expect(merged.hooks?.SessionStart).toBeDefined();
-      expect(merged.hooks?.UserPromptSubmit).toBeDefined();
+      expect(merged.hooks?.Notification).toBeDefined();
     });
 
-    it('should override SessionStart and UserPromptSubmit hooks', () => {
+    it('should override Notification hook', () => {
       const existing = {
         hooks: {
-          SessionStart: [{ hooks: [{ type: 'command', command: 'old' }] }],
-          UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'old' }] }],
+          Notification: [{ hooks: [{ type: 'command', command: 'old' }] }],
         },
       };
 
       const merged = mergeSettings(existing);
 
-      expect(merged.hooks?.SessionStart[0].hooks[0].command).toContain('hook --type session');
-      expect(merged.hooks?.UserPromptSubmit[0].hooks[0].command).toContain('hook --type message');
+      expect(merged.hooks?.Notification[0].hooks[0].command).toContain('hook --type notification');
     });
   });
 
@@ -100,8 +90,7 @@ describe('claude-code-logic', () => {
       const settings = createSettings();
 
       expect(settings.hooks).toBeDefined();
-      expect(settings.hooks?.SessionStart).toBeDefined();
-      expect(settings.hooks?.UserPromptSubmit).toBeDefined();
+      expect(settings.hooks?.Notification).toBeDefined();
     });
   });
 
@@ -128,9 +117,8 @@ describe('claude-code-logic', () => {
     it('should return success message', () => {
       const message = getSuccessMessage();
 
-      expect(message).toContain('Claude Code hooks configured');
-      expect(message).toContain('SessionStart');
-      expect(message).toContain('UserPromptSubmit');
+      expect(message).toContain('Claude Code hook configured');
+      expect(message).toContain('Notification');
     });
   });
 
@@ -141,7 +129,7 @@ describe('claude-code-logic', () => {
       expect(result._tag).toBe('Success');
       if (result._tag === 'Success') {
         const parsed = JSON.parse(result.value);
-        expect(parsed.hooks.SessionStart).toBeDefined();
+        expect(parsed.hooks.Notification).toBeDefined();
       }
     });
 
@@ -151,7 +139,7 @@ describe('claude-code-logic', () => {
       expect(result._tag).toBe('Success');
       if (result._tag === 'Success') {
         const parsed = JSON.parse(result.value);
-        expect(parsed.hooks.SessionStart).toBeDefined();
+        expect(parsed.hooks.Notification).toBeDefined();
       }
     });
 
@@ -163,7 +151,7 @@ describe('claude-code-logic', () => {
       if (result._tag === 'Success') {
         const parsed = JSON.parse(result.value);
         expect(parsed.test).toBe('value');
-        expect(parsed.hooks.SessionStart).toBeDefined();
+        expect(parsed.hooks.Notification).toBeDefined();
       }
     });
 
@@ -173,7 +161,7 @@ describe('claude-code-logic', () => {
       expect(result._tag).toBe('Success');
       if (result._tag === 'Success') {
         const parsed = JSON.parse(result.value);
-        expect(parsed.hooks.SessionStart).toBeDefined();
+        expect(parsed.hooks.Notification).toBeDefined();
         // Should not have any invalid content
         expect(parsed.invalid).toBeUndefined();
       }
@@ -181,15 +169,13 @@ describe('claude-code-logic', () => {
 
     it('should use custom hook config', () => {
       const result = processSettings(null, {
-        sessionCommand: 'custom-session',
-        messageCommand: 'custom-message',
+        notificationCommand: 'custom-notification',
       });
 
       expect(result._tag).toBe('Success');
       if (result._tag === 'Success') {
         const parsed = JSON.parse(result.value);
-        expect(parsed.hooks.SessionStart[0].hooks[0].command).toBe('custom-session');
-        expect(parsed.hooks.UserPromptSubmit[0].hooks[0].command).toBe('custom-message');
+        expect(parsed.hooks.Notification[0].hooks[0].command).toBe('custom-notification');
       }
     });
   });
@@ -197,32 +183,15 @@ describe('claude-code-logic', () => {
   describe('validateHookConfig', () => {
     it('should accept valid config', () => {
       const result = validateHookConfig({
-        sessionCommand: 'valid-command',
-        messageCommand: 'valid-command',
+        notificationCommand: 'valid-command',
       });
 
       expect(result._tag).toBe('Success');
     });
 
-    it('should accept config with only session command', () => {
+    it('should reject empty notification command', () => {
       const result = validateHookConfig({
-        sessionCommand: 'valid-command',
-      });
-
-      expect(result._tag).toBe('Success');
-    });
-
-    it('should reject empty session command', () => {
-      const result = validateHookConfig({
-        sessionCommand: '   ',
-      });
-
-      expect(result._tag).toBe('Failure');
-    });
-
-    it('should reject empty message command', () => {
-      const result = validateHookConfig({
-        messageCommand: '',
+        notificationCommand: '   ',
       });
 
       expect(result._tag).toBe('Failure');

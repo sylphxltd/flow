@@ -31,7 +31,6 @@ export interface ClaudeCodeSettings {
 }
 
 export interface HookConfig {
-  sessionCommand?: string;
   notificationCommand?: string;
 }
 
@@ -41,17 +40,15 @@ export interface HookConfig {
  */
 export const generateHookCommands = async (targetId: string): Promise<HookConfig> => {
   return {
-    sessionCommand: `sylphx-flow hook --type session --target ${targetId}`,
     notificationCommand: `sylphx-flow hook --type notification --target ${targetId}`,
   };
 };
 
 /**
  * Default hook commands (fallback)
- * Simplified to only include session and notification hooks
+ * Simplified to only include notification hook
  */
 export const DEFAULT_HOOKS: HookConfig = {
-  sessionCommand: 'sylphx-flow hook --type session --target claude-code',
   notificationCommand: 'sylphx-flow hook --type notification --target claude-code',
 };
 
@@ -74,20 +71,9 @@ export const parseSettings = (content: string): Result<ClaudeCodeSettings, Confi
 export const buildHookConfiguration = (
   config: HookConfig = DEFAULT_HOOKS
 ): ClaudeCodeSettings['hooks'] => {
-  const sessionCommand = config.sessionCommand || DEFAULT_HOOKS.sessionCommand!;
   const notificationCommand = config.notificationCommand || DEFAULT_HOOKS.notificationCommand!;
 
   return {
-    SessionStart: [
-      {
-        hooks: [
-          {
-            type: 'command',
-            command: sessionCommand,
-          },
-        ],
-      },
-    ],
     Notification: [
       {
         matcher: '',
@@ -140,7 +126,7 @@ export const serializeSettings = (settings: ClaudeCodeSettings): string => {
  * Get success message (pure)
  */
 export const getSuccessMessage = (): string => {
-  return 'Claude Code hooks configured: SessionStart (static info) + UserPromptSubmit (dynamic info)';
+  return 'Claude Code hook configured: Notification';
 };
 
 /**
@@ -173,12 +159,8 @@ export const processSettings = (
  * Validate hook configuration (pure)
  */
 export const validateHookConfig = (config: HookConfig): Result<HookConfig, ConfigError> => {
-  if (config.sessionCommand !== undefined && config.sessionCommand.trim() === '') {
-    return failure(configError('Session command cannot be empty'));
-  }
-
-  if (config.messageCommand !== undefined && config.messageCommand.trim() === '') {
-    return failure(configError('Message command cannot be empty'));
+  if (config.notificationCommand !== undefined && config.notificationCommand.trim() === '') {
+    return failure(configError('Notification command cannot be empty'));
   }
 
   return success(config);
