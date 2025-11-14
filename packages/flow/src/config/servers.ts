@@ -1,5 +1,4 @@
 import type { MCPServerConfigUnion } from '../types.js';
-import { envSecurity, securitySchemas } from '../utils/security.js';
 
 /**
  * Central MCP server registry for Sylphx Flow
