@@ -24,7 +24,6 @@ export type {
 } from './types/common.types.js';
 export type {
   MCPServerConfig,
-  MCPServerConfigFlags,
   MCPServerConfigHTTP,
   MCPServerConfigUnion,
   OpenCodeConfig,

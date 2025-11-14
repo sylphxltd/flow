@@ -2,4 +2,3 @@
 
 export { useEnv, useEnvVar } from './useEnv.js';
 export { useIsCI, useIsDebug, useRuntimeConfig } from './useRuntimeConfig.js';
-export { useTargetConfig, useTargetConfigById } from './useTargetConfig.js';

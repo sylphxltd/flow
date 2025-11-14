@@ -8,9 +8,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
-import { codebaseCommand } from './commands/codebase-command.js';
 import { hookCommand } from './commands/hook-command.js';
-import { knowledgeCommand } from './commands/knowledge-command.js';
 import {
   flowCommand,
   statusCommand,
@@ -95,8 +93,6 @@ export function createCLI(): Command {
   program.addCommand(statusCommand);
   program.addCommand(doctorCommand);
   program.addCommand(upgradeCommand);
-  program.addCommand(codebaseCommand);
-  program.addCommand(knowledgeCommand);
   program.addCommand(hookCommand);
 
   return program;

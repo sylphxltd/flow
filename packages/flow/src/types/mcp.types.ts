@@ -1,30 +1,26 @@
 /**
- * MCP (Model Context Protocol) configuration types
- * Types for configuring and managing MCP servers
+ * MCP (Model Context Protocol) Configuration Types
+ * Defines configuration formats for different MCP server implementations
  */
-
-import type { Resolvable } from './common.types.js';
 
 /**
- * MCP server configuration for stdio-based servers
- * Communicates via standard input/output
+ * Base MCP server configuration with stdio transport
  */
-export interface MCPServerConfig {
+export type MCPServerConfig = {
   type: 'stdio';
-  command: Resolvable<string>;
-  args?: Resolvable<string[]>;
+  command: string;
+  args?: string[];
   env?: Record<string, string>;
-}
+};
 
 /**
- * MCP server configuration for HTTP-based servers
- * Communicates via HTTP requests
+ * MCP server configuration with HTTP transport
  */
-export interface MCPServerConfigHTTP {
+export type MCPServerConfigHTTP = {
   type: 'http';
-  url: Resolvable<string>;
+  url: string;
   headers?: Record<string, string>;
-}
+};
 
 /**
  * Union of all possible MCP server configurations
@@ -32,38 +28,33 @@ export interface MCPServerConfigHTTP {
 export type MCPServerConfigUnion = MCPServerConfig | MCPServerConfigHTTP;
 
 /**
- * MCP server configuration flags
- * Used to disable specific server features per target
+ * OpenCode-specific configuration format
  */
-export type MCPServerConfigFlags = {
-  disableTime?: boolean;
-  disableKnowledge?: boolean;
-  disableCodebase?: boolean;
+export type OpenCodeConfig = {
+  type: 'local' | 'remote';
+  command?: string[];
+  url?: string;
+  headers?: Record<string, string>;
+  environment?: Record<string, string>;
 };
 
 /**
- * OpenCode-specific configuration format
+ * Type guard for stdio config
  */
-export interface OpenCodeConfig {
-  $schema?: string;
-  mcp?: Record<string, MCPServerConfigUnion>;
+export function isStdioConfig(config: MCPServerConfigUnion): config is MCPServerConfig {
+  return config.type === 'stdio';
 }
 
 /**
- * Type guard: Check if config is stdio-based
+ * Type guard for HTTP config
  */
-export const isStdioConfig = (config: MCPServerConfigUnion): config is MCPServerConfig =>
-  config.type === 'stdio';
+export function isHttpConfig(config: MCPServerConfigUnion): config is MCPServerConfigHTTP {
+  return config.type === 'http';
+}
 
 /**
- * Type guard: Check if config is HTTP-based
+ * Type guard for CLI command config (stdio)
  */
-export const isHttpConfig = (config: MCPServerConfigUnion): config is MCPServerConfigHTTP =>
-  config.type === 'http';
-
-/**
- * Type guard: Check if config is CLI command-based (stdio)
- * Alias for isStdioConfig for backward compatibility
- */
-export const isCLICommandConfig = (config: MCPServerConfigUnion): config is MCPServerConfig =>
-  isStdioConfig(config);
+export function isCLICommandConfig(config: MCPServerConfigUnion): config is MCPServerConfig {
+  return isStdioConfig(config);
+}

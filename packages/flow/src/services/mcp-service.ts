@@ -293,22 +293,6 @@ export const createMCPService = (deps: MCPServiceDeps): MCPService => {
             ? await resolveConfig(server.config.command)
             : undefined;
           resolvedArgs = server.config.args ? await resolveConfig(server.config.args) : [];
-
-          // Apply target-specific flags for sylphx-flow server
-          if (serverId === 'sylphx-flow' && Array.isArray(resolvedArgs)) {
-            const targetConfig = deps.target.mcpServerConfig;
-            if (targetConfig) {
-              if (targetConfig.disableTime) {
-                resolvedArgs.push('--disable-time');
-              }
-              if (targetConfig.disableKnowledge) {
-                resolvedArgs.push('--disable-knowledge');
-              }
-              if (targetConfig.disableCodebase) {
-                resolvedArgs.push('--disable-codebase');
-              }
-            }
-          }
         }
 
         // Update the config with resolved values (only for CLI servers)

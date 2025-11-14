@@ -69,8 +69,6 @@ export interface Target {
   // Configuration
   /** Target-specific configuration */
   readonly config: TargetConfig;
-  /** MCP server configuration for this target */
-  readonly mcpServerConfig?: MCPServerConfigFlags;
 
   // Required transformation methods
   /** Transform agent content for the target */

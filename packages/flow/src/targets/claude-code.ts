@@ -22,12 +22,6 @@ export const claudeCodeTarget: Target = {
   isImplemented: true,
   isDefault: false,
 
-  mcpServerConfig: {
-    disableTime: true,
-    disableKnowledge: false,
-    disableCodebase: true,
-  },
-
   config: {
     agentDir: '.claude/agents',
     agentExtension: '.md',

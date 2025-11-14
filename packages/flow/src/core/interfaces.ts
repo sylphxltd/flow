@@ -46,39 +46,6 @@ export interface IStorage<T = unknown> {
   healthCheck(): Promise<{ healthy: boolean; error?: string }>;
 }
 
-// Search service interface
-export interface ISearchService {
-  initialize(): Promise<void>;
-  searchCodebase(query: string, options?: SearchOptions): Promise<SearchResult[]>;
-  searchKnowledge(query: string, options?: SearchOptions): Promise<SearchResult[]>;
-  getStatus(): Promise<SearchServiceStatus>;
-}
-
-// Search options
-export interface SearchOptions {
-  limit?: number;
-  offset?: number;
-  filters?: Record<string, unknown>;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
-
-// Search result
-export interface SearchResult {
-  id: string;
-  content: string;
-  score: number;
-  metadata: Record<string, unknown>;
-}
-
-// Search service status
-export interface SearchServiceStatus {
-  indexed: number;
-  total: number;
-  lastIndexed: string;
-  healthy: boolean;
-}
-
 // Target manager interface
 export interface ITargetManager {
   getTarget(id: string): Target | null;

@@ -23,12 +23,6 @@ export const opencodeTarget: Target = {
   isImplemented: true,
   isDefault: true,
 
-  mcpServerConfig: {
-    disableTime: false,
-    disableKnowledge: false,
-    disableCodebase: false,
-  },
-
   config: {
     agentDir: '.opencode/agent',
     agentExtension: '.md',
