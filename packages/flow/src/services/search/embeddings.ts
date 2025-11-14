@@ -1,6 +1,6 @@
 /**
  * Embedding generation utilities
- * 用 Vercel AI SDK - 第一個支持 OpenAI
+ * 用 Vercel AI SDK OpenAI Provider
  *
  * Design:
  * - MCP Server (headless, no interaction)
@@ -9,7 +9,7 @@
  */
 
 import { embed, embedMany } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { generateMockEmbedding } from '../storage/vector-storage.js';
 import { createLogger } from '../../utils/debug-logger.js';
 
@@ -27,13 +27,13 @@ export interface EmbeddingProvider {
 }
 
 /**
- * OpenAI Embedding Provider (用 AI SDK)
+ * OpenAI Embedding Provider (用 AI SDK Provider)
  */
 export class OpenAIEmbeddingProvider implements EmbeddingProvider {
   name = 'openai';
   model: string;
   dimensions: number;
-  private apiKey?: string;
+  private provider: ReturnType<typeof createOpenAI>;
 
   constructor(
     options: {
@@ -42,7 +42,11 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
     } = {}
   ) {
     this.model = options.model || 'text-embedding-3-small';
-    this.apiKey = options.apiKey || process.env.OPENAI_API_KEY;
+
+    // 創建 OpenAI provider instance
+    this.provider = createOpenAI({
+      apiKey: options.apiKey || process.env.OPENAI_API_KEY,
+    });
 
     // Set dimensions based on model
     switch (this.model) {
@@ -58,17 +62,9 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
-    // No API key → mock
-    if (!this.apiKey) {
-      log('No OPENAI_API_KEY, using mock embedding');
-      return generateMockEmbedding(text, this.dimensions);
-    }
-
     try {
       const { embedding } = await embed({
-        model: openai.embedding(this.model, {
-          apiKey: this.apiKey,
-        }),
+        model: this.provider.embedding(this.model),
         value: text,
       });
 
@@ -81,17 +77,9 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
-    // No API key → mock
-    if (!this.apiKey) {
-      log('No OPENAI_API_KEY, using mock embeddings');
-      return texts.map((text) => generateMockEmbedding(text, this.dimensions));
-    }
-
     try {
       const { embeddings } = await embedMany({
-        model: openai.embedding(this.model, {
-          apiKey: this.apiKey,
-        }),
+        model: this.provider.embedding(this.model),
         values: texts,
       });
 
@@ -133,7 +121,10 @@ export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> 
   // Check OPENAI_API_KEY
   if (process.env.OPENAI_API_KEY) {
     const model = (process.env.EMBEDDING_MODEL ||
-      'text-embedding-3-small') as 'text-embedding-3-small';
+      'text-embedding-3-small') as
+      | 'text-embedding-3-small'
+      | 'text-embedding-3-large'
+      | 'text-embedding-ada-002';
 
     log(`Using OpenAI embedding provider: ${model}`);
     return new OpenAIEmbeddingProvider({
