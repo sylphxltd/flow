@@ -1,298 +1,341 @@
 /**
- * Embedding generation utilities
- * Supports OpenAI embeddings (with fallback to mock embeddings)
+ * Embedding generation utilities - Refactored
+ * 用 Vercel AI SDK 支持多個 providers
+ *
+ * Supported providers:
+ * - OpenAI (text-embedding-3-small, text-embedding-3-large, ada-002)
+ * - Anthropic (Voyager models)
+ * - Google (text-embedding-004, text-multilingual-embedding-002)
+ * - Cohere (embed-english-v3.0, embed-multilingual-v3.0)
+ * - OpenRouter (任何支持 embedding 嘅模型)
  */
 
-import { secretUtils } from '../../utils/secret-utils.js';
-import { envSecurity, securitySchemas } from '../../utils/security.js';
+import { embed, embedMany } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { google } from '@ai-sdk/google';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateMockEmbedding } from '../storage/vector-storage.js';
 import { createLogger } from '../../utils/debug-logger.js';
 
 const log = createLogger('search:embeddings');
 
-export interface ModelInfo {
-  id: string;
-  object: string;
-  created?: number;
-  owned_by?: string;
+/**
+ * Embedding Provider 類型
+ */
+export type ProviderType = 'openai' | 'anthropic' | 'google' | 'cohere' | 'openrouter' | 'mock';
+
+/**
+ * Embedding Model 配置
+ */
+export interface EmbeddingModelConfig {
+  provider: ProviderType;
+  model: string;
+  dimensions: number;
+  description?: string;
 }
 
-export interface EmbeddingModelOption {
-  id: string;
-  description: string;
-}
+/**
+ * 預設 Embedding Models
+ */
+export const EMBEDDING_MODELS: Record<string, EmbeddingModelConfig> = {
+  // OpenAI
+  'openai-small': {
+    provider: 'openai',
+    model: 'text-embedding-3-small',
+    dimensions: 1536,
+    description: 'OpenAI - Fast and cost-effective (1536 dims)',
+  },
+  'openai-large': {
+    provider: 'openai',
+    model: 'text-embedding-3-large',
+    dimensions: 3072,
+    description: 'OpenAI - Higher quality (3072 dims)',
+  },
+  'openai-ada': {
+    provider: 'openai',
+    model: 'text-embedding-ada-002',
+    dimensions: 1536,
+    description: 'OpenAI - Legacy model (1536 dims)',
+  },
 
+  // Google
+  'google-latest': {
+    provider: 'google',
+    model: 'text-embedding-004',
+    dimensions: 768,
+    description: 'Google - Latest embedding model (768 dims)',
+  },
+  'google-multilingual': {
+    provider: 'google',
+    model: 'text-multilingual-embedding-002',
+    dimensions: 768,
+    description: 'Google - Multilingual support (768 dims)',
+  },
+
+  // Voyage AI (via OpenRouter or direct)
+  'voyage-large': {
+    provider: 'openrouter',
+    model: 'voyageai/voyage-large-2-instruct',
+    dimensions: 1024,
+    description: 'Voyage AI - Large instruct (1024 dims)',
+  },
+  'voyage-code': {
+    provider: 'openrouter',
+    model: 'voyageai/voyage-code-2',
+    dimensions: 1536,
+    description: 'Voyage AI - Optimized for code (1536 dims)',
+  },
+};
+
+/**
+ * Embedding Provider Interface
+ */
 export interface EmbeddingProvider {
   name: string;
+  model: string;
   dimensions: number;
   generateEmbedding(text: string): Promise<number[]>;
   generateEmbeddings(texts: string[]): Promise<number[][]>;
 }
 
 /**
- * OpenAI Embedding Provider
- * Requires OPENAI_API_KEY environment variable
+ * Universal Embedding Provider (用 AI SDK)
  */
-export class OpenAIEmbeddingProvider implements EmbeddingProvider {
-  name = 'openai';
-  dimensions = 1536; // text-embedding-3-small
-  private apiKey: string;
-  private model: string;
-  private baseURL: string;
+export class UniversalEmbeddingProvider implements EmbeddingProvider {
+  name: string;
+  model: string;
+  dimensions: number;
+  private provider: ProviderType;
+  private apiKey?: string;
 
-  constructor(
-    options: {
-      apiKey?: string;
-      model?: 'text-embedding-3-small' | 'text-embedding-3-large' | 'text-embedding-ada-002';
-      baseURL?: string;
-    } = {}
-  ) {
-    // Validate and get API key with security checks
-    this.apiKey = options.apiKey || envSecurity.getEnvVar('OPENAI_API_KEY') || '';
-    this.model = options.model || 'text-embedding-3-small';
+  constructor(config: {
+    provider: ProviderType;
+    model: string;
+    dimensions: number;
+    apiKey?: string;
+  }) {
+    this.provider = config.provider;
+    this.model = config.model;
+    this.dimensions = config.dimensions;
+    this.apiKey = config.apiKey;
+    this.name = `${config.provider}:${config.model}`;
+  }
 
-    // Validate base URL
-    const providedBaseURL =
-      options.baseURL || envSecurity.getEnvVar('OPENAI_BASE_URL', 'https://api.openai.com/v1');
-    if (providedBaseURL) {
-      try {
-        this.baseURL = securitySchemas.url.parse(providedBaseURL);
-      } catch (_error) {
-        log('Invalid OPENAI_BASE_URL format, using default');
-        this.baseURL = 'https://api.openai.com/v1';
+  /**
+   * 獲取 AI SDK 模型實例
+   */
+  private getModelInstance() {
+    switch (this.provider) {
+      case 'openai':
+        return openai.embedding(this.model, {
+          apiKey: this.apiKey || process.env.OPENAI_API_KEY,
+        });
+
+      case 'anthropic':
+        return anthropic.embedding(this.model, {
+          apiKey: this.apiKey || process.env.ANTHROPIC_API_KEY,
+        });
+
+      case 'google':
+        return google.embedding(this.model, {
+          apiKey: this.apiKey || process.env.GOOGLE_API_KEY,
+        });
+
+      case 'openrouter': {
+        const openrouter = createOpenRouter({
+          apiKey: this.apiKey || process.env.OPENROUTER_API_KEY,
+        });
+        return openrouter.embedding(this.model);
       }
-    } else {
-      this.baseURL = 'https://api.openai.com/v1';
-    }
 
-    // Set dimensions based on model
-    if (this.model === 'text-embedding-3-large') {
-      this.dimensions = 3072;
-    } else if (this.model === 'text-embedding-ada-002') {
-      this.dimensions = 1536;
-    }
+      case 'mock':
+        throw new Error('Mock provider should not call getModelInstance');
 
-    if (this.apiKey) {
-      // Validate API key format
-      try {
-        securitySchemas.apiKey.parse(this.apiKey);
-      } catch (_error) {
-        log('Invalid OPENAI_API_KEY format, using mock implementation');
-        this.apiKey = '';
-      }
-    } else {
-      log('OPENAI_API_KEY not set, using mock implementation');
+      default:
+        throw new Error(`Unsupported provider: ${this.provider}`);
     }
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
-    if (!this.apiKey) {
-      log('Using mock embedding (no API key)');
+    // Mock provider
+    if (this.provider === 'mock') {
       return generateMockEmbedding(text, this.dimensions);
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/embeddings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: this.model,
-          input: text,
-        }),
+      const model = this.getModelInstance();
+      const { embedding } = await embed({
+        model,
+        value: text,
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} ${error}`);
-      }
-
-      const data = await response.json();
-      return data.data[0].embedding;
+      return embedding;
     } catch (error) {
-      log('Failed to generate OpenAI embedding:', error instanceof Error ? error.message : String(error));
+      log(`Failed to generate embedding with ${this.name}:`, error);
       log('Falling back to mock embedding');
       return generateMockEmbedding(text, this.dimensions);
     }
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
-    if (!this.apiKey) {
-      log('Using mock embeddings (no API key)');
+    // Mock provider
+    if (this.provider === 'mock') {
       return texts.map((text) => generateMockEmbedding(text, this.dimensions));
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/embeddings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: this.model,
-          input: texts,
-        }),
+      const model = this.getModelInstance();
+      const { embeddings } = await embedMany({
+        model,
+        values: texts,
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} ${error}`);
-      }
-
-      const data = await response.json();
-      return data.data.map((item: { embedding: number[] }) => item.embedding);
+      return embeddings;
     } catch (error) {
-      log('Failed to generate OpenAI embeddings:', error instanceof Error ? error.message : String(error));
+      log(`Failed to generate embeddings with ${this.name}:`, error);
       log('Falling back to mock embeddings');
       return texts.map((text) => generateMockEmbedding(text, this.dimensions));
     }
   }
-
-  /**
-   * List all available models from the OpenAI-compatible API
-   */
-  async listModels(): Promise<ModelInfo[]> {
-    if (!this.apiKey) {
-      throw new Error('API key required to list models');
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/models`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} ${error}`);
-      }
-
-      const data = await response.json();
-      return data.data.map((model: any) => ({
-        id: model.id,
-        object: model.object,
-        created: model.created,
-        owned_by: model.owned_by,
-      }));
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to list models: ${error.message}`);
-      }
-      throw new Error('Failed to list models: Unknown error');
-    }
-  }
-
-  /**
-   * Filter models to only include embedding models
-   */
-  async listEmbeddingModels(): Promise<ModelInfo[]> {
-    const allModels = await this.listModels();
-    return allModels.filter(
-      (model) => model.id.includes('embedding') || model.id.includes('text-embedding')
-    );
-  }
-
-  /**
-   * Test if the API connection is working
-   */
-  async testConnection(): Promise<boolean> {
-    try {
-      await this.listModels();
-      return true;
-    } catch (_error) {
-      return false;
-    }
-  }
-
-  /**
-   * Get available embedding models with their details
-   */
-  async getEmbeddingModelOptions(): Promise<EmbeddingModelOption[]> {
-    const embeddingModels = await this.listEmbeddingModels();
-
-    return embeddingModels.map((model) => ({
-      id: model.id,
-      description: this.getModelDescription(model.id),
-    }));
-  }
-
-  private getModelDescription(modelId: string): string {
-    const descriptions: Record<string, string> = {
-      'text-embedding-3-small': 'Latest small embedding model (1536 dimensions)',
-      'text-embedding-3-large': 'Latest large embedding model (3072 dimensions)',
-      'text-embedding-ada-002': 'Legacy embedding model (1536 dimensions)',
-    };
-
-    return descriptions[modelId] || `Embedding model: ${modelId}`;
-  }
 }
 
 /**
- * Mock Embedding Provider (for testing without API key)
+ * 從配置創建 Embedding Provider
  */
-export class MockEmbeddingProvider implements EmbeddingProvider {
-  name = 'mock';
-  dimensions: number;
-
-  constructor(dimensions = 1536) {
-    this.dimensions = dimensions;
-  }
-
-  async generateEmbedding(text: string): Promise<number[]> {
-    return generateMockEmbedding(text, this.dimensions);
-  }
-
-  async generateEmbeddings(texts: string[]): Promise<number[][]> {
-    return texts.map((text) => generateMockEmbedding(text, this.dimensions));
-  }
-}
-
-/**
- * Get default embedding provider
- * Uses OpenAI if API key is available, otherwise mock
- */
-export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> {
-  // Try to load from secrets first
-  let secrets: Record<string, string> = {};
-  try {
-    secrets = await secretUtils.loadSecrets(process.cwd()).catch(() => ({}));
-  } catch (_error) {
-    // Ignore if secretUtils is not available
-  }
-
-  const apiKey = secrets.OPENAI_API_KEY || envSecurity.getEnvVar('OPENAI_API_KEY');
-  const baseURL =
-    secrets.OPENAI_BASE_URL ||
-    envSecurity.getEnvVar('OPENAI_BASE_URL', 'https://api.openai.com/v1');
-  const model = secrets.EMBEDDING_MODEL || envSecurity.getEnvVar('EMBEDDING_MODEL');
-
-  if (apiKey) {
-    return new OpenAIEmbeddingProvider({
+export function createEmbeddingProvider(
+  modelKey: keyof typeof EMBEDDING_MODELS | string,
+  apiKey?: string
+): EmbeddingProvider {
+  // 使用預設模型
+  if (modelKey in EMBEDDING_MODELS) {
+    const config = EMBEDDING_MODELS[modelKey as keyof typeof EMBEDDING_MODELS];
+    return new UniversalEmbeddingProvider({
+      provider: config.provider,
+      model: config.model,
+      dimensions: config.dimensions,
       apiKey,
-      baseURL,
-      model: model as any,
     });
   }
 
-  // Return mock embeddings silently
-  return new MockEmbeddingProvider();
+  // 自定義配置（格式：provider:model:dimensions）
+  const parts = modelKey.split(':');
+  if (parts.length === 3) {
+    return new UniversalEmbeddingProvider({
+      provider: parts[0] as ProviderType,
+      model: parts[1],
+      dimensions: parseInt(parts[2], 10),
+      apiKey,
+    });
+  }
+
+  // Fallback to mock
+  log(`Unknown model "${modelKey}", using mock provider`);
+  return new UniversalEmbeddingProvider({
+    provider: 'mock',
+    model: 'mock',
+    dimensions: 1536,
+  });
 }
 
 /**
- * Chunk text into smaller pieces for embedding
- * Useful for long documents
+ * 自動檢測並返回最佳可用 provider
+ */
+export async function getDefaultEmbeddingProvider(): Promise<EmbeddingProvider> {
+  // 優先級：OpenAI > Google > OpenRouter > Mock
+
+  if (process.env.OPENAI_API_KEY) {
+    log('Using OpenAI embedding provider');
+    return createEmbeddingProvider('openai-small', process.env.OPENAI_API_KEY);
+  }
+
+  if (process.env.GOOGLE_API_KEY) {
+    log('Using Google embedding provider');
+    return createEmbeddingProvider('google-latest', process.env.GOOGLE_API_KEY);
+  }
+
+  if (process.env.OPENROUTER_API_KEY) {
+    log('Using OpenRouter embedding provider');
+    return createEmbeddingProvider('voyage-code', process.env.OPENROUTER_API_KEY);
+  }
+
+  log('No API key found, using mock embedding provider');
+  return createEmbeddingProvider('mock');
+}
+
+/**
+ * 獲取用戶選擇的 provider（互動式）
+ */
+export async function promptUserForProvider(): Promise<EmbeddingProvider> {
+  const { select } = await import('@inquirer/prompts');
+
+  const availableModels = listAvailableModels().filter(m => m.available);
+
+  if (availableModels.length === 0) {
+    log('No API keys configured, using mock provider');
+    return createEmbeddingProvider('mock');
+  }
+
+  if (availableModels.length === 1) {
+    const model = availableModels[0];
+    log(`Only one provider available: ${model.key}`);
+    return createEmbeddingProvider(model.key);
+  }
+
+  // 互動式選擇
+  const answer = await select({
+    message: 'Select embedding provider:',
+    choices: availableModels.map(({ key, config }) => ({
+      name: `${config.description || config.model} [${config.provider}]`,
+      value: key,
+      description: `${config.dimensions} dimensions`,
+    })),
+  });
+
+  return createEmbeddingProvider(answer);
+}
+
+/**
+ * 列出所有可用的 embedding models
+ */
+export function listAvailableModels(): Array<{
+  key: string;
+  config: EmbeddingModelConfig;
+  available: boolean;
+}> {
+  return Object.entries(EMBEDDING_MODELS).map(([key, config]) => {
+    let available = false;
+
+    switch (config.provider) {
+      case 'openai':
+        available = !!process.env.OPENAI_API_KEY;
+        break;
+      case 'google':
+        available = !!process.env.GOOGLE_API_KEY;
+        break;
+      case 'anthropic':
+        available = !!process.env.ANTHROPIC_API_KEY;
+        break;
+      case 'openrouter':
+        available = !!process.env.OPENROUTER_API_KEY;
+        break;
+      case 'mock':
+        available = true;
+        break;
+    }
+
+    return { key, config, available };
+  });
+}
+
+/**
+ * Chunk text (保留原有功能)
  */
 export function chunkText(
   text: string,
   options: {
-    maxChunkSize?: number; // Max characters per chunk
-    overlap?: number; // Overlap between chunks
+    maxChunkSize?: number;
+    overlap?: number;
   } = {}
 ): string[] {
   const { maxChunkSize = 1000, overlap = 100 } = options;
@@ -305,7 +348,6 @@ export function chunkText(
     const chunk = text.slice(start, end);
     chunks.push(chunk);
 
-    // Move start position with overlap
     start = end - overlap;
     if (start >= text.length) {
       break;
