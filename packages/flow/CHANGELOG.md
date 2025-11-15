@@ -1,5 +1,15 @@
 # @sylphx/flow
 
+## 1.3.0
+
+### Minor Changes
+
+- Enhanced --sync with MCP registry checking:
+  - Detect servers not in Flow registry (removed or custom)
+  - Interactive selection for removal
+  - Clean removal from .mcp.json
+  - Flow: sync templates → check MCP → remove selected
+
 ## 1.2.1
 
 ### Patch Changes
