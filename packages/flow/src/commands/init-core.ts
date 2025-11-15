@@ -168,7 +168,7 @@ export async function installComponents(
   if (target.setupAgents && options.agents !== false) {
     const agentSpinner = quiet ? null : ora({ text: 'Installing agents', color: 'cyan' }).start();
     try {
-      const agentResult = await target.setupAgents(process.cwd(), { ...options, quiet: true });
+      const agentResult = await target.setupAgents(process.cwd(), { ...options, quiet: true, force: options.clear });
       result.installed.agents = agentResult.count;
 
       if (agentSpinner) {
@@ -188,7 +188,7 @@ export async function installComponents(
   if (target.setupOutputStyles && options.outputStyles !== false) {
     const stylesSpinner = quiet ? null : ora({ text: 'Installing output styles', color: 'cyan' }).start();
     try {
-      const stylesResult = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true });
+      const stylesResult = await target.setupOutputStyles(process.cwd(), { ...options, quiet: true, force: options.clear });
       result.installed.outputStyles = stylesResult.count;
 
       if (stylesSpinner) {
@@ -216,7 +216,7 @@ export async function installComponents(
   if (target.setupRules && options.rules !== false) {
     const rulesSpinner = quiet ? null : ora({ text: 'Installing rules', color: 'cyan' }).start();
     try {
-      const rulesResult = await target.setupRules(process.cwd(), { ...options, quiet: true });
+      const rulesResult = await target.setupRules(process.cwd(), { ...options, quiet: true, force: options.clear });
       result.installed.rules = rulesResult.count;
 
       if (rulesSpinner) {
@@ -247,7 +247,7 @@ export async function installComponents(
       color: 'cyan',
     }).start();
     try {
-      const commandsResult = await target.setupSlashCommands(process.cwd(), { ...options, quiet: true });
+      const commandsResult = await target.setupSlashCommands(process.cwd(), { ...options, quiet: true, force: options.clear });
       result.installed.slashCommands = commandsResult.count;
 
       if (commandsSpinner) {

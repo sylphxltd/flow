@@ -15,6 +15,8 @@ export interface InstallOptions extends CommonOptions {
   flatten?: boolean;
   /** Show progress messages */
   showProgress?: boolean;
+  /** Force overwrite without checking content (for sync) */
+  force?: boolean;
 }
 
 export type FileTransformFn = (content: string, sourcePath?: string) => Promise<string>;
@@ -122,10 +124,8 @@ export async function installToDirectory(
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = await transform(content, file);
 
-    const localProcessed = localInfo ? await transform(localInfo.content, file) : '';
-    const contentChanged = !localInfo || localProcessed !== content;
-
-    if (contentChanged) {
+    // Force mode: always overwrite without checking
+    if (options.force) {
       fs.writeFileSync(targetPath, content, 'utf8');
       results.push({
         file,
@@ -133,11 +133,24 @@ export async function installToDirectory(
         action: localInfo ? 'Updated' : 'Created',
       });
     } else {
-      results.push({
-        file,
-        status: 'current',
-        action: 'Already current',
-      });
+      // Normal mode: check if content changed
+      const localProcessed = localInfo ? await transform(localInfo.content, file) : '';
+      const contentChanged = !localInfo || localProcessed !== content;
+
+      if (contentChanged) {
+        fs.writeFileSync(targetPath, content, 'utf8');
+        results.push({
+          file,
+          status: localInfo ? 'updated' : 'added',
+          action: localInfo ? 'Updated' : 'Created',
+        });
+      } else {
+        results.push({
+          file,
+          status: 'current',
+          action: 'Already current',
+        });
+      }
     }
   });
 
