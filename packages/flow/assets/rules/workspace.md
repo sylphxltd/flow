@@ -7,406 +7,258 @@ description: .sylphx/ shared workspace - auto-create, maintain SSOT, verify on e
 
 ## On First Task
 
-**Check:** `.sylphx/` exists?
-
-**No → Create structure:**
-```bash
-mkdir -p .sylphx/decisions
-```
-
-Create files with templates below. Populate with project-specific content.
-
-**Yes → Verify:**
-- Read all files
-- Check accuracy vs actual code
-- Update or delete outdated sections
+`.sylphx/` missing → Create structure + populate templates.
+`.sylphx/` exists → Read all → Verify accuracy → Update or delete outdated.
 
 ---
 
-## Structure & Templates
+## Structure
 
-### .sylphx/context.md
+```
+.sylphx/
+├── context.md          # WHAT, WHY, WHO
+├── architecture.md     # System design, patterns (WHY chosen)
+├── glossary.md        # Project-specific terms only
+└── decisions/         # ADRs (<200 words)
+    ├── README.md
+    └── NNN-title.md
+```
 
-**Create when:** First task, or when missing
-**Update when:** Project scope/purpose/constraints change
+---
+
+## Templates
+
+### context.md
 
 ```markdown
 # Project Context
 
 ## What
-[1-2 sentence description of what this project is]
+[1-2 sentence description]
 
 ## Why
-[Problem being solved, user need addressed]
+[Problem solved, user need]
 
 ## Who
-[Target users, primary use cases]
+[Target users, use cases]
 
 ## Status
-[Development phase: Alpha/Beta/Stable, current version]
+[Phase, current version]
 
 ## Key Constraints
-- [Non-negotiable requirement 1]
-- [Non-negotiable requirement 2]
-- [Critical limitation or boundary]
+- [Non-negotiable 1]
+- [Non-negotiable 2]
 
-## Source of Truth References
-<!-- VERIFY: These files exist -->
-- Tech stack: `package.json`
-- Configuration: [list config files]
-- Build/Scripts: `package.json` scripts
+## Source of Truth
+<!-- VERIFY: package.json -->
+- Dependencies: `package.json`
+- Config: [list files]
+- Build: `package.json` scripts
 ```
 
-**Verify:** Referenced files exist. If not, update or remove reference.
-
----
-
-### .sylphx/architecture.md
-
-**Create when:** First task, or when missing
-**Update when:** Architecture changes, patterns adopted, major refactoring
+### architecture.md
 
 ```markdown
 # Architecture
 
 ## System Overview
-[1-2 paragraph high-level description]
+[High-level description, 1-2 paragraphs]
 
 ## Key Components
-<!-- VERIFY: Paths exist -->
-- **Component A** (`src/path/`): [Purpose, responsibility]
-- **Component B** (`src/path/`): [Purpose, responsibility]
+<!-- VERIFY: src/path/ -->
+- **Component** (`src/path/`): Purpose
 
 ## Design Patterns
 
 ### Pattern: [Name]
-**Why chosen:** [Rationale - problem it solves]
-**Where used:** `src/path/to/implementation.ts`
-**Trade-off:** [What gained vs what lost]
+**Why:** [Rationale]
+**Where:** `src/path/to/code.ts`
+**Trade-off:** [Gained vs lost]
 
 ## Data Flow
-[Macro-level: input → processing → output]
-See `src/[entry-point].ts` for implementation.
+[Macro: input → processing → output]
+See `src/[entry].ts` for implementation.
 
 ## Boundaries
-**In scope:** [What this project does]
-**Out of scope:** [What it explicitly doesn't do]
+**In scope:** [What it does]
+**Out of scope:** [What it doesn't]
 ```
 
-**Verify:** All paths exist. Patterns still used. Trade-offs still accurate.
-
----
-
-### .sylphx/glossary.md
-
-**Create when:** First task, or when missing
-**Update when:** New project-specific term introduced
+### glossary.md
 
 ```markdown
 # Glossary
 
 ## [Term]
-**Definition:** [Clear, concise definition]
-**Usage:** `src/path/where/used.ts`
-**Context:** [When/why this term matters]
+**Definition:** [Clear, concise]
+**Usage:** `src/path/to/usage.ts`
+**Context:** [When/why matters]
 
 ---
 
-[Only project-specific terms. No general programming concepts.]
+[Project-specific terms only]
 ```
 
-**Verify:** Terms still used. Usage references exist.
-
----
-
-### .sylphx/decisions/README.md
-
-**Create when:** First ADR created
-**Update when:** New ADR added
+### decisions/NNN-title.md
 
 ```markdown
-# Architecture Decision Records
-
-## Active Decisions
-- [ADR-001: Title](./001-title.md) ✅ Accepted
-- [ADR-002: Title](./002-title.md) ✅ Accepted
-
-## Superseded
-- [ADR-XXX: Old Title](./xxx-old.md) 🔄 Superseded by ADR-YYY
-
-## Status Legend
-- ✅ Accepted - Currently in effect
-- ⏸️ Proposed - Under consideration
-- ❌ Rejected - Not adopted
-- 🔄 Superseded - Replaced by newer ADR
-```
-
----
-
-### .sylphx/decisions/NNN-title.md
-
-**Create when:** Making architectural decision
-**Update when:** Decision status changes or is superseded
-
-```markdown
-# NNN. [Title - Verb + Object, e.g., "Use Bun as Package Manager"]
+# NNN. [Verb + Object]
 
 **Status:** ✅ Accepted
 **Date:** YYYY-MM-DD
-**Deciders:** [Who made decision, or "Project maintainers"]
 
 ## Context
-[Situation/problem requiring a decision. 1-2 sentences.]
+[Problem requiring decision, 1-2 sentences]
 
 ## Decision
-[What was decided. 1 sentence.]
+[What was decided, 1 sentence]
 
 ## Rationale
-[Why this decision over alternatives. Key benefits. 2-3 bullet points.]
+- [Key benefit 1]
+- [Key benefit 2]
 
 ## Consequences
-**Positive:**
-- [Benefit 1]
-- [Benefit 2]
-
-**Negative:**
-- [Drawback 1]
-- [Drawback 2]
+**Positive:** [Gains]
+**Negative:** [Drawbacks]
 
 ## References
-<!-- VERIFY: Links exist -->
-- Implementation: `src/path/to/code.ts`
-- Related PR: #123 (if applicable)
-- Supersedes: ADR-XXX (if applicable)
+<!-- VERIFY: src/path.ts -->
+- Implementation: `src/path.ts`
+- Related: #123, ADR-XXX
 ```
 
-**Keep <200 words total.**
+Keep <200 words.
 
 ---
 
 ## SSOT Discipline
 
-**Never duplicate. Always reference.**
+**Reference, never duplicate.**
 
-### ❌ Bad (Duplication - Will Drift)
-
+❌ Bad:
 ```markdown
-Dependencies:
-- react 19.2.0
-- zod 4.1.12
-
-Linting rules:
-- no-unused-vars
-- prefer-const
+Dependencies: react 19.2.0, zod 4.1.12
+Linting: no-unused-vars, prefer-const
 ```
 
-### ✅ Good (Reference - SSOT Maintained)
-
+✅ Good:
 ```markdown
-<!-- VERIFY: package.json exists -->
+<!-- VERIFY: package.json -->
 Dependencies: See `package.json`
 
-<!-- VERIFY: biome.json exists -->
-Linting: Biome (config in `biome.json`)
+<!-- VERIFY: biome.json -->
+Linting: Biome (`biome.json`)
 
 ## Why Biome
-- Decision: ADR-003
-- Benefit: Single tool for format + lint
-- Trade-off: Smaller ecosystem than ESLint
+Decision: ADR-003. Single tool for format + lint.
+Trade-off: Smaller ecosystem vs convenience.
 ```
 
-**Format for references:**
-```markdown
-<!-- VERIFY: path/to/file.ts -->
-[Description]. See `path/to/file.ts`.
-```
-
-Verification marker reminds: when file changes, check if doc needs update.
+**Format:** `<!-- VERIFY: path -->` before references.
 
 ---
 
-## Maintenance Triggers
+## Maintenance
 
-### On Every Task Start
+### Every Task Start
 
-```
-1. Check .sylphx/ exists
-   - No → Create with templates
-   - Yes → Continue to verify
+Read .sylphx/ → Verify accuracy → Update or delete.
 
-2. Read all .sylphx/ files
-
-3. Verify accuracy:
-   - Check <!-- VERIFY: --> markers
-   - Confirm files exist
-   - Check if still accurate vs code
-
-4. Update or delete:
-   - Wrong → Fix immediately
-   - Outdated → Update or delete
-   - Missing context → Add
-
-5. Note gaps for later update
-```
-
-### During Task Execution
-
-**Triggers to update:**
-
-- **New understanding** → Update context.md or architecture.md
-- **Architectural decision made** → Create ADR in decisions/
-- **New project-specific term** → Add to glossary.md
-- **Pattern adopted** → Document in architecture.md with WHY
-- **Constraint discovered** → Add to context.md
-- **Found outdated info** → Delete or update immediately
+New understanding → Update immediately.
+Architectural decision → Create ADR.
+New project term → Add to glossary.
+Outdated info → Delete.
 
 ### Before Commit
 
-```
-1. Updated understanding? → Update .sylphx/
-2. Made architectural change? → Create/update ADR
-3. Deprecated approach? → Mark superseded or delete
-4. Verify: No contradictions between .sylphx/ and code
-5. Verify: All <!-- VERIFY: --> markers still valid
-```
+Understanding changed? → Update .sylphx/
+Made architectural change? → Document ADR.
+Deprecated approach? → Mark superseded or delete.
+
+Verify: No contradictions. All `<!-- VERIFY: -->` markers valid.
 
 ---
 
 ## Content Rules
 
-### ✅ Include (Macro-Level WHY)
-
-- Project purpose and context
+**Include (Macro WHY):**
+- Project purpose, context, constraints
 - Architectural decisions (WHY chosen)
-- System boundaries (in/out of scope)
+- System boundaries
 - Key patterns (WHY used, trade-offs)
-- Project-specific terminology
-- Non-obvious constraints
+- Project-specific terms
 
-### ❌ Exclude (Belongs Elsewhere)
-
-- API documentation → JSDoc in code
+**Exclude (Belongs in Code):**
+- API docs → JSDoc
 - Implementation details → Code comments
-- Configuration values → Config files
+- Config values → Config files
 - Dependency versions → package.json
-- Code examples → Actual code or tests
-- How-to guides → Code comments
-- Step-by-step processes → Code itself
+- How-to guides → Code
+- Step-by-step processes → Code
 
-**Principle:** If it's in code or config, don't duplicate it here.
-
----
-
-## Red Flags (Delete Immediately)
-
-Scan for these on every read:
-
-- ❌ "We plan to..." / "In the future..." (speculation)
-- ❌ "Currently using..." (implies might change - use present tense or delete)
-- ❌ Contradicts actual code
-- ❌ References non-existent files
-- ❌ Duplicates package.json / config
-- ❌ Explains HOW instead of WHY
-- ❌ Generic advice (not project-specific)
-
-**When found:** Delete entire section immediately.
+**Principle:** Code or config? Don't duplicate here.
 
 ---
 
-## Cleanup Protocol
+## Red Flags → Delete Immediately
 
-**Monthly or after major changes:**
-
-```bash
-# 1. Check all referenced files exist
-cd .sylphx
-grep -r "src/" . | grep -o 'src/[^`)]*' | sort -u > /tmp/refs.txt
-# Verify each file in refs.txt exists
-
-# 2. Check package.json references
-grep -r "package.json" .
-# Verify info isn't duplicated
-
-# 3. Check verification markers
-grep -r "<!-- VERIFY:" .
-# Check each marked file exists and content accurate
-
-# 4. Read all files
-# Delete outdated sections
-# Update inaccurate content
-# Remove speculation
-```
+- "We plan to..." (speculation)
+- "Currently using..." (use present tense or delete)
+- Contradicts actual code
+- References non-existent files
+- Duplicates package.json/config
+- Explains HOW instead of WHY
+- Generic advice (not project-specific)
 
 ---
 
-## Decision Flow: Create ADR?
+## Decision Flow
 
 **Create ADR when:**
-- Choosing between 2+ significant alternatives
-- Decision has long-term impact
-- Future developers will ask "why did they do this?"
-- Non-obvious trade-offs involved
+- 2+ significant alternatives
+- Long-term impact
+- Non-obvious trade-offs
+- Future devs will ask "why?"
 
-**Don't create ADR for:**
-- Obvious choices (use standard tool)
-- Temporary decisions (will change soon)
-- Implementation details (belongs in code comments)
-- Trivial choices (naming, formatting)
+**Skip ADR for:**
+- Obvious choices
+- Temporary decisions
+- Implementation details
+- Trivial choices
 
-**Quick test:** Will this decision matter in 6 months? Yes → ADR. No → Skip.
-
----
-
-## Verification Commands
-
-**Check links valid:**
-```bash
-cd .sylphx
-# Extract all file references
-grep -roh '`[^`]*\.[a-z]*`' . | tr -d '`' | sort -u | while read f; do
-  [ -f "../$f" ] || echo "MISSING: $f"
-done
-```
-
-**Check for duplication:**
-```bash
-# If package.json mentioned without "See package.json"
-grep -r "dependencies" .sylphx/ | grep -v "See \`package.json\`"
-# Should be empty or references only
-```
+**Quick test:** Matters in 6 months? → ADR. No → Skip.
 
 ---
 
 ## Examples
 
-### Good context.md (Real Project)
+### Good context.md
 
 ```markdown
 # Project Context
 
 ## What
-AI-powered CLI for autonomous development workflows with agent orchestration.
+AI-powered CLI for autonomous development workflows.
 
 ## Why
-Enable developers to delegate complex multi-step tasks to AI that can plan, execute, verify autonomously while maintaining quality.
+Enable delegating complex multi-step tasks to AI that can plan, execute, verify autonomously.
 
 ## Who
-Developers using Claude/AI for coding assistance.
+Developers using Claude/AI for coding.
 
 ## Status
 Active development - v1.2.0
-Focus: Agent prompt optimization
 
 ## Key Constraints
 - No breaking changes without major version
 - Research mandatory before implementation
 - All modules need .test.ts and .bench.ts
-- Clean commits only (no TODOs, debug code)
+- Clean commits only
 
 ## Source of Truth
 <!-- VERIFY: packages/flow/package.json -->
 - Dependencies: `packages/flow/package.json`
-- Build: `package.json` scripts (root + packages/flow)
+- Build: `package.json` scripts
 - TypeScript: `packages/flow/tsconfig.json`
 ```
 
@@ -416,11 +268,11 @@ Focus: Agent prompt optimization
 # Architecture
 
 ## System Overview
-CLI loads agent prompts from markdown, composes with rules/output-styles, orchestrates multi-agent workflows.
+CLI loads agent prompts from markdown, composes with rules/output-styles, orchestrates workflows.
 
 ## Key Components
-<!-- VERIFY: Paths exist -->
-- **Agent Loader** (`src/core/agent-loader.ts`): Parses markdown prompts
+<!-- VERIFY: src/core/ -->
+- **Agent Loader** (`src/core/agent-loader.ts`): Parses markdown
 - **Agent Manager** (`src/core/agent-manager.ts`): Orchestration
 
 ## Design Patterns
@@ -433,7 +285,7 @@ CLI loads agent prompts from markdown, composes with rules/output-styles, orches
 ### Pattern: Minimal Effective Prompting
 **Why:** Trust LLM, reduce tokens 40%, increase clarity
 **Where:** All prompts (v1.2.0 refactor)
-**Trade-off:** Less explicit teaching vs more effective triggering
+**Trade-off:** Less teaching vs more effective triggering
 **Decision:** ADR-002
 ```
 
@@ -446,40 +298,38 @@ CLI loads agent prompts from markdown, composes with rules/output-styles, orches
 **Date:** 2024-11-15
 
 ## Context
-Agent prompts were verbose with step-by-step teaching, reducing effectiveness and increasing cost.
+Prompts were verbose, reducing effectiveness and increasing cost.
 
 ## Decision
-Adopt MEP: Trust LLM, WHAT+WHEN not HOW+WHY, mixed formats, condensed.
+Adopt MEP: Trust LLM, WHAT+WHEN not HOW+WHY, condensed.
 
 ## Rationale
 - 40% token reduction
-- Better LLM performance (less noise)
+- Better LLM performance
 - Easier maintenance
 
 ## Consequences
-**Positive:** Lower cost, better results, cleaner prompts
-**Negative:** Less explicit for human readers
+**Positive:** Lower cost, better results
+**Negative:** Less explicit for humans
 
 ## References
-<!-- VERIFY: commit exists -->
-- Implementation: All `assets/**/*.md` files
-- Refactor: commit c7795c0f
+<!-- VERIFY: commit c7795c0f -->
+- Implementation: `assets/**/*.md`
+- Refactor: c7795c0f
 ```
 
 ---
 
 ## Summary
 
-**Agent behavior:**
-1. **First task:** Check .sylphx/ exists → Create if missing → Populate with templates
-2. **Every task start:** Read .sylphx/ → Verify accuracy → Update/delete as needed
-3. **During work:** New understanding → Update immediately
-4. **Before commit:** Verify .sylphx/ matches reality → No contradictions
+**On first task:** .sylphx/ missing → Create with templates → Populate.
 
-**Content:**
-- **Include:** WHY (context, decisions, rationale)
-- **Exclude:** HOW (implementation → code)
-- **Reference:** Link to SSOT, never duplicate
-- **Maintain:** Verify on read, update on learn, delete when wrong
+**Every task:** Read → Verify → Update/delete.
+
+**During work:** New understanding → Update immediately.
+
+**Content:** WHY (context, decisions) not HOW (implementation).
+
+**Reference:** Link to SSOT, never duplicate.
 
 **Prime Directive: Outdated docs worse than no docs. When in doubt, delete.**
