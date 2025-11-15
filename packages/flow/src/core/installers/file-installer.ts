@@ -124,9 +124,25 @@ export async function installToDirectory(
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = await transform(content, file);
 
+    // DEBUG: Log installation details
+    if (options.force && !options.quiet) {
+      console.log(
+        `[DEBUG] Installing ${file} - force=${options.force}, exists=${!!localInfo}, path=${targetPath}`
+      );
+    }
+
     // Force mode: always overwrite without checking
     if (options.force) {
       fs.writeFileSync(targetPath, content, 'utf8');
+
+      // DEBUG: Verify write
+      if (!options.quiet) {
+        const written = fs.existsSync(targetPath);
+        if (!written) {
+          console.warn(`[DEBUG] Failed to write: ${targetPath}`);
+        }
+      }
+
       results.push({
         file,
         status: localInfo ? 'updated' : 'added',
