@@ -90,15 +90,28 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
     }
   }
 
-  // Rules files - check individual files
-  const rulesDir = path.dirname(target.config.rulesFile || '');
-  if (rulesDir && fs.existsSync(path.join(cwd, rulesDir))) {
-    const files = fs.readdirSync(path.join(cwd, rulesDir), { withFileTypes: true });
-    const ruleFiles = files
-      .filter((f) => f.isFile() && f.name.endsWith('.md'))
-      .map((f) => path.join(cwd, rulesDir, f.name));
+  // Rules files - only for targets with separate rules directory
+  // Claude Code has rules in agent files, so skip
+  if (target.config.rulesFile) {
+    const rulesPath = path.join(cwd, target.config.rulesFile);
 
-    manifest.rules = categorizeFiles(ruleFiles, FLOW_RULES);
+    // Check if it's a directory or file
+    if (fs.existsSync(rulesPath)) {
+      const stat = fs.statSync(rulesPath);
+
+      if (stat.isDirectory()) {
+        // Scan directory for rule files
+        const files = fs.readdirSync(rulesPath, { withFileTypes: true });
+        const ruleFiles = files
+          .filter((f) => f.isFile() && f.name.endsWith('.md'))
+          .map((f) => path.join(rulesPath, f.name));
+
+        manifest.rules = categorizeFiles(ruleFiles, FLOW_RULES);
+      } else {
+        // Single rules file - check if it matches Flow templates
+        manifest.rules = categorizeFiles([rulesPath], FLOW_RULES);
+      }
+    }
   }
 
   // MCP servers
