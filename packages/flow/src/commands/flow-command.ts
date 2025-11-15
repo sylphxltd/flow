@@ -380,7 +380,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
 
       // Handle sync mode - delete template files first
       if (options.sync && !options.dryRun) {
-        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete } = await import('../utils/sync-utils.js');
+        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete, checkMCPServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
 
         // Need target to build manifest
         const targetId = await selectAndValidateTarget(initOptions);
@@ -394,8 +394,11 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
         const target = targetOption.value;
         const manifest = await buildSyncManifest(process.cwd(), target);
 
+        // Check MCP servers before showing preview
+        const nonRegistryServers = await checkMCPServers(process.cwd());
+
         console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
-        showSyncPreview(manifest, process.cwd());
+        showSyncPreview(manifest, process.cwd(), nonRegistryServers);
 
         const confirmed = await confirmSync();
         if (!confirmed) {
@@ -403,20 +406,17 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
           process.exit(0);
         }
 
+        // Delete templates
         const deletedCount = await executeSyncDelete(manifest);
-        console.log(chalk.green(`\n✓ Deleted ${deletedCount} files\n`));
+        console.log(chalk.green(`\n✓ Deleted ${deletedCount} template files\n`));
 
-        // Check MCP servers
-        const { checkMCPServers, showNonRegistryServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
-        const nonRegistryServers = await checkMCPServers(process.cwd());
-
+        // Handle MCP servers if any found
         if (nonRegistryServers.length > 0) {
-          showNonRegistryServers(nonRegistryServers);
           const serversToRemove = await selectServersToRemove(nonRegistryServers);
 
           if (serversToRemove.length > 0) {
             const removedCount = await removeMCPServers(process.cwd(), serversToRemove);
-            console.log(chalk.green(`\n✓ Removed ${removedCount} MCP server(s)\n`));
+            console.log(chalk.green(`✓ Removed ${removedCount} MCP server(s)\n`));
           }
         }
       } else if (!options.sync) {
@@ -709,7 +709,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
 
       // Handle sync mode - delete template files first
       if (options.sync && !options.dryRun) {
-        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete } = await import('../utils/sync-utils.js');
+        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete, checkMCPServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
 
         // Need target to build manifest
         const targetId = await selectAndValidateTarget(initOptions);
@@ -723,8 +723,11 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
         const target = targetOption.value;
         const manifest = await buildSyncManifest(process.cwd(), target);
 
+        // Check MCP servers before showing preview
+        const nonRegistryServers = await checkMCPServers(process.cwd());
+
         console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
-        showSyncPreview(manifest, process.cwd());
+        showSyncPreview(manifest, process.cwd(), nonRegistryServers);
 
         const confirmed = await confirmSync();
         if (!confirmed) {
@@ -732,20 +735,17 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
           process.exit(0);
         }
 
+        // Delete templates
         const deletedCount = await executeSyncDelete(manifest);
-        console.log(chalk.green(`\n✓ Deleted ${deletedCount} files\n`));
+        console.log(chalk.green(`\n✓ Deleted ${deletedCount} template files\n`));
 
-        // Check MCP servers
-        const { checkMCPServers, showNonRegistryServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
-        const nonRegistryServers = await checkMCPServers(process.cwd());
-
+        // Handle MCP servers if any found
         if (nonRegistryServers.length > 0) {
-          showNonRegistryServers(nonRegistryServers);
           const serversToRemove = await selectServersToRemove(nonRegistryServers);
 
           if (serversToRemove.length > 0) {
             const removedCount = await removeMCPServers(process.cwd(), serversToRemove);
-            console.log(chalk.green(`\n✓ Removed ${removedCount} MCP server(s)\n`));
+            console.log(chalk.green(`✓ Removed ${removedCount} MCP server(s)\n`));
           }
         }
       } else {

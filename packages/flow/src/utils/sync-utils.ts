@@ -56,17 +56,13 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
   }
 
   // Files to preserve
-  const preservePaths = [
+  manifest.preserve = [
     '.sylphx-flow/',
     '.secrets/',
     target.config.configFile || '',
-    '.mcp.json',
-    'opencode.jsonc',
   ]
-    .filter(Boolean);
-
-  // Deduplicate paths
-  manifest.preserve = [...new Set(preservePaths)].map((p) => path.join(cwd, p));
+    .filter(Boolean)
+    .map((p) => path.join(cwd, p));
 
   return manifest;
 }
@@ -74,46 +70,64 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
 /**
  * Show sync preview - what will be deleted
  */
-export function showSyncPreview(manifest: SyncManifest, cwd: string): void {
+export function showSyncPreview(
+  manifest: SyncManifest,
+  cwd: string,
+  nonRegistryServers: string[]
+): void {
   console.log(chalk.cyan.bold('📋 Sync Preview\n'));
-  console.log(chalk.dim('The following files will be deleted and re-installed:\n'));
 
+  // Template files section
   const allFiles = [...manifest.agents, ...manifest.slashCommands, ...manifest.rules];
 
-  if (allFiles.length === 0) {
-    console.log(chalk.yellow('  No template files found\n'));
-    return;
+  if (allFiles.length > 0) {
+    console.log(chalk.yellow('🔄 Templates (delete + reinstall):\n'));
+
+    if (manifest.agents.length > 0) {
+      console.log(chalk.dim('  Agents:'));
+      manifest.agents.forEach((file) => {
+        const relative = path.relative(cwd, file);
+        console.log(chalk.dim(`    - ${relative}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.slashCommands.length > 0) {
+      console.log(chalk.dim('  Slash Commands:'));
+      manifest.slashCommands.forEach((file) => {
+        const relative = path.relative(cwd, file);
+        console.log(chalk.dim(`    - ${relative}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.rules.length > 0) {
+      console.log(chalk.dim('  Rules:'));
+      manifest.rules.forEach((file) => {
+        const relative = path.relative(cwd, file);
+        console.log(chalk.dim(`    - ${relative}`));
+      });
+      console.log('');
+    }
+  } else {
+    console.log(chalk.yellow('🔄 Templates: None found\n'));
   }
 
-  // Group by type
-  if (manifest.agents.length > 0) {
-    console.log(chalk.cyan('  Agents:'));
-    manifest.agents.forEach((file) => {
-      const relative = path.relative(cwd, file);
-      console.log(chalk.dim(`    - ${relative}`));
+  // MCP servers section
+  if (nonRegistryServers.length > 0) {
+    console.log(chalk.yellow('🔍 MCP Servers (not in registry):\n'));
+    nonRegistryServers.forEach((server) => {
+      console.log(chalk.dim(`    - ${server}`));
     });
-    console.log('');
+    console.log(chalk.dim('\n  Possible reasons:'));
+    console.log(chalk.dim('    1. Removed from Flow registry'));
+    console.log(chalk.dim('    2. Custom installation\n'));
+  } else {
+    console.log(chalk.green('✓ MCP Servers: All in registry\n'));
   }
 
-  if (manifest.slashCommands.length > 0) {
-    console.log(chalk.cyan('  Slash Commands:'));
-    manifest.slashCommands.forEach((file) => {
-      const relative = path.relative(cwd, file);
-      console.log(chalk.dim(`    - ${relative}`));
-    });
-    console.log('');
-  }
-
-  if (manifest.rules.length > 0) {
-    console.log(chalk.cyan('  Rules:'));
-    manifest.rules.forEach((file) => {
-      const relative = path.relative(cwd, file);
-      console.log(chalk.dim(`    - ${relative}`));
-    });
-    console.log('');
-  }
-
-  console.log(chalk.green('✓ Preserved:'));
+  // Preserved files section
+  console.log(chalk.green('✓ Preserved:\n'));
   manifest.preserve.forEach((file) => {
     const relative = path.relative(cwd, file);
     if (fs.existsSync(file)) {
@@ -188,26 +202,6 @@ export async function checkMCPServers(cwd: string): Promise<string[]> {
     console.warn(chalk.yellow('⚠ Failed to read .mcp.json'));
     return [];
   }
-}
-
-/**
- * Show non-registry servers
- */
-export function showNonRegistryServers(servers: string[]): void {
-  if (servers.length === 0) {
-    return;
-  }
-
-  console.log(chalk.cyan.bold('\n📋 MCP Registry Check\n'));
-  console.log(chalk.yellow('⚠️  以下 MCP servers 唔係 Flow registry 入面:\n'));
-
-  servers.forEach(server => {
-    console.log(chalk.dim(`    - ${server}`));
-  });
-
-  console.log(chalk.dim('\n可能原因:'));
-  console.log(chalk.dim('  1. Flow registry 已移除'));
-  console.log(chalk.dim('  2. 你自己手動安裝\n'));
 }
 
 /**
