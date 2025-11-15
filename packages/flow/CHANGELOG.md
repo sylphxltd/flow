@@ -1,5 +1,18 @@
 # @sylphx/flow
 
+## 1.4.0
+
+### Minor Changes
+
+- Complete sync redesign with intelligent file categorization:
+  - Categorize all files: agents, commands, rules, MCP servers
+  - Separate Flow templates (auto-sync) from unknown files (user decides)
+  - New flow: preview → select unknowns → summary → confirm → execute
+  - Preserve user custom files by default (no accidental deletion)
+  - Multi-select UI for unknown files
+  - Clear visibility: what syncs, what's removed, what's preserved
+  - Remove all Chinese text (English only)
+
 ## 1.3.1
 
 ### Patch Changes
