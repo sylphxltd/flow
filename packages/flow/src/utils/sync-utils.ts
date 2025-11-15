@@ -383,14 +383,17 @@ export async function executeSyncDelete(
   let templatesDeleted = 0;
   let unknownsDeleted = 0;
 
+  console.log(chalk.cyan('\n🗑️  Deleting files...\n'));
+
   // Delete Flow templates
   for (const file of flowFiles) {
     try {
       await fs.promises.unlink(file);
+      console.log(chalk.dim(`  ✓ Deleted: ${path.basename(file)}`));
       templatesDeleted++;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        console.warn(chalk.yellow(`⚠ Failed to delete: ${file}`));
+        console.warn(chalk.yellow(`  ⚠ Failed to delete: ${path.basename(file)}`));
       }
     }
   }
@@ -402,13 +405,16 @@ export async function executeSyncDelete(
 
     try {
       await fs.promises.unlink(file);
+      console.log(chalk.dim(`  ✓ Deleted: ${path.basename(file)}`));
       unknownsDeleted++;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        console.warn(chalk.yellow(`⚠ Failed to delete: ${file}`));
+        console.warn(chalk.yellow(`  ⚠ Failed to delete: ${path.basename(file)}`));
       }
     }
   }
+
+  console.log('');
 
   return { templates: templatesDeleted, unknowns: unknownsDeleted };
 }
@@ -451,6 +457,7 @@ export async function removeMCPServers(cwd: string, serversToRemove: string[]): 
     for (const server of serversToRemove) {
       if (mcpConfig.mcpServers[server]) {
         delete mcpConfig.mcpServers[server];
+        console.log(chalk.dim(`  ✓ Removed MCP: ${server}`));
         removedCount++;
       }
     }
