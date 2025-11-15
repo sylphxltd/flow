@@ -438,12 +438,12 @@ Please begin your response with a comprehensive summary of all the instructions 
       getAgentsDir(),
       agentsDir,
       async (content, sourcePath) => {
-        // Transform agent content (add YAML front matter, etc.)
-        const transformed = await this.transformAgentContent(content, undefined, sourcePath);
-
-        // Extract rules from frontmatter to pass to enhancer
-        const { metadata } = await yamlUtils.extractFrontMatter(transformed);
+        // Extract rules from ORIGINAL content before transformation
+        const { metadata } = await yamlUtils.extractFrontMatter(content);
         const rules = metadata.rules as string[] | undefined;
+
+        // Transform agent content (converts to Claude Code format, strips unsupported fields)
+        const transformed = await this.transformAgentContent(content, undefined, sourcePath);
 
         // Enhance with rules and output styles
         const enhanced = await enhanceAgentContent(transformed, rules);
@@ -558,16 +558,11 @@ function convertToClaudeCodeFormat(
     result.model = openCodeMetadata.model;
   }
 
-  // Preserve rules field (needed for agent enhancement)
-  if (openCodeMetadata.rules && Array.isArray(openCodeMetadata.rules)) {
-    result.rules = openCodeMetadata.rules;
-  }
-
   // Remove unsupported fields that might cause issues
   // - tools: removed to allow all tools by default
-  // - mode: not supported by Claude Code (ignored, not in result)
-  // - temperature: not supported by Claude Code (ignored, not in result)
-  // - rules: KEPT (needed for enhancement to load correct rule files)
+  // - mode: not supported by Claude Code
+  // - temperature: not supported by Claude Code
+  // - rules: removed (only used during enhancement, not by Claude Code)
 
   return result;
 }
