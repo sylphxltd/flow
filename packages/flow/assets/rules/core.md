@@ -20,14 +20,9 @@ Only act on verified data or logic.
 
 **Research First**: Before implementing, research current best practices. Assume knowledge may be outdated.
 
-Execute BEFORE writing code:
-1. **Check latest docs** → WebSearch/WebFetch for library@latest
-2. **Review codebase patterns** → Grep for similar implementations
-3. **Verify current practices** → GitHub code search for recent examples
-4. **Document findings** → Add `// RESEARCH: [source] suggests [approach]` comments
+Check latest docs, review codebase patterns, verify current practices. Document sources in code.
 
-Verification: Can cite specific source (docs/code) for approach chosen.
-Skip research → outdated implementation → tech debt → rework cost.
+Skip research → outdated implementation → rework.
 
 **Parallel Execution**: Multiple tool calls in ONE message = parallel. Multiple messages = sequential.
 Use parallel whenever tools are independent.
@@ -44,26 +39,21 @@ Document assumptions:
 **Decision hierarchy**: existing patterns > current best practices > simplicity > maintainability
 
 **Thoroughness**:
-- Finish tasks completely before reporting
-- Don't stop halfway to ask permission
-- If unclear → make reasonable assumption + document + proceed
-- Surface all findings at once (not piecemeal)
+Finish tasks completely before reporting. Don't stop halfway to ask permission.
+Unclear → make reasonable assumption + document + proceed.
+Surface all findings at once (not piecemeal).
 
 **Problem Solving**:
-When stuck:
-1. State the blocker clearly
-2. List what you've tried
-3. Propose 2+ alternative approaches
-4. Pick best option and proceed (or ask if genuinely ambiguous)
+Stuck → state blocker + what tried + 2+ alternatives + pick best and proceed (or ask if genuinely ambiguous).
 
 ---
 
 ## Communication
 
 **Output Style**:
-- Concise and direct. No fluff, no apologies, no hedging.
-- Show, don't tell. Code examples over explanations.
-- One clear statement over three cautious ones.
+Concise and direct. No fluff, no apologies, no hedging.
+Show, don't tell. Code examples over explanations.
+One clear statement over three cautious ones.
 
 **Minimal Effective Prompt**: All docs, comments, delegation messages.
 
@@ -111,43 +101,30 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 
 ### Programming
 
-**Pure functions default**: No side effects, deterministic, testable.
-- Trigger: Writing any function
-- Check: Does it mutate inputs? Access global state? Do I/O?
-- If yes → Isolate side effect, document with `// SIDE EFFECT:` comment
-- Verification: Can test with same inputs = same outputs, no mocks needed
+**Pure functions default**: No mutations, no global state, no I/O.
+Side effects isolated: `// SIDE EFFECT: writes to disk`
 
-**Named args over positional (3+ params)**: Self-documenting, order-independent
-- Trigger: Function has 3+ parameters
-- Action: Convert to object `{ param1, param2, param3 }`
-- Verification: Can't mess up parameter order
+**3+ params → named args**: `fn({ a, b, c })` not `fn(a, b, c)`
 
-**Composition over inheritance**: Prefer function composition, mixins, dependency injection
-- Trigger: Thinking "I need to extend this class"
-- Check: Can I compose functions instead? Use dependency injection?
-- Verification: No deep inheritance chains (max 1 level)
+**Composition over inheritance**: Max 1 inheritance level.
+
+**Declarative over imperative**: Express what you want, not how.
+
+**Event-driven when appropriate**: Decouple components through events/messages.
 
 ### Quality
 
-**YAGNI**: Build what's needed now, not hypothetical futures
-- Trigger: Adding features "just in case" or "we might need later"
-- Check: Is this required NOW for current task? If no → delete it
-- Verification: Every feature traceable to current requirement
+**YAGNI**: Build what's needed now, not hypothetical futures.
 
-**KISS**: Choose simple solutions over complex ones
-- Trigger: Solution needs >3 sentences to explain
-- Check: Is there simpler approach? Can I remove abstraction layer?
-- Verification: Junior dev can understand in <5 min
+**KISS**: Simple > complex.
+Solution needs >3 sentences to explain → find simpler approach.
 
-**DRY**: Extract duplication on 3rd occurrence
-- Trigger: Copying code second time
-- Action: Mark for extraction. Third time → extract immediately
-- Verification: Changed once, applies everywhere
+**DRY**: Copying 2nd time → mark for extraction. 3rd time → extract immediately.
 
-**Single Responsibility**: One reason to change per module
-- Trigger: File/function does multiple things
-- Check: Can I split this? Does it have "and" in description?
-- Verification: File changes for only ONE type of requirement
+**Single Responsibility**: One reason to change per module.
+File does multiple things → split.
+
+**Dependency inversion**: Depend on abstractions, not implementations.
 
 ---
 
@@ -155,17 +132,9 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 
 **Code Quality**: Self-documenting names, test critical paths (100%) and business logic (80%+), comments explain WHY not WHAT, make illegal states unrepresentable.
 
-**Testing**: Every module gets `.test.ts` (unit tests) and `.bench.ts` (performance benchmarks).
-
-Mandatory steps:
-1. **Create test file** → `touch [module].test.ts` when creating `[module].ts`
-2. **Write tests** → Before or immediately after implementation
-3. **Run tests** → `npm test` after every code change
-4. **Check coverage** → `npm run test:coverage`, verify ≥80% for business logic
-5. **Add benchmarks** → `touch [module].bench.ts` for performance-critical code
-
-Verification: `ls *.test.ts` returns file for every `*.ts` module.
-Skip test → unverified code → bugs in production.
+**Testing**: Every module needs `.test.ts` and `.bench.ts`.
+Write tests with implementation. Run after every change. Coverage ≥80%.
+Skip tests → bugs in production.
 
 **Security**: Validate inputs at boundaries, never log sensitive data, secure defaults (auth required, deny by default), follow OWASP API Security, rollback plan for risky changes.
 
@@ -173,48 +142,27 @@ Skip test → unverified code → bugs in production.
 
 **Error Handling**: Handle explicitly at boundaries, use Result/Either for expected failures, never mask failures, log with context, actionable messages.
 
-**Refactoring**: Extract on 3rd duplication, when function >20 lines or cognitive load high. When thinking "I'll clean later" → Clean NOW. When adding TODO → Implement NOW.
+**Refactoring**: Extract on 3rd duplication, when function >20 lines or cognitive load high. Thinking "I'll clean later" → Clean NOW. Adding TODO → Implement NOW.
 
-**Proactive Cleanup**: Execute before EVERY commit:
+**Proactive Cleanup**: Before every commit:
 
-Commands to run:
-1. `eslint --fix .` or IDE organize imports → remove unused
-2. `grep -r "TODO\|FIXME\|XXX\|console.log\|debugger" .` → must be empty
-3. `git diff` → review every line, delete commented code
-4. Check README/docs → update or delete stale sections
-5. Check dependencies → remove unused from package.json
-
-Verification checklist:
-- [ ] No unused imports (linter confirms)
-- [ ] No TODO/FIXME (grep confirms)
-- [ ] No debug code (grep confirms)
-- [ ] No commented code (git diff review)
-- [ ] Docs match code (manual review)
+Organize imports, remove unused code/imports/commented code/debug statements.
+Update or delete outdated docs/comments/configs. Fix discovered tech debt.
 
 **Prime directive: Never accumulate misleading artifacts.**
-If unsure whether to delete → delete it. Git remembers everything.
+Unsure whether to delete → delete it. Git remembers everything.
 
 ---
 
 ## Documentation
 
-**Code-Level**: Communicate through inline comments and docstrings. Comments explain WHY, not WHAT.
-- Trigger: Non-obvious decision or workaround
-- Action: Add `// WHY: [reason]` comment, not `// WHAT: [description]`
-- Verification: Delete comment, code still makes sense → good. Confused → need comment.
+**Code-Level**: Comments explain WHY, not WHAT.
+Non-obvious decision → `// WHY: [reason]`
 
 **Project-Level**: Every project needs a docs site.
 
-Execute on first feature completion:
-1. `npm create @sylphx/leaf` (or specified alternative)
-2. Write docs covering: setup, API, examples
-3. `vercel deploy` to publish
-4. Add docs URL to README
-
-Verification:
-- [ ] Docs site exists and accessible
-- [ ] README has docs link
-- [ ] Docs match current implementation
+First feature completion: Create docs with `@sylphx/leaf` + Vercel (unless specified otherwise).
+Deploy with `vercel` CLI. Add docs URL to README.
 
 Separate documentation files only when explicitly requested.
 
