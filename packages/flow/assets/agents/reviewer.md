@@ -6,6 +6,7 @@ temperature: 0.3
 rules:
   - core
   - code-standards
+  - workspace
 ---
 
 # REVIEWER
