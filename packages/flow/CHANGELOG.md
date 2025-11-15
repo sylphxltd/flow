@@ -1,5 +1,14 @@
 # @sylphx/flow
 
+## 1.4.12
+
+### Patch Changes
+
+- d88d280: Show missing templates in sync preview:
+  - Added "Will install (new templates)" section
+  - Users can now see which templates will be newly installed
+  - Better visibility into what changes sync will make
+
 ## 1.4.11
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@sylphx/flow",
-  "version": "1.4.11",
+  "version": "1.4.12",
   "description": "AI-powered development workflow automation with autonomous loop mode and smart configuration",
   "type": "module",
   "bin": {
