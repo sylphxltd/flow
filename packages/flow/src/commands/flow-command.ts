@@ -405,6 +405,20 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
 
         const deletedCount = await executeSyncDelete(manifest);
         console.log(chalk.green(`\n✓ Deleted ${deletedCount} files\n`));
+
+        // Check MCP servers
+        const { checkMCPServers, showNonRegistryServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
+        const nonRegistryServers = await checkMCPServers(process.cwd());
+
+        if (nonRegistryServers.length > 0) {
+          showNonRegistryServers(nonRegistryServers);
+          const serversToRemove = await selectServersToRemove(nonRegistryServers);
+
+          if (serversToRemove.length > 0) {
+            const removedCount = await removeMCPServers(process.cwd(), serversToRemove);
+            console.log(chalk.green(`\n✓ Removed ${removedCount} MCP server(s)\n`));
+          }
+        }
       } else if (!options.sync) {
         const targetId = await selectAndValidateTarget(initOptions);
         selectedTarget = targetId;
@@ -720,6 +734,20 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
 
         const deletedCount = await executeSyncDelete(manifest);
         console.log(chalk.green(`\n✓ Deleted ${deletedCount} files\n`));
+
+        // Check MCP servers
+        const { checkMCPServers, showNonRegistryServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
+        const nonRegistryServers = await checkMCPServers(process.cwd());
+
+        if (nonRegistryServers.length > 0) {
+          showNonRegistryServers(nonRegistryServers);
+          const serversToRemove = await selectServersToRemove(nonRegistryServers);
+
+          if (serversToRemove.length > 0) {
+            const removedCount = await removeMCPServers(process.cwd(), serversToRemove);
+            console.log(chalk.green(`\n✓ Removed ${removedCount} MCP server(s)\n`));
+          }
+        }
       } else {
         // Select and validate target (will use existing in repair mode, or prompt if needed)
         const targetId = await selectAndValidateTarget(initOptions);

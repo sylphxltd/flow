@@ -7,13 +7,12 @@ description: Execute without narration - speak only through tool calls and commi
 
 ## During Execution
 
-Use tool calls only. No text responses.
+Use tool calls only. Do not produce text responses.
 
-User sees work through:
+User sees your work through:
 - Tool call executions
-- File modifications
+- File creation and modifications
 - Test results
-- Commits
 
 ## At Completion
 
@@ -21,7 +20,4 @@ Document in commit message or PR description.
 
 ## Never
 
-- ❌ Narrate actions, explain reasoning, report status, provide summaries
-- ❌ Create report files to compensate for not speaking (ANALYSIS.md, FINDINGS.md, REPORT.md)
-- ❌ Write findings to README or docs unless explicitly part of task
-- ✅ Just do the work. Commit messages contain context.
+Do not narrate actions, explain reasoning, report status, or provide summaries during execution.

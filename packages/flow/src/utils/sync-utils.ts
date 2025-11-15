@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import type { Target } from '../types.js';
+import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 
 /**
  * Files to delete during sync for each target
@@ -156,4 +157,109 @@ export async function confirmSync(): Promise<boolean> {
     },
   ]);
   return confirm;
+}
+
+/**
+ * Check MCP servers - find servers not in Flow registry
+ */
+export async function checkMCPServers(cwd: string): Promise<string[]> {
+  const mcpPath = path.join(cwd, '.mcp.json');
+
+  if (!fs.existsSync(mcpPath)) {
+    return [];
+  }
+
+  try {
+    const content = await fs.promises.readFile(mcpPath, 'utf-8');
+    const mcpConfig = JSON.parse(content);
+
+    if (!mcpConfig.mcpServers) {
+      return [];
+    }
+
+    const installedServers = Object.keys(mcpConfig.mcpServers);
+    const registryServers = Object.keys(MCP_SERVER_REGISTRY);
+
+    // Find servers not in registry
+    return installedServers.filter(id => !registryServers.includes(id));
+  } catch (error) {
+    console.warn(chalk.yellow('⚠ Failed to read .mcp.json'));
+    return [];
+  }
+}
+
+/**
+ * Show non-registry servers
+ */
+export function showNonRegistryServers(servers: string[]): void {
+  if (servers.length === 0) {
+    return;
+  }
+
+  console.log(chalk.cyan.bold('\n📋 MCP Registry Check\n'));
+  console.log(chalk.yellow('⚠️  以下 MCP servers 唔係 Flow registry 入面:\n'));
+
+  servers.forEach(server => {
+    console.log(chalk.dim(`    - ${server}`));
+  });
+
+  console.log(chalk.dim('\n可能原因:'));
+  console.log(chalk.dim('  1. Flow registry 已移除'));
+  console.log(chalk.dim('  2. 你自己手動安裝\n'));
+}
+
+/**
+ * Select servers to remove
+ */
+export async function selectServersToRemove(servers: string[]): Promise<string[]> {
+  const { default: inquirer } = await import('inquirer');
+  const { selected } = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'selected',
+      message: '選擇要刪除既 servers:',
+      choices: servers.map(s => ({ name: s, value: s })),
+    },
+  ]);
+  return selected;
+}
+
+/**
+ * Remove MCP servers from .mcp.json
+ */
+export async function removeMCPServers(cwd: string, serversToRemove: string[]): Promise<number> {
+  if (serversToRemove.length === 0) {
+    return 0;
+  }
+
+  const mcpPath = path.join(cwd, '.mcp.json');
+
+  try {
+    const content = await fs.promises.readFile(mcpPath, 'utf-8');
+    const mcpConfig = JSON.parse(content);
+
+    if (!mcpConfig.mcpServers) {
+      return 0;
+    }
+
+    let removedCount = 0;
+    for (const server of serversToRemove) {
+      if (mcpConfig.mcpServers[server]) {
+        delete mcpConfig.mcpServers[server];
+        removedCount++;
+      }
+    }
+
+    // Write back
+    await fs.promises.writeFile(
+      mcpPath,
+      JSON.stringify(mcpConfig, null, 2) + '\n',
+      'utf-8'
+    );
+
+    return removedCount;
+  } catch (error) {
+    console.warn(chalk.yellow('⚠ Failed to update .mcp.json'));
+    return 0;
+  }
 }
