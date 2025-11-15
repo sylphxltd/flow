@@ -1,5 +1,15 @@
 # @sylphx/flow
 
+## 1.3.1
+
+### Patch Changes
+
+- Redesign sync flow for better clarity:
+  - Remove duplicate config files in preserved list
+  - Show MCP check in preview upfront (not after confirmation)
+  - Combined preview: templates + MCP servers + preserved files
+  - Clear sections with emojis for easy scanning
+
 ## 1.3.0
 
 ### Minor Changes
