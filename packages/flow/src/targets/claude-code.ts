@@ -558,11 +558,16 @@ function convertToClaudeCodeFormat(
     result.model = openCodeMetadata.model;
   }
 
+  // Preserve rules field (needed for agent enhancement)
+  if (openCodeMetadata.rules && Array.isArray(openCodeMetadata.rules)) {
+    result.rules = openCodeMetadata.rules;
+  }
+
   // Remove unsupported fields that might cause issues
   // - tools: removed to allow all tools by default
-  // - mode: not supported by Claude Code
-  // - temperature: not supported by Claude Code
-  // - Other custom fields should also be removed for compatibility
+  // - mode: not supported by Claude Code (ignored, not in result)
+  // - temperature: not supported by Claude Code (ignored, not in result)
+  // - rules: KEPT (needed for enhancement to load correct rule files)
 
   return result;
 }
