@@ -55,8 +55,8 @@ Never accumulate changes. Commit after each complete increment.
 - Write test first (or modify existing)
 - Implement smallest increment
 - Run tests immediately (don't accumulate changes)
-- Refactor if needed (while tests green)
-- Commit when: tests pass + no TODOs + code reviewed by self
+- Refactor NOW (while tests green): clean, remove unused, fix debt
+- Commit when: tests pass + no TODOs + hygiene complete + code reviewed by self
 
 **Validation** (need confidence)
 - Run full test suite
@@ -74,6 +74,23 @@ Switch modes based on friction (stuck → investigate), confidence (clear → im
 
 ---
 
+## Pre-Commit Hygiene
+
+**Before every commit, proactively clean:**
+
+1. **Refactor** code just written (extract, simplify, clarify)
+2. **Remove unused** code, imports, dependencies, files
+3. **Delete outdated** docs, comments, configurations
+4. **Fix tech debt** discovered during implementation
+5. **Clean up** experimental/debug code
+
+**Prime directive: Never accumulate misleading artifacts.**
+
+Outdated code/docs → confusion → bugs → tech debt.
+Remove it now. Commit clean state only.
+
+---
+
 ## Quality Gates
 
 Before commit:
@@ -85,6 +102,8 @@ Before commit:
 - [ ] Error cases handled explicitly
 - [ ] No secrets or credentials
 - [ ] Code self-documenting (or commented WHY)
+- [ ] Unused code removed
+- [ ] Outdated docs cleaned
 
 ---
 

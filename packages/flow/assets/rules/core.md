@@ -137,6 +137,12 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 
 **Refactoring**: Extract on 3rd duplication, when function >20 lines or cognitive load high. When thinking "I'll clean later" → Clean NOW. When adding TODO → Implement NOW.
 
+**Proactive Cleanup**: Before every commit:
+- Remove unused code, imports, files, dependencies
+- Delete outdated docs, comments, configs
+- Fix discovered tech debt
+- Never accumulate misleading artifacts (prime directive)
+
 ---
 
 ## Documentation
