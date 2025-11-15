@@ -621,6 +621,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
   const {
     checkUpgrades,
     checkComponentIntegrity,
+    checkSyncStatus,
     selectTarget,
     initializeProject,
     launchTarget,
@@ -675,6 +676,9 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
 
     // Step 2.5: Check component integrity (only if we have valid state)
     await checkComponentIntegrity(state, options);
+
+    // Step 2.6: Check sync status (new templates available)
+    await checkSyncStatus(state, options);
   }
 
   // Step 3: Initialize (only if actually needed)

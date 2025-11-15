@@ -148,6 +148,59 @@ export async function checkComponentIntegrity(
 }
 
 /**
+ * Step 2.5: Check sync status (new templates available)
+ * Only checks for missing templates, ignores unknown files
+ */
+export async function checkSyncStatus(
+  state: ProjectState,
+  options: FlowOptions
+): Promise<void> {
+  // Skip if not initialized, syncing, or init-only
+  if (!state.initialized || options.sync || options.initOnly) return;
+
+  // Skip in quick mode
+  if (options.quick) return;
+
+  // Need target to check sync status
+  if (!state.target) return;
+
+  try {
+    const { buildSyncManifest } = await import('../utils/sync-utils.js');
+    const target = targetManager.getTarget(state.target);
+
+    if (target._tag === 'None') return;
+
+    const manifest = await buildSyncManifest(process.cwd(), target.value);
+
+    // Count missing templates (new templates not installed locally)
+    const missingCount =
+      manifest.agents.missing.length +
+      manifest.slashCommands.missing.length +
+      manifest.rules.missing.length;
+
+    // Only prompt if there are missing templates
+    if (missingCount > 0) {
+      const missing: string[] = [];
+
+      if (manifest.agents.missing.length > 0) {
+        missing.push(`${manifest.agents.missing.length} agent${manifest.agents.missing.length > 1 ? 's' : ''}`);
+      }
+      if (manifest.slashCommands.missing.length > 0) {
+        missing.push(`${manifest.slashCommands.missing.length} command${manifest.slashCommands.missing.length > 1 ? 's' : ''}`);
+      }
+      if (manifest.rules.missing.length > 0) {
+        missing.push(`${manifest.rules.missing.length} rule${manifest.rules.missing.length > 1 ? 's' : ''}`);
+      }
+
+      console.log(chalk.yellow(`\n📦 New templates available: ${missing.join(', ')}\n`));
+      console.log(chalk.dim(`   Run ${chalk.cyan('sylphx-flow --sync')} to install new templates\n`));
+    }
+  } catch (error) {
+    // Silently ignore sync check errors - don't block execution
+  }
+}
+
+/**
  * Step 3: Handle target selection
  * Returns the selected target ID
  */
