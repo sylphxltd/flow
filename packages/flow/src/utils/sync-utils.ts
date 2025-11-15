@@ -56,15 +56,17 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
   }
 
   // Files to preserve
-  manifest.preserve = [
+  const preservePaths = [
     '.sylphx-flow/',
     '.secrets/',
     target.config.configFile || '',
     '.mcp.json',
     'opencode.jsonc',
   ]
-    .filter(Boolean)
-    .map((p) => path.join(cwd, p));
+    .filter(Boolean);
+
+  // Deduplicate paths
+  manifest.preserve = [...new Set(preservePaths)].map((p) => path.join(cwd, p));
 
   return manifest;
 }
