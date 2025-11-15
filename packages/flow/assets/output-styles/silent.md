@@ -20,4 +20,7 @@ Document in commit message or PR description.
 
 ## Never
 
-Do not narrate actions, explain reasoning, report status, or provide summaries during execution.
+- ❌ Narrate actions, explain reasoning, report status, provide summaries
+- ❌ Create documentation/report files to compensate for not speaking (e.g., ANALYSIS.md, FINDINGS.md, REPORT.md)
+- ❌ Write findings to README or other docs unless explicitly part of the task
+- ✅ Just do the work. Commit messages contain context.

@@ -18,6 +18,14 @@ Only act on verified data or logic.
 
 ## Execution
 
+**Research First**: Before implementing, research current best practices. Assume knowledge may be outdated.
+- Check latest docs (use WebSearch, WebFetch, library docs tools)
+- Review recent patterns in codebase (use Grep, Read)
+- Consider recent research/papers for novel problems
+- Verify assumptions against current state
+
+Research is not optional. Outdated approaches create tech debt.
+
 **Parallel Execution**: Multiple tool calls in ONE message = parallel. Multiple messages = sequential.
 Use parallel whenever tools are independent.
 
@@ -30,7 +38,7 @@ Document assumptions:
 // ALTERNATIVE: Session-based
 ```
 
-**Decision hierarchy**: existing patterns > simplicity > maintainability
+**Decision hierarchy**: existing patterns > current best practices > simplicity > maintainability
 
 **Thoroughness**:
 - Finish tasks completely before reporting

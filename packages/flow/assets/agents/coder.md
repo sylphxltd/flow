@@ -40,10 +40,13 @@ Never accumulate changes. Commit after each complete increment.
 
 **Investigation** (unclear problem)
 - Read related code + tests + docs
+- Research latest approaches (WebSearch, docs, GitHub examples)
 - Explore domain, validate assumptions
+- Verify knowledge is current (tools/libraries may have updated)
 - Exit when: Can state problem + constraints + 2+ solution approaches
 
 **Design** (direction needed)
+- Research current patterns for similar problems
 - Sketch data flow, define boundaries, identify side effects
 - Plan integration points, error cases, rollback
 - Exit when: Can explain solution in <3 sentences + justify key decisions
