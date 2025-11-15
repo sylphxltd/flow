@@ -5,23 +5,62 @@ import type { Target } from '../types.js';
 import { MCP_SERVER_REGISTRY } from '../config/servers.js';
 
 /**
- * Files to delete during sync for each target
+ * Flow template filenames (source of truth)
+ */
+const FLOW_AGENTS = ['coder.md', 'orchestrator.md', 'reviewer.md', 'writer.md'];
+const FLOW_SLASH_COMMANDS = ['commit.md', 'context.md', 'explain.md', 'review.md', 'test.md'];
+const FLOW_RULES = ['code-standards.md', 'core.md'];
+
+/**
+ * Categorized files for sync
+ */
+interface CategorizedFiles {
+  inFlow: string[];      // Files that exist in Flow templates
+  unknown: string[];     // Files not in Flow templates (custom or removed)
+}
+
+/**
+ * Sync manifest with categorization
  */
 interface SyncManifest {
-  agents: string[];
-  slashCommands: string[];
-  rules: string[];
+  agents: CategorizedFiles;
+  slashCommands: CategorizedFiles;
+  rules: CategorizedFiles;
+  mcpServers: {
+    inRegistry: string[];
+    notInRegistry: string[];
+  };
   preserve: string[];
 }
 
 /**
- * Build sync manifest - list files to delete and preserve
+ * Categorize files into Flow templates vs unknown
+ */
+function categorizeFiles(files: string[], flowTemplates: string[]): CategorizedFiles {
+  const inFlow: string[] = [];
+  const unknown: string[] = [];
+
+  for (const file of files) {
+    const basename = path.basename(file);
+    if (flowTemplates.includes(basename)) {
+      inFlow.push(file);
+    } else {
+      unknown.push(file);
+    }
+  }
+
+  return { inFlow, unknown };
+}
+
+/**
+ * Build sync manifest - categorize all files
  */
 export async function buildSyncManifest(cwd: string, target: Target): Promise<SyncManifest> {
   const manifest: SyncManifest = {
-    agents: [],
-    slashCommands: [],
-    rules: [],
+    agents: { inFlow: [], unknown: [] },
+    slashCommands: { inFlow: [], unknown: [] },
+    rules: { inFlow: [], unknown: [] },
+    mcpServers: { inRegistry: [], notInRegistry: [] },
     preserve: [],
   };
 
@@ -30,9 +69,11 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
     const agentsDir = path.join(cwd, target.config.agentDir);
     if (fs.existsSync(agentsDir)) {
       const files = fs.readdirSync(agentsDir, { withFileTypes: true });
-      manifest.agents = files
+      const agentFiles = files
         .filter((f) => f.isFile() && f.name.endsWith(target.config.agentExtension || '.md'))
         .map((f) => path.join(agentsDir, f.name));
+
+      manifest.agents = categorizeFiles(agentFiles, FLOW_AGENTS);
     }
   }
 
@@ -41,17 +82,45 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
     const commandsDir = path.join(cwd, target.config.slashCommandsDir);
     if (fs.existsSync(commandsDir)) {
       const files = fs.readdirSync(commandsDir, { withFileTypes: true });
-      manifest.slashCommands = files
+      const commandFiles = files
         .filter((f) => f.isFile() && f.name.endsWith('.md'))
         .map((f) => path.join(commandsDir, f.name));
+
+      manifest.slashCommands = categorizeFiles(commandFiles, FLOW_SLASH_COMMANDS);
     }
   }
 
-  // Rules files
-  if (target.config.rulesFile) {
-    const rulesPath = path.join(cwd, target.config.rulesFile);
-    if (fs.existsSync(rulesPath)) {
-      manifest.rules.push(rulesPath);
+  // Rules files - check individual files
+  const rulesDir = path.dirname(target.config.rulesFile || '');
+  if (rulesDir && fs.existsSync(path.join(cwd, rulesDir))) {
+    const files = fs.readdirSync(path.join(cwd, rulesDir), { withFileTypes: true });
+    const ruleFiles = files
+      .filter((f) => f.isFile() && f.name.endsWith('.md'))
+      .map((f) => path.join(cwd, rulesDir, f.name));
+
+    manifest.rules = categorizeFiles(ruleFiles, FLOW_RULES);
+  }
+
+  // MCP servers
+  const mcpPath = path.join(cwd, '.mcp.json');
+  if (fs.existsSync(mcpPath)) {
+    try {
+      const content = await fs.promises.readFile(mcpPath, 'utf-8');
+      const mcpConfig = JSON.parse(content);
+
+      if (mcpConfig.mcpServers) {
+        const installedServers = Object.keys(mcpConfig.mcpServers);
+        const registryServers = Object.keys(MCP_SERVER_REGISTRY);
+
+        manifest.mcpServers.inRegistry = installedServers.filter(id =>
+          registryServers.includes(id)
+        );
+        manifest.mcpServers.notInRegistry = installedServers.filter(id =>
+          !registryServers.includes(id)
+        );
+      }
+    } catch (error) {
+      console.warn(chalk.yellow('⚠ Failed to read .mcp.json'));
     }
   }
 
@@ -68,95 +137,267 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
 }
 
 /**
- * Show sync preview - what will be deleted
+ * Show sync preview with categorization
  */
-export function showSyncPreview(
-  manifest: SyncManifest,
-  cwd: string,
-  nonRegistryServers: string[]
-): void {
-  console.log(chalk.cyan.bold('📋 Sync Preview\n'));
+export function showSyncPreview(manifest: SyncManifest, cwd: string): void {
+  console.log(chalk.cyan.bold('━━━ 🔄 Sync Preview\n'));
 
-  // Template files section
-  const allFiles = [...manifest.agents, ...manifest.slashCommands, ...manifest.rules];
+  // Will sync section
+  const hasFlowFiles =
+    manifest.agents.inFlow.length > 0 ||
+    manifest.slashCommands.inFlow.length > 0 ||
+    manifest.rules.inFlow.length > 0 ||
+    manifest.mcpServers.inRegistry.length > 0;
 
-  if (allFiles.length > 0) {
-    console.log(chalk.yellow('🔄 Templates (delete + reinstall):\n'));
+  if (hasFlowFiles) {
+    console.log(chalk.green('Will sync (delete + reinstall):\n'));
 
-    if (manifest.agents.length > 0) {
+    if (manifest.agents.inFlow.length > 0) {
       console.log(chalk.dim('  Agents:'));
-      manifest.agents.forEach((file) => {
-        const relative = path.relative(cwd, file);
-        console.log(chalk.dim(`    - ${relative}`));
+      manifest.agents.inFlow.forEach((file) => {
+        console.log(chalk.dim(`    ✓ ${path.basename(file)}`));
       });
       console.log('');
     }
 
-    if (manifest.slashCommands.length > 0) {
-      console.log(chalk.dim('  Slash Commands:'));
-      manifest.slashCommands.forEach((file) => {
-        const relative = path.relative(cwd, file);
-        console.log(chalk.dim(`    - ${relative}`));
+    if (manifest.slashCommands.inFlow.length > 0) {
+      console.log(chalk.dim('  Commands:'));
+      manifest.slashCommands.inFlow.forEach((file) => {
+        console.log(chalk.dim(`    ✓ ${path.basename(file)}`));
       });
       console.log('');
     }
 
-    if (manifest.rules.length > 0) {
+    if (manifest.rules.inFlow.length > 0) {
       console.log(chalk.dim('  Rules:'));
-      manifest.rules.forEach((file) => {
-        const relative = path.relative(cwd, file);
-        console.log(chalk.dim(`    - ${relative}`));
+      manifest.rules.inFlow.forEach((file) => {
+        console.log(chalk.dim(`    ✓ ${path.basename(file)}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.mcpServers.inRegistry.length > 0) {
+      console.log(chalk.dim('  MCP Servers:'));
+      manifest.mcpServers.inRegistry.forEach((server) => {
+        console.log(chalk.dim(`    ✓ ${server}`));
+      });
+      console.log('');
+    }
+  }
+
+  // Unknown files section
+  const hasUnknownFiles =
+    manifest.agents.unknown.length > 0 ||
+    manifest.slashCommands.unknown.length > 0 ||
+    manifest.rules.unknown.length > 0 ||
+    manifest.mcpServers.notInRegistry.length > 0;
+
+  if (hasUnknownFiles) {
+    console.log(chalk.yellow('Unknown files (not in Flow templates):\n'));
+
+    if (manifest.agents.unknown.length > 0) {
+      console.log(chalk.dim('  Agents:'));
+      manifest.agents.unknown.forEach((file) => {
+        console.log(chalk.dim(`    ? ${path.basename(file)}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.slashCommands.unknown.length > 0) {
+      console.log(chalk.dim('  Commands:'));
+      manifest.slashCommands.unknown.forEach((file) => {
+        console.log(chalk.dim(`    ? ${path.basename(file)}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.rules.unknown.length > 0) {
+      console.log(chalk.dim('  Rules:'));
+      manifest.rules.unknown.forEach((file) => {
+        console.log(chalk.dim(`    ? ${path.basename(file)}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.mcpServers.notInRegistry.length > 0) {
+      console.log(chalk.dim('  MCP Servers:'));
+      manifest.mcpServers.notInRegistry.forEach((server) => {
+        console.log(chalk.dim(`    ? ${server}`));
       });
       console.log('');
     }
   } else {
-    console.log(chalk.yellow('🔄 Templates: None found\n'));
+    console.log(chalk.green('✓ No unknown files\n'));
   }
 
-  // MCP servers section
-  if (nonRegistryServers.length > 0) {
-    console.log(chalk.yellow('🔍 MCP Servers (not in registry):\n'));
-    nonRegistryServers.forEach((server) => {
-      console.log(chalk.dim(`    - ${server}`));
-    });
-    console.log(chalk.dim('\n  Possible reasons:'));
-    console.log(chalk.dim('    1. Removed from Flow registry'));
-    console.log(chalk.dim('    2. Custom installation\n'));
-  } else {
-    console.log(chalk.green('✓ MCP Servers: All in registry\n'));
-  }
-
-  // Preserved files section
-  console.log(chalk.green('✓ Preserved:\n'));
+  // Preserved section
+  console.log(chalk.green('Preserved:\n'));
   manifest.preserve.forEach((file) => {
     const relative = path.relative(cwd, file);
     if (fs.existsSync(file)) {
-      console.log(chalk.dim(`    - ${relative}`));
+      console.log(chalk.dim(`  ${relative}`));
     }
   });
   console.log('');
 }
 
 /**
- * Execute sync - delete template files
+ * Select unknown files to remove
  */
-export async function executeSyncDelete(manifest: SyncManifest): Promise<number> {
-  const allFiles = [...manifest.agents, ...manifest.slashCommands, ...manifest.rules];
-  let deletedCount = 0;
+export async function selectUnknownFilesToRemove(manifest: SyncManifest): Promise<string[]> {
+  const unknownFiles: Array<{ name: string; value: string; type: string }> = [];
 
-  for (const file of allFiles) {
+  // Collect all unknown files
+  manifest.agents.unknown.forEach((file) => {
+    unknownFiles.push({
+      name: `Agents: ${path.basename(file)}`,
+      value: file,
+      type: 'agent',
+    });
+  });
+
+  manifest.slashCommands.unknown.forEach((file) => {
+    unknownFiles.push({
+      name: `Commands: ${path.basename(file)}`,
+      value: file,
+      type: 'command',
+    });
+  });
+
+  manifest.rules.unknown.forEach((file) => {
+    unknownFiles.push({
+      name: `Rules: ${path.basename(file)}`,
+      value: file,
+      type: 'rule',
+    });
+  });
+
+  manifest.mcpServers.notInRegistry.forEach((server) => {
+    unknownFiles.push({
+      name: `MCP: ${server}`,
+      value: server,
+      type: 'mcp',
+    });
+  });
+
+  if (unknownFiles.length === 0) {
+    return [];
+  }
+
+  const { default: inquirer } = await import('inquirer');
+  const { selected } = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'selected',
+      message: 'Select files to remove (space to select, enter to continue):',
+      choices: unknownFiles.map((f) => ({ name: f.name, value: f.value })),
+    },
+  ]);
+
+  return selected;
+}
+
+/**
+ * Show final summary before execution
+ */
+export function showFinalSummary(
+  manifest: SyncManifest,
+  selectedUnknowns: string[]
+): void {
+  console.log(chalk.cyan.bold('\n━━━ 📋 Final Summary\n'));
+
+  // Will delete + reinstall
+  const flowFiles = [
+    ...manifest.agents.inFlow,
+    ...manifest.slashCommands.inFlow,
+    ...manifest.rules.inFlow,
+  ];
+
+  if (flowFiles.length > 0 || manifest.mcpServers.inRegistry.length > 0) {
+    console.log(chalk.yellow('Delete + reinstall:\n'));
+    flowFiles.forEach((file) => {
+      console.log(chalk.dim(`  - ${path.basename(file)}`));
+    });
+    if (manifest.mcpServers.inRegistry.length > 0) {
+      manifest.mcpServers.inRegistry.forEach((server) => {
+        console.log(chalk.dim(`  - MCP: ${server}`));
+      });
+    }
+    console.log('');
+  }
+
+  // Will remove (selected unknowns)
+  if (selectedUnknowns.length > 0) {
+    console.log(chalk.red('Remove (selected):\n'));
+    selectedUnknowns.forEach((file) => {
+      const name = file.includes('/') ? path.basename(file) : file;
+      console.log(chalk.dim(`  - ${name}`));
+    });
+    console.log('');
+  }
+
+  // Will preserve
+  const preservedUnknowns = [
+    ...manifest.agents.unknown,
+    ...manifest.slashCommands.unknown,
+    ...manifest.rules.unknown,
+    ...manifest.mcpServers.notInRegistry,
+  ].filter((file) => !selectedUnknowns.includes(file));
+
+  if (preservedUnknowns.length > 0) {
+    console.log(chalk.green('Preserve:\n'));
+    preservedUnknowns.forEach((file) => {
+      const name = file.includes('/') ? path.basename(file) : file;
+      console.log(chalk.dim(`  - ${name}`));
+    });
+    console.log('');
+  }
+}
+
+/**
+ * Execute sync - delete Flow templates and selected unknowns
+ */
+export async function executeSyncDelete(
+  manifest: SyncManifest,
+  selectedUnknowns: string[]
+): Promise<{ templates: number; unknowns: number }> {
+  const flowFiles = [
+    ...manifest.agents.inFlow,
+    ...manifest.slashCommands.inFlow,
+    ...manifest.rules.inFlow,
+  ];
+
+  let templatesDeleted = 0;
+  let unknownsDeleted = 0;
+
+  // Delete Flow templates
+  for (const file of flowFiles) {
     try {
       await fs.promises.unlink(file);
-      deletedCount++;
+      templatesDeleted++;
     } catch (error) {
-      // Ignore if file doesn't exist
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.warn(chalk.yellow(`⚠ Failed to delete: ${file}`));
       }
     }
   }
 
-  return deletedCount;
+  // Delete selected unknown files
+  for (const file of selectedUnknowns) {
+    // Skip MCP servers (handled separately)
+    if (!file.includes('/')) continue;
+
+    try {
+      await fs.promises.unlink(file);
+      unknownsDeleted++;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        console.warn(chalk.yellow(`⚠ Failed to delete: ${file}`));
+      }
+    }
+  }
+
+  return { templates: templatesDeleted, unknowns: unknownsDeleted };
 }
 
 /**
@@ -168,56 +409,11 @@ export async function confirmSync(): Promise<boolean> {
     {
       type: 'confirm',
       name: 'confirm',
-      message: 'Proceed with sync? This will delete the files listed above.',
+      message: 'Proceed with sync?',
       default: false,
     },
   ]);
   return confirm;
-}
-
-/**
- * Check MCP servers - find servers not in Flow registry
- */
-export async function checkMCPServers(cwd: string): Promise<string[]> {
-  const mcpPath = path.join(cwd, '.mcp.json');
-
-  if (!fs.existsSync(mcpPath)) {
-    return [];
-  }
-
-  try {
-    const content = await fs.promises.readFile(mcpPath, 'utf-8');
-    const mcpConfig = JSON.parse(content);
-
-    if (!mcpConfig.mcpServers) {
-      return [];
-    }
-
-    const installedServers = Object.keys(mcpConfig.mcpServers);
-    const registryServers = Object.keys(MCP_SERVER_REGISTRY);
-
-    // Find servers not in registry
-    return installedServers.filter(id => !registryServers.includes(id));
-  } catch (error) {
-    console.warn(chalk.yellow('⚠ Failed to read .mcp.json'));
-    return [];
-  }
-}
-
-/**
- * Select servers to remove
- */
-export async function selectServersToRemove(servers: string[]): Promise<string[]> {
-  const { default: inquirer } = await import('inquirer');
-  const { selected } = await inquirer.prompt([
-    {
-      type: 'checkbox',
-      name: 'selected',
-      message: '選擇要刪除既 servers:',
-      choices: servers.map(s => ({ name: s, value: s })),
-    },
-  ]);
-  return selected;
 }
 
 /**

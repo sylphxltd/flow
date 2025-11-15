@@ -380,7 +380,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
 
       // Handle sync mode - delete template files first
       if (options.sync && !options.dryRun) {
-        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete, checkMCPServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
+        const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers } = await import('../utils/sync-utils.js');
 
         // Need target to build manifest
         const targetId = await selectAndValidateTarget(initOptions);
@@ -394,31 +394,43 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
         const target = targetOption.value;
         const manifest = await buildSyncManifest(process.cwd(), target);
 
-        // Check MCP servers before showing preview
-        const nonRegistryServers = await checkMCPServers(process.cwd());
-
+        // Show preview
         console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
-        showSyncPreview(manifest, process.cwd(), nonRegistryServers);
+        showSyncPreview(manifest, process.cwd());
 
+        // Select unknown files to remove
+        const selectedUnknowns = await selectUnknownFilesToRemove(manifest);
+
+        // Show final summary
+        showFinalSummary(manifest, selectedUnknowns);
+
+        // Confirm
         const confirmed = await confirmSync();
         if (!confirmed) {
           console.log(chalk.yellow('\n✗ Sync cancelled\n'));
           process.exit(0);
         }
 
-        // Delete templates
-        const deletedCount = await executeSyncDelete(manifest);
-        console.log(chalk.green(`\n✓ Deleted ${deletedCount} template files\n`));
+        // Execute deletion
+        const { templates, unknowns } = await executeSyncDelete(manifest, selectedUnknowns);
 
-        // Handle MCP servers if any found
-        if (nonRegistryServers.length > 0) {
-          const serversToRemove = await selectServersToRemove(nonRegistryServers);
-
-          if (serversToRemove.length > 0) {
-            const removedCount = await removeMCPServers(process.cwd(), serversToRemove);
-            console.log(chalk.green(`✓ Removed ${removedCount} MCP server(s)\n`));
-          }
+        // Remove MCP servers
+        const mcpServersToRemove = selectedUnknowns.filter(s => !s.includes('/'));
+        let mcpRemoved = 0;
+        if (mcpServersToRemove.length > 0) {
+          mcpRemoved = await removeMCPServers(process.cwd(), mcpServersToRemove);
         }
+
+        // Summary
+        console.log(chalk.green(`\n✓ Synced ${templates} templates`));
+        if (unknowns > 0 || mcpRemoved > 0) {
+          console.log(chalk.green(`✓ Removed ${unknowns + mcpRemoved} files`));
+        }
+        const preserved = manifest.agents.unknown.length + manifest.slashCommands.unknown.length + manifest.rules.unknown.length + manifest.mcpServers.notInRegistry.length - selectedUnknowns.length;
+        if (preserved > 0) {
+          console.log(chalk.green(`✓ Preserved ${preserved} custom files`));
+        }
+        console.log('');
       } else if (!options.sync) {
         const targetId = await selectAndValidateTarget(initOptions);
         selectedTarget = targetId;
@@ -709,7 +721,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
 
       // Handle sync mode - delete template files first
       if (options.sync && !options.dryRun) {
-        const { buildSyncManifest, showSyncPreview, confirmSync, executeSyncDelete, checkMCPServers, selectServersToRemove, removeMCPServers } = await import('../utils/sync-utils.js');
+        const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers } = await import('../utils/sync-utils.js');
 
         // Need target to build manifest
         const targetId = await selectAndValidateTarget(initOptions);
@@ -723,31 +735,43 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
         const target = targetOption.value;
         const manifest = await buildSyncManifest(process.cwd(), target);
 
-        // Check MCP servers before showing preview
-        const nonRegistryServers = await checkMCPServers(process.cwd());
-
+        // Show preview
         console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
-        showSyncPreview(manifest, process.cwd(), nonRegistryServers);
+        showSyncPreview(manifest, process.cwd());
 
+        // Select unknown files to remove
+        const selectedUnknowns = await selectUnknownFilesToRemove(manifest);
+
+        // Show final summary
+        showFinalSummary(manifest, selectedUnknowns);
+
+        // Confirm
         const confirmed = await confirmSync();
         if (!confirmed) {
           console.log(chalk.yellow('\n✗ Sync cancelled\n'));
           process.exit(0);
         }
 
-        // Delete templates
-        const deletedCount = await executeSyncDelete(manifest);
-        console.log(chalk.green(`\n✓ Deleted ${deletedCount} template files\n`));
+        // Execute deletion
+        const { templates, unknowns } = await executeSyncDelete(manifest, selectedUnknowns);
 
-        // Handle MCP servers if any found
-        if (nonRegistryServers.length > 0) {
-          const serversToRemove = await selectServersToRemove(nonRegistryServers);
-
-          if (serversToRemove.length > 0) {
-            const removedCount = await removeMCPServers(process.cwd(), serversToRemove);
-            console.log(chalk.green(`✓ Removed ${removedCount} MCP server(s)\n`));
-          }
+        // Remove MCP servers
+        const mcpServersToRemove = selectedUnknowns.filter(s => !s.includes('/'));
+        let mcpRemoved = 0;
+        if (mcpServersToRemove.length > 0) {
+          mcpRemoved = await removeMCPServers(process.cwd(), mcpServersToRemove);
         }
+
+        // Summary
+        console.log(chalk.green(`\n✓ Synced ${templates} templates`));
+        if (unknowns > 0 || mcpRemoved > 0) {
+          console.log(chalk.green(`✓ Removed ${unknowns + mcpRemoved} files`));
+        }
+        const preserved = manifest.agents.unknown.length + manifest.slashCommands.unknown.length + manifest.rules.unknown.length + manifest.mcpServers.notInRegistry.length - selectedUnknowns.length;
+        if (preserved > 0) {
+          console.log(chalk.green(`✓ Preserved ${preserved} custom files`));
+        }
+        console.log('');
       } else {
         // Select and validate target (will use existing in repair mode, or prompt if needed)
         const targetId = await selectAndValidateTarget(initOptions);
