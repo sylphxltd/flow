@@ -1,5 +1,14 @@
 # @sylphx/flow
 
+## 1.4.1
+
+### Patch Changes
+
+- Fix rules scanning showing all project markdown files:
+  - Skip rules scanning for Claude Code (rules embedded in agent files)
+  - Only scan when target has explicit rulesFile config
+  - Prevent scanning entire project directory
+
 ## 1.4.0
 
 ### Minor Changes
