@@ -388,25 +388,12 @@ export async function executeSyncDelete(
   // Delete Flow templates
   for (const file of flowFiles) {
     try {
-      const existsBefore = fs.existsSync(file);
-      if (!existsBefore) {
-        console.log(chalk.dim(`  ⊘ Already deleted: ${path.basename(file)}`));
-        continue;
-      }
-
       await fs.promises.unlink(file);
-
-      // Verify deletion
-      const existsAfter = fs.existsSync(file);
-      if (existsAfter) {
-        console.warn(chalk.yellow(`  ⚠ File still exists after deletion: ${path.basename(file)}`));
-      } else {
-        console.log(chalk.dim(`  ✓ Deleted: ${path.basename(file)}`));
-        templatesDeleted++;
-      }
+      console.log(chalk.dim(`  ✓ Deleted: ${path.basename(file)}`));
+      templatesDeleted++;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        console.warn(chalk.yellow(`  ⚠ Failed to delete: ${path.basename(file)} - ${error}`));
+        console.warn(chalk.yellow(`  ⚠ Failed to delete: ${path.basename(file)}`));
       }
     }
   }

@@ -124,36 +124,9 @@ export async function installToDirectory(
     let content = fs.readFileSync(sourcePath, 'utf8');
     content = await transform(content, file);
 
-    // DEBUG: Log installation details (always show in force mode)
-    if (options.force) {
-      console.log(
-        `[DEBUG] Installing ${file} - force=${options.force}, exists=${!!localInfo}, path=${targetPath}`
-      );
-    }
-
     // Force mode: always overwrite without checking
     if (options.force) {
-      const contentPreview = content.substring(0, 100).replace(/\n/g, ' ');
-      console.log(`[DEBUG] Writing content (first 100 chars): ${contentPreview}...`);
-
       fs.writeFileSync(targetPath, content, 'utf8');
-
-      // DEBUG: Verify write and read back
-      const written = fs.existsSync(targetPath);
-      if (!written) {
-        console.warn(`[DEBUG] ⚠ Failed to write: ${targetPath}`);
-      } else {
-        const readBack = fs.readFileSync(targetPath, 'utf8');
-        const readBackPreview = readBack.substring(0, 100).replace(/\n/g, ' ');
-        console.log(`[DEBUG] Read back (first 100 chars): ${readBackPreview}...`);
-
-        if (readBack !== content) {
-          console.warn(`[DEBUG] ⚠ Content mismatch! Written ${content.length} bytes, read ${readBack.length} bytes`);
-        } else {
-          console.log(`[DEBUG] ✓ Verified write: ${targetPath}`);
-        }
-      }
-
       results.push({
         file,
         status: localInfo ? 'updated' : 'added',

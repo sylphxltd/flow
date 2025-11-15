@@ -168,11 +168,6 @@ export async function installComponents(
   if (target.setupAgents && options.agents !== false) {
     const agentSpinner = quiet ? null : ora({ text: 'Installing agents', color: 'cyan' }).start();
     try {
-      // DEBUG: Log force flag
-      if (!quiet && options.clear) {
-        console.log(`[DEBUG] Installing agents with force=${options.clear}`);
-      }
-
       const agentResult = await target.setupAgents(process.cwd(), { ...options, quiet: true, force: options.clear });
       result.installed.agents = agentResult.count;
 
@@ -252,11 +247,6 @@ export async function installComponents(
       color: 'cyan',
     }).start();
     try {
-      // DEBUG: Log force flag
-      if (!quiet && options.clear) {
-        console.log(`[DEBUG] Installing slash commands with force=${options.clear}`);
-      }
-
       const commandsResult = await target.setupSlashCommands(process.cwd(), { ...options, quiet: true, force: options.clear });
       result.installed.slashCommands = commandsResult.count;
 
