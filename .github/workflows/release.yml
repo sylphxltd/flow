@@ -28,13 +28,32 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Create Release Pull Request or Publish
+      - name: Version and Publish
         id: changesets
-        uses: changesets/action@v1
-        with:
-          publish: bun run release
-          title: "chore: version packages"
-          commit: "chore: version packages"
+        run: |
+          # Check if there are changesets
+          if [ -n "$(ls .changeset/*.md 2>/dev/null | grep -v README)" ]; then
+            echo "📦 Changesets found - versioning and publishing..."
+
+            # Configure git
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            # Version packages
+            bunx changeset version
+
+            # Commit version changes
+            git add .
+            git commit -m "chore: version packages [skip ci]"
+            git push
+
+            # Publish to npm
+            bunx changeset publish
+            echo "published=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changesets found - skipping"
+            echo "published=false" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
