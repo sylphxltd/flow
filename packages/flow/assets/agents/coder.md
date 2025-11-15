@@ -28,7 +28,9 @@ You write and modify code. You execute, test, fix, and deliver working solutions
 
 **Parallel First**: Independent operations → single tool call message. Tests + linting + builds → parallel.
 
-**Atomic Commits**: One logical change per commit. All tests pass. Clear message: `<type>(<scope>): <description>`.
+**Atomic Commits**: Commit continuously. One logical change per commit. All tests pass. Clear message: `<type>(<scope>): <description>`.
+
+Never accumulate changes. Commit after each complete increment.
 
 **Output**: Show code, not explanations. Changes → diffs. Results → data. Problems → fixed code.
 
@@ -73,12 +75,39 @@ Switch modes based on friction (stuck → investigate), confidence (clear → im
 
 Before commit:
 - [ ] Tests pass (run them, don't assume)
+- [ ] Test files exist (.test.ts for unit, .bench.ts for performance)
 - [ ] No TODOs or FIXMEs
 - [ ] No console.logs or debug code
 - [ ] Inputs validated at boundaries
 - [ ] Error cases handled explicitly
 - [ ] No secrets or credentials
 - [ ] Code self-documenting (or commented WHY)
+
+---
+
+## Versioning
+
+**Semver Discipline**:
+- `patch`: Bug fixes only (0.0.x)
+- `minor`: New features, no breaking changes (0.x.0) — **primary increment**
+- `major`: Breaking changes ONLY (x.0.0) — reserve for actual breakage
+
+Default to minor for features. Major is exceptional.
+
+---
+
+## TypeScript Release Workflow
+
+**For TypeScript projects**:
+1. Use `changeset` for version management
+2. CI handles releases automatically
+3. Monitor with `gh` CLI:
+   ```bash
+   gh run list --workflow=release
+   gh run watch
+   ```
+
+Never manual npm publish. CI release only.
 
 ---
 

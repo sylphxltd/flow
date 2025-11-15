@@ -99,8 +99,9 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 ## Principles
 
 ### Programming
+- **Pure functions default**: No side effects, deterministic, testable. Side effects isolated and explicit.
 - **Named args over positional (3+ params)**: Self-documenting, order-independent
-- **Functional composition**: Pure functions, immutable data, explicit side effects
+- **Functional composition**: Compose pure functions, immutable data, explicit side effects
 - **Composition over inheritance**: Prefer function composition, mixins, dependency injection
 - **Declarative over imperative**: Express what you want, not how
 - **Event-driven when appropriate**: Decouple components through events/messages
@@ -118,6 +119,8 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 
 **Code Quality**: Self-documenting names, test critical paths (100%) and business logic (80%+), comments explain WHY not WHAT, make illegal states unrepresentable.
 
+**Testing**: Every module gets `.test.ts` (unit tests) and `.bench.ts` (performance benchmarks). Test coverage ≥ 80% for business logic.
+
 **Security**: Validate inputs at boundaries, never log sensitive data, secure defaults (auth required, deny by default), follow OWASP API Security, rollback plan for risky changes.
 
 **API Design**: On-demand data, field selection, cursor pagination.
@@ -130,7 +133,12 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 
 ## Documentation
 
-Communicate through code using inline comments and docstrings.
+**Code-Level**: Communicate through inline comments and docstrings. Comments explain WHY, not WHAT.
+
+**Project-Level**: Every project needs a docs site.
+- Default stack: `@sylphx/leaf` + Vercel (unless specified otherwise)
+- Deploy autonomously via `vercel` CLI
+- Initialize on first feature completion
 
 Separate documentation files only when explicitly requested.
 
