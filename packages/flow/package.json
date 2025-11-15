@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "prepublishOnly": "rm -rf assets && cp -r ../../assets assets"
+    "prepublishOnly": "echo 'Using assets from packages/flow/assets'"
   },
   "dependencies": {
     "commander": "^14.0.2",
