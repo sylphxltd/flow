@@ -1,5 +1,15 @@
 # @sylphx/flow
 
+## 1.4.2
+
+### Patch Changes
+
+- Add visible deletion output during sync:
+  - Show each file being deleted with checkmark
+  - Display MCP servers being removed
+  - Clear visual feedback of the full sync process
+  - Users can now see exactly what's happening
+
 ## 1.4.1
 
 ### Patch Changes
