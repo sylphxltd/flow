@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.4.10
+
+### Patch Changes
+
+- 126de1e: Fix CI auto-publish workflow NPM authentication
+
 ## 1.4.9
 
 ### Patch Changes
