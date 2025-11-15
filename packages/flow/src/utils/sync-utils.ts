@@ -3,13 +3,29 @@ import path from 'node:path';
 import chalk from 'chalk';
 import type { Target } from '../types.js';
 import { MCP_SERVER_REGISTRY } from '../config/servers.js';
+import { getAgentsDir, getSlashCommandsDir, getRulesDir } from './paths.js';
 
 /**
- * Flow template filenames (source of truth)
+ * Scan directory for .md files and return basenames
  */
-const FLOW_AGENTS = ['coder.md', 'orchestrator.md', 'reviewer.md', 'writer.md'];
-const FLOW_SLASH_COMMANDS = ['commit.md', 'context.md', 'explain.md', 'review.md', 'test.md'];
-const FLOW_RULES = ['code-standards.md', 'core.md'];
+function scanTemplateDir(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+
+  try {
+    return fs.readdirSync(dir, { withFileTypes: true })
+      .filter((f) => f.isFile() && f.name.endsWith('.md'))
+      .map((f) => f.name);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Flow template filenames (scanned from assets at runtime)
+ */
+const FLOW_AGENTS = scanTemplateDir(getAgentsDir());
+const FLOW_SLASH_COMMANDS = scanTemplateDir(getSlashCommandsDir());
+const FLOW_RULES = scanTemplateDir(getRulesDir());
 
 /**
  * Categorized files for sync
