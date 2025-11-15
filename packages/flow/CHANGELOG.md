@@ -1,5 +1,15 @@
 # @sylphx/flow
 
+## 1.2.1
+
+### Patch Changes
+
+- Apply MEP principles to workspace documentation rule:
+  - Condensed from verbose instructions to condition→action format
+  - Removed step-by-step teaching and command examples
+  - Embedded verification in directives
+  - 31% reduction while maintaining clarity
+
 ## 1.2.0
 
 ### Minor Changes
