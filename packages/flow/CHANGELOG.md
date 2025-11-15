@@ -1,5 +1,15 @@
 # @sylphx/flow
 
+## 1.4.3
+
+### Patch Changes
+
+- Fix sync not actually updating files (CRITICAL):
+  - Installation was comparing content and skipping writes
+  - Even after deletion, files weren't updated if content "matched"
+  - Add force mode that always overwrites during sync
+  - Sync now properly updates all files regardless of content
+
 ## 1.4.2
 
 ### Patch Changes
