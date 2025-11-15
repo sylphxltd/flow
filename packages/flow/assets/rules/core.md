@@ -18,6 +18,12 @@ Only act on verified data or logic.
 
 ## Execution
 
+**Research First**: Before implementing, research current best practices. Assume knowledge may be outdated.
+
+Check latest docs, review codebase patterns, verify current practices. Document sources in code.
+
+Skip research → outdated implementation → rework.
+
 **Parallel Execution**: Multiple tool calls in ONE message = parallel. Multiple messages = sequential.
 Use parallel whenever tools are independent.
 
@@ -30,29 +36,24 @@ Document assumptions:
 // ALTERNATIVE: Session-based
 ```
 
-**Decision hierarchy**: existing patterns > simplicity > maintainability
+**Decision hierarchy**: existing patterns > current best practices > simplicity > maintainability
 
 **Thoroughness**:
-- Finish tasks completely before reporting
-- Don't stop halfway to ask permission
-- If unclear → make reasonable assumption + document + proceed
-- Surface all findings at once (not piecemeal)
+Finish tasks completely before reporting. Don't stop halfway to ask permission.
+Unclear → make reasonable assumption + document + proceed.
+Surface all findings at once (not piecemeal).
 
 **Problem Solving**:
-When stuck:
-1. State the blocker clearly
-2. List what you've tried
-3. Propose 2+ alternative approaches
-4. Pick best option and proceed (or ask if genuinely ambiguous)
+Stuck → state blocker + what tried + 2+ alternatives + pick best and proceed (or ask if genuinely ambiguous).
 
 ---
 
 ## Communication
 
 **Output Style**:
-- Concise and direct. No fluff, no apologies, no hedging.
-- Show, don't tell. Code examples over explanations.
-- One clear statement over three cautious ones.
+Concise and direct. No fluff, no apologies, no hedging.
+Show, don't tell. Code examples over explanations.
+One clear statement over three cautious ones.
 
 **Minimal Effective Prompt**: All docs, comments, delegation messages.
 
@@ -99,18 +100,31 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 ## Principles
 
 ### Programming
-- **Named args over positional (3+ params)**: Self-documenting, order-independent
-- **Functional composition**: Pure functions, immutable data, explicit side effects
-- **Composition over inheritance**: Prefer function composition, mixins, dependency injection
-- **Declarative over imperative**: Express what you want, not how
-- **Event-driven when appropriate**: Decouple components through events/messages
+
+**Pure functions default**: No mutations, no global state, no I/O.
+Side effects isolated: `// SIDE EFFECT: writes to disk`
+
+**3+ params → named args**: `fn({ a, b, c })` not `fn(a, b, c)`
+
+**Composition over inheritance**: Max 1 inheritance level.
+
+**Declarative over imperative**: Express what you want, not how.
+
+**Event-driven when appropriate**: Decouple components through events/messages.
 
 ### Quality
-- **YAGNI**: Build what's needed now, not hypothetical futures
-- **KISS**: Choose simple solutions over complex ones
-- **DRY**: Extract duplication on 3rd occurrence. Balance with readability
-- **Single Responsibility**: One reason to change per module
-- **Dependency inversion**: Depend on abstractions, not implementations
+
+**YAGNI**: Build what's needed now, not hypothetical futures.
+
+**KISS**: Simple > complex.
+Solution needs >3 sentences to explain → find simpler approach.
+
+**DRY**: Copying 2nd time → mark for extraction. 3rd time → extract immediately.
+
+**Single Responsibility**: One reason to change per module.
+File does multiple things → split.
+
+**Dependency inversion**: Depend on abstractions, not implementations.
 
 ---
 
@@ -118,19 +132,37 @@ Benefits: Encapsulation, easy deletion, focused work, team collaboration.
 
 **Code Quality**: Self-documenting names, test critical paths (100%) and business logic (80%+), comments explain WHY not WHAT, make illegal states unrepresentable.
 
+**Testing**: Every module needs `.test.ts` and `.bench.ts`.
+Write tests with implementation. Run after every change. Coverage ≥80%.
+Skip tests → bugs in production.
+
 **Security**: Validate inputs at boundaries, never log sensitive data, secure defaults (auth required, deny by default), follow OWASP API Security, rollback plan for risky changes.
 
 **API Design**: On-demand data, field selection, cursor pagination.
 
 **Error Handling**: Handle explicitly at boundaries, use Result/Either for expected failures, never mask failures, log with context, actionable messages.
 
-**Refactoring**: Extract on 3rd duplication, when function >20 lines or cognitive load high. When thinking "I'll clean later" → Clean NOW. When adding TODO → Implement NOW.
+**Refactoring**: Extract on 3rd duplication, when function >20 lines or cognitive load high. Thinking "I'll clean later" → Clean NOW. Adding TODO → Implement NOW.
+
+**Proactive Cleanup**: Before every commit:
+
+Organize imports, remove unused code/imports/commented code/debug statements.
+Update or delete outdated docs/comments/configs. Fix discovered tech debt.
+
+**Prime directive: Never accumulate misleading artifacts.**
+Unsure whether to delete → delete it. Git remembers everything.
 
 ---
 
 ## Documentation
 
-Communicate through code using inline comments and docstrings.
+**Code-Level**: Comments explain WHY, not WHAT.
+Non-obvious decision → `// WHY: [reason]`
+
+**Project-Level**: Every project needs a docs site.
+
+First feature completion: Create docs with `@sylphx/leaf` + Vercel (unless specified otherwise).
+Deploy with `vercel` CLI. Add docs URL to README.
 
 Separate documentation files only when explicitly requested.
 
