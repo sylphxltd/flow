@@ -31,8 +31,9 @@ const FLOW_RULES = scanTemplateDir(getRulesDir());
  * Categorized files for sync
  */
 interface CategorizedFiles {
-  inFlow: string[];      // Files that exist in Flow templates
+  inFlow: string[];      // Files that exist locally and in Flow templates (will reinstall)
   unknown: string[];     // Files not in Flow templates (custom or removed)
+  missing: string[];     // Flow templates that don't exist locally (will install)
 }
 
 /**
@@ -50,11 +51,15 @@ interface SyncManifest {
 }
 
 /**
- * Categorize files into Flow templates vs unknown
+ * Categorize files into Flow templates vs unknown, and detect missing templates
  */
 function categorizeFiles(files: string[], flowTemplates: string[]): CategorizedFiles {
   const inFlow: string[] = [];
   const unknown: string[] = [];
+  const existingBasenames = files.map((f) => path.basename(f));
+
+  // Find missing Flow templates (in flowTemplates but not in files)
+  const missing = flowTemplates.filter((template) => !existingBasenames.includes(template));
 
   for (const file of files) {
     const basename = path.basename(file);
@@ -65,7 +70,7 @@ function categorizeFiles(files: string[], flowTemplates: string[]): CategorizedF
     }
   }
 
-  return { inFlow, unknown };
+  return { inFlow, unknown, missing };
 }
 
 /**
@@ -73,9 +78,9 @@ function categorizeFiles(files: string[], flowTemplates: string[]): CategorizedF
  */
 export async function buildSyncManifest(cwd: string, target: Target): Promise<SyncManifest> {
   const manifest: SyncManifest = {
-    agents: { inFlow: [], unknown: [] },
-    slashCommands: { inFlow: [], unknown: [] },
-    rules: { inFlow: [], unknown: [] },
+    agents: { inFlow: [], unknown: [], missing: [] },
+    slashCommands: { inFlow: [], unknown: [], missing: [] },
+    rules: { inFlow: [], unknown: [], missing: [] },
     mcpServers: { inRegistry: [], notInRegistry: [] },
     preserve: [],
   };
@@ -209,6 +214,40 @@ export function showSyncPreview(manifest: SyncManifest, cwd: string): void {
       console.log(chalk.dim('  MCP Servers:'));
       manifest.mcpServers.inRegistry.forEach((server) => {
         console.log(chalk.dim(`    ✓ ${server}`));
+      });
+      console.log('');
+    }
+  }
+
+  // Missing templates section (will be installed)
+  const hasMissingFiles =
+    manifest.agents.missing.length > 0 ||
+    manifest.slashCommands.missing.length > 0 ||
+    manifest.rules.missing.length > 0;
+
+  if (hasMissingFiles) {
+    console.log(chalk.green('Will install (new templates):\n'));
+
+    if (manifest.agents.missing.length > 0) {
+      console.log(chalk.dim('  Agents:'));
+      manifest.agents.missing.forEach((file) => {
+        console.log(chalk.dim(`    + ${file}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.slashCommands.missing.length > 0) {
+      console.log(chalk.dim('  Commands:'));
+      manifest.slashCommands.missing.forEach((file) => {
+        console.log(chalk.dim(`    + ${file}`));
+      });
+      console.log('');
+    }
+
+    if (manifest.rules.missing.length > 0) {
+      console.log(chalk.dim('  Rules:'));
+      manifest.rules.missing.forEach((file) => {
+        console.log(chalk.dim(`    + ${file}`));
       });
       console.log('');
     }
