@@ -1,11 +1,11 @@
 ---
 name: Code Standards
-description: Shared coding standards for Coder and Reviewer agents
+description: Technical standards for Coder and Reviewer agents
 ---
 
 # CODE STANDARDS
 
-## Task Approach
+## Cognitive Framework
 
 ### Understanding Depth
 - **Shallow OK**: Well-defined, low-risk, established patterns → Implement
@@ -34,9 +34,7 @@ description: Shared coding standards for Coder and Reviewer agents
 ❌ {api, hooks, components, utils}/auth
 ```
 
-**File size limits**:
-Component <250 lines, Module <300 lines.
-Larger → split by feature or responsibility.
+**File size limits**: Component <250 lines, Module <300 lines. Larger → split by feature or responsibility.
 
 ---
 
@@ -48,11 +46,9 @@ Larger → split by feature or responsibility.
 ❌ updateUser(id, email, role)
 ```
 
-**Functional composition**:
-Pure functions where possible. Immutable data. Explicit side effects.
+**Pure functions default**: No mutations, no global state, no I/O. Side effects isolated: `// SIDE EFFECT: writes to disk`
 
-**Composition over inheritance**:
-Prefer mixins, HOCs, hooks. Dependency injection > tight coupling.
+**Composition over inheritance**: Prefer mixins, HOCs, hooks, dependency injection. Max 1 inheritance level.
 
 **Declarative over imperative**:
 ```typescript
@@ -60,73 +56,54 @@ Prefer mixins, HOCs, hooks. Dependency injection > tight coupling.
 ❌ const active = []; for (let i = 0; i < users.length; i++) { ... }
 ```
 
-**Event-driven when appropriate**:
-Decouple components through events/messages. Pub/sub for cross-cutting concerns.
+**Event-driven when appropriate**: Decouple components through events/messages.
 
 ---
 
-## Quality Standards
+## Quality Principles
 
 **YAGNI**: Build what's needed now, not hypothetical futures.
 
-**KISS**: Simple > complex.
+**KISS**: Simple > complex. Solution needs >3 sentences to explain → find simpler approach.
 
 **DRY**: Extract on 3rd duplication. Balance with readability.
 
-**Single Responsibility**: One reason to change per module.
+**Single Responsibility**: One reason to change per module. File does multiple things → split.
 
 **Dependency Inversion**: Depend on abstractions, not implementations.
 
 ---
 
-## Code Quality Checklist
+## Code Quality
 
 **Naming**:
-- [ ] Functions: verbs (getUserById, calculateTotal)
-- [ ] Booleans: is/has/can (isActive, hasPermission)
-- [ ] Classes: nouns (UserService, AuthManager)
-- [ ] Constants: UPPER_SNAKE_CASE
-- [ ] No abbreviations unless universal (req/res ok, usr/calc not ok)
-
-**Testing**:
-- [ ] Critical paths: 100% coverage
-- [ ] Business logic: 80%+ coverage
-- [ ] Edge cases explicitly tested
-- [ ] Error paths tested
-- [ ] Test names describe behavior, not implementation
-
-**Comments**:
-- [ ] Explain WHY, not WHAT
-- [ ] Complex logic has reasoning
-- [ ] Non-obvious decisions documented
-- [ ] TODOs forbidden (implement or delete)
+- Functions: verbs (getUserById, calculateTotal)
+- Booleans: is/has/can (isActive, hasPermission)
+- Classes: nouns (UserService, AuthManager)
+- Constants: UPPER_SNAKE_CASE
+- No abbreviations unless universal (req/res ok, usr/calc not ok)
 
 **Type Safety**:
-- [ ] Make illegal states unrepresentable
-- [ ] No `any` without justification
-- [ ] Null/undefined handled explicitly
-- [ ] Union types over loose types
+- Make illegal states unrepresentable
+- No `any` without justification
+- Null/undefined handled explicitly
+- Union types over loose types
+
+**Comments**: Explain WHY, not WHAT. Non-obvious decisions documented. TODOs forbidden (implement or delete).
+
+**Testing**: Critical paths 100% coverage. Business logic 80%+. Edge cases and error paths tested. Test names describe behavior, not implementation.
 
 ---
 
 ## Security Standards
 
-**Input Validation**:
-Validate at boundaries (API, forms, file uploads). Whitelist > blacklist.
-Sanitize before storage/display. Use schema validation (Zod, Yup).
+**Input Validation**: Validate at boundaries (API, forms, file uploads). Whitelist > blacklist. Sanitize before storage/display. Use schema validation (Zod, Yup).
 
-**Authentication/Authorization**:
-Auth required by default (opt-in to public). Deny by default.
-Check permissions at every entry point. Never trust client-side validation.
+**Authentication/Authorization**: Auth required by default (opt-in to public). Deny by default. Check permissions at every entry point. Never trust client-side validation.
 
-**Data Protection**:
-Never log: passwords, tokens, API keys, PII.
-Encrypt sensitive data at rest. HTTPS only.
-Secure cookie flags (httpOnly, secure, sameSite).
+**Data Protection**: Never log: passwords, tokens, API keys, PII. Encrypt sensitive data at rest. HTTPS only. Secure cookie flags (httpOnly, secure, sameSite).
 
-**Risk Mitigation**:
-Rollback plan for risky changes. Feature flags for gradual rollout.
-Circuit breakers for external services.
+**Risk Mitigation**: Rollback plan for risky changes. Feature flags for gradual rollout. Circuit breakers for external services.
 
 ---
 
@@ -138,17 +115,11 @@ Circuit breakers for external services.
 ❌ const data = await fetchUser(id) // let it bubble
 ```
 
-**Expected Failures**:
-Use Result/Either types. Never exceptions for control flow. Return errors as values.
+**Expected Failures**: Use Result/Either types. Never exceptions for control flow. Return errors as values.
 
-**Logging**:
-Include context (user id, request id). Actionable messages.
-Appropriate severity. Never mask failures.
+**Logging**: Include context (user id, request id). Actionable messages. Appropriate severity. Never mask failures.
 
-**Retry Logic**:
-Transient failures (network, rate limits) → retry with exponential backoff.
-Permanent failures (validation, auth) → fail fast.
-Max retries: 3-5 with jitter.
+**Retry Logic**: Transient failures (network, rate limits) → retry with exponential backoff. Permanent failures (validation, auth) → fail fast. Max retries: 3-5 with jitter.
 
 ---
 
@@ -160,19 +131,11 @@ Max retries: 3-5 with jitter.
 ✅ const posts = await db.posts.findByUserIds(users.map(u => u.id))
 ```
 
-**Algorithm Complexity**:
-O(n²) in hot paths → reconsider algorithm.
-Nested loops on large datasets → use hash maps.
-Repeated calculations → memoize.
+**Algorithm Complexity**: O(n²) in hot paths → reconsider algorithm. Nested loops on large datasets → use hash maps. Repeated calculations → memoize.
 
-**Data Transfer**:
-Large payloads → pagination or streaming.
-API responses → only return needed fields.
-Images/assets → lazy load, CDN.
+**Data Transfer**: Large payloads → pagination or streaming. API responses → only return needed fields. Images/assets → lazy load, CDN.
 
-**When to Optimize**:
-Only with data showing bottleneck. Profile before optimizing.
-Measure impact. No premature optimization.
+**When to Optimize**: Only with data showing bottleneck. Profile before optimizing. Measure impact. No premature optimization.
 
 ---
 
@@ -189,10 +152,7 @@ Measure impact. No premature optimization.
 - Multiple unrelated responsibilities
 - Difficult to name clearly
 
-**Immediate refactor**:
-Thinking "I'll clean later" → Clean NOW.
-Adding TODO → Implement NOW.
-Copy-pasting → Extract NOW.
+**Immediate refactor**: Thinking "I'll clean later" → Clean NOW. Adding TODO → Implement NOW. Copy-pasting → Extract NOW.
 
 ---
 
@@ -204,8 +164,7 @@ Copy-pasting → Extract NOW.
 - ❌ "Tests slow me down" → Bugs slow more
 - ✅ Refactor AS you work, not after
 
-**Reinventing the Wheel**:
-Before ANY feature: research best practices + search codebase + check package registry + check framework built-ins.
+**Reinventing the Wheel**: Before ANY feature: research best practices + search codebase + check package registry + check framework built-ins.
 
 ```typescript
 ❌ Custom Result type → ✅ import { Result } from 'neverthrow'
@@ -230,27 +189,13 @@ Before ANY feature: research best practices + search codebase + check package re
 
 ## Code Smells
 
-**Complexity**:
-Function >20 lines → extract.
->3 nesting levels → flatten or extract.
->5 parameters → use object or split.
-Deeply nested ternaries → use if/else or early returns.
+**Complexity**: Function >20 lines → extract. >3 nesting levels → flatten or extract. >5 parameters → use object or split. Deeply nested ternaries → use if/else or early returns.
 
-**Coupling**:
-Circular dependencies → redesign.
-Import chains >3 levels → reconsider architecture.
-Tight coupling to external APIs → add adapter layer.
+**Coupling**: Circular dependencies → redesign. Import chains >3 levels → reconsider architecture. Tight coupling to external APIs → add adapter layer.
 
-**Data**:
-Mutable shared state → make immutable or encapsulate.
-Global variables → dependency injection.
-Magic numbers → named constants.
-Stringly typed → use enums/types.
+**Data**: Mutable shared state → make immutable or encapsulate. Global variables → dependency injection. Magic numbers → named constants. Stringly typed → use enums/types.
 
-**Naming**:
-Generic names (data, info, manager, utils) → be specific.
-Misleading names → rename immediately.
-Inconsistent naming → align with conventions.
+**Naming**: Generic names (data, info, manager, utils) → be specific. Misleading names → rename immediately. Inconsistent naming → align with conventions.
 
 ---
 
@@ -273,10 +218,7 @@ function loadConfig(raw: unknown): Config {
 }
 ```
 
-**Single Source of Truth**:
-Configuration → Environment + config files.
-State → Single store (Redux, Zustand, Context).
-Derived data → Compute from source, don't duplicate.
+**Single Source of Truth**: Configuration → Environment + config files. State → Single store (Redux, Zustand, Context). Derived data → Compute from source, don't duplicate.
 
 **Data Flow**:
 ```

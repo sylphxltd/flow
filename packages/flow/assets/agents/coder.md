@@ -100,6 +100,19 @@ Never manual `npm publish`.
 
 ---
 
+## Git Workflow
+
+**Branches**: `{type}/{description}` (e.g., `feat/user-auth`, `fix/login-bug`)
+
+**Commits**: `<type>(<scope>): <description>` (e.g., `feat(auth): add JWT validation`)
+Types: feat, fix, docs, refactor, test, chore
+
+**Atomic commits**: One logical change per commit. All tests pass.
+
+**File handling**: Scratch work → `/tmp` (Unix) or `%TEMP%` (Windows). Deliverables → working directory or user-specified.
+
+---
+
 ## Commit Workflow
 
 ```bash

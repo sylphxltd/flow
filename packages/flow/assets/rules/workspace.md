@@ -7,9 +7,9 @@ description: .sylphx/ workspace - SSOT for context, architecture, decisions
 
 ## Core Behavior
 
-**First task:** `.sylphx/` missing → create structure. Exists → verify accuracy, update/delete outdated.
+**First task:** `.sylphx/` missing → create structure. Exists → verify accuracy, delete outdated.
 
-**Every task start:** Read all `.sylphx/` files. Verify `<!-- VERIFY: -->` markers. Fix or delete wrong info immediately.
+**Task start:** Read `.sylphx/context.md`. Verify VERIFY markers. Drift → fix immediately (see Drift Resolution).
 
 **During work:** New understanding/decision/term → update `.sylphx/` immediately.
 
@@ -21,15 +21,15 @@ description: .sylphx/ workspace - SSOT for context, architecture, decisions
 
 ```
 .sylphx/
-  context.md       # What, Why, Who, Constraints
-  architecture.md  # System overview, patterns (WHY), boundaries
+  context.md       # Internal context, constraints, boundaries
+  architecture.md  # System overview, patterns (WHY), trade-offs
   glossary.md      # Project-specific terms only
   decisions/
     README.md      # ADR index
     NNN-title.md   # Individual ADRs
 ```
 
-Missing on first task → create with minimal templates below.
+Missing → create with templates below.
 
 ---
 
@@ -37,32 +37,33 @@ Missing on first task → create with minimal templates below.
 
 ### context.md
 
+Internal context only. Public info → README.md.
+
 ```markdown
 # Project Context
 
-## What
-[1-2 sentences]
+## What (Internal)
+[Project scope, internal boundaries, target use cases]
 
-## Why
-[Problem solved]
-
-## Who
-[Users, use cases]
-
-## Status
-[Phase, version]
+## Why (Business/Internal)
+[Business context, internal motivation, market gap]
 
 ## Key Constraints
-- [Non-negotiable 1]
-- [Non-negotiable 2]
+<!-- Non-negotiable constraints affecting code decisions -->
+- Technical: [e.g., "Bundle <5MB (Vercel edge)"]
+- Business: [e.g., "Zero telemetry (enterprise security)"]
+- Legal: [e.g., "GDPR compliant (EU market)"]
 
-## Source of Truth
+## Boundaries
+**In scope:** [What we build]
+**Out of scope:** [What we don't]
+
+## SSOT References
 <!-- VERIFY: package.json -->
 - Dependencies: `package.json`
-- [Other SSOT references]
 ```
 
-**Update when:** Scope/purpose/constraints change.
+Update when: Scope/constraints/boundaries change.
 
 ---
 
@@ -72,7 +73,7 @@ Missing on first task → create with minimal templates below.
 # Architecture
 
 ## System Overview
-[1-2 paragraphs]
+[1-2 paragraphs: structure, data flow, key decisions]
 
 ## Key Components
 <!-- VERIFY: src/path/ -->
@@ -90,7 +91,7 @@ Missing on first task → create with minimal templates below.
 **Out of scope:** [What it doesn't]
 ```
 
-**Update when:** Architecture changes, pattern adopted, major refactor.
+Update when: Architecture changes, pattern adopted, major refactor.
 
 ---
 
@@ -105,8 +106,7 @@ Missing on first task → create with minimal templates below.
 **Context:** [When/why matters]
 ```
 
-**Update when:** New project-specific term introduced.
-**Skip:** General programming concepts.
+Update when: New project-specific term. Skip: General programming concepts.
 
 ---
 
@@ -115,7 +115,7 @@ Missing on first task → create with minimal templates below.
 ```markdown
 # NNN. [Verb + Object]
 
-**Status:** ✅ Accepted
+**Status:** ✅ Accepted | 🚧 Proposed | ❌ Rejected | 📦 Superseded
 **Date:** YYYY-MM-DD
 
 ## Context
@@ -140,15 +140,22 @@ Missing on first task → create with minimal templates below.
 
 **<200 words total.**
 
-**Create when:**
+**Create ADR when:**
+- Difficult to reverse (schema, architecture)
+- Affects >3 major components
+- Security/compliance decision
 - 2+ significant alternatives
-- Long-term impact
-- Non-obvious trade-offs
-- "Why did they do this?" question
+- Team will ask "why?"
 
-**Don't create for:** Obvious/temporary/trivial choices.
+**Don't create for:** Framework patterns, best practices, temporary solutions, single-file changes.
 
-**Quick test:** Matters in 6 months? → ADR. Otherwise skip.
+**Decision tree:**
+```
+Can reverse in <1 day? → No ADR
+Clear best practice? → No ADR
+Affects architecture? → ADR
+Trade-offs worth documenting? → ADR
+```
 
 ---
 
@@ -156,67 +163,58 @@ Missing on first task → create with minimal templates below.
 
 Never duplicate. Always reference.
 
-Reference format:
 ```markdown
 <!-- VERIFY: path/to/file -->
 [Topic]: See `path/to/file`
 ```
 
-**Examples:**
+**Example:**
 ```markdown
 <!-- VERIFY: package.json -->
-Dependencies: See `package.json`
+Dependencies: `package.json`
 
 <!-- VERIFY: biome.json -->
-Linting: Biome (config in `biome.json`)
-Why Biome: Single tool for format+lint. Trade-off: Smaller ecosystem. (ADR-003)
+Linting: Biome. WHY: Single tool for format+lint. Trade-off: Smaller ecosystem. (ADR-003)
 ```
 
-Marker `<!-- VERIFY: -->` = reminder to check on file changes.
+VERIFY marker = check on file changes.
 
 ---
 
 ## Update Triggers
 
-**New understanding** → Update context.md or architecture.md
-**Architectural decision** → Create ADR
-**Project-specific term** → Add to glossary.md
-**Pattern adopted** → Document in architecture.md (WHY + trade-off)
-**Constraint discovered** → Add to context.md
-**Outdated info found** → Delete or fix immediately
+New understanding → context.md/architecture.md. Architectural decision → ADR. Project term → glossary.md. Pattern adopted → architecture.md (WHY + trade-off). Constraint → context.md. Outdated → delete/fix immediately.
 
 ---
 
 ## Content Rules
 
-### ✅ Include (WHY)
-- Project purpose, context
-- Architectural decisions (WHY chosen)
-- System boundaries
-- Key patterns (WHY, trade-offs)
-- Project-specific terms
-- Non-obvious constraints
+### ✅ Include (WHY + Internal)
+- context.md: Business context, constraints, scope
+- architecture.md: Design decisions (WHY), patterns, trade-offs
+- glossary.md: Project-specific terms
+- ADRs: Significant decisions with alternatives
 
 ### ❌ Exclude (Elsewhere)
-- API docs → JSDoc
+- Public info → README.md
+- API docs → JSDoc/TSDoc
 - Implementation → Code comments
-- Config values → Config files
-- Versions → package.json
-- How-to → Code
-- Step-by-step → Code
+- Config → Config files
+- Versions/deps → package.json
+- How-to → Code/docs site
 
-**If in code/config, don't duplicate.**
+Internal context only. No duplication.
 
 ---
 
 ## Red Flags
 
-Scan every read. Delete immediately:
+Delete immediately:
 
-- ❌ "We plan to..." / "In the future..." (speculation)
-- ❌ "Currently using..." (implies change)
+- ❌ "We plan to..." / "In the future..."
+- ❌ "Currently using..."
 - ❌ Contradicts code
-- ❌ References non-existent files
+- ❌ Non-existent file references
 - ❌ Duplicates package.json/config
 - ❌ Explains HOW not WHY
 - ❌ Generic advice
@@ -225,16 +223,39 @@ Scan every read. Delete immediately:
 
 ## Verification
 
-**On every `.sylphx/` read:**
-- Check `<!-- VERIFY: -->` markers → files exist?
-- Content accurate vs code?
-- Wrong → fix. Outdated → update/delete.
+**Every `.sylphx/` read:** VERIFY markers valid. Content matches code. Wrong → fix immediately.
 
-**Monthly or after major changes:**
-- Verify all file references exist
-- Check no duplication of package.json/config
-- Verify all markers valid
-- Delete outdated sections
+**Automated:**
+```bash
+bun run verify-docs  # Check all VERIFY markers
+```
+
+---
+
+## Drift Resolution
+
+**Detection triggers:**
+- VERIFY marker → non-existent file
+- Docs describe missing pattern
+- Code has undocumented pattern
+- Contradiction between .sylphx/ and code
+
+**Resolution hierarchy:**
+```
+Code vs Docs:
+├─ WHAT/HOW → Code wins, update docs
+├─ WHY → Docs win if valid, else update both
+└─ Both outdated → Research, fix both
+```
+
+**Fix immediately:** Code evolved → update docs. Docs outdated → update/delete. File moved → update markers. Who detects = who fixes.
+
+**Document:** Architectural change → ADR. Pattern change → architecture.md. Constraint change → context.md.
+
+**Examples:**
+- File moved → update marker path
+- Implementation changed → update docs + ADR
+- Constraint violated → fix code or update constraint
 
 ---
 
