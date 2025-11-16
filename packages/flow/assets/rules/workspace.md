@@ -7,13 +7,11 @@ description: .sylphx/ workspace - SSOT for context, architecture, decisions
 
 ## Core Behavior
 
-**First task:** `.sylphx/` missing → create structure. Exists → verify accuracy, delete outdated.
+**Task start:** `.sylphx/` missing → create structure with templates. Exists → read context.md, spot-check critical VERIFY markers.
 
-**Task start:** Read `.sylphx/context.md`. Verify VERIFY markers. Drift → fix immediately (see Drift Resolution).
+**During work:** Note changes. Defer updates until before commit.
 
-**During work:** New understanding/decision/term → update `.sylphx/` immediately.
-
-**Before commit:** `.sylphx/` matches code. No contradictions. All markers valid.
+**Before commit:** Update all .sylphx/ files. All VERIFY markers valid. No contradictions. Outdated → delete.
 
 ---
 
@@ -29,41 +27,43 @@ description: .sylphx/ workspace - SSOT for context, architecture, decisions
     NNN-title.md   # Individual ADRs
 ```
 
-Missing → create with templates below.
-
 ---
 
 ## Templates
 
 ### context.md
 
-Internal context only. Public info → README.md.
+Internal only. Public → README.md.
 
 ```markdown
 # Project Context
 
 ## What (Internal)
-[Project scope, internal boundaries, target use cases]
+[Project scope, boundaries, target]
+
+Example: CLI for AI agent orchestration. Scope: Local execution, file config, multi-agent. Target: TS developers. Out: Cloud, training, UI.
 
 ## Why (Business/Internal)
-[Business context, internal motivation, market gap]
+[Business context, motivation, market gap]
+
+Example: Market gap in TS-native AI tooling. Python-first tools dominate. Opportunity: Capture web dev market.
 
 ## Key Constraints
 <!-- Non-negotiable constraints affecting code decisions -->
-- Technical: [e.g., "Bundle <5MB (Vercel edge)"]
-- Business: [e.g., "Zero telemetry (enterprise security)"]
-- Legal: [e.g., "GDPR compliant (EU market)"]
+- Technical: [e.g., "Bundle <5MB (Vercel edge)", "Node 18+ (ESM-first)"]
+- Business: [e.g., "Zero telemetry (enterprise security)", "Offline-capable (China market)"]
+- Legal: [e.g., "GDPR compliant (EU market)", "Apache 2.0 license only"]
 
 ## Boundaries
 **In scope:** [What we build]
-**Out of scope:** [What we don't]
+**Out of scope:** [What we explicitly don't]
 
 ## SSOT References
 <!-- VERIFY: package.json -->
 - Dependencies: `package.json`
 ```
 
-Update when: Scope/constraints/boundaries change.
+Update: Scope/constraints/boundaries change.
 
 ---
 
@@ -75,9 +75,15 @@ Update when: Scope/constraints/boundaries change.
 ## System Overview
 [1-2 paragraphs: structure, data flow, key decisions]
 
+Example: Event-driven CLI. Commands → Agent orchestrator → Specialized agents → Tools. File-based config, no server.
+
 ## Key Components
 <!-- VERIFY: src/path/ -->
 - **Name** (`src/path/`): [Responsibility]
+
+Example:
+- **Agent Orchestrator** (`src/orchestrator/`): Task decomposition, delegation, synthesis
+- **Code Agent** (`src/agents/coder/`): Code generation, testing, git operations
 
 ## Design Patterns
 
@@ -86,12 +92,18 @@ Update when: Scope/constraints/boundaries change.
 **Where:** `src/path/`
 **Trade-off:** [Gained vs lost]
 
+Example:
+### Pattern: Factory for agents
+**Why:** Dynamic agent creation based on task type
+**Where:** `src/factory/`
+**Trade-off:** Flexibility vs complexity. Added indirection but easy to add agents.
+
 ## Boundaries
-**In scope:** [What it does]
-**Out of scope:** [What it doesn't]
+**In scope:** [Core functionality]
+**Out of scope:** [Explicitly excluded]
 ```
 
-Update when: Architecture changes, pattern adopted, major refactor.
+Update: Architecture changes, pattern adopted, major refactor.
 
 ---
 
@@ -104,9 +116,15 @@ Update when: Architecture changes, pattern adopted, major refactor.
 **Definition:** [Concise]
 **Usage:** `src/path/`
 **Context:** [When/why matters]
+
+Example:
+## Agent Enhancement
+**Definition:** Merging base agent definition with rules
+**Usage:** `src/core/enhance-agent.ts`
+**Context:** Loaded at runtime before agent execution. Rules field stripped for Claude Code compatibility.
 ```
 
-Update when: New project-specific term. Skip: General programming concepts.
+Update: New project-specific term. Skip: General programming concepts.
 
 ---
 
@@ -140,22 +158,15 @@ Update when: New project-specific term. Skip: General programming concepts.
 
 **<200 words total.**
 
-**Create ADR when:**
-- Difficult to reverse (schema, architecture)
-- Affects >3 major components
+**Create ADR when ANY:**
+- Changes database schema
+- Adds/removes major dependency (runtime, not dev)
+- Changes auth/authz mechanism
+- Affects >3 files in different features
 - Security/compliance decision
-- 2+ significant alternatives
-- Team will ask "why?"
+- Multiple valid approaches exist
 
-**Don't create for:** Framework patterns, best practices, temporary solutions, single-file changes.
-
-**Decision tree:**
-```
-Can reverse in <1 day? → No ADR
-Clear best practice? → No ADR
-Affects architecture? → ADR
-Trade-offs worth documenting? → ADR
-```
+**Skip:** Framework patterns, obvious fixes, config changes, single-file changes, dev dependencies.
 
 ---
 
@@ -168,42 +179,86 @@ Never duplicate. Always reference.
 [Topic]: See `path/to/file`
 ```
 
+**Duplication triggers:**
+- Listing dependencies → Reference package.json
+- Describing config → Reference config file
+- Listing versions → Reference package.json
+- How-to steps → Reference code or docs site
+
+**When to duplicate:**
+- WHY behind choice + trade-off (with reference)
+- Business constraint context (reference authority)
+
 **Example:**
 ```markdown
 <!-- VERIFY: package.json -->
 Dependencies: `package.json`
 
 <!-- VERIFY: biome.json -->
-Linting: Biome. WHY: Single tool for format+lint. Trade-off: Smaller ecosystem. (ADR-003)
+Linting: Biome. WHY: Single tool for format+lint. Trade-off: Smaller plugin ecosystem vs simplicity. (ADR-003)
 ```
-
-VERIFY marker = check on file changes.
 
 ---
 
-## Update Triggers
+## Update Strategy
 
-New understanding → context.md/architecture.md. Architectural decision → ADR. Project term → glossary.md. Pattern adopted → architecture.md (WHY + trade-off). Constraint → context.md. Outdated → delete/fix immediately.
+**During work:** Note changes (comment/mental).
+
+**Before commit:**
+- Architecture change → Update architecture.md or create ADR
+- New constraint discovered → Update context.md
+- Project-specific term introduced → Add to glossary.md
+- Pattern adopted → Document in architecture.md (WHY + trade-off)
+- Outdated content → Delete
+
+Single batch update. Reduces context switching.
 
 ---
 
 ## Content Rules
 
-### ✅ Include (WHY + Internal)
-- context.md: Business context, constraints, scope
-- architecture.md: Design decisions (WHY), patterns, trade-offs
-- glossary.md: Project-specific terms
-- ADRs: Significant decisions with alternatives
+### ✅ Include
+- **context.md:** Business context you can't find in code. Constraints affecting decisions. Explicit scope boundaries.
+- **architecture.md:** WHY this pattern. Trade-offs of major decisions. System-level structure.
+- **glossary.md:** Project-specific terms. Domain language.
+- **ADRs:** Significant decisions with alternatives.
 
-### ❌ Exclude (Elsewhere)
-- Public info → README.md
-- API docs → JSDoc/TSDoc
-- Implementation → Code comments
-- Config → Config files
-- Versions/deps → package.json
-- How-to → Code/docs site
+### ❌ Exclude
+- Public marketing → README.md
+- API reference → JSDoc/TSDoc
+- Implementation details → Code comments
+- Config values → Config files
+- Dependency list → package.json
+- Tutorial steps → Code examples or docs site
+- Generic best practices → Core rules
 
-Internal context only. No duplication.
+**Boundary test:** Can user learn this from README? → Exclude. Does code show WHAT but not WHY? → Include.
+
+---
+
+## Verification
+
+**On read:** Spot-check critical VERIFY markers in context.md.
+
+**Before commit:** Check all VERIFY markers → files exist. Content matches code. Wrong → fix. Outdated → delete.
+
+**Drift detection:**
+- VERIFY → non-existent file
+- Docs describe missing pattern
+- Code has undocumented pattern
+- Contradiction between .sylphx/ and code
+
+**Resolution:**
+```
+WHAT/HOW conflict → Code wins, update docs
+WHY conflict → Docs win if still valid, else update both
+Both outdated → Research current state, fix both
+```
+
+**Fix patterns:**
+- File moved → Update VERIFY path
+- Implementation changed → Update docs. Major change + alternatives existed → Create ADR
+- Constraint violated → Fix code (if constraint valid) or update constraint (if context changed) + document WHY
 
 ---
 
@@ -211,51 +266,14 @@ Internal context only. No duplication.
 
 Delete immediately:
 
-- ❌ "We plan to..." / "In the future..."
-- ❌ "Currently using..."
+- ❌ "We plan to..." / "In the future..." (speculation)
+- ❌ "Currently using X" implying change (state facts: "Uses X")
 - ❌ Contradicts code
-- ❌ Non-existent file references
-- ❌ Duplicates package.json/config
+- ❌ References non-existent files
+- ❌ Duplicates package.json/config values
 - ❌ Explains HOW not WHY
-- ❌ Generic advice
-
----
-
-## Verification
-
-**Every `.sylphx/` read:** VERIFY markers valid. Content matches code. Wrong → fix immediately.
-
-**Automated:**
-```bash
-bun run verify-docs  # Check all VERIFY markers
-```
-
----
-
-## Drift Resolution
-
-**Detection triggers:**
-- VERIFY marker → non-existent file
-- Docs describe missing pattern
-- Code has undocumented pattern
-- Contradiction between .sylphx/ and code
-
-**Resolution hierarchy:**
-```
-Code vs Docs:
-├─ WHAT/HOW → Code wins, update docs
-├─ WHY → Docs win if valid, else update both
-└─ Both outdated → Research, fix both
-```
-
-**Fix immediately:** Code evolved → update docs. Docs outdated → update/delete. File moved → update markers. Who detects = who fixes.
-
-**Document:** Architectural change → ADR. Pattern change → architecture.md. Constraint change → context.md.
-
-**Examples:**
-- File moved → update marker path
-- Implementation changed → update docs + ADR
-- Constraint violated → fix code or update constraint
+- ❌ Generic advice ("follow best practices")
+- ❌ Outdated after refactor
 
 ---
 
