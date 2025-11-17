@@ -9,58 +9,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   release:
-    name: Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.1
-
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Configure NPM Auth
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-
-      - name: Version and Publish
-        id: changesets
-        run: |
-          # Check if there are changesets
-          if [ -n "$(ls .changeset/*.md 2>/dev/null | grep -v README)" ]; then
-            echo "📦 Changesets found - versioning and publishing..."
-
-            # Configure git
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-            # Version packages
-            bunx changeset version
-
-            # Commit version changes
-            git add .
-            git commit -m "chore: version packages [skip ci]"
-            git push
-
-            # Publish to npm
-            bunx changeset publish
-            echo "published=true" >> $GITHUB_OUTPUT
-          else
-            echo "No changesets found - skipping"
-            echo "published=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Send Slack Notification
-        if: steps.changesets.outputs.published == 'true'
-        run: echo "Packages published!"
+    uses: SylphxAI/.github/.github/workflows/publish-npm.yml@main
+    with:
+      bun-version: '1.3.1'
+    secrets: inherit
