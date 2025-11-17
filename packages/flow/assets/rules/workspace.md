@@ -7,11 +7,15 @@ description: .sylphx/ workspace - SSOT for context, architecture, decisions
 
 ## Core Behavior
 
-**Task start:** `.sylphx/` missing → create structure with templates. Exists → read context.md, spot-check critical VERIFY markers.
+<!-- P1 --> **Task start**: `.sylphx/` missing → create structure. Exists → read context.md.
 
-**During work:** Note changes. Defer updates until before commit.
+<!-- P2 --> **During work**: Note changes mentally. Batch updates before commit.
 
-**Before commit:** Update all .sylphx/ files. All VERIFY markers valid. No contradictions. Outdated → delete.
+<!-- P1 --> **Before commit**: Update .sylphx/ files if architecture/constraints/decisions changed. Delete outdated content.
+
+<reasoning>
+Outdated docs worse than no docs. Defer updates to reduce context switching.
+</reasoning>
 
 ---
 
@@ -27,13 +31,17 @@ description: .sylphx/ workspace - SSOT for context, architecture, decisions
     NNN-title.md   # Individual ADRs
 ```
 
+**Missing → create with templates below.**
+
 ---
 
 ## Templates
 
 ### context.md
 
-Internal only. Public → README.md.
+<instruction priority="P2">
+Internal context only. Public info → README.md.
+</instruction>
 
 ```markdown
 # Project Context
@@ -41,12 +49,20 @@ Internal only. Public → README.md.
 ## What (Internal)
 [Project scope, boundaries, target]
 
-Example: CLI for AI agent orchestration. Scope: Local execution, file config, multi-agent. Target: TS developers. Out: Cloud, training, UI.
+<example>
+CLI for AI agent orchestration.
+Scope: Local execution, file config, multi-agent.
+Target: TS developers.
+Out: Cloud, training, UI.
+</example>
 
 ## Why (Business/Internal)
 [Business context, motivation, market gap]
 
-Example: Market gap in TS-native AI tooling. Python-first tools dominate. Opportunity: Capture web dev market.
+<example>
+Market gap in TS-native AI tooling. Python-first tools dominate.
+Opportunity: Capture web dev market.
+</example>
 
 ## Key Constraints
 <!-- Non-negotiable constraints affecting code decisions -->
@@ -59,11 +75,11 @@ Example: Market gap in TS-native AI tooling. Python-first tools dominate. Opport
 **Out of scope:** [What we explicitly don't]
 
 ## SSOT References
-<!-- VERIFY: package.json -->
 - Dependencies: `package.json`
+- Config: `[config file]`
 ```
 
-Update: Scope/constraints/boundaries change.
+**Update when**: Scope/constraints/boundaries change.
 
 ---
 
@@ -75,15 +91,18 @@ Update: Scope/constraints/boundaries change.
 ## System Overview
 [1-2 paragraphs: structure, data flow, key decisions]
 
-Example: Event-driven CLI. Commands → Agent orchestrator → Specialized agents → Tools. File-based config, no server.
+<example>
+Event-driven CLI. Commands → Agent orchestrator → Specialized agents → Tools.
+File-based config, no server.
+</example>
 
 ## Key Components
-<!-- VERIFY: src/path/ -->
-- **Name** (`src/path/`): [Responsibility]
+- **[Name]** (`src/path/`): [Responsibility]
 
-Example:
+<example>
 - **Agent Orchestrator** (`src/orchestrator/`): Task decomposition, delegation, synthesis
 - **Code Agent** (`src/agents/coder/`): Code generation, testing, git operations
+</example>
 
 ## Design Patterns
 
@@ -92,18 +111,19 @@ Example:
 **Where:** `src/path/`
 **Trade-off:** [Gained vs lost]
 
-Example:
+<example>
 ### Pattern: Factory for agents
 **Why:** Dynamic agent creation based on task type
 **Where:** `src/factory/`
 **Trade-off:** Flexibility vs complexity. Added indirection but easy to add agents.
+</example>
 
 ## Boundaries
 **In scope:** [Core functionality]
 **Out of scope:** [Explicitly excluded]
 ```
 
-Update: Architecture changes, pattern adopted, major refactor.
+**Update when**: Architecture changes, pattern adopted, major refactor.
 
 ---
 
@@ -117,14 +137,17 @@ Update: Architecture changes, pattern adopted, major refactor.
 **Usage:** `src/path/`
 **Context:** [When/why matters]
 
-Example:
+<example>
 ## Agent Enhancement
 **Definition:** Merging base agent definition with rules
 **Usage:** `src/core/enhance-agent.ts`
 **Context:** Loaded at runtime before agent execution. Rules field stripped for Claude Code compatibility.
+</example>
 ```
 
-Update: New project-specific term. Skip: General programming concepts.
+**Update when**: New project-specific term introduced.
+
+**Skip**: General programming concepts.
 
 ---
 
@@ -151,13 +174,13 @@ Update: New project-specific term. Skip: General programming concepts.
 **Negative:** [Drawbacks]
 
 ## References
-<!-- VERIFY: src/path/ -->
 - Implementation: `src/path/`
 - Supersedes: ADR-XXX (if applicable)
 ```
 
 **<200 words total.**
 
+<instruction priority="P2">
 **Create ADR when ANY:**
 - Changes database schema
 - Adds/removes major dependency (runtime, not dev)
@@ -167,17 +190,27 @@ Update: New project-specific term. Skip: General programming concepts.
 - Multiple valid approaches exist
 
 **Skip:** Framework patterns, obvious fixes, config changes, single-file changes, dev dependencies.
+</instruction>
 
 ---
 
 ## SSOT Discipline
 
-Never duplicate. Always reference.
+<!-- P1 --> Never duplicate. Always reference.
 
 ```markdown
-<!-- VERIFY: path/to/file -->
 [Topic]: See `path/to/file`
 ```
+
+<example type="good">
+Dependencies: `package.json`
+Linting: Biome. WHY: Single tool for format+lint. Trade-off: Smaller plugin ecosystem vs simplicity. (ADR-003)
+</example>
+
+<example type="bad">
+Dependencies: react@18.2.0, next@14.0.0, ...
+(Duplicates package.json - will drift)
+</example>
 
 **Duplication triggers:**
 - Listing dependencies → Reference package.json
@@ -189,36 +222,29 @@ Never duplicate. Always reference.
 - WHY behind choice + trade-off (with reference)
 - Business constraint context (reference authority)
 
-**Example:**
-```markdown
-<!-- VERIFY: package.json -->
-Dependencies: `package.json`
-
-<!-- VERIFY: biome.json -->
-Linting: Biome. WHY: Single tool for format+lint. Trade-off: Smaller plugin ecosystem vs simplicity. (ADR-003)
-```
-
 ---
 
 ## Update Strategy
 
-**During work:** Note changes (comment/mental).
+<workflow priority="P1">
+**During work:** Note changes (mental/comment).
 
 **Before commit:**
-- Architecture change → Update architecture.md or create ADR
-- New constraint discovered → Update context.md
-- Project-specific term introduced → Add to glossary.md
-- Pattern adopted → Document in architecture.md (WHY + trade-off)
-- Outdated content → Delete
+1. Architecture changed → Update architecture.md or create ADR
+2. New constraint discovered → Update context.md
+3. Project term introduced → Add to glossary.md
+4. Pattern adopted → Document in architecture.md (WHY + trade-off)
+5. Outdated content → Delete
 
 Single batch update. Reduces context switching.
+</workflow>
 
 ---
 
 ## Content Rules
 
 ### ✅ Include
-- **context.md:** Business context you can't find in code. Constraints affecting decisions. Explicit scope boundaries.
+- **context.md:** Business context not in code. Constraints affecting decisions. Explicit scope boundaries.
 - **architecture.md:** WHY this pattern. Trade-offs of major decisions. System-level structure.
 - **glossary.md:** Project-specific terms. Domain language.
 - **ADRs:** Significant decisions with alternatives.
@@ -238,12 +264,14 @@ Single batch update. Reduces context switching.
 
 ## Verification
 
-**On read:** Spot-check critical VERIFY markers in context.md.
-
-**Before commit:** Check all VERIFY markers → files exist. Content matches code. Wrong → fix. Outdated → delete.
+<checklist priority="P1">
+**Before commit:**
+- [ ] Files referenced exist (spot-check critical paths)
+- [ ] Content matches code (no contradictions)
+- [ ] Outdated content deleted
+</checklist>
 
 **Drift detection:**
-- VERIFY → non-existent file
 - Docs describe missing pattern
 - Code has undocumented pattern
 - Contradiction between .sylphx/ and code
@@ -255,8 +283,14 @@ WHY conflict → Docs win if still valid, else update both
 Both outdated → Research current state, fix both
 ```
 
+<example type="drift">
+Drift: architecture.md says "Uses Redis for sessions"
+Code: No Redis, using JWT
+Resolution: Code wins → Update architecture.md: "Uses JWT for sessions (stateless auth)"
+</example>
+
 **Fix patterns:**
-- File moved → Update VERIFY path
+- File moved → Update path reference
 - Implementation changed → Update docs. Major change + alternatives existed → Create ADR
 - Constraint violated → Fix code (if constraint valid) or update constraint (if context changed) + document WHY
 
@@ -264,7 +298,7 @@ Both outdated → Research current state, fix both
 
 ## Red Flags
 
-Delete immediately:
+<!-- P1 --> Delete immediately:
 
 - ❌ "We plan to..." / "In the future..." (speculation)
 - ❌ "Currently using X" implying change (state facts: "Uses X")
@@ -279,4 +313,4 @@ Delete immediately:
 
 ## Prime Directive
 
-**Outdated docs worse than no docs. When in doubt, delete.**
+<!-- P0 --> **Outdated docs worse than no docs. When in doubt, delete.**
