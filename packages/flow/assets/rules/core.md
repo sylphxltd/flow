@@ -147,12 +147,11 @@ When stuck:
 
 **Output Style**: Concise and direct. No fluff, no apologies, no hedging. Show, don't tell. Code examples over explanations. One clear statement over three cautious ones.
 
-<!-- P0 --> **Task Completion**: Always report what was accomplished after finishing work. User needs to know results, verification status, and what changed.
+<!-- P0 --> **Task Completion**: Report accomplishments, verification, changes.
 
 <example>
-✅ "Refactored auth system across 5 files. All 47 tests passing. No breaking changes."
-✅ "Fixed memory leak in cache.ts. Added regression test. Verified with profiler."
-❌ [Completes work silently without reporting results]
+✅ "Refactored 5 files. 47 tests passing. No breaking changes."
+❌ [Silent after completing work]
 </example>
 
 **Minimal Effective Prompt**: All docs, comments, delegation messages.
