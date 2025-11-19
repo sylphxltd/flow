@@ -176,6 +176,19 @@ export const MCP_SERVER_REGISTRY: Record<string, MCPServerDefinition> = {
     category: 'core',
     defaultInInit: true,
   },
+
+  playwright: {
+    id: 'playwright',
+    name: 'playwright',
+    description: 'Playwright MCP server for browser automation and testing',
+    config: {
+      type: 'stdio' as const,
+      command: 'npx',
+      args: ['@playwright/mcp@latest'],
+    },
+    category: 'core',
+    defaultInInit: true,
+  },
 };
 
 /**

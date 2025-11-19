@@ -18,7 +18,46 @@ Think of MCP as **plugins for AI agents**.
 
 Flow comes with battle-tested MCP servers:
 
-### 1. Web Search Prime
+### 1. Playwright
+
+Browser automation and testing:
+
+**Capabilities:**
+- Automated browser testing
+- Web scraping and data extraction
+- E2E test automation
+- Visual regression testing
+- Cross-browser testing
+
+**Use Cases:**
+```bash
+# Automated testing
+sylphx-flow "create E2E tests for authentication flow"
+# ✅ Generates Playwright test suite
+
+# Web scraping
+sylphx-flow "extract product data from this website"
+# ✅ Uses Playwright for dynamic content
+
+# Visual testing
+sylphx-flow "add screenshot tests for dashboard"
+# ✅ Creates visual regression tests
+```
+
+**Configuration:**
+```json
+// .sylphx-flow/mcp-servers.json
+{
+  "playwright": {
+    "enabled": true,
+    "browsers": ["chromium", "firefox", "webkit"]
+  }
+}
+```
+
+---
+
+### 2. Web Search Prime
 
 Real-time internet information access:
 
@@ -52,7 +91,7 @@ sylphx-flow "fix this bug with latest library version"
 
 ---
 
-### 2. Z.AI Vision & Video Analysis
+### 3. Z.AI Vision & Video Analysis
 
 Advanced image and video understanding:
 
@@ -80,7 +119,7 @@ sylphx-flow "extract data from this screenshot" --attach screenshot.png
 
 ---
 
-### 3. Code Indexing Server
+### 4. Code Indexing Server
 
 Semantic code understanding and navigation:
 
@@ -101,7 +140,7 @@ sylphx-flow "refactor authentication to use OAuth"
 
 ---
 
-### 4. File Operations Server
+### 5. File Operations Server
 
 Advanced file manipulation:
 
@@ -123,7 +162,7 @@ sylphx-flow "create component structure for UserProfile"
 
 ---
 
-### 5. Git Operations Server
+### 6. Git Operations Server
 
 Repository management:
 
@@ -155,6 +194,7 @@ Flow automatically discovers available MCP servers:
 sylphx-flow --list-mcp-servers
 
 # Output:
+# ✅ playwright (active)
 # ✅ web-search-prime (active)
 # ✅ zai-vision (active)
 # ✅ code-indexing (active)
@@ -173,9 +213,10 @@ sylphx-flow "implement OAuth login"
 // Behind the scenes:
 1. Code Indexing: Find existing auth patterns
 2. Web Search: Get latest OAuth best practices
-3. Knowledge Base: Security guidelines
-4. File Operations: Create necessary files
-5. Git Operations: Create feature branch
+3. Playwright: Test authentication flow
+4. Knowledge Base: Security guidelines
+5. File Operations: Create necessary files
+6. Git Operations: Create feature branch
 
 // You get: Complete, secure implementation
 ```
@@ -208,6 +249,7 @@ MCP servers are automatically installed:
 sylphx-flow --init-only
 
 # Auto-installs:
+# ✅ playwright
 # ✅ web-search-prime
 # ✅ zai-vision
 # ✅ code-indexing
