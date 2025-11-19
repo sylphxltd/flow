@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.5.2
+
+### Patch Changes
+
+- fbf8f32: Add Personality section with research-backed trait descriptors (Methodical Scientist, Skeptical Verifier, Evidence-Driven Perfectionist) to combat rash LLM behavior. Refactor Character section to be more MEP-compliant and modular. Research shows personality priming achieves 80% behavioral compliance and is the most effective control method.
+
 ## 1.5.1
 
 ### Patch Changes
