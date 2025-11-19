@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.5.1
+
+### Patch Changes
+
+- 76b3c84: Add Playwright MCP server as default pre-configured server for browser automation and testing capabilities
+
 ## 1.5.0
 
 ### Minor Changes
