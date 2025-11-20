@@ -173,7 +173,7 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
 /**
  * Show sync preview with categorization
  */
-export function showSyncPreview(manifest: SyncManifest, cwd: string): void {
+export function showSyncPreview(manifest: SyncManifest, cwd: string, target?: Target): void {
   console.log(chalk.cyan.bold('━━━ 🔄 Sync Preview\n'));
 
   // Will sync section
@@ -183,7 +183,9 @@ export function showSyncPreview(manifest: SyncManifest, cwd: string): void {
     manifest.rules.inFlow.length > 0 ||
     manifest.mcpServers.inRegistry.length > 0;
 
-  if (hasFlowFiles) {
+  const hasHooksSupport = target?.setupHooks !== undefined;
+
+  if (hasFlowFiles || hasHooksSupport) {
     console.log(chalk.green('Will sync (delete + reinstall):\n'));
 
     if (manifest.agents.inFlow.length > 0) {
@@ -215,6 +217,13 @@ export function showSyncPreview(manifest: SyncManifest, cwd: string): void {
       manifest.mcpServers.inRegistry.forEach((server) => {
         console.log(chalk.dim(`    ✓ ${server}`));
       });
+      console.log('');
+    }
+
+    // Show hooks if target supports them
+    if (hasHooksSupport) {
+      console.log(chalk.dim('  Settings:'));
+      console.log(chalk.dim(`    ✓ Hooks configuration`));
       console.log('');
     }
   }

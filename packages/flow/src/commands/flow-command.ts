@@ -396,7 +396,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
 
         // Show preview
         console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
-        showSyncPreview(manifest, process.cwd());
+        showSyncPreview(manifest, process.cwd(), target);
 
         // Select unknown files to remove
         const selectedUnknowns = await selectUnknownFilesToRemove(manifest);
@@ -741,7 +741,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
 
         // Show preview
         console.log(chalk.cyan.bold('━━━ 🔄 Synchronizing Files\n'));
-        showSyncPreview(manifest, process.cwd());
+        showSyncPreview(manifest, process.cwd(), target);
 
         // Select unknown files to remove
         const selectedUnknowns = await selectUnknownFilesToRemove(manifest);
