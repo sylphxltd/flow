@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.11
+
+### Patch Changes
+
+- 5e170c7: Test Slack notification toJSON fix
+
 ## 1.6.10
 
 ### Patch Changes
