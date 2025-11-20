@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.3
+
+### Patch Changes
+
+- db58e6a: Test Slack notification with fixed workflow - should now display correct package name and version.
+
 ## 1.6.2
 
 ### Patch Changes
