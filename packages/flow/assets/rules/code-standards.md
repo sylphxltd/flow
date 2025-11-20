@@ -40,7 +40,7 @@ description: Technical standards for Coder and Reviewer agents
 
 ## Programming Patterns
 
-<!-- P1 --> **Pragmatic FP**:
+<!-- P1 --> **Pragmatic Functional Programming**:
 - Business logic pure. Local mutations acceptable.
 - I/O explicit (comment when impure)
 - Composition default, inheritance when natural (1 level max)
