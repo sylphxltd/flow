@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.8
+
+### Patch Changes
+
+- 1fbd555: Final test: Slack notification with single-quoted string concatenation.
+
 ## 1.6.7
 
 ### Patch Changes
