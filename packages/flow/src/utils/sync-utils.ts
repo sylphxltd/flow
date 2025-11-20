@@ -47,6 +47,10 @@ interface SyncManifest {
     inRegistry: string[];
     notInRegistry: string[];
   };
+  hooks: {
+    inConfig: string[];      // Hooks from config (will be synced)
+    orphaned: string[];      // Hooks that exist locally but not in config (ask user)
+  };
   preserve: string[];
 }
 
@@ -82,6 +86,7 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
     slashCommands: { inFlow: [], unknown: [], missing: [] },
     rules: { inFlow: [], unknown: [], missing: [] },
     mcpServers: { inRegistry: [], notInRegistry: [] },
+    hooks: { inConfig: [], orphaned: [] },
     preserve: [],
   };
 
@@ -158,6 +163,34 @@ export async function buildSyncManifest(cwd: string, target: Target): Promise<Sy
     }
   }
 
+  // Hooks - detect orphaned hooks (only for targets that support hooks)
+  if (target.setupHooks) {
+    const settingsPath = path.join(cwd, '.claude', 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      try {
+        const content = await fs.promises.readFile(settingsPath, 'utf-8');
+        const settings = JSON.parse(content);
+
+        if (settings.hooks) {
+          const existingHookTypes = Object.keys(settings.hooks);
+
+          // Expected hooks from config (currently only Notification)
+          // In the future, this could be read from Flow config
+          const expectedHookTypes = ['Notification'];
+
+          manifest.hooks.inConfig = existingHookTypes.filter(type =>
+            expectedHookTypes.includes(type)
+          );
+          manifest.hooks.orphaned = existingHookTypes.filter(type =>
+            !expectedHookTypes.includes(type)
+          );
+        }
+      } catch (error) {
+        console.warn(chalk.yellow('⚠ Failed to read settings.json'));
+      }
+    }
+  }
+
   // Files to preserve
   manifest.preserve = [
     '.sylphx-flow/',
@@ -223,7 +256,14 @@ export function showSyncPreview(manifest: SyncManifest, cwd: string, target?: Ta
     // Show hooks if target supports them
     if (hasHooksSupport) {
       console.log(chalk.dim('  Settings:'));
-      console.log(chalk.dim(`    ✓ Hooks configuration`));
+
+      if (manifest.hooks.inConfig.length > 0) {
+        manifest.hooks.inConfig.forEach((hookType) => {
+          console.log(chalk.dim(`    ✓ ${hookType} hook`));
+        });
+      } else {
+        console.log(chalk.dim(`    ✓ Hooks configuration`));
+      }
       console.log('');
     }
   }
@@ -267,7 +307,8 @@ export function showSyncPreview(manifest: SyncManifest, cwd: string, target?: Ta
     manifest.agents.unknown.length > 0 ||
     manifest.slashCommands.unknown.length > 0 ||
     manifest.rules.unknown.length > 0 ||
-    manifest.mcpServers.notInRegistry.length > 0;
+    manifest.mcpServers.notInRegistry.length > 0 ||
+    manifest.hooks.orphaned.length > 0;
 
   if (hasUnknownFiles) {
     console.log(chalk.yellow('Unknown files (not in Flow templates):\n'));
@@ -303,6 +344,14 @@ export function showSyncPreview(manifest: SyncManifest, cwd: string, target?: Ta
       });
       console.log('');
     }
+
+    if (manifest.hooks.orphaned.length > 0) {
+      console.log(chalk.dim('  Hooks:'));
+      manifest.hooks.orphaned.forEach((hookType) => {
+        console.log(chalk.dim(`    ? ${hookType} hook`));
+      });
+      console.log('');
+    }
   } else {
     console.log(chalk.green('✓ No unknown files\n'));
   }
@@ -319,9 +368,18 @@ export function showSyncPreview(manifest: SyncManifest, cwd: string, target?: Ta
 }
 
 /**
+ * Selected items to remove with type information
+ */
+export interface SelectedToRemove {
+  files: string[];
+  mcpServers: string[];
+  hooks: string[];
+}
+
+/**
  * Select unknown files to remove
  */
-export async function selectUnknownFilesToRemove(manifest: SyncManifest): Promise<string[]> {
+export async function selectUnknownFilesToRemove(manifest: SyncManifest): Promise<SelectedToRemove> {
   const unknownFiles: Array<{ name: string; value: string; type: string }> = [];
 
   // Collect all unknown files
@@ -357,8 +415,16 @@ export async function selectUnknownFilesToRemove(manifest: SyncManifest): Promis
     });
   });
 
+  manifest.hooks.orphaned.forEach((hookType) => {
+    unknownFiles.push({
+      name: `Hook: ${hookType}`,
+      value: hookType,
+      type: 'hook',
+    });
+  });
+
   if (unknownFiles.length === 0) {
-    return [];
+    return { files: [], mcpServers: [], hooks: [] };
   }
 
   const { default: inquirer } = await import('inquirer');
@@ -371,7 +437,27 @@ export async function selectUnknownFilesToRemove(manifest: SyncManifest): Promis
     },
   ]);
 
-  return selected;
+  // Categorize selected items by type
+  const selectedSet = new Set(selected);
+  const result: SelectedToRemove = {
+    files: [],
+    mcpServers: [],
+    hooks: [],
+  };
+
+  for (const item of unknownFiles) {
+    if (selectedSet.has(item.value)) {
+      if (item.type === 'mcp') {
+        result.mcpServers.push(item.value);
+      } else if (item.type === 'hook') {
+        result.hooks.push(item.value);
+      } else {
+        result.files.push(item.value);
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -379,7 +465,7 @@ export async function selectUnknownFilesToRemove(manifest: SyncManifest): Promis
  */
 export function showFinalSummary(
   manifest: SyncManifest,
-  selectedUnknowns: string[]
+  selectedUnknowns: SelectedToRemove
 ): void {
   console.log(chalk.cyan.bold('\n━━━ 📋 Final Summary\n'));
 
@@ -404,22 +490,30 @@ export function showFinalSummary(
   }
 
   // Will remove (selected unknowns)
-  if (selectedUnknowns.length > 0) {
+  const totalToRemove = selectedUnknowns.files.length + selectedUnknowns.mcpServers.length + selectedUnknowns.hooks.length;
+  if (totalToRemove > 0) {
     console.log(chalk.red('Remove (selected):\n'));
-    selectedUnknowns.forEach((file) => {
-      const name = file.includes('/') ? path.basename(file) : file;
-      console.log(chalk.dim(`  - ${name}`));
+    selectedUnknowns.files.forEach((file) => {
+      console.log(chalk.dim(`  - ${path.basename(file)}`));
+    });
+    selectedUnknowns.mcpServers.forEach((server) => {
+      console.log(chalk.dim(`  - MCP: ${server}`));
+    });
+    selectedUnknowns.hooks.forEach((hook) => {
+      console.log(chalk.dim(`  - Hook: ${hook}`));
     });
     console.log('');
   }
 
   // Will preserve
+  const allSelected = [...selectedUnknowns.files, ...selectedUnknowns.mcpServers, ...selectedUnknowns.hooks];
   const preservedUnknowns = [
     ...manifest.agents.unknown,
     ...manifest.slashCommands.unknown,
     ...manifest.rules.unknown,
     ...manifest.mcpServers.notInRegistry,
-  ].filter((file) => !selectedUnknowns.includes(file));
+    ...manifest.hooks.orphaned,
+  ].filter((file) => !allSelected.includes(file));
 
   if (preservedUnknowns.length > 0) {
     console.log(chalk.green('Preserve:\n'));
@@ -436,7 +530,7 @@ export function showFinalSummary(
  */
 export async function executeSyncDelete(
   manifest: SyncManifest,
-  selectedUnknowns: string[]
+  selectedUnknowns: SelectedToRemove
 ): Promise<{ templates: number; unknowns: number }> {
   const flowFiles = [
     ...manifest.agents.inFlow,
@@ -463,10 +557,7 @@ export async function executeSyncDelete(
   }
 
   // Delete selected unknown files
-  for (const file of selectedUnknowns) {
-    // Skip MCP servers (handled separately)
-    if (!file.includes('/')) continue;
-
+  for (const file of selectedUnknowns.files) {
     try {
       await fs.promises.unlink(file);
       console.log(chalk.dim(`  ✓ Deleted: ${path.basename(file)}`));
@@ -536,6 +627,47 @@ export async function removeMCPServers(cwd: string, serversToRemove: string[]): 
     return removedCount;
   } catch (error) {
     console.warn(chalk.yellow('⚠ Failed to update .mcp.json'));
+    return 0;
+  }
+}
+
+/**
+ * Remove hooks from .claude/settings.json
+ */
+export async function removeHooks(cwd: string, hooksToRemove: string[]): Promise<number> {
+  if (hooksToRemove.length === 0) {
+    return 0;
+  }
+
+  const settingsPath = path.join(cwd, '.claude', 'settings.json');
+
+  try {
+    const content = await fs.promises.readFile(settingsPath, 'utf-8');
+    const settings = JSON.parse(content);
+
+    if (!settings.hooks) {
+      return 0;
+    }
+
+    let removedCount = 0;
+    for (const hookType of hooksToRemove) {
+      if (settings.hooks[hookType]) {
+        delete settings.hooks[hookType];
+        console.log(chalk.dim(`  ✓ Removed Hook: ${hookType}`));
+        removedCount++;
+      }
+    }
+
+    // Write back
+    await fs.promises.writeFile(
+      settingsPath,
+      JSON.stringify(settings, null, 2) + '\n',
+      'utf-8'
+    );
+
+    return removedCount;
+  } catch (error) {
+    console.warn(chalk.yellow('⚠ Failed to update settings.json'));
     return 0;
   }
 }

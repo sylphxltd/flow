@@ -380,7 +380,7 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
 
       // Handle sync mode - delete template files first
       if (options.sync && !options.dryRun) {
-        const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers } = await import('../utils/sync-utils.js');
+        const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers, removeHooks } = await import('../utils/sync-utils.js');
 
         // Need target to build manifest
         const targetId = await selectAndValidateTarget(initOptions);
@@ -415,20 +415,27 @@ async function executeSetupPhase(prompt: string | undefined, options: FlowOption
         const { templates, unknowns } = await executeSyncDelete(manifest, selectedUnknowns);
 
         // Remove MCP servers
-        const mcpServersToRemove = selectedUnknowns.filter(s => !s.includes('/'));
         let mcpRemoved = 0;
-        if (mcpServersToRemove.length > 0) {
-          mcpRemoved = await removeMCPServers(process.cwd(), mcpServersToRemove);
+        if (selectedUnknowns.mcpServers.length > 0) {
+          mcpRemoved = await removeMCPServers(process.cwd(), selectedUnknowns.mcpServers);
+        }
+
+        // Remove hooks
+        let hooksRemoved = 0;
+        if (selectedUnknowns.hooks.length > 0) {
+          hooksRemoved = await removeHooks(process.cwd(), selectedUnknowns.hooks);
         }
 
         // Summary
         console.log(chalk.green(`\n✓ Synced ${templates} templates`));
-        if (unknowns > 0 || mcpRemoved > 0) {
-          console.log(chalk.green(`✓ Removed ${unknowns + mcpRemoved} files`));
+        const totalRemoved = unknowns + mcpRemoved + hooksRemoved;
+        if (totalRemoved > 0) {
+          console.log(chalk.green(`✓ Removed ${totalRemoved} items`));
         }
-        const preserved = manifest.agents.unknown.length + manifest.slashCommands.unknown.length + manifest.rules.unknown.length + manifest.mcpServers.notInRegistry.length - selectedUnknowns.length;
+        const totalSelected = selectedUnknowns.files.length + selectedUnknowns.mcpServers.length + selectedUnknowns.hooks.length;
+        const preserved = manifest.agents.unknown.length + manifest.slashCommands.unknown.length + manifest.rules.unknown.length + manifest.mcpServers.notInRegistry.length + manifest.hooks.orphaned.length - totalSelected;
         if (preserved > 0) {
-          console.log(chalk.green(`✓ Preserved ${preserved} custom files`));
+          console.log(chalk.green(`✓ Preserved ${preserved} custom items`));
         }
         console.log('');
       } else if (!options.sync) {
@@ -725,7 +732,7 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
 
       // Handle sync mode - delete template files first
       if (options.sync && !options.dryRun) {
-        const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers } = await import('../utils/sync-utils.js');
+        const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers, removeHooks } = await import('../utils/sync-utils.js');
 
         // Need target to build manifest
         const targetId = await selectAndValidateTarget(initOptions);
@@ -760,20 +767,27 @@ async function executeFlowOnce(prompt: string | undefined, options: FlowOptions)
         const { templates, unknowns } = await executeSyncDelete(manifest, selectedUnknowns);
 
         // Remove MCP servers
-        const mcpServersToRemove = selectedUnknowns.filter(s => !s.includes('/'));
         let mcpRemoved = 0;
-        if (mcpServersToRemove.length > 0) {
-          mcpRemoved = await removeMCPServers(process.cwd(), mcpServersToRemove);
+        if (selectedUnknowns.mcpServers.length > 0) {
+          mcpRemoved = await removeMCPServers(process.cwd(), selectedUnknowns.mcpServers);
+        }
+
+        // Remove hooks
+        let hooksRemoved = 0;
+        if (selectedUnknowns.hooks.length > 0) {
+          hooksRemoved = await removeHooks(process.cwd(), selectedUnknowns.hooks);
         }
 
         // Summary
         console.log(chalk.green(`\n✓ Synced ${templates} templates`));
-        if (unknowns > 0 || mcpRemoved > 0) {
-          console.log(chalk.green(`✓ Removed ${unknowns + mcpRemoved} files`));
+        const totalRemoved = unknowns + mcpRemoved + hooksRemoved;
+        if (totalRemoved > 0) {
+          console.log(chalk.green(`✓ Removed ${totalRemoved} items`));
         }
-        const preserved = manifest.agents.unknown.length + manifest.slashCommands.unknown.length + manifest.rules.unknown.length + manifest.mcpServers.notInRegistry.length - selectedUnknowns.length;
+        const totalSelected = selectedUnknowns.files.length + selectedUnknowns.mcpServers.length + selectedUnknowns.hooks.length;
+        const preserved = manifest.agents.unknown.length + manifest.slashCommands.unknown.length + manifest.rules.unknown.length + manifest.mcpServers.notInRegistry.length + manifest.hooks.orphaned.length - totalSelected;
         if (preserved > 0) {
-          console.log(chalk.green(`✓ Preserved ${preserved} custom files`));
+          console.log(chalk.green(`✓ Preserved ${preserved} custom items`));
         }
         console.log('');
       } else {
