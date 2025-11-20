@@ -40,31 +40,22 @@ description: Technical standards for Coder and Reviewer agents
 
 ## Programming Patterns
 
-**3+ params → named args**:
-<example>
-✅ updateUser({ id, email, role })
-❌ updateUser(id, email, role)
-</example>
-
-**Pure functions default**: No mutations, no global state, no I/O. Side effects isolated with comment.
+<!-- P1 --> **Pragmatic FP**:
+- Business logic pure. Local mutations acceptable.
+- I/O explicit (comment when impure)
+- Composition default, inheritance when natural (1 level max)
+- Declarative when clearer, imperative when simpler
 
 <example>
-// SIDE EFFECT: writes to disk
-function saveConfig(config) { ... }
-
-// Pure function
-function validateConfig(config) { return ... }
+✅ users.filter(u => u.active)
+✅ for (const user of users) process(user)
+✅ class UserRepo extends BaseRepo {}
+❌ let shared = {}; fn() { shared.x = 1 }
 </example>
 
-**Composition over inheritance**: Prefer mixins, HOCs, hooks, dependency injection. Max 1 inheritance level.
+**Named args (3+ params)**: `update({ id, email, role })`
 
-**Declarative over imperative**:
-<example>
-✅ const active = users.filter(u => u.isActive)
-❌ const active = []; for (let i = 0; i < users.length; i++) { ... }
-</example>
-
-**Event-driven when appropriate**: Decouple components through events/messages.
+**Event-driven when appropriate**: Decouple via events/messages
 
 ---
 
@@ -138,7 +129,13 @@ function validateConfig(config) { return ... }
 ❌ const data = await fetchUser(id) // let it bubble unhandled
 </example>
 
-**Expected Failures**: Use Result/Either types. Never exceptions for control flow. Return errors as values.
+**Expected Failures**: Result types or explicit exceptions. Never throw for control flow.
+
+<example>
+✅ return Result.err(error)
+✅ throw new DomainError(msg)
+❌ throw "error" // control flow
+</example>
 
 **Logging**: Include context (user id, request id). Actionable messages. Appropriate severity. Never mask failures.
 
@@ -201,9 +198,11 @@ Before ANY feature: research best practices + search codebase + check package re
 </instruction>
 
 <example>
-❌ Custom Result type → ✅ import { Result } from 'neverthrow'
-❌ Custom validation → ✅ import { z } from 'zod'
-❌ Custom date formatting → ✅ import { format } from 'date-fns'
+✅ import { Result } from 'neverthrow'
+✅ try/catch with typed errors
+✅ import { z } from 'zod'
+✅ import { format } from 'date-fns'
+❌ Custom Result/validation/date implementations
 </example>
 
 **Premature Abstraction**:
