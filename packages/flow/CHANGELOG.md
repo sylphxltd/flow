@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.12
+
+### Patch Changes
+
+- 5873a9f: Test Slack notification double parse fix
+
 ## 1.6.11
 
 ### Patch Changes
