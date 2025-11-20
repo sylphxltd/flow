@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.4
+
+### Patch Changes
+
+- 02cc912: Test Slack notification with env var fix - shell escaping resolved.
+
 ## 1.6.3
 
 ### Patch Changes
