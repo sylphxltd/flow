@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.13
+
+### Patch Changes
+
+- 6ea9757: Test repository link in Slack notification
+
 ## 1.6.12
 
 ### Patch Changes
