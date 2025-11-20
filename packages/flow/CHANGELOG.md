@@ -1,5 +1,24 @@
 # @sylphx/flow
 
+## 1.7.0
+
+### Minor Changes
+
+- Add orphaned hooks detection and removal to sync command
+
+  The sync command now properly detects and prompts for removal of hooks that exist locally but are not in the configuration. This ensures full synchronization between local settings and the Flow configuration.
+
+  **New Features:**
+
+  - Detects orphaned hooks in `.claude/settings.json`
+  - Shows orphaned hooks in sync preview
+  - Allows users to select which orphaned hooks to remove
+  - Properly cleans up settings.json after removal
+
+  **Breaking Changes:**
+
+  - Internal API: `selectUnknownFilesToRemove()` now returns `SelectedToRemove` object instead of `string[]`
+
 ## 1.6.13
 
 ### Patch Changes
