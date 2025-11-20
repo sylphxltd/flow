@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- 746d576: Fix missing chalk import in claude-code target causing ReferenceError in dry-run mode
+- ea6aa39: fix(sync): display hooks configuration in sync preview
+
+  When running `sylphx-flow --sync`, the sync preview now shows that hooks will be configured/updated. This makes it clear to users that hook settings are being synchronized along with other Flow templates.
+
+  Previously, hooks were being updated during sync but this wasn't visible in the sync preview output, leading to confusion about whether hooks were being synced.
+
 - 6ea9757: Test repository link in Slack notification
 
 ## 1.6.12
