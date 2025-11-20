@@ -1,5 +1,12 @@
 # @sylphx/flow
 
+## 1.6.9
+
+### Patch Changes
+
+- 2ecbdae: Fix Slack notification JSON parsing with temp file approach.
+- 2634f30: Test temp file fix for Slack notification - should now display correct package name.
+
 ## 1.6.8
 
 ### Patch Changes
