@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
+import chalk from 'chalk';
 import { FileInstaller } from '../core/installers/file-installer.js';
 import { MCPInstaller } from '../core/installers/mcp-installer.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
