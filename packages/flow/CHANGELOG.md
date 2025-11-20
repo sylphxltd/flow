@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.6
+
+### Patch Changes
+
+- 47c1d39: Test Slack notification with string concatenation fix - template literal escaping resolved.
+
 ## 1.6.5
 
 ### Patch Changes
