@@ -1,5 +1,12 @@
 # @sylphx/flow
 
+## 1.6.7
+
+### Patch Changes
+
+- 5b44829: Test Slack notification with heredoc fix - YAML quoting resolved.
+- 197e4af: Test Slack notification with one-liner - YAML syntax issues resolved.
+
 ## 1.6.6
 
 ### Patch Changes
