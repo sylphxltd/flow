@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.1
+
+### Patch Changes
+
+- 8c6fb07: Use full term "Pragmatic Functional Programming" instead of abbreviation "Pragmatic FP" for clarity and searchability.
+
 ## 1.6.0
 
 ### Minor Changes
