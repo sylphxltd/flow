@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.10
+
+### Patch Changes
+
+- 2efbfe4: Test Slack notification forEach fix
+
 ## 1.6.9
 
 ### Patch Changes
