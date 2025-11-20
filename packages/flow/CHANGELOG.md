@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.5
+
+### Patch Changes
+
+- bfa33df: Test Slack notification with errexit fix - bash -e handling resolved.
+
 ## 1.6.4
 
 ### Patch Changes
