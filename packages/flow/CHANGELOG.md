@@ -1,5 +1,11 @@
 # @sylphx/flow
 
+## 1.6.2
+
+### Patch Changes
+
+- a5e299d: Test Slack notification integration with upgraded publish workflow.
+
 ## 1.6.1
 
 ### Patch Changes
