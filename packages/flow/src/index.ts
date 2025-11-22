@@ -15,8 +15,8 @@ import {
   setupCommand,
   doctorCommand,
   upgradeCommand,
-  executeFlow,
 } from './commands/flow-command.js';
+import { executeFlow } from './commands/flow/execute.js';
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);

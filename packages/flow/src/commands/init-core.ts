@@ -7,8 +7,8 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { targetManager } from '../core/target-manager.js';
 import { CLIError } from '../utils/error-handler.js';
-import { projectSettings } from '../utils/settings.js';
-import { validateTarget } from '../utils/target-config.js';
+import { projectSettings } from '../utils/config/settings.js';
+import { validateTarget } from '../utils/config/target-config.js';
 import { ConfigService } from '../services/config-service.js';
 
 export interface InitOptions {

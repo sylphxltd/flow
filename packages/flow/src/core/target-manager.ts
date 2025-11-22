@@ -10,7 +10,7 @@ import {
   isTargetImplemented,
 } from '../config/targets.js';
 import { getOrElse, isSome } from '../core/functional/option.js';
-import { projectSettings } from '../utils/settings.js';
+import { projectSettings } from '../utils/config/settings.js';
 
 /**
  * Target Manager interface

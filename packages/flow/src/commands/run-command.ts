@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Command } from 'commander';
 import { targetManager } from '../core/target-manager.js';
 import { CLIError } from '../utils/error-handler.js';
-import { getAgentsDir } from '../utils/paths.js';
+import { getAgentsDir } from '../utils/config/paths.js';
 
 export async function loadAgentContent(agentName: string, agentFilePath?: string): Promise<string> {
   const { enhanceAgentContent } = await import('../utils/agent-enhancer.js');

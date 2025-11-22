@@ -1,1 +1,15 @@
+# Secrets
 .secrets/
+
+# Dev/Test files
+.mcp.json
+.sylphx-flow/
+.opencode/
+.claude/
+
+# Build outputs
+dist/
+build/
+
+# Runtime
+*.log

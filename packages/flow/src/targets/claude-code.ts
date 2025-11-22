@@ -8,9 +8,9 @@ import { MCPInstaller } from '../core/installers/mcp-installer.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
 import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
 import { CLIError } from '../utils/error-handler.js';
-import { getAgentsDir, getSlashCommandsDir } from '../utils/paths.js';
-import { sanitize } from '../utils/security.js';
-import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/target-utils.js';
+import { getAgentsDir, getSlashCommandsDir } from '../utils/config/paths.js';
+import { sanitize } from '../utils/security/security.js';
+import { fileUtils, generateHelpText, pathUtils, yamlUtils } from '../utils/config/target-utils.js';
 
 /**
  * Claude Code target - composition approach with all original functionality

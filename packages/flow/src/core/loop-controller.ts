@@ -10,7 +10,7 @@
  */
 
 import chalk from 'chalk';
-import type { FlowOptions } from '../commands/flow-command.js';
+import type { FlowOptions } from '../commands/flow/types.js';
 
 export interface LoopOptions {
   enabled: boolean;

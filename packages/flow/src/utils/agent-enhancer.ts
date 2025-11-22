@@ -12,8 +12,8 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getOutputStylesDir, getRulesDir } from './paths.js';
-import { yamlUtils } from './target-utils.js';
+import { getOutputStylesDir, getRulesDir } from './config/paths.js';
+import { yamlUtils } from './config/target-utils.js';
 
 /**
  * Load and combine rules and output styles

@@ -4,7 +4,7 @@
  */
 
 import chalk from 'chalk';
-import type { FlowOptions } from './flow-command.js';
+import type { FlowOptions } from './flow/types.js';
 import { StateDetector, type ProjectState } from '../core/state-detector.js';
 import { UpgradeManager } from '../core/upgrade-manager.js';
 import { targetManager } from '../core/target-manager.js';

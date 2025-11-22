@@ -2,7 +2,7 @@
  * Rules configuration
  */
 
-import { getRuleFile } from '../utils/paths.js';
+import { getRuleFile } from '../utils/config/paths.js';
 
 export const CORE_RULES = {
   core: 'core.md',

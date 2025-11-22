@@ -8,7 +8,7 @@ import {
   getFileInfo,
   readDirectorySafe,
   readFileSafe,
-} from '../../utils/file-operations.js';
+} from '../../utils/files/file-operations.js';
 import type { ProcessResult } from '../types/index.js';
 
 /**

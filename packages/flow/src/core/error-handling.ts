@@ -3,7 +3,7 @@
  * Functional, composable error handling system
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/display/logger.js';
 import type { Result } from './result.js';
 
 /**

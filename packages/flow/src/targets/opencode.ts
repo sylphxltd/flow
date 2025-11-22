@@ -7,9 +7,9 @@ import { FileInstaller } from '../core/installers/file-installer.js';
 import { MCPInstaller } from '../core/installers/mcp-installer.js';
 import type { AgentMetadata } from '../types/target-config.types.js';
 import type { CommonOptions, MCPServerConfigUnion, SetupResult, Target } from '../types.js';
-import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/paths.js';
-import { secretUtils } from '../utils/secret-utils.js';
-import { fileUtils, generateHelpText, yamlUtils } from '../utils/target-utils.js';
+import { getAgentsDir, getOutputStylesDir, getSlashCommandsDir } from '../utils/config/paths.js';
+import { secretUtils } from '../utils/security/secret-utils.js';
+import { fileUtils, generateHelpText, yamlUtils } from '../utils/config/target-utils.js';
 import { CLIError } from '../utils/error-handler.js';
 
 /**

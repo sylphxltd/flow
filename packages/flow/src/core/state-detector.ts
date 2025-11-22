@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { projectSettings } from '../utils/settings.js';
+import { projectSettings } from '../utils/config/settings.js';
 import { targetManager } from './target-manager.js';
 import { ConfigService } from '../services/config-service.js';
 

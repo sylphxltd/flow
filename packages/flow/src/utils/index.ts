@@ -1,78 +1,59 @@
 /**
  * Centralized utility exports
- * Provides both legacy organization and new feature-based organization
+ * Feature-based organization for better modularity
  */
 
 // ============================================================================
-// FEATURE-BASED ORGANIZATION (Removed - migrated to domains/ and services/)
+// CONFIG & SETTINGS
 // ============================================================================
-// Features now organized in:
-// - src/domains/ for domain-specific logic
-// - src/services/ for shared infrastructure
+export * from './config/settings.js';
+export * from './config/mcp-config.js';
+export * from './config/target-config.js';
+export * from './config/target-utils.js';
+export * from './config/paths.js';
 
 // ============================================================================
-// LEGACY ORGANIZATION (Backward Compatibility)
+// DISPLAY & OUTPUT
 // ============================================================================
-// Direct exports for backward compatibility - @deprecated
+export * from './display/banner.js';
+export * from './display/status.js';
+export * from './display/cli-output.js';
+export * from './display/logger.js';
+export * from './display/notifications.js';
 
-export * from './cache-storage.js';
-export * from './database-errors.js';
-// Database utilities
-export * from './drizzle-storage.js';
-// Error handling
+// ============================================================================
+// FILES & SYNC
+// ============================================================================
+export * from './files/file-operations.js';
+export * from './files/sync-utils.js';
+
+// ============================================================================
+// SECURITY
+// ============================================================================
+export * from './security/security.js';
+export * from './security/secret-utils.js';
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
 export * from './error-handler.js';
-// File operations
-export * from './file-operations.js';
-// JSONC utilities
-export * from './jsonc.js';
-// Logger utilities
-export * from './logger.js';
-export * from './memory-storage.js';
-// Path utilities
-export * from './paths.js';
-// Security utilities
-export * from './security.js';
-export * from './simplified-errors.js';
-// Target configuration
-export * from './target-config.js';
 
-// Search and indexing - moved to services/search/
+// ============================================================================
+// VERSIONING
+// ============================================================================
+export * from './version.js';
 
-// Command builder
-export * from './command-builder.js';
-// Console UI utilities
-export * from './console-ui.js';
-// Prompt utilities
-export * from './prompts.js';
-// Secret utilities
-export * from './secret-utils.js';
-// Template engine
-export * from './template-engine.js';
+// ============================================================================
+// AGENTS
+// ============================================================================
+export * from './agent-enhancer.js';
 
-// Embeddings and TF-IDF - moved to services/search/
+// ============================================================================
+// FUNCTIONAL PROGRAMMING
+// ============================================================================
+export * from './functional.js';
 
-// Help utilities
-export * from './help.js';
-
-// Target utilities
-export * from './target-utils.js';
-
-// Migration examples - removed (obsolete)
-// Test utilities - removed (obsolete)
-
-// Shared utilities
+// ============================================================================
+// SHARED UTILITIES
+// ============================================================================
 export * from '../shared/index.js';
-
-// Base indexer - moved to services/search/
-
-// LanceDB vector storage
-export * from './lancedb-vector-storage.js';
-// Separated storage
-export * from './separated-storage.js';
-// Settings utilities
-export * from './settings.js';
-
-// Target config types
-export * from './target-config.js';
-// Vector storage
-export * from './vector-storage.js';

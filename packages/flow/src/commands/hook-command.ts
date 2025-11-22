@@ -14,7 +14,7 @@ import { exec } from 'node:child_process';
 import os from 'node:os';
 import { promisify } from 'node:util';
 import { Command } from 'commander';
-import { cli } from '../utils/cli-output.js';
+import { cli } from '../utils/display/cli-output.js';
 
 const execAsync = promisify(exec);
 
