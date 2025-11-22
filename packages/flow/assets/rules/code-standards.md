@@ -5,26 +5,6 @@ description: Technical standards for Coder and Reviewer agents
 
 # CODE STANDARDS
 
-## Cognitive Framework
-
-### Understanding Depth
-- **Shallow OK**: Well-defined, low-risk, established patterns → Implement
-- **Deep required**: Ambiguous, high-risk, novel, irreversible → Investigate first
-
-### Complexity Navigation
-- **Mechanical**: Known patterns → Execute fast
-- **Analytical**: Multiple components → Design then build
-- **Emergent**: Unknown domain → Research, prototype, design, build
-
-### State Awareness
-- **Flow**: Clear path, tests pass → Push forward
-- **Friction**: Hard to implement, messy → Reassess, simplify
-- **Uncertain**: Missing info → Assume reasonably, document, continue
-
-**Signals to pause**: Can't explain simply, too many caveats, hesitant without reason, over-confident without alternatives.
-
----
-
 ## Structure
 
 **Feature-first over layer-first**: Organize by functionality, not type.
@@ -40,7 +20,7 @@ description: Technical standards for Coder and Reviewer agents
 
 ## Programming Patterns
 
-<!-- P1 --> **Pragmatic Functional Programming**:
+**Pragmatic Functional Programming**:
 - Business logic pure. Local mutations acceptable.
 - I/O explicit (comment when impure)
 - Composition default, inheritance when natural (1 level max)
@@ -88,31 +68,31 @@ description: Technical standards for Coder and Reviewer agents
 - Null/undefined handled explicitly
 - Union types over loose types
 
-<!-- P1 --> **Comments**: Explain WHY, not WHAT. Non-obvious decisions documented. TODOs forbidden (implement or delete).
+**Comments**: Explain WHY, not WHAT. Non-obvious decisions documented. TODOs forbidden (implement or delete).
 
 <example>
 ✅ // Retry 3x because API rate limits after burst
 ❌ // Retry the request
 </example>
 
-<!-- P1 --> **Testing**: Critical paths 100% coverage. Business logic 80%+. Edge cases and error paths tested. Test names describe behavior, not implementation.
+**Testing**: Critical paths 100% coverage. Business logic 80%+. Edge cases and error paths tested. Test names describe behavior, not implementation.
 
 ---
 
 ## Security Standards
 
-<!-- P0 --> **Input Validation**: Validate at boundaries (API, forms, file uploads). Whitelist > blacklist. Sanitize before storage/display. Use schema validation (Zod, Yup).
+**Input Validation**: Validate at boundaries (API, forms, file uploads). Whitelist > blacklist. Sanitize before storage/display. Use schema validation (Zod, Yup).
 
 <example>
 ✅ const input = UserInputSchema.parse(req.body)
 ❌ const input = req.body // trusting user input
 </example>
 
-<!-- P0 --> **Authentication/Authorization**: Auth required by default (opt-in to public). Deny by default. Check permissions at every entry point. Never trust client-side validation.
+**Authentication/Authorization**: Auth required by default (opt-in to public). Deny by default. Check permissions at every entry point. Never trust client-side validation.
 
-<!-- P0 --> **Data Protection**: Never log: passwords, tokens, API keys, PII. Encrypt sensitive data at rest. HTTPS only. Secure cookie flags (httpOnly, secure, sameSite).
+**Data Protection**: Never log: passwords, tokens, API keys, PII. Encrypt sensitive data at rest. HTTPS only. Secure cookie flags (httpOnly, secure, sameSite).
 
-<example type="violation">
+<example>
 ❌ logger.info('User login', { email, password }) // NEVER log passwords
 ✅ logger.info('User login', { email })
 </example>
@@ -166,7 +146,6 @@ description: Technical standards for Coder and Reviewer agents
 
 ## Refactoring Triggers
 
-<instruction priority="P2">
 **Extract function when**:
 - 3rd duplication appears
 - Function >20 lines
@@ -177,9 +156,8 @@ description: Technical standards for Coder and Reviewer agents
 - File >300 lines
 - Multiple unrelated responsibilities
 - Difficult to name clearly
-</instruction>
 
-<!-- P1 --> **Immediate refactor**: Thinking "I'll clean later" → Clean NOW. Adding TODO → Implement NOW. Copy-pasting → Extract NOW.
+**Immediate refactor**: Thinking "I'll clean later" → Clean NOW. Adding TODO → Implement NOW. Copy-pasting → Extract NOW.
 
 ---
 
@@ -193,9 +171,7 @@ description: Technical standards for Coder and Reviewer agents
 
 **Reinventing the Wheel**:
 
-<instruction priority="P1">
 Before ANY feature: research best practices + search codebase + check package registry + check framework built-ins.
-</instruction>
 
 <example>
 ✅ import { Result } from 'neverthrow'
@@ -253,7 +229,7 @@ function loadConfig(raw: unknown): Config {
 
 **Single Source of Truth**: Configuration → Environment + config files. State → Single store (Redux, Zustand, Context). Derived data → Compute from source, don't duplicate.
 
-<!-- P1 --> **Data Flow**:
+**Data Flow**:
 ```
 External → Validate → Transform → Domain Model → Storage
 Storage → Domain Model → Transform → API Response
