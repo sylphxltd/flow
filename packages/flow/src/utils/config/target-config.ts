@@ -6,11 +6,11 @@ import {
   getSecretEnvVars,
   MCP_SERVER_REGISTRY,
   type MCPServerID,
-} from '../config/servers.js';
-import { targetManager } from '../core/target-manager.js';
-import { resolveConfig } from '../services/mcp-service.js';
-import { deleteNestedProperty, getNestedProperty, setNestedProperty } from './object-utils.js';
-import { secretUtils } from './secret-utils.js';
+} from '../../config/servers.js';
+import { targetManager } from '../../core/target-manager.js';
+import { resolveConfig } from '../../services/mcp-service.js';
+import { deleteNestedProperty, getNestedProperty, setNestedProperty } from '../object-utils.js';
+import { secretUtils } from '../security/secret-utils.js';
 
 /**
  * Target-specific MCP configuration utilities
