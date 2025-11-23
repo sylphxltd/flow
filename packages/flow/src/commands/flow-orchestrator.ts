@@ -210,9 +210,18 @@ export async function selectTarget(
 ): Promise<string | undefined> {
   // Force target selection when cleaning
   if (options.clean) {
-    const targetId = await targetManager.promptForTargetSelection();
-    console.log(chalk.green(`✅ Selected target: ${targetId}`));
-    return targetId;
+    try {
+      const targetId = await targetManager.promptForTargetSelection();
+      console.log(chalk.green(`✅ Selected target: ${targetId}`));
+      return targetId;
+    } catch (error) {
+      // User cancelled with Ctrl+C - exit gracefully
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        console.log('\n');
+        process.exit(0);
+      }
+      throw error;
+    }
   }
 
   // Use existing target or option

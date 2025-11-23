@@ -47,7 +47,16 @@ export async function selectAndValidateTarget(options: InitOptions): Promise<str
 
   // Target selection (with UI prompt if needed)
   if (!targetId) {
-    targetId = await targetManager.promptForTargetSelection();
+    try {
+      targetId = await targetManager.promptForTargetSelection();
+    } catch (error) {
+      // User cancelled with Ctrl+C - exit gracefully
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        console.log('\n');
+        process.exit(0);
+      }
+      throw error;
+    }
   }
 
   // Validate target
