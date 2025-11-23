@@ -245,7 +245,7 @@ async function initializeProject(options: FlowOptions, state: any): Promise<stri
  * Handle sync mode
  */
 async function handleSyncMode(initOptions: any): Promise<string> {
-  const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers, removeHooks } = await import('../../utils/sync-utils.js');
+  const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers, removeHooks } = await import('../../utils/files/sync-utils.js');
   const { selectAndValidateTarget } = await import('../init-core.js');
 
   const targetId = await selectAndValidateTarget(initOptions);

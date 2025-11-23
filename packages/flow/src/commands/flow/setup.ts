@@ -196,7 +196,7 @@ async function initializeWithTarget(options: FlowOptions): Promise<string | unde
  * Handle sync mode: delete templates then reinstall
  */
 async function handleSyncMode(initOptions: any): Promise<string> {
-  const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers, removeHooks } = await import('../../utils/sync-utils.js');
+  const { buildSyncManifest, showSyncPreview, selectUnknownFilesToRemove, showFinalSummary, confirmSync, executeSyncDelete, removeMCPServers, removeHooks } = await import('../../utils/files/sync-utils.js');
   const { selectAndValidateTarget } = await import('../init-core.js');
 
   // Need target to build manifest

@@ -165,7 +165,7 @@ export async function checkSyncStatus(
   if (!state.target) return;
 
   try {
-    const { buildSyncManifest } = await import('../utils/sync-utils.js');
+    const { buildSyncManifest } = await import('../utils/files/sync-utils.js');
     const target = targetManager.getTarget(state.target);
 
     if (target._tag === 'None') return;
