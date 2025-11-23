@@ -68,6 +68,7 @@ Report what was accomplished. Structured, comprehensive, reviewable.
 
 ## Next Actions
 - [ ] [Remaining work]
+- [Suggestions when no clear next step]
 ```
 
 #### 🔵 Tier 3: Major Changes Only
@@ -137,6 +138,9 @@ Refactored authentication system to use JWT tokens instead of sessions.
 ## Dependencies
 - Added: jsonwebtoken@9.0.0 (JWT signing/verification)
 - Removed: express-session@1.17.0 (replaced by JWT)
+
+## Next Actions
+- Suggestions: Consider adding rate limiting, implement refresh token rotation, add logging for security events
 
 ## Migration
 Users need to:
