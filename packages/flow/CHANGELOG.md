@@ -1,5 +1,57 @@
 # @sylphx/flow
 
+## 1.8.1
+
+### Patch Changes
+
+- ad56fc3: Add structured completion report format to prompts
+
+  Added comprehensive 3-tier report structure to guide task completion reporting:
+
+  **Tier 1 - Always Required:**
+
+  - Summary, Changes, Commits, Tests, Documentation, Breaking Changes, Known Issues
+
+  **Tier 2 - When Relevant:**
+
+  - Dependencies, Tech Debt, Files Cleanup/Refactor, Next Actions
+
+  **Tier 3 - Major Changes Only:**
+
+  - Performance, Security, Migration, Verification, Rollback, Optimization Opportunities
+
+  Benefits:
+
+  - Forces LLM to remember completed work (must write report)
+  - Provides reviewable, structured output
+  - Prevents incomplete reporting
+  - Consistent format across all tasks
+
+  Includes detailed example for authentication refactoring showing proper usage of each section.
+
+- a4b0b48: Fix broken imports and Ctrl+C handling
+
+  - Fix Ctrl+C gracefully exits during target selection instead of showing stack trace
+  - Restore accidentally deleted object-utils.ts file
+  - Correct 16 broken relative import paths from refactor reorganization:
+    - target-config.ts: Fix imports to config/, core/, services/ (5 paths)
+    - sync-utils.ts: Fix imports to types, servers, paths (3 paths)
+    - mcp-config.ts: Fix imports to config/, core/, target-config (4 paths)
+    - target-utils.ts: Fix import to types (1 path)
+    - execute.ts, setup.ts, flow-orchestrator.ts: Fix sync-utils paths (3 paths)
+
+  All module resolution errors fixed. Application now runs successfully.
+
+- 7e3a3a1: Refactor codebase for better modularity and maintainability
+
+  - Split flow-command.ts into focused modules (1207 → 258 lines, 78% reduction)
+  - Reorganize utils into feature-based directories (config, display, files, security)
+  - Extract reusable utilities (version, banner, status, prompt resolution)
+  - Create modular flow command structure in src/commands/flow/
+  - Add JSONC parser utility for JSON with comments support
+  - Update all imports to use new modular structure
+  - Improve code organization and separation of concerns
+
 ## 1.8.0
 
 ### Minor Changes
