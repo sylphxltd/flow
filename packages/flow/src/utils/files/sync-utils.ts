@@ -3,7 +3,7 @@ import path from 'node:path';
 import chalk from 'chalk';
 import type { Target } from '../../types.js';
 import { MCP_SERVER_REGISTRY } from '../../config/servers.js';
-import { getAgentsDir, getSlashCommandsDir, getRulesDir } from './paths.js';
+import { getAgentsDir, getSlashCommandsDir, getRulesDir } from '../config/paths.js';
 
 /**
  * Scan directory for .md files and return basenames

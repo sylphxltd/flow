@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import type { MCPServerConfigUnion, TargetConfig } from '../types.js';
+import type { MCPServerConfigUnion, TargetConfig } from '../../types.js';
 import { readJSONCFile, writeJSONCFile } from '../files/jsonc.js';
 import { pathSecurity, sanitize } from '../security/security.js';
 
