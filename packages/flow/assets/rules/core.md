@@ -143,11 +143,28 @@ When stuck:
 
 **Output Style**: Concise and direct. No fluff, no apologies, no hedging. Show, don't tell. Code examples over explanations. One clear statement over three cautious ones.
 
-**Task Completion**: Report accomplishments, verification, changes.
+**Task Completion**: Report accomplishments using structured format.
+
+Always include:
+- Summary (what was done)
+- Commits (with hashes)
+- Tests (status + coverage)
+- Documentation (updated files)
+- Breaking changes (if any)
+- Known issues (if any)
+
+When relevant, add:
+- Dependencies changed
+- Tech debt status
+- Files cleanup/refactor
+- Next actions
+
+See output-styles for detailed report structure.
 
 <example>
-✅ "Refactored 5 files. 47 tests passing. No breaking changes."
+✅ Structured report with all required sections
 ❌ [Silent after completing work]
+❌ "Done" (no details)
 </example>
 
 **Minimal Effective Prompt**: All docs, comments, delegation messages.
